@@ -1,0 +1,414 @@
+const checklistData = reactive({
+  prexor: [
+    { 
+      title: '1.- GESTIÓN ADMINISTRATIVA EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '1.1', text: 'El experto profesional y/o encargado de la implementación del protocolo cuenta con el curso de su OAL -PREXOR .', ref: 'Protocolo PREXOR                                               Ley N° 16.744', val: '0' },
+        { id: '1.2', text: 'La Empresa tiene identificado en su  Matriz  IPER  , agente riesgo Ruido.', ref: '', val: '0' },
+        { id: '1.3', text: 'La Empresa en su reglamento Interno tiene incorporado el agente de riesgo Ruido', ref: '', val: '0' },
+        { id: '1.4', text: '¿La Empresa cuenta con el registro de la difusión del Manual sobre Normas Mínimas para el Desarrollo de Programas de Vigilancia de la Pérdida Auditiva para los trabajadores expuestos a ruido en los lugares de trabajo?', ref: '', val: '0' },
+        { id: '1.5', text: 'La empresa realizó la difusion del Protocolos de Exposición Ocupacional a Ruido PREXOR por medio de cartas a las autoridades fiscalizadoras competentes.', ref: 'Protocolo PREXOR', val: '0' },
+        { id: '1.6', text: 'La empresa realizó la difusion a todos los trabajadores incluyendo linea de mando, sobre el SGSST(etapas) para el control a Ruido - PREXOR', ref: '', val: '0' },
+        { id: '1.7', text: 'La empresa cuenta con un cronograma o cart gantt de la implementacion del Protocolo de Exposición ocupacional a Ruido PREXOR.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- GESTIÓN DE COMITES PARITARIOS EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '2.1', text: 'El CPHS cuenta con un programa de trabajo donde incorporen actividades relacionadas con la prevención de la Hipoacusia laboral.', ref: 'Protocolo PREXOR                                                   D.S N° 44', val: '0' },
+        { id: '2.2', text: 'Los integrantes del CPHS se encuentran capacitados en el Protocolo de Exposición Ocupacional a Ruido PREXOR', ref: '', val: '0' },
+        { id: '2.3', text: 'El CPHS participa en reuniones y realiza inspecciones  de SSO referente a verificación de medidas de control  tecnicas de Ruido ;   ingenieriles , administrativas y EPP.', ref: '', val: '0' },
+        { id: '2.4', text: 'Los integrantes del CPHS se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion personal a ruido (EPA)', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '3.- GESTIÓN DE CAPACITACIÓN Y ENTRENAMIENTO EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '3.1', text: 'Los trabajadores, linea de mando y sindicatos se encuentran capacitados sobre el Protocolos de Exposición Ocupacional a Ruido-PREXOR .', ref: 'Protocolo PREXOR                                      D.S N° 594', val: '0' },
+        { id: '3.2', text: 'Los trabajadores se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion personal a ruido (EPA)', ref: '', val: '0' },
+        { id: '3.3', text: 'La empresa cuenta con programa de trabajo teórico y práctico de capacitación y entrenamiento del Protocolo de Exposición Ocupacional a Ruido -PREXOR', ref: '', val: '0' },
+        { id: '3.4', text: 'La empresa informó a los trabajadores de la obligación de informar de los riesgos laborales  que entrañan sus labores y de los metodos correcto de trabajo respecto al agente de riesgo Ruido', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '4.-GESTION DE EMPRESA Y OAL EN MATERIA  DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '4.1', text: 'El personal o encargado de implementar el Protocolo PREXOR cuenta con un curso , taller y/o  capacitacion', ref: 'Protocolo PREXOR        Requerimientos OAL', val: '0' },
+        { id: '4.2', text: 'Se realizó estudio Previo en conjunto con OAL', ref: '', val: '0' },
+        { id: '4.3', text: 'La empresa cuenta su evaluación cualitativa vigente del agentes de riesgos higiénicos por su OAL- Revisar vigencia', ref: '', val: '0' },
+        { id: '4.4', text: 'Se envío la Matriz de ruido a su  OAL para su revisión, aprobación y la respectiva coordinación de evaluaciones cuantitativas -', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '5.-GESTION DE VIGILANCIA AMBIENTAL Y SALUD  EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '5.1', text: 'La empresa cuenta con evaluaciones cuantitativas de exposición ocupacional a Ruido -PREXOR efectuadas por su OAL', ref: 'Protocolo PREXOR                             Ley N° 16.744', val: '0' },
+        { id: '5.2', text: 'Existen Área o GES con exposición ocupacional a Ruido que superen los criterios de accion del PREXOR . Se realizó la difusion a todos los  trabajadores evaluados que desarrollan actividades en el área de trabajo.', ref: '', val: '0' },
+        { id: '5.3', text: 'La empresa informó a los trabajadores que de acuerdo a los resultados obtenidos en informe técnico ingresan a   Programa de Vigilancia Auditiva .', ref: '', val: '0' },
+        { id: '5.4', text: 'Presentar Listado de trabajadores expuestos a Ruido Ocupacional', ref: '', val: '0' },
+        { id: '5.5', text: 'La empresa cuenta con historial de algun trabajador con Hipoasucia laboral y/o alguna afeccion auditiva de Salud.', ref: '', val: '0' },
+        { id: '5.6', text: 'La empresa realiza examen de Post-ocupacional  cuando el trabajador deja de estar en vigilancia auditiva o cuando sesa sus funciones y/o deja de pertenecer a la empresa.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '6.- MEDIDAS PRESCRITAS DEL OAL A EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '6.1', text: 'La empresa cuenta con un programa o carta gantt de trabajo para la ejecucion de las medidas de control prescritas por su OAL.', ref: 'Protocolo PREXOR                                    Requerimientos OAL', val: '0' },
+        { id: '6.2', text: 'La empresa realiza el seguimiento y cierre de estas medidas prescritas informando a su OAL y empresa mandante.', ref: '', val: '0' },
+        { id: '6.3', text: 'La empresa ha efectuado con conjunto con su OAL re-evaluaciones de ruido a  fuentes sonoras o GES en los tiempos establecidos que indica el Protocolos PREXOR.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '7.-GESTIÓN DE RUIDO A HERRAMIENTAS , MAQUINARIAS Y/O  EQUIPOS DE LA EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '7.1', text: 'La empresa tiene identificado las fuentes de mayor emision sonoras tales como ; maquinarias y/o herramientas que estas se encuentren encerradas, encapsulas o con algun sistema de reduccion de ruido.', ref: 'Protocolo PREXOR                                      D.S N° 594', val: '0' },
+        { id: '7.2', text: 'Las herramientas manuales o electricas mas ruidosas tales como ; aire comprimido, martillo neumatico, esmeriles, taladros o alguna otra cuenta con tecnologia para disminuir los niveles de ruido.', ref: '', val: '0' },
+        { id: '7.3', text: 'La empresa cuenta con un programa de mantención de maquinaria pesada, herramientas manuales y electricas que ayuden a disminuir la exposición a ruido.', ref: '', val: '0' },
+        { id: '7.4', text: 'La empresa cuenta con señalizaciones de advertencia de ruido y medidas de control en el área de trabajo que sean visibles para los trabajadores.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '8.-SISTEMA SGSST Y PROGRAMA DE PROTECCION AUDITIVA DE LA EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '8.1', text: 'La empresa cuenta con un Plan , SGSST o tiene incorporado dentro de su SGSSO controlar las actividades y disminuir la exposición a ruido de los trabajadores.', ref: 'Protocolo PREXOR', val: '0' },
+        { id: '8.2', text: 'La empresa cuenta con un programa de selección y  proteccion auditiva , siguiendo los lineamientos de la Guia Técnica EPA del Instituto Salud Pública ISP', ref: '', val: '0' },
+        { id: '8.3', text: 'La empresa realizó la difusion del Programa de selección y proteccion auditiva a los trabajadores -', ref: '', val: '0' },
+        { id: '8.4', text: 'La empresa realizó el calculo teórico de la Selección Auditiva EPA para sus trabajadores .', ref: '', val: '0' },
+        { id: '8.5', text: 'Los elementos de proteccion audutiva EPA que entrega la empresa cuenta con la resolucion del Instituto Salud Publica ISP - Certificacion Nacional  D.S N° 18.', ref: '', val: '0' },
+        { id: '8.6', text: 'La empresa realiza la supervision a los trabajadores que utilizan  los elementos de proteccion personal( EPA ) en sus actividades de trabajo con presencia de ruido.', ref: '', val: '0' },
+        { id: '8.7', text: 'La empresa deja registro cuando se realiza el re-cambio del Elemento de proteccion auditiva EPA de los trabajadores.', ref: '', val: '0' },
+        { id: '8.8', text: 'La empresa cuenta con un stock al menos del 10% de los elementos de proteccion audutiva EPA para sus trabajadores expuesto.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '9.- GESTION DE MEJORA CONTINUA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '9.1', text: 'La empresa ha profundizado sobre algunas propuesta y/o proyecto para disminuir la exposición a ruido de los trabajadores. ( Control personal o ambiental de trabajo)', ref: '', val: '0' },
+      ]
+    },
+  ],
+  uv: [
+    { 
+      title: '1.- GESTIÓN ADMINISTRATIVA EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '1.1', text: 'El experto profesional y/o encargado de la implementación de la Guia tecnica de radiación UV cuenta el curso de su OAL', ref: 'Guia Técnica UV', val: '0' },
+        { id: '1.2', text: 'La Empresa tiene indentificado el  agentes de riesgo UV incluido en su Matriz  IPER', ref: '', val: '0' },
+        { id: '1.3', text: 'La empresa realizó la difusion de la Guia Técnica de Radiación Ultravioleta de Origen Solar UV a todos los trabajadores, inluyendo linea de mando y sindicatos.', ref: '', val: '0' },
+        { id: '1.4', text: 'La Empresa en su reglamento Interno tiene incorporado el agente de riesgos UV', ref: '', val: '0' },
+        { id: '1.5', text: 'La empresa realizó la difusion de la Guia Técnica de Radiación UV  por medio de cartas a las autoridades fiscalizadoras', ref: '', val: '0' },
+        { id: '1.6', text: 'La empresa cuenta con un cronograma o carta gantt de la implementacion de la Guia Técnica de Radiación Ultravioleta UV', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- GESTIÓN DE COMITES PARITARIOS EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '2.1', text: 'El CPHS cuenta con un programa de trabajo donde incorporen actividades relacionadas con la prevención de la cancer de piel , lesiones pre-cancesoras y determatosis profesional.', ref: 'Guia Técnica UV                                          D.S N° 44', val: '0' },
+        { id: '2.2', text: 'Los integrantes del CPHS se encuentran capacitados sobre la Guia Técnica de Radiación UV', ref: '', val: '0' },
+        { id: '2.3', text: 'El CPHS participa en reuniones y realiza inspecciones  de SSO referente a verificación de medidas de control  tecnicas de asociadas a RUV  ;   ingenieriles , administrativas y EPP.', ref: '', val: '0' },
+        { id: '2.4', text: 'Los integrantes del CPHS se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion personal asociados a la RUV .', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '3.- GESTIÓN DE CAPACITACIÓN Y ENTRENAMIENTO EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '3.1', text: 'La empresa realizó la Difusion y Capacitación de la Guia Técnica de Radiación Ultravioleta de Origen Solar UV a todos los trabajadores, inluyendo linea de mando y sindicatos.- Solicitar registros', ref: 'Guia Técnica UV                                       D.S N° 594', val: '0' },
+        { id: '3.2', text: 'Los trabajadores se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion contra la RUV- Especificamente Protector  Solar FPS', ref: '', val: '0' },
+        { id: '3.3', text: 'La empresa cuenta con programa de trabajo teórico y práctico de capacitación y entrenamiento de trabajadores expuesto a  radiación UV', ref: '', val: '0' },
+        { id: '3.4', text: 'La empresa informó a los trabajadores de la obligación de informar de los riesgos laborales que entrañan sus labores y de los metodos correcto de trabajo respecto al agente de riesgo RUV', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '4.- GESTION DE EMPRESA Y OAL EN MATERIA  DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '4.1', text: 'La empresa cuenta su evaluación cualitativa vigente del agentes de riesgos higiénicos por su OAL', ref: 'Requerimiento OAL', val: '0' },
+      ]
+    },
+    { 
+      title: '5.- GESTION DE VIGILANCIA AMBIENTAL Y SALUD  EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '5.1', text: 'La empresa tiene identificado a sus Grupos de exposición similiar el nivel riesgo de exposición.', ref: 'Guia Técnica UV', val: '0' },
+        { id: '5.2', text: 'La empresa proporciona medidas de control especificas a los GES con exposición continua a RUV', ref: '', val: '0' },
+        { id: '5.3', text: 'El personal que trabaja en la empresa se encuentra libre de signos de exposición a RUV tales como ; enrrojecimiento de piel, ampollas, quamaduras solares entre otras.', ref: '', val: '0' },
+        { id: '5.4', text: 'La empresa cuenta con historial de algun trabajador con cancer de piel y/o dermatosis profesional o  alguna afeccion de salud a la piel.-', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '6.- GESTION DE LA EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '6.1', text: 'El OAL a establecido medidas prescritas para los trabajadores expuestos a radiación UV', ref: 'Guia Técnica UV                                         Requerimiento OAL', val: '0' },
+        { id: '6.2', text: 'Los trabajadores que realizan sus actividades al aire libre a exposición RUV cuentas con medidas de control tales como ; techumbres, galpones , toldos u otro elemento que genere sombra.', ref: '', val: '0' },
+        { id: '6.3', text: 'Los vehiculos que se encuentran operando al aire libre cuenta con laminas en parabrisas y/o algun otro elementos que diminuya la  exposición a RUV.', ref: '', val: '0' },
+        { id: '6.4', text: 'La empresa dentro de sus procedimientos o politicas a establecidos alguna medida de control que considere disminuir la exposición a RUV -', ref: '', val: '0' },
+        { id: '6.5', text: 'La empresa publica diariamente el Indice UV y medidas de control  acorde a lo establecido en la Guia Técnica de Radiación UV', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '7.- SISTEMA DE SGSST Y PROGRAMA DE PREVENCIÓN Y PROTECCION SOLAR UV', collapsed: false, 
+      questions: [
+        { id: '7.1', text: 'La empresa cuenta con un  SGSST o tiene incorporado dentro de su SGSSO controlar las actividades y disminuir la exposicón a radiación UV  de los trabajadores.', ref: 'Guia Técnica UV                                   D.S N° 594                                      Requerimientos OAL', val: '0' },
+        { id: '7.2', text: 'La empresa cuenta con un Programa de Prevencion y Proteccion Solar contra la radiación UV -', ref: '', val: '0' },
+        { id: '7.3', text: 'La empresa realizó la difusion del Programa de prevencion y proteccion solar UV  a los trabajadores -', ref: '', val: '0' },
+        { id: '7.4', text: 'La empresa tiene identidicado el Listado de trabajadores o GES  expuestos a RUV acorde al nivel de exposición', ref: '', val: '0' },
+        { id: '7.5', text: 'Los elementos de proteccion solar que entrega la empresa cuenta con la resolucion del Instituto Salud Publica ISP - Certificacion Nacional  D.S N° 18.', ref: '', val: '0' },
+        { id: '7.6', text: 'La empresa realiza la supervision de que los trabajadores utilicen los elementos de proteccion personal de RUV en sus actividades de trabajo especialmente la aplicación del Protector Solar FPS', ref: '', val: '0' },
+        { id: '7.7', text: 'La empresa deja registro cuando se realiza el re-cambio del Elemento de proteccion Solar  de los trabajadores', ref: '', val: '0' },
+        { id: '7.8', text: 'La empresa cuenta con un stock al menos del 10% de los elementos de proteccion personal a RUV para sus trabajadores.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '8.- GESTION DE MEJORA CONTINUA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '8.1', text: 'La empresa ha profundizado sobre algunas propuesta y/o proyecto para disminuir la exposición de los trabajadores expuestos RUV (Control personal o ambiental de trabajo)', ref: '', val: '0' },
+      ]
+    },
+  ],
+  tmert: [
+    { 
+      title: '1.- ETAPA 0 : INICIO IMPLEMENTACIÓN PROTOCOLO TMERT', collapsed: false, 
+      questions: [
+        { id: '1.1', text: '¿La empresa cuenta con difusión a trabajadores, jefatura, CPHS y Sindicatos, según lo establecido en Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME)?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '1.2', text: '¿La empresa cuenta con capacitación a trabajadores, jefatura, CPHS y Sindicatos, según lo establecido en Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME)?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '1.3', text: '¿La empresa cuenta con un programa de capacitación, según lo establecido en Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME)? Curso de 8 horas para trabajadores, CPHS y Sindicatos (50 % teórico y 50% practico).', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '1.4', text: '¿Los implementadores de Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TME) cuentas con capacitación de 20 horas para aplicación de "Caracterización, Identificación inicial y avanzada Minsal"?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '1.5', text: '¿Tiene una Carta Gantt para implementación de TMERT?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '1.6', text: '¿Tiene un Programa de Gestión de Riesgos de TMERT?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- ETAPA I: CARACTERIZACIÓN DEL PUESTO DE TRABAJO, IDENTIFICACIÓN INICIAL Y AVANZADA', collapsed: false, 
+      questions: [
+        { id: '2.1', text: '¿Existe identificación de peligro en las áreas de la empresa,?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.2', text: '¿Se realiza ficha de caracterización en cada puesto de trabajo"?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.3', text: '¿Se aplica tabla de identificación inicial para factores de riesgo presentes en las tareas del puesto de trabajo "Tabla I: Identificación Inicial"? (críterio de entrada)', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.4', text: '¿Se aplica tablas de identificación avanzada para factores de riesgo presentes en el puesto de trabajo? (Trabajo repetitivo de miembros superiores, Postura de trabajo estática/forzada, Manipulación Manual de cargas, Manejo Manual de pacientes/personas, Vibración de cuerpo completo, Vibración segmento mano-brazo)', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.5', text: 'Se notifica al OAL cuando la tarea y el puesto de trabajo presenten niveles de riesgo medio/alto/ No Aceptable en la evaluación inicial, para el ingreso del GES al PVS según tiempos establecidos en Protocolo.', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.6', text: '¿Existen evaluaciones de riesgo TMERT en las tareas y puestos que presentan peligro?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.7', text: '¿Existe informe de seguimiento de implementación de medidas de control en empresas con tareas criticas (rojas)?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.8', text: '¿Existe Plan de Acción correctivo para la eliminación y/o disminución de la magnitud del riesgo?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.9', text: '¿Se ejecutan acciones para la mitigación o eliminación de los riesgos identificados y/o evaluados?', ref: 'Art. 110 a.2, D.S. N°594, MINSAL', val: '0' },
+        { id: '2.10', text: '¿Se ejecutan las medidas dentro los plazos, definidos por Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT)?', ref: 'Art. 110 a.2, D.S. N°594, MINSAL. Resolución Exenta Nº503/2012, MINSAL', val: '0' },
+        { id: '2.11', text: '¿Se realiza la Re-evaluación del riesgo, si corresponde?', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.12', text: 'La empresa comunica a los trabajadores el nivel de riesgo de los puestos de trabajo.', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+        { id: '2.13', text: 'La empresa notifica al OAL el EGRESO del GES del Programa de Vigilancia de Salud, cuando en la evaluación y reevaluación inicial presenten un nivel de riesgo bajo/ aceptable.', ref: 'Programa de Vigilancia Ocupacional por exposición a factores de riesgo de Trastornos Músculo Esqueléticos (TMERT). MINSAL, R.E. N°327, publicado 05-03-2024.', val: '0' },
+      ]
+    },
+  ],
+  psicosocial: [
+    { 
+      title: '1.- ETAPA 1: INICIO IMPLEMENTACIÓN PROTOCOLO PSICOSOCIAL', collapsed: false, 
+      questions: [
+        { id: '1.1', text: '¿El implementador cuenta con el curso para la implementación del protocolo psicosocial establecido por el OAL?', ref: 'Protocolo de vigilancia en riesgos psicosociales           CEAL-SM/SUSESO', val: '0' },
+        { id: '1.2', text: '¿La empresa conforma un comité de aplicación con sus respectivos integrantes para dar inicio a la implementación del protocolo psicosocial CEAL-SM/SUSESO?', ref: '', val: '0' },
+        { id: '1.3', text: '¿El comité de aplicación cuenta con representantes del comité paritario pertenecientes a la empresa?', ref: '', val: '0' },
+        { id: '1.4', text: '¿El comité de aplicación cuenta con representantes de los sindicatos pertenecientes a la empresa?                                                                                                                                         Nota: de no existir sindicato, el representante deberá ser elegido en votación por los trabajadores y las trabajadoras', ref: '', val: '0' },
+        { id: '1.5', text: '¿El comité de aplicación cuenta con representantes por parte del empleador?                          Ejemplo: Encargado de prevención de riesgos u otro que el empleador determine y Área de Recursos Humanos', ref: '', val: '0' },
+        { id: '1.6', text: '¿El comité de aplicación se conforma de manera igualitaria?                                                                                 Nota: Igualdad de cantidad en representantes del empleador y representantes de los trabajadores', ref: '', val: '0' },
+        { id: '1.7', text: '¿La empresa cuenta con un archivador para almacenamiento de informacion interna?                                                                Ejemplo: Bitácora fisica y online para llevar un control interno del proceso,que lleve actas y respaldo de reuniones.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- ETAPA 2: DIFUSIÓN Y SENSIBILIZACIÓN', collapsed: false, 
+      questions: [
+        { id: '2.1', text: '¿El comité de aplicación recibe capacitación de difusion por parte del OAL?', ref: 'Protocolo de vigilancia en riesgos psicosociales            CEAL-SM/SUSESO', val: '0' },
+        { id: '2.2', text: '¿El comité de aplicación resguarda las condiciones de anonimato y confidencialidad que exige la metodología?                                                                                                                 Nota: Se definen las unidades de análisis por ocupación, zona geográfica y unidad funcional', ref: '', val: '0' },
+        { id: '2.3', text: '¿Se realiza sensibilización a todos los trabajadores y trabajadoras?                                                                                                                                  Ejemplo: definir la forma y contenido de campaña de sensibilización, llevar un listado de asistencia, reuniones de difusion, folletos, etc.', ref: '', val: '0' },
+        { id: '2.4', text: '¿Se elabora un cronograma de trabajo para implementación de actividades iniciales?            Nota: primera y segunda etapa', ref: '', val: '0' },
+        { id: '2.5', text: '¿Se cumplen los plazos establecidos para la implementación del protocolo psicosocial en la primera y segunda etapa?                                                                                                   Nota: 2 meses', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '3.-  APLICACIÓN DEL CUESTIONARIO CEAL-SM/SUSESO', collapsed: false, 
+      questions: [
+        { id: '3.1', text: '¿El comité de aplicación solicita la apertura de plataforma SUSESO para tabular los cuestionarios constestados en base a las exigencias del OAL?                                              Nota: enviar excel de apertura via correo al OAL', ref: 'Protocolo de vigilancia en riesgos psicosociales            CEAL-SM/SUSESO', val: '0' },
+        { id: '3.2', text: '¿El comité de aplicación determina el tiempo de aplicación del cuestionario CEAL-SM/SUSESO en la empresa? Ejemplo: Comunicado enviado por la empresa con fecha inicial de la aplicación del cuestionario y fecha de término', ref: '', val: '0' },
+        { id: '3.3', text: '¿El comité de aplicación define la modalidad de aplicación (fisica u online) del cuestionario CEAL-SM/SUSESO?                                                                                                                     Nota: formato papel  o formato electrónico', ref: '', val: '0' },
+        { id: '3.4', text: '¿Se elabora un cronograma de aplicación para las unidades de análisis identificadas?   Nota: Cronograma en base a la fechas de aplicación', ref: '', val: '0' },
+        { id: '3.5', text: '¿Cumple con los plazos establecidos para la aplicación del cuestionario CEAL-SM/SUSESO?                                                                                                                           Nota: Plazo establecido es de 30 días', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '4.- PRESENTACIÓN DE RESULTADOS, DISCUSIÓN, ANÁLISIS', collapsed: false, 
+      questions: [
+        { id: '4.1', text: '¿El comité de aplicación notifica los resultados obtenidos del cuestionario CEAL-SM/SUSESO a su OAL?                                                                                                                                     Ejemplo: Se envía informe psicosocial a través de un correo informativo, no superar los 30 dias.', ref: 'Prescripcion de medidas                                   Ley N° 16.744                                   OAL                                        Protocolo de vigilancia en riesgos psicosociales                   CEAL-SM/SUSESO', val: '0' },
+        { id: '4.2', text: '¿El comité de aplicación analiza y discute los resultados obtenidos en el cuestionario CEAL-SM/SUSESO con su asesor OAL?                                                                                           Nota: Mesas de trabajo, evidencias con registros y actas de reuniones', ref: '', val: '0' },
+        { id: '4.3', text: '¿El comité de aplicación informa sobre los resultados obtenidos a todos los trabajadores y trabajadoras?                                                                                                               Ejemplo: Correo informativo, reuniones, presentaciones, etc.', ref: '', val: '0' },
+        { id: '4.4', text: '¿El comité de aplicación asegura la participación de los trabajadores en las propuestas de medidas de intervención y mitigación?                                                                                     Nota: Focus Group, reuniones, buzon de sugerencias, entre otros.', ref: '', val: '0' },
+        { id: '4.5', text: '¿El comité de aplicación y su OAL prescriben medidas de intervención, según el estado de riesgo calificado?                                                                                                               Nota: Riesgo bajo, riesgo medio y riesgo alto', ref: '', val: '0' },
+        { id: '4.6', text: '¿Se informa a los trabajadores sobre las medidas prescriptivas de intervención psiscosocial tomadas por el comité de aplicación?                                                                                 Nota: evidencias con registros y actas de reuniones', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '5.- INICIO DE EJECUCION DE MEDIDAS', collapsed: false, 
+      questions: [
+        { id: '5.1', text: '¿El comité de aplicación cuenta con un programa o carta gantt de trabajo para la ejecución de las medidas de control prescritas por su OAL?', ref: 'Prescripcion de medidas                                   Ley N° 16.744                                   OAL                                        Protocolo de vigilancia en riesgos psicosociales                   CEAL-SM/SUSESO', val: '0' },
+        { id: '5.2', text: '¿La empresa define el orden y prioridades de atención de las medidas de intervención en aquellas dimensiones con mayor riesgo? Corto, Mediano y  Largo plazo                                                                                                                     Ejemplo: 6 meses, 9 meses y 12 meses', ref: '', val: '0' },
+        { id: '5.3', text: '¿La empresa da inicio a la primera medida establecida en su matriz de intervención psicosocial?                                                                                                                               Nota: posterior a los 3 meses entregada su matriz de intervención psicosocial', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '6.- MONITOREO Y VERIFICACION DE MEDIDAS', collapsed: false, 
+      questions: [
+        { id: '6.1', text: 'Riesgo Bajo: La empresa prescribe medidas específicas para las dimensiones en riesgo medio y alto.', ref: 'Prescripcion de medidas                                   Ley N° 16.744                                   OAL                                        Protocolo de vigilancia en riesgos psicosociales                   CEAL-SM/SUSESO', val: '0' },
+        { id: '6.2', text: 'Riesgo Medio: La empresa prescribe acciones específicas para los grupos de exposición similar.', ref: '', val: '0' },
+        { id: '6.3', text: 'Riesgo Alto: La empresa el riesgo de acuerdo a las acciones propias del programa de  vigilancia ambiental establecidas en este protocolo.', ref: '', val: '0' },
+        { id: '6.4', text: '¿El comité de aplicación verifica el cumplimiento de las medidas de intervención establecida en su carta gantt?                                                                                                                   Nota: se debe evidenciar dejando los registros correspondientes', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '7.- INICIO DEL PROCESO DE REEVALUACION', collapsed: false, 
+      questions: [
+        { id: '7.1', text: 'La empresa debe reevaluar cada dos años con la encuesta CEAL-SM SUSESO, independiente del  nivel de riesgo, considerando: planificación, sensibilización, aplicación cuestionario, análisis de resultados y seguimiento.                                                                  Nota: Adjuntar documentación del proceso anterior (bitácora)', ref: 'Protocolo de vigilancia en riesgos psicosociales                   CEAL-SM/SUSESO', val: '0' },
+      ]
+    },
+  ],
+  silice: [
+    { 
+      title: '1.- GESTIÓN ADMINISTRATIVA EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '1.1', text: 'El experto profesional y/o encargado de la implementación del Protocolo de Exposición a Silice curso de su OAL-', ref: 'Protocolo Silice Ley N° 16.744', val: '0' },
+        { id: '1.2', text: 'La Empresa tiene indentificado el  agentes de riesgo Silice incluido en su Matriz  IPER', ref: '', val: '0' },
+        { id: '1.3', text: 'La Empresa realizó  la difusión del Manual sobre Normas Mínimas para el Desarrollo de Programas de Vigilancia de la Silicosis ,  a los trabajadores de expuestos a Silice.', ref: '', val: '0' },
+        { id: '1.4', text: 'La Empresa en su reglamento Interno tiene incorporado el agente de riesgos  Silice Libre Critalizada', ref: '', val: '0' },
+        { id: '1.5', text: 'La empresa realizó la difusion del Protocolos de Exposición de Vigilancia  a Silice Libre Cristalizada  por medio de cartas a las autoridades fiscalizadoras', ref: 'Protocolo Silice', val: '0' },
+        { id: '1.6', text: 'La empresa cuenta con un cronograma o cart gantt de la implementacion del Protocolos de Vigilancia de Expisición a Silice  Libre Cristalizada.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- GESTIÓN DE COMITES PARITARIOS EN MATERIA DE SSO -HSO', collapsed: false, 
+      questions: [
+        { id: '2.1', text: 'El CPHS cunta con un programa de trabajo donde incorporen actividades relacionadas con la prevención de la Silicosis.', ref: 'Protocolo Silice  D.S N° 44', val: '0' },
+        { id: '2.2', text: 'Los integrantes del CPHS se encuentran capacitados en el Protocolo de Vigilancia de Exposición a Silice.', ref: '', val: '0' },
+        { id: '2.3', text: 'El CPHS participa en reuniones y realiza inspecciones  de SSO referente a verificación de medidas de control  tecnicas de Silice ;   ingenieriles , administrativas y EPP.', ref: '', val: '0' },
+        { id: '2.4', text: 'Los integrantes del CPHS se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion personal del EPR .', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '3.- GESTIÓN DE CAPACITACIÓN Y ENTRENAMIENTO EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '3.1', text: 'Los trabajadores, linea de mando y sindicatos se encuentran capacitados sobre el Protocolos de Vigilacia de Exposición a Silice.', ref: 'Protocolo Silice D.S N° 594  D.S N° 40', val: '0' },
+        { id: '3.2', text: 'Los trabajadores se encuentran capacitados en uso , mantención, limpieza y almacenamiento de los elementos de proteccion personal EPR.', ref: '', val: '0' },
+        { id: '3.3', text: 'La empresa cuenta con programa de trabajo teórico y práctico de capacitación y entrenamiento del Protocolo de Vigilancia de Exposición a Silice.', ref: '', val: '0' },
+        { id: '3.4', text: 'La empresa informó a los trabajadores de la obligación de informar de los riesgos laborales que entrañan sus labores y de los metodos correcto de trabajo respecto al agente de riesgo Silice.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '4.- GESTION DE EMPRESA Y OAL EN MATERIA  DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '4.1', text: 'La empresa cuenta con su evaluacion cualitativa aprobada por su OAL.', ref: 'Protocolo Silice Requerimiento OAL', val: '0' },
+      ]
+    },
+    { 
+      title: '5. VIGILANCIA DE SALUD', collapsed: false, 
+      questions: [
+        { id: '5.1', text: 'La empresa cuenta con evaluciones cuantitativa vigente del agentes de riesgos higiénicos por su OAL.', ref: 'Protocolo Silice                             Requerimiento OAL                                  Ley N° 16.744', val: '0' },
+        { id: '5.2', text: 'Existen Área o GES con exposición ocupacional a Silice que superen los niveles de exposición igual o mayor al 50% . Se realizó la difusion a los trabajadores, contratistas o subcontratis que desarrollan actividades en el área de trabajo.', ref: '', val: '0' },
+        { id: '5.3', text: 'La empresa informó a los trabajadores que superaron el 50% de exposición NR3 y deben ser  incorporarlos a un Programa de Vigilancia de Salud.', ref: '', val: '0' },
+        { id: '5.4', text: 'Listado de trabajadores expuestos a Silice u otro agente de riesgo quimico de riesgo', ref: '', val: '0' },
+        { id: '5.5', text: 'La empresa cuenta con historial de algun trabajador con Silicosis y/o alguna afeccion  respiratoria de salud', ref: '', val: '0' },
+        { id: '5.6', text: 'La empresa realiza examen de Egreso cuando el trabajador deja de estar en vigilancia  o cuando sesa sus funciones y/o dejar de pertener a la empresa.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '6.- MEDIDAS PRESCRITAS DEL OAL A EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '6.1', text: 'La empresa cuenta con un programa o carta gantt de trabajo para la ejecucion de las medidas de control prescritas por su OAL.', ref: 'Protocolo Silice                                 Requerimiento OAL                                   D.S N° 40', val: '0' },
+        { id: '6.2', text: 'La empresa ha efectuado con conjunto con su OAL re-evaluaciones de Silice a  fuentes  o GES en los tiempos establecidos que indica el Protocolo de Vigilancia de Exposición a Silice', ref: '', val: '0' },
+        { id: '6.3', text: 'La empresa realiza el seguimiento y cierre de estas medidas prescritas informando a su OAL y empresa mandante.', ref: '', val: '0' },
+        { id: '6.4', text: 'La Empresa en su reglamento Interno tiene incorporado la prohibicion de  No comer, No Beber y fumar en lugares con presencia de Silice /Polvo en los lugares de trabajo.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '7. MEDIDA DE CONTROL', collapsed: false, 
+      questions: [
+        { id: '7.1', text: 'La empresa tiene identificado las fuentes de mayor emision Silice/Polvo tales como ; maquinarias y/o herramientas que estas se encuentren encerradas, encapsulas o con algun sistema de reduccion de silice/polvo.', ref: 'Protocolo Silice', val: '0' },
+        { id: '7.2', text: 'La empresa cuenta con un programa de mantimiento periodico a los sistemas de ventilacion para disminuir la exposición a agentes quimicos.', ref: '', val: '0' },
+        { id: '7.3', text: 'La empresa cuenta con algun sistema que ayude a la limpieza del puesto de trabajo al terminar cada turno para minimizar la exposición a silice/polvo', ref: '', val: '0' },
+        { id: '7.4', text: 'La empresa realiza la limpieza de la ropa de trabajo para minimizar la exposición de los trabajadores expuestos a silice/polvo.', ref: '', val: '0' },
+        { id: '7.5', text: 'Los residuos generados por la limpieza y/o los filtros captados cuentan con un sistema de eliminacion controlada.', ref: '', val: '0' },
+        { id: '7.6', text: 'La empresa cuenta con humectacion  o aplican aditivos higroscópicos no peligrosos en las vías de tránsito de equipos motorizados para evitar el polvo en suspension.', ref: '', val: '0' },
+        { id: '7.7', text: 'La empresa cuenta con sistemas de  filtros colectores de polvo autolimpiantes para captar y/o retener silice /polvo.', ref: '', val: '0' },
+        { id: '7.8', text: 'La empresa cuenta con señalizaciones de advertencia de silice/polvo y medidas de control en el área de trabajo que sean visibles para los trabajadores.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '8.- SISTEMA  SGSST Y PROGRAMA DE PROTECCION AUDITIVA DE LA EMPRESA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '8.1', text: 'La empresa cuenta con un Plan , SGSST o tiene incorporado dentro de su SGSSO controlar las actividades y disminuir la exposicón a Silice Libre Cristalizada de los trabajadores.', ref: 'Protocolo Silice                                      Guia Técnica ISP                                             D.S N° 594', val: '0' },
+        { id: '8.2', text: 'La empresa cuenta con un programa de selección y  proteccion respiratoria , siguiendo los linemientos de la Guia Ténica EPR del Instituto Salud Pública ISP', ref: '', val: '0' },
+        { id: '8.3', text: 'La empresa realizó la difusion del Programa de selección y proteccion respiratoria  a los trabajadores.', ref: '', val: '0' },
+        { id: '8.4', text: 'La empresa realizó el calculo teórico de la Selección Respiratoria para sus trabajadores .', ref: '', val: '0' },
+        { id: '8.5', text: 'La empresa cuenta con pruebas de ajuste respiratorias cuantitativas de los trabajadores expuestos.', ref: '', val: '0' },
+        { id: '8.6', text: 'Los elementos de proteccion respiratoria EPR  que entrega la empresa cuenta con la resolucion del Instituto Salud Publica ISP - Certificacion Nacional  D.S N° 18.', ref: '', val: '0' },
+        { id: '8.7', text: 'La empresa realiza la supervision de que los trabajadores utilicen los elementos de proteccion personal EPR en sus actividades de trabajo con presencia de Silice.', ref: '', val: '0' },
+        { id: '8.8', text: 'La empresa deja registro cuando se realiza el re-cambio del Elemento de proteccion Respiratoria EPR  de los trabajadores.', ref: '', val: '0' },
+        { id: '8.9', text: 'La empresa cuenta con un stock al menos del 10% de los elementos de proteccion respiratoria para sus trabajadores.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '9.- GESTION DE MEJORA CONTINUA EN MATERIA DE SSO-HSO', collapsed: false, 
+      questions: [
+        { id: '9.1', text: 'La empresa ha profundizado sobre algunas propuesta y/o proyecto para disminuir la exposición a silice/ polvo de los trabajadores.          (Control personal o ambiental de trabajo)', ref: '', val: '0' },
+      ]
+    },
+  ],
+  hipobaria: [
+    { 
+      title: '1.- RESPECTO DE LA CAPACITACIÓN', collapsed: false, 
+      questions: [
+        { id: '1.1', text: 'Informa a Trabajadores sobre los  Riesgos  de la exposición y las  Medidas de control.', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '1.2', text: 'Imparte anualmente instrucción Teorico Practica  de 3 horas de duración  sobre el riesgo y las consecuencias para la salud,  teniendo en cuenta las caracteristicas mencionadas en el punto 6 de la Guia Tecnica.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '2.- RESPECTO DEL PROGRAMA PREVENTIVO', collapsed: false, 
+      questions: [
+        { id: '2.1', text: 'Tiene programa Preventivo tendiente a preservar la salud de los trabajadores expuestos a H.I.C, realizado por un Medico o Enfermera con conocimiento en Salud Ocupacional y que considere las caracteristicas mencionadas en el punto 7 de la Guia Tecnica.', ref: 'PROTOCOLO HIC', val: '0' },
+      ]
+    },
+    { 
+      title: '3.- RESPECTO DE LAS EVALUACIONES DE SALUD', collapsed: false, 
+      questions: [
+        { id: '3.1', text: 'Cuenta con autorización sanitaria para realizar trabajos sobre los 5.500 msnm', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '3.2', text: 'Los trabajadores que se van a exponer a H.I.C son evaluados previo a su contratación  (Evaluación Pre Ocupacional)  para  pesquisar contraindicaciones de salud para la exposición.', ref: '', val: '0' },
+        { id: '3.3', text: 'Los trabajadores contratados, con antecedentes de exposición laboral y que se expondran  a H.I.C  tienen evaluacion ocupacional vigente según su edad.', ref: '', val: '0' },
+        { id: '3.4', text: 'Los Trabajadores expuestos a H.I.C  se encuentran en Programa de vigilancia de la Salud.', ref: '', val: '0' },
+        { id: '3.5', text: 'Los trabajadores son evaluados por el Programa de Vigilancia de la Salud al termino de la relación contractual  o por cambio de puesto de trabajo bajo los 3000mts en la misma empresa (Examen Pre-egreso)', ref: '', val: '0' },
+        { id: '3.6', text: 'Los trabajadores se realizan el chequeo anual preventivo en su sistema previsional de acuerdo al estandar definido por el Ministerio de Salud en la Evaluación Medica Preventiva (EMPA)', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '4.- RESPECTO DE LAS MEDIDAS DE PREVENCIÓN Y MITIGACIÓN', collapsed: false, 
+      questions: [
+        { id: '4.1', text: 'Se aplica Oxigenación individual o ambiental en los dormitorios de  aquellos trabajadores que presenten apnea central debido a H.I.C.', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '4.2', text: 'La oxigenación ambiental de los dormitorios permite mantener una presión parcial de Oxigeno equivalente a la existente bajo los 3000msnm y sobre los 2700msnm, con monitoreo permanente de presión parcial de CO2, O2 y vapor de agua.', ref: '', val: '0' },
+        { id: '4.3', text: 'La Oxigenación Individual se administra por naricera a un flujo de 1 a 2 Lts/min, manteniendo una saturación igual o mayor a 85%', ref: '', val: '0' },
+        { id: '4.4', text: 'La dependencia donde pernoctan los trabajadores cumple con los siguientes estandares de habitabilidad: Humidificación entre 40 y 70% Temperatura de bienestar entre 17 y 22 Grados.  Ruido menor a 30 Db Oscuridad menor a 5Lux', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '5.- RESPECTO DEL PROTOCOLO DE SEGUIMIENTO  DE ACLIMATACIÓN A LA LLEGADA A LA FAENA Y A LAS 24 Y 48 HORAS.', collapsed: false, 
+      questions: [
+        { id: '5.1', text: 'Aplica el Protocolo de seguimiento de la aclimatación según Guia Tecnica a los trababjadores que llegan a la faena o lugar de trabajo por primera vez.', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '5.2', text: 'Aplica el Protocolo de seguimiento de la aclimatación según Guia Tecnica a los trabajadores que han pasado mas de 6 meses sin haber subido a gran altitud.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '6.- RESPECTO DE LOS POLICLINICOS', collapsed: false, 
+      questions: [
+        { id: '6.1', text: 'Cuenta con la autorización Sanitaria', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '6.2', text: 'Presta atención Diurna y Nocturna', ref: '', val: '0' },
+        { id: '6.3', text: 'Cuenta con el personal de salud según criterios establecidos en el Decreto Supremo 594/1999.', ref: '', val: '0' },
+        { id: '6.4', text: 'Cuenta con el arsenal terapeutico  que menciona el punto 14.1 de la Guia Tecnica,  que permita hacer el seguimiento de la aclimatación  a la gran altitud y la atención del mal de montaña agudo, grave y de emergencias medicas traumaticas y cardiorrespiratorias', ref: '', val: '0' },
+        { id: '6.5', text: 'Cuenta con ambulancia Basica disponible las 24 horas del día y todos los dias que se desarrollen labores o hayan personas en el lugar.  (Aquellos lugares de trabajo a mas de 50kmts  de un hospital o Policlinico y que tengan puntaje total igual o mayor a 8, de acuerdo a lo establecido en el DS No 28.', ref: '', val: '0' },
+      ]
+    },
+    { 
+      title: '7. RESPECTO DE LA BRIGADA DE EMERGENCIA.', collapsed: false, 
+      questions: [
+        { id: '7.1', text: 'La faena cuenta con una Brigada de emergencia', ref: 'PROTOCOLO HIC', val: '0' },
+        { id: '7.2', text: 'Los integrantes de la Brigada de emergencia estan capacitados en Soporte Vital Basico (BLS) y Auxilio en alta montaña.', ref: '', val: '0' },
+        { id: '7.3', text: 'Los Integrantes de la Brigrada de Emergencia son instruidos anualmente en un curso de al menos dos horas que considera: atención de accidentados, primeros auxilios, manejo basico de politraumatizados y extricación, precauciuones estandares de la atención en salud y conceptos basicos de espacios confinados, fugas quimicas, incendios y derrames.', ref: '', val: '0' },
+      ]
+    },
+  ],
+});

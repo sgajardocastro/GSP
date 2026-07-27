@@ -1,0 +1,72 @@
+[
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-009 CHECK LIST GRUA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 12,
+        "attributes": [
+          {
+            "type": "checkListGruaCdch",
+            "label": "Checklist CDCH Grua",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-012 CHECK LIST PARA VEHICULOS LIVIANOS CAMIONETA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 11,
+        "attributes": [
+          {
+            "type": "checkListCamionetaCdch",
+            "label": "Camioneta",
+            "nullable": false,
+            "datos": {
+              "nombreConductor": "",
+              "kilometros": "",
+              "patente": "",
+              "fecha": ""
+            },
+            "fotos": {
+              "frontal": {
+                "label": "Frontal",
+                "galeria": []
+              },
+              "trasera": {
+                "label": "Trasera",
+                "galeria": []
+              },
+              "lateralIzquierda": {
+                "label": "Lateral izquierda",
+                "galeria": []
+              },
+              "lateralDerecha": {
+                "label": "Lateral derecha",
+                "galeria": []
+              }
+            },
+            "secciones": {},
+            "cierre": {
+              "obra": "",
+              "realizadoPor": "",
+              "fecha": "",
+              "firmaRealiza": "",
+              "tomaConocimiento": ""
+            },
+            "observacionesDetectadas": ""
+          }
+        ]
+      }
+    ]
+  }
+]

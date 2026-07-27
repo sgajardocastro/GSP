@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-03 ESMERIL ANGULAR",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 73,
+      "attributes": [
+        {
+          "type": "checkListTransmacEsmerilAngular",
+          "label": "Esmeril angular",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

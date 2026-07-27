@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSP – Consola Operacional & Financiera | Grúas San Pablo</title>
+<meta name="description" content="Sistema de gestión operacional y financiera para Grúas San Pablo. Control de devengado, torre de control de izajes y mantención de flota pesada.">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM – GSP Crane Operations Console
+   Zero dependencies. Self-contained.
+   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Core palette */
+  --bg-deep: #050810;
+  --bg-base: #0a0f1e;
+  --bg-surface: #0f1629;
+  --bg-elevated: #151d35;
+  --bg-hover: #1a2440;
+
+  /* Brand – Amber/Gold for industrial heavy machinery */
+  --amber-50: #fff8e1;
+  --amber-100: #ffecb3;
+  --amber-300: #ffd54f;
+  --amber-400: #ffca28;
+  --amber-500: #f5a623;
+  --amber-600: #e69500;
+  --amber-glow: rgba(245, 166, 35, 0.15);
+  --amber-glow-strong: rgba(245, 166, 35, 0.35);
+
+  /* Semantic */
+  --green-400: #34d399;
+  --green-500: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.12);
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.12);
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --purple-400: #a78bfa;
+  --cyan-400: #22d3ee;
+
+  /* Text */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+
+  /* Borders */
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-light: rgba(255,255,255,0.08);
+  --border-medium: rgba(255,255,255,0.12);
+
+  /* Layout */
+  --sidebar-w: 260px;
+  --header-h: 52px;
+  --topbar-h: 42px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(245,166,35,0.3); }
+
+/* ─── Utilities ─── */
+.mono { font-family: 'JetBrains Mono', 'Consolas', monospace; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.shrink-0 { flex-shrink: 0; }
+.flex-1 { flex: 1; min-width: 0; min-height: 0; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.uppercase { text-transform: uppercase; }
+.tracking-wide { letter-spacing: 0.05em; }
+.tracking-wider { letter-spacing: 0.08em; }
+.tracking-widest { letter-spacing: 0.12em; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+.font-black { font-weight: 900; }
+.select-none { user-select: none; }
+.cursor-pointer { cursor: pointer; }
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 8px var(--amber-glow); } 50% { box-shadow: 0 0 20px var(--amber-glow-strong); } }
+
+/* ─── Glass ─── */
+.glass {
+  background: rgba(15, 22, 41, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+}
+.glass-card {
+  background: rgba(15, 22, 41, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all 0.25s ease;
+}
+.glass-card:hover {
+  background: rgba(15, 22, 41, 0.65);
+  border-color: rgba(245,166,35,0.2);
+  box-shadow: 0 4px 24px rgba(245,166,35,0.06);
+  transform: translateY(-1px);
+}
+
+/* ─── Tags / Badges ─── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; padding: 3px 8px; border-radius: 4px;
+  border: 1px solid;
+}
+.badge-amber { background: rgba(245,166,35,0.1); color: var(--amber-500); border-color: rgba(245,166,35,0.25); }
+.badge-green { background: rgba(16,185,129,0.1); color: var(--green-400); border-color: rgba(16,185,129,0.25); }
+.badge-red { background: rgba(239,68,68,0.1); color: var(--red-400); border-color: rgba(239,68,68,0.25); }
+.badge-blue { background: rgba(59,130,246,0.1); color: var(--blue-400); border-color: rgba(59,130,246,0.25); }
+.badge-purple { background: rgba(167,139,250,0.1); color: var(--purple-400); border-color: rgba(167,139,250,0.25); }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; padding: 7px 14px;
+  border-radius: var(--radius-sm); border: none; cursor: pointer;
+  transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.btn-primary {
+  background: var(--amber-500); color: var(--bg-deep);
+  box-shadow: 0 0 12px var(--amber-glow);
+}
+.btn-primary:hover { background: var(--amber-400); box-shadow: 0 0 20px var(--amber-glow-strong); }
+.btn-ghost {
+  background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border-light);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.btn-sm { font-size: 10px; padding: 4px 10px; }
+.btn-danger { background: rgba(239,68,68,0.15); color: var(--red-400); border: 1px solid rgba(239,68,68,0.2); }
+.btn-success { background: rgba(16,185,129,0.15); color: var(--green-400); border: 1px solid rgba(16,185,129,0.2); }
+
+/* ─── Progress Bar ─── */
+.progress-track {
+  width: 100%; height: 6px; background: rgba(255,255,255,0.05);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px; transition: width 0.6s ease;
+}
+
+/* ═══════ LAYOUT ═══════ */
+.app { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
+
+/* ─── Top Bar ─── */
+.topbar {
+  height: var(--topbar-h); flex-shrink: 0;
+  background: linear-gradient(90deg, #080c18 0%, #0d1227 50%, #080c18 100%);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; z-index: 100;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber-500); animation: glow 2.5s ease-in-out infinite; }
+.topbar-label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; }
+.topbar-switcher { display: flex; background: var(--bg-deep); border-radius: var(--radius-sm); padding: 3px; border: 1px solid var(--border-subtle); gap: 2px; }
+.topbar-sw-btn {
+  padding: 5px 16px; border-radius: 4px; font-size: 10px; font-weight: 700;
+  border: none; cursor: pointer; transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.topbar-sw-btn.active-despacho { background: var(--amber-500); color: var(--bg-deep); box-shadow: 0 0 12px var(--amber-glow); }
+.topbar-sw-btn.active-operador { background: var(--green-500); color: #fff; box-shadow: 0 0 12px var(--green-glow); }
+.topbar-sw-btn.inactive { background: transparent; color: var(--text-muted); }
+.topbar-sw-btn.inactive:hover { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+
+/* ─── Main container ─── */
+.main-container { flex: 1; display: flex; overflow: hidden; }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #080c18 0%, #0a0f20 100%);
+  border-right: 1px solid var(--border-subtle); z-index: 50;
+}
+.sidebar-header {
+  height: 60px; display: flex; align-items: center; padding: 0 20px;
+  border-bottom: 1px solid var(--border-subtle); gap: 12px;
+}
+.sidebar-logo {
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
+  background: var(--amber-500); display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 12px; color: var(--bg-deep);
+  box-shadow: 0 0 16px var(--amber-glow-strong);
+}
+.sidebar-title { font-size: 11px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; }
+.sidebar-subtitle { font-size: 8px; font-weight: 700; color: var(--amber-500); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 10px; }
+.sidebar-section-label { font-size: 9px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; padding: 0 12px; margin-bottom: 8px; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;
+  border: 1px solid transparent; margin-bottom: 2px;
+}
+.sidebar-item:hover { background: rgba(255,255,255,0.03); }
+.sidebar-item.active { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.15); }
+.sidebar-item.active .sidebar-item-icon { color: var(--amber-500); }
+.sidebar-item.active .sidebar-item-title { color: var(--amber-500); }
+.sidebar-item-icon { width: 18px; height: 18px; color: var(--text-dim); flex-shrink: 0; }
+.sidebar-item-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+.sidebar-item-sub { font-size: 8px; font-weight: 600; color: var(--text-dim); margin-top: 1px; }
+.sidebar-item-count {
+  margin-left: auto; background: var(--bg-deep); font-size: 9px; font-weight: 800;
+  color: var(--amber-500); padding: 2px 7px; border-radius: 10px; border: 1px solid rgba(245,166,35,0.2);
+}
+.sidebar-footer {
+  padding: 14px 16px; border-top: 1px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2);
+}
+.sidebar-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-light); flex-shrink: 0;
+}
+.sidebar-avatar svg { width: 16px; height: 16px; color: var(--amber-500); }
+.sidebar-user-name { font-size: 11px; font-weight: 700; color: #fff; }
+.sidebar-user-role { font-size: 8px; font-weight: 600; color: var(--amber-500); display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+.sidebar-user-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green-500); animation: pulse 2s infinite; }
+
+/* ─── Workspace ─── */
+.workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-base); }
+.workspace-header {
+  height: var(--header-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(90deg, rgba(15,22,41,0.5) 0%, rgba(10,15,30,0.8) 100%);
+}
+.workspace-title { font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.06em; }
+.workspace-sync {
+  display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 700;
+  color: var(--text-muted); background: var(--bg-deep); padding: 6px 12px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);
+}
+.workspace-sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green-500); animation: pulse 2s infinite; }
+.workspace-body { flex: 1; overflow: hidden; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ─── Views ─── */
+.view { display: none; flex-direction: column; flex: 1; overflow: hidden; gap: 16px; animation: fadeIn 0.3s ease; }
+.view.active { display: flex; }
+
+/* ─── KPI Strip ─── */
+.kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; flex-shrink: 0; }
+.kpi-card {
+  background: rgba(15, 22, 41, 0.5); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); padding: 14px 16px; position: relative; overflow: hidden;
+  transition: all 0.25s ease;
+}
+.kpi-card:hover { border-color: rgba(245,166,35,0.2); background: rgba(15, 22, 41, 0.7); }
+.kpi-card-bg {
+  position: absolute; right: -8px; bottom: -8px; width: 64px; height: 64px;
+  opacity: 0.04; transition: transform 0.3s ease;
+}
+.kpi-card:hover .kpi-card-bg { transform: scale(1.15); }
+.kpi-label { font-size: 8px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.kpi-value { font-size: 20px; font-weight: 900; color: #fff; line-height: 1; }
+.kpi-value.amber { color: var(--amber-500); }
+.kpi-value.green { color: var(--green-400); }
+.kpi-value.red { color: var(--red-400); }
+.kpi-delta { font-size: 9px; font-weight: 700; margin-top: 5px; display: flex; align-items: center; gap: 3px; }
+.kpi-delta.up { color: var(--green-400); }
+.kpi-delta.down { color: var(--red-400); }
+.kpi-delta.warn { color: var(--amber-500); }
+.kpi-delta.neutral { color: var(--text-muted); }
+
+/* ─── Panels Grid ─── */
+.panels-grid { flex: 1; display: grid; gap: 14px; min-height: 0; overflow: hidden; }
+.panels-2col { grid-template-columns: 1fr 1fr; }
+.panels-main { grid-template-columns: 2fr 1fr; }
+.panels-3col { grid-template-columns: 1fr 1fr 1fr; }
+.panel {
+  background: rgba(15, 22, 41, 0.4); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.panel-title { font-size: 10px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px; }
+.panel-title svg { width: 14px; height: 14px; color: var(--amber-500); }
+.panel-subtitle { font-size: 9px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
+.panel-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+.panel-body-np { flex: 1; overflow-y: auto; }
+
+/* ─── Tables ─── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table thead th {
+  font-size: 8px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.1em; padding: 10px 14px; text-align: left;
+  background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-light);
+  position: sticky; top: 0; z-index: 5;
+}
+.data-table tbody td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.data-table tbody tr { transition: background 0.15s ease; }
+.data-table tbody tr:hover { background: rgba(255,255,255,0.015); }
+.data-table .cell-primary { font-weight: 700; color: #fff; }
+.data-table .cell-secondary { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+.data-table .cell-mono { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+/* ─── Kanban ─── */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: 1; min-height: 0; overflow: hidden; }
+.kanban-col {
+  background: rgba(10, 15, 30, 0.5); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden;
+}
+.kanban-col-header {
+  padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.kanban-col-title { display: flex; align-items: center; gap: 8px; }
+.kanban-col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.kanban-col-name { font-size: 10px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.06em; }
+.kanban-col-count {
+  font-size: 9px; font-weight: 800; color: var(--text-muted); background: var(--bg-deep);
+  padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-subtle);
+}
+.kanban-col-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.kanban-card {
+  background: rgba(15, 22, 41, 0.6); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 12px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.kanban-card:hover { border-color: rgba(245,166,35,0.25); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.kanban-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.kanban-card-id { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: var(--amber-500); }
+.kanban-card-client { font-size: 11px; font-weight: 700; color: #fff; }
+.kanban-card-faena { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.kanban-card-meta {
+  background: var(--bg-deep); border: 1px solid var(--border-subtle);
+  border-radius: 4px; padding: 6px 8px; margin-top: 8px; font-size: 9px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.kanban-card-meta-row { display: flex; justify-content: space-between; }
+.kanban-card-meta-label { color: var(--text-dim); }
+.kanban-card-meta-value { color: var(--text-secondary); font-weight: 600; }
+.kanban-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+.kanban-card-icons { display: flex; gap: 6px; }
+.kanban-card-amount { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: #fff; }
+
+/* ─── Alert Items ─── */
+.alert-item {
+  padding: 10px 14px; border-radius: var(--radius-md); margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid; transition: all 0.2s ease;
+}
+.alert-item.danger { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.15); }
+.alert-item.warning { background: rgba(245,166,35,0.06); border-color: rgba(245,166,35,0.15); }
+.alert-item.info { background: rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.15); }
+.alert-item-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.alert-item.danger .alert-item-icon { background: rgba(239,68,68,0.1); color: var(--red-400); }
+.alert-item.warning .alert-item-icon { background: rgba(245,166,35,0.1); color: var(--amber-500); }
+.alert-item.info .alert-item-icon { background: rgba(59,130,246,0.1); color: var(--blue-400); }
+.alert-item-text { flex: 1; }
+.alert-item-title { font-size: 11px; font-weight: 700; color: #fff; }
+.alert-item-desc { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.alert-item-time { font-size: 8px; color: var(--text-dim); font-weight: 600; margin-top: 3px; }
+
+/* ─── Sankey / Charts ─── */
+.chart-container { width: 100%; height: 100%; position: relative; }
+canvas { width: 100% !important; height: 100% !important; }
+
+/* ─── Devengado Flow Bars ─── */
+.flow-stage {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.flow-stage:last-child { border-bottom: none; }
+.flow-stage-label { width: 140px; flex-shrink: 0; font-size: 10px; font-weight: 700; color: var(--text-secondary); }
+.flow-stage-bar-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
+.flow-stage-bar { height: 20px; border-radius: 4px; transition: width 0.8s ease; position: relative; min-width: 2px; }
+.flow-stage-bar .bar-label {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+}
+.flow-stage-amount { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; color: #fff; white-space: nowrap; min-width: 100px; text-align: right; }
+.flow-arrow { width: 20px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); flex-shrink: 0; }
+
+/* ─── Mobile Frame ─── */
+.mobile-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(15,22,41,0.8) 0%, var(--bg-deep) 70%); }
+.mobile-frame {
+  width: 340px; height: 680px; border-radius: 44px; border: 10px solid #1a1f30;
+  background: var(--bg-deep); overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5), 0 0 30px rgba(245,166,35,0.05), inset 0 0 30px rgba(0,0,0,0.3);
+  position: relative;
+}
+.mobile-notch {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 100px; height: 24px; background: #1a1f30; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 6px; z-index: 10;
+}
+.mobile-notch-cam { width: 10px; height: 10px; border-radius: 50%; background: #0d1120; border: 1px solid #2a3040; }
+.mobile-notch-speaker { width: 40px; height: 4px; border-radius: 2px; background: #0d1120; }
+.mobile-header {
+  padding: 40px 18px 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--amber-500) 0%, var(--amber-600) 100%);
+  color: var(--bg-deep);
+}
+.mobile-header-title { font-size: 15px; font-weight: 900; }
+.mobile-header-sub { font-size: 9px; font-weight: 600; opacity: 0.7; margin-top: 3px; }
+.mobile-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mobile-card {
+  background: var(--bg-surface); border: 1px solid var(--border-light);
+  border-radius: var(--radius-md); padding: 12px; transition: all 0.2s ease;
+}
+.mobile-card-title { font-size: 10px; font-weight: 800; color: var(--amber-500); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.mobile-field { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border-subtle); font-size: 10px; }
+.mobile-field:last-child { border-bottom: none; }
+.mobile-field-label { color: var(--text-muted); font-weight: 500; }
+.mobile-field-value { color: #fff; font-weight: 700; }
+.mobile-btn {
+  width: 100%; padding: 12px; border: none; border-radius: var(--radius-md);
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.mobile-btn-primary { background: var(--amber-500); color: var(--bg-deep); }
+.mobile-btn-success { background: var(--green-500); color: #fff; }
+.mobile-btn-checklist {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: var(--bg-elevated); border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm); font-size: 10px; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s ease; margin-bottom: 4px; font-weight: 600;
+}
+.mobile-btn-checklist.checked { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); }
+.mobile-btn-checklist.checked .check-box { background: var(--green-500); border-color: var(--green-500); }
+.mobile-btn-checklist.checked .check-box svg { opacity: 1; }
+.check-box {
+  width: 16px; height: 16px; border: 1.5px solid var(--text-dim); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.check-box svg { width: 10px; height: 10px; color: #fff; opacity: 0; transition: opacity 0.15s ease; }
+.mobile-footer {
+  padding: 10px 14px; border-top: 1px solid var(--border-light);
+  display: flex; justify-content: space-around; flex-shrink: 0;
+}
+.mobile-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all 0.15s ease; }
+.mobile-tab.active { background: rgba(245,166,35,0.1); }
+.mobile-tab svg { width: 18px; height: 18px; color: var(--text-dim); }
+.mobile-tab.active svg { color: var(--amber-500); }
+.mobile-tab-label { font-size: 7px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; }
+.mobile-tab.active .mobile-tab-label { color: var(--amber-500); }
+
+/* ─── Expediente Modal ─── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center; z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.open { display: flex; }
+.modal-content {
+  width: 780px; max-height: 85vh; background: var(--bg-surface);
+  border: 1px solid var(--border-light); border-radius: var(--radius-xl);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  animation: slideUp 0.3s ease;
+}
+.modal-header {
+  padding: 18px 24px; border-bottom: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  background: linear-gradient(90deg, rgba(245,166,35,0.04) 0%, transparent 100%);
+}
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s ease; color: var(--text-muted);
+}
+.modal-close:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--red-400); }
+.modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.modal-section { margin-bottom: 20px; }
+.modal-section-title {
+  font-size: 9px; font-weight: 800; color: var(--amber-500); text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);
+}
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modal-field { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; background: var(--bg-deep); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+.modal-field-label { font-size: 8px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.modal-field-value { font-size: 12px; font-weight: 700; color: #fff; }
+.modal-field-value.mono { font-family: 'JetBrains Mono', monospace; }
+.modal-timeline { display: flex; flex-direction: column; gap: 0; }
+.modal-timeline-item { display: flex; gap: 12px; padding: 8px 0; }
+.modal-timeline-dot-wrap { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+.modal-timeline-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+.modal-timeline-dot.done { background: var(--green-500); border-color: var(--green-500); }
+.modal-timeline-dot.current { background: var(--amber-500); border-color: var(--amber-500); animation: pulse 2s infinite; }
+.modal-timeline-dot.pending { background: transparent; border-color: var(--text-dim); }
+.modal-timeline-line { width: 2px; flex: 1; background: var(--border-light); margin: 2px 0; }
+.modal-timeline-text { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.modal-timeline-time { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+
+/* ─── Visibility ─── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SVG ICON DEFINITIONS (self-contained, no CDN)             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></symbol>
+  <symbol id="i-layout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-alert-tri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-alert-oct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2H8.688L2 8.688v6.624L8.688 22h6.624L22 15.312V8.688z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol>
+  <symbol id="i-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-file-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></symbol>
+  <symbol id="i-file-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-user-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></symbol>
+  <symbol id="i-user-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="8" y2="13"/><line x1="22" x2="17" y1="8" y2="13"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+  <symbol id="i-crane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"/><path d="M2 22h20"/><path d="M6 12h12"/><path d="M10 2v4"/><path d="M14 2v4"/></symbol>
+  <symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-trending-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- ═══════ TOP BAR ═══════ -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-dot"></div>
+      <span class="topbar-label">GSP Ecosistema v2.0</span>
+      <span class="badge badge-amber" style="margin-left:8px;">Consola Control Operativo & Devengado</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;">Perfil Activo:</span>
+      <div class="topbar-switcher">
+        <button class="topbar-sw-btn active-despacho" id="sw-despacho" onclick="switchRole('despacho')">
+          <svg style="width:13px;height:13px"><use href="#i-building"/></svg>
+          Despacho GSP (Temuco)
+        </button>
+        <button class="topbar-sw-btn inactive" id="sw-operador" onclick="switchRole('operador')">
+          <svg style="width:13px;height:13px"><use href="#i-smartphone"/></svg>
+          App Operador (Terreno)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ MAIN CONTAINER ═══════ -->
+  <div class="main-container">
+
+    <!-- ═══════ SIDEBAR ═══════ -->
+    <aside class="sidebar" id="sidebar-despacho">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">GSP</div>
+        <div>
+          <div class="sidebar-title">Grúas San Pablo</div>
+          <div class="sidebar-subtitle">Despacho Central · Temuco</div>
+        </div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-section-label" style="margin-top:4px;">Módulos GSP</div>
+        <div class="sidebar-item active" data-view="dashboard" onclick="switchView('dashboard', this)">
+          <svg class="sidebar-item-icon"><use href="#i-chart"/></svg>
+          <div>
+            <div class="sidebar-item-title">Dashboard Devengado</div>
+            <div class="sidebar-item-sub">Control de Caja & HSEC</div>
+          </div>
+        </div>
+        <div class="sidebar-item" data-view="torre" onclick="switchView('torre', this)">
+          <svg class="sidebar-item-icon"><use href="#i-layout"/></svg>
+          <div>
+            <div class="sidebar-item-title">Torre de Control</div>
+            <div class="sidebar-item-sub">Planificación & Kanban</div>
+          </div>
+          <span class="sidebar-item-count">12</span>
+        </div>
+        <div class="sidebar-item" data-view="cruce" onclick="switchView('cruce', this)">
+          <svg class="sidebar-item-icon"><use href="#i-swap"/></svg>
+          <div>
+            <div class="sidebar-item-title">Doble Conciliación</div>
+            <div class="sidebar-item-sub">Cruce Parte vs Contrato</div>
+          </div>
+        </div>
+        <div class="sidebar-item" data-view="mantencion" onclick="switchView('mantencion', this)">
+          <svg class="sidebar-item-icon"><use href="#i-wrench"/></svg>
+          <div>
+            <div class="sidebar-item-title">Mantención de Flota</div>
+            <div class="sidebar-item-sub">Horómetros & Certificados</div>
+          </div>
+        </div>
+        <div class="sidebar-item" data-view="acreditacion" onclick="switchView('acreditacion', this)">
+          <svg class="sidebar-item-icon"><use href="#i-users"/></svg>
+          <div>
+            <div class="sidebar-item-title">Acreditación Personal</div>
+            <div class="sidebar-item-sub">Operadores & Riggers</div>
+          </div>
+          <span class="sidebar-item-count" style="color:var(--red-400);border-color:rgba(239,68,68,0.3);">2</span>
+        </div>
+
+        <div class="sidebar-section-label" style="margin-top:20px;">Sucursales</div>
+        <div class="sidebar-item" style="opacity:0.5;cursor:default;">
+          <svg class="sidebar-item-icon"><use href="#i-map-pin"/></svg>
+          <div>
+            <div class="sidebar-item-title">Los Ángeles</div>
+            <div class="sidebar-item-sub">Soporte Industrial</div>
+          </div>
+        </div>
+        <div class="sidebar-item" style="opacity:0.5;cursor:default;">
+          <svg class="sidebar-item-icon"><use href="#i-map-pin"/></svg>
+          <div>
+            <div class="sidebar-item-title">Valdivia</div>
+            <div class="sidebar-item-sub">Portuario & Civil</div>
+          </div>
+        </div>
+        <div class="sidebar-item" style="opacity:0.5;cursor:default;">
+          <svg class="sidebar-item-icon"><use href="#i-map-pin"/></svg>
+          <div>
+            <div class="sidebar-item-title">Puerto Montt</div>
+            <div class="sidebar-item-sub">Acuícola & Patagonia</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-avatar"><svg><use href="#i-shield"/></svg></div>
+        <div>
+          <div class="sidebar-user-name">Sergio Gajardo</div>
+          <div class="sidebar-user-role"><span class="sidebar-user-dot"></span> Consultor Operacional</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══════ WORKSPACE ═══════ -->
+    <div class="workspace" id="workspace-despacho">
+      <div class="workspace-header">
+        <span class="workspace-title" id="ws-title">Dashboard Devengado & HSEC</span>
+        <div class="workspace-sync">
+          <span class="workspace-sync-dot"></span>
+          <span style="color:var(--green-400);">Sincronizando en Vivo</span>
+          <span style="color:var(--text-dim);">·</span>
+          <span>Junio 2026</span>
+        </div>
+      </div>
+
+      <div class="workspace-body">
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- VIEW 1: DASHBOARD DEVENGADO               -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="view active" id="view-dashboard">
+          <!-- Header + Total -->
+          <div class="flex justify-between items-center shrink-0">
+            <div>
+              <h2 style="font-size:20px;font-weight:900;color:#fff;">Consola de Operaciones — Grúas San Pablo</h2>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Control centralizado de caja, devengado operacional y seguridad (HSEC) de izajes pesados.</p>
+            </div>
+            <div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.18);border-radius:var(--radius-md);padding:10px 18px;text-align:right;">
+              <span style="font-size:8px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;display:block;">Producción Devengada Junio</span>
+              <span class="mono" style="font-size:18px;font-weight:900;color:var(--amber-500);">$186.450.000 CLP</span>
+            </div>
+          </div>
+
+          <!-- KPI Strip -->
+          <div class="kpi-strip">
+            <div class="kpi-card">
+              <div class="kpi-label">Servicios Activos</div>
+              <div class="kpi-value">12</div>
+              <div class="kpi-delta up"><svg style="width:12px;height:12px"><use href="#i-trending-up"/></svg> 3 más vs Mayo</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Descalce Dev. vs Facturado</div>
+              <div class="kpi-value red mono" style="font-size:16px;">$42.800.000</div>
+              <div class="kpi-delta warn"><svg style="width:12px;height:12px"><use href="#i-alert-tri"/></svg> Esperando 3 OC</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Grúas Operativas / Total</div>
+              <div class="kpi-value">14 <span style="font-size:13px;color:var(--text-dim);">/ 16</span></div>
+              <div class="kpi-delta down"><svg style="width:12px;height:12px"><use href="#i-trending-down"/></svg> 2 en mantención</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Acreditación Tripulación</div>
+              <div class="kpi-value green">8 <span style="font-size:13px;color:var(--text-dim);">/ 10</span></div>
+              <div class="kpi-delta down"><svg style="width:12px;height:12px"><use href="#i-user-x" style="width:12px;height:12px;color:var(--red-400)"/></svg> <span style="color:var(--red-400);">2 operadores bloqueados</span></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Seguridad (HSE)</div>
+              <div class="kpi-value green">0</div>
+              <div class="kpi-delta up"><svg style="width:12px;height:12px"><use href="#i-shield"/></svg> Accidentes · Historial impecable</div>
+            </div>
+          </div>
+
+          <!-- Main panels -->
+          <div class="panels-grid panels-main" style="flex:1;min-height:0;">
+            <!-- LEFT: Devengado Flow + Alerts -->
+            <div style="display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+              <!-- Devengado Flow Visualization -->
+              <div class="panel" style="flex:1.4;">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title"><svg><use href="#i-activity"/></svg> Flujo Financiero del Devengado</div>
+                    <div class="panel-subtitle">Trazabilidad de la producción económica: Terreno → EDP → Factura SII → Caja</div>
+                  </div>
+                  <span class="badge badge-green">En Vivo</span>
+                </div>
+                <div class="panel-body" style="display:flex;flex-direction:column;justify-content:center;gap:0;">
+                  <div class="flow-stage">
+                    <div class="flow-stage-label">🏗️ Horas Devengadas</div>
+                    <div class="flow-stage-bar-wrap">
+                      <div class="flow-stage-bar" style="width:100%;background:linear-gradient(90deg,var(--amber-500),var(--amber-600));"><span class="bar-label">100%</span></div>
+                    </div>
+                    <div class="flow-stage-amount" style="color:var(--amber-500);">$186.450.000</div>
+                  </div>
+                  <div style="display:flex;align-items:center;padding:2px 0 2px 152px;"><svg style="width:16px;height:16px;color:var(--text-dim);transform:rotate(90deg);"><use href="#i-arrow-right"/></svg></div>
+                  <div class="flow-stage">
+                    <div class="flow-stage-label">📋 EDP Aprobado</div>
+                    <div class="flow-stage-bar-wrap">
+                      <div class="flow-stage-bar" style="width:77%;background:linear-gradient(90deg,var(--blue-500),var(--blue-400));"><span class="bar-label">77%</span></div>
+                    </div>
+                    <div class="flow-stage-amount" style="color:var(--blue-400);">$143.650.000</div>
+                  </div>
+                  <div style="display:flex;align-items:center;padding:2px 0 2px 152px;"><svg style="width:16px;height:16px;color:var(--text-dim);transform:rotate(90deg);"><use href="#i-arrow-right"/></svg></div>
+                  <div class="flow-stage">
+                    <div class="flow-stage-label">🧾 Facturado (SII)</div>
+                    <div class="flow-stage-bar-wrap">
+                      <div class="flow-stage-bar" style="width:58%;background:linear-gradient(90deg,var(--green-500),var(--green-400));"><span class="bar-label">58%</span></div>
+                    </div>
+                    <div class="flow-stage-amount" style="color:var(--green-400);">$108.150.000</div>
+                  </div>
+                  <div style="display:flex;align-items:center;padding:2px 0 2px 152px;"><svg style="width:16px;height:16px;color:var(--text-dim);transform:rotate(90deg);"><use href="#i-arrow-right"/></svg></div>
+                  <div class="flow-stage">
+                    <div class="flow-stage-label">💰 Recaudado (Caja)</div>
+                    <div class="flow-stage-bar-wrap">
+                      <div class="flow-stage-bar" style="width:41%;background:linear-gradient(90deg,var(--purple-400),#8b5cf6);"><span class="bar-label">41%</span></div>
+                    </div>
+                    <div class="flow-stage-amount" style="color:var(--purple-400);">$76.400.000</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Alertas -->
+              <div class="panel" style="flex:1;">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title"><svg><use href="#i-alert-tri"/></svg> Alertas Operativas Críticas</div>
+                    <div class="panel-subtitle">Incidencias que requieren atención inmediata</div>
+                  </div>
+                  <span class="badge badge-red">4 Activas</span>
+                </div>
+                <div class="panel-body" style="display:flex;flex-direction:column;gap:6px;">
+                  <div class="alert-item danger">
+                    <div class="alert-item-icon"><svg style="width:14px;height:14px;"><use href="#i-alert-oct"/></svg></div>
+                    <div class="alert-item-text">
+                      <div class="alert-item-title">Acreditación vencida — Carlos Muñoz (Operador)</div>
+                      <div class="alert-item-desc">Inducción CMPC Laja venció el 15/06/2026. No puede operar LTM 1150 en Planta Laja.</div>
+                      <div class="alert-item-time">Hace 6 días · Bloqueante</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm">Atender</button>
+                  </div>
+                  <div class="alert-item danger">
+                    <div class="alert-item-icon"><svg style="width:14px;height:14px;"><use href="#i-alert-oct"/></svg></div>
+                    <div class="alert-item-text">
+                      <div class="alert-item-title">Certificado Bureau Veritas vencido — LTM 1100 (GZBC-43)</div>
+                      <div class="alert-item-desc">Certificación anual izaje venció 01/06. Grúa no puede ingresar a faenas Arauco/CMPC.</div>
+                      <div class="alert-item-time">Hace 20 días · Bloqueante</div>
+                    </div>
+                    <button class="btn btn-danger btn-sm">Atender</button>
+                  </div>
+                  <div class="alert-item warning">
+                    <div class="alert-item-icon"><svg style="width:14px;height:14px;"><use href="#i-wind"/></svg></div>
+                    <div class="alert-item-text">
+                      <div class="alert-item-title">Ráfaga de viento 38 km/h — Faena CMPC Laja</div>
+                      <div class="alert-item-desc">Supera umbral de 35 km/h. Operador Juan Pérez pausó maniobra LTM 1220.</div>
+                      <div class="alert-item-time">Hace 12 min · Precaución</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm">Ver Detalle</button>
+                  </div>
+                  <div class="alert-item warning">
+                    <div class="alert-item-icon"><svg style="width:14px;height:14px;"><use href="#i-wrench"/></svg></div>
+                    <div class="alert-item-text">
+                      <div class="alert-item-title">Mantención preventiva próxima — LTM 1250 (GZBC-61)</div>
+                      <div class="alert-item-desc">Restan 45 horas de horómetro para mantención de 5.000 hrs. Programar con taller Temuco.</div>
+                      <div class="alert-item-time">Hace 2 hrs · Planificable</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm">Programar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Balance + HSEC + Quick Stats -->
+            <div style="display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+              <!-- Balanza -->
+              <div class="panel" style="flex:1;">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title"><svg><use href="#i-scale"/></svg> Balanza Devengado vs Facturado</div>
+                    <div class="panel-subtitle">Alertador de descalce tributario y contable</div>
+                  </div>
+                </div>
+                <div class="panel-body" style="display:flex;flex-direction:column;gap:14px;">
+                  <div>
+                    <div class="flex justify-between" style="margin-bottom:4px;"><span style="font-size:10px;font-weight:600;color:var(--text-secondary);">Trabajo Devengado</span><span class="mono" style="font-size:10px;font-weight:800;color:var(--amber-500);">$186.450.000</span></div>
+                    <div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--amber-500);"></div></div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between" style="margin-bottom:4px;"><span style="font-size:10px;font-weight:600;color:var(--text-secondary);">Facturación Real</span><span class="mono" style="font-size:10px;font-weight:800;color:var(--green-400);">$108.150.000</span></div>
+                    <div class="progress-track"><div class="progress-fill" style="width:58%;background:var(--green-500);"></div></div>
+                  </div>
+                  <div>
+                    <div class="flex justify-between" style="margin-bottom:4px;"><span style="font-size:10px;font-weight:600;color:var(--text-secondary);">Recaudado (Caja)</span><span class="mono" style="font-size:10px;font-weight:800;color:var(--purple-400);">$76.400.000</span></div>
+                    <div class="progress-track"><div class="progress-fill" style="width:41%;background:var(--purple-400);"></div></div>
+                  </div>
+                  <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);border-radius:var(--radius-sm);padding:10px;margin-top:4px;">
+                    <div style="font-size:9px;font-weight:800;color:var(--red-400);text-transform:uppercase;letter-spacing:0.08em;">Brecha por Facturar (Falta OC)</div>
+                    <div class="mono" style="font-size:16px;font-weight:900;color:var(--red-400);margin-top:3px;">$42.800.000 CLP</div>
+                    <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">3 servicios completados sin Orden de Compra del cliente. Ingresos devengados contablemente (IFRS 15) pero no facturables aún ante SII.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motor HSEC -->
+              <div class="panel" style="flex:0 0 auto;">
+                <div class="panel-header" style="background:rgba(245,166,35,0.03);">
+                  <div class="panel-title" style="color:var(--amber-500);"><svg><use href="#i-zap"/></svg> Motor HSEC Digital</div>
+                </div>
+                <div class="panel-body" style="padding:12px 16px;">
+                  <p style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">Sincronización digital de licencias clase D, certificados anuales Bureau Veritas de grúas Liebherr y firmas del mandante.</p>
+                  <div style="display:flex;flex-direction:column;gap:5px;">
+                    <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:13px;height:13px;color:var(--green-500);"><use href="#i-check"/></svg> Firma digital (FES) in situ offline</div>
+                    <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:13px;height:13px;color:var(--green-500);"><use href="#i-check"/></svg> Alertas ráfagas viento en obra</div>
+                    <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:13px;height:13px;color:var(--green-500);"><use href="#i-check"/></svg> Integración ERP Ladus</div>
+                    <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:13px;height:13px;color:var(--green-500);"><use href="#i-check"/></svg> 0% Papel en Faena</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- VIEW 2: TORRE DE CONTROL (KANBAN)         -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="view" id="view-torre">
+          <div class="flex justify-between items-center shrink-0">
+            <div>
+              <h2 style="font-size:20px;font-weight:900;color:#fff;">Torre de Control Operativa</h2>
+              <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Seguimiento de maniobras de izaje, logística de contrapesos y acreditación de operadores en vivo.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal()"><svg style="width:13px;height:13px;"><use href="#i-plus"/></svg> Programar Servicio</button>
+          </div>
+
+          <div class="kanban">
+            <!-- Col 1: Asignado -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title"><span class="kanban-col-dot" style="background:var(--blue-400);"></span><span class="kanban-col-name">Asignado</span></div>
+                <span class="kanban-col-count">3</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card" onclick="openModal()">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-048</span><span class="badge badge-green" style="font-size:8px;">Wind: 12 km/h</span></div>
+                  <div class="kanban-card-client">Arauco S.A.</div>
+                  <div class="kanban-card-faena">Planta Horcones · Montaje Caldera</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1400 (400T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Operador:</span><span class="kanban-card-meta-value">Luis Contreras</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Rigger:</span><span class="kanban-card-meta-value">Roberto Soto</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$18.500.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-051</span><span class="badge badge-green" style="font-size:8px;">Wind: 8 km/h</span></div>
+                  <div class="kanban-card-client">MOP Biobío</div>
+                  <div class="kanban-card-faena">Puente Biobío · Vigas Prefab.</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1220 (220T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Operador:</span><span class="kanban-card-meta-value">Mario Fuentes</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--amber-500);"><use href="#i-file-warn"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$12.800.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-054</span><span class="badge badge-green" style="font-size:8px;">Wind: 15 km/h</span></div>
+                  <div class="kanban-card-client">Enel Chile</div>
+                  <div class="kanban-card-faena">S/E Temuco Norte · Transformador</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1090 (90T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Operador:</span><span class="kanban-card-meta-value">Diego Riquelme</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$4.200.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Col 2: Acreditación -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title"><span class="kanban-col-dot" style="background:var(--amber-500);"></span><span class="kanban-col-name">Acreditación</span></div>
+                <span class="kanban-col-count">2</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-047</span><span class="badge badge-red" style="font-size:8px;">⚠ Bloqueado</span></div>
+                  <div class="kanban-card-client">CMPC Celulosa</div>
+                  <div class="kanban-card-faena">Planta Laja · Reactor Kraft</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1150 (150T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Operador:</span><span class="kanban-card-meta-value" style="color:var(--red-400);">Carlos Muñoz ⚠</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Bloqueo:</span><span class="kanban-card-meta-value" style="color:var(--red-400);">Inducción CMPC vencida</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--red-400);"><use href="#i-user-x"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$22.100.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-052</span><span class="badge badge-amber" style="font-size:8px;">Pendiente Docs</span></div>
+                  <div class="kanban-card-client">Hospital Temuco</div>
+                  <div class="kanban-card-faena">Nuevo Edificio · HVAC Rooftop</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Tadano GR-800XL (80T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Pendiente:</span><span class="kanban-card-meta-value" style="color:var(--amber-500);">Examen ocupacional</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--amber-500);"><use href="#i-file-warn"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--amber-500);"><use href="#i-user-x"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$6.300.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Col 3: En Maniobra -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title"><span class="kanban-col-dot" style="background:var(--green-500);"></span><span class="kanban-col-name">En Maniobra</span></div>
+                <span class="kanban-col-count">4</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card" onclick="openModal()">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-041</span><span class="badge badge-red" style="font-size:8px;">Wind: 38 km/h ⚠</span></div>
+                  <div class="kanban-card-client">CMPC Celulosa</div>
+                  <div class="kanban-card-faena">Planta Laja · Turbina Vapor</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1220 (220T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Operador:</span><span class="kanban-card-meta-value">Juan Pérez</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Hrs Hoy:</span><span class="kanban-card-meta-value">6.5 hrs (pausado)</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$34.800.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-043</span><span class="badge badge-green" style="font-size:8px;">Wind: 14 km/h</span></div>
+                  <div class="kanban-card-client">Arauco Forestal</div>
+                  <div class="kanban-card-faena">Planta Arauco · Torres Secado</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1250 (250T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Hrs Hoy:</span><span class="kanban-card-meta-value">8.0 hrs</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$28.500.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-045</span><span class="badge badge-green" style="font-size:8px;">Wind: 5 km/h</span></div>
+                  <div class="kanban-card-client">Colbún Energía</div>
+                  <div class="kanban-card-faena">Central Angostura · Compuerta</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">XCMG QY70K (70T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Hrs Hoy:</span><span class="kanban-card-meta-value">4.0 hrs</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$9.100.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-050</span><span class="badge badge-green" style="font-size:8px;">Wind: 10 km/h</span></div>
+                  <div class="kanban-card-client">Puerto Lirquén</div>
+                  <div class="kanban-card-faena">Muelle 3 · Descarga Pesada</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Grúa:</span><span class="kanban-card-meta-value">Liebherr LTM 1070 (70T)</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Hrs Hoy:</span><span class="kanban-card-meta-value">7.5 hrs</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <div class="kanban-card-icons">
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg>
+                      <svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-user-check"/></svg>
+                    </div>
+                    <span class="kanban-card-amount">$7.650.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Col 4: Completado -->
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title"><span class="kanban-col-dot" style="background:var(--purple-400);"></span><span class="kanban-col-name">Completado</span></div>
+                <span class="kanban-col-count">3</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-038</span><span class="badge badge-green" style="font-size:8px;">✓ FES Firmado</span></div>
+                  <div class="kanban-card-client">Cementos Biobío</div>
+                  <div class="kanban-card-faena">Planta Talcahuano · Silo #4</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Total Hrs:</span><span class="kanban-card-meta-value">96 hrs</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">OC:</span><span class="kanban-card-meta-value" style="color:var(--green-400);">OC-4521</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">EDP:</span><span class="kanban-card-meta-value" style="color:var(--green-400);">Aprobado ✓</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-green">Facturado</span>
+                    <span class="kanban-card-amount">$14.400.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-035</span><span class="badge badge-amber" style="font-size:8px;">⏳ Falta OC</span></div>
+                  <div class="kanban-card-client">Aguas Araucanía</div>
+                  <div class="kanban-card-faena">PTAR Temuco · Bomba Impulsión</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Total Hrs:</span><span class="kanban-card-meta-value">48 hrs</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">OC:</span><span class="kanban-card-meta-value" style="color:var(--amber-500);">Pendiente ⏳</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Devengado:</span><span class="kanban-card-meta-value" style="color:var(--amber-500);">$16.800.000</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-amber">Dev. sin Facturar</span>
+                    <span class="kanban-card-amount">$16.800.000</span>
+                  </div>
+                </div>
+                <div class="kanban-card">
+                  <div class="kanban-card-top"><span class="kanban-card-id">#SRV-2026-032</span><span class="badge badge-green" style="font-size:8px;">✓ FES Firmado</span></div>
+                  <div class="kanban-card-client">Latam Airlines</div>
+                  <div class="kanban-card-faena">Aeropuerto Temuco · Puente Embarque</div>
+                  <div class="kanban-card-meta">
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">Total Hrs:</span><span class="kanban-card-meta-value">24 hrs</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">OC:</span><span class="kanban-card-meta-value" style="color:var(--green-400);">OC-4498</span></div>
+                    <div class="kanban-card-meta-row"><span class="kanban-card-meta-label">EDP:</span><span class="kanban-card-meta-value" style="color:var(--green-400);">Aprobado ✓</span></div>
+                  </div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-purple">Recaudado</span>
+                    <span class="kanban-card-amount">$11.300.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- VIEW 3: DOBLE CONCILIACIÓN                -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="view" id="view-cruce">
+          <div>
+            <h2 style="font-size:20px;font-weight:900;color:#fff;">Cruce de Devengado y Facturación</h2>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Valida partes diarios de izaje firmados digitalmente (FES) en terreno contra tarifas contractuales para generar Estados de Pago (EDP).</p>
+          </div>
+
+          <!-- KPI Summary Strip for EDP -->
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; flex-shrink:0; margin-top:8px;">
+            <div class="panel" style="padding:10px 14px; background:rgba(245,166,35,0.02); border-color:rgba(245,166,35,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Total Servicios</div>
+              <div id="edp-kpi-total" style="font-size:18px; font-weight:900; color:#fff; line-height:1;">8</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(96,165,250,0.02); border-color:rgba(96,165,250,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Devengado Acumulado</div>
+              <div id="edp-kpi-monto" style="font-size:18px; font-weight:900; color:var(--blue-400); line-height:1;">$141.050.000</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(16,185,129,0.02); border-color:rgba(16,185,129,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">EDP Aprobados</div>
+              <div id="edp-kpi-aprobados" style="font-size:18px; font-weight:900; color:var(--green-400); line-height:1;">4</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(239,68,68,0.02); border-color:rgba(239,68,68,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Pendientes OC / Firma</div>
+              <div id="edp-kpi-pendientes" style="font-size:18px; font-weight:900; color:var(--red-400); line-height:1;">4</div>
+            </div>
+          </div>
+
+          <!-- Filters & Search Toolbar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(15,22,41,0.4); border:1px solid var(--border-subtle); padding:10px 14px; border-radius:var(--radius-lg); gap:16px; margin-top:4px;">
+            <div style="display:flex; align-items:center; gap:12px; flex:1;">
+              <!-- Search box -->
+              <div style="position:relative; flex:1; max-width:240px;">
+                <input type="text" id="edp-search" placeholder="Buscar servicio, cliente..." style="width:100%; padding:6px 10px 6px 28px; background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; font-size:11px; outline:none; transition:all 0.2s;" oninput="applyTableFilters('cruce')" />
+                <svg style="position:absolute; left:8px; top:50%; transform:translateY(-50%); width:12px; height:12px; color:var(--text-muted);"><use href="#i-search"/></svg>
+              </div>
+              <!-- Date Range From -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Desde:</span>
+                <input type="date" id="edp-date-from" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('cruce')" />
+              </div>
+              <!-- Date Range To -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Hasta:</span>
+                <input type="date" id="edp-date-to" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('cruce')" />
+              </div>
+              <!-- Reset btn -->
+              <button class="btn btn-ghost btn-sm" id="edp-reset" style="padding:4px 8px; font-size:9px; display:none;" onclick="resetFilters('cruce')">Limpiar</button>
+            </div>
+            <!-- Export button -->
+            <button class="btn btn-success btn-sm" style="font-weight:800; padding:6px 12px; display:flex; align-items:center; gap:4px;" onclick="exportTableToExcel('edp-table', 'Estados_de_Pago_GSP.csv')">
+              <svg style="width:12px; height:12px; fill:currentColor;"><use href="#i-download"/></svg> Exportar a Excel
+            </button>
+          </div>
+
+          <div class="panel" style="flex:1; margin-top:4px;">
+            <div class="panel-body-np" style="overflow:auto;">
+              <table class="data-table" id="edp-table">
+                <thead>
+                  <tr>
+                    <th>Servicio</th>
+                    <th>Fecha</th>
+                    <th>Cliente / Obra</th>
+                    <th>Grúa</th>
+                    <th>Hrs Reportadas</th>
+                    <th>Tarifa/Hr</th>
+                    <th>Devengado Terreno</th>
+                    <th>Orden de Compra</th>
+                    <th>Firma (FES)</th>
+                    <th style="text-align:right;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-date="2026-06-21">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-041</td>
+                    <td class="cell-mono" style="font-size:10px;">21 Jun 2026</td>
+                    <td><div class="cell-primary">CMPC Celulosa</div><div class="cell-secondary">Planta Laja · Turbina Vapor</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1220</td>
+                    <td class="cell-mono">174 Hrs</td>
+                    <td class="cell-mono">$200.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$34.800.000</td>
+                    <td><span class="badge badge-green">OC-4530</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm">Aprobar EDP</button></td>
+                  </tr>
+                  <tr data-date="2026-06-18">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-043</td>
+                    <td class="cell-mono" style="font-size:10px;">18 Jun 2026</td>
+                    <td><div class="cell-primary">Arauco Forestal</div><div class="cell-secondary">Planta Arauco · Torres Secado</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1250</td>
+                    <td class="cell-mono">114 Hrs</td>
+                    <td class="cell-mono">$250.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$28.500.000</td>
+                    <td><span class="badge badge-green">OC-4533</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm">Aprobar EDP</button></td>
+                  </tr>
+                  <tr data-date="2026-06-12">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-048</td>
+                    <td class="cell-mono" style="font-size:10px;">12 Jun 2026</td>
+                    <td><div class="cell-primary">Arauco S.A.</div><div class="cell-secondary">Planta Horcones · Montaje Caldera</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1400</td>
+                    <td class="cell-mono">46 Hrs</td>
+                    <td class="cell-mono">$402.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$18.500.000</td>
+                    <td><span class="badge badge-amber">Falta OC</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--text-dim);font-weight:600;">Esperando OC...</span></td>
+                  </tr>
+                  <tr data-date="2026-06-02">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-035</td>
+                    <td class="cell-mono" style="font-size:10px;">02 Jun 2026</td>
+                    <td><div class="cell-primary">Aguas Araucanía</div><div class="cell-secondary">PTAR Temuco · Bomba Impulsión</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1050</td>
+                    <td class="cell-mono">48 Hrs</td>
+                    <td class="cell-mono">$350.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$16.800.000</td>
+                    <td><span class="badge badge-amber">Falta OC</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--text-dim);font-weight:600;">Esperando OC...</span></td>
+                  </tr>
+                  <tr data-date="2026-05-28">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-038</td>
+                    <td class="cell-mono" style="font-size:10px;">28 May 2026</td>
+                    <td><div class="cell-primary">Cementos Biobío</div><div class="cell-secondary">Planta Talcahuano · Silo #4</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1090</td>
+                    <td class="cell-mono">96 Hrs</td>
+                    <td class="cell-mono">$150.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$14.400.000</td>
+                    <td><span class="badge badge-green">OC-4521</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--green-400);font-weight:700;display:flex;align-items:center;justify-content:flex-end;gap:4px;"><svg style="width:12px;height:12px;"><use href="#i-check-circle"/></svg> EDP Aprobado</span></td>
+                  </tr>
+                  <tr data-date="2026-05-15">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-032</td>
+                    <td class="cell-mono" style="font-size:10px;">15 May 2026</td>
+                    <td><div class="cell-primary">Latam Airlines</div><div class="cell-secondary">Aeropuerto Temuco · Puente Embarque</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1040</td>
+                    <td class="cell-mono">24 Hrs</td>
+                    <td class="cell-mono">$470.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$11.300.000</td>
+                    <td><span class="badge badge-green">OC-4498</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--green-400);font-weight:700;display:flex;align-items:center;justify-content:flex-end;gap:4px;"><svg style="width:12px;height:12px;"><use href="#i-check-circle"/></svg> EDP Aprobado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-08">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-045</td>
+                    <td class="cell-mono" style="font-size:10px;">08 Jun 2026</td>
+                    <td><div class="cell-primary">Colbún Energía</div><div class="cell-secondary">Central Angostura · Compuerta</div></td>
+                    <td class="cell-mono" style="font-size:10px;">XCMG QY70K</td>
+                    <td class="cell-mono">65 Hrs</td>
+                    <td class="cell-mono">$140.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$9.100.000</td>
+                    <td><span class="badge badge-green">OC-4540</span></td>
+                    <td><span class="badge badge-amber">Falta Firma</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--text-dim);font-weight:600;">Ejecutando...</span></td>
+                  </tr>
+                  <tr data-date="2026-06-11">
+                    <td class="cell-mono" style="color:var(--amber-500);font-weight:700;">#SRV-050</td>
+                    <td class="cell-mono" style="font-size:10px;">11 Jun 2026</td>
+                    <td><div class="cell-primary">Puerto Lirquén</div><div class="cell-secondary">Muelle 3 · Descarga Pesada</div></td>
+                    <td class="cell-mono" style="font-size:10px;">LTM 1070</td>
+                    <td class="cell-mono">51 Hrs</td>
+                    <td class="cell-mono">$150.000/Hr</td>
+                    <td class="cell-mono" style="font-weight:800;color:#fff;">$7.650.000</td>
+                    <td><span class="badge badge-amber">Falta OC</span></td>
+                    <td><span class="badge badge-green">✓ Firmado</span></td>
+                    <td style="text-align:right;"><span style="font-size:10px;color:var(--text-dim);font-weight:600;">Esperando OC...</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- VIEW 4: MANTENCIÓN DE FLOTA               -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="view" id="view-mantencion">
+          <div>
+            <h2 style="font-size:20px;font-weight:900;color:#fff;">Mantención y Estado de Flota Pesada</h2>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Control preventivo basado en horómetros reportados en tiempo real por operadores en faena. Certificaciones anuales de izaje.</p>
+          </div>
+
+          <!-- KPI Summary Strip for Fleet -->
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; flex-shrink:0; margin-top:8px;">
+            <div class="panel" style="padding:10px 14px; background:rgba(245,166,35,0.02); border-color:rgba(245,166,35,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Total Equipos</div>
+              <div id="fleet-kpi-total" style="font-size:18px; font-weight:900; color:#fff; line-height:1;">10</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(16,185,129,0.02); border-color:rgba(16,185,129,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Equipos Operativos</div>
+              <div id="fleet-kpi-operativos" style="font-size:18px; font-weight:900; color:var(--green-400); line-height:1;">9</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(239,68,68,0.02); border-color:rgba(239,68,68,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">En Taller (Mantención)</div>
+              <div id="fleet-kpi-taller" style="font-size:18px; font-weight:900; color:var(--red-400); line-height:1;">1</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(245,166,35,0.02); border-color:rgba(245,166,35,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Alertas RT / Certificación</div>
+              <div id="fleet-kpi-alertas" style="font-size:18px; font-weight:900; color:var(--amber-500); line-height:1;">2</div>
+            </div>
+          </div>
+
+          <!-- Filters & Search Toolbar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(15,22,41,0.4); border:1px solid var(--border-subtle); padding:10px 14px; border-radius:var(--radius-lg); gap:16px; margin-top:4px;">
+            <div style="display:flex; align-items:center; gap:12px; flex:1;">
+              <!-- Search box -->
+              <div style="position:relative; flex:1; max-width:240px;">
+                <input type="text" id="fleet-search" placeholder="Buscar patente, modelo, sucursal..." style="width:100%; padding:6px 10px 6px 28px; background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; font-size:11px; outline:none; transition:all 0.2s;" oninput="applyTableFilters('mantencion')" />
+                <svg style="position:absolute; left:8px; top:50%; transform:translateY(-50%); width:12px; height:12px; color:var(--text-muted);"><use href="#i-search"/></svg>
+              </div>
+              <!-- Date Range From -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Desde:</span>
+                <input type="date" id="fleet-date-from" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('mantencion')" />
+              </div>
+              <!-- Date Range To -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Hasta:</span>
+                <input type="date" id="fleet-date-to" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('mantencion')" />
+              </div>
+              <!-- Reset btn -->
+              <button class="btn btn-ghost btn-sm" id="fleet-reset" style="padding:4px 8px; font-size:9px; display:none;" onclick="resetFilters('mantencion')">Limpiar</button>
+            </div>
+            <!-- Export button -->
+            <button class="btn btn-success btn-sm" style="font-weight:800; padding:6px 12px; display:flex; align-items:center; gap:4px;" onclick="exportTableToExcel('fleet-table', 'Control_Flota_GSP.csv')">
+              <svg style="width:12px; height:12px; fill:currentColor;"><use href="#i-download"/></svg> Exportar a Excel
+            </button>
+          </div>
+
+          <div class="panel" style="flex:1; margin-top:4px;">
+            <div class="panel-body-np" style="overflow:auto;">
+              <table class="data-table" id="fleet-table">
+                <thead>
+                  <tr>
+                    <th>Equipo</th>
+                    <th>Capacidad</th>
+                    <th>Sucursal</th>
+                    <th>Horometro Motor</th>
+                    <th>Horometro Izaje</th>
+                    <th>Próx. Mantención</th>
+                    <th>Última Insp.</th>
+                    <th>Status Docs</th>
+                    <th style="text-align:right;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-date="2026-06-18">
+                    <td><div class="cell-primary">Liebherr LTM 1400</div><div class="cell-secondary cell-mono">GZBC-71</div></td>
+                    <td class="cell-mono" style="font-weight:700;">400 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">8.240 Hrs</td>
+                    <td class="cell-mono">4.120 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--amber-500);">Restan 260 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">18 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-71')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-20">
+                    <td><div class="cell-primary">Liebherr LTM 1250</div><div class="cell-secondary cell-mono">GZBC-61</div></td>
+                    <td class="cell-mono" style="font-weight:700;">250 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">4.955 Hrs</td>
+                    <td class="cell-mono">2.410 Hrs</td>
+                    <td class="cell-mono">Cada 5.000 Hrs<br><span style="font-size:9px;color:var(--amber-500);">Restan 45 Hrs ⚠</span></td>
+                    <td class="cell-mono" style="font-size:10px;">20 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#f5a623;box-shadow:0 0 8px #f5a623;"></span><span style="font-size:10px;color:var(--amber-500);font-weight:700;">RT Próxima</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-61')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-12">
+                    <td><div class="cell-primary">Liebherr LTM 1220</div><div class="cell-secondary cell-mono">GZBC-58</div></td>
+                    <td class="cell-mono" style="font-weight:700;">220 T</td>
+                    <td>Los Ángeles</td>
+                    <td class="cell-mono">6.870 Hrs</td>
+                    <td class="cell-mono">3.210 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 1.630 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">12 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-58')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-15">
+                    <td><div class="cell-primary">Liebherr LTM 1150</div><div class="cell-secondary cell-mono">GZBC-55</div></td>
+                    <td class="cell-mono" style="font-weight:700;">150 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">3.450 Hrs</td>
+                    <td class="cell-mono">1.680 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 1.550 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">15 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-55')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-01">
+                    <td><div class="cell-primary">Liebherr LTM 1100</div><div class="cell-secondary cell-mono">GZBC-43</div></td>
+                    <td class="cell-mono" style="font-weight:700;">100 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">12.340 Hrs</td>
+                    <td class="cell-mono">6.120 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 660 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">01 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;"></span><span style="font-size:10px;color:var(--red-400);font-weight:700;">Docs Vencidos ⚠</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-43')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-10">
+                    <td><div class="cell-primary">Liebherr LTM 1090</div><div class="cell-secondary cell-mono">GZBC-40</div></td>
+                    <td class="cell-mono" style="font-weight:700;">90 T</td>
+                    <td>Valdivia</td>
+                    <td class="cell-mono">7.680 Hrs</td>
+                    <td class="cell-mono">3.890 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 820 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">10 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-40')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-19">
+                    <td><div class="cell-primary">Tadano GR-800XL</div><div class="cell-secondary cell-mono">GZBC-37</div></td>
+                    <td class="cell-mono" style="font-weight:700;">80 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">5.210 Hrs</td>
+                    <td class="cell-mono">2.550 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--amber-500);">Restan 290 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">19 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-37')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-08">
+                    <td><div class="cell-primary">XCMG QY70K</div><div class="cell-secondary cell-mono">GZBC-32</div></td>
+                    <td class="cell-mono" style="font-weight:700;">70 T</td>
+                    <td>Los Ángeles</td>
+                    <td class="cell-mono">9.100 Hrs</td>
+                    <td class="cell-mono">4.300 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 900 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">08 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-32')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-11">
+                    <td><div class="cell-primary">Liebherr LTM 1070</div><div class="cell-secondary cell-mono">GZBC-28</div></td>
+                    <td class="cell-mono" style="font-weight:700;">70 T</td>
+                    <td>Puerto Montt</td>
+                    <td class="cell-mono">11.450 Hrs</td>
+                    <td class="cell-mono">5.600 Hrs</td>
+                    <td class="cell-mono">Cada 2.500 Hrs<br><span style="font-size:9px;color:var(--green-400);">Restan 1.050 Hrs</span></td>
+                    <td class="cell-mono" style="font-size:10px;">11 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span><span style="font-size:10px;color:var(--green-400);font-weight:700;">Todo Vigente</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-28')">Ver Ficha 360</button></td>
+                  </tr>
+                  <tr data-date="2026-06-02">
+                    <td><div class="cell-primary">Liebherr LTM 1050</div><div class="cell-secondary cell-mono">GZBC-22</div></td>
+                    <td class="cell-mono" style="font-weight:700;">50 T</td>
+                    <td>Temuco</td>
+                    <td class="cell-mono">14.200 Hrs</td>
+                    <td class="cell-mono">7.100 Hrs</td>
+                    <td class="cell-mono" style="color:var(--red-400);font-weight:700;">EN MANTENCIÓN</td>
+                    <td class="cell-mono" style="font-size:10px;">02 Jun 2026</td>
+                    <td><div class="flex items-center gap-2"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;"></span><span style="font-size:10px;color:var(--red-400);font-weight:700;">En Taller</span></div></td>
+                    <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openFichaEquipo('GZBC-22')">Ver Ficha 360</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- VIEW 5: ACREDITACIÓN DE PERSONAL          -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="view" id="view-acreditacion">
+          <div>
+            <h2 style="font-size:20px;font-weight:900;color:#fff;">Acreditación de Operadores y Riggers</h2>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Gestión de licencias clase D, certificaciones de izaje, inducciones de mandante y exámenes ocupacionales.</p>
+          </div>
+
+          <!-- KPI Summary Strip for Accreditation -->
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; flex-shrink:0; margin-top:8px;">
+            <div class="panel" style="padding:10px 14px; background:rgba(245,166,35,0.02); border-color:rgba(245,166,35,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Total Personal</div>
+              <div id="acred-kpi-total" style="font-size:18px; font-weight:900; color:#fff; line-height:1;">10</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(16,185,129,0.02); border-color:rgba(16,185,129,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Habilitados</div>
+              <div id="acred-kpi-habilitados" style="font-size:18px; font-weight:900; color:var(--green-400); line-height:1;">8</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(239,68,68,0.02); border-color:rgba(239,68,68,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Bloqueados / Vencidos</div>
+              <div id="acred-kpi-bloqueados" style="font-size:18px; font-weight:900; color:var(--red-400); line-height:1;">2</div>
+            </div>
+            <div class="panel" style="padding:10px 14px; background:rgba(245,166,35,0.02); border-color:rgba(245,166,35,0.15);">
+              <div style="font-size:8px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Tasa de Acreditación</div>
+              <div id="acred-kpi-tasa" style="font-size:18px; font-weight:900; color:var(--amber-500); line-height:1;">80%</div>
+            </div>
+          </div>
+
+          <!-- Filters & Search Toolbar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(15,22,41,0.4); border:1px solid var(--border-subtle); padding:10px 14px; border-radius:var(--radius-lg); gap:16px; margin-top:4px;">
+            <div style="display:flex; align-items:center; gap:12px; flex:1;">
+              <!-- Search box -->
+              <div style="position:relative; flex:1; max-width:240px;">
+                <input type="text" id="acred-search" placeholder="Buscar personal, rol..." style="width:100%; padding:6px 10px 6px 28px; background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; font-size:11px; outline:none; transition:all 0.2s;" oninput="applyTableFilters('acreditacion')" />
+                <svg style="position:absolute; left:8px; top:50%; transform:translateY(-50%); width:12px; height:12px; color:var(--text-muted);"><use href="#i-search"/></svg>
+              </div>
+              <!-- Date Range From -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Desde:</span>
+                <input type="date" id="acred-date-from" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('acreditacion')" />
+              </div>
+              <!-- Date Range To -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase;">Hasta:</span>
+                <input type="date" id="acred-date-to" style="background:rgba(5,8,16,0.6); border:1px solid var(--border-light); border-radius:6px; color:white; padding:4px 8px; font-size:10px; outline:none; cursor:pointer;" onchange="applyTableFilters('acreditacion')" />
+              </div>
+              <!-- Reset btn -->
+              <button class="btn btn-ghost btn-sm" id="acred-reset" style="padding:4px 8px; font-size:9px; display:none;" onclick="resetFilters('acreditacion')">Limpiar</button>
+            </div>
+            <!-- Export button -->
+            <button class="btn btn-success btn-sm" style="font-weight:800; padding:6px 12px; display:flex; align-items:center; gap:4px;" onclick="exportTableToExcel('acred-table', 'Acreditacion_Personal_GSP.csv')">
+              <svg style="width:12px; height:12px; fill:currentColor;"><use href="#i-download"/></svg> Exportar a Excel
+            </button>
+          </div>
+
+          <div class="panel" style="flex:1; margin-top:4px;">
+            <div class="panel-body-np" style="overflow:auto;">
+              <table class="data-table" id="acred-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Fecha Control</th>
+                    <th>Licencia Clase D</th>
+                    <th>Cert. Izaje</th>
+                    <th>Inducción Mandante</th>
+                    <th>Examen Ocupacional</th>
+                    <th style="text-align:right;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-date="2026-06-20">
+                    <td class="cell-primary">Juan Pérez Alarcón</td>
+                    <td>Operador Grúa</td>
+                    <td class="cell-mono" style="font-size:10px;">20 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2028-03</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">CMPC · 2027-01</span></td>
+                    <td><span class="badge badge-green">2026-12</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-18">
+                    <td class="cell-primary">Luis Contreras Vega</td>
+                    <td>Operador Grúa</td>
+                    <td class="cell-mono" style="font-size:10px;">18 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2027-08</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">Arauco · 2027-05</span></td>
+                    <td><span class="badge badge-green">2026-11</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-15">
+                    <td class="cell-primary" style="color:var(--red-400);">Carlos Muñoz Sepúlveda</td>
+                    <td>Operador Grúa</td>
+                    <td class="cell-mono" style="font-size:10px;">15 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2027-11</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-red">CMPC · VENCIDA 2026-06-15 ⚠</span></td>
+                    <td><span class="badge badge-green">2026-10</span></td>
+                    <td style="text-align:right;"><span class="badge badge-red">⚠ Bloqueado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-05">
+                    <td class="cell-primary">Mario Fuentes Lagos</td>
+                    <td>Operador Grúa</td>
+                    <td class="cell-mono" style="font-size:10px;">05 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2028-01</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">MOP · 2027-04</span></td>
+                    <td><span class="badge badge-green">2026-09</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-17">
+                    <td class="cell-primary">Diego Riquelme Mora</td>
+                    <td>Operador Grúa</td>
+                    <td class="cell-mono" style="font-size:10px;">17 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2027-06</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">Enel · 2027-02</span></td>
+                    <td><span class="badge badge-green">2026-12</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-11">
+                    <td class="cell-primary">Roberto Soto Garrido</td>
+                    <td>Rigger Jefe</td>
+                    <td class="cell-mono" style="font-size:10px;">11 Jun 2026</td>
+                    <td><span class="badge badge-blue">N/A</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">Arauco · 2027-03</span></td>
+                    <td><span class="badge badge-green">2026-11</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-03">
+                    <td class="cell-primary">Andrés Molina Bravo</td>
+                    <td>Rigger</td>
+                    <td class="cell-mono" style="font-size:10px;">03 Jun 2026</td>
+                    <td><span class="badge badge-blue">N/A</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">CMPC · 2027-06</span></td>
+                    <td><span class="badge badge-green">2026-10</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-10">
+                    <td class="cell-primary" style="color:var(--red-400);">Felipe Herrera Pinto</td>
+                    <td>Supervisor Izaje</td>
+                    <td class="cell-mono" style="font-size:10px;">10 Jun 2026</td>
+                    <td><span class="badge badge-green">Vigente · 2028-05</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">Multi-mandante</span></td>
+                    <td><span class="badge badge-red">VENCIDO 2026-06-10 ⚠</span></td>
+                    <td style="text-align:right;"><span class="badge badge-red">⚠ Bloqueado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-14">
+                    <td class="cell-primary">Gonzalo Parra Díaz</td>
+                    <td>Prevencionista HSE</td>
+                    <td class="cell-mono" style="font-size:10px;">14 Jun 2026</td>
+                    <td><span class="badge badge-blue">N/A</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">Multi-mandante</span></td>
+                    <td><span class="badge badge-green">2026-12</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                  <tr data-date="2026-06-02">
+                    <td class="cell-primary">Patricio Vidal Sáez</td>
+                    <td>Vientero</td>
+                    <td class="cell-mono" style="font-size:10px;">02 Jun 2026</td>
+                    <td><span class="badge badge-blue">N/A</span></td>
+                    <td><span class="badge badge-green">Vigente</span></td>
+                    <td><span class="badge badge-green">CMPC · 2027-01</span></td>
+                    <td><span class="badge badge-green">2026-11</span></td>
+                    <td style="text-align:right;"><span class="badge badge-green">✓ Habilitado</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ MOBILE FRAME (OPERATOR APP) ═══════ -->
+    <div class="mobile-wrapper hidden" id="mobile-view">
+      <div style="text-align:center;margin-right:40px;">
+        <h2 style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;">App Operador de Grúa</h2>
+        <p style="font-size:11px;color:var(--text-muted);max-width:280px;line-height:1.5;">Reporte de horas, checklist preoperacional, AST digital y firma electrónica simple (FES) — todo offline-first.</p>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center;">
+          <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:14px;height:14px;color:var(--green-500);"><use href="#i-check"/></svg> Funciona sin conexión a internet</div>
+          <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:14px;height:14px;color:var(--green-500);"><use href="#i-check"/></svg> Sincroniza al recuperar señal</div>
+          <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:14px;height:14px;color:var(--green-500);"><use href="#i-check"/></svg> Firma digital FES in situ</div>
+          <div class="flex items-center gap-2" style="font-size:10px;color:var(--text-secondary);"><svg style="width:14px;height:14px;color:var(--green-500);"><use href="#i-check"/></svg> Captura fotográfica carga</div>
+        </div>
+      </div>
+
+      <div class="mobile-frame">
+        <div class="mobile-notch">
+          <div class="mobile-notch-cam"></div>
+          <div class="mobile-notch-speaker"></div>
+        </div>
+        <div class="mobile-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;">GSP</div>
+            <div>
+              <div class="mobile-header-title">Reporte de Terreno</div>
+              <div class="mobile-header-sub">Juan Pérez · LTM 1220 (220T)</div>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-body">
+          <!-- Service Info -->
+          <div class="mobile-card">
+            <div class="mobile-card-title">📋 Servicio Activo</div>
+            <div class="mobile-field"><span class="mobile-field-label">ID:</span><span class="mobile-field-value mono">#SRV-2026-041</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Cliente:</span><span class="mobile-field-value">CMPC Celulosa</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Faena:</span><span class="mobile-field-value">Planta Laja</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Obra:</span><span class="mobile-field-value">Turbina Vapor</span></div>
+          </div>
+
+          <!-- Horómetros -->
+          <div class="mobile-card">
+            <div class="mobile-card-title">⏱ Horómetros del Día</div>
+            <div class="mobile-field"><span class="mobile-field-label">Motor Inicio:</span><span class="mobile-field-value mono">6.864 hrs</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Motor Actual:</span><span class="mobile-field-value mono" style="color:var(--amber-500);">6.870,5 hrs</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Hrs Izaje Hoy:</span><span class="mobile-field-value mono" style="color:var(--green-400);">6,5 hrs</span></div>
+            <div class="mobile-field"><span class="mobile-field-label">Viento Actual:</span><span class="mobile-field-value" style="color:var(--red-400);">38 km/h ⚠ PAUSA</span></div>
+          </div>
+
+          <!-- Checklist Preoperacional -->
+          <div class="mobile-card">
+            <div class="mobile-card-title">✅ Checklist Pre-Operacional</div>
+            <div class="mobile-btn-checklist checked" onclick="toggleCheck(this)"><div class="check-box"><svg><use href="#i-check"/></svg></div>Eslingas y grilletes inspeccionados</div>
+            <div class="mobile-btn-checklist checked" onclick="toggleCheck(this)"><div class="check-box"><svg><use href="#i-check"/></svg></div>Nivel hidráulico verificado</div>
+            <div class="mobile-btn-checklist checked" onclick="toggleCheck(this)"><div class="check-box"><svg><use href="#i-check"/></svg></div>Cables de izaje sin desgaste</div>
+            <div class="mobile-btn-checklist checked" onclick="toggleCheck(this)"><div class="check-box"><svg><use href="#i-check"/></svg></div>Estabilizadores desplegados</div>
+            <div class="mobile-btn-checklist" onclick="toggleCheck(this)"><div class="check-box"><svg><use href="#i-check"/></svg></div>AST firmado por equipo</div>
+          </div>
+
+          <!-- Evidencia -->
+          <div class="mobile-card">
+            <div class="mobile-card-title">📸 Evidencia Fotográfica</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <div style="background:var(--bg-elevated);border:1px solid var(--border-light);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;">
+                <svg style="width:20px;height:20px;color:var(--green-400);"><use href="#i-camera"/></svg>
+              </div>
+              <div style="background:var(--bg-elevated);border:1px solid var(--border-light);border-radius:6px;height:60px;display:flex;align-items:center;justify-content:center;">
+                <svg style="width:20px;height:20px;color:var(--green-400);"><use href="#i-camera"/></svg>
+              </div>
+            </div>
+            <div style="font-size:8px;color:var(--text-dim);text-align:center;margin-top:4px;">2 fotos capturadas · Estado inicial carga</div>
+          </div>
+
+          <!-- Firma -->
+          <div style="margin-top:4px;">
+            <button class="mobile-btn mobile-btn-primary" onclick="alert('Firma Electrónica Simple capturada offline. Se sincronizará al recuperar señal.')">✍ Capturar Firma FES del Cliente</button>
+          </div>
+          <div style="margin-top:4px;">
+            <button class="mobile-btn mobile-btn-success" onclick="alert('Reporte enviado y sincronizado exitosamente.')">📤 Enviar Reporte del Día</button>
+          </div>
+        </div>
+        <div class="mobile-footer">
+          <div class="mobile-tab active"><svg><use href="#i-home"/></svg><span class="mobile-tab-label">Inicio</span></div>
+          <div class="mobile-tab"><svg><use href="#i-clock"/></svg><span class="mobile-tab-label">Horas</span></div>
+          <div class="mobile-tab"><svg><use href="#i-clipboard"/></svg><span class="mobile-tab-label">AST</span></div>
+          <div class="mobile-tab"><svg><use href="#i-camera"/></svg><span class="mobile-tab-label">Fotos</span></div>
+          <div class="mobile-tab"><svg><use href="#i-pen"/></svg><span class="mobile-tab-label">Firma</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: EXPEDIENTE 360° ═══════ -->
+<div class="modal-overlay" id="modal-360">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:14px;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px;">
+          <span class="mono" style="color:var(--amber-500);">#SRV-2026-041</span> Expediente 360° del Servicio
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">CMPC Celulosa · Planta Laja · Turbina Vapor</div>
+      </div>
+      <div class="modal-close" onclick="closeModal()"><svg style="width:14px;height:14px;"><use href="#i-x"/></svg></div>
+    </div>
+    <div class="modal-body">
+      <!-- Datos Generales -->
+      <div class="modal-section">
+        <div class="modal-section-title"><svg style="width:12px;height:12px;"><use href="#i-layout"/></svg> Datos Generales del Servicio</div>
+        <div class="modal-grid">
+          <div class="modal-field"><div class="modal-field-label">Cliente</div><div class="modal-field-value">CMPC Celulosa S.A.</div></div>
+          <div class="modal-field"><div class="modal-field-label">Faena / Obra</div><div class="modal-field-value">Planta Laja · Turbina Vapor</div></div>
+          <div class="modal-field"><div class="modal-field-label">Grúa Asignada</div><div class="modal-field-value mono">Liebherr LTM 1220 (220T) · GZBC-58</div></div>
+          <div class="modal-field"><div class="modal-field-label">Operador</div><div class="modal-field-value">Juan Pérez Alarcón</div></div>
+          <div class="modal-field"><div class="modal-field-label">Rigger Jefe</div><div class="modal-field-value">Roberto Soto Garrido</div></div>
+          <div class="modal-field"><div class="modal-field-label">Prevencionista HSE</div><div class="modal-field-value">Gonzalo Parra Díaz</div></div>
+          <div class="modal-field"><div class="modal-field-label">Fecha Inicio</div><div class="modal-field-value mono">2026-06-02</div></div>
+          <div class="modal-field"><div class="modal-field-label">Fecha Est. Término</div><div class="modal-field-value mono">2026-06-28</div></div>
+        </div>
+      </div>
+
+      <!-- Financial -->
+      <div class="modal-section">
+        <div class="modal-section-title"><svg style="width:12px;height:12px;"><use href="#i-dollar"/></svg> Información Financiera (Devengado)</div>
+        <div class="modal-grid">
+          <div class="modal-field"><div class="modal-field-label">Tarifa Contrato</div><div class="modal-field-value mono">$200.000 CLP / Hora</div></div>
+          <div class="modal-field"><div class="modal-field-label">Horas Reportadas</div><div class="modal-field-value mono" style="color:var(--amber-500);">174 Horas</div></div>
+          <div class="modal-field"><div class="modal-field-label">Devengado Total</div><div class="modal-field-value mono" style="font-size:14px;color:var(--amber-500);">$34.800.000 CLP</div></div>
+          <div class="modal-field"><div class="modal-field-label">Orden de Compra</div><div class="modal-field-value"><span class="badge badge-green">OC-4530 · Recibida</span></div></div>
+          <div class="modal-field"><div class="modal-field-label">Estado de Pago (EDP)</div><div class="modal-field-value"><span class="badge badge-amber">Pendiente Aprobación</span></div></div>
+          <div class="modal-field"><div class="modal-field-label">Firma FES Cliente</div><div class="modal-field-value"><span class="badge badge-green">✓ Firmado en Terreno</span></div></div>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="modal-section">
+        <div class="modal-section-title"><svg style="width:12px;height:12px;"><use href="#i-file-check"/></svg> Documentación del Expediente</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="flex items-center justify-between" style="background:var(--bg-deep);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <div class="flex items-center gap-2"><svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg><span style="font-size:11px;font-weight:600;">Plan de Rigging (PDF)</span></div>
+            <span class="badge badge-green">Aprobado</span>
+          </div>
+          <div class="flex items-center justify-between" style="background:var(--bg-deep);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <div class="flex items-center gap-2"><svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg><span style="font-size:11px;font-weight:600;">AST Firmado Digitalmente</span></div>
+            <span class="badge badge-green">Completado</span>
+          </div>
+          <div class="flex items-center justify-between" style="background:var(--bg-deep);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <div class="flex items-center gap-2"><svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-file-check"/></svg><span style="font-size:11px;font-weight:600;">Log de Horómetros (Motor + Izaje)</span></div>
+            <span class="badge badge-green">174 Hrs registradas</span>
+          </div>
+          <div class="flex items-center justify-between" style="background:var(--bg-deep);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <div class="flex items-center gap-2"><svg style="width:14px;height:14px;color:var(--green-400);"><use href="#i-camera"/></svg><span style="font-size:11px;font-weight:600;">Evidencia Fotográfica</span></div>
+            <span class="badge badge-green">24 fotos</span>
+          </div>
+          <div class="flex items-center justify-between" style="background:var(--bg-deep);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <div class="flex items-center gap-2"><svg style="width:14px;height:14px;color:var(--amber-500);"><use href="#i-file-warn"/></svg><span style="font-size:11px;font-weight:600;">Estado de Pago (EDP)</span></div>
+            <span class="badge badge-amber">Borrador Generado</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="modal-section">
+        <div class="modal-section-title"><svg style="width:12px;height:12px;"><use href="#i-activity"/></svg> Línea de Tiempo del Servicio</div>
+        <div class="modal-timeline">
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot done"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text">Requerimiento Comercial Recibido</div><div class="modal-timeline-time">28 May 2026 · Gerald Aguilera</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot done"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text">Grúa LTM 1220 + Operador Juan Pérez Asignados</div><div class="modal-timeline-time">30 May 2026 · Despacho Temuco</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot done"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text">Acreditación CMPC Aprobada (Operador + Rigger)</div><div class="modal-timeline-time">01 Jun 2026 · Validado por CMPC</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot done"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text">Despacho Logístico: Contrapesos en Cama Baja + Escolta</div><div class="modal-timeline-time">01 Jun 2026 · Flete desde Temuco</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot current"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text" style="color:var(--amber-500);font-weight:700;">En Maniobra — Reportando Horas Diarias (174 hrs acumuladas)</div><div class="modal-timeline-time">02 Jun – Actualidad · Pausa por viento 38 km/h</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot pending"></div><div class="modal-timeline-line"></div></div>
+            <div><div class="modal-timeline-text">Firma FES Cliente y Cierre de Reporte Final</div><div class="modal-timeline-time">Estimado: 28 Jun 2026</div></div>
+          </div>
+          <div class="modal-timeline-item">
+            <div class="modal-timeline-dot-wrap"><div class="modal-timeline-dot pending"></div></div>
+            <div><div class="modal-timeline-text">Aprobación EDP → Facturación SII → Recaudación</div><div class="modal-timeline-time">Estimado: 30 Jun – 15 Jul 2026</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ JAVASCRIPT ═══════ -->
+<script>
+// ── Navigation ──
+function switchRole(role) {
+  const swDespacho = document.getElementById('sw-despacho');
+  const swOperador = document.getElementById('sw-operador');
+  const sidebarDespacho = document.getElementById('sidebar-despacho');
+  const workspaceDespacho = document.getElementById('workspace-despacho');
+  const mobileView = document.getElementById('mobile-view');
+
+  if (role === 'despacho') {
+    swDespacho.className = 'topbar-sw-btn active-despacho';
+    swOperador.className = 'topbar-sw-btn inactive';
+    sidebarDespacho.classList.remove('hidden');
+    workspaceDespacho.classList.remove('hidden');
+    mobileView.classList.add('hidden');
+  } else {
+    swDespacho.className = 'topbar-sw-btn inactive';
+    swOperador.className = 'topbar-sw-btn active-operador';
+    sidebarDespacho.classList.add('hidden');
+    workspaceDespacho.classList.add('hidden');
+    mobileView.classList.remove('hidden');
+  }
+}
+
+const viewTitles = {
+  dashboard: 'Dashboard Devengado & HSEC',
+  torre: 'Torre de Control Operativa',
+  cruce: 'Doble Conciliación · Cruce Devengado vs Facturado',
+  mantencion: 'Mantención y Estado de Flota Pesada',
+  acreditacion: 'Acreditación de Operadores y Riggers'
+};
+
+function switchView(viewId, navEl) {
+  // Hide all views
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  // Show target
+  const target = document.getElementById('view-' + viewId);
+  if (target) target.classList.add('active');
+  // Update sidebar active
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  // Update workspace title
+  document.getElementById('ws-title').textContent = viewTitles[viewId] || '';
+}
+
+// ── Modal ──
+function openModal() {
+  document.getElementById('modal-360').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-360').classList.remove('open');
+}
+document.getElementById('modal-360').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── Mobile Checklist ──
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "label": "CONDICIONES DE SEGURIDAD EN TRABAJOS",
+  "posicion": 999,
+  "touch": false,
+  "attributes": [
+    {
+      "type": "condicionesSeguridadTrabajo",
+      "label": "BLOQUES COMUNES PARA TODAS LAS IIDD",
+      "groupTitle": "BLOQUES COMUNES PARA TODAS LAS IIDD",
+      "preset": "comunes",
+      "nullable": true
+    },
+    {
+      "type": "condicionesSeguridadTrabajo",
+      "label": "BLOQUE DE TRABAJOS ESPECIALES",
+      "groupTitle": "BLOQUE DE TRABAJOS ESPECIALES",
+      "preset": "especiales",
+      "showIntroHeader": false,
+      "nullable": true
+    },
+    {
+      "type": "condicionesSeguridadTrabajo",
+      "label": "BLOQUE DE ACTIVIDADES EN LUGARES DE TRABAJO CON CARACTERÍSTICAS ESPECIALES",
+      "groupTitle": "BLOQUE DE ACTIVIDADES EN LUGARES DE TRABAJO CON CARACTERÍSTICAS ESPECIALES",
+      "preset": "lugares_especiales",
+      "showIntroHeader": false,
+      "nullable": true
+    }
+  ]
+}

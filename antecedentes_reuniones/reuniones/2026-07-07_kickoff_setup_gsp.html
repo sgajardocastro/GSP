@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reunión de Setup & Kickoff: Ecosistema Operacional GSP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-main: #0f172a;       /* Slate 900 */
+      --bg-card: #1e293b;       /* Slate 800 */
+      --bg-card-hover: #334155; /* Slate 700 */
+      --text-main: #f8fafc;     /* Slate 50 */
+      --text-muted: #94a3b8;    /* Slate 400 */
+      --amber: #f5a623;         /* Amarillo Seguridad Industrial */
+      --amber-light: rgba(245, 166, 35, 0.1);
+      --green: #10b981;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 30px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ════════════════ LAYOUT ════════════════ */
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* Header Presentation */
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 24px 30px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--amber);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-info h1 {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+    .header-info p {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .badge-kickoff {
+      background: var(--amber-light);
+      color: var(--amber);
+      border: 1px solid rgba(245, 166, 35, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Tabs Bar */
+    .tabs-bar {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      margin-bottom: 24px;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      background: var(--amber);
+      color: #000000 !important;
+    }
+
+    /* ════════════════ TAB CONTENT ════════════════ */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+    }
+    .card-title {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    /* Role Cards specific styling */
+    .role-badge {
+      display: inline-block;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      letter-spacing: 0.05em;
+    }
+    .role-lg { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-gsp { background: rgba(245, 166, 35, 0.15); color: var(--amber); border: 1px solid rgba(245, 166, 35, 0.3); }
+
+    /* Lists and Checklist */
+    .check-list {
+      list-style: none;
+    }
+    .check-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+    .check-list li strong {
+      color: var(--text-main);
+    }
+    .check-list li i {
+      color: var(--amber);
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #111827;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .badge-status {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .bg-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .bg-yellow { background: rgba(245, 166, 35, 0.2); color: #fbbf24; }
+    .bg-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .bg-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+
+    /* Dashboard UI Elements */
+    .progress-bar-container {
+      background: #111827;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 4px;
+    }
+
+    .issue-box {
+      border-left: 4px solid #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+    .issue-box strong {
+      color: #f87171;
+    }
+
+    /* ─── Matriz de Alcance y Requerimientos ─── */
+    .scope-matrix-container {
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-card);
+      overflow: hidden;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+    .scope-matrix-header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: var(--text-main);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .scope-matrix-header h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-main);
+    }
+    .scope-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .scope-matrix-table th {
+      background: rgba(15, 23, 42, 0.4);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      padding: 10px 16px;
+      border-bottom: 2px solid var(--border);
+      text-align: left;
+    }
+    .scope-matrix-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    /* Filas por nivel */
+    .row-level-1 {
+      background: rgba(255, 255, 255, 0.03);
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+    .row-level-1 td {
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--border);
+    }
+    .row-level-2 {
+      background: rgba(255, 255, 255, 0.01);
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: pointer;
+      user-select: none;
+    }
+    .row-level-2 td {
+      padding: 8px 16px 8px 28px;
+    }
+    .row-level-3 {
+      background: transparent;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+    .row-level-3 td {
+      padding: 8px 16px 8px 44px;
+    }
+    /* Hover effects */
+    .row-level-1:hover { background: rgba(255, 255, 255, 0.08); }
+    .row-level-2:hover { background: rgba(255, 255, 255, 0.05); }
+    .row-level-3:hover { background: rgba(255, 255, 255, 0.02); }
+    
+    /* Chevrones rotativos */
+    .chevron-icon {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 8px;
+      transition: transform 0.2s ease;
+      vertical-align: middle;
+      color: var(--amber);
+      stroke: currentColor;
+    }
+    .expanded .chevron-icon {
+      transform: rotate(90deg);
+    }
+    
+    /* Indicadores de Fase */
+    .phase-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .phase-badge-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .phase-badge-issue {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .phase-badge-pending {
+      background: rgba(255, 255, 255, 0.02);
+      color: #475569;
+      border: 1px dashed var(--border);
+    }
+    .phase-badge-process {
+      background: var(--amber-light);
+      color: var(--amber);
+      border: 1px solid rgba(245, 166, 35, 0.3);
+      animation: pulse-orange-matrix 2s infinite;
+    }
+
+    /* Insignias de Gestión */
+    .mgmt-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+      min-width: 80px;
+    }
+    .mgmt-badge-ok {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .mgmt-badge-pending {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--blue);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .mgmt-badge-issue {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    /* Clases de colapsado */
+    .row-collapsed {
+      display: none;
+    }
+
+    @keyframes pulse-orange-matrix {
+      0% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.4); }
+      70% { box-shadow: 0 0 0 5px rgba(245, 166, 35, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0); }
+    }
+
+    /* Sub-fila de detalles técnicos */
+    .row-detail-sub {
+      background: #0b0f19 !important; /* Fondo slate-950 bien oscuro */
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .row-detail-sub td {
+      padding: 10px 16px 12px 44px !important; /* Indentado para quedar alineado al texto */
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .detail-card-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+    .detail-card-item strong {
+      color: var(--text-main);
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 90px;
+    }
+    .detail-icon {
+      width: 14px;
+      height: 14px;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .detail-icon-attr { color: var(--blue); }
+    .detail-icon-doc { color: var(--green); }
+    .detail-icon-chall { color: var(--amber); }
+
+    /* ════════════════ FLOATING NOTES PANEL ════════════════ */
+    .notes-toggle {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--amber);
+      color: #000;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      z-index: 1000;
+    }
+    .notes-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(245, 166, 35, 0.4);
+    }
+    
+    .notes-panel {
+      position: fixed;
+      bottom: 90px;
+      right: 30px;
+      width: 350px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .notes-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    
+    .notes-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .notes-header h4 {
+      font-size: 14px;
+      margin: 0;
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .notes-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .notes-close:hover {
+      color: var(--text-main);
+    }
+    
+    .notes-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .notes-textarea {
+      width: 100%;
+      height: 200px;
+      background: rgba(0,0,0,0.15);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    
+    .notes-textarea:focus {
+      border-color: var(--amber);
+    }
+    
+    .notes-footer {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header>
+    <div class="header-info">
+      <h1>Kickoff &amp; Setup de Implementación Operativa</h1>
+      <p>Ecosistema LeanGlobal / Grúas San Pablo • Minuta y Plan de Trabajo Activo • 07 Julio 2026</p>
+    </div>
+    <div class="badge-kickoff">
+      <i data-lucide="play-circle"></i>
+      Fase de Inicio
+    </div>
+  </header>
+
+  <!-- ════════════════ TABS BAR ════════════════ -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('roles')"><i data-lucide="users"></i> Roles &amp; Responsabilidades</button>
+    <button class="tab-btn" onclick="switchTab('proceso')"><i data-lucide="map"></i> Fases del Proceso</button>
+    <button class="tab-btn" onclick="switchTab('lbp')"><i data-lucide="kanban"></i> Avance LBP</button>
+    <button class="tab-btn" onclick="switchTab('atributos_tarifas')"><i data-lucide="alert-circle"></i> Puntos de Atención Inmediatos</button>
+    <button class="tab-btn" onclick="switchTab('administracion')"><i data-lucide="building"></i> Administración</button>
+    <button class="tab-btn" onclick="switchTab('tareas')"><i data-lucide="check-square"></i> Próximos Pasos (Siguiente Reunión)</button>
+  </div>
+
+  <!-- ════════════════ ROLES ════════════════ -->
+  <div id="roles" class="tab-content active">
+    <div class="grid-4">
+      <!-- Card Jorge Ponce -->
+      <div class="card" style="border-top: 4px solid var(--amber);">
+        <div class="card-title">
+          <i data-lucide="user-check" style="color:var(--amber);"></i>
+          Jorge Ponce
+        </div>
+        <p style="font-size: 14px; font-weight: 600;">Jefe de Proyecto (Owner GSP)</p>
+        <span class="role-badge role-gsp">Grúas San Pablo</span>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 12px;">
+          Líder operativo y SSoT del negocio al interior de GSP. Encargado de priorizar desarrollos, resolver dudas sobre procesos, escalar bloqueos y asegurar la adopción.
+        </p>
+      </div>
+
+      <!-- Card Sergio Gajardo -->
+      <div class="card" style="border-top: 4px solid var(--blue);">
+        <div class="card-title">
+          <i data-lucide="cpu" style="color:var(--blue);"></i>
+          Sergio Gajardo
+        </div>
+        <p style="font-size: 14px; font-weight: 600;">Líder de Tecnología</p>
+        <span class="role-badge role-lg">LeanGlobal</span>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 12px;">
+          Responsable tecnológico general del desarrollo, modelado de bases de datos, integraciones de API e implementación del ecosistema móvil y web.
+        </p>
+      </div>
+
+      <!-- Card Edgardo Barrueto -->
+      <div class="card" style="border-top: 4px solid var(--blue);">
+        <div class="card-title">
+          <i data-lucide="briefcase" style="color:var(--blue);"></i>
+          Edgardo Barrueto
+        </div>
+        <p style="font-size: 14px; font-weight: 600;">Responsable Comercial</p>
+        <span class="role-badge role-lg">LeanGlobal</span>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 12px;">
+          Socio comercial a cargo de la cuenta, coordinación estratégica e hitos contractuales a alto nivel con el dueño de Grúas San Pablo.
+        </p>
+      </div>
+
+      <!-- Card Felipe Julio -->
+      <div class="card" style="border-top: 4px solid var(--blue);">
+        <div class="card-title">
+          <i data-lucide="file-text" style="color:var(--blue);"></i>
+          Felipe Julio
+        </div>
+        <p style="font-size: 14px; font-weight: 600;">Control Administrativo</p>
+        <span class="role-badge role-lg">LeanGlobal</span>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 12px;">
+          Contraparte administrativa interna para facturación, cobranza, contratos, seguimiento financiero y actas de inicio de hitos.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ PROCESO FASES ════════════════ -->
+  <div id="proceso" class="tab-content">
+    <div class="grid-2">
+      <!-- Flujo General -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="git-commit"></i> Flujo Operativo y Datos a Formalizar</div>
+        <ul class="check-list">
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Fase 1: Cotización &amp; Preventa (CRM)</strong><br>Registro de cliente, levantamiento técnico (Site Visit), tarifas, estructura de cotización y valorización del servicio.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Fase 2: Aprobación &amp; Despacho (Coordinación)</strong><br>Asignación física de patentes de grúas, operadores, riggers, escoltas y validación de vigencia de acreditaciones.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Fase 3: Preparación &amp; Salida (Taller y Patio)</strong><br>Checklist de patio pre-operacional con fotos obligatorias, horómetros de salida y control de Permiso Vialidad MOP.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Fase 4: Ejecución en Faena (Operación Terreno App)</strong><br>Tracking GPS, AST firmado digitalmente, control stand-by/viento, reporte FES y PIN del cliente.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Fase 5: Valorización y EDP (Cierre)</strong><br>Cálculo final de horas, aplicación de tarifas, fletes adicionales, tiempos de stand-by y generación de Estado de Pago (EDP).</div></li>
+        </ul>
+      </div>
+
+      <!-- Compromiso del Proyecto -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="info"></i> Foco Actual: Preventa y Tarifas</div>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px;">
+          Nuestra prioridad absoluta es <strong>formalizar todos los datos requeridos</strong> desde el inicio del proceso hasta la valorización del servicio.
+        </p>
+        <div class="issue-box" style="border-left-color: var(--amber); background: rgba(245, 166, 35, 0.03); margin-bottom: 12px;">
+          <strong style="color: var(--amber);">Objetivo Principal:</strong> Estructurar el cotizador automático en el CRM. Necesitamos parametrizar tarifas base, cobros de fletes de camas bajas, horas mínimas, y recargos por stand-by.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ AVANCE LBP ════════════════ -->
+  <div id="lbp" class="tab-content">
+    <div class="grid-2">
+      <!-- Dashboard de Avance -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="pie-chart"></i> Avance por Área Temática (LBP)</div>
+        
+        <!-- Fase 1 -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+            <span><strong>Fase 1: Preventa &amp; Cotización</strong> (Fichas, Tarifas)</span>
+            <span style="color:var(--amber); font-weight:600;">10%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: 10%; background: var(--amber);"></div>
+          </div>
+        </div>
+
+        <!-- Fase 2 -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+            <span><strong>Fase 2: Aprobación y Recursos</strong> (Despacho, Acreditaciones)</span>
+            <span style="color:var(--blue); font-weight:600;">5%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: 5%; background: var(--blue);"></div>
+          </div>
+        </div>
+
+        <!-- Fase 3 -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+            <span><strong>Fase 3: Ejecución en Terreno</strong> (App, GPS, Horómetros)</span>
+            <span style="color:var(--amber); font-weight:600;">5%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: 5%; background: var(--amber);"></div>
+          </div>
+        </div>
+
+        <!-- Fase 4 -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+            <span><strong>Fase 4: Valorización y EDP</strong> (Cálculos, Stand-by)</span>
+            <span style="color:var(--blue); font-weight:600;">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: 0%; background: var(--blue);"></div>
+          </div>
+        </div>
+
+        <!-- Fase 5 -->
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+            <span><strong>Fase 5: Administración</strong> (Proveedores, Facturación)</span>
+            <span style="color:var(--amber); font-weight:600;">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: 0%; background: var(--amber);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issues y Control de Riesgos -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="shield-alert" style="color:#ef4444;"></i> Control de Issues y Riesgos</div>
+        <div class="issue-box">
+          <strong>Issue #1: Reglas de Stand-by por Viento</strong>
+          <br>Aún no están claras las tolerancias máximas de viento para grúas pesadas ni la forma de cobrar las esperas imputables. (Estado: Pendiente levantamiento).
+        </div>
+        <div class="issue-box">
+          <strong>Issue #2: Acreditaciones en Offline</strong>
+          <br>Necesitamos definir la frecuencia de sincronización local en IndexedDB para la consulta de pases de faena sin cobertura. (Estado: Pendiente diseño técnico).
+        </div>
+      </div>
+      
+      <!-- Matriz de Requerimientos y Alcance de 3 Niveles -->
+      <div style="grid-column: span 2; margin-top: 10px;">
+        <div class="scope-matrix-container">
+          <div class="scope-matrix-header">
+            <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: #ffffff;">
+              <i data-lucide="check-square" style="color: var(--amber); width: 16px; height: 16px;"></i>
+              Detalle de Requerimientos y Trazabilidad (Matriz de Alcance)
+            </h3>
+            <div style="font-size: 11px; font-weight: 700; color: #ffffff; background: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.3); padding: 4px 10px; border-radius: 20px;" id="matrix-global-progress">
+              Avance Global: --
+            </div>
+          </div>
+          <table class="scope-matrix-table">
+            <thead>
+              <tr>
+                <th style="width: 45%;">Requerimiento / Punto de Alcance</th>
+                <th style="width: 10%; text-align: center;">Definición</th>
+                <th style="width: 10%; text-align: center;">Desarrollo</th>
+                <th style="width: 10%; text-align: center;">Pruebas QA</th>
+                <th style="width: 10%; text-align: center;">Desplegado</th>
+                <th style="width: 15%; text-align: center;">Gestión</th>
+              </tr>
+            </thead>
+            <tbody id="scope-matrix-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ PUNTOS DE ATENCION INMEDIATOS ════════════════ -->
+  <div id="atributos_tarifas" class="tab-content">
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-title"><i data-lucide="alert-triangle" style="color:var(--amber);"></i> Desafío Inmediato: Estructura de Cotización y Tarifas</div>
+      <p style="font-size:14px; color:var(--text-muted); margin-bottom: 20px;">
+        Debemos registrar y formalizar <strong>TOOOOOODOs los datos que son requeridos</strong> para la preventa y la valorización final de los servicios.
+      </p>
+      
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div style="background:#111827; padding:16px; border-radius:8px; border:1px solid var(--border);">
+          <h5 style="color:var(--amber); margin-bottom:8px;">1. Tarifas Base (Grúas)</h5>
+          <p style="font-size:12.5px; color:var(--text-muted);">
+            Valores hora/diarios según tonelaje nominal (LTM 1040, LTM 1400) y radio configurado. Horas mínimas requeridas.
+          </p>
+        </div>
+        <div style="background:#111827; padding:16px; border-radius:8px; border:1px solid var(--border);">
+          <h5 style="color:var(--amber); margin-bottom:8px;">2. Fletes y Traslados</h5>
+          <p style="font-size:12.5px; color:var(--text-muted);">
+            Estructura de cobro de fletes nacionales. Uso de camas bajas propias o externas para contrapesos y accesorios.
+          </p>
+        </div>
+        <div style="background:#111827; padding:16px; border-radius:8px; border:1px solid var(--border);">
+          <h5 style="color:var(--amber); margin-bottom:8px;">3. Tiempos Stand-by (Viento)</h5>
+          <p style="font-size:12.5px; color:var(--text-muted);">
+            Datos para la regla de valorización: velocidades máximas por grúa, y definición comercial de cobro por horas muertas imputables.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Fase 1 & 2 -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="arrow-right-circle" style="color:var(--amber);"></i> Inputs Fase 1 (Cotizaciones) y Fase 2 (Despacho)</div>
+        <ul class="check-list">
+          <li><i data-lucide="check"></i> <strong>Familia de Producto:</strong> Grúas telescópicas alto tonelaje, plataformas PTA, camiones pluma, grúas horquilla, manipuladores, camas bajas, accesorios, riggers.</li>
+          <li><i data-lucide="check"></i> <strong>Tipo de Disponibilidad:</strong> Reserva asegurada vs. sujeto a factibilidad logística diaria.</li>
+          <li><i data-lucide="check"></i> <strong>Carga e Izaje:</strong> Peso de la carga, radio de operación, altura de trabajo, resistencia del suelo y pendiente.</li>
+          <li><i data-lucide="check"></i> <strong>Acreditaciones (Semáforo):</strong> Licencia clase D del operador, exámenes de altura física, inducción en faena.</li>
+          <li><i data-lucide="check"></i> <strong>Documentos:</strong> Ficha Site Visit, Croquis/Plano de Rigging y Cotización Comercial.</li>
+        </ul>
+      </div>
+
+      <!-- Fase 3 & 4 -->
+      <div class="card">
+        <div class="card-title"><i data-lucide="check-square" style="color:var(--amber);"></i> Inputs Fase 3 (Patio) y Fase 4 (Terreno)</div>
+        <ul class="check-list">
+          <li><i data-lucide="check"></i> <strong>Salida Patio:</strong> Checklist Pre-operacional firmado, fotos del estado de grúa, horómetro motor de salida.</li>
+          <li><i data-lucide="check"></i> <strong>Permiso MOP:</strong> Control de vigencia y archivo PDF cargado para consulta offline por patente.</li>
+          <li><i data-lucide="check"></i> <strong>Telemetry GPS:</strong> Trazabilidad del conductor en viaje con registro automático cada 5 min.</li>
+          <li><i data-lucide="check"></i> <strong>Tiempos Faena:</strong> Horómetro inicial/final del motor de izaje, hora de inicio/término maniobra.</li>
+          <li><i data-lucide="check"></i> <strong>Seguridad:</strong> Formulario de AST digital firmado por la tripulación.</li>
+          <li><i data-lucide="check"></i> <strong>Cierre (FES):</strong> Firma con PIN de 4 dígitos del supervisor de obra y geolocalización de término.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ ADMINISTRACION ════════════════ -->
+  <div id="administracion" class="tab-content">
+    <div class="grid-2">
+      <!-- Proveedores y OC -->
+      <div class="card" style="border-top: 4px solid var(--blue);">
+        <div class="card-title"><i data-lucide="file-text" style="color:var(--blue);"></i> Gestión de Proveedores y OCs</div>
+        <ul class="check-list">
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Inscripción del Proveedor:</strong><br>Proceso de registro y validación de antecedentes comerciales y tributarios en sistema.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Generación de Orden de Compra (OC):</strong><br>Emisión, aprobación y envío de OC al proveedor, amarrada a la cotización inicial del CRM.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--amber);"></i> <div><strong>Control de Presupuesto:</strong><br>Trazabilidad cruzada del monto aprobado en la OC vs montos ejecutados reales por flete o subcontratos.</div></li>
+        </ul>
+      </div>
+
+      <!-- Facturación -->
+      <div class="card" style="border-top: 4px solid var(--amber);">
+        <div class="card-title"><i data-lucide="dollar-sign" style="color:var(--amber);"></i> Facturación y Cobranza</div>
+        <ul class="check-list">
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--blue);"></i> <div><strong>Gatillador de Facturación:</strong><br>Emisión de DTE (Factura Electrónica) de forma inmediata una vez aprobado el Estado de Pago (EDP).</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--blue);"></i> <div><strong>Cuadratura de Servicios:</strong><br>Conciliación automática de las horas trabajadas en faena contra la tarifa cobrada final y horas mínimas.</div></li>
+          <li style="margin-bottom:14px;"><i data-lucide="check-circle" style="color:var(--blue);"></i> <div><strong>Gestión de Cobranza:</strong><br>Seguimiento al estado de facturas emitidas, integración de fechas de vencimiento y pagos recibidos/conciliados.</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ PRÓXIMOS PASOS (SIGUIENTE REUNIÓN) ════════════════ -->
+  <div id="tareas" class="tab-content">
+    <div class="grid-2">
+      <!-- Tareas de LeanGlobal -->
+      <div class="card" style="border-top: 4px solid var(--blue);">
+        <div class="card-title"><i data-lucide="terminal" style="color:var(--blue); width:18px; height:18px;"></i> Compromisos: LeanGlobal</div>
+        <ul class="check-list" style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
+          <li style="display:flex; gap:10px; font-size:13px; color:var(--text-main);">
+            <i data-lucide="square" style="color:var(--text-muted); width:16px; height:16px; flex-shrink:0; margin-top:2px;"></i>
+            <div>
+              <strong style="color:var(--text-main);">Modelamiento de Matriz de Tarifas:</strong>
+              <br><span style="color:var(--text-muted); font-size:12px;">Estructurar las tablas de tarifas bases, horas mínimas y fletes de GSP en el modelo relacional del CRM.</span>
+            </div>
+          </li>
+          <li style="display:flex; gap:10px; font-size:13px; color:var(--text-main);">
+            <i data-lucide="square" style="color:var(--text-muted); width:16px; height:16px; flex-shrink:0; margin-top:2px;"></i>
+            <div>
+              <strong style="color:var(--text-main);">Estructura de Cotización (Preventa):</strong>
+              <br><span style="color:var(--text-muted); font-size:12px;">Definir el formulario de creación de cotización, levantando todos los datos necesarios para generar el PDF comercial.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tareas de GSP -->
+      <div class="card" style="border-top: 4px solid var(--amber);">
+        <div class="card-title"><i data-lucide="briefcase" style="color:var(--amber); width:18px; height:18px;"></i> Compromisos: Grúas San Pablo (GSP)</div>
+        <ul class="check-list" style="margin-top:14px; display:flex; flex-direction:column; gap:14px;">
+          <li style="display:flex; gap:10px; font-size:13px; color:var(--text-main);">
+            <i data-lucide="square" style="color:var(--text-muted); width:16px; height:16px; flex-shrink:0; margin-top:2px;"></i>
+            <div>
+              <strong style="color:var(--text-main);">Entrega de Tarifas y Fletes (Excel):</strong>
+              <br><span style="color:var(--text-muted); font-size:12px;">Enviar la matriz detallada de tarifas, horas mínimas, y costos por tonelaje. (Responsable: Jorge Ponce).</span>
+            </div>
+          </li>
+          <li style="display:flex; gap:10px; font-size:13px; color:var(--text-main);">
+            <i data-lucide="square" style="color:var(--text-muted); width:16px; height:16px; flex-shrink:0; margin-top:2px;"></i>
+            <div>
+              <strong style="color:var(--text-main);">Definición de Reglas de Valorización:</strong>
+              <br><span style="color:var(--text-muted); font-size:12px;">Formalizar las reglas comerciales: cobros por stand-by, recargos nocturnos y tolerancias de viento.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Roadmap de la Siguiente Reunión -->
+      <div class="card" style="grid-column: span 2; border-top: 4px solid var(--purple); margin-top: 10px;">
+        <div class="card-title"><i data-lucide="calendar" style="color:var(--purple); width:18px; height:18px;"></i> Planificación de la Siguiente Reunión (Kickoff #2)</div>
+        <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px; line-height: 1.5;">
+          Para la próxima sesión revisaremos en conjunto la captura de TODOS los datos formales en la etapa de preventa:
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;">
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:16px; border-radius:10px; font-size:12px; line-height:1.5;">
+            <h5 style="color:var(--text-main); font-weight:700; margin-bottom:6px; font-size:13px; display:flex; align-items:center; gap:6px;">
+              <i data-lucide="database" style="color:var(--blue); width:14px; height:14px;"></i>
+              1. Datos de Cotización
+            </h5>
+            <span style="color:var(--text-muted);">Revisión de todos los campos obligatorios para generar una cotización: cliente, obra, equipo, tarifas y traslados.</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:16px; border-radius:10px; font-size:12px; line-height:1.5;">
+            <h5 style="color:var(--text-main); font-weight:700; margin-bottom:6px; font-size:13px; display:flex; align-items:center; gap:6px;">
+              <i data-lucide="monitor" style="color:var(--green); width:14px; height:14px;"></i>
+              2. Demo del Cotizador CRM
+            </h5>
+            <span style="color:var(--text-muted);">Prueba de la maqueta funcional del cotizador web que consolida los valores comerciales y genera el borrador.</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border); padding:16px; border-radius:10px; font-size:12px; line-height:1.5;">
+            <h5 style="color:var(--text-main); font-weight:700; margin-bottom:6px; font-size:13px; display:flex; align-items:center; gap:6px;">
+              <i data-lucide="check-circle" style="color:var(--purple); width:14px; height:14px;"></i>
+              3. Validación de Atributos
+            </h5>
+            <span style="color:var(--text-muted);">Conformidad de que no falte ningún dato (RUT, contactos, ubicaciones, dimensiones de carga) en el flujo de entrada.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ FLOATING NOTES PANEL ════════════════ -->
+  <button class="notes-toggle" onclick="toggleNotesPanel()">
+    <i data-lucide="edit-3" style="width: 18px; height: 18px;"></i> Notas
+  </button>
+
+  <div class="notes-panel" id="notesPanel">
+    <div class="notes-header">
+      <h4><i data-lucide="book-open" style="width: 16px; height: 16px;"></i> Mis Notas - <span id="currentNoteTabName">Roles & Responsabilidades</span></h4>
+      <button class="notes-close" onclick="toggleNotesPanel()"><i data-lucide="x" style="width: 18px; height: 18px;"></i></button>
+    </div>
+    <div class="notes-body">
+      <textarea class="notes-textarea" id="notesTextarea" placeholder="Escribe aquí tus apuntes o dudas sobre esta pestaña. Se guardarán automáticamente en tu navegador..."></textarea>
+      <div class="notes-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <span>Guardado local persistente</span>
+        <button onclick="downloadAllNotes()" style="background: rgba(245, 166, 35, 0.1); border: 1px solid rgba(245, 166, 35, 0.3); color: var(--amber); font-size: 11px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+          <i data-lucide="download" style="width: 12px; height: 12px;"></i> Exportar Notas
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ════════════════ NOTAS LOCALES ════════════════
+  let currentActiveTabId = 'roles';
+
+  function toggleNotesPanel() {
+    const panel = document.getElementById('notesPanel');
+    panel.classList.toggle('open');
+    if(panel.classList.contains('open')) {
+      document.getElementById('notesTextarea').focus();
+    }
+  }
+
+  function loadNotesForTab(tabId) {
+    const notesTextarea = document.getElementById('notesTextarea');
+    if (!notesTextarea) return;
+    const savedNotes = localStorage.getItem('gsp_kickoff_notes_' + tabId) || '';
+    notesTextarea.value = savedNotes;
+  }
+
+  function saveNotesForTab() {
+    const notesTextarea = document.getElementById('notesTextarea');
+    if (!notesTextarea) return;
+    localStorage.setItem('gsp_kickoff_notes_' + currentActiveTabId, notesTextarea.value);
+  }
+
+  function downloadAllNotes() {
+    const tabs = ['roles', 'proceso', 'lbp', 'atributos_tarifas', 'administracion', 'tareas'];
+    const tabNames = {
+      'roles': 'Roles & Responsabilidades',
+      'proceso': 'Fases del Proceso',
+      'lbp': 'Avance LBP',
+      'atributos_tarifas': 'Puntos de Atención Inmediatos',
+      'administracion': 'Administración',
+      'tareas': 'Próximos Pasos'
+    };
+    
+    let fullNotes = "=== NOTAS DE REUNIÓN KICKOFF: GRÚAS SAN PABLO ===\n";
+    fullNotes += "Fecha de exportación: " + new Date().toLocaleString() + "\n\n";
+    
+    let hasNotes = false;
+    tabs.forEach(tabId => {
+      const noteContent = localStorage.getItem('gsp_kickoff_notes_' + tabId);
+      if (noteContent && noteContent.trim() !== '') {
+        hasNotes = true;
+        fullNotes += "--------------------------------------------------------\n";
+        fullNotes += "Pestaña: " + tabNames[tabId] + "\n";
+        fullNotes += "--------------------------------------------------------\n";
+        fullNotes += noteContent + "\n\n";
+      }
+    });
+    
+    if (!hasNotes) {
+      alert("No has escrito ninguna nota para exportar aún.");
+      return;
+    }
+
+    const blob = new Blob([fullNotes], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Notas_Reunion_GSP_' + new Date().toISOString().split('T')[0] + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const notesTextarea = document.getElementById('notesTextarea');
+    if (notesTextarea) {
+      notesTextarea.addEventListener('input', saveNotesForTab);
+    }
+    // Cargar notas iniciales
+    loadNotesForTab(currentActiveTabId);
+  });
+
+  // Tabs switcher logic
+  function switchTab(tabId) {
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(content => content.classList.remove('active'));
+    
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    
+    let tabName = tabId;
+    // Find button that has onclick attribute matching tabId
+    buttons.forEach(btn => {
+      if (btn.getAttribute('onclick').includes(tabId)) {
+        btn.classList.add('active');
+        tabName = btn.innerText;
+      }
+    });
+
+    currentActiveTabId = tabId;
+    const tabNameEl = document.getElementById('currentNoteTabName');
+    if (tabNameEl) tabNameEl.innerText = tabName;
+    loadNotesForTab(tabId);
+  }
+
+  // ════════════════ MATRIZ DE REQUERIMIENTOS Y ALCANCE INTERACTIVA ════════════════
+  const matrixData = [
+    {
+      id: "g-0",
+      name: "1. Fase: Preventa & Cotización (El Foco Principal)",
+      phases: [
+        {
+          id: "g-0-p0",
+          name: "Levantamiento, Tarifas y Estructura Comercial",
+          items: [
+            { 
+              id: "REQ-CRM-01", 
+              name: "Estructura de Datos del Cliente e Instalación", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "RUT Cliente, Razón Social, Contactos (Comercial, Operativo, Pago), Dirección de Obra, Coordenadas",
+              documents: "Ficha Empresa (Digital)",
+              challenge: "Formalizar campos obligatorios antes de poder cotizar."
+            },
+            { 
+              id: "REQ-CRM-02", 
+              name: "Estructura Base de Tarifas por Grúa", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Categoría de Grúa (Tonelaje), Tarifa Hora Base, Horas Mínimas Diarias, Valor Hora Extra",
+              documents: "Matriz Maestra de Tarifas GSP (Excel origen)",
+              challenge: "Cargar el catálogo completo de tarifas desde GSP al CRM sin omisiones."
+            },
+            { 
+              id: "REQ-CRM-03", 
+              name: "Estructura de Fletes y Traslados", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Origen/Destino, Tipo de Cama Baja, Tarifa Fija por tramo, Peajes, Escoltas requeridas",
+              documents: "Tarifario de Traslados (Nacional)",
+              challenge: "Definir si los escoltas se cobran por hora o tramo cerrado."
+            },
+            { 
+              id: "REQ-CRM-04", 
+              name: "Datos del Izaje y Cotización Final", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Peso de la Carga (Tons), Radio Máximo (mts), Altura, Accesorios (Eslingas, Grilletes), % Recargo Nocturno",
+              documents: "Cotización PDF, Plan de Rigging (Site Visit)",
+              challenge: "Generador dinámico de Cotización en formato PDF listo para la firma."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "g-1",
+      name: "2. Fase: Aprobación y Coordinación de Recursos",
+      phases: [
+        {
+          id: "g-1-p0",
+          name: "Asignación y Acreditación",
+          items: [
+            { 
+              id: "REQ-TCO-01", 
+              name: "Asignación de Activos y Personal", 
+              def: "ok", dev: "process", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "ID Cotización Aprobada, Patente de Grúa, RUT Operador, RUT Rigger, Fecha/Hora Inicio",
+              documents: "Calendario de Despacho",
+              challenge: "Cruzar la disponibilidad física de los equipos contra lo cotizado."
+            },
+            { 
+              id: "REQ-TCO-02", 
+              name: "Validación de Acreditaciones HSEC", 
+              def: "ok", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Vigencia Examen Altura, Licencia Clase D, Inducción de Faena Cliente",
+              documents: "Pases de Ingreso (PDF), Licencias (Imagen)",
+              challenge: "No permitir el despacho si los documentos están vencidos."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "g-2",
+      name: "3. Fase: Ejecución y Registro de Datos en Terreno",
+      phases: [
+        {
+          id: "g-2-p0",
+          name: "Operación Móvil",
+          items: [
+            { 
+              id: "REQ-OPS-01", 
+              name: "Datos Pre-Operacionales y Ruta", 
+              def: "ok", dev: "process", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Checklist (Frenos, Luces, Estabilizadores), Fotos Iniciales, Coordenadas GPS en Ruta",
+              documents: "Checklist de Patio (Digital)",
+              challenge: "Sincronización Offline si el patio no tiene señal."
+            },
+            { 
+              id: "REQ-OPS-02", 
+              name: "Registro de Horómetros de Trabajo", 
+              def: "ok", dev: "ok", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Horómetro Inicial (Llegada), Horómetro Final (Término), Firma FES del Cliente (PIN)",
+              documents: "Reporte de Faena / Guía de Servicio",
+              challenge: "Capturar el PIN del supervisor de obra obligatoriamente para cerrar."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "g-3",
+      name: "4. Fase: Valorización y EDP (Cierre del Ciclo)",
+      phases: [
+        {
+          id: "g-3-p0",
+          name: "Cálculo de Consumos y Estado de Pago",
+          items: [
+            { 
+              id: "REQ-VAL-01", 
+              name: "Ítems de Valorización Final (Horas Reales)", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Horas Cotizadas vs Horas Reales (Horómetro), Aplicación de Horas Mínimas",
+              documents: "Estado de Pago Preliminar",
+              challenge: "Automatizar el cobro del mínimo cuando el uso real fue menor a 8 hrs."
+            },
+            { 
+              id: "REQ-VAL-02", 
+              name: "Gestión de Datos Stand-by y Eventualidades", 
+              def: "process", dev: "pending", qa: "pending", deployed: "pending", mgmt: "pending",
+              attributes: "Velocidad de Viento Registrada, Horas Parada, Causante (Cliente vs Clima)",
+              documents: "Bitácora de Eventos Extraordinarios",
+              challenge: "Convertir la detención en tarifa cobrable según las reglas comerciales de la cotización."
+            }
+          ]
+        }
+      ]
+    }
+  ];
+
+  // Estado de expansión (inicialmente todo expandido)
+  const expandedGroups = { "g-0": true, "g-1": true, "g-2": true, "g-3": true };
+  const expandedPhases = {
+    "g-0-p0": true,
+    "g-1-p0": true,
+    "g-2-p0": true,
+    "g-3-p0": true
+  };
+
+  // Ayudantes para renderizar íconos y badges
+  function getPhaseBadgeHtml(status) {
+    if (status === "ok") {
+      return '<span class="phase-badge phase-badge-ok" title="Superado con éxito">✔️</span>';
+    } else if (status === "issue") {
+      return '<span class="phase-badge phase-badge-issue" title="Detenido con Issue">🔴</span>';
+    } else if (status === "process") {
+      return '<span class="phase-badge phase-badge-process" title="En desarrollo activo">🟡</span>';
+    } else {
+      return '<span class="phase-badge phase-badge-pending" title="Pendiente">-</span>';
+    }
+  }
+
+  function getMgmtBadgeHtml(status) {
+    if (status === "ok") {
+      return '<span class="mgmt-badge mgmt-badge-ok">🟢 OK</span>';
+    } else if (status === "issue") {
+      return '<span class="mgmt-badge mgmt-badge-issue">🔴 Con Issue</span>';
+    } else {
+      return '<span class="mgmt-badge mgmt-badge-pending">🟡 Pendiente</span>';
+    }
+  }
+
+  // Calcular el progreso de un requerimiento (fase técnica)
+  function calculateItemProgress(item) {
+    const weights = { ok: 25, process: 12.5, issue: 0, pending: 0 };
+    return weights[item.def] + weights[item.dev] + weights[item.qa] + weights[item.deployed];
+  }
+
+  // Inicializar y renderizar la matriz en el DOM
+  function initScopeMatrix() {
+    const tbody = document.getElementById("scope-matrix-body");
+    if (!tbody) return;
+
+    let html = "";
+    let totalItems = 0;
+    let totalProgressSum = 0;
+
+    matrixData.forEach(group => {
+      let groupItemsCount = 0;
+      let groupProgressSum = 0;
+
+      // Calcular progresos del grupo
+      group.phases.forEach(phase => {
+        phase.items.forEach(item => {
+          const prog = calculateItemProgress(item);
+          groupProgressSum += prog;
+          groupItemsCount++;
+          totalProgressSum += prog;
+          totalItems++;
+        });
+      });
+
+      const groupProgress = groupItemsCount > 0 ? Math.round(groupProgressSum / groupItemsCount) : 0;
+
+      // Fila Nivel 1 (Área Temática / Proceso)
+      html += `
+        <tr class="row-level-1 expanded" id="row-${group.id}" onclick="toggleGroup('${group.id}')">
+          <td colspan="5">
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            ${group.name}
+          </td>
+          <td style="text-align: center;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block;">
+              Avance: ${groupProgress}%
+            </div>
+          </td>
+        </tr>
+      `;
+
+      group.phases.forEach(phase => {
+        let phaseItemsCount = 0;
+        let phaseProgressSum = 0;
+
+        phase.items.forEach(item => {
+          phaseProgressSum += calculateItemProgress(item);
+          phaseItemsCount++;
+        });
+
+        const phaseProgress = phaseItemsCount > 0 ? Math.round(phaseProgressSum / phaseItemsCount) : 0;
+
+        // Fila Nivel 2 (Subagrupador / Fase de Proceso)
+        html += `
+          <tr class="row-level-2 expanded ${group.id}" id="row-${phase.id}" data-group="${group.id}" onclick="togglePhase('${phase.id}')">
+            <td colspan="5">
+              <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              ${phase.name}
+            </td>
+            <td style="text-align: center;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">
+                ${phaseProgress}%
+              </span>
+            </td>
+          </tr>
+        `;
+
+        // Filas Nivel 3 (Detalle del Punto)
+        phase.items.forEach(item => {
+          html += `
+            <tr class="row-level-3 ${group.id} ${phase.id}" data-group="${group.id}" data-phase="${phase.id}">
+              <td style="color: var(--text-main);">
+                <span class="mono" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-right: 6px;">[${item.id}]</span>
+                ${item.name}
+              </td>
+              <td style="text-align: center;">${getPhaseBadgeHtml(item.def)}</td>
+              <td style="text-align: center;">${getPhaseBadgeHtml(item.dev)}</td>
+              <td style="text-align: center;">${getPhaseBadgeHtml(item.qa)}</td>
+              <td style="text-align: center;">${getPhaseBadgeHtml(item.deployed)}</td>
+              <td style="text-align: center;">${getMgmtBadgeHtml(item.mgmt)}</td>
+            </tr>
+            <!-- Sub-fila de detalles técnicos (Atributos, Documentos, Desafíos) -->
+            <tr class="row-detail-sub ${group.id} ${phase.id}" data-group="${group.id}" data-phase="${phase.id}">
+              <td colspan="6">
+                <div class="detail-card">
+                  <div class="detail-card-item">
+                    <svg class="detail-icon detail-icon-attr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    <strong>📊 Atributos:</strong>
+                    <span>${item.attributes || '-'}</span>
+                  </div>
+                  <div class="detail-card-item">
+                    <svg class="detail-icon detail-icon-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <strong>📄 Documentos:</strong>
+                    <span>${item.documents || '-'}</span>
+                  </div>
+                  ${item.challenge ? `
+                  <div class="detail-card-item">
+                    <svg class="detail-icon detail-icon-chall" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <strong>⚠️ Desafío:</strong>
+                    <span style="color: #fca5a5;">${item.challenge}</span>
+                  </div>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    });
+
+    tbody.innerHTML = html;
+
+    // Actualizar progreso global en cabecera
+    const globalProgress = totalItems > 0 ? Math.round(totalProgressSum / totalItems) : 0;
+    const globalProgressDiv = document.getElementById("matrix-global-progress");
+    if (globalProgressDiv) {
+      globalProgressDiv.innerHTML = `Avance Global: ${globalProgress}%`;
+    }
+
+    // Inicializar visualización de chevrones y clases
+    updateMatrixVisibility();
+  }
+
+  // Toggle de nivel 1
+  window.toggleGroup = function(groupId) {
+    expandedGroups[groupId] = !expandedGroups[groupId];
+    const row = document.getElementById("row-" + groupId);
+    if (expandedGroups[groupId]) {
+      row.classList.add("expanded");
+    } else {
+      row.classList.remove("expanded");
+    }
+    updateMatrixVisibility();
+  };
+
+  // Toggle de nivel 2
+  window.togglePhase = function(phaseId) {
+    expandedPhases[phaseId] = !expandedPhases[phaseId];
+    const row = document.getElementById("row-" + phaseId);
+    if (expandedPhases[phaseId]) {
+      row.classList.add("expanded");
+    } else {
+      row.classList.remove("expanded");
+    }
+    updateMatrixVisibility();
+  };
+
+  // Sincronizar visibilidad de filas según estado
+  function updateMatrixVisibility() {
+    matrixData.forEach(group => {
+      const isGroupExpanded = expandedGroups[group.id];
+      const level2Rows = document.querySelectorAll(`.row-level-2[data-group="${group.id}"]`);
+      
+      level2Rows.forEach(row => {
+        if (isGroupExpanded) {
+          row.classList.remove("row-collapsed");
+        } else {
+          row.classList.add("row-collapsed");
+        }
+      });
+
+      group.phases.forEach(phase => {
+        const isPhaseExpanded = expandedPhases[phase.id];
+        const level3Rows = document.querySelectorAll(`.row-level-3[data-phase="${phase.id}"]`);
+        const detailRows = document.querySelectorAll(`.row-detail-sub[data-phase="${phase.id}"]`);
+
+        level3Rows.forEach(row => {
+          if (isGroupExpanded && isPhaseExpanded) {
+            row.classList.remove("row-collapsed");
+          } else {
+            row.classList.add("row-collapsed");
+          }
+        });
+
+        detailRows.forEach(row => {
+          if (isGroupExpanded && isPhaseExpanded) {
+            row.classList.remove("row-collapsed");
+          } else {
+            row.classList.add("row-collapsed");
+          }
+        });
+
+        // Asegurar que el chevrón de la fase tenga la rotación correcta
+        const phaseRow = document.getElementById("row-" + phase.id);
+        if (phaseRow) {
+          if (isPhaseExpanded) {
+            phaseRow.classList.add("expanded");
+          } else {
+            phaseRow.classList.remove("expanded");
+          }
+        }
+      });
+
+      // Asegurar que el chevrón del grupo tenga la rotación correcta
+      const groupRow = document.getElementById("row-" + group.id);
+      if (groupRow) {
+        if (isGroupExpanded) {
+          groupRow.classList.add("expanded");
+        } else {
+          groupRow.classList.remove("expanded");
+        }
+      }
+    });
+  }
+
+  // Inicializar la matriz interactiva
+  initScopeMatrix();
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+</body>
+</html>

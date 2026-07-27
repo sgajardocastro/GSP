@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    background: hsl(0 0% 100%);
+    overflow-y: auto !important;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    font-family: Inter, Arial, sans-serif;
+    letter-spacing: 0;
+    overflow-y: auto !important;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsl(0 0% 100% / 0.82);
+    backdrop-filter: blur(14px);
+  }
+
+  .glass-card {
+    background: hsl(0 0% 100% / 0.88);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 30px hsl(240 10% 3.9% / 0.08);
+  }
+
+  .dark .glass,
+  .dark .glass-card {
+    background: hsl(240 10% 3.9% / 0.76);
+    border-color: hsl(240 3.7% 15.9%);
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}

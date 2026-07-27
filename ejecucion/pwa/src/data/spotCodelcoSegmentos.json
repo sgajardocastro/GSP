@@ -1,0 +1,269 @@
+[
+  {
+    "segmentos": [
+      {
+        "posicion": 39,
+        "label": "FOR-OP-DN-002 CHECK LIST ESLINGA DE CADENAS",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotEslingaCadenasCodelco",
+            "label": "Checklist SPOT Eslinga de Cadenas",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 40,
+        "label": "FOR-OP-DN-003 ESLINGAS DE POLIESTER PLANA",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotEslingasPoliesterCodelco",
+            "label": "Checklist SPOT Eslingas de Poliester",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 41,
+        "label": "FOR-OP-DN-004 ESLINGAS TUBULARES",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotEslingasTubularesCodelco",
+            "label": "Checklist SPOT Eslingas Tubulares",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 42,
+        "label": "FOR-OP-DN-005 ESTROBOS DE ACERO",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotEstrobosAceroCodelco",
+            "label": "Checklist SPOT Estrobos de Acero",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 43,
+        "label": "FOR-OP-DN-006 GRILLETES",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotGrilletesCodelco",
+            "label": "Checklist SPOT Grilletes",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 44,
+        "label": "FOR-OP-DN-008 FAJAS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotFajasAmarreCodelco",
+            "label": "Checklist SPOT Fajas de Amarre",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 45,
+        "label": "FOR-OP-DN-009 ARNES DE SEGURIDAD",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotArnesSeguridadCodelco",
+            "label": "Checklist SPOT Arnes de Seguridad",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 46,
+        "label": "FOR-OP-DN-010 ESCALAS PORTATILES",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotEscalasPortatilesCodelco",
+            "label": "Checklist SPOT Escalas Portatiles",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 47,
+        "label": "FOR-OP-DN-011 CHEQUEO CANCAMOS",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotCancamosCodelco",
+            "label": "Checklist SPOT Cancamos",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 48,
+        "label": "FOR-OP-DN-014 CHECK LIST GRUA",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotGruaCodelco",
+            "label": "Checklist SPOT Grua",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 49,
+        "label": "FOR-OP-DN-015 CHECK LIST ACCESORIOS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotAccesoriosAmarreCodelco",
+            "label": "Checklist SPOT Accesorios de Amarre",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 50,
+        "label": "FOR-OP-DN-016 CHECK LIST MAN-LIFT - ALZAHOMBRE",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotAlzaHombreCodelco",
+            "label": "Checklist SPOT Man-Lift Alzahombre",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 51,
+        "label": "FOR-OP-DN-019 CHECK LIST DE COMUNICACION RADIAL",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListSpotComunicacionRadialCodelco",
+            "label": "Checklist SPOT Comunicacion Radial",
+            "nullable": false,
+            "datos": {
+              "trabajadorInspecciona": "",
+              "especialidad": "",
+              "firmaTrabajador": ""
+            },
+            "fechaInicio": "",
+            "fechaTermino": "",
+            "codificacionColores": null,
+            "body": []
+          }
+        ]
+      }
+    ]
+  }
+]

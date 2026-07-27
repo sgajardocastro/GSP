@@ -1,0 +1,41 @@
+const usuariosRouter = require('./usuarioRoutes.js');
+const surveyRouter = require('./surveyRoutes.js');
+const authsRouter = require('./authRoutes.js');
+const servicioRouter = require('./servicioRoutes.js');
+const archivoRouter = require('./archivoRoutes.js');
+const exportarRouter = require('./exportarRoutes.js');
+const signatureRouter = require('./signatureRoutes.js');
+const messageRouter = require('./messageRoutes.js');
+const notificacionesRouter = require('./notificacionesRoutes.js');
+const notfqueueRouter = require('./notfqueueRoutes.js');
+const personalizados = require('./personalizadosRoutes.js');
+const tareas = require('./tareasRoutes.js');
+const equipos = require('./equipoRoutes.js');
+const tequEquipoRouter = require('./tequEquipoRoutes.js');
+const tequDocumentacionRouter = require('./tequDocumentacionRoutes.js');
+const proyectos = require('./proyectoRoutes.js');
+const tfmgArchivoRouter = require('./tfmgArchivoRoutes.js');
+const sstRouter = require('./sstRoutes.js');
+
+function routerApi(app) {
+    app.use('/api/usuarios', usuariosRouter);
+    app.use('/api/survey', surveyRouter);
+    app.use('/api/auth', authsRouter);
+    app.use('/api/servicio', servicioRouter);
+    app.use('/api/archivo', archivoRouter);
+    app.use('/api/exportar', exportarRouter);
+    app.use('/api/signature', signatureRouter);
+    app.use('/api/message', messageRouter);
+    app.use('/api/notificaciones', notificacionesRouter);
+    app.use('/api/notfqueue', notfqueueRouter);
+    app.use('/api/personalizados', personalizados);
+    app.use('/api/tareas', tareas);
+    app.use('/api/equipos', equipos);
+    app.use('/api/tequ-equipos', tequEquipoRouter);
+    app.use('/api/tequ-documentacion', tequDocumentacionRouter);
+    app.use('/api/proyectos', proyectos);
+    app.use('/api/tfmg-archivos', tfmgArchivoRouter);
+    app.use('/api/sst', sstRouter);
+}
+
+module.exports = routerApi;

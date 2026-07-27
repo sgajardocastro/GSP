@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-96 EVALUACION TERRENO IZAJE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 79,
+      "attributes": [
+        {
+          "type": "checkListTransmacEvaluacionTerrenoIzaje",
+          "label": "Evaluacion terreno izaje",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

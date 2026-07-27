@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-11 CHECK LIST ESLINGAS DE AMARRE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 77,
+      "attributes": [
+        {
+          "type": "checkListTransmacSpaEslingasAmarre",
+          "label": "Eslingas de amarre SPA",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

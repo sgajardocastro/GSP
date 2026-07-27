@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-10 CHECK LIST CADENAS DE AMARRE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 76,
+      "attributes": [
+        {
+          "type": "checkListTransmacSpaCadenasAmarre",
+          "label": "Cadenas de amarre SPA",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

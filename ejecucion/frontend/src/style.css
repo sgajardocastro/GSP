@@ -1,0 +1,471 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 96.9%;     /* #F5F7FA */
+    --foreground: 215 19% 16.9%;     /* #1F2937 */
+    --card: 0 0% 100%;               /* #FFFFFF */
+    --card-foreground: 215 19% 16.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 19% 16.9%;
+    --primary: 216 100% 29.4%;       /* #003B96 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 206 100% 38%;       /* #006FC2 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 196 100% 45.9%;        /* #00A9E8 */
+    --accent-foreground: 215 19% 16.9%;
+    --destructive: 0 84.3% 60.2%;    /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 208 45% 90.2%;         /* #D9E6F2 */
+    --input: 208 45% 90.2%;
+    --ring: 216 100% 29.4%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Glassmorphism utilities */
+.glass {
+  @apply bg-background/60 backdrop-blur-md border border-white/10;
+}
+
+.glass-card {
+  @apply bg-card/40 backdrop-blur-lg border border-white/5 shadow-xl;
+}
+
+/* Global Print Styles */
+@media print {
+  /* 1. Hide interactive layouts and components completely */
+  nav, aside, header, footer, .no-print, [class*="Sidebar"], [class*="sidebar"] {
+    display: none !important;
+  }
+  
+  /* 2. Reset height & scroll constraints to prevent clipping/incomplete pages */
+  html, body, #app {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Target App.vue main wrapper elements to free them from flex/height constraints */
+  #app > div, 
+  main, 
+  main.flex-1, 
+  .overflow-y-auto {
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    position: static !important;
+    display: block !important;
+  }
+
+  /* 3. Force proper report styling */
+  .print-only {
+    display: block !important;
+    background: white !important;
+    color: black !important;
+    width: 100% !important;
+  }
+
+  /* 4. Page break controls */
+  .break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* 5. Custom margins */
+  @page {
+    margin: 12mm 10mm 12mm 10mm;
+  }
+}
+
+/* ==========================================================================
+   ANULACIONES CONDICIONALES PARA TEMA CLARO CORPORATIVO (CUANDO NO HAY .dark)
+   ========================================================================== */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Fondos oscuros de contenedores a fondos claros */
+html:not(.dark) .bg-\[\#0a0a0a\],
+html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#0c0c0e\],
+html:not(.dark) .bg-\[\#0c0c0e\]\/90,
+html:not(.dark) .bg-\[\#0c0c0e\]\/95,
+html:not(.dark) .bg-\[\#0a0a0a\]\/50,
+html:not(.dark) .bg-black\/60,
+html:not(.dark) .bg-black\/40,
+html:not(.dark) .bg-emerald-950\/10,
+html:not(.dark) .bg-\[\#14261d\],
+html:not(.dark) .bg-black\/20 {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Tarjetas y paneles oscuros a blanco */
+html:not(.dark) .bg-\[\#111113\],
+html:not(.dark) .bg-\[\#131316\],
+html:not(.dark) .bg-\[\#141414\],
+html:not(.dark) .bg-\[\#141414\]\/95,
+html:not(.dark) .bg-\[\#1a1a1a\],
+html:not(.dark) .bg-\[\#0f0f0f\]\/50,
+html:not(.dark) .bg-\[\#0d0d0d\],
+html:not(.dark) .bg-\[\#16191f\],
+html:not(.dark) .bg-\[\#16191f\]\/80,
+html:not(.dark) .bg-\[\#16191f\]\/60,
+html:not(.dark) .bg-\[\#16191f\]\/40,
+html:not(.dark) .bg-\[\#1a1e26\]\/50,
+html:not(.dark) .bg-\[\#151518\],
+html:not(.dark) .bg-\[\#1a1d24\],
+html:not(.dark) .bg-\[\#1a1e26\],
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-950,
+html:not(.dark) .bg-muted\/50 {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* Opacidades sutiles de fondo y efectos hover en tema claro corporativo */
+html:not(.dark) .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+html:not(.dark) .hover\:bg-white\/5:hover,
+html:not(.dark) .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Bordes oscuros a bordes claros visibles */
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/40,
+html:not(.dark) .border-border\/40,
+html:not(.dark) .border-border\/50,
+html:not(.dark) .border-border\/60,
+html:not(.dark) .border-border {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Textos claros a textos oscuros legibles */
+html:not(.dark) .text-white,
+html:not(.dark) .text-zinc-200,
+html:not(.dark) .text-zinc-300,
+html:not(.dark) .text-zinc-400,
+html:not(.dark) .text-zinc-500,
+html:not(.dark) .text-slate-200,
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-white\/40,
+html:not(.dark) .text-white\/60,
+html:not(.dark) .text-white\/70,
+html:not(.dark) .text-muted-foreground,
+html:not(.dark) .group-hover\:text-white:hover,
+html:not(.dark) .hover\:text-white:hover {
+  color: hsl(var(--foreground)) !important;
+}
+
+html:not(.dark) .text-white\/40,
+html:not(.dark) .text-zinc-500,
+html:not(.dark) .text-slate-500 {
+  opacity: 0.65;
+}
+
+/* Botones e iconos Emerald a Corporate Blue (excepto estados success) */
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-emerald-400,
+html:not(.dark) .text-emerald-500\/70,
+html:not(.dark) .text-emerald-400\/70 {
+  color: hsl(var(--secondary)) !important;
+}
+
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-emerald-500 {
+  background-color: hsl(var(--secondary)) !important;
+  color: white !important;
+}
+
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-950\/10 {
+  background-color: hsla(var(--primary) / 0.1) !important;
+}
+
+html:not(.dark) .border-emerald-500\/10,
+html:not(.dark) .border-emerald-500\/40 {
+  border-color: hsla(var(--primary) / 0.3) !important;
+}
+
+html:not(.dark) .text-emerald-400.font-black,
+html:not(.dark) .text-emerald-500.font-black {
+  color: hsl(var(--primary)) !important;
+}
+
+/* ==========================================================================
+   ESTANDAR DE ESTADOS CORPORATIVOS SÓLIDOS (VERDE, AMARILLO, ROJO)
+   ========================================================================== */
+.state-ok {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+.state-warning {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+.state-critical {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+.state-info {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+.state-purple {
+  background-color: #a855f7 !important;
+  color: #ffffff !important;
+  border-color: #a855f7 !important;
+}
+.state-neutral {
+  background-color: #71717a !important;
+  color: #ffffff !important;
+  border-color: #71717a !important;
+}
+
+.text-state-ok {
+  color: #10b981 !important;
+}
+.text-state-warning {
+  color: #f59e0b !important;
+}
+.text-state-critical {
+  color: #ef4444 !important;
+}
+
+.dot-state-ok {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 8px rgba(16,185,129,0.5) !important;
+}
+.dot-state-warning {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245,158,11,0.5) !important;
+}
+.dot-state-critical {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239,68,68,0.5) !important;
+}
+
+/* ==========================================================================
+   ANULACIONES DE ESTADOS TRANSPARENTES A SÓLIDOS EN TEMA CORPORATIVO CLARO
+   ========================================================================== */
+html:not(.dark) .bg-emerald-50,
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-500\/5,
+html:not(.dark) .bg-emerald-600\/10,
+html:not(.dark) .bg-emerald-600\/20,
+html:not(.dark) .bg-emerald-500\/20,
+html:not(.dark) .border-emerald-500\/30,
+html:not(.dark) .border-emerald-500\/40,
+html:not(.dark) .border-emerald-500\/20 {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+html:not(.dark) .bg-emerald-50 *,
+html:not(.dark) .bg-emerald-500\/10 *,
+html:not(.dark) .bg-emerald-500\/5 *,
+html:not(.dark) .bg-emerald-600\/10 *,
+html:not(.dark) .bg-emerald-600\/20 *,
+html:not(.dark) .bg-emerald-500\/20 * {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .bg-amber-50,
+html:not(.dark) .bg-amber-500\/10,
+html:not(.dark) .bg-amber-500\/5,
+html:not(.dark) .bg-amber-600\/10,
+html:not(.dark) .bg-amber-600\/20,
+html:not(.dark) .bg-amber-500\/20,
+html:not(.dark) .bg-orange-50,
+html:not(.dark) .bg-orange-500\/10,
+html:not(.dark) .bg-orange-500\/5,
+html:not(.dark) .border-amber-500\/30,
+html:not(.dark) .border-amber-500\/40,
+html:not(.dark) .border-amber-500\/20 {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+html:not(.dark) .bg-amber-50 *,
+html:not(.dark) .bg-amber-500\/10 *,
+html:not(.dark) .bg-amber-500\/5 *,
+html:not(.dark) .bg-amber-600\/10 *,
+html:not(.dark) .bg-amber-600\/20 *,
+html:not(.dark) .bg-amber-500\/20 *,
+html:not(.dark) .bg-orange-50 *,
+html:not(.dark) .bg-orange-500\/10 *,
+html:not(.dark) .bg-orange-500\/5 * {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .bg-red-50,
+html:not(.dark) .bg-red-500\/10,
+html:not(.dark) .bg-red-500\/5,
+html:not(.dark) .bg-red-600\/10,
+html:not(.dark) .bg-red-600\/20,
+html:not(.dark) .bg-red-500\/20,
+html:not(.dark) .border-red-500\/30,
+html:not(.dark) .border-red-500\/40,
+html:not(.dark) .border-red-500\/20 {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+html:not(.dark) .bg-red-50 *,
+html:not(.dark) .bg-red-500\/10 *,
+html:not(.dark) .bg-red-500\/5 *,
+html:not(.dark) .bg-red-600\/10 *,
+html:not(.dark) .bg-red-600\/20 *,
+html:not(.dark) .bg-red-500\/20 * {
+  color: #ffffff !important;
+}
+
+/* Evitar redirecciones a azul y textos lavados en el tema corporativo claro */
+html:not(.dark) .text-emerald-400,
+html:not(.dark) .text-emerald-500 {
+  color: #10b981 !important;
+}
+html:not(.dark) .text-amber-400,
+html:not(.dark) .text-amber-500,
+html:not(.dark) .text-yellow-400,
+html:not(.dark) .text-yellow-500 {
+  color: #f59e0b !important;
+}
+html:not(.dark) .text-red-400,
+html:not(.dark) .text-red-500,
+html:not(.dark) .text-rose-400,
+html:not(.dark) .text-rose-500 {
+  color: #ef4444 !important;
+}
+html:not(.dark) .text-cyan-400,
+html:not(.dark) .text-cyan-500 {
+  color: hsl(var(--secondary)) !important;
+}
+html:not(.dark) .bg-cyan-500\/20,
+html:not(.dark) .bg-cyan-900\/40,
+html:not(.dark) .bg-cyan-900\/50 {
+  background-color: hsla(var(--secondary) / 0.1) !important;
+}
+html:not(.dark) .border-cyan-500\/40,
+html:not(.dark) .border-cyan-500\/30,
+html:not(.dark) .border-cyan-800\/30 {
+  border-color: hsla(var(--secondary) / 0.3) !important;
+}
+html:not(.dark) .text-blue-400,
+html:not(.dark) .text-blue-500 {
+  color: hsl(var(--primary)) !important;
+}
+html:not(.dark) .bg-blue-500\/10 {
+  background-color: hsla(var(--primary) / 0.1) !important;
+}
+html:not(.dark) .border-blue-500\/20 {
+  border-color: hsla(var(--primary) / 0.2) !important;
+}
+
+/* Mapeo de contraste para clases de utilidad de texto blanco bajo tema claro */
+html:not(.dark) .text-white\/90,
+html:not(.dark) .text-white\/80 {
+  color: hsl(var(--foreground)) !important;
+}
+html:not(.dark) .text-white\/70,
+html:not(.dark) .text-white\/60,
+html:not(.dark) .text-white\/50 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+html:not(.dark) .text-white\/40,
+html:not(.dark) .text-white\/30,
+html:not(.dark) .text-white\/20,
+html:not(.dark) .text-white\/10 {
+  color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   ANULACIONES DE ESTILOS DE FORMULARIO PARA TEMA CORPORATIVO CLARO
+   ========================================================================== */
+html:not(.dark) select,
+html:not(.dark) input,
+html:not(.dark) textarea {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+html:not(.dark) select:not(.text-emerald-400):not(.text-emerald-500):not(.text-red-400):not(.text-red-500):not(.text-amber-400):not(.text-amber-500):not(.text-rose-400):not(.text-rose-500):not(.text-yellow-400):not(.text-yellow-500):not(.text-cyan-400):not(.text-cyan-500),
+html:not(.dark) input:not(.text-emerald-400):not(.text-emerald-500):not(.text-red-400):not(.text-red-500):not(.text-amber-400):not(.text-amber-500):not(.text-rose-400):not(.text-rose-500):not(.text-yellow-400):not(.text-yellow-500):not(.text-cyan-400):not(.text-cyan-500),
+html:not(.dark) textarea:not(.text-emerald-400):not(.text-emerald-500):not(.text-red-400):not(.text-red-500):not(.text-amber-400):not(.text-amber-500):not(.text-rose-400):not(.text-rose-500):not(.text-yellow-400):not(.text-yellow-500):not(.text-cyan-400):not(.text-cyan-500) {
+  color: hsl(var(--foreground)) !important;
+}
+
+html:not(.dark) option {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+html:not(.dark) .form-field {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+html:not(.dark) .form-select option {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+html:not(.dark) .field-icon {
+  color: hsl(var(--foreground)) !important;
+  opacity: 0.6;
+}
+
+
+

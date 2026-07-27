@@ -1,0 +1,927 @@
+{
+  "segmentos": [
+    {
+      "label": "2. DATOS GENERALES DEL SERVICIO",
+      "attributes": [
+        {
+          "type": "textField",
+          "label": "NOMBRE DE LA OBRA",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "DIRECCION DE LA OBRA",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "REFERENCIA DE LA DIRECCION",
+          "nullable": true,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "geoLocation",
+          "label": "GEOLOCALIZACION OBRA",
+          "nullable": true,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "VISITADO POR (NOMBRE VENDEDOR)",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "VISITADO POR (NOMBRE OPERADOR)",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "CONTACTO EN TERRENO",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "N° TELEFONO (CONTACTO EN TERRENO)",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "CORREO ELECTRONICO CONTACTO EN TERRENO",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "3. DATOS ESPECIFICOS DEL SERVICIO",
+      "attributes": [
+        {
+          "type": "textField",
+          "label": "EQUIPO A DEFINIR",
+          "nullable": false
+        },
+        {
+          "type": "photoCheck",
+          "label": "EL SERVICIO REQUIERE DE UN RIGGER",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        }
+      ]
+    },
+    {
+      "label": "4. DATOS TECNICOS DE LA RUTA",
+      "attributes": [
+        {
+          "type": "textField",
+          "label": "RUTA VISITA A TERRENO (DESDE)",
+          "nullable": false
+        },
+        {
+          "type": "textField",
+          "label": "RUTA VISITA A TERRENO (HASTA)",
+          "nullable": false
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTENCIA DE ROMANAS EN EL TRAYECTO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "CUESTAS PRONUNCIADAS",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "ASFALTO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "number",
+          "label": "CANTIDAD KILOMETROS (ASFALTO)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "RIPIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "number",
+          "label": "CANTIDAD KILOMETROS (RIPIO)",
+          "nullable": true
+        },
+        {
+          "type": "labelLine",
+          "text": "INDICAR SI EN EL TRAYECTO HACIA LA OBRA Y DENTRO DE LA OBRA MISMA EXISTEN PUENTES DE MADERA A CONSIDERAR:"
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTEN PUENTES DE MADERA",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "number",
+          "label": "CANTIDAD DE PUENTES DE MADERA",
+          "nullable": true
+        },
+        {
+          "type": "textField",
+          "label": "DIMENSIONES",
+          "nullable": true
+        },
+        {
+          "type": "textField",
+          "label": "MATERIAL DE VIGAS",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTENCIA DE RAMAS DE ARBOLES Y/O ARBOLES EN LA RUTA",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "ALTURA/MEDIDAS (ARBOLES)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTENCIA DE CABLES DE TENDIDO ELECTRICO BAJO EN LA RUTA",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "CAMINO FORESTAL",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "LA OBRA ESTA UBICADA EN LA MACROZONA SUR",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "ZONA ROJA",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "SUPERFICIE DE ACCESO AL SERVICIO SE ENCUENTRA EN BUENAS CONDICIONES",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "SE RECOMIENDA UN MEJORAMIENTO O REFUERZO PARA LOS ACCESOS AL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCapture",
+          "label": "FOTOGRAFIAS CLARAS DE LOS ACCESOS, PUENTES DE MADERA (VIGAS), SI APLICA",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "label": "5. DATOS TECNICOS DEL ESPACIO DE TRABAJO",
+      "attributes": [
+        {
+          "type": "photoCheck",
+          "label": "ESPACIO DE TRABAJO PARA EL SERVICIO CUENTA CON EL ESPACIO SUFICIENTE PARA REALIZAR EL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "CONDICIONES DEL TERRENO SON FAVORABLES PARA EJECUTAR EL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "comboBox",
+          "nullable": false,
+          "values": {
+            "quest": "DETALLAR QUE TIPO DE SUELO SE POSICIONARA EL EQUIPO",
+            "selected": null,
+            "options": [
+              {
+                "value": "NATURAL",
+                "label": "NATURAL"
+              },
+              {
+                "value": "ASFALTO",
+                "label": "ASFALTO"
+              },
+              {
+                "value": "HORMIGON",
+                "label": "HORMIGON"
+              },
+              {
+                "value": "BASE ESTABILIZADORA COMPACTADA",
+                "label": "BASE ESTABILIZADORA COMPACTADA"
+              },
+              {
+                "value": "OTRO",
+                "label": "OTRO"
+              }
+            ]
+          }
+        },
+        {
+          "type": "textField",
+          "label": "OTRO TIPO DE SUELO (ESPECIFICAR)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTENCIA DE TUBERIAS SUBTERRANEAS EN ZONA PARA ARMAR EQUIPO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "BASES ESTABILIZADORAS ESTANDAR SON LAS ADECUADAS PARA EL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTE TENDIDO ELECTRICO EN EL RADIO DEL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "SE CUENTA CON LA ILUMINACION SUFICIENTE EN EL AREA DE TRABAJO/TRANSITO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "ZONA DE TRABAJO EXISTEN ARBOLES/VEGETACION O ELEMENTOS QUE DIFICULTEN EL SERVICIO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "EXISTEN ELEMENTOS QUE DIFICULTEN LA VISIBILIDAD DE LA MANIOBRA A EJECUTAR EN LA ZONA DE TRABAJO",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCheck",
+          "label": "ES CONDICIONANTE EL CLIMA SEGÚN EL SERVICIO A REALIZAR",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "photoCapture",
+          "label": "REGISTRO FOTOGRAFICO ESPACIO DE TRABAJO",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "label": "6. DATOS TECNICOS DE IZAJE",
+      "attributes": [
+        {
+          "type": "textField",
+          "label": "TIPO DE CARGA",
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "PESO DE LA CARGA",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "textField",
+          "label": "VOLUMEN DE CARGA",
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "RADIO MINIMO DE TRABAJO",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "RADIO MAXIMO DE TRABAJO",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "ALTURA DE TRABAJO",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "photoCheck",
+          "label": "CARGA CUENTA CON TOMAS DE IZAJE",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "comboBox",
+          "nullable": true,
+          "values": {
+            "quest": "ESTADO DE TOMAS DE IZAJE",
+            "selected": null,
+            "options": [
+              {
+                "value": "BUENO",
+                "label": "BUENO"
+              },
+              {
+                "value": "REGULAR",
+                "label": "REGULAR"
+              },
+              {
+                "value": "MALO",
+                "label": "MALO"
+              }
+            ]
+          }
+        },
+        {
+          "type": "textField",
+          "label": "FORMA EN LA QUE SE TOMARA LA CARGA",
+          "nullable": false
+        },
+        {
+          "type": "textField",
+          "label": "PUNTOS DE AMARRE",
+          "nullable": false
+        },
+        {
+          "type": "textField",
+          "label": "TIPO DE MANIOBRA DE IZAJE A REALIZAR",
+          "nullable": false
+        },
+        {
+          "type": "photoCheck",
+          "label": "MANIOBRA A REALIZAR ES MANIOBRA TANDEM",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "decimal",
+          "label": "RADIOS MINIMOS DE CADA GRUA",
+          "cantiDec": 2,
+          "nullable": true
+        },
+        {
+          "type": "decimal",
+          "label": "RADIOS MAXIMOS DE CADA GRUA",
+          "cantiDec": 2,
+          "nullable": true
+        },
+        {
+          "type": "photoCapture",
+          "label": "REGISTRO FOTOGRAFICO IZAJE",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "label": "7. CROQUIS ADICIONAL",
+      "attributes": [
+        {
+          "type": "labelLine",
+          "text": "DIMENSIONES DE LA CARGA"
+        },
+        {
+          "type": "decimal",
+          "label": "ALTO (CARGA)",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "ANCHO (CARGA)",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "LARGO (CARGA)",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "labelLine",
+          "text": "RADIO DE TRABAJO"
+        },
+        {
+          "type": "decimal",
+          "label": "RADIO DE TRABAJO",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "decimal",
+          "label": "LARGO Y ALTO",
+          "cantiDec": 2,
+          "nullable": false
+        },
+        {
+          "type": "photoCapture",
+          "label": "FOTOGRAFIAS DE LA CARGA",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "label": "8. DATOS DE IMPLEMENTOS PARA EL SERVICIO",
+      "attributes": [
+        {
+          "type": "photoCheck",
+          "label": "ESTROBOS",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "CAPACIDAD/LARGO/CANTIDAD (ESTROBOS)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "PULPO CADENA",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "CAPACIDAD/CANT. RAMALES/LARGO (PULPO CADENA)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "ESLINGAS",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "CAPACIDAD/LARGO/CANTIDAD (ESLINGAS)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "GRILLETES",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "CAPACIDAD/CANTIDAD (GRILLETES)",
+          "nullable": true
+        },
+        {
+          "type": "photoCheck",
+          "label": "ACCESORIOS",
+          "default": "",
+          "options": [
+            {
+              "id": "SI",
+              "label": "SI"
+            },
+            {
+              "id": "NO",
+              "label": "NO"
+            }
+          ],
+          "nullable": false,
+          "galeria": [],
+          "obs": ""
+        },
+        {
+          "type": "textField",
+          "label": "TIPO DE ACCESORIO",
+          "nullable": true
+        },
+        {
+          "type": "photoCapture",
+          "label": "REGISTRO FOTOGRAFICO IMPLEMENTOS",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    },
+    {
+      "label": "9. RECOMENDACIÓN Y PACTOS CON EL CLIENTE",
+      "attributes": [
+        {
+          "type": "textArea",
+          "label": "RECOMENDACIÓN Y PACTOS",
+          "nullable": true
+        },
+        {
+          "type": "photoCapture",
+          "label": "FOTOGRAFIAS DE MEJORAS A REALIZAR",
+          "compression": 50,
+          "maxFotos": 3,
+          "obs": "",
+          "galeria": [],
+          "nullable": true
+        }
+      ]
+    }
+  ]
+}

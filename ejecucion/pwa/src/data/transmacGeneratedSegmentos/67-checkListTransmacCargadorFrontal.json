@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-90 CARGADOR FRONTAL",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 67,
+      "attributes": [
+        {
+          "type": "checkListTransmacCargadorFrontal",
+          "label": "Cargador frontal",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

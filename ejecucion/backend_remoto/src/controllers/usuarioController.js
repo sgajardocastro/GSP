@@ -1,0 +1,295 @@
+const usuarioModel = require("../models/usuarioModel");
+const usuario = new usuarioModel();
+
+module.exports = {
+  getUsuarios: async (req, res) => {
+    try {
+      const result = await usuario.getUsuarios(); // Llamada con async/await
+      res.status(200).json({ data: result });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+  getUsuarioById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const usuarioEncontrado = await usuario.getUsuarioById(id); // Llamada sin callback
+
+      if (!usuarioEncontrado) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      res.status(200).json({ data: usuarioEncontrado });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+  postUsuario: async (req, res) => {
+    try {
+      const {
+        username,
+        password,
+        is_deleted,
+        empresa_id,
+        nombre,
+        correo,
+        edad,
+        altura,
+        peso,
+      } = req.body;
+
+      // 1️⃣ Insertar primero en la tabla "auth" para obtener el auth_id
+      const auth_id = await usuario.postAuth(username, password, is_deleted);
+
+      // 2️⃣ Insertar en la tabla "usuarios" con el auth_id obtenido
+      const usuarioId = await usuario.postUsuario(
+        auth_id,
+        empresa_id,
+        nombre,
+        correo,
+        edad,
+        altura,
+        peso,
+        is_deleted
+      );
+
+      res
+        .status(201)
+        .json({ message: "Usuario creado correctamente", usuarioId });
+    } catch (err) {
+      console.error("Error en postUsuario:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+  updateUsuario: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { empresa_id, nombre, correo, edad, altura, peso, is_deleted } =
+        req.body;
+
+      // 1️⃣ Buscar usuario actual
+      const usuarioActual = await usuario.getUsuarioById(id);
+      if (!usuarioActual || usuarioActual.length === 0) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // 2️⃣ Asignar valores nuevos o mantener los existentes
+      const nuevoUsuario = {
+        empresa_id: empresa_id ?? usuarioActual.empresa_id,
+        nombre: nombre ?? usuarioActual.nombre,
+        correo: correo ?? usuarioActual.correo,
+        edad: edad ?? usuarioActual.edad,
+        altura: altura ?? usuarioActual.altura,
+        peso: peso ?? usuarioActual.peso,
+        is_deleted: is_deleted ?? usuarioActual.is_deleted,
+      };
+
+      // 3️⃣ Actualizar usuario
+      const updatedId = await usuario.putUsuario(
+        id,
+        nuevoUsuario.empresa_id,
+        nuevoUsuario.nombre,
+        nuevoUsuario.correo,
+        nuevoUsuario.edad,
+        nuevoUsuario.altura,
+        nuevoUsuario.peso,
+        nuevoUsuario.is_deleted
+      );
+
+      res
+        .status(200)
+        .json({ message: "Usuario actualizado correctamente", id: updatedId });
+    } catch (err) {
+      console.error("Error en updateUsuario:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+  
+  postInicioEnrolamiento: async (req, res) => {
+    try {
+      const { rut, nombre, correo, roles, id_empresa } = req.body;
+
+      // 1) Validaciones básicas
+      if (!rut || !nombre || !correo) {
+        return res.status(400).json({ message: "Faltan campos requeridos: rut, nombre o correo." });
+      }
+      if (!Array.isArray(roles) || roles.length === 0) {
+        return res.status(400).json({ message: "Debes enviar al menos un rol en un array 'roles'." });
+      }
+
+      // 2) Llamada al servicio, ahora con roles
+      const resultado = await usuario.iniciarEnrolamiento(rut, nombre, correo, roles, id_empresa);
+
+      return res.status(201).json({
+        message: "Enrolamiento iniciado correctamente",
+        data: resultado,
+      });
+    } catch (err) {
+      console.error("Error en postInicioEnrolamiento:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  ,
+  putEnrolamiento: async (req, res) => {
+    try {
+      const {
+        id_user,
+        rut,
+        correo,
+        name_frst,
+        name_sec,
+        apellido_pat,
+        apellido_mat,
+        email_alternativo,
+        movil,
+        pass_hash_fes,
+      } = req.body;
+
+      if (!id_user) {
+        return res.status(400).json({ message: "Faltan campos requeridos" });
+      }
+
+      const resultado = await usuario.enrolamiento(
+        id_user,
+        name_frst,
+        name_sec,
+        apellido_pat,
+        apellido_mat,
+        email_alternativo,
+        movil,
+        pass_hash_fes
+      );
+
+      res.status(200).json({
+        message: "Enrolamiento terminado correctamente",
+        data: resultado,
+      });
+    } catch (err) {
+      console.error("Error en putEnrolamiento:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+  putCambiarPassFes: async (req, res) => {
+    try {
+      const { id_user, pass_fes } = req.body;
+
+      if (!id_user || !pass_fes) {
+        return res
+          .status(400)
+          .json({ message: "Faltan campos requeridos (id_user y pass_fes)" });
+      }
+
+      // OJO: pass_fes ya viene hasheada desde el front (hashSHA256)
+      const resultado = await usuario.UpdPassFes(id_user, pass_fes);
+
+      return res.status(200).json({
+        message: "Clave FES actualizada correctamente",
+        data: resultado,
+      });
+    } catch (err) {
+      console.error("Error en putCambiarPassFes:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  },
+  getEquiposUsuario: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = await usuario.getEquiposUsuario(id);
+      res.json({ data });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+  postUpdUsuario: async (req, res) => {
+    try {
+      const {
+        id_user,
+        email,
+        rut,
+        name_frst,
+        name_sec,
+        apellido_pat,
+        apellido_mat,
+        movil,
+        activo,
+        json_data,
+        id_empresa,
+        roles,     // array de id_rol
+        teams      // array de id_equipo_proyecto
+      } = req.body;
+
+      if (!id_user) {
+        return res.status(400).json({ message: "Falta el campo requerido: id_user" });
+      }
+
+      if (!Array.isArray(roles)) {
+        return res
+          .status(400)
+          .json({ message: "El campo 'roles' debe ser un array (puede ser vacío)." });
+      }
+
+      // 1) Datos del usuario
+      await usuario.updUsuarioDatos({
+        id_user,
+        email,
+        rut,
+        name_frst,
+        name_sec,
+        apellido_pat,
+        apellido_mat,
+        movil,
+        activo,
+        json_data,
+        id_empresa
+      });
+
+      // 2) Roles del usuario
+      await usuario.updUsuarioRoles(id_user, roles);
+
+      // 3) Equipos del usuario (Pertenencia a Proyectos)
+      if (Array.isArray(teams)) {
+        await usuario.updUsuarioEquipos(id_user, teams, req.body.id_usuario_modificacion);
+      }
+
+      return res.status(200).json({
+        message: "Usuario, roles y equipos actualizados correctamente",
+        data: { id_user, roles, teams }
+      });
+    } catch (err) {
+      console.error("Error en postUpdUsuario:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  },
+  getMailRut: async (req, res) => {
+    try {
+      const { rut } = req.params
+
+      if (!rut || !rut.trim()) {
+        return res.status(400).json({ error: 'rut es requerido' })
+      }
+
+      const resultado = await usuario.getMailRut(rut)
+
+      if (!resultado) {
+        return res.status(404).json({ error: 'No existe correo asociado al RUT' })
+      }
+
+      return res.status(200).json({
+        email: resultado.email
+      })
+    } catch (err) {
+      console.error("Error en getMailRut:", err)
+      return res.status(500).json({ error: 'Error interno' })
+    }
+  },
+  getUsuarioByRut: async (req, res) => {
+    try {
+      const { rut } = req.params;
+      const data = await usuario.getUserByRut(rut);
+      if (!data) return res.status(404).json({ error: "Usuario no encontrado" });
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+};

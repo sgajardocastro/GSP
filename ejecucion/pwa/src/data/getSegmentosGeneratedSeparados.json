@@ -1,0 +1,869 @@
+[
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-002 CHECK LIST ARNES Y RESPIRADOR",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 2,
+        "attributes": [
+          {
+            "type": "checkListArnesRespirador",
+            "label": "Arnes y Respirador",
+            "nullable": false,
+            "fechaInicio": "",
+            "fechasPorDia": {},
+            "equipo": {
+              "marcaModelo": "",
+              "codigoArnes": "",
+              "codigoColas": "",
+              "codigoAbsImpac": "",
+              "codigoRetractil": ""
+            },
+            "arnes": {
+              "groups": []
+            },
+            "respirador": {
+              "items": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-004 CHECK LIST EXTINTOR",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 3,
+        "attributes": [
+          {
+            "type": "checkListExtintorCdch",
+            "label": "Extintor",
+            "nullable": false,
+            "identificacion": {
+              "lugar": "",
+              "fechaInspeccion": "",
+              "fechaTermino": "",
+              "colorMes": ""
+            },
+            "descripcionEquipo": {
+              "numeroInterno": "",
+              "capacidadKg": ""
+            },
+            "componentes": [],
+            "observaciones": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-005 CHECK LIST GRILLETE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 4,
+        "attributes": [
+          {
+            "type": "checkListGrilleteCdch",
+            "label": "Grillete",
+            "nullable": false,
+            "identificacion": {
+              "lugar": "",
+              "fechaInspeccion": "",
+              "fechaTermino": "",
+              "colorMes": ""
+            },
+            "descripcionEquipo": {
+              "medida": "",
+              "codificacion": ""
+            },
+            "componentes": [],
+            "observaciones": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-006 CHECK LIST RETRACTIL",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 5,
+        "attributes": [
+          {
+            "type": "checkListRetractilCdch",
+            "label": "Retractil",
+            "nullable": false,
+            "identificacion": {
+              "lugar": "",
+              "fechaInspeccion": "",
+              "fechaTermino": "",
+              "colorMes": ""
+            },
+            "descripcionEquipo": {
+              "marca": "",
+              "modelo": ""
+            },
+            "componentes": [],
+            "observaciones": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-007 ESLINGAS TUBULARES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 6,
+        "attributes": [
+          {
+            "type": "checkListEslingasTubularesCdch",
+            "label": "Eslingas Tubulares",
+            "nullable": false,
+            "descripcion": {
+              "largo": "",
+              "factorSeguridad": "",
+              "cargaSeguraTrabajo": ""
+            },
+            "condiciones": [],
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-008 CONTROL DE VIENTO",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 7,
+        "attributes": [
+          {
+            "type": "checkListControlVientoCdch",
+            "label": "Control de Viento",
+            "nullable": false,
+            "datos": {
+              "equipo": "",
+              "fecha": "",
+              "operador": "",
+              "tarea": "",
+              "rigger": "",
+              "firma": ""
+            },
+            "lecturas": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-013 FORMATO VERIFICACION DEL SUELO",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 8,
+        "attributes": [
+          {
+            "type": "checkListVerificacionSueloCdch",
+            "label": "Verificacion del Suelo",
+            "nullable": false,
+            "datos": {
+              "fecha": "",
+              "faenaDivision": "",
+              "sectorUbicacion": "",
+              "modeloGrua": "",
+              "supervisorTransmac": "",
+              "operadorGrua": "",
+              "riggerSenalero": ""
+            },
+            "items": [],
+            "resultadoFinal": {
+              "resultado": "",
+              "observaciones": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-014 CHECK LIST ACCESORIOS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 9,
+        "attributes": [
+          {
+            "type": "checkListAccesoriosAmarreCdch",
+            "label": "Accesorios de Amarre",
+            "nullable": false,
+            "datos": {
+              "nombre": "",
+              "cargo": "",
+              "rut": "",
+              "fecha": "",
+              "hora": "",
+              "equipo": "",
+              "marca": "",
+              "modelo": "",
+              "patente": ""
+            },
+            "grupos": {},
+            "observaciones": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-003 CHECK LIST DIARIO CAMA BAJA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 10,
+        "attributes": [
+          {
+            "type": "checkListCamaBajaCdch",
+            "label": "Cama Baja",
+            "nullable": false,
+            "secciones": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-012 CHECK LIST PARA VEHICULOS LIVIANOS CAMIONETA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 11,
+        "attributes": [
+          {
+            "type": "checkListCamionetaCdch",
+            "label": "Camioneta",
+            "nullable": false,
+            "datos": {
+              "nombreConductor": "",
+              "kilometros": "",
+              "patente": "",
+              "fecha": ""
+            },
+            "fotos": {
+              "frontal": {
+                "label": "Frontal",
+                "galeria": []
+              },
+              "trasera": {
+                "label": "Trasera",
+                "galeria": []
+              },
+              "lateralIzquierda": {
+                "label": "Lateral izquierda",
+                "galeria": []
+              },
+              "lateralDerecha": {
+                "label": "Lateral derecha",
+                "galeria": []
+              }
+            },
+            "secciones": {},
+            "cierre": {
+              "obra": "",
+              "realizadoPor": "",
+              "fecha": "",
+              "firmaRealiza": "",
+              "tomaConocimiento": ""
+            },
+            "observacionesDetectadas": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-CDCH-02-SST-009 CHECK LIST GRUA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 12,
+        "attributes": [
+          {
+            "type": "checkListGruaCdch",
+            "label": "Checklist CDCH Grua",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-010 CHECK LIST ARNÉS DE SEGURIDAD",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 10,
+        "attributes": [
+          {
+            "type": "checkListArnesSeguridadDmh",
+            "label": "Check List Arnes de Seguridad DMH",
+            "nullable": false,
+            "datos": {
+              "faenaContrato": "",
+              "area": "",
+              "codigoCertArnes": "",
+              "codigoCertColas": "",
+              "codigoSpdcArnes": "",
+              "codigoSpdcColas": ""
+            },
+            "bloques": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-011 CHECK LIST ELEMENTOS DE IZAJE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 11,
+        "attributes": [
+          {
+            "type": "checkListElementosIzajeDmh",
+            "label": "Check List Elementos de Izaje DMH",
+            "nullable": false,
+            "checklist": {},
+            "elementos": [],
+            "fallas": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-012 CHECK LIST DE COMUNICACIÓN RADIAL",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 12,
+        "attributes": [
+          {
+            "type": "checkListComunicacionRadialDmh",
+            "label": "Check List Comunicación Radial DMH",
+            "nullable": false,
+            "datos": {
+              "trabajadorInspecciona": "",
+              "especialidad": "",
+              "tipoRadio": "",
+              "marcaModelo": "",
+              "firmaTrabajador": ""
+            },
+            "fechaInicio": "",
+            "fechaTermino": "",
+            "codificacionColores": null,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-020 CHECK LIST DE CONFORMIDAD DE LA SEGREGACION",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 13,
+        "attributes": [
+          {
+            "type": "checkListConformidadSegregacionDmh",
+            "label": "Check List Conformidad de la Segregacion DMH",
+            "nullable": false,
+            "actividades": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-021 INSPECCIÓN EPR",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 14,
+        "attributes": [
+          {
+            "type": "checkListInspeccionEprDmh",
+            "label": "Inspeccion EPR DMH",
+            "nullable": false,
+            "datos": {
+              "nombreTrabajador": "",
+              "rut": "",
+              "cargo": ""
+            },
+            "inspecciones": [],
+            "observaciones": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-022 FORMATO VERIFICACION DE ESTABILIDAD DEL SUELO",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 15,
+        "attributes": [
+          {
+            "type": "checkListEstabilidadSueloDmh",
+            "label": "Verificacion de Estabilidad del Suelo DMH",
+            "nullable": false,
+            "datos": {
+              "tarea": "",
+              "modeloGrua": "",
+              "sectorUbicacion": "",
+              "operadorGrua": "",
+              "supervisor": "",
+              "rigger": ""
+            },
+            "items": [],
+            "resultadoFinal": {
+              "resultado": "",
+              "observaciones": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-023 PLANILLA DE CONTROL DE ASEO Y DESINFECCIÓN",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 16,
+        "attributes": [
+          {
+            "type": "checkListAseoDesinfeccionDmh",
+            "label": "Planilla de Control de Aseo y Desinfeccion DMH",
+            "nullable": false,
+            "controles": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-025 CONTROL E INSPECCIÓN DE NEUMÁTICOS",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 17,
+        "attributes": [
+          {
+            "type": "checkListControlNeumaticosDmh",
+            "label": "Control e Inspeccion de Neumaticos DMH",
+            "nullable": false,
+            "controles": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-026 CHECKLIST DEL ESTADO OPERATIVO DE ELEMENTOS DE VISIBILIDAD",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 18,
+        "attributes": [
+          {
+            "type": "checkListElementosVisibilidadDmh",
+            "label": "Checklist Estado Operativo Elementos de Visibilidad DMH",
+            "nullable": false,
+            "fechaInicio": "",
+            "fechaTermino": "",
+            "items": [],
+            "observaciones": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-002 CAMION PLUMA REV0",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 19,
+        "attributes": [
+          {
+            "type": "checkListCamionPlumaAmsa",
+            "label": "Checklist AMSA Camion Pluma",
+            "nullable": false,
+            "datos": {
+              "contrato": "4644009479",
+              "modelo": "",
+              "marca": "",
+              "patente": "",
+              "fecha": "",
+              "area": "",
+              "kilometraje": "",
+              "nombreOperador": "",
+              "nombreRigger": "",
+              "vencCertificacionCliente": "",
+              "horometro": "",
+              "vencCertificacionGps": ""
+            },
+            "grupos": [],
+            "pruebas": {},
+            "neumaticosSurcos": {
+              "estado": "",
+              "profundidades": {},
+              "observacion": ""
+            },
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-015 INSPECCION CAMIONETA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 12,
+        "attributes": [
+          {
+            "type": "checkListCamionetaDmh",
+            "label": "Inspeccion Camioneta DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fotos": {
+              "frontal": {
+                "label": "Frontal",
+                "observacion": "",
+                "galeria": []
+              },
+              "trasera": {
+                "label": "Trasera",
+                "observacion": "",
+                "galeria": []
+              },
+              "lateralIzquierda": {
+                "label": "Lateral izquierda",
+                "observacion": "",
+                "galeria": []
+              },
+              "lateralDerecha": {
+                "label": "Lateral derecha",
+                "observacion": "",
+                "galeria": []
+              }
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "En caso de declarar alguna condicion critica, el conductor esta obligado a detener el vehiculo, no iniciar sus servicios e informar tal condicion a su supervisor. Sera obligacion del supervisor chequear la condicion informada y derivar al vehiculo al taller correspondiente.",
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-016 CHECK LIST CAMION RAMPLA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 13,
+        "attributes": [
+          {
+            "type": "checkListCamionRamplaDmh",
+            "label": "Check List Camion Rampla DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "mediciones": {},
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "En caso de declarar alguna condicion critica, el conductor esta obligado a detener el vehiculo, no iniciar sus servicios e informar tal condicion a su supervisor. Sera obligacion del supervisor chequear la condicion informada y derivar al vehiculo al taller correspondiente.",
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-017 CHECK LIST GRUA HORQUILLA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 14,
+        "attributes": [
+          {
+            "type": "checkListGruaHorquillaDmh",
+            "label": "Check List Grua Horquilla DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fotos": {
+              "adelante": {
+                "label": "Adelante",
+                "galeria": []
+              },
+              "atras": {
+                "label": "Atras",
+                "galeria": []
+              },
+              "derecha": {
+                "label": "Derecha",
+                "galeria": []
+              },
+              "izquierda": {
+                "label": "Izquierda",
+                "galeria": []
+              }
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "mediciones": {},
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-018 CHECK LIST CAMION GRUA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 15,
+        "attributes": [
+          {
+            "type": "checkListCamionGruaDmh",
+            "label": "Check List Camion Grua DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "mediciones": {},
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-019 CHECK LIST CAMION PLUMA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 16,
+        "attributes": [
+          {
+            "type": "checkListCamionPlumaDmh",
+            "label": "Check List Camion Pluma DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "mediciones": {},
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SGI-CDMH-01-SST-020 CHECK LIST ALZA HOMBRE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 17,
+        "attributes": [
+          {
+            "type": "checkListAlzaHombreDmh",
+            "label": "Check List Alza Hombre DMH",
+            "nullable": false,
+            "datos": {
+              "patente": "",
+              "proximaMantencion": ""
+            },
+            "fechas": {
+              "miercoles": "",
+              "jueves": "",
+              "viernes": "",
+              "sabado": "",
+              "domingo": "",
+              "lunes": "",
+              "martes": ""
+            },
+            "mediciones": {},
+            "respuestas": {},
+            "observacionesDanos": "",
+            "notas": [
+              "B = BUENO, M = MALO."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-003 CAMIONETA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 20,
+        "attributes": [
+          {
+            "type": "checkListCamionetaAmsa",
+            "label": "Checklist AMSA Camioneta",
+            "nullable": false,
+            "datos": {
+              "nombreConductor": "",
+              "kilometros": "",
+              "patente": "",
+              "fecha": "",
+              "obra": "",
+              "realizadoPor": "",
+              "fechaRealizado": ""
+            },
+            "fotos": {
+              "ladoPasajero": {
+                "label": "Lado pasajero",
+                "observacion": "",
+                "galeria": []
+              },
+              "ladoConductor": {
+                "label": "Lado conductor",
+                "observacion": "",
+                "galeria": []
+              },
+              "vistaFrontal": {
+                "label": "Vista frontal",
+                "observacion": "",
+                "galeria": []
+              },
+              "vistaPosterior": {
+                "label": "Vista posterior",
+                "observacion": "",
+                "galeria": []
+              }
+            },
+            "grupos": [],
+            "observacionesGenerales": ""
+          }
+        ]
+      }
+    ]
+  }
+]

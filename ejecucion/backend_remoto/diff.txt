@@ -1,0 +1,1619 @@
+Line 350:
+Remote (PROD): // 1b. Obtener detalles de la empresa emisora desde DB (Paramétrico)
+Local  (OLD) : // 2. Definir emisor y sus características según id_empresa
+
+Line 351:
+Remote (PROD): let emisorObjDB = null;
+Local  (OLD) : const EMISORES = {
+
+Line 352:
+Remote (PROD): if (p.id_empresa_emisora) {
+Local  (OLD) : 9: {
+
+Line 353:
+Remote (PROD): const { rows: emisorRows } = await client.query('SELECT * FROM tpar_empresas WHERE id_empresa = $1', [p.id_empresa_emisora]);
+Local  (OLD) : nombre: "LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)",
+
+Line 354:
+Remote (PROD): if (emisorRows.length > 0) emisorObjDB = emisorRows[0];
+Local  (OLD) : rut: "52.004.162-1",
+
+Line 355:
+Remote (PROD): }
+Local  (OLD) : giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS MOTORIZADOS",
+
+Line 356:
+Remote (PROD): 
+Local  (OLD) : direccion: "Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco",
+
+Line 357:
+Remote (PROD): // 2. Definir emisor y sus características según id_empresa
+Local  (OLD) : fono: "+56 9 9443 7725",
+
+Line 358:
+Remote (PROD): const EMISORES = {
+Local  (OLD) : color: "#f5a623",
+
+Line 359:
+Remote (PROD): 9: {
+Local  (OLD) : colorLight: "rgba(245, 166, 35, 0.08)"
+
+Line 360:
+Remote (PROD): nombre: "LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)",
+Local  (OLD) : },
+
+Line 361:
+Remote (PROD): rut: "52.004.162-1",
+Local  (OLD) : 7: {
+
+Line 362:
+Remote (PROD): giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS MOTORIZADOS",
+Local  (OLD) : nombre: "SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)",
+
+Line 363:
+Remote (PROD): direccion: "Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco",
+Local  (OLD) : rut: "76.209.534-3",
+
+Line 364:
+Remote (PROD): fono: "+56 9 9443 7725",
+Local  (OLD) : giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS",
+
+Line 365:
+Remote (PROD): color: "#f5a623",
+Local  (OLD) : direccion: "Camino Labranza KM 9.5, Temuco",
+
+Line 366:
+Remote (PROD): colorLight: "rgba(245, 166, 35, 0.08)",
+Local  (OLD) : fono: "+56 9 9443 7725",
+
+Line 367:
+Remote (PROD): logoPath: "logo-sanpablo.png"
+Local  (OLD) : color: "#3b82f6",
+
+Line 368:
+Remote (PROD): },
+Local  (OLD) : colorLight: "rgba(59, 130, 246, 0.08)"
+
+Line 369:
+Remote (PROD): 7: {
+Local  (OLD) : },
+
+Line 370:
+Remote (PROD): nombre: "SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)",
+Local  (OLD) : 8: {
+
+Line 371:
+Remote (PROD): rut: "76.209.534-3",
+Local  (OLD) : nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
+
+Line 372:
+Remote (PROD): giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS",
+Local  (OLD) : rut: "76.218.576-8",
+
+Line 373:
+Remote (PROD): direccion: "Camino Labranza KM 9.5, Temuco",
+Local  (OLD) : giro: "ARRIENDO DE MAQUINARIAS Y LOGÍSTICA",
+
+Line 374:
+Remote (PROD): fono: "+56 9 9443 7725",
+Local  (OLD) : direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
+
+Line 375:
+Remote (PROD): color: "#3b82f6",
+Local  (OLD) : fono: "+56 9 9443 7725",
+
+Line 376:
+Remote (PROD): colorLight: "rgba(59, 130, 246, 0.08)"
+Local  (OLD) : color: "#10b981",
+
+Line 377:
+Remote (PROD): },
+Local  (OLD) : colorLight: "rgba(16, 185, 129, 0.08)"
+
+Line 378:
+Remote (PROD): 8: {
+Local  (OLD) : },
+
+Line 379:
+Remote (PROD): nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
+Local  (OLD) : 11: {
+
+Line 380:
+Remote (PROD): rut: "76.218.576-8",
+Local  (OLD) : nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
+
+Line 381:
+Remote (PROD): giro: "ARRIENDO DE MAQUINARIAS Y LOGÍSTICA",
+Local  (OLD) : rut: "78.254.535-3",
+
+Line 382:
+Remote (PROD): direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
+Local  (OLD) : giro: "ARRIENDO DE MAQUINARIAS Y EQUIPOS",
+
+Line 383:
+Remote (PROD): fono: "+56 9 9443 7725",
+Local  (OLD) : direccion: "Camino Labranza KM 9.5, Temuco",
+
+Line 384:
+Remote (PROD): color: "#10b981",
+Local  (OLD) : fono: "+56 9 9443 7725",
+
+Line 385:
+Remote (PROD): colorLight: "rgba(16, 185, 129, 0.08)"
+Local  (OLD) : color: "#8b5cf6",
+
+Line 386:
+Remote (PROD): },
+Local  (OLD) : colorLight: "rgba(139, 92, 246, 0.08)"
+
+Line 387:
+Remote (PROD): 11: {
+Local  (OLD) : }
+
+Line 388:
+Remote (PROD): nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
+Local  (OLD) : };
+
+Line 389:
+Remote (PROD): rut: "78.254.535-3",
+Local  (OLD) : const emisor = EMISORES[p.id_empresa] || EMISORES[9];
+
+Line 390:
+Remote (PROD): giro: "ARRIENDO DE MAQUINARIAS Y EQUIPOS",
+Local  (OLD) : 
+
+Line 391:
+Remote (PROD): direccion: "Camino Labranza KM 9.5, Temuco",
+Local  (OLD) : // 3. Extraer datos estructurados de json_field.crm_v1
+
+Line 392:
+Remote (PROD): fono: "+56 9 9443 7725",
+Local  (OLD) : const crm = jsonField.crm_v1 || {};
+
+Line 393:
+Remote (PROD): color: "#8b5cf6",
+Local  (OLD) : const lineas = crm.lineas_servicio || [];
+
+Line 394:
+Remote (PROD): colorLight: "rgba(139, 92, 246, 0.08)"
+Local  (OLD) : 
+
+Line 395:
+Remote (PROD): }
+Local  (OLD) : // Formateador simple de moneda CLP
+
+Line 396:
+Remote (PROD): };
+Local  (OLD) : const formatCLP = (v) => {
+
+Line 397:
+Remote (PROD): 
+Local  (OLD) : return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(v || 0);
+
+Line 398:
+Remote (PROD): 
+Local  (OLD) : };
+
+Line 399:
+Remote (PROD): // Objeto base de colores
+Local  (OLD) : 
+
+Line 400:
+Remote (PROD): let emisorBase = EMISORES[p.id_empresa_emisora] || EMISORES[9];
+Local  (OLD) : // 4. Compilar líneas de servicios en tabla HTML
+
+Line 401:
+Remote (PROD): 
+Local  (OLD) : let lineasHtml = '';
+
+Line 402:
+Remote (PROD): const emisor = {
+Local  (OLD) : lineas.forEach((line, index) => {
+
+Line 403:
+Remote (PROD): nombre: emisorObjDB?.razon_social || emisorObjDB?.name_empresa || emisorBase.nombre,
+Local  (OLD) : const qty = Number(line.cantidad || 0);
+
+Line 404:
+Remote (PROD): rut: emisorObjDB?.rut_empresa || emisorBase.rut,
+Local  (OLD) : const price = Number(line.valorUnitario || line.valor_unitario || 0);
+
+Line 405:
+Remote (PROD): giro: emisorObjDB?.giro || emisorBase.giro,
+Local  (OLD) : const totalLine = qty * price;
+
+Line 406:
+Remote (PROD): direccion: emisorObjDB?.direccion || emisorBase.direccion,
+Local  (OLD) : lineasHtml += `
+
+Line 407:
+Remote (PROD): fono: emisorObjDB?.fono_contacto || emisorBase.fono,
+Local  (OLD) : <tr>
+
+Line 408:
+Remote (PROD): color: emisorBase.color,
+Local  (OLD) : <td style="text-align: center;">${index + 1}</td>
+
+Line 409:
+Remote (PROD): colorLight: emisorBase.colorLight,
+Local  (OLD) : <td>
+
+Line 410:
+Remote (PROD): logoPath: emisorObjDB?.logo_empresa || emisorBase.logoPath
+Local  (OLD) : <div style="font-weight: bold; color: ${emisor.color}; text-transform: uppercase; font-size: 8px;">
+
+Line 411:
+Remote (PROD): };
+Local  (OLD) : ${line.tipo || 'Servicio'} ${line.subcategoria ? '— ' + line.subcategoria : ''}
+
+Line 412:
+Remote (PROD): 
+Local  (OLD) : </div>
+
+Line 413:
+Remote (PROD): let finalLogoPath = emisor.logoPath;
+Local  (OLD) : <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
+
+Line 414:
+Remote (PROD): if (finalLogoPath && !finalLogoPath.startsWith('data:image')) {
+Local  (OLD) : ${line.descripcion || '—'}
+
+Line 415:
+Remote (PROD): finalLogoPath = 'file://' + path.join('/var/www/html/lg-gsp', finalLogoPath);
+Local  (OLD) : </div>
+
+Line 416:
+Remote (PROD): }
+Local  (OLD) : </td>
+
+Line 417:
+Remote (PROD): 
+Local  (OLD) : <td style="text-align: center;">${qty}</td>
+
+Line 418:
+Remote (PROD): // 3. Extraer datos estructurados de json_field.crm_v1
+Local  (OLD) : <td style="text-align: center;">${line.unidad || 'Día'}</td>
+
+Line 419:
+Remote (PROD): const crm = jsonField.crm_v1 || {};
+Local  (OLD) : <td style="text-align: right;">${formatCLP(price)}</td>
+
+Line 420:
+Remote (PROD): const lineas = crm.lineas_servicio || [];
+Local  (OLD) : <td style="text-align: right;">${formatCLP(totalLine)}</td>
+
+Line 421:
+Remote (PROD): 
+Local  (OLD) : </tr>
+
+Line 422:
+Remote (PROD): // Formateador simple de moneda CLP
+Local  (OLD) : `;
+
+Line 423:
+Remote (PROD): const formatCLP = (v) => {
+Local  (OLD) : });
+
+Line 424:
+Remote (PROD): return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(v || 0);
+Local  (OLD) : if (lineas.length === 0) {
+
+Line 425:
+Remote (PROD): };
+Local  (OLD) : lineasHtml = `<tr><td colspan="6" style="text-align: center; color: #718096; padding: 10px;">No hay líneas de servicio detalladas</td></tr>`;
+
+Line 426:
+Remote (PROD): 
+Local  (OLD) : }
+
+Line 427:
+Remote (PROD): // 4. Compilar líneas de servicios en tabla HTML
+Local  (OLD) : 
+
+Line 428:
+Remote (PROD): let lineasHtml = '';
+Local  (OLD) : // Totales
+
+Line 429:
+Remote (PROD): lineas.forEach((line, index) => {
+Local  (OLD) : const totalNetoVal = Number(monto || 0);
+
+Line 430:
+Remote (PROD): const qty = Number(line.cantidad || 0);
+Local  (OLD) : const ivaVal = Math.round(totalNetoVal * 0.19);
+
+Line 431:
+Remote (PROD): const price = Number(line.valorUnitario || line.valor_unitario || 0);
+Local  (OLD) : const totalGeneralVal = totalNetoVal + ivaVal;
+
+Line 432:
+Remote (PROD): const totalLine = qty * price;
+Local  (OLD) : 
+
+Line 433:
+Remote (PROD): lineasHtml += `
+Local  (OLD) : // Formatear saltos de línea de condiciones para HTML
+
+Line 434:
+Remote (PROD): <tr>
+Local  (OLD) : const condicionesHtml = crm.condiciones_pdf
+
+Line 435:
+Remote (PROD): <td style="text-align: center;">${index + 1}</td>
+Local  (OLD) : ? crm.condiciones_pdf.replace(/\r?\n/g, '<br>')
+
+Line 436:
+Remote (PROD): <td>
+Local  (OLD) : : '';
+
+Line 437:
+Remote (PROD): <div style="font-weight: bold; color: ${emisor.color}; text-transform: uppercase; font-size: 8px;">
+Local  (OLD) : 
+
+Line 438:
+Remote (PROD): ${line.tipo || 'Servicio'} ${line.subcategoria ? '— ' + line.subcategoria : ''}
+Local  (OLD) : // 5. Generar plantilla HTML
+
+Line 439:
+Remote (PROD): </div>
+Local  (OLD) : const htmlContent = `
+
+Line 440:
+Remote (PROD): <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
+Local  (OLD) : <!DOCTYPE html>
+
+Line 441:
+Remote (PROD): ${line.descripcion || '—'}
+Local  (OLD) : <html lang="es">
+
+Line 442:
+Remote (PROD): </div>
+Local  (OLD) : <head>
+
+Line 443:
+Remote (PROD): <ul style="margin: 3px 0 0 15px; padding: 0; font-size: 8px; color: #4a5568;">
+Local  (OLD) : <meta charset="UTF-8">
+
+Line 444:
+Remote (PROD): ${Object.keys(line).filter(k => !['tipo','subcategoria','descripcion','cantidad','valorUnitario','valor_unitario','unidad'].includes(k)).map(k => `<li><strong>${String(k).toUpperCase().replace(/_/g, ' ')}:</strong> ${typeof line[k] === 'object' ? JSON.stringify(line[k]) : line[k]}</li>`).join('')}
+Local  (OLD) : <title>Cotización ${codi}</title>
+
+Line 445:
+Remote (PROD): </ul>
+Local  (OLD) : <style>
+
+Line 446:
+Remote (PROD): </td>
+Local  (OLD) : body {
+
+Line 447:
+Remote (PROD): <td style="text-align: center;">${qty}</td>
+Local  (OLD) : font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+
+Line 448:
+Remote (PROD): <td style="text-align: center;">${line.unidad || 'Día'}</td>
+Local  (OLD) : color: #2d3748;
+
+Line 449:
+Remote (PROD): <td style="text-align: right;">${formatCLP(price)}</td>
+Local  (OLD) : background-color: #ffffff;
+
+Line 450:
+Remote (PROD): <td style="text-align: right;">${formatCLP(totalLine)}</td>
+Local  (OLD) : margin: 0;
+
+Line 451:
+Remote (PROD): </tr>
+Local  (OLD) : padding: 10px;
+
+Line 452:
+Remote (PROD): `;
+Local  (OLD) : font-size: 10px;
+
+Line 453:
+Remote (PROD): });
+Local  (OLD) : line-height: 1.3;
+
+Line 454:
+Remote (PROD): if (lineas.length === 0) {
+Local  (OLD) : }
+
+Line 455:
+Remote (PROD): lineasHtml = `<tr><td colspan="6" style="text-align: center; color: #718096; padding: 10px;">No hay líneas de servicio detalladas</td></tr>`;
+Local  (OLD) : .container { width: 100%; }
+
+Line 456:
+Remote (PROD): }
+Local  (OLD) : .header-table { width: 100%; margin-bottom: 12px; border-collapse: collapse; }
+
+Line 457:
+Remote (PROD): 
+Local  (OLD) : .header-table td { vertical-align: top; }
+
+Line 458:
+Remote (PROD): // Totales
+Local  (OLD) : .emitter-title { font-size: 14px; font-weight: bold; color: ${emisor.color}; text-transform: uppercase; }
+
+Line 459:
+Remote (PROD): const totalNetoVal = Number(monto || 0);
+Local  (OLD) : .emitter-info { font-size: 9px; color: #718096; margin-top: 4px; }
+
+Line 460:
+Remote (PROD): const ivaVal = Math.round(totalNetoVal * 0.19);
+Local  (OLD) : .quote-badge { background-color: ${emisor.colorLight}; border: 1px solid ${emisor.color}; border-radius: 6px; padding: 8px 12px; text-align: center; }
+
+Line 461:
+Remote (PROD): const totalGeneralVal = totalNetoVal + ivaVal;
+Local  (OLD) : .quote-title { font-size: 13px; font-weight: bold; color: #1a202c; }
+
+Line 462:
+Remote (PROD): 
+Local  (OLD) : .quote-meta { font-size: 9px; color: #2d3748; margin-top: 3px; }
+
+Line 463:
+Remote (PROD): // Formatear saltos de línea de condiciones para HTML
+Local  (OLD) : 
+
+Line 464:
+Remote (PROD): const condicionesHtml = crm.condiciones_pdf || '';
+Local  (OLD) : .section-title { font-size: 10px; font-weight: bold; color: #1a202c; text-transform: uppercase; border-bottom: 2px solid ${emisor.color}; padding-bottom: 2px; margin-bottom: 6px; margin-top: 10px; }
+
+Line 465:
+Remote (PROD): 
+Local  (OLD) : .info-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+
+Line 466:
+Remote (PROD): // Generar secciones extra dinámicas para los tabs del CRM (ej. Datos Servicio & Visita)
+Local  (OLD) : .info-table td { padding: 4px 6px; vertical-align: top; border: 1px solid #e2e8f0; font-size: 9px; }
+
+Line 467:
+Remote (PROD): let extraSectionsHtml = '';
+Local  (OLD) : .info-label { font-weight: bold; color: #4a5568; background-color: #f7fafc; width: 15%; }
+
+Line 468:
+Remote (PROD): const standardKeys = ['lineas_servicio', 'cotizaciones_historicas', 'condiciones_pdf', 'prioridad', 'contacto_nombre', 'contacto_telefono', 'tipo_pago', 'requiere_oc_hes', 'obra_nombre', 'obra_direccion', 'obra_ciudad', 'coordenadas_mapa', 'detalle_servicio', 'tipo_carga', 'peso_carga', 'volumen_carga', 'radios_trabajo', 'alturas_trabajo', 'visita_terreno', 'validez_dias', 'moneda', 'condicion_servicio'];
+Local  (OLD) : .info-value { color: #2d3748; width: 35%; }
+
+Line 469:
+Remote (PROD): let sectionCounter = 4; // Empezamos en 4 porque 1, 2 y 3 ya están definidos arriba (la sección de Condiciones Comerciales será la última)
+Local  (OLD) : 
+
+Line 470:
+Remote (PROD): 
+Local  (OLD) : .services-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 9px; }
+
+Line 471:
+Remote (PROD): for (const key in crm) {
+Local  (OLD) : .services-table th { background-color: ${emisor.color}; color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 9px; padding: 5px 6px; border: 1px solid ${emisor.color}; text-align: left; }
+
+Line 472:
+Remote (PROD): if (!standardKeys.includes(key) && crm[key] !== null && crm[key] !== undefined && crm[key] !== '') {
+Local  (OLD) : .services-table td { padding: 5px 6px; border: 1px solid #cbd5e0; vertical-align: top; }
+
+Line 473:
+Remote (PROD): let valHtml = '';
+Local  (OLD) : .services-table tr:nth-child(even) { background-color: #f7fafc; }
+
+Line 474:
+Remote (PROD): if (typeof crm[key] === 'object' && !Array.isArray(crm[key])) {
+Local  (OLD) : 
+
+Line 475:
+Remote (PROD): valHtml = `<table class="info-table">`;
+Local  (OLD) : .summary-table { width: 220px; float: right; border-collapse: collapse; margin-top: 10px; font-size: 9px; }
+
+Line 476:
+Remote (PROD): let rowCount = 0;
+Local  (OLD) : .summary-table td { padding: 4px 6px; border: 1px solid #cbd5e0; }
+
+Line 477:
+Remote (PROD): for (const subKey in crm[key]) {
+Local  (OLD) : .summary-label { font-weight: bold; background-color: #f7fafc; text-align: right; width: 50%; }
+
+Line 478:
+Remote (PROD): if (rowCount % 2 === 0) valHtml += '<tr>';
+Local  (OLD) : .summary-value { text-align: right; font-weight: bold; width: 50%; }
+
+Line 479:
+Remote (PROD): valHtml += `<td class="info-label" style="width: 20%;">${String(subKey).toUpperCase().replace(/_/g, ' ')}</td><td class="info-value" style="width: 30%;">${typeof crm[key][subKey] === 'object' ? JSON.stringify(crm[key][subKey]) : crm[key][subKey]}</td>`;
+Local  (OLD) : .summary-total { background-color: ${emisor.colorLight}; color: #1a202c; }
+
+Line 480:
+Remote (PROD): if (rowCount % 2 !== 0) valHtml += '</tr>';
+Local  (OLD) : 
+
+Line 481:
+Remote (PROD): rowCount++;
+Local  (OLD) : .conditions-box { background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 8.5px; color: #4a5568; line-height: 1.4; }
+
+Line 482:
+Remote (PROD): }
+Local  (OLD) : .footer { margin-top: 25px; text-align: center; font-size: 8px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 4px; clear: both; }
+
+Line 483:
+Remote (PROD): if (rowCount % 2 !== 0) valHtml += '<td colspan="2"></td></tr>';
+Local  (OLD) : </style>
+
+Line 484:
+Remote (PROD): valHtml += `</table>`;
+Local  (OLD) : </head>
+
+Line 485:
+Remote (PROD): } else if (Array.isArray(crm[key])) {
+Local  (OLD) : <body>
+
+Line 486:
+Remote (PROD): valHtml = `<div style="font-size: 9px; padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f7fafc;">`;
+Local  (OLD) : <div class="container">
+
+Line 487:
+Remote (PROD): valHtml += crm[key].map(item => typeof item === 'object' ? JSON.stringify(item) : item).join('<br>');
+Local  (OLD) : <!-- HEADER -->
+
+Line 488:
+Remote (PROD): valHtml += `</div>`;
+Local  (OLD) : <table class="header-table">
+
+Line 489:
+Remote (PROD): } else {
+Local  (OLD) : <tr>
+
+Line 490:
+Remote (PROD): valHtml = `<table class="info-table"><tr><td class="info-label" style="width: 25%;">${String(key).toUpperCase().replace(/_/g, ' ')}</td><td class="info-value" style="width: 75%;">${crm[key]}</td></tr></table>`;
+Local  (OLD) : <td style="width: 65%;">
+
+Line 491:
+Remote (PROD): }
+Local  (OLD) : <div class="emitter-title">${emisor.nombre}</div>
+
+Line 492:
+Remote (PROD): extraSectionsHtml += `
+Local  (OLD) : <div class="emitter-info">
+
+Line 493:
+Remote (PROD): <div class="section-title">${sectionCounter}. ${String(key).toUpperCase().replace(/_/g, ' ')}</div>
+Local  (OLD) : RUT: ${emisor.rut} | Giro: ${emisor.giro}<br>
+
+Line 494:
+Remote (PROD): ${valHtml}
+Local  (OLD) : Casa Matriz: ${emisor.direccion}<br>
+
+Line 495:
+Remote (PROD): `;
+Local  (OLD) : Contacto: ${emisor.fono}
+
+Line 496:
+Remote (PROD): sectionCounter++;
+Local  (OLD) : </div>
+
+Line 497:
+Remote (PROD): }
+Local  (OLD) : </td>
+
+Line 498:
+Remote (PROD): }
+Local  (OLD) : <td style="width: 35%; text-align: right;">
+
+Line 499:
+Remote (PROD): 
+Local  (OLD) : <div class="quote-badge">
+
+Line 500:
+Remote (PROD): // 5. Generar plantilla HTML
+Local  (OLD) : <div class="quote-title">COTIZACIÓN COMERCIAL</div>
+
+Line 501:
+Remote (PROD): const htmlContent = `
+Local  (OLD) : <div class="quote-meta">
+
+Line 502:
+Remote (PROD): <!DOCTYPE html>
+Local  (OLD) : <strong>Número:</strong> ${codi}<br>
+
+Line 503:
+Remote (PROD): <html lang="es">
+Local  (OLD) : <strong>Versión:</strong> ${version}<br>
+
+Line 504:
+Remote (PROD): <head>
+Local  (OLD) : <strong>Fecha:</strong> ${new Date(nuevaCotizacion.fecha).toLocaleDateString('es-CL')}<br>
+
+Line 505:
+Remote (PROD): <meta charset="UTF-8">
+Local  (OLD) : <strong>Prioridad:</strong> ${String(crm.prioridad || 'normal').toUpperCase()}
+
+Line 506:
+Remote (PROD): <title>Cotización ${codi}</title>
+Local  (OLD) : </div>
+
+Line 507:
+Remote (PROD): <style>
+Local  (OLD) : </div>
+
+Line 508:
+Remote (PROD): body {
+Local  (OLD) : </td>
+
+Line 509:
+Remote (PROD): font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+Local  (OLD) : </tr>
+
+Line 510:
+Remote (PROD): color: #2d3748;
+Local  (OLD) : </table>
+
+Line 511:
+Remote (PROD): background-color: #ffffff;
+Local  (OLD) : 
+
+Line 512:
+Remote (PROD): margin: 0;
+Local  (OLD) : <!-- CLIENTE MANDANTE -->
+
+Line 513:
+Remote (PROD): padding: 10px;
+Local  (OLD) : <div class="section-title">1. Datos del Cliente Mandante</div>
+
+Line 514:
+Remote (PROD): font-size: 11px;
+Local  (OLD) : <table class="info-table">
+
+Line 515:
+Remote (PROD): line-height: 1.4;
+Local  (OLD) : <tr>
+
+Line 516:
+Remote (PROD): }
+Local  (OLD) : <td class="info-label">Razón Social:</td>
+
+Line 517:
+Remote (PROD): .container { width: 100%; }
+Local  (OLD) : <td class="info-value">${clienteObj ? clienteObj.razon_social : '—'}</td>
+
+Line 518:
+Remote (PROD): .header-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; margin-top: 15px; }
+Local  (OLD) : <td class="info-label">RUT Cliente:</td>
+
+Line 519:
+Remote (PROD): .header-table td { vertical-align: middle; }
+Local  (OLD) : <td class="info-value">${clienteObj ? clienteObj.rut_empresa : '—'}</td>
+
+Line 520:
+Remote (PROD): .emitter-title { font-size: 16px; font-weight: bold; color: ${emisor.color}; text-transform: uppercase; margin-bottom: 5px; }
+Local  (OLD) : </tr>
+
+Line 521:
+Remote (PROD): .emitter-info { font-size: 10px; color: #718096; margin-top: 4px; line-height: 1.3; }
+Local  (OLD) : <tr>
+
+Line 522:
+Remote (PROD): .quote-badge { background-color: ${emisor.colorLight}; border: 1px solid ${emisor.color}; border-radius: 6px; padding: 12px; text-align: center; }
+Local  (OLD) : <td class="info-label">Dirección:</td>
+
+Line 523:
+Remote (PROD): .quote-title { font-size: 14px; font-weight: bold; color: #1a202c; }
+Local  (OLD) : <td class="info-value">${clienteObj ? (clienteObj.direccion || '—') : '—'}</td>
+
+Line 524:
+Remote (PROD): .quote-meta { font-size: 10px; color: #2d3748; margin-top: 5px; line-height: 1.4; }
+Local  (OLD) : <td class="info-label">Giro:</td>
+
+Line 525:
+Remote (PROD): 
+Local  (OLD) : <td class="info-value">${clienteObj ? (clienteObj.giro || '—') : '—'}</td>
+
+Line 526:
+Remote (PROD): .section-title { font-size: 12px; font-weight: bold; color: #1a202c; text-transform: uppercase; border-bottom: 2px solid ${emisor.color}; padding-bottom: 3px; margin-bottom: 8px; margin-top: 15px; }
+Local  (OLD) : </tr>
+
+Line 527:
+Remote (PROD): .info-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+Local  (OLD) : <tr>
+
+Line 528:
+Remote (PROD): .info-table td { padding: 6px 8px; vertical-align: top; border: 1px solid #e2e8f0; font-size: 10px; }
+Local  (OLD) : <td class="info-label">Contacto:</td>
+
+Line 529:
+Remote (PROD): .info-label { font-weight: bold; color: #4a5568; background-color: #f7fafc; width: 20%; }
+Local  (OLD) : <td class="info-value">${crm.contacto_nombre || '—'}</td>
+
+Line 530:
+Remote (PROD): .info-value { color: #2d3748; width: 30%; }
+Local  (OLD) : <td class="info-label">Teléfono:</td>
+
+Line 531:
+Remote (PROD): 
+Local  (OLD) : <td class="info-value">${crm.contacto_telefono || '—'}</td>
+
+Line 532:
+Remote (PROD): .services-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10px; }
+Local  (OLD) : </tr>
+
+Line 533:
+Remote (PROD): .services-table th { background-color: ${emisor.color}; color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 10px; padding: 6px 8px; border: 1px solid ${emisor.color}; text-align: left; }
+Local  (OLD) : <tr>
+
+Line 534:
+Remote (PROD): .services-table td { padding: 6px 8px; border: 1px solid #cbd5e0; vertical-align: top; }
+Local  (OLD) : <td class="info-label">Forma de Pago:</td>
+
+Line 535:
+Remote (PROD): .services-table tr:nth-child(even) { background-color: #f7fafc; }
+Local  (OLD) : <td class="info-value" style="text-transform: uppercase;">${crm.tipo_pago || '—'}</td>
+
+Line 536:
+Remote (PROD): 
+Local  (OLD) : <td class="info-label">Requiere OC/HES:</td>
+
+Line 537:
+Remote (PROD): .summary-table { width: 250px; float: right; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+Local  (OLD) : <td class="info-value">${crm.requiere_oc_hes ? 'SÍ' : 'NO'}</td>
+
+Line 538:
+Remote (PROD): .summary-table td { padding: 6px 8px; border: 1px solid #cbd5e0; }
+Local  (OLD) : </tr>
+
+Line 539:
+Remote (PROD): .summary-label { font-weight: bold; background-color: #f7fafc; text-align: right; width: 50%; }
+Local  (OLD) : </table>
+
+Line 540:
+Remote (PROD): .summary-value { text-align: right; font-weight: bold; width: 50%; }
+Local  (OLD) : 
+
+Line 541:
+Remote (PROD): .summary-total { background-color: ${emisor.colorLight}; color: #1a202c; font-size: 12px; }
+Local  (OLD) : <!-- DATOS SERVICIO & VISITA -->
+
+Line 542:
+Remote (PROD): 
+Local  (OLD) : <div class="section-title">2. Datos de Operación e Ingeniería</div>
+
+Line 543:
+Remote (PROD): .conditions-box { background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 10px; color: #4a5568; line-height: 1.5; }
+Local  (OLD) : <table class="info-table">
+
+Line 544:
+Remote (PROD): .footer { margin-top: 30px; text-align: center; font-size: 9px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 8px; clear: both; }
+Local  (OLD) : <tr>
+
+Line 545:
+Remote (PROD): </style>
+Local  (OLD) : <td class="info-label">Nombre Obra/Proyecto:</td>
+
+Line 546:
+Remote (PROD): </head>
+Local  (OLD) : <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+
+Line 547:
+Remote (PROD): <body>
+Local  (OLD) : <td class="info-label">Ubicación Obra:</td>
+
+Line 548:
+Remote (PROD): <div class="container">
+Local  (OLD) : <td class="info-value">
+
+Line 549:
+Remote (PROD): <!-- HEADER -->
+Local  (OLD) : ${crm.obra_direccion || '—'}${crm.obra_ciudad ? ', ' + crm.obra_ciudad : ''}
+
+Line 550:
+Remote (PROD): <table class="header-table">
+Local  (OLD) : ${crm.coordenadas_mapa?.lat ? `<br><span style="font-size: 8px; color: #718096; font-family: monospace;">Coord: ${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
+
+Line 551:
+Remote (PROD): <tr>
+Local  (OLD) : </td>
+
+Line 552:
+Remote (PROD): <td style="width: 25%;">
+Local  (OLD) : </tr>
+
+Line 553:
+Remote (PROD): ${finalLogoPath ? `<img src="${finalLogoPath}" style="max-width: 140px; max-height: 80px;" alt="Logo" />` : ''}
+Local  (OLD) : <tr>
+
+Line 554:
+Remote (PROD): </td>
+Local  (OLD) : <td class="info-label">Detalle del Servicio:</td>
+
+Line 555:
+Remote (PROD): <td style="width: 45%;">
+Local  (OLD) : <td class="info-value" colspan="3">${crm.detalle_servicio || p.observacion_proyecto || '—'}</td>
+
+Line 556:
+Remote (PROD): <div class="emitter-title">${emisor.nombre}</div>
+Local  (OLD) : </tr>
+
+Line 557:
+Remote (PROD): <div class="emitter-info">
+Local  (OLD) : <tr>
+
+Line 558:
+Remote (PROD): RUT: ${emisor.rut} | Giro: ${emisor.giro}<br>
+Local  (OLD) : <td class="info-label">Tipo de Carga:</td>
+
+Line 559:
+Remote (PROD): Casa Matriz: ${emisor.direccion}<br>
+Local  (OLD) : <td class="info-value">${crm.tipo_carga || '—'}</td>
+
+Line 560:
+Remote (PROD): Contacto: ${emisor.fono}
+Local  (OLD) : <td class="info-label">Peso de la Carga:</td>
+
+Line 561:
+Remote (PROD): </div>
+Local  (OLD) : <td class="info-value">${crm.peso_carga || '—'}</td>
+
+Line 562:
+Remote (PROD): </td>
+Local  (OLD) : </tr>
+
+Line 563:
+Remote (PROD): <td style="width: 30%; text-align: right;">
+Local  (OLD) : <tr>
+
+Line 564:
+Remote (PROD): <div class="quote-badge">
+Local  (OLD) : <td class="info-label">Volumen (Dimensiones):</td>
+
+Line 565:
+Remote (PROD): <div class="quote-title">COTIZACIÓN COMERCIAL</div>
+Local  (OLD) : <td class="info-value">${crm.volumen_carga || '—'}</td>
+
+Line 566:
+Remote (PROD): <div class="quote-meta">
+Local  (OLD) : <td class="info-label">Radios / Alturas Trab:</td>
+
+Line 567:
+Remote (PROD): <strong>Número:</strong> ${codi}<br>
+Local  (OLD) : <td class="info-value">Radio: ${crm.radios_trabajo || '—'} | Altura: ${crm.alturas_trabajo || '—'}</td>
+
+Line 568:
+Remote (PROD): <strong>Versión:</strong> ${version}<br>
+Local  (OLD) : </tr>
+
+Line 569:
+Remote (PROD): <strong>Fecha:</strong> ${new Date(nuevaCotizacion.fecha).toLocaleDateString('es-CL')}<br>
+Local  (OLD) : <tr>
+
+Line 570:
+Remote (PROD): <strong>Prioridad:</strong> ${String(crm.prioridad || 'normal').toUpperCase()}
+Local  (OLD) : <td class="info-label">Visita Técnica Terreno:</td>
+
+Line 571:
+Remote (PROD): </div>
+Local  (OLD) : <td class="info-value" colspan="3">${crm.visita_terreno ? 'SÍ (Realizada por personal técnico certificado GSP)' : 'NO (Sujeto a validación operacional previa en faena)'}</td>
+
+Line 572:
+Remote (PROD): </div>
+Local  (OLD) : </tr>
+
+Line 573:
+Remote (PROD): </td>
+Local  (OLD) : </table>
+
+Line 574:
+Remote (PROD): </tr>
+Local  (OLD) : 
+
+Line 575:
+Remote (PROD): </table>
+Local  (OLD) : <!-- ESTRUCTURADOR DE SERVICIOS -->
+
+Line 576:
+Remote (PROD): 
+Local  (OLD) : <div class="section-title">3. Detalles de Servicios y Tarifas</div>
+
+Line 577:
+Remote (PROD): <!-- CLIENTE MANDANTE -->
+Local  (OLD) : <table class="services-table">
+
+Line 578:
+Remote (PROD): <div class="section-title">1. Datos del Cliente Mandante</div>
+Local  (OLD) : <thead>
+
+Line 579:
+Remote (PROD): <table class="info-table">
+Local  (OLD) : <tr>
+
+Line 580:
+Remote (PROD): <tr>
+Local  (OLD) : <th style="width: 5%;">Item</th>
+
+Line 581:
+Remote (PROD): <td class="info-label">Razón Social:</td>
+Local  (OLD) : <th style="width: 55%;">Descripción del Servicio</th>
+
+Line 582:
+Remote (PROD): <td class="info-value">${clienteObj ? clienteObj.razon_social : '—'}</td>
+Local  (OLD) : <th style="width: 8%; text-align: center;">Cantidad</th>
+
+Line 583:
+Remote (PROD): <td class="info-label">RUT Cliente:</td>
+Local  (OLD) : <th style="width: 8%; text-align: center;">Unidad</th>
+
+Line 584:
+Remote (PROD): <td class="info-value">${clienteObj ? clienteObj.rut_empresa : '—'}</td>
+Local  (OLD) : <th style="width: 12%; text-align: right;">Unitario (Neto)</th>
+
+Line 585:
+Remote (PROD): </tr>
+Local  (OLD) : <th style="width: 12%; text-align: right;">Subtotal (Neto)</th>
+
+Line 586:
+Remote (PROD): <tr>
+Local  (OLD) : </tr>
+
+Line 587:
+Remote (PROD): <td class="info-label">Dirección:</td>
+Local  (OLD) : </thead>
+
+Line 588:
+Remote (PROD): <td class="info-value">${clienteObj ? (clienteObj.direccion || '—') : '—'}</td>
+Local  (OLD) : <tbody>
+
+Line 589:
+Remote (PROD): <td class="info-label">Giro:</td>
+Local  (OLD) : ${lineasHtml}
+
+Line 590:
+Remote (PROD): <td class="info-value">${clienteObj ? (clienteObj.giro || '—') : '—'}</td>
+Local  (OLD) : </tbody>
+
+Line 591:
+Remote (PROD): </tr>
+Local  (OLD) : </table>
+
+Line 592:
+Remote (PROD): <tr>
+Local  (OLD) : 
+
+Line 593:
+Remote (PROD): <td class="info-label">Contacto:</td>
+Local  (OLD) : <!-- TOTALES -->
+
+Line 594:
+Remote (PROD): <td class="info-value">${crm.contacto_nombre || '—'}</td>
+Local  (OLD) : <table class="summary-table">
+
+Line 595:
+Remote (PROD): <td class="info-label">Teléfono:</td>
+Local  (OLD) : <tr>
+
+Line 596:
+Remote (PROD): <td class="info-value">${crm.contacto_telefono || '—'}</td>
+Local  (OLD) : <td class="summary-label">Total Neto:</td>
+
+Line 597:
+Remote (PROD): </tr>
+Local  (OLD) : <td class="summary-value">${formatCLP(totalNetoVal)}</td>
+
+Line 598:
+Remote (PROD): <tr>
+Local  (OLD) : </tr>
+
+Line 599:
+Remote (PROD): <td class="info-label">Forma de Pago:</td>
+Local  (OLD) : <tr>
+
+Line 600:
+Remote (PROD): <td class="info-value" style="text-transform: uppercase;">${crm.tipo_pago || '—'}</td>
+Local  (OLD) : <td class="summary-label">IVA (19%):</td>
+
+Line 601:
+Remote (PROD): <td class="info-label">Requiere OC/HES:</td>
+Local  (OLD) : <td class="summary-value">${formatCLP(ivaVal)}</td>
+
+Line 602:
+Remote (PROD): <td class="info-value">${crm.requiere_oc_hes ? 'SÍ' : 'NO'}</td>
+Local  (OLD) : </tr>
+
+Line 603:
+Remote (PROD): </tr>
+Local  (OLD) : <tr class="summary-total">
+
+Line 604:
+Remote (PROD): </table>
+Local  (OLD) : <td class="summary-label summary-total">Total General:</td>
+
+Line 605:
+Remote (PROD): 
+Local  (OLD) : <td class="summary-value summary-total">${formatCLP(totalGeneralVal)}</td>
+
+Line 606:
+Remote (PROD): <!-- DATOS SERVICIO & VISITA -->
+Local  (OLD) : </tr>
+
+Line 607:
+Remote (PROD): <div class="section-title">2. Datos de Operación e Ingeniería</div>
+Local  (OLD) : </table>
+
+Line 608:
+Remote (PROD): <table class="info-table">
+Local  (OLD) : 
+
+Line 609:
+Remote (PROD): <tr>
+Local  (OLD) : <div style="clear: both;"></div>
+
+Line 610:
+Remote (PROD): <td class="info-label">Nombre Obra/Proyecto:</td>
+Local  (OLD) : 
+
+Line 611:
+Remote (PROD): <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+Local  (OLD) : <!-- CONDICIONES COMERCIALES -->
+
+Line 612:
+Remote (PROD): <td class="info-label">Revisión/Visita:</td>
+Local  (OLD) : <div class="section-title">4. Condiciones Comerciales y Especiales</div>
+
+Line 613:
+Remote (PROD): <td class="info-value">${crm.visita_terreno || 'No'}</td>
+Local  (OLD) : <table class="info-table">
+
+Line 614:
+Remote (PROD): <td class="info-label">Ubicación Obra:</td>
+Local  (OLD) : <tr>
+
+Line 615:
+Remote (PROD): <td class="info-value">
+Local  (OLD) : <td class="info-label">Validez de Oferta:</td>
+
+Line 616:
+Remote (PROD): ${crm.obra_direccion || '—'}${crm.obra_ciudad ? ', ' + crm.obra_ciudad : ''}
+Local  (OLD) : <td class="info-value">${crm.validez_dias || 15} días corridos</td>
+
+Line 617:
+Remote (PROD): ${crm.coordenadas_mapa?.lat ? `<br><img src="https://static-maps.yandex.ru/1.x/?ll=${crm.coordenadas_mapa.lng},${crm.coordenadas_mapa.lat}&z=15&l=map&size=200,120&pt=${crm.coordenadas_mapa.lng},${crm.coordenadas_mapa.lat},pm2rdl" style="margin-top: 5px; max-width: 200px; border: 1px solid #e2e8f0; border-radius: 4px;" alt="Mapa de Ubicación" /><br><span style="font-size: 8px; color: #718096; font-family: monospace;">Coord: ${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
+Local  (OLD) : <td class="info-label">Moneda Cotizada:</td>
+
+Line 618:
+Remote (PROD): </td>
+Local  (OLD) : <td class="info-value" style="text-transform: uppercase;">${crm.moneda || 'CLP'}</td>
+
+Line 621:
+Remote (PROD): <td class="info-label">Detalle del Servicio:</td>
+Local  (OLD) : <td class="info-label">Condición de Servicio:</td>
+
+Line 622:
+Remote (PROD): <td class="info-value" colspan="3">${crm.detalle_servicio || p.observacion_proyecto || '—'}</td>
+Local  (OLD) : <td class="info-value" colspan="3" style="text-transform: uppercase;">
+
+Line 623:
+Remote (PROD): </tr>
+Local  (OLD) : <strong>${crm.condicion_servicio || 'programado'}</strong>
+
+Line 624:
+Remote (PROD): <tr>
+Local  (OLD) : ${(crm.condicion_servicio || 'programado') === 'programado'
+
+Line 625:
+Remote (PROD): <td class="info-label">Tipo de Carga:</td>
+Local  (OLD) : ? '— Reserva garantizada de equipo. Se factura a todo evento según programación.'
+
+Line 626:
+Remote (PROD): <td class="info-value">${crm.tipo_carga || '—'}</td>
+Local  (OLD) : : '— Sujeto a disponibilidad de flota al momento del requerimiento.'}
+
+Line 627:
+Remote (PROD): <td class="info-label">Peso de la Carga:</td>
+Local  (OLD) : </td>
+
+Line 628:
+Remote (PROD): <td class="info-value">${crm.peso_carga || '—'}</td>
+Local  (OLD) : </tr>
+
+Line 629:
+Remote (PROD): </tr>
+Local  (OLD) : </table>
+
+Line 630:
+Remote (PROD): <tr>
+Local  (OLD) : 
+
+Line 631:
+Remote (PROD): <td class="info-label">Volumen (Dimensiones):</td>
+Local  (OLD) : ${condicionesHtml ? `
+
+Line 632:
+Remote (PROD): <td class="info-value">${crm.volumen_carga || '—'}</td>
+Local  (OLD) : <div style="font-weight: bold; font-size: 8.5px; color: #2d3748; margin-top: 6px;">Exclusiones y Condiciones Especiales:</div>
+
+Line 633:
+Remote (PROD): <td class="info-label">Radios / Alturas Trab:</td>
+Local  (OLD) : <div class="conditions-box">${condicionesHtml}</div>
+
+Line 634:
+Remote (PROD): <td class="info-value">Radio: ${crm.radios_trabajo || '—'} | Altura: ${crm.alturas_trabajo || '—'}</td>
+Local  (OLD) : ` : ''}
+
+Line 635:
+Remote (PROD): </tr>
+Local  (OLD) : 
+
+Line 636:
+Remote (PROD): <tr>
+Local  (OLD) : <div class="footer">
+
+Line 637:
+Remote (PROD): <td class="info-label">Visita Técnica Terreno:</td>
+Local  (OLD) : Documento de carácter confidencial emitido por el Holding de Empresas de Grúas San Pablo.<br>
+
+Line 638:
+Remote (PROD): <td class="info-value" colspan="3">${crm.visita_terreno ? 'SÍ (Realizada por personal técnico certificado GSP)' : 'NO (Sujeto a validación operacional previa en faena)'}</td>
+Local  (OLD) : Para cualquier consulta comercial o de operaciones, contactar a fono: ${emisor.fono} o al correo oficial de su ejecutivo asignado.
+
+Line 639:
+Remote (PROD): </tr>
+Local  (OLD) : </div>
+
+Line 640:
+Remote (PROD): </table>
+Local  (OLD) : </div>
+
+Line 641:
+Remote (PROD): 
+Local  (OLD) : </body>
+
+Line 642:
+Remote (PROD): <!-- ESTRUCTURADOR DE SERVICIOS -->
+Local  (OLD) : </html>
+
+Line 643:
+Remote (PROD): <div class="section-title">3. Detalles de Servicios y Tarifas</div>
+Local  (OLD) : `;
+
+Line 644:
+Remote (PROD): <table class="services-table">
+Local  (OLD) : 
+
+Line 645:
+Remote (PROD): <thead>
+Local  (OLD) : // 6. Escribir HTML temporal y compilar a PDF con wkhtmltopdf
+
+Line 646:
+Remote (PROD): <tr>
+Local  (OLD) : const tempHtmlPath = path.join(targetDir, `${codi}_V${version}_temp.html`);
+
+Line 647:
+Remote (PROD): <th style="width: 5%;">Item</th>
+Local  (OLD) : fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+Line 648:
+Remote (PROD): <th style="width: 55%;">Descripción del Servicio</th>
+Local  (OLD) : 
+
+Line 649:
+Remote (PROD): <th style="width: 8%; text-align: center;">Cantidad</th>
+Local  (OLD) : await new Promise((resolve, reject) => {
+
+Line 650:
+Remote (PROD): <th style="width: 8%; text-align: center;">Unidad</th>
+Local  (OLD) : const cmd = `xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf --page-size A4 --orientation Portrait "${tempHtmlPath}" "${filepath}"`;
+
+Line 651:
+Remote (PROD): <th style="width: 12%; text-align: right;">Unitario (Neto)</th>
+Local  (OLD) : exec(cmd, (error, stdout, stderr) => {
+
+Line 652:
+Remote (PROD): <th style="width: 12%; text-align: right;">Subtotal (Neto)</th>
+Local  (OLD) : // Limpiar archivo temporal HTML
+
+Line 653:
+Remote (PROD): </tr>
+Local  (OLD) : try {
+
+Line 654:
+Remote (PROD): </thead>
+Local  (OLD) : if (fs.existsSync(tempHtmlPath)) {
+
+Line 655:
+Remote (PROD): <tbody>
+Local  (OLD) : fs.unlinkSync(tempHtmlPath);
+
+Line 656:
+Remote (PROD): ${lineasHtml}
+Local  (OLD) : }
+
+Line 657:
+Remote (PROD): </tbody>
+Local  (OLD) : } catch (unlinkErr) {
+
+Line 658:
+Remote (PROD): </table>
+Local  (OLD) : console.error("Error al borrar HTML temporal:", unlinkErr);
+
+Line 659:
+Remote (PROD): 
+Local  (OLD) : }
+
+Line 660:
+Remote (PROD): <!-- TOTALES -->
+Local  (OLD) : 
+
+Line 661:
+Remote (PROD): <table class="summary-table">
+Local  (OLD) : if (error) {
+
+Line 662:
+Remote (PROD): <tr>
+Local  (OLD) : console.error("Error al ejecutar wkhtmltopdf:", error);
+
+Line 663:
+Remote (PROD): <td class="summary-label">Total Neto:</td>
+Local  (OLD) : console.error("stderr:", stderr);
+
+Line 664:
+Remote (PROD): <td class="summary-value">${formatCLP(totalNetoVal)}</td>
+Local  (OLD) : return reject(new Error(`Error al compilar el PDF de la cotización: ${error.message}`));
+
+Line 665:
+Remote (PROD): </tr>
+Local  (OLD) : }
+
+Line 666:
+Remote (PROD): <tr>
+Local  (OLD) : resolve();
+
+Line 667:
+Remote (PROD): <td class="summary-label">IVA (19%):</td>
+Local  (OLD) : });
+
+Line 668:
+Remote (PROD): <td class="summary-value">${formatCLP(ivaVal)}</td>
+Local  (OLD) : });
+
+Line 669:
+Remote (PROD): </tr>
+Local  (OLD) : 
+
+Line 670:
+Remote (PROD): <tr class="summary-total">
+Local  (OLD) : await client.query('COMMIT');
+
+Line 671:
+Remote (PROD): <td class="summary-label summary-total">Total General:</td>
+Local  (OLD) : 
+
+Line 672:
+Remote (PROD): <td class="summary-value summary-total">${formatCLP(totalGeneralVal)}</td>
+Local  (OLD) : return {
+
+Line 673:
+Remote (PROD): </tr>
+Local  (OLD) : cotizacion: nuevaCotizacion,
+
+Line 674:
+Remote (PROD): </table>
+Local  (OLD) : proyecto: updateResult.rows[0]
+
+Line 675:
+Remote (PROD): 
+Local  (OLD) : };
+
+Line 676:
+Remote (PROD): <div style="clear: both;"></div>
+Local  (OLD) : } catch (error) {
+
+Line 677:
+Remote (PROD): 
+Local  (OLD) : await client.query('ROLLBACK');
+
+Line 678:
+Remote (PROD): ${extraSectionsHtml}
+Local  (OLD) : throw error;
+
+Line 679:
+Remote (PROD): 
+Local  (OLD) : } finally {
+
+Line 680:
+Remote (PROD): <!-- CONDICIONES COMERCIALES -->
+Local  (OLD) : client.release();
+
+Line 681:
+Remote (PROD): <div class="section-title">${sectionCounter}. Condiciones Comerciales y Especiales</div>
+Local  (OLD) : }
+
+Line 682:
+Remote (PROD): <table class="info-table">
+Local  (OLD) : }
+
+Line 683:
+Remote (PROD): <tr>
+Local  (OLD) : }
+
+Line 684:
+Remote (PROD): <td class="info-label">Validez de Oferta:</td>
+Local  (OLD) : 
+
+Line 685:
+Remote (PROD): <td class="info-value">${crm.validez_dias || 15} días corridos</td>
+Local  (OLD) : module.exports = ProyectoModel;
+
+Line 686:
+Remote (PROD): <td class="info-label">Moneda Cotizada:</td>
+Local  (OLD) : (none)
+
+Line 687:
+Remote (PROD): <td class="info-value" style="text-transform: uppercase;">${crm.moneda || 'CLP'}</td>
+Local  (OLD) : (none)
+
+Line 688:
+Remote (PROD): </tr>
+Local  (OLD) : (none)
+
+Line 689:
+Remote (PROD): <tr>
+Local  (OLD) : (none)
+
+Line 690:
+Remote (PROD): <td class="info-label">Condición de Servicio:</td>
+Local  (OLD) : (none)
+
+Line 691:
+Remote (PROD): <td class="info-value" colspan="3" style="text-transform: uppercase;">
+Local  (OLD) : (none)
+
+Line 692:
+Remote (PROD): <strong>${crm.condicion_servicio || 'programado'}</strong>
+Local  (OLD) : (none)
+
+Line 693:
+Remote (PROD): ${(crm.condicion_servicio || 'programado') === 'programado'
+Local  (OLD) : (none)
+
+Line 694:
+Remote (PROD): ? '— Reserva garantizada de equipo. Se factura a todo evento según programación.'
+Local  (OLD) : (none)
+
+Line 695:
+Remote (PROD): : '— Sujeto a disponibilidad de flota al momento del requerimiento.'}
+Local  (OLD) : (none)
+
+Line 696:
+Remote (PROD): </td>
+Local  (OLD) : (none)
+
+Line 697:
+Remote (PROD): </tr>
+Local  (OLD) : (none)
+
+Line 698:
+Remote (PROD): </table>
+Local  (OLD) : (none)
+
+Line 699:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 700:
+Remote (PROD): ${condicionesHtml ? `
+Local  (OLD) : (none)
+
+Line 701:
+Remote (PROD): <div style="font-weight: bold; font-size: 8.5px; color: #2d3748; margin-top: 6px;">Exclusiones y Condiciones Especiales:</div>
+Local  (OLD) : (none)
+
+Line 702:
+Remote (PROD): <div class="conditions-box" style="white-space: pre-wrap;">${condicionesHtml}</div>
+Local  (OLD) : (none)
+
+Line 703:
+Remote (PROD): ` : ''}
+Local  (OLD) : (none)
+
+Line 704:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 705:
+Remote (PROD): <div class="footer">
+Local  (OLD) : (none)
+
+Line 706:
+Remote (PROD): Documento de carácter confidencial emitido por el Holding de Empresas de Grúas San Pablo.<br>
+Local  (OLD) : (none)
+
+Line 707:
+Remote (PROD): Para cualquier consulta comercial o de operaciones, contactar a fono: ${emisor.fono} o al correo oficial de su ejecutivo asignado.
+Local  (OLD) : (none)
+
+Line 708:
+Remote (PROD): </div>
+Local  (OLD) : (none)
+
+Line 709:
+Remote (PROD): </div>
+Local  (OLD) : (none)
+
+Line 710:
+Remote (PROD): </body>
+Local  (OLD) : (none)
+
+Line 711:
+Remote (PROD): </html>
+Local  (OLD) : (none)
+
+Line 712:
+Remote (PROD): `;
+Local  (OLD) : (none)
+
+Line 713:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 714:
+Remote (PROD): // 6. Escribir HTML temporal y compilar a PDF con wkhtmltopdf
+Local  (OLD) : (none)
+
+Line 715:
+Remote (PROD): const tempHtmlPath = path.join(targetDir, `${codi}_V${version}_temp.html`);
+Local  (OLD) : (none)
+
+Line 716:
+Remote (PROD): fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+Local  (OLD) : (none)
+
+Line 717:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 718:
+Remote (PROD): await new Promise((resolve, reject) => {
+Local  (OLD) : (none)
+
+Line 719:
+Remote (PROD): const cmd = `xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait "${tempHtmlPath}" "${filepath}"`;
+Local  (OLD) : (none)
+
+Line 720:
+Remote (PROD): exec(cmd, (error, stdout, stderr) => {
+Local  (OLD) : (none)
+
+Line 721:
+Remote (PROD): // Limpiar archivo temporal HTML
+Local  (OLD) : (none)
+
+Line 722:
+Remote (PROD): try {
+Local  (OLD) : (none)
+
+Line 723:
+Remote (PROD): if (fs.existsSync(tempHtmlPath)) {
+Local  (OLD) : (none)
+
+Line 724:
+Remote (PROD): fs.unlinkSync(tempHtmlPath);
+Local  (OLD) : (none)
+
+Line 725:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 726:
+Remote (PROD): } catch (unlinkErr) {
+Local  (OLD) : (none)
+
+Line 727:
+Remote (PROD): console.error("Error al borrar HTML temporal:", unlinkErr);
+Local  (OLD) : (none)
+
+Line 728:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 729:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 730:
+Remote (PROD): // wkhtmltopdf can exit with code 1 on minor network warnings.
+Local  (OLD) : (none)
+
+Line 731:
+Remote (PROD): // If the PDF file was successfully created, we treat it as a success.
+Local  (OLD) : (none)
+
+Line 732:
+Remote (PROD): if (error && !fs.existsSync(filepath)) {
+Local  (OLD) : (none)
+
+Line 733:
+Remote (PROD): console.error("Error al ejecutar wkhtmltopdf:", error);
+Local  (OLD) : (none)
+
+Line 734:
+Remote (PROD): console.error("stderr:", stderr);
+Local  (OLD) : (none)
+
+Line 735:
+Remote (PROD): return reject(new Error(`Error al compilar el PDF de la cotización: ${error.message}`));
+Local  (OLD) : (none)
+
+Line 736:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 737:
+Remote (PROD): resolve();
+Local  (OLD) : (none)
+
+Line 738:
+Remote (PROD): });
+Local  (OLD) : (none)
+
+Line 739:
+Remote (PROD): });
+Local  (OLD) : (none)
+
+Line 740:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 741:
+Remote (PROD): await client.query('COMMIT');
+Local  (OLD) : (none)
+
+Line 742:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 743:
+Remote (PROD): return {
+Local  (OLD) : (none)
+
+Line 744:
+Remote (PROD): cotizacion: nuevaCotizacion,
+Local  (OLD) : (none)
+
+Line 745:
+Remote (PROD): proyecto: updateResult.rows[0]
+Local  (OLD) : (none)
+
+Line 746:
+Remote (PROD): };
+Local  (OLD) : (none)
+
+Line 747:
+Remote (PROD): } catch (error) {
+Local  (OLD) : (none)
+
+Line 748:
+Remote (PROD): await client.query('ROLLBACK');
+Local  (OLD) : (none)
+
+Line 749:
+Remote (PROD): throw error;
+Local  (OLD) : (none)
+
+Line 750:
+Remote (PROD): } finally {
+Local  (OLD) : (none)
+
+Line 751:
+Remote (PROD): client.release();
+Local  (OLD) : (none)
+
+Line 752:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 753:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 754:
+Remote (PROD): }
+Local  (OLD) : (none)
+
+Line 755:
+Remote (PROD): 
+Local  (OLD) : (none)
+
+Line 756:
+Remote (PROD): module.exports = ProyectoModel;
+Local  (OLD) : (none)

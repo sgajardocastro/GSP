@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 62,
+      "attributes": [
+        {
+          "type": "checkListTransmacFatigaSomnolencia",
+          "label": "Fatiga y somnolencia",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

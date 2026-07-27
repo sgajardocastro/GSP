@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP & LeanGlobal – Presentación Estratégica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #030609;
+      --bg-base:    #070b14;
+      --bg-card:    #0c1220;
+      --bg-surface: #111827;
+      --bg-hover:   #161f32;
+      --amber:      #f5a623;
+      --amber-dim:  rgba(245,166,35,0.08);
+      --amber-glow: rgba(245,166,35,0.18);
+      --blue:       #3b82f6;
+      --blue-dim:   rgba(59,130,246,0.08);
+      --green:      #10b981;
+      --green-dim:  rgba(16,185,129,0.08);
+      --red:        #ef4444;
+      --purple:     #a78bfa;
+      --cyan:       #22d3ee;
+      --t-primary:  #f8fafc;
+      --t-sec:      #cbd5e1;
+      --t-muted:    #94a3b8;
+      --border:     rgba(255,255,255,0.08);
+      --border-md:  rgba(255,255,255,0.15);
+    }
+
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--t-primary);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-size: 15px; /* Aumentado de tamaño base */
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--amber-glow); border-radius: 99px; }
+
+    /* ── Layout shell ── */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+    #header { flex-shrink: 0; }
+    #stage  { flex: 1; overflow: hidden; position: relative; }
+    #footer { flex-shrink: 0; }
+
+    /* ── Slide system ── */
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      opacity: 0; transform: translateY(18px) scale(0.99);
+      pointer-events: none;
+      transition: opacity 0.42s cubic-bezier(0.22,1,0.36,1), transform 0.42s cubic-bezier(0.22,1,0.36,1);
+      padding: 24px 48px;
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1; transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+    .slide.exit-left  { opacity: 0; transform: translateX(-28px) scale(0.98); }
+    .slide.exit-right { opacity: 0; transform: translateX(28px) scale(0.98); }
+
+    /* ── Ambient background ── */
+    .amb-1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(245,166,35,0.05) 0%, transparent 70%); top: -200px; right: -100px; pointer-events:none; }
+    .amb-2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%); bottom: -150px; left: -100px; pointer-events:none; }
+
+    /* ── Typography ── */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .card:hover { border-color: var(--border-md); }
+
+    /* ── Glow borders ── */
+    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.18), 0 8px 32px -8px rgba(245,166,35,0.15); }
+    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.18),  0 8px 32px -8px rgba(59,130,246,0.15); }
+    .glow-green  { box-shadow: 0 0 0 1px rgba(16,185,129,0.18),  0 8px 32px -8px rgba(16,185,129,0.15); }
+    .glow-purple { box-shadow: 0 0 0 1px rgba(167,139,250,0.18), 0 8px 32px -8px rgba(167,139,250,0.15); }
+
+    /* ── Tag / Badge ── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid; white-space: nowrap;
+    }
+    .tag-amber  { background: rgba(245,166,35,0.1); color: var(--amber);  border-color: rgba(245,166,35,0.3); }
+    .tag-blue   { background: rgba(59,130,246,0.1); color: var(--blue);   border-color: rgba(59,130,246,0.3); }
+    .tag-green  { background: rgba(16,185,129,0.1); color: var(--green);  border-color: rgba(16,185,129,0.3); }
+    .tag-purple { background: rgba(167,139,250,0.1);color: var(--purple); border-color: rgba(167,139,250,0.3);}
+    .tag-cyan   { background: rgba(34,211,238,0.1); color: var(--cyan);   border-color: rgba(34,211,238,0.3); }
+    .tag-red    { background: rgba(239,68,68,0.1);  color: var(--red);    border-color: rgba(239,68,68,0.3); }
+    .tag-slate  { background: rgba(100,116,139,0.12); color: var(--t-sec);  border-color: rgba(100,116,139,0.25);}
+
+    /* ── Role pills ── */
+    .role-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      white-space: nowrap;
+    }
+    .role-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Icon boxes ── */
+    .icon-box {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1px solid; flex-shrink: 0;
+    }
+
+    /* ── Process node ── */
+    .phase-node {
+      background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-surface) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.25s;
+      flex: 1;
+    }
+    .phase-node:hover { transform: translateY(-2px); border-color: var(--border-md); }
+    .phase-node::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+      border-radius: 16px 16px 0 0;
+    }
+    .phase-1::before { background: linear-gradient(90deg, var(--amber), transparent); }
+    .phase-2::before { background: linear-gradient(90deg, var(--blue), transparent); }
+    .phase-3::before { background: linear-gradient(90deg, var(--purple), transparent); }
+    .phase-4::before { background: linear-gradient(90deg, var(--green), transparent); }
+
+    /* ── Connector arrow ── */
+    .arrow-connector {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; flex-shrink: 0;
+    }
+
+    /* ── Feature grid ── */
+    .feat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex; gap: 14px; align-items: flex-start;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .feat-card:hover { background: var(--bg-hover); border-color: var(--border-md); }
+
+    /* ── Matrix ── */
+    .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .matrix-table th, .matrix-table td { padding: 8px 10px; font-size: 13px; } /* Aumentado */
+    .matrix-table thead th {
+      font-family: 'Outfit', sans-serif; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--t-muted); text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+    }
+    .matrix-table thead th:first-child { text-align: left; font-size: 12px; }
+    .matrix-table tbody tr { transition: background 0.18s; }
+    .matrix-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+    .matrix-table tbody td {
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      text-align: center; vertical-align: middle;
+    }
+    .matrix-table tbody td:first-child {
+      text-align: left; font-weight: 600; color: var(--t-primary);
+      font-family: 'Outfit', sans-serif; font-size: 13px;
+    }
+    .matrix-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      transition: transform 0.2s;
+    }
+    .matrix-dot:hover { transform: scale(1.3); }
+    .dot-on  { background: rgba(245,166,35,0.18); border: 1.5px solid rgba(245,166,35,0.45); color: var(--amber); }
+    .dot-off { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); color: transparent; }
+
+    /* ── Flow chip in devengado ── */
+    .flow-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 12px;
+      border: 1px solid; font-size: 13px;
+    }
+    .flow-arrow { color: var(--t-muted); font-size: 16px; }
+
+    /* ── Button ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--amber); color: #0a0400;
+      font-family: 'Outfit', sans-serif; font-weight: 800;
+      font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 16px 36px; border-radius: 14px;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 0 0 rgba(245,166,35,0.4);
+    }
+    .btn-primary:hover {
+      background: #ffca28; transform: translateY(-2px);
+      box-shadow: 0 12px 40px -8px rgba(245,166,35,0.4);
+    }
+    .btn-primary svg { transition: transform 0.2s; }
+    .btn-primary:hover svg { transform: translateX(4px); }
+
+    /* ── Header ── */
+    #header {
+      background: rgba(7,11,20,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 14px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── Footer ── */
+    #footer {
+      background: rgba(7,11,20,0.85);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 14px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── Dots nav ── */
+    .nav-dot {
+      width: 8px; height: 8px; border-radius: 99px;
+      background: rgba(255,255,255,0.15);
+      border: none; cursor: pointer; padding: 0;
+      transition: width 0.3s, background 0.3s;
+    }
+    .nav-dot.active { width: 24px; background: var(--amber); }
+
+    /* ── Nav btn ── */
+    .nav-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--t-sec); border-radius: 10px;
+      padding: 8px 18px; font-size: 13px; font-weight: 700;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--t-primary); border-color: rgba(255,255,255,0.15); }
+    .nav-btn:disabled { opacity: 0.25; pointer-events: none; }
+    .nav-btn.primary { background: rgba(245,166,35,0.15); color: var(--amber); border-color: rgba(245,166,35,0.3); }
+    .nav-btn.primary:hover { background: rgba(245,166,35,0.25); }
+
+    /* ── Section labels ── */
+    .slide-inner { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; }
+    .section-eyebrow { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(22px, 2.5vw, 32px); font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; color: var(--t-primary); }
+    .section-sub { font-size: 14px; color: var(--t-muted); line-height: 1.6; }
+    .section-head { border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px; }
+
+    /* ── Separator line between header and content ── */
+    .section-head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+  </style>
+</head>
+<body>
+<div class="amb-1"></div>
+<div class="amb-2"></div>
+
+<div id="app">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);display:flex;align-items:center;justify-content:center;color:var(--amber);">
+        <i data-lucide="shield-check" style="width:20px;height:20px;"></i>
+      </div>
+      <div class="font-display" style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--t-primary);">
+        LEAN <span style="color:var(--amber);">GLOBAL</span>
+        <span style="color:rgba(255,255,255,0.12);margin:0 8px;">×</span>
+        GRÚAS SAN PABLO
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span id="hdr-label" style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t-muted);">Portada</span>
+      <div style="width:1px;height:18px;background:rgba(255,255,255,0.08);"></div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 12px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite;display:inline-block;"></span>
+        <span class="mono" style="font-size:11px;color:var(--t-muted);font-weight:600;"><span id="cnt-cur">1</span>/<span id="cnt-tot">7</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════════════════ STAGE ════════════════ -->
+  <main id="stage">
+
+    <!-- ─── SLIDE 1: PORTADA ─── -->
+    <div class="slide active" id="s1" data-label="Portada">
+      <div style="max-width:900px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:28px;">
+        <div class="tag tag-amber" style="font-size:12px;padding:6px 18px;animation:fadeUp 0.5s 0.1s both;">
+          <span>Soporte Estratégico a la Operación Industrial</span>
+        </div>
+        <h1 class="font-display" style="font-size:clamp(36px,5.5vw,68px);font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.07;color:var(--t-primary);animation:fadeUp 0.5s 0.18s both;">
+          Control de Gestión para<br>
+          <span style="color:var(--amber);font-style:italic;">Operaciones de Izaje</span><br>
+          <span style="color:var(--amber);font-style:italic;">&amp; Transporte Pesado</span>
+        </h1>
+        <p style="font-size:16px;color:var(--t-muted);max-width:600px;line-height:1.7;font-weight:400;animation:fadeUp 0.5s 0.26s both;">
+          Cómo una consola de operaciones conecta la <strong style="color:var(--t-sec);">ejecución en terreno</strong> con la <strong style="color:var(--t-sec);">facturación oportuna</strong> y el <strong style="color:var(--t-sec);">cumplimiento normativo</strong>.
+        </p>
+        <div style="width:80px;height:1px;background:rgba(255,255,255,0.1);animation:fadeUp 0.5s 0.3s both;"></div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px 28px;animation:fadeUp 0.5s 0.36s both;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+            <i data-lucide="hard-hat" style="width:16px;height:16px;color:var(--amber);"></i> Ingeniería de Izaje
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+            <i data-lucide="trending-up" style="width:16px;height:16px;color:var(--green);"></i> Devengado &amp; Facturación
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+            <i data-lucide="shield" style="width:16px;height:16px;color:var(--blue);"></i> HSEC &amp; Acreditación
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 2: PROCESO OPERATIVO ─── -->
+    <div class="slide" id="s2" data-label="Proceso Operativo">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Contexto de Negocio</div>
+            <h2 class="section-title">Proceso General de Operación de Grúas de Alto Tonelaje</h2>
+            <p class="section-sub" style="margin-top:4px;">El flujo operativo sigue un ciclo estructurado de alta criticidad técnica que mitiga riesgos en cada fase e involucra roles especializados.</p>
+          </div>
+        </div>
+
+        <!-- 4 phases in a row -->
+        <div style="display:flex;gap:12px;align-items:stretch;">
+
+          <!-- FASE 1 -->
+          <div class="phase-node phase-1" style="border-color:rgba(245,166,35,0.2);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:14px;color:var(--amber);">1</div>
+              <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--t-primary);">Comercial &amp; Levantamiento</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="message-square" style="width:14px;height:14px;color:var(--amber);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Requerimiento:</strong> El cliente solicita el servicio indicando el equipo/material, pesos, dimensiones y lugar de maniobra.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="map-pin" style="width:14px;height:14px;color:var(--amber);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Site Visit:</strong> Visita a terreno para evaluar la viabilidad física: espacio, resistencia del suelo y líneas eléctricas.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="file-text" style="width:14px;height:14px;color:var(--amber);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Presupuesto:</strong> Basado en el tipo de grúa, accesorios, horas de uso y el personal necesario.</p>
+              </div>
+            </div>
+            <!-- roles activos en esta fase -->
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;display:flex;flex-wrap:wrap;gap:6px;">
+              <div class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Gerente de Operaciones</div>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-connector">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="rgba(148,163,184,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <!-- FASE 2 -->
+          <div class="phase-node phase-2" style="border-color:rgba(59,130,246,0.2);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:14px;color:var(--blue);">2</div>
+              <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--t-primary);">Ingeniería &amp; Planificación</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="compass" style="width:14px;height:14px;color:var(--blue);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Lift Plan:</strong> Cálculos matemáticos y físicos: centro de gravedad, capacidad bruta/neta de la grúa y radio de giro.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="route" style="width:14px;height:14px;color:var(--blue);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Permisos &amp; Logística:</strong> Permisos especiales de vialidad (sobredimensión/peso en carretera) y cortes de tránsito.</p>
+              </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;display:flex;flex-wrap:wrap;gap:6px;">
+              <div class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Ingeniero de Izaje</div>
+              <div class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Gte. de Operaciones</div>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-connector">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="rgba(148,163,184,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <!-- FASE 3 -->
+          <div class="phase-node phase-3" style="border-color:rgba(167,139,250,0.2);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:14px;color:var(--purple);">3</div>
+              <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--t-primary);">Ejecución en Terreno</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="truck" style="width:14px;height:14px;color:var(--purple);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Movilización:</strong> Traslado de la grúa y sus contrapesos en camiones cama baja propios al lugar.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="anchor" style="width:14px;height:14px;color:var(--purple);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Armado:</strong> Nivelación y despliegue de estabilizadores hidráulicos sobre placas para distribuir el peso.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="move-up" style="width:14px;height:14px;color:var(--purple);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Maniobra:</strong> Levante y posicionamiento de la carga, guiado por señales normalizadas del Rigger.</p>
+              </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;display:flex;flex-wrap:wrap;gap:6px;">
+              <div class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operador de Grúa</div>
+              <div class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Rigger</div>
+              <div class="role-pill"><span class="role-dot" style="background:var(--cyan);"></span>Supervisor Izaje</div>
+              <div class="role-pill"><span class="role-dot" style="background:var(--t-muted);"></span>Choferes Cama Baja</div>
+            </div>
+          </div>
+
+          <!-- arrow -->
+          <div class="arrow-connector">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M14 7l5 5-5 5" stroke="rgba(148,163,184,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <!-- FASE 4 -->
+          <div class="phase-node phase-4" style="border-color:rgba(16,185,129,0.2);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:14px;color:var(--green);">4</div>
+              <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--t-primary);">Cierre &amp; Facturación</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="package" style="width:14px;height:14px;color:var(--green);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Desmovilización:</strong> Retiro y desarme ordenado de los equipos y accesorios del sitio.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <i data-lucide="receipt" style="width:14px;height:14px;color:var(--green);flex-shrink:0;margin-top:2px;"></i>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;"><strong style="color:var(--t-sec);">Facturación:</strong> Cierre de hojas de servicio firmadas por el cliente en terreno y emisión de la factura.</p>
+              </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;display:flex;flex-wrap:wrap;gap:6px;">
+              <div class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Gte. de Operaciones</div>
+              <div class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Analista Facturación</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- legend -->
+        <div style="display:flex;align-items:center;gap:16px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:12px;margin-top:8px;">
+          <span style="font-size:10px;color:var(--t-muted);font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Roles del Negocio →</span>
+          <div class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Gerente de Operaciones</div>
+          <div class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Ingeniero de Izaje</div>
+          <div class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Rigger (Aparejador)</div>
+          <div class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operador de Grúa</div>
+          <div class="role-pill"><span class="role-dot" style="background:var(--cyan);"></span>Supervisor de Izaje</div>
+          <div class="role-pill"><span class="role-dot" style="background:var(--t-muted);"></span>Choferes Cama Baja</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 3: DEVENGADO ─── -->
+    <div class="slide" id="s3" data-label="Devengado & Facturación">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Concepto Financiero Clave</div>
+            <h2 class="section-title">El Devengado: La Verdadera Productividad del Negocio</h2>
+            <p class="section-sub" style="margin-top:4px;">Reconocimiento económico continuo del servicio entregado, independiente de cuándo se emita la OC, el EDP o la factura.</p>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:20px;flex:1;">
+
+          <!-- Flow column -->
+          <div class="card glow-amber" style="padding:24px;display:flex;flex-direction:column;gap:14px;justify-content:center;">
+            <span style="font-family:Outfit,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);">Flujo del Valor Generado</span>
+            <div style="display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center;">
+              <div class="flow-step" style="background:rgba(245,166,35,0.07);border-color:rgba(245,166,35,0.22);">
+                <div style="width:26px;height:26px;border-radius:6px;background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:12px;color:var(--amber);flex-shrink:0;">1</div>
+                <div><span style="font-size:12px;font-weight:700;color:var(--t-primary);">Horas Devengadas</span><br><span style="font-size:10px;color:var(--t-muted);">Trabajo ejecutado en terreno</span></div>
+              </div>
+              <div style="display:flex;justify-content:center;color:var(--t-muted);font-size:16px;">↓</div>
+              <div class="flow-step" style="background:rgba(59,130,246,0.07);border-color:rgba(59,130,246,0.22);">
+                <div style="width:26px;height:26px;border-radius:6px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:12px;color:var(--blue);flex-shrink:0;">2</div>
+                <div><span style="font-size:12px;font-weight:700;color:var(--t-primary);">EDP Aprobado</span><br><span style="font-size:10px;color:var(--t-muted);">Estado de Pago validado por cliente</span></div>
+              </div>
+              <div style="display:flex;justify-content:center;color:var(--t-muted);font-size:16px;">↓</div>
+              <div class="flow-step" style="background:rgba(167,139,250,0.07);border-color:rgba(167,139,250,0.22);">
+                <div style="width:26px;height:26px;border-radius:6px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:12px;color:var(--purple);flex-shrink:0;">3</div>
+                <div><span style="font-size:12px;font-weight:700;color:var(--t-primary);">Facturado (SII)</span><br><span style="font-size:10px;color:var(--t-muted);">Factura definitiva emitida con OC</span></div>
+              </div>
+              <div style="display:flex;justify-content:center;color:var(--t-muted);font-size:16px;">↓</div>
+              <div class="flow-step" style="background:rgba(16,185,129,0.07);border-color:rgba(16,185,129,0.22);">
+                <div style="width:26px;height:26px;border-radius:6px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-weight:900;font-size:12px;color:var(--green);flex-shrink:0;">4</div>
+                <div><span style="font-size:12px;font-weight:700;color:var(--t-primary);">Recaudado (Caja)</span><br><span style="font-size:10px;color:var(--t-muted);">Dinero ingresado en banco</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Benefits column -->
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;">
+              <div class="card" style="padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <i data-lucide="activity" style="width:16px;height:16px;color:var(--amber);"></i>
+                  <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">Evita el "Efecto Montaña Rusa"</span>
+                </div>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Estabiliza la rentabilidad. Evita que un mes muestre pérdidas artificiales por costos devengados sin facturar, y el siguiente utilidades ficticias.</p>
+              </div>
+              <div class="card" style="padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <i data-lucide="eye" style="width:16px;height:16px;color:var(--blue);"></i>
+                  <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">Capital de Trabajo Visible</span>
+                </div>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">La cuenta <em>Ingresos por Facturar</em> mide el capital de trabajo atrapado en la burocracia comercial del cliente, alertando descalces a tiempo.</p>
+              </div>
+              <div class="card" style="padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <i data-lucide="landmark" style="width:16px;height:16px;color:var(--green);"></i>
+                  <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">Protección del EBITDA</span>
+                </div>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Los bancos analizan balances bajo IFRS/NIIF. Mantener los ingresos devengados asegura un EBITDA robusto para calificar a financiamiento.</p>
+              </div>
+              <div class="card" style="padding:16px 20px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <i data-lucide="credit-card" style="width:16px;height:16px;color:var(--purple);"></i>
+                  <span style="font-family:Outfit,sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">Acceso a Factoring</span>
+                </div>
+                <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Facilita el financiamiento anticipado de hitos y contratos mediante el respaldo de la producción devengada y validada en terreno.</p>
+              </div>
+            </div>
+            <!-- SII Treatment -->
+            <div class="card" style="padding:16px 20px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <i data-lucide="landmark" style="width:15px;height:15px;color:var(--blue);"></i>
+                <span style="font-family:Outfit,sans-serif;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);">Tratamiento Tributario SII Chile</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.06); text-align:left;">
+                    <th style="padding:6px 10px 6px 0;color:var(--t-muted);font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;">Impuesto</th>
+                    <th style="padding:6px 10px;color:var(--t-muted);font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;text-align:center;">IVA Mensual (F29)</th>
+                    <th style="padding:6px 10px;color:var(--t-muted);font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;text-align:center;">Rég. General (14 A)</th>
+                    <th style="padding:6px 10px;color:var(--t-muted);font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;text-align:center;">Rég. ProPyme (14 D)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding:8px 10px 8px 0;font-weight:700;color:var(--t-primary);">¿Paga Impuesto?</td>
+                    <td style="padding:8px 10px;color:var(--t-sec);text-align:center;"><span style="color:var(--green);font-weight:700;">No.</span> Se posterga hasta facturación.</td>
+                    <td style="padding:8px 10px;color:var(--t-sec);text-align:center;"><span style="color:var(--red);font-weight:700;">Sí.</span> Tributa en año del servicio (27%).</td>
+                    <td style="padding:8px 10px;color:var(--t-sec);text-align:center;"><span style="color:var(--green);font-weight:700;">No.</span> Tributará al ser percibido.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 4: CARACTERÍSTICAS FUNDAMENTALES (Calidad, Oportunidad, Trazabilidad) ─── -->
+    <div class="slide" id="s4" data-label="Características Fundamentales">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Pilares del Ecosistema</div>
+            <h2 class="section-title">Características Fundamentales del Soporte Operativo</h2>
+            <p class="section-sub" style="margin-top:4px;">Principios conceptuales sobre los cuales está cimentada la solución para garantizar integridad y velocidad.</p>
+          </div>
+          <div class="tag tag-amber" style="flex-shrink:0;">Pilares Estratégicos</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
+
+          <!-- Calidad -->
+          <div class="card glow-blue" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--blue);width:48px;height:48px;">
+                <i data-lucide="database" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Calidad de Información</h4>
+            </div>
+            <p style="font-size:14px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Minimizamos el ingreso manual de datos eliminando reportes por correos o WhatsApp. Toda la información ingresa directo mediante Apps móviles o consolas web con validaciones estrictas y listas de selección para asegurar la integridad de la base.
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-blue">Captura Controlada</span>
+            </div>
+          </div>
+
+          <!-- Oportunidad -->
+          <div class="card glow-amber" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.3);color:var(--amber);width:48px;height:48px;">
+                <i data-lucide="zap" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Oportunidad</h4>
+            </div>
+            <p style="font-size:14px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Sin demoras por transcripción ni carpetas compartidas. En el momento en que se captura el registro en terreno, viaja de manera directa y segura al servidor central para estar disponible inmediatamente para la toma de decisiones.
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-amber">Tiempo Real</span>
+            </div>
+          </div>
+
+          <!-- Trazabilidad -->
+          <div class="card glow-green" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--green);width:48px;height:48px;">
+                <i data-lucide="search" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Trazabilidad</h4>
+            </div>
+            <p style="font-size:14px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Registro permanente e inalterable de cada evento. Permite responder con precisión científica e inmediata quién, cuándo, dónde y qué acción se realizó dentro del ecosistema operacional.
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-green">Auditoría Total</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 5: CARACTERÍSTICAS FUNCIONALES (exactas de Segmento 02) ─── -->
+    <div class="slide" id="s5" data-label="Características Funcionales">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Funcionalidades Core</div>
+            <h2 class="section-title">Características Funcionales del Sistema</h2>
+            <p class="section-sub" style="margin-top:4px;">Los 9 módulos construidos del producto para la gestión y soporte de la operación industrial.</p>
+          </div>
+          <div class="tag tag-slate" style="flex-shrink:0;">Estructura de Módulos</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1;align-content:start;">
+
+          <!-- 1 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2);color:var(--blue);">
+              <i data-lucide="layout" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Documentación Configurable</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Configurables para dar soporte a cualquier necesidad técnica: fotografías, geolocalización, firmas, checklists y listas dinámicas.</p>
+            </div>
+          </div>
+          <!-- 2 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(245,166,35,0.08);border-color:rgba(245,166,35,0.2);color:var(--amber);">
+              <i data-lucide="calendar" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Actividades Programadas o Autónomas</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Orquestación de inspecciones asignando fecha, responsable e instalaciones por grupos, clientes, contratos u otras agrupaciones.</p>
+            </div>
+          </div>
+          <!-- 3 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);color:var(--cyan);">
+              <i data-lucide="smartphone" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">App / Registro en Terreno</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Aplicación con almacenamiento persistente local y capacidades avanzadas de funcionamiento offline en zonas sin cobertura de internet.</p>
+            </div>
+          </div>
+          <!-- 4 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.2);color:var(--green);">
+              <i data-lucide="file-check" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Flujos de Aprobación</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Validación rigurosa de documentos mediante flujos de aprobación firmados electrónicamente de forma individual o colectiva.</p>
+            </div>
+          </div>
+          <!-- 5 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:var(--red);">
+              <i data-lucide="lock" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Firma Electrónica &amp; Ciberseguridad</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Firma Electrónica Simple (FES) que garantiza integridad y no repudio, blindaje ante inyecciones SQL y cifrado de datos extremo a extremo.</p>
+            </div>
+          </div>
+          <!-- 6 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(167,139,250,0.08);border-color:rgba(167,139,250,0.2);color:var(--purple);">
+              <i data-lucide="users" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Roles y Perfiles</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Control granular de acceso según responsabilidad en la organización, definiendo con precisión quién puede leer, escribir o aprobar.</p>
+            </div>
+          </div>
+          <!-- 7 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);color:var(--cyan);">
+              <i data-lucide="refresh-cw" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Real-Time Sync</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Sincronización bidireccional automática en cuanto se recupera la conexión de red, asegurando la inmediata consistencia de datos.</p>
+            </div>
+          </div>
+          <!-- 8 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(167,139,250,0.08);border-color:rgba(167,139,250,0.2);color:var(--purple);">
+              <i data-lucide="book-open" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">Biblioteca de Contenidos</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Repositorio que almacena y vincula automáticamente la documentación de los registros operacionales con manuales, planos y reglamentos.</p>
+            </div>
+          </div>
+          <!-- 9 -->
+          <div class="feat-card">
+            <div class="icon-box" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2);color:var(--blue);">
+              <i data-lucide="brain-circuit" style="width:18px;height:18px;"></i>
+            </div>
+            <div>
+              <div style="font-family:Outfit,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--t-primary);margin-bottom:4px;">BI e IA Integrada</div>
+              <p style="font-size:12px;color:var(--t-muted);line-height:1.6;">Inteligencia de negocio con integración paulatina de Inteligencia Artificial para análisis de datos avanzado y biblioteca de contenidos.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 6: MATRIZ DE IMPACTO (Proceso × Características) ─── -->
+    <div class="slide" id="s6" data-label="Matriz de Impacto">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Cobertura Operacional</div>
+            <h2 class="section-title">Matriz de Cobertura Operacional GSP</h2>
+            <p class="section-sub" style="margin-top:4px;">Cruce entre las fases del proceso de izaje y las características funcionales de la solución. Cada <span style="color:var(--amber);font-weight:700;">●</span> es una acción digital concreta en terreno o backoffice.</p>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden;flex:1;">
+          <div style="overflow-x:auto;height:100%;">
+          <table class="matrix-table" style="min-width:1000px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;min-width:200px;padding:14px 16px;background:rgba(255,255,255,0.02);border-right:1px solid rgba(255,255,255,0.05); font-size:12px;">
+                  <span>Fase del Proceso de Izaje</span>
+                </th>
+                <th title="Documentación Configurable"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Doc. Configurable</div></th>
+                <th title="Actividades Programadas"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Act. Programadas</div></th>
+                <th title="App / Registro en Terreno"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">App / Terreno</div></th>
+                <th title="Flujos de Aprobación"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Flujos Aprobación</div></th>
+                <th title="Firma Electrónica & Ciberseguridad"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Firma FES &amp; Ciber.</div></th>
+                <th title="Roles y Perfiles"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Roles y Perfiles</div></th>
+                <th title="Real-Time Sync"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Real-Time Sync</div></th>
+                <th title="Biblioteca de Contenidos"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">Biblioteca Contenidos</div></th>
+                <th title="BI e IA Integrada"><div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:10px 8px;font-size:11px;white-space:nowrap;font-weight:700;">BI e IA Integrada</div></th>
+                <th style="text-align:center;min-width:80px;"><div style="font-size:11px;font-weight:700;">Cobertura</div></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Fase 1: Comercial -->
+              <tr>
+                <td style="padding:14px 16px;border-right:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:4px;height:36px;border-radius:2px;background:var(--amber);flex-shrink:0;"></div>
+                    <div>
+                      <span style="color:var(--amber);font-size:9px;font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;">Fase 1</span>
+                      <span style="font-size:13px;font-weight:700;">Comercial &amp; Levantamiento</span>
+                    </div>
+                  </div>
+                </td>
+                <!-- Doc Config --> <td><div class="matrix-dot dot-on" title="Registro de Site Visit y viabilidad técnica">●</div></td>
+                <!-- Act Prog  --> <td><div class="matrix-dot dot-on" title="Programación de visitas técnicas y seguimiento de requerimientos">●</div></td>
+                <!-- App       --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- Flujos    --> <td><div class="matrix-dot dot-on" title="Aprobación interna de viabilidad y oferta comercial">●</div></td>
+                <!-- Firma FES --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- Roles     --> <td><div class="matrix-dot dot-on" title="Perfil Gerente de Operaciones y Ejecutivo Comercial">●</div></td>
+                <!-- RT Sync   --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- Biblioteca--> <td><div class="matrix-dot dot-on" title="Fichas de capacidades de grúas Liebherr/Tadano de referencia">●</div></td>
+                <!-- BI/IA     --> <td><div class="matrix-dot dot-on" title="Control comercial e historial de cotizaciones de izaje">●</div></td>
+                <td style="text-align:center;"><span class="tag tag-amber" style="font-size:11px;">5 / 9</span></td>
+              </tr>
+              <!-- Fase 2: Ingeniería -->
+              <tr>
+                <td style="padding:14px 16px;border-right:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:4px;height:36px;border-radius:2px;background:var(--blue);flex-shrink:0;"></div>
+                    <div>
+                      <span style="color:var(--blue);font-size:9px;font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;">Fase 2</span>
+                      <span style="font-size:13px;font-weight:700;">Ingeniería &amp; Planificación</span>
+                    </div>
+                  </div>
+                </td>
+                <!-- Doc Config --> <td><div class="matrix-dot dot-on" title="Ingreso digital del Lift Plan y pauta HSEC previa">●</div></td>
+                <!-- Act Prog  --> <td><div class="matrix-dot dot-on" title="Asignación específica de grúas, operadores y riggers acreditados">●</div></td>
+                <!-- App       --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- Flujos    --> <td><div class="matrix-dot dot-on" title="Aprobación de ingeniería de izaje por el especialista">●</div></td>
+                <!-- Firma FES --> <td><div class="matrix-dot dot-on" title="Firma FES digital del especialista valida plan de maniobra">●</div></td>
+                <!-- Roles     --> <td><div class="matrix-dot dot-on" title="Perfiles Ingeniero de Izaje y Despacho GSP">●</div></td>
+                <!-- RT Sync   --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- Biblioteca--> <td><div class="matrix-dot dot-on" title="Load Charts y manuales de eslingas/grilletes en la nube">●</div></td>
+                <!-- BI/IA     --> <td><div class="matrix-dot dot-off"></div></td>
+                <td style="text-align:center;"><span class="tag tag-blue" style="font-size:11px;">6 / 9</span></td>
+              </tr>
+              <!-- Fase 3: Ejecución -->
+              <tr>
+                <td style="padding:14px 16px;border-right:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:4px;height:36px;border-radius:2px;background:var(--purple);flex-shrink:0;"></div>
+                    <div>
+                      <span style="color:var(--purple);font-size:9px;font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;">Fase 3</span>
+                      <span style="font-size:13px;font-weight:700;">Ejecución en Terreno</span>
+                    </div>
+                  </div>
+                </td>
+                <!-- Doc Config --> <td><div class="matrix-dot dot-on" title="Checklist preoperacional, registro de orómetros, fotos y AST">●</div></td>
+                <!-- Act Prog  --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- App       --> <td><div class="matrix-dot dot-on" title="Registro offline de horas, combustible y bitácora del operador">●</div></td>
+                <!-- Flujos    --> <td><div class="matrix-dot dot-on" title="Aprobación del reporte diario por el Supervisor en faena">●</div></td>
+                <!-- Firma FES --> <td><div class="matrix-dot dot-on" title="Firma FES del supervisor del cliente en terreno al terminar maniobra">●</div></td>
+                <!-- Roles     --> <td><div class="matrix-dot dot-on" title="Perfiles de Operador, Rigger y Supervisor de Izaje">●</div></td>
+                <!-- RT Sync   --> <td><div class="matrix-dot dot-on" title="Sincronización en caliente al recuperar cobertura en faena">●</div></td>
+                <!-- Biblioteca--> <td><div class="matrix-dot dot-on" title="Estudios de rigging y planos de maniobra para consulta en tablet">●</div></td>
+                <!-- BI/IA     --> <td><div class="matrix-dot dot-off"></div></td>
+                <td style="text-align:center;"><span class="tag tag-purple" style="font-size:11px;">7 / 9</span></td>
+              </tr>
+              <!-- Fase 4: Cierre -->
+              <tr>
+                <td style="padding:14px 16px;border-right:1px solid rgba(255,255,255,0.05);">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:4px;height:36px;border-radius:2px;background:var(--green);flex-shrink:0;"></div>
+                    <div>
+                      <span style="color:var(--green);font-size:9px;font-family:Outfit,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;">Fase 4</span>
+                      <span style="font-size:13px;font-weight:700;">Cierre &amp; Facturación</span>
+                    </div>
+                  </div>
+                </td>
+                <!-- Doc Config --> <td><div class="matrix-dot dot-on" title="Generación automatizada del borrador de Estado de Pago (EDP)">●</div></td>
+                <!-- Act Prog  --> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- App       --> <td><div class="matrix-dot dot-on" title="Visualización del estado del EDP y documentos de cobro">●</div></td>
+                <!-- Flujos    --> <td><div class="matrix-dot dot-on" title="Flujo de validación Analista → Gerente → Emisión de Factura">●</div></td>
+                <!-- Firma FES --> <td><div class="matrix-dot dot-on" title="Firma FES del cierre del EDP consolidado con validez legal">●</div></td>
+                <!-- Roles     --> <td><div class="matrix-dot dot-on" title="Perfiles Gerente de Operaciones y Facturador">●</div></td>
+                <!-- RT Sync   --> <td><div class="matrix-dot dot-on" title="Sincronización instantánea de EDPs aprobados en la casa matriz">●</div></td>
+                <!-- Biblioteca--> <td><div class="matrix-dot dot-off"></div></td>
+                <!-- BI/IA     --> <td><div class="matrix-dot dot-on" title="Dashboard devengado vs. facturado y control de IFRS 15">●</div></td>
+                <td style="text-align:center;"><span class="tag tag-green" style="font-size:11px;">7 / 9</span></td>
+              </tr>
+              <!-- TOTALS ROW -->
+              <tr style="background:rgba(245,166,35,0.03);border-top:2px solid rgba(245,166,35,0.12);">
+                <td style="padding:12px 14px;border-right:1px solid rgba(255,255,255,0.05);">
+                  <span style="font-family:Outfit,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);">Cobertura por Módulo</span>
+                </td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">4/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">3/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">2/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">4/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">3/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">4/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">2/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">3/4</div></td>
+                <td><div class="tag tag-amber" style="margin:0 auto;display:flex;justify-content:center;">2/4</div></td>
+                <td style="text-align:center;"><span class="tag tag-amber" style="font-size:11px;font-weight:900;">25 / 36</span></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--t-muted);text-align:center;margin-top:6px;">Pasa el cursor sobre cada <span style="color:var(--amber);">●</span> para ver el caso de uso específico aplicado a la operación de Grúas San Pablo.</p>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 7: ALCANCE & INTEGRACIÓN (Subcontratos, CRM, ERP) ─── -->
+    <div class="slide" id="s7" data-label="Alcance & Integración">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Arquitectura & Límites del Ecosistema</div>
+            <h2 class="section-title">Definiciones de Alcance e Integración de Sistemas</h2>
+            <p class="section-sub" style="margin-top:4px;">Delimitación de responsabilidades de software, integración externa y control de capacidad.</p>
+          </div>
+          <div class="tag tag-green" style="flex-shrink:0;">Alcance del Scope</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
+
+          <!-- Clientes & CRM -->
+          <div class="card glow-indigo" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#818cf8;width:48px;height:48px;">
+                <i data-lucide="users" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:15px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Gestión de Clientes & CRM</h4>
+            </div>
+            <p style="font-size:13.5px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Centralización completa del directorio de clientes e interacciones comerciales de preventa:
+              <br><br>
+              • <strong>Ficha Cliente 360°:</strong> Consola unificada para administrar datos de contacto, bitácora histórica de reuniones, llamadas y correos de negociación.
+              <br>
+              • <strong>Visión Consolidada:</strong> Estado financiero total de cada cuenta (montos ofertados, contratos asignados, devengados y facturados).
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-indigo" style="background:rgba(99,102,241,0.1); color:#818cf8; border-color:rgba(99,102,241,0.2);">CRM & Ficha 360°</span>
+            </div>
+          </div>
+
+          <!-- Cotizador -->
+          <div class="card glow-amber" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.3);color:var(--amber);width:48px;height:48px;">
+                <i data-lucide="dollar-sign" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:15px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Cotizador & Margen</h4>
+            </div>
+            <p style="font-size:13.5px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Simulador interactivo de cálculo para la generación de propuestas de izaje:
+              <br><br>
+              • <strong>Fórmulas Estandarizadas:</strong> Cómputo físico-financiero automático sumando horas de operación estimadas, tarifas base según grúa, gastos operacionales de HSEC y movilización de contrapesos.
+              <br>
+              • <strong>Margen Asegurado:</strong> Visualización en caliente del margen comercial y viabilidad técnica de la flota.
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-amber">Preventa Inteligente</span>
+            </div>
+          </div>
+
+          <!-- Laudus ERP -->
+          <div class="card glow-green" style="padding:28px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="icon-box" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--green);width:48px;height:48px;">
+                <i data-lucide="refresh-cw" style="width:22px;height:22px;"></i>
+              </div>
+              <h4 class="font-display" style="font-size:15px;font-weight:800;text-transform:uppercase;color:var(--t-primary);letter-spacing:0.02em;">Conexión Laudus ERP</h4>
+            </div>
+            <p style="font-size:13.5px;color:var(--t-muted);line-height:1.75;flex:1;">
+              Integración online nativa mediante API REST con el ERP chileno **Laudus** para agilizar cobros:
+              <br><br>
+              • <strong>Lectura de OCs:</strong> Importación automática de Órdenes de Compra generadas en Laudus y vinculación instantánea a los expedientes de GSP.
+              <br>
+              • <strong>Facturación SII:</strong> Sincronización del estado de facturas y folios emitidos en el ERP para una conciliación financiera sin errores.
+            </p>
+            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:14px;">
+              <span class="tag tag-green">Sincronización Laudus</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 8: CTA ─── -->
+    <div class="slide" id="s8" data-label="Demostración en Vivo">
+      <div style="max-width:800px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:24px;">
+        <div class="tag tag-green" style="padding:6px 18px;font-size:12px;">Producto Construido · +200 Componentes Listos</div>
+        <h2 class="font-display" style="font-size:clamp(32px,4.5vw,56px);font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.1;color:var(--t-primary);">
+          Veamos la Consola<br><span style="color:var(--amber);font-style:italic;">en Funcionamiento</span>
+        </h2>
+        <p style="font-size:15px;color:var(--t-muted);max-width:540px;line-height:1.7;">
+          A continuación, una demostración interactiva de la consola adaptada al modelo de negocio de <strong style="color:var(--t-sec);">Grúas San Pablo</strong>: dashboard de devengado, torre de control Kanban, estados de pago, mantención de flota y acreditación de personal.
+        </p>
+        <div style="width:64px;height:1px;background:rgba(255,255,255,0.08);"></div>
+        <a href="maqueta_gsp_final.html" class="btn-primary">
+          <span>Ingresar a Consola GSP</span>
+          <i data-lucide="arrow-right" style="width:20px;height:20px;"></i>
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ════════════════ FOOTER ════════════════ -->
+  <footer id="footer">
+    <div style="display:flex;align-items:center;gap:8px;" id="dots-container">
+      <button class="nav-dot active" id="dot-1" onclick="goTo(1)"></button>
+      <button class="nav-dot" id="dot-2" onclick="goTo(2)"></button>
+      <button class="nav-dot" id="dot-3" onclick="goTo(3)"></button>
+      <button class="nav-dot" id="dot-4" onclick="goTo(4)"></button>
+      <button class="nav-dot" id="dot-5" onclick="goTo(5)"></button>
+      <button class="nav-dot" id="dot-6" onclick="goTo(6)"></button>
+      <button class="nav-dot" id="dot-7" onclick="goTo(7)"></button>
+      <button class="nav-dot" id="dot-8" onclick="goTo(8)"></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="nav-btn" id="btn-prev" onclick="move(-1)" disabled>
+        <i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Anterior
+      </button>
+      <button class="nav-btn" id="btn-next" onclick="move(1)">
+        Siguiente <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<style>
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+</style>
+
+<script>
+  lucide.createIcons();
+  const TOTAL = 8;
+  let cur = 1;
+
+  const labels = {
+    1: 'Portada',
+    2: 'Proceso Operativo',
+    3: 'Devengado & Facturación',
+    4: 'Características Fundamentales',
+    5: 'Características Funcionales',
+    6: 'Matriz de Impacto',
+    7: 'Alcance & Integración',
+    8: 'Demostración en Vivo'
+  };
+
+  function goTo(n) {
+    if (n < 1 || n > TOTAL) return;
+    const prev = document.getElementById('s' + cur);
+    prev.classList.remove('active');
+    prev.classList.add(n > cur ? 'exit-left' : 'exit-right');
+    setTimeout(() => { prev.classList.remove('exit-left', 'exit-right'); }, 450);
+
+    document.getElementById('s' + n).classList.add('active');
+
+    for (let i = 1; i <= TOTAL; i++) {
+      document.getElementById('dot-' + i).classList.toggle('active', i === n);
+    }
+
+    document.getElementById('btn-prev').disabled = (n === 1);
+    const btnNext = document.getElementById('btn-next');
+    if (n === TOTAL) {
+      btnNext.classList.add('primary');
+      btnNext.innerHTML = 'Ir a Consola <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>';
+      btnNext.onclick = () => window.location.href = 'maqueta_gsp_final.html';
+    } else {
+      btnNext.classList.remove('primary');
+      btnNext.innerHTML = 'Siguiente <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>';
+      btnNext.onclick = () => move(1);
+    }
+
+    document.getElementById('hdr-label').textContent = labels[n];
+    document.getElementById('cnt-cur').textContent = n;
+    cur = n;
+  }
+
+  function move(d) { goTo(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ')  { e.preventDefault(); move(1);  }
+    if (e.key === 'ArrowLeft')                     { e.preventDefault(); move(-1); }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+[
+  {
+    "title": "ADMINISTRACION DE CONTRATO",
+    "id": 1,
+    "questions": [
+      {
+        "id": "1.1",
+        "text": "La jefatura trata a los trabajadores con respeto y de manera justa."
+      },
+      {
+        "id": "1.2",
+        "text": "Se considera la opinión de los trabajadores en temas relacionados con el trabajo."
+      },
+      {
+        "id": "1.3",
+        "text": "La jefatura guía adecuadamente el trabajo del equipo."
+      },
+      {
+        "id": "1.4",
+        "text": "Puedo acercarme a mi jefatura cuando necesito apoyo o información."
+      },
+      {
+        "id": "1.5",
+        "text": "Las tareas y objetivos del trabajo son claros."
+      },
+      {
+        "id": "1.6",
+        "text": "La empresa está abierta a nuevas ideas o mejoras."
+      },
+      {
+        "id": "1.7",
+        "text": "En Transmac no se aceptan situaciones de discriminación o malos tratos."
+      },
+      {
+        "id": "1.8",
+        "text": "Mi trabajo es supervisado y evaluado de manera adecuada."
+      },
+      {
+        "id": "1.9",
+        "text": "Recibo orientación o retroalimentación sobre cómo realizo mi trabajo."
+      },
+      {
+        "id": "1.10",
+        "text": "Considero que el trabajo del equipo está bien coordinado."
+      },
+      {
+        "id": "1.11",
+        "text": "La jefatura mantiene un trato respetuoso con los trabajadores."
+      },
+      {
+        "id": "1.12",
+        "text": "Siento que mi trabajo es valorado por la jefatura."
+      }
+    ]
+  },
+  {
+    "title": "COMPROMISO.-",
+    "id": 2,
+    "questions": [
+      {
+        "id": "2.1",
+        "text": "Considero que Transmac entrega buenas condiciones de trabajo."
+      },
+      {
+        "id": "2.2",
+        "text": "Recomendaría Transmac como un buen lugar para trabajar."
+      },
+      {
+        "id": "2.3",
+        "text": "Siento que mi trabajo aporta al funcionamiento de la empresa."
+      },
+      {
+        "id": "2.4",
+        "text": "Me siento orgulloso de trabajar en Transmac."
+      },
+      {
+        "id": "2.5",
+        "text": "Me gustaría continuar trabajando en la empresa."
+      },
+      {
+        "id": "2.6",
+        "text": "Siento que mi trabajo es importante para el servicio que entrega la empresa."
+      }
+    ]
+  },
+  {
+    "title": "ORIENTACION AL CLIENTE.-",
+    "id": 3,
+    "questions": [
+      {
+        "id": "3.1",
+        "text": "La empresa me entrega herramientas e información para realizar un buen servicio al cliente o mandante."
+      },
+      {
+        "id": "3.2",
+        "text": "Recibo información clara sobre los requisitos del cliente o faena."
+      },
+      {
+        "id": "3.3",
+        "text": "Conozco y respeto las normas y exigencias del cliente o faena donde trabajo."
+      }
+    ]
+  },
+  {
+    "title": "DESARROLLO PROFESIONAL Y FORMACION.-",
+    "id": 4,
+    "questions": [
+      {
+        "id": "4.1",
+        "text": ".He recibido capacitaciones relacionadas con mi trabajo."
+      },
+      {
+        "id": "4.2",
+        "text": "Las capacitaciones entregadas por la empresa son útiles para mi trabajo."
+      },
+      {
+        "id": "4.3",
+        "text": "Estoy conforme con las oportunidades de aprendizaje que entrega la empresa."
+      },
+      {
+        "id": "4.4",
+        "text": "Considero que las oportunidades de crecimiento laboral son justas."
+      },
+      {
+        "id": "4.5",
+        "text": "La empresa entrega oportunidades de desarrollo a sus trabajadores."
+      }
+    ]
+  },
+  {
+    "title": "SATISFACCION GENERAL.-",
+    "id": 5,
+    "questions": [
+      {
+        "id": "5.1",
+        "text": "En general me siento conforme con el trabajo que realizo."
+      },
+      {
+        "id": "5.2",
+        "text": "Cuento con los equipos, herramientas o recursos necesarios para trabajar."
+      },
+      {
+        "id": "5.3",
+        "text": "Las instalaciones y lugares de trabajo favorecen un buen ambiente laboral."
+      },
+      {
+        "id": "5.4",
+        "text": "En general me siento cómodo trabajando en la empresa."
+      }
+    ]
+  },
+  {
+    "title": "ORGANIZACION.-",
+    "id": 6,
+    "questions": [
+      {
+        "id": "6.1",
+        "text": "La empresa se preocupa por la seguridad y salud de los trabajadores."
+      },
+      {
+        "id": "6.2",
+        "text": "Los procedimientos e instrucciones de trabajo me ayudan a realizar bien mis tareas."
+      },
+      {
+        "id": "6.3",
+        "text": "Cuento con los recursos necesarios para realizar mi trabajo correctamente."
+      },
+      {
+        "id": "6.4",
+        "text": "Considero que el trabajo y las tareas están bien organizadas."
+      }
+    ]
+  },
+  {
+    "title": "COMUNICACIÓN Y RELACIONES INTERNAS.-",
+    "id": 7,
+    "questions": [
+      {
+        "id": "7.1",
+        "text": "La empresa cuenta con medios adecuados para entregar información a los trabajadores."
+      },
+      {
+        "id": "7.2",
+        "text": "La empresa comunica de manera clara sus objetivos y lineamientos."
+      },
+      {
+        "id": "7.3",
+        "text": "Conozco los objetivos y responsabilidades de mi trabajo."
+      },
+      {
+        "id": "7.4",
+        "text": "La comunicación entre jefatura y trabajadores es clara y transparente."
+      },
+      {
+        "id": "7.5",
+        "text": "Recibo la información necesaria para realizar mi trabajo."
+      },
+      {
+        "id": "7.6",
+        "text": "Los problemas o conflictos se intentan resolver de manera adecuada."
+      }
+    ]
+  }
+]

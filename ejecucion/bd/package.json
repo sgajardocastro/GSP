@@ -1,0 +1,14 @@
+{
+  "name": "gsp-database",
+  "version": "1.0.0",
+  "description": "Database Schema and Migrations for GSP using Prisma",
+  "type": "module",
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "dotenv": "^16.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "prisma": "^5.10.0"
+  }
+}

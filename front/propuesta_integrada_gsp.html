@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propuesta Técnico-Comercial: Sistema de Control de Gestión Operativa & Devengado – Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ════════════════ DESIGN SYSTEM ════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-document: #ffffff;
+      --bg-sidebar: #0f172a;
+      --bg-card: #f8fafc;
+      --border-color: #e2e8f0;
+      
+      --text-dark: #0f172a;
+      --text-gray: #475569;
+      --text-light: #94a3b8;
+      --text-white: #f8fafc;
+      
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --purple: #7c3aed;
+      --purple-light: #f3e8ff;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
+      color: var(--text-dark);
+      line-height: 1.6;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .font-display { font-family: 'Outfit', sans-serif; }
+
+    /* ── Layout Shell ── */
+    #app {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1440px;
+      margin: 0 auto;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ── Sidebar Index (Hidden in Print) ── */
+    .sidebar {
+      width: 300px;
+      background: var(--bg-sidebar);
+      color: var(--text-white);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+      flex-shrink: 0;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 20px;
+    }
+
+    .sidebar-brand h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .sidebar-brand span {
+      color: #f5a623;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-menu a {
+      color: #cbd5e1;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .sidebar-menu a:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-white);
+    }
+
+    .sidebar-menu li.active a {
+      background: rgba(245, 166, 35, 0.12);
+      color: #f5a623;
+      font-weight: 600;
+      border-left: 3px solid #f5a623;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 20px;
+      margin-top: 20px;
+    }
+
+    .print-btn {
+      width: 100%;
+      background: #f5a623;
+      color: #050810;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      background: #ffb732;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
+    }
+
+    /* ── Content Container ── */
+    .content-wrapper {
+      flex: 1;
+      background: var(--bg-document);
+      padding: 60px 80px;
+      overflow-y: auto;
+    }
+
+    /* ── Covers and Sections ── */
+    section {
+      margin-bottom: 64px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 40px;
+    }
+
+    section:last-child {
+      border-bottom: none;
+    }
+
+    /* Cover Page Specific styling */
+    .cover-page {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--text-dark);
+      padding-bottom: 60px;
+      margin-bottom: 80px;
+    }
+
+    .cover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    .cover-body {
+      margin: 80px 0;
+    }
+
+    .cover-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1.3;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+      padding-bottom: 4px;
+    }
+
+    .cover-subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      color: var(--text-gray);
+      max-width: 700px;
+      margin-bottom: 40px;
+      font-weight: 300;
+    }
+
+    .cover-meta {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 40px;
+      max-width: 800px;
+    }
+
+    .meta-col h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .meta-col p {
+      font-size: 13.5px;
+      color: var(--text-gray);
+      font-weight: 500;
+    }
+
+    /* Headings */
+    h2.section-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      color: var(--text-dark);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2.section-heading::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background: var(--amber);
+      border-radius: 2px;
+    }
+
+    h3.sub-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    p.lead-paragraph {
+      font-size: 15px;
+      color: var(--text-gray);
+      font-weight: 400;
+      margin-bottom: 20px;
+    }
+
+    /* Typography helpers */
+    strong { color: var(--text-dark); font-weight: 600; }
+    ul, ol { margin-left: 20px; margin-bottom: 20px; color: var(--text-gray); }
+    li { margin-bottom: 6px; }
+
+    /* ── Callouts ── */
+    .callout {
+      background: var(--bg-card);
+      border-left: 4px solid var(--border-color);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+    .callout-amber { border-left-color: var(--amber); background: rgba(217, 119, 6, 0.03); }
+    .callout-blue  { border-left-color: var(--blue);  background: rgba(37, 99, 235, 0.03); }
+    .callout-green { border-left-color: var(--green); background: rgba(22, 163, 74, 0.03); }
+    
+    .callout-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .callout-amber .callout-title { color: var(--amber); }
+    .callout-blue .callout-title  { color: var(--blue); }
+    .callout-green .callout-title { color: var(--green); }
+
+    .callout-body {
+      font-size: 13px;
+      color: var(--text-gray);
+    }
+
+    /* ── Grid Structures ── */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card-header-icon {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-amber { background: var(--amber-light); color: var(--amber); }
+    .icon-blue  { background: var(--blue-light);  color: var(--blue); }
+    .icon-green { background: var(--green-light); color: var(--green); }
+    .icon-purple{ background: var(--purple-light);color: var(--purple); }
+    .icon-red   { background: var(--red-light);   color: var(--red); }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      letter-spacing: 0.02em;
+    }
+
+    .card-body {
+      font-size: 12.5px;
+      color: var(--text-gray);
+      line-height: 1.6;
+    }
+
+    /* ── Image & Figure Styles ── */
+    .screenshot-figure {
+      margin: 24px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #090e1a; /* Match mockup dark theme background slightly */
+    }
+
+    .screenshot-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity 0.25s;
+    }
+
+    .screenshot-caption {
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-gray);
+      font-weight: 500;
+    }
+
+    /* ── Table Styles ── */
+    .table-wrapper {
+      margin: 24px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-card);
+      font-family: 'Outfit', sans-serif;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-gray);
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-gray);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ── Badge / Tag ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-amber  { background: var(--amber-light); color: var(--amber); }
+    .badge-blue   { background: var(--blue-light);  color: var(--blue); }
+    .badge-green  { background: var(--green-light); color: var(--green); }
+    .badge-purple { background: var(--purple-light);color: var(--purple); }
+    .badge-red    { background: var(--red-light);   color: var(--red); }
+
+    /* ── Print Settings ── */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 12px;
+      }
+
+      #app {
+        box-shadow: none;
+        max-width: 100%;
+      }
+
+      .sidebar {
+        display: none !important;
+      }
+
+      .content-wrapper {
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+
+      section {
+        page-break-before: always !important;
+        break-before: page !important;
+        margin-bottom: 40px !important;
+        padding-bottom: 20px !important;
+        border-bottom: none !important;
+      }
+
+      /* Force page break after cover */
+      .cover-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        min-height: 100vh !important;
+        justify-content: space-around !important;
+        margin-bottom: 0 !important;
+      }
+
+      /* Keep cards and tables together */
+      .card, table, tr, .screenshot-figure, .callout {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Avoid breaking heading and paragraph */
+      h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      /* Print background colors */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    /* ── Matrix & Tag Styles for Proposal ── */
+    .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
+    .matrix-table th, .matrix-table td { padding: 12px 14px; font-size: 12.5px; }
+    .matrix-table thead th {
+      font-family: 'Outfit', sans-serif; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--text-muted); text-align: center;
+      border-bottom: 2px solid var(--border-light);
+      font-size: 10px;
+    }
+    .matrix-table thead th:first-child { text-align: left; font-size: 11px; }
+    .matrix-table tbody tr { transition: background 0.18s; }
+    .matrix-table tbody tr:hover { background: rgba(0,0,0,0.02); }
+    .matrix-table tbody td {
+      border-bottom: 1px solid var(--border-light);
+      text-align: center; vertical-align: middle;
+    }
+    .matrix-table tbody td:first-child {
+      text-align: left; font-weight: 600; color: var(--text-main);
+      font-family: 'Outfit', sans-serif; font-size: 12.5px;
+    }
+    .matrix-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      margin: 0 auto;
+    }
+    .dot-on  { background: rgba(245,166,35,0.12); border: 1.5px solid rgba(245,166,35,0.45); color: var(--amber); }
+    .dot-off { background: rgba(0,0,0,0.02); border: 1px solid var(--border-light); color: transparent; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 10px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid; white-space: nowrap;
+    }
+    .tag-amber  { background: rgba(245,166,35,0.05); color: var(--amber);  border-color: rgba(245,166,35,0.25); }
+    .tag-blue   { background: rgba(59,130,246,0.05); color: var(--blue);   border-color: rgba(59,130,246,0.25); }
+    .tag-green  { background: rgba(16,185,129,0.05); color: var(--green);  border-color: rgba(16,185,129,0.25); }
+    .tag-purple { background: rgba(167,139,250,0.05);color: var(--purple); border-color: rgba(167,139,250,0.25); }
+
+    /* ── Navigation Tree Styles ── */
+    .tree-container {
+      background: #070b16;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 16px;
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+    }
+    .tree-node {
+      margin-left: 24px;
+      position: relative;
+      padding-left: 16px;
+      border-left: 1px dashed rgba(255,255,255,0.12);
+      margin-bottom: 6px;
+    }
+    .tree-node:before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 12px;
+      border-top: 1px dashed rgba(255,255,255,0.12);
+    }
+    .tree-root {
+      font-weight: 800;
+      color: var(--amber);
+      font-size: 13.5px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tree-branch {
+      font-weight: 700;
+      color: var(--blue);
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tree-leaf {
+      color: var(--text-gray);
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Flowchart CSS */
+    .flow-pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .flow-step {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+    .flow-step-header {
+      background: var(--bg-sidebar);
+      color: #ffffff;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .flow-step-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--amber);
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .flow-step-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .flow-step-content {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .flow-sub-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .flow-sub-card h5 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+    .flow-sub-card p {
+      font-size: 11px;
+      color: var(--text-gray);
+      line-height: 1.4;
+    }
+
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ════════════════ SIDEBAR (INDEX) ════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);display:flex;align-items:center;justify-content:center;color:#f5a623;">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <div>
+        <h1 class="font-display">LEAN <span>GLOBAL</span></h1>
+        <p style="font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Dossier de Propuesta</p>
+      </div>
+    </div>
+    
+    <nav style="flex:1;overflow-y:auto;margin-bottom:20px;">
+      <ul class="sidebar-menu">
+        <li class="active"><a href="#portada"><i data-lucide="file-text"></i> Portada</a></li>
+        <li><a href="#quienes-somos"><i data-lucide="users"></i> 1. Quiénes Somos</a></li>
+        <li><a href="#pilares"><i data-lucide="award"></i> 2. Pilares y Core</a></li>
+        <li><a href="#proceso"><i data-lucide="refresh-cw"></i> 3. Proceso &amp; Cobertura</a></li>
+        <li><a href="#desafio"><i data-lucide="trending-up"></i> 4. Desafío Operativo</a></li>
+        <li><a href="#navegacion"><i data-lucide="map"></i> 5. Árbol de Navegación</a></li>
+        <li><a href="#crm"><i data-lucide="heart-handshake"></i> 6. Módulos Operacionales Core</a></li>
+        <li><a href="#pantallas"><i data-lucide="monitor"></i> 7. Pantallas de Control</a></li>
+        <li><a href="#seguridad"><i data-lucide="shield"></i> 8. Seguridad y GCP</a></li>
+        <li><a href="#extension-sgi"><i data-lucide="expand"></i> 9. Extensión SGI &amp; DS 44</a></li>
+        <li><a href="#ia-vectorial"><i data-lucide="brain"></i> 10. IA Vectorial &amp; RAG</a></li>
+        <li><a href="#cronograma"><i data-lucide="calendar"></i> 11. Cronograma &amp; Roadmap</a></li>
+        <li><a href="#oferta"><i data-lucide="dollar-sign"></i> 12. Convenio Comercial</a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="print-btn" onclick="window.print()">
+        <i data-lucide="printer"></i> Exportar a PDF
+      </button>
+      <p style="font-size:10px;text-align:center;color:#64748b;margin-top:10px;">Recomendación: PDF en Horizontal</p>
+    </div>
+  </aside>
+
+  <!-- ════════════════ CONTENT WRAPPER ════════════════ -->
+  <main class="content-wrapper">
+
+    <!-- ── PORTADA ── -->
+    <header class="cover-page" id="portada">
+      <div class="cover-header">
+        <div class="logo-badge">
+          <i data-lucide="shield" style="width:14px;height:14px;color:var(--amber);"></i>
+          <span>PROPUESTA FORMAL TÉCNICO-COMERCIAL</span>
+        </div>
+        <div style="font-family:'Outfit';font-weight:900;font-size:18px;">
+          LEAN <span style="color:var(--amber);">GLOBAL</span>
+        </div>
+      </div>
+
+      <div class="cover-body">
+        <h1 class="cover-title">
+          Ecosistema Digital de Control Operativo,<br>
+          Seguridad (HSEC) e Integración Financiera<br>
+          para Grúas San Pablo
+        </h1>
+        <p class="cover-subtitle">
+          Solución integrada "0% Papel" para la gestión de operaciones de izaje, taller de mantenimiento, control logístico de repuestos críticos, cálculo automático de márgenes y roadmaps de integración contable SII.
+        </p>
+        
+        <div class="statement-card" style="background: var(--bg-sidebar); color: #ffffff; padding: 20px; border-radius: 12px; border-left: 5px solid var(--amber); margin-bottom: 24px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+          <i data-lucide="check-square" style="width:24px;height:24px;color:var(--amber);flex-shrink:0;"></i>
+          <span>LeanGlobal compromete el 100% de capacidad de cumplimiento del proceso operacional definido por GSP.</span>
+        </div>
+      </div>
+
+      <div class="cover-meta">
+        <div class="meta-col">
+          <h4>Preparado Para:</h4>
+          <p><strong>Arriendo de Maquinarias San Pablo EIRL (GSP)</strong></p>
+          <p class="mono" style="font-size:11px;color:var(--text-gray);">RUT: 52.004.162-1</p>
+          <p>Atención: Jorge Ponce, Omar Ghisellini y Marcelo Reyes</p>
+        </div>
+        <div class="meta-col">
+          <h4>Emitido por:</h4>
+          <p><strong>LeanGlobal S.A.</strong></p>
+          <p style="margin-bottom: 4px; font-size:13px;">
+            <strong>Sergio Gajardo</strong>
+            <br><span style="font-size: 11px; color: var(--text-light);">Socio Director de Tecnología &amp; Estrategia</span>
+          </p>
+          <p style="margin-bottom: 8px; font-size:13px;">
+            <strong>Edgardo Barrueto</strong>
+            <br><span style="font-size: 11px; color: var(--text-light);">Socio Director Comercial &amp; Negocios</span>
+          </p>
+          <p style="font-size: 11px; color: var(--text-gray);">Fecha de Emisión: Julio 2026</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── SECCIÓN 1: QUIÉNES SOMOS ── -->
+    <section id="quienes-somos">
+      <h2 class="section-heading">1. Quiénes Somos</h2>
+      <p class="lead-paragraph">
+        <strong>LeanGlobal</strong> es una firma de consultoría tecnológica, desarrollo y servicios de software especializada en la transformación digital de operaciones industriales complejas, gestión de activos, logística de transporte y HSEC.
+      </p>
+      
+      <p style="margin-bottom:16px;color:var(--text-gray);">
+        Nuestro enfoque se basa en construir sistemas operativos de alta densidad y aplicaciones móviles robustas con funcionamiento offline que cierran la brecha de información entre la faena (terreno) y la administración comercial (casa matriz).
+      </p>
+
+      <div class="callout callout-blue">
+        <div class="callout-title">
+          <i data-lucide="trending-up" style="width:14px;height:14px;"></i>
+          Nuestra Experiencia Operacional – Caso de Éxito Transmac
+        </div>
+        <div class="callout-body">
+          Hemos diseñado e implementado soluciones de control operacional similares para grandes operadores de grúas industriales y transporte pesado en Chile (como Metso, Codelco y Ferrovial). Destaca el caso de <strong>Transmac</strong>, donde digitalizamos al 100% el control preventivo de flota y la captura de horas de izaje, habilitando un crecimiento operacional de <strong>6 veces en tamaño físico y facturación en solo 24 meses</strong>, operando sin planillas manuales de Excel y con un control de devengado en tiempo real de primer nivel.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 2: PILARES Y CORE ── -->
+    <section id="pilares">
+      <h2 class="section-heading">2. Pilares del Ecosistema & Funcionalidades Core</h2>
+      <p class="lead-paragraph">
+        El ecosistema operacional propuesto está estructurado sobre tres pilares fundamentales que mitigan el riesgo operativo, seguidos por un núcleo de 9 módulos específicos construidos del producto.
+      </p>
+
+      <h3 class="sub-heading">A. Pilares del Soporte Operativo</h3>
+      <div class="grid-3">
+        <!-- Pilar 1 -->
+        <div class="card" style="border-top:3px solid var(--blue);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="database" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Calidad de Información</h4>
+          </div>
+          <p class="card-body">
+            Minimizamos el ingreso manual eliminando reportes por correos o WhatsApp. Toda la información ingresa directo mediante Apps móviles o consolas web con validaciones estrictas y listas de selección para asegurar la integridad de los datos.
+          </p>
+        </div>
+        <!-- Pilar 2 -->
+        <div class="card" style="border-top:3px solid var(--amber);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="zap" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Oportunidad</h4>
+          </div>
+          <p class="card-body">
+            Sin demoras por transcripción ni carpetas compartidas en red. En el momento en que se captura el registro en terreno, viaja de manera directa y segura al servidor para estar disponible inmediatamente para la toma de decisiones financieras.
+          </p>
+        </div>
+        <!-- Pilar 3 -->
+        <div class="card" style="border-top:3px solid var(--green);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="search" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Trazabilidad</h4>
+          </div>
+          <p class="card-body">
+            Registro permanente e inalterable de cada evento en la nube. Permite responder con precisión e inmediatez quién, cuándo, dónde y qué acción se realizó dentro de la operación, respaldando las auditorías de grandes mandantes.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">B. Funcionalidades Core (Los 9 Módulos del Sistema)</h3>
+      <p style="margin-bottom:16px;color:var(--text-gray);">
+        La arquitectura del sistema incluye 9 módulos interconectados que manejan el flujo operativo de inicio a fin:
+      </p>
+
+      <div class="grid-3" style="margin-top:12px;">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="file-text" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Doc. Configurable</h4>
+          </div>
+          <p class="card-body">Formularios digitales flexibles adaptados para la toma de firmas, checklists mecánicos, registro de orómetros, fotos de terreno y geolocalización.</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="calendar" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Actividades Programadas</h4>
+          </div>
+          <p class="card-body">Orquestación y despacho de tareas preventivas u operacionales asignando responsables, grúas autorizadas e instalaciones del mandante.</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="smartphone" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">App Móvil Terreno</h4>
+          </div>
+          <p class="card-body">Aplicación nativa móvil con persistencia local que permite a los operadores operar 100% offline en zonas de faena sin cobertura celular.</p>
+        </div>
+        <!-- Card 4 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="file-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Flujos de Aprobación</h4>
+          </div>
+          <p class="card-body">Validación de reportes de terreno por niveles: Supervisor GSP aprueba datos técnicos y Analista valida el calce contractual antes de facturar.</p>
+        </div>
+        <!-- Card 5 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-red"><i data-lucide="key" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Firma FES & Seguridad</h4>
+          </div>
+          <p class="card-body">Firma Electrónica Simple (FES) integrada para el operador y cliente, garantizando la validez legal del cierre de la maniobra de izaje.</p>
+        </div>
+        <!-- Card 6 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="user-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Roles y Perfiles</h4>
+          </div>
+          <p class="card-body">Control de accesos robusto que limita vistas según responsabilidad: Despachador (Temuco/Los Ángeles), Operador, Facturador y Gerente.</p>
+        </div>
+        <!-- Card 7 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Real-Time Sync</h4>
+          </div>
+          <p class="card-body">Sincronización bidireccional automática en cuanto el móvil recupera cobertura de internet, subiendo fotos y firmas sin intervención del usuario.</p>
+        </div>
+        <!-- Card 8 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="book-open" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Biblioteca de Docs</h4>
+          </div>
+          <p class="card-body">Acceso inmediato desde tablet a los Load Charts (tablas de carga) de grúas Liebherr/Tadano, planos de maniobra y documentos operativos.</p>
+        </div>
+        <!-- Card 9 -->
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="cpu" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">BI e IA Integrada</h4>
+          </div>
+          <p class="card-body">Tableros dinámicos en tiempo real y componentes de análisis para proyectar descalces y automatizar auditorías documentales de acreditación.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 3: PROCESO OPERATIVO DE GRÚAS ── -->
+    <section id="proceso">
+      <h2 class="section-heading">3. Proceso General de Operación de Grúas de Alto Tonelaje</h2>
+      <p class="lead-paragraph">
+        LeanGlobal compromete el soporte y la automatización del proceso operativo unificado de GSP, estructurando el sistema en 5 fases lógicas que mapean exactamente la dinámica real de su negocio de izajes:
+      </p>
+
+      <div class="flow-pipeline">
+        <!-- Paso 1 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 1</span>
+            <span class="flow-step-name">Cotización &amp; Requerimiento</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Cotizador por Familia</h5>
+              <p>Mapea las 9 familias de productos (grúas telescópicas, plataformas PTA, tijeras, plumas, grúas horquilla, manipuladores, camas bajas, accesorios, y riggers) asociando condiciones y anexos específicos.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Programado vs. Disponibilidad</h5>
+              <p>Valida si el servicio reserva equipo "a todo evento" o si queda sujeto a disponibilidad logística diaria.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Datos Técnicos y Site Visit</h5>
+              <p>Captura pesos, dimensiones de carga, radios, alturas de trabajo y link de ubicación geográfica de la obra.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="flow-step">
+          <div class="flow-step-header" style="background:var(--bg-sidebar);">
+            <span class="flow-step-num">Fase 2</span>
+            <span class="flow-step-name">Aprobación &amp; Despacho</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Coordinación de OT</h5>
+              <p>El Coordinador aprueba y convierte el requerimiento en una Orden de Trabajo (OT) activa asignando operador, rigger y grúa.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Alertas al Personal</h5>
+              <p>Notificación automática y directa al teléfono/tablet del operador asignado, exigiendo su aceptación digital.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Control de Acreditación</h5>
+              <p>Cotejo automático de vigencia de licencias Clase D, exámenes médicos de altura y pases de faena del operador.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 3</span>
+            <span class="flow-step-name">Preparación &amp; Salida</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Jefe de Patio (Checklist)</h5>
+              <p>Generación de checklist digital pre-operacional en patio con registro fotográfico obligatorio del estado de la maquinaria.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Logística de Maniobras</h5>
+              <p>Jefe de Patio controla y valida por sistema la carga correcta de contrapesos y accesorios solicitados para el izaje.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Geocerca &amp; Permisos MOP</h5>
+              <p>Activación de geocerca GPS sobre la ruta y validación del almacenamiento del Permiso de Vialidad MOP sobredimensionado.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="flow-step">
+          <div class="flow-step-header" style="background:var(--bg-sidebar);">
+            <span class="flow-step-num">Fase 4</span>
+            <span class="flow-step-name">Ejecución en Faena (App)</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Trazado Desplazamiento</h5>
+              <p>El conductor inicia el viaje en la App, registrando telemetría GPS automática cada 5 minutos hasta su destino.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Inicio y Término en Faena</h5>
+              <p>El operador registra la hora exacta de inicio de posicionamiento, colación, y término de faena desde su App offline.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Reglas de Horas Mínimas</h5>
+              <p>Validación automática por software de las horas mínimas pactadas por contrato para evitar cobros sub-valuados.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Firma del Cliente (FES)</h5>
+              <p>El cliente en obra firma digitalmente en la pantalla de la tablet del operador, validando el servicio con geolocalización GPS.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 5 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 5</span>
+            <span class="flow-step-name">Costos, Margen &amp; Facturación</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Margen Operativo Directo</h5>
+              <p>Registro de costos del servicio (peajes, romana, combustible, alimentación, pensión de la tripulación y remuneración de operarios).</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Análisis 360° Financiero</h5>
+              <p>El Analista audita y valida que las horas reportadas en terreno cuadren matemáticamente con la cotización aprobada.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Facturación Eficiente</h5>
+              <p>Cierre de EDP por el Coordinador de Operaciones y emisión directa de la factura DTE vinculada a la OC del cliente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ── SECCIÓN 4: EL DESAFÍO OPERATIVO ── -->
+    <section id="desafio">
+      <h2 class="section-heading">4. El Desafío Operativo y Financiero</h2>
+      <p class="lead-paragraph">
+        En la gestión de servicios de izaje de alto tonelaje, existe una valiosa oportunidad de mejora en la eficiencia del flujo de caja al optimizar la comunicación entre la preventa comercial, la operación en terreno y la facturación. La centralización y automatización de este flujo mitiga el desfase temporal entre la ejecución de la maniobra y la emisión del documento fiscal, garantizando una trazabilidad oportuna y un control financiero preciso.
+      </p>
+
+      <h3 class="sub-heading">El Devengado: La Verdadera Productividad del Negocio</h3>
+      <p style="margin-bottom:16px;color:var(--text-gray);">
+        El <strong>devengado</strong> es el principio contable que reconoce los ingresos y costos en el momento exacto en que se ejecuta la maniobra (el hecho económico), sin importar cuándo se reciba la orden de compra (OC) o se logre emitir la factura en el SII. 
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="background:#fffbeb; border-color:#fef3c7;">
+          <h4 class="card-title" style="color:var(--amber);margin-bottom:8px;"><i data-lucide="info" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Estabilización del EBITDA</h4>
+          <p class="card-body" style="color:#78350f;">
+            Al devengar los servicios realizados (registrando la cuenta de activo puente <em>"Ingresos por Facturar"</em>), GSP evita el <strong>efecto montaña rusa</strong> en sus balances. Esto permite justificar con exactitud el capital de trabajo de la empresa ante los bancos para obtener financiamiento operacional (factoring de contratos).
+          </p>
+        </div>
+        <div class="card" style="background:#f0fdf4; border-color:#dcfce7;">
+          <h4 class="card-title" style="color:var(--green);margin-bottom:8px;"><i data-lucide="shield-alert" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;"></i>Tratamiento Tributario SII Chile (NIIF 15)</h4>
+          <p class="card-body" style="color:#166534;">
+            El ingreso devengado no facturado tiene un comportamiento favorable según el régimen. En el <strong>Régimen General 14 A</strong>, tributa Impuesto de Primera Categoría (27%) al cierre del ejercicio anual. En el <strong>Régimen ProPyme 14 D N°3</strong>, no paga impuesto anual ni paga el IVA del Formulario F29 mensual hasta que sea efectivamente percibido en caja o facturado, resguardando la caja.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">Tabla de Tratamiento Tributario en Chile (SII)</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:25%;">Impuesto / Régimen</th>
+              <th style="width:25%;text-align:center;">IVA Mensual (Formulario 29)</th>
+              <th style="width:25%;text-align:center;">Régimen General (14 A)</th>
+              <th style="width:25%;text-align:center;">Régimen ProPyme (14 D N°3)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>¿Paga Impuesto?</strong></td>
+              <td style="text-align:center;"><span class="badge badge-green">No</span><br><span style="font-size:11px;color:var(--text-gray);">Se posterga hasta la emisión de factura.</span></td>
+              <td style="text-align:center;"><span class="badge badge-red">Sí</span><br><span style="font-size:11px;color:var(--text-gray);">Tributa en el año del servicio (27%).</span></td>
+              <td style="text-align:center;"><span class="badge badge-green">No</span><br><span style="font-size:11px;color:var(--text-gray);">Tributará al ser percibido (caja).</span></td>
+            </tr>
+            <tr>
+              <td><strong>Mecanismo SII</strong></td>
+              <td style="text-align:center;">No se reporta en el RCV hasta facturar.</td>
+              <td style="text-align:center;">Declarado en Balance y RLI anual.</td>
+              <td style="text-align:center;">Conciliación restándolo en la DJ 1924.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-amber" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Cuello de Botella Detectado</div>
+        <div class="callout-body">
+          Si el operador entrega el reporte en papel el fin de semana, el analista digita el lunes, y el cliente tarda 15 días en emitir la Orden de Compra, el flujo de caja se retrasa <strong>más de 20 días</strong>. Nuestra propuesta automatiza el traspaso a borrador de Estado de Pago (EDP) en cuanto el operador toma la firma del cliente en terreno en la App Móvil, reduciendo la brecha administrativa a <strong>menos de 24 horas</strong>.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 5: ÁRBOL DE NAVEGACIÓN ── -->
+    <section id="navegacion">
+      <h2 class="section-heading">5. Estructura de la Aplicación y Árbol de Navegación</h2>
+      <p class="lead-paragraph">
+        Para asegurar una usabilidad impecable y una alta densidad de datos adaptada a la operación industrial de GSP, el sistema divide su navegación en dos áreas de trabajo principales:
+      </p>
+
+      <div class="tree-container">
+        <div class="tree-root"><i data-lucide="layout" style="width:16px;height:16px;color:var(--amber);"></i> Consola Web de Despacho &amp; Backoffice (Gestión de Escritorio)</div>
+        
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="bar-chart-3" style="width:14px;height:14px;"></i> 1. Dashboard (Control de Caja &amp; Operaciones)</div>
+          <div class="tree-node"><div class="tree-leaf">• Histograma Financiero Comparativo (Devengado vs. Facturado)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Balanza de Conciliación de Descalce de OCs</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Panel de Alertas Operativas Críticas (Vencimientos de Acreditación)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Resumen de Acreditación de Equipos y Operadores</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="users" style="width:14px;height:14px;"></i> 2. Clientes &amp; CRM (Gestión Comercial B2B)</div>
+          <div class="tree-node"><div class="tree-leaf">• Directorio Comercial de Cuentas (Ofertado/Asignado/Devengado/Facturado)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Ficha General del Cliente &amp; Bitácora de Interacciones</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Gestor de Oportunidades &amp; Cotizaciones Desglosadas (Pipeline)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Conector API Laudus ERP (Asociación automática de OCs y Facturas SII)</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> 3. Torre de Control (Logística Activa)</div>
+          <div class="tree-node"><div class="tree-leaf">• Tablero Kanban de Avance de Servicios (5 Columnas Operativas)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Vista Temporal (Diagrama de Gantt / Programador de Ocupación de Flota)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Perspectiva Geográfica (Seguimiento Satelital GPS / Mapa Leaflet en Vivo)</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="dollar-sign" style="width:14px;height:14px;"></i> 4. Estados de Pago (EDP &amp; Cobranza)</div>
+          <div class="tree-node"><div class="tree-leaf">• Liquidación y Conciliación de Horas Reportadas de Terreno</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Generación de Borradores de EDP por Cliente y Faena</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="truck" style="width:14px;height:14px;"></i> 5. Mantención de Flota (Ficha 360° de Maquinaria)</div>
+          <div class="tree-node"><div class="tree-leaf">• Panel de Estado de Operación de la Flota (Temuco/Los Ángeles/Valdivia/PM)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Alertas de Mantención Preventiva según Horómetros Activos</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Acreditaciones de Equipos (Revisiones Técnicas, Bureau Veritas, Permisos MOP)</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="user-check" style="width:14px;height:14px;"></i> 6. Acreditación de Tripulación (Personal &amp; Equipos)</div>
+          <div class="tree-node"><div class="tree-leaf">• Control de Vigencia de Licencias Clase D para Operadores de Grúa</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Exámenes Ocupacionales (Altura Física, Psicotécnicos)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Registro de Inducciones Vigentes de Mandantes (CMPC, Celulosa Arauco)</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="folder-open" style="width:14px;height:14px;"></i> 7. Gestor Documental GSP (Expediente Centralizado)</div>
+          <div class="tree-node"><div class="tree-leaf">• Biblioteca Unificada de Archivos (Directorios por Cliente/Proyecto/Patente)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Carpeta Flota (Acreditación Bureau Veritas, Permisos MOP, Seguros)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Carpeta Operaciones (ASTs, Checklists firmados, Reportes de Terreno)</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="wrench" style="width:14px;height:14px;"></i> 8. Taller de Mantenimiento &amp; OTs</div>
+          <div class="tree-node"><div class="tree-leaf">• Generación de Órdenes de Trabajo Correctivas y Preventivas</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Calendario de Inspecciones Periódicas de Flota y Checklists de Patio</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Asignación de Mecánicos y Consolidación de Historial Técnico de Grúas</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="package" style="width:14px;height:14px;"></i> 9. Control de Bodegas &amp; WMS</div>
+          <div class="tree-node"><div class="tree-leaf">• Maestro de Repuestos SKU (Filtros, Neumáticos, Cables de Izaje)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Gestión de Stock Crítico y Alertas de Quiebre por Metodología ABC</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Control de Proveedores, Recepción de Materiales e Integración de Salida a OTs</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="line-chart" style="width:14px;height:14px;"></i> 10. Margen Operativo Directo</div>
+          <div class="tree-node"><div class="tree-leaf">• Consolidación de Costos de Faena (Peajes, Romana, Combustible, Alimentación)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Remuneración y Viáticos de Operarios y Tripulaciones de Montaje</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Cálculo automático de EBITDA y Margen de Utilidad Neto por Servicio</div></div>
+        </div>
+
+        <div class="tree-root" style="margin-top:20px;"><i data-lucide="smartphone" style="width:16px;height:16px;color:var(--amber);"></i> App Móvil de Operadores en Terreno (Captura Offline)</div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="inbox" style="width:14px;height:14px;"></i> 1. Inbox de Servicios Asignados</div>
+          <div class="tree-node"><div class="tree-leaf">• Listado de Órdenes del Operador e indicaciones GPS de Faena</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="file-text" style="width:14px;height:14px;"></i> 2. Formulario de Reporte y Seguridad</div>
+          <div class="tree-node"><div class="tree-leaf">• Checklist Pre-Operacional Mecánico Obligatorio (Outriggers, Cables, Nivel)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Firma Digital de AST (Análisis de Seguridad en el Trabajo) de Terreno</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Registro de Horómetros (Inicio y Término de Maniobras)</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Registro de Tiempos Stand-by y Condiciones de Viento</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Captura Fotográfica de Evidencia de Carga y Maniobra</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Firmas FES en Pantalla del Operador, Rigger y Supervisor Mandante</div></div>
+        </div>
+
+        <div class="tree-node">
+          <div class="tree-branch"><i data-lucide="navigation" style="width:14px;height:14px;"></i> 3. Registro de Desplazamientos &amp; Ruta</div>
+          <div class="tree-node"><div class="tree-leaf">• Activación de viaje mediante botón "Iniciar Desplazamiento" y "Finalizar Trayecto"</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Envío automático de telemetría de geolocalización (traza GPS) cada 5 minutos en ruta</div></div>
+          <div class="tree-node"><div class="tree-leaf">• Descarga rápida y visualización offline de Permisos Especiales de Vialidad MOP</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 7: GESTIÓN DE CLIENTES & CRM (VISIÓN ENTERPRISE 360° Y PIPELINE) ── -->
+    <section id="crm">
+      <h2 class="section-heading" style="color:var(--amber); border-bottom: 2px solid var(--amber); margin-bottom: 32px;">6. Módulos Operacionales Core (CRM &amp; Gestor Documental)</h2>
+      <h3 class="sub-heading" style="font-size: 18px; margin-top: 0; font-weight: 800;">6.A. Gestión de Clientes &amp; CRM (Módulo Enterprise 360°)</h3>
+      <p class="lead-paragraph">
+        El módulo de <strong>Clientes & CRM</strong> de LeanGlobal para GSP ha sido diseñado bajo los estándares más exigentes del mercado corporativo. Centraliza y automatiza toda la preventa comercial y la posventa operativa, sirviendo como el puente definitivo de control entre la casa matriz en Temuco y la facturación de servicios.
+      </p>
+
+      <h3 class="sub-heading">A. Ficha Cliente 360° y Control de Interacciones (CRM)</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        Este módulo elimina la dependencia de notas en papel y agendas de negociación dispersas de los ejecutivos comerciales (como Gerald Aguilera). Ofrece una consola comercial centralizada de dos columnas que incluye:
+      </p>
+      <ul>
+        <li><strong>Buscador Inteligente de Clientes (4.800+ Registros):</strong> El módulo incorpora un campo de búsqueda asíncrona tipo <em>Autocomplete</em> conectado a la base de datos de GSP. Evita el colapso del navegador al no precargar todas las cuentas estáticamente; en su lugar, tras escribir 3 caracteres, el sistema realiza una consulta asíncrona rápida filtrando coincidencias tanto por <strong>Razón Social / Nombre</strong> (ej. <em>Arauco</em>) como por <strong>RUT del Cliente</strong> (limpiando automáticamente puntos y guiones en la consulta).</li>
+        <li><strong>Auto-completado de Datos Maestros:</strong> Al hacer clic en el cliente seleccionado, el CRM auto-completa de manera instantánea la Razón Social, el RUT, el Giro Comercial y la Dirección física (combinada con su comuna/ciudad), evitando cualquier error humano de digitación.</li>
+        <li><strong>Contexto Multi-Empresa Emisora (Selector Matriz):</strong> Permite al ejecutivo comercial cotizar y emitir propuestas a nombre de cualquiera de las 5 razones sociales hermanas del grupo (<strong>BESTMAQ, LOGISTICA DEL SUR, SAN PABLO, DOROTEA y ROYAL RENTAL</strong>). El sistema asocia automáticamente el RUT de la empresa emisora correspondiente al proyecto en la base de datos centralizada.</li>
+        <li><strong>Variables Comerciales y de Operación:</strong> Posterior al auto-completado, el ejecutivo ingresa los datos particulares del contacto (Nombre y Teléfono), el Tipo de Pago (Efectivo, Transferencia, Crédito, Débito, Cheque, Otros), si el servicio requiere Orden de Compra/HES obligatoria para la facturación posterior, y si exige documentos de Acreditación específicos de ingreso a faena.</li>
+        <li><strong>Bitácora Unificada de Negociación:</strong> Registro histórico e inalterable de cada punto de contacto con el cliente (llamadas telefónicas, correos, reuniones y visitas técnicas de site visit).</li>
+      </ul>
+
+      <h3 class="sub-heading">B. Registro de Oportunidades &amp; Pipeline Preventa</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        El motor de captación y seguimiento descansa sobre el Gestor de Oportunidades. Este panel permite registrar y calificar en caliente cada requerimiento técnico B2B bajo el siguiente flujo parametrizado:
+      </p>
+      <ul>
+        <li><strong>Formulario de Entrada Completo:</strong> Captura tanto los datos comerciales del mandante como las condiciones generales del servicio (ej. Obra, dirección exacta con enlace de geolocalización, peso de la carga, radios y alturas de izaje).</li>
+        <li><strong>Estructurador de Servicios en base a las 9 Familias Oficiales:</strong> Tabla reactiva de cotizaciones que obliga a catalogar el arriendo bajo la lista estricta de 9 familias del grupo:
+          <ol style="margin-left: 20px; color:var(--text-gray); font-size:12px; margin-top:6px;">
+            <li>Grúas Telescópicas</li>
+            <li>Camiones Pluma</li>
+            <li>Grúas Horquillas</li>
+            <li>Camiones con rampla</li>
+            <li>Manipuladores Telescópicos</li>
+            <li>Plataformas articuladas</li>
+            <li>Plataformas Tijeras</li>
+            <li>Plataformas Telescópicas</li>
+            <li>Servicios de personal acreditado (Operadores/Riggers)</li>
+          </ol>
+          Las tarifas se ingresan de forma manual o sugerida según unidades de medida estándar: Horas de Operación, Fletes (traslado de contrapesos/maquinaria) o Mensualidades de arriendo.
+        </li>
+        <li><strong>Módulo de Visita a Terreno (Site Visit &amp; Viabilidad):</strong> Pestaña interactiva adaptada digitalmente del formulario de campo de GSP para asegurar la ruta de tránsito y condiciones de maniobra. Contempla 9 segmentos de recolección de datos técnicos (obstáculos de ruta como puentes o tendido eléctrico, tipo y capacidad de suelo, toma de dimensiones de la carga con croquis, implementos de izaje como eslingas o pulpos, fotografías de terreno y firmas digitales del supervisor mandante y visitador).</li>
+        <li><strong>Ciclo de Vida Comercial (4 Estados de Ficha):</strong> El sistema mantiene integridad referencial estricta hacia una tabla de estados en base de datos para controlar la madurez de la cotización:
+          <ol style="margin-left: 20px; color:var(--text-gray); font-size:12px; margin-top:6px;">
+            <li><strong>Oportunidad Registrada:</strong> Nacimiento de la tarjeta en la preventa, sin líneas de servicio asignadas aún.</li>
+            <li><strong>Preparación de Cotización:</strong> Ficha activa en proceso de definición de equipos, tarifas y desgloses.</li>
+            <li><strong>Cotización Asignada:</strong> Aprobación final del cliente mandante (botón "Registrar y Ganar"), lo que hace transicionar la tarjeta de inmediato a la Torre de Control operativa para asignación de operadores y grúas.</li>
+            <li><strong>Cotización No Asignada:</strong> Registro de rechazo o pérdida para métricas del dashboard contable.</li>
+          </ol>
+        </li>
+      </ul>
+
+      <h3 class="sub-heading">C. Sincronización Temporal de APIs con Laudus ERP (Plan de Transición)</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        Como plan de transición temporal y de resguardo operativo, mientras se desarrolla e implementa el módulo definitivo de Contabilidad Simple nativa comprometido, el CRM incluirá conectores bidireccionales automáticos de API REST con <strong>Laudus ERP</strong> para eliminar el doble ingreso de datos y resguardar la continuidad de la información actual de GSP:
+      </p>
+      <ul>
+        <li><strong>Sincronización de Órdenes de Compra (OCs):</strong> El sistema lee online las OCs ingresadas en Laudus por el RUT de los clientes (ej. CMPC, Arauco). Al detectar coincidencia, asocia de forma automática el número y archivo PDF de la OC al servicio correspondiente en el Kanban.</li>
+        <li><strong>Cierre de Facturación SII:</strong> Cuando el Estado de Pago (EDP) es aprobado en GSP, el sistema envía los datos a Laudus para facturar. Al emitirse el folio de factura, el sistema lo captura de forma online, actualiza la cuenta puente del devengado y cierra el ciclo de caja.</li>
+      </ul>
+
+      <h3 class="sub-heading" style="margin-top: 24px;">Mitigación de Riesgos de Integración (Laudus ERP)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Para asegurar la viabilidad del proyecto y anticipar contingencias técnicas relacionadas con la infraestructura de Laudus ERP, se establece la siguiente matriz de control de riesgos:
+      </p>
+      <div class="table-wrapper" style="margin-bottom: 24px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:20%;">Riesgo Identificado</th>
+              <th style="width:20%;">Impacto Operacional</th>
+              <th style="width:15%;text-align:center;">Probabilidad</th>
+              <th style="width:45%;">Plan de Mitigación y Contingencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Retraso en la habilitación de infraestructura para Laudus On-Premise</strong></td>
+              <td><span style="color:var(--red); font-weight:700;">Alto</span> (Bloqueo de la fase de pruebas e integración).</td>
+              <td style="text-align:center;"><span class="badge badge-red">Media-Alta</span></td>
+              <td>
+                1. <strong>Definición en Kick-off:</strong> Definir en la sesión de inicio (Kick-off) la arquitectura de Laudus del cliente.
+                <br>
+                2. <strong>Condición de Desarrollo:</strong> De ser On-Premise, condicionar el inicio del desarrollo a la entrega efectiva de accesos a bases de datos o APIs locales bajo un protocolo de comunicación firmado por el encargado de TI del cliente.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-heading">Análisis Comparativo: Laudus Cloud vs. Laudus On-Premise</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        A continuación se expone la tabla técnica comparativa que detalla los niveles de esfuerzo y requerimientos de conexión entre ambos escenarios de integración:
+      </p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%;">Criterio</th>
+              <th style="width:41%; background: rgba(59,130,246,0.02);">Escenario X: Laudus Cloud</th>
+              <th style="width:41%; background: rgba(239,68,68,0.02);">Escenario Y: Laudus On-Premise (Local)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Nivel de Esfuerzo</strong></td>
+              <td><span class="badge badge-green">Bajo a Medio</span> (Predecible y acotado).</td>
+              <td><span class="badge badge-red">Alto</span> (Altamente variable y complejo).</td>
+            </tr>
+            <tr>
+              <td><strong>Mecanismo de Conexión</strong></td>
+              <td>Consumo directo de la API REST oficial (<code>https://api.laudus.cl</code>) usando HTTPS y tokens Bearer (JWT).</td>
+              <td>Acceso directo a la base de datos local (ej. MS SQL Server / Firebird) o desarrollo de un agente de sincronización local.</td>
+            </tr>
+            <tr>
+              <td><strong>Lectura de OCs y Facturas</strong></td>
+              <td>Estándar. Se consultan los endpoints oficiales de compras (<code>/sales/purchaseorders</code>) y facturación (<code>/sales/invoices</code>) obteniendo JSONs estructurados.</td>
+              <td>Complejo / Manual. Requiere hacer ingeniería inversa o mapear de forma manual la base de datos local para descifrar las tablas donde se guardan las OCs y Facturas.</td>
+            </tr>
+            <tr>
+              <td><strong>Dependencia de Terceros</strong></td>
+              <td>Mínima. Solo se requiere que el cliente active la API en su configuración y nos entregue las credenciales de acceso.</td>
+              <td>Máxima. Se depende críticamente de la disponibilidad y velocidad de respuesta del administrador de TI del cliente para configurar accesos de red.</td>
+            </tr>
+            <tr>
+              <td><strong>Seguridad e Infraestructura</strong></td>
+              <td>Cumple con estándares de seguridad web nativos (HTTPS) sin requerir modificaciones en la red interna del cliente.</td>
+              <td>Suele generar alta fricción con las políticas de seguridad del cliente, ya que exige abrir puertos externos hacia sus servidores contables o crear VPNs dedicadas.</td>
+            </tr>
+            <tr>
+              <td><strong>Estabilidad y Disponibilidad</strong></td>
+              <td>Alta. Garantizada por los servidores de Laudus (Visma) con alta disponibilidad y monitoreo constante.</td>
+              <td>Incierta / Baja. Si el servidor físico de la oficina del cliente se apaga, cambia de IP pública o pierde conexión a internet, la integración se interrumpe de inmediato.</td>
+            </tr>
+            <tr>
+              <td><strong>Impacto en Plazos y Costos</strong></td>
+              <td>Tiempo de desarrollo estimado en días. Costos estables y acotados al presupuesto original.</td>
+              <td>Alto Factor de Riesgo. Puede duplicar o triplicar el tiempo de desarrollo. Requiere más horas de soporte técnico, elevando la cotización final del proyecto.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 8: GESTOR DOCUMENTAL GSP ── -->
+    <section id="gestor-docs">
+      <h3 class="sub-heading" style="font-size: 18px; margin-top: 0; font-weight: 800; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">6.B. Gestor Documental GSP (Expediente Digital Centralizado)</h3>
+      <p class="lead-paragraph">
+        El <strong>Gestor Documental GSP</strong> es el repositorio digital centralizado de la empresa. Este módulo organiza, resguarda e indexa de forma automática toda la documentación legal de la flota de grúas y los expedientes técnicos de los servicios en terreno, cumpliendo de forma estricta con las exigencias de fiscalización de grandes mandantes del sector forestal y minero (ej. Celulosa Arauco, CMPC).
+      </p>
+
+      <h3 class="sub-heading">A. Expediente Digital Centralizado de Flota (Equipos)</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        Este módulo automatiza la administración y control de vigencias de toda la documentación obligatoria por cada grúa móvil de la flota (como la Liebherr LTM 1400 o la Tadano ATF 220G), incluyendo:
+      </p>
+      <ul>
+        <li><strong>Certificaciones Técnicas de Izaje:</strong> Revisiones estructurales e hidráulicas anuales realizadas por organismos externos autorizados (como Bureau Veritas o LSQA) requeridas para ingresar a faena.</li>
+        <li><strong>Seguros de Carga y Responsabilidad Civil:</strong> Pólizas vigentes indispensables para cubrir siniestros durante maniobras críticas de izaje pesado.</li>
+        <li><strong>Permisos Especiales de Tránsito MOP:</strong> Resoluciones viales especiales otorgadas por la Dirección de Vialidad del Ministerio de Obras Públicas para el traslado por carreteras públicas de grúas sobredimensionadas y camiones cama baja con contrapesos.</li>
+      </ul>
+
+      <h3 class="sub-heading">B. Biblioteca de Servicios y Acreditación de Personal</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        Al mismo tiempo, la biblioteca digital clasifica jerárquicamente las carpetas de servicios por cliente y por faena, sincronizando las capturas que los operadores realizan desde la App móvil:
+      </p>
+      <ul>
+        <li><strong>Documentación AST y Checklists:</strong> Los Análisis de Seguridad en el Trabajo (AST) y checklists preoperacionales mecánicos firmados en pantalla por el operador, rigger y supervisor mandante.</li>
+        <li><strong>Acreditación de Tripulación:</strong> Registro digitalizado y vigencia de licencias de conducir clase D, exámenes de altura física ocupacionales vigentes e inducciones vigentes para cada planta de destino.</li>
+        <li><strong>Integridad del Expediente:</strong> Almacena de forma inalterable las firmas electrónicas del cierre de maniobra y reportes de orómetros, respaldando contablemente el devengado operativo y el borrador de EDP.</li>
+      </ul>
+    </section>
+
+    <!-- ── SECCIÓN 9: PANTALLAS CONSOLA ── -->
+    <section id="pantallas">
+      <h2 class="section-heading">8. Pantallas Principales del Ecosistema Operacional</h2>
+      <p class="lead-paragraph">
+        A continuación se presentan capturas de pantalla de la maqueta funcional adaptada para Grúas San Pablo, demostrando la alta densidad de información y los controles del sistema.
+      </p>
+
+      <div class="callout callout-blue" style="margin-bottom: 24px;">
+        <div class="callout-title">
+          <i data-lucide="external-link" style="width:14px;height:14px;"></i> Prototipo Interactivo En Vivo
+        </div>
+        <div class="callout-body">
+          La maqueta interactiva completa está publicada y disponible para navegación en el siguiente enlace: 
+          <a href="https://servidor.leanglobal.cl/pptas/GSP/maqueta_gsp_final.html" target="_blank" style="color:var(--blue); font-weight:700; text-decoration:underline;">https://servidor.leanglobal.cl/pptas/GSP/maqueta_gsp_final.html</a>. 
+          <br><br>
+          <strong>Nota Importante:</strong> Este prototipo corresponde a una maqueta interactiva. Su propósito es describir y cifrar de forma visual el punto de destino de nuestro trabajo, sirviendo como guía conceptual y estética para el proyecto final.
+        </div>
+      </div>
+
+      <!-- Pantalla 1 -->
+      <h3 class="sub-heading">A. Dashboard de Devengado Financiero &amp; Operaciones</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta vista unifica el control ejecutivo. Incorpora la barra de KPIs operativos en la parte superior, el histograma financiero de comparación de 6 meses (desarrollado con Highcharts), y la balanza de descalce contable que alerta la falta de Órdenes de Compra vinculadas a trabajos ya devengados en terreno.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/kpi_dashboard.png" alt="Dashboard Ejecutivo GSP" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 1. Vista principal del Dashboard. Se observa en color naranja el monto total devengado y la brecha financiera sin referencias HSEC.</figcaption>
+      </figure>
+
+      <!-- Pantalla 2 -->
+      <h3 class="sub-heading">B. Torre de Control Logística (Tablero Kanban de Servicios)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Tablero visual interactivo que reemplaza la pizarra manual de operaciones en Temuco. Este módulo centraliza las dos dimensiones más críticas de la operación de izajes:
+      </p>
+      <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-gray); font-size: 13px;">
+        <li style="margin-bottom: 6px;"><strong>La Perspectiva Temporal (Cronograma Gantt / Planificación Flota):</strong> Permite programar de forma visual la asignación diaria y semanal de las grúas Liebherr y Tadano, evitando colisiones horarias del personal y optimizando la ocupación del equipamiento.</li>
+        <li style="margin-bottom: 6px;"><strong>La Perspectiva Geográfica (Seguimiento Satelital GPS / Mapa):</strong> Integra geolocalización satelital en caliente sobre mapas de control para ver la ubicación exacta de las grúas de alto tonelaje en tránsito y de los camiones cama baja propios transportando los contrapesos pesados, validando velocidades y el estado de sus respectivos permisos viales.</li>
+      </ul>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Las tarjetas se organizan secuencialmente en 5 columnas de avance operativo: Solicitado, Asignado (Acreditación en curso), Desplazamiento (Ruta/GPS), En Maniobra (Ejecutando en terreno) y Completado (Listo para Estado de Pago).
+      </p>
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <figure class="screenshot-figure" style="margin-bottom:12px;">
+          <img src="assets/kanban_torre.png" alt="Torre de Control Kanban GSP" class="screenshot-img">
+          <figcaption class="screenshot-caption">Figura 2a. Vista Kanban de Servicios. Distribución operativa en las 5 columnas logísticas desde la solicitud hasta el cobro.</figcaption>
+        </figure>
+        <figure class="screenshot-figure" style="margin-bottom:12px;">
+          <img src="assets/torre_mapa.png" alt="Torre de Control Mapa GSP" class="screenshot-img">
+          <figcaption class="screenshot-caption">Figura 2b. Perspectiva Geográfica (Mapa GPS de Despacho). Geolocalización en vivo de grúas Liebherr y camiones de transporte en ruta.</figcaption>
+        </figure>
+        <figure class="screenshot-figure" style="margin-bottom:12px;">
+          <img src="assets/torre_gantt.png" alt="Torre de Control Gantt GSP" class="screenshot-img">
+          <figcaption class="screenshot-caption">Figura 2c. Perspectiva Temporal (Diagrama de Gantt de la Flota). Programación diaria y semanal interactiva de maquinaria y personal acreditado.</figcaption>
+        </figure>
+      </div>
+
+      <!-- Pantalla 3 -->
+      <h3 class="sub-heading">C. Expediente Operacional 360° (Detalle de Ingeniería & Site Visit)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Al hacer clic en cualquier servicio del Kanban, se despliega esta ficha unificada. Esta captura representa la pestaña de <strong>Ingeniería & Site Visit</strong>, la cual consolida los parámetros técnicos de viabilidad evaluados en el terreno (resistencia del suelo de 35 t/m², pendiente menor al 1%, distancia segura de líneas eléctricas) y las especificaciones físicas de izaje (peso bruto, radio, pluma de 32.5m y utilización de grúa del 77.9%). También integra la logística y asignación de las 74 Ton de contrapesos en camiones cama baja propios y resoluciones del MOP.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/modal_360.png" alt="Expediente 360 GSP" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 3. Pestaña de Ingeniería del Expediente 360°. Visualización del margen de seguridad de utilización de grúa y la logística de contrapesos sin fondos negros que coman espacio.</figcaption>
+      </figure>
+
+      <!-- Pantalla 4 -->
+      <h3 class="sub-heading">D. Consola de Clientes & CRM (Gestor de Oportunidades)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta vista unifica el control preventa y comercial. Muestra la base de datos de clientes activos a la izquierda y el expediente comercial del cliente seleccionado a la derecha, con el panel interactivo del <strong>Gestor de Oportunidades</strong> abierto para calificar el lead y cotizar las líneas de servicio para la parada de planta.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/crm_clientes.png" alt="Consola CRM Clientes GSP" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 4. Drawer de Oportunidades abierto sobre el CRM. Permite calificar leads, cotizar equipos y asignar el servicio al flujo Kanban con un solo clic.</figcaption>
+      </figure>
+
+      <!-- Pantalla 5 -->
+      <h3 class="sub-heading">E. App Móvil del Operador (Secuencia de Terreno)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Flujo secuencial de la aplicación móvil e intuitiva en terreno, diseñada para tablets de los operadores. Cuenta con soporte offline automático y sincronización resiliente:
+      </p>
+      <div class="mobile-sequence" style="display:flex; justify-content:center; gap:20px; margin: 24px auto;">
+        <figure class="screenshot-figure" style="max-width: 320px; margin:0;">
+          <img src="assets/app_mobile_inbox.png" alt="App Movil Inbox GSP" class="screenshot-img" style="border-radius:16px;">
+          <figcaption class="screenshot-caption">Figura 5a. Bandeja de Entrada (Inbox) con servicios activos asignados al operador en terreno.</figcaption>
+        </figure>
+        <figure class="screenshot-figure" style="max-width: 320px; margin:0;">
+          <img src="assets/app_mobile_form.png" alt="App Movil Checklist GSP" class="screenshot-img" style="border-radius:16px;">
+          <figcaption class="screenshot-caption">Figura 5b. Checklist preoperacional mecánico y Análisis de Seguridad AST digital firmados en terreno.</figcaption>
+        </figure>
+      </div>
+
+      <!-- Pantalla 6 -->
+      <h3 class="sub-heading">F. Gestión y Control de Flota 360° (Ficha de Maquinaria)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta pantalla representa el módulo de control de flota de GSP con la ficha unificada de un equipo seleccionado. Muestra las especificaciones técnicas completas de la maquinaria (ej. Liebherr LTM 1400 de 400 Toneladas), la vigencia en vivo de su acreditación legal (exámenes, MOP, revisiones) y su historial operativo.
+      </p>
+      <figure class="screenshot-figure" style="margin-bottom:24px;">
+        <img src="assets/ficha_grua.png" alt="Ficha Tecnica de Grua GSP" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 6. Ficha unificada 360° de maquinaria pesada. Se detalla el estado operacional 'Operativo', historial de horómetros de izaje/motor y la vigencia de documentos legales indispensables para licitar.</figcaption>
+      </figure>
+
+      <!-- Pantalla G -->
+      <h3 class="sub-heading">G. Gestor Documental Centralizado (Árbol y Biblioteca de Archivos)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta captura representa la interfaz del <strong>Gestor Documental GSP</strong> en producción. A la izquierda se observa el panel con el árbol de directorios dinámico estructurado por grúa (modelos Liebherr LTM 1220, LTM 1250, y LTM 1400) y por cliente/faena (CMPC, Arauco). A la derecha se despliega el listado de archivos en la carpeta seleccionada, incluyendo el estado de su revisión ("Vigente", "Habilitado") y enlaces directos para descarga.
+      </p>
+      <figure class="screenshot-figure" style="margin-bottom:24px;">
+        <img src="assets/gestor_documental.png" alt="Gestor Documental GSP" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 7. Interfaz del Gestor Documental GSP. Vista unificada de la biblioteca digital con control de vigencias y descargas directas de expedientes de flota y terreno.</figcaption>
+      </figure>
+
+      <!-- Pantalla H: Mantenimiento -->
+      <h3 class="sub-heading">H. Mantenimiento y Control de Disponibilidad Mecánica en OTs</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Interfaz premium de talleres y mantenimiento. Centraliza la planificación de Órdenes de Trabajo (OTs) preventivas y correctivas de la flota, el registro digital de horómetros de motor e izaje, y el control técnico del estado de las grúas de alto tonelaje para asegurar su disponibilidad en faena.
+      </p>
+      <figure class="screenshot-figure" style="margin-bottom:24px;">
+        <img src="assets/mantenimiento_gsp_mockup.png" alt="Modulo Mantenimiento Premium" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 8. Consola de taller para la imputación de actividades de mecánicos, check-lists preoperacionales de patio y control de OTs activas.</figcaption>
+      </figure>
+
+      <!-- Pantalla I: Bodegas WMS ABC -->
+      <h3 class="sub-heading">I. Maestro de Repuestos SKU, Bodegas y Valorización Logística (WMS)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Tablero de control para el departamento de adquisiciones y bodegas de repuestos críticos. Monitorea en tiempo real los niveles de stock (neumáticos, filtros, cables de izaje), valoriza existencias al costo promedio ponderado y gestiona de forma automatizada las alertas de quiebre de stock crítico bajo la **metodología de clasificación y priorización ABC** (según criticidad operacional, valor y rotación de los repuestos).
+      </p>
+      <figure class="screenshot-figure" style="margin-bottom:24px;">
+        <img src="assets/inventario_gsp_mockup.png" alt="Modulo Inventario WMS Premium" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 9. Maestro logístico de SKU con alertas de stock mínimo y quiebres mediante metodología ABC por sucursal, control de proveedores y salida de materiales integrada a OTs.</figcaption>
+      </figure>
+
+      <!-- Pantalla J: Dashboard SST -->
+      <h3 class="sub-heading">J. Consola Ejecutiva y Dashboard SST Integrado</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta consola de Torre de Control SST consolida las observaciones conductuales y los checklists de seguridad en tiempo real. Permite visualizar de forma interactiva indicadores críticos como índices de severidad (IG), frecuencia (IF) y accidentabilidad (IA), así como tendencias históricas por faena o sucursal.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/dashboard_sst.png" alt="Dashboard SST Transmac" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 10. Tablero de control ejecutivo para HSEC, Clima Laboral y dotación activa de personal en faenas mineras.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ── SECCIÓN 10: SEGURIDAD Y GCP ── -->
+    <section id="seguridad">
+      <h2 class="section-heading">8. Seguridad, Ciberseguridad y Arquitectura en la Nube</h2>
+      <p class="lead-paragraph">
+        El ecosistema tecnológico está construido bajo altos estándares de disponibilidad y seguridad informática sobre la infraestructura de Google Cloud Platform (GCP), resguardando los activos digitales del negocio de Grúas San Pablo:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4 class="card-title" style="color:var(--green);margin-bottom:10px;"><i data-lucide="cloud" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Arquitectura en GCP</h4>
+          <p class="card-body">
+            • <strong>Servidor Cloud en Chile:</strong> Alojamiento en la región sur de GCP (Santiago) para una latencia mínima de comunicación con las sucursales de Temuco, Los Ángeles, Valdivia y Puerto Montt.
+            <br>
+            • <strong>Disponibilidad Garantizada:</strong> Arquitectura serverless escalable con backups automáticos diarios de la base de datos encriptada.
+            <br>
+            • <strong>Sincronización Offline Resiliente:</strong> Base de datos local SQLite en los dispositivos móviles que se sincroniza automáticamente a la nube central al reconectar a redes 4G/5G.
+          </p>
+        </div>
+        <div class="card">
+          <h4 class="card-title" style="color:var(--blue);margin-bottom:10px;"><i data-lucide="shield-check" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i>Ciberseguridad & Cumplimiento Normativo</h4>
+          <p class="card-body">
+            • <strong>Seguridad de Datos:</strong> Tránsito encriptado mediante certificados SSL/TLS y encriptación de datos sensibles en reposo. Blindaje ante inyecciones de código malicioso.
+            <br>
+            • <strong>Nueva Ley de Ciberseguridad en Chile:</strong> Nuestro software está alineado con la nueva ley marco que entra en vigencia en <strong>Diciembre de 2026</strong>.
+            <br>
+            • <strong>Homologación ante Grandes Mandantes:</strong> Contar con una plataforma que garantice trazabilidad e integridad de firmas electrónicas es un requisito mandatorio para licitar en grandes forestales (Arauco, CMPC) y constructoras.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 9: EXTENSIÓN SGI Y DS 44 (PRÓXIMOS PASOS) ── -->
+    <section id="extension-sgi">
+      <h2 class="section-heading">9. Extensión del Sistema de Gestión Integral (SGI) y Módulos del DS 44</h2>
+      
+      <div class="callout callout-amber" style="margin-bottom: 24px;">
+        <div class="callout-title">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Proyección de Futuro — Excluido de la Propuesta Actual
+        </div>
+        <div class="callout-body">
+          Los componentes descritos en esta sección representan una extensión tecnológica proyectada a mediano plazo para consolidar un SGI robusto bajo el estándar normativo chileno (incluyendo el DS 44). Esta especificación tiene carácter ilustrativo para demostrar la escalabilidad del sistema y <strong>no forma parte del alcance del desarrollo inicial ni de la oferta económica de esta propuesta</strong>.
+        </div>
+      </div>
+
+      <p class="lead-paragraph">
+        El ecosistema de LeanGlobal cuenta con la base arquitectónica necesaria para implementar módulos avanzados de seguridad y salud en el trabajo (SST) alineados con las auditorías exigidas por los grandes mandantes, estructurándose de la siguiente forma:
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-top:3px solid var(--amber);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="shield-alert" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo A: Gestión de Riesgos Dinámica (MIPER 2.0)</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Automatiza la Matriz de Identificación de Peligros y Evaluación de Riesgos (MIPER) de forma activa e interactiva:
+            <br>• <strong>Calculadora de Riesgo Puro y Residual:</strong> Campos parametrizados que calculan automáticamente la criticidad del riesgo (Probabilidad × Severidad) antes y después de las medidas de control.
+            <br>• <strong>Filtros de Enfoque Inclusivo:</strong> Checkboxes obligatorios para indicar si el riesgo evaluado afecta de manera diferenciada por perspectiva de género, discapacidad y trabajadores sensibles.
+            <br>• <strong>Alertas de Caducidad:</strong> Notificación automática y obligatoria de revisión al registrarse un accidente o transcurrir 12 meses.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--blue);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="users" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo B: Ecosistema Comités Paritarios (CPHS)</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Automatiza la burocracia y validez legal de las actividades del Comité Paritario de Higiene y Seguridad:
+            <br>• <strong>Votación Electrónica:</strong> Pantalla de inscripción, votación encriptada (un voto por trabajador, secreto y auditable) y generación del Acta de Escrutinio y Acta de Constitución listas para firma digital.
+            <br>• <strong>Control del Curso OPR:</strong> Perfil de miembro con contador en reversa de 6 meses para capacitarse en Prevención de Riesgos (20 horas obligatorias).
+            <br>• <strong>Gestor de Actas Mensuales:</strong> Repositorio con firma electrónica simple que envía copias automáticas al prevencionista y representantes del comité.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--green);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="clipboard-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo C: Planificador de Trabajo y Ciclo PHVA</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            El motor que mueve el Programa de Prevención de Riesgos de GSP:
+            <br>• <strong>Kanban Preventivo:</strong> Asignación y seguimiento de tareas derivadas de la MIPER, con responsables, plazos y niveles de criticidad.
+            <br>• <strong>Planes de Emergencia:</strong> Sección de descarga rápida en la App móvil para que los operadores tengan acceso offline al plan ante catástrofes climáticas.
+            <br>• <strong>Encuestas de Percepción:</strong> Envío periódico de cuestionarios anónimos para evaluar la cultura de seguridad de los trabajadores.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--purple);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="user-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo D: Portal del Trabajador y "Derecho a Saber"</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            La interfaz de cara al empleado, optimizada para smartphones:
+            <br>• <strong>Inducción Digital (ODI):</strong> Pantallas donde el nuevo trabajador revisa los riesgos de su puesto, ve videos formativos y rinde un test para generar el documento ODI firmado digitalmente.
+            <br>• <strong>Buzón de Reportes de Incidentes:</strong> Acceso rápido para tomar una foto a una condición insegura en terreno y enviarla al prevencionista o comité (con opción anónima).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 10: IA VECTORIAL & RAG (PRÓXIMOS PASOS) ── -->
+    <section id="ia-vectorial">
+      <h2 class="section-heading">10. Copiloto Inteligente: IA Vectorial &amp; RAG (Búsqueda Semántica de Operaciones)</h2>
+      
+      <div class="callout callout-amber" style="margin-bottom: 24px;">
+        <div class="callout-title">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Proyección de Futuro — Excluido de la Propuesta Actual
+        </div>
+        <div class="callout-body">
+          La funcionalidad de Inteligencia Artificial Vectorial y RAG descrita en esta sección representa una capacidad tecnológica que la plataforma de LeanGlobal está preparada para soportar de manera nativa. Su activación <strong>requiere de una estrategia de implementación específica (curaduría de documentos y entrenamiento) y no forma parte del alcance inicial de este proyecto</strong>, pudiendo planificarse como una fase de extensión a partir del <strong>sexto mes en adelante</strong>.
+        </div>
+      </div>
+
+      <p class="lead-paragraph">
+        En la gestión industrial moderna, los equipos de Operaciones, Calidad y HSE de GSP se enfrentan a un desafío crítico: manejar miles de procedimientos de izaje, manuales de fabricantes de grúas (Liebherr, Tadano), normativas mineras y reportes históricos. Para acelerar la consulta de datos en terreno sin búsquedas manuales ineficientes, la plataforma de LeanGlobal cuenta con la infraestructura tecnológica para integrar:
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-left:4px solid var(--blue); background:#ffffff;">
+          <h4 class="card-title" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><i data-lucide="database" style="width:14px;height:14px;color:var(--blue);"></i>IA Vectorial</h4>
+          <p class="card-body">
+            Convierte sus documentos, manuales de operación e incidentes en mapas conceptuales matemáticos. Esto permite al sistema entender el significado y contexto de las preguntas en lugar de limitarse a buscar palabras clave exactas.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid var(--amber); background:#ffffff;">
+          <h4 class="card-title" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><i data-lucide="message-square" style="width:14px;height:14px;color:var(--amber);"></i>Generación Aumentada por Recuperación (RAG)</h4>
+          <p class="card-body">
+            Conecta la base de datos de GSP con un modelo de lenguaje seguro. En lugar de que la IA invente respuestas, RAG extrae los fragmentos exactos del manual o procedimiento interno real y redacta una respuesta precisa y justificada.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">Ejemplos de uso potencial en GSP</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        La integración de esta tecnología transformará la velocidad de respuesta del personal técnico y supervisor en la obra:
+      </p>
+
+      <div class="grid-3">
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue" style="background:rgba(37,99,235,0.06);"><i data-lucide="shield-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">🛡️ HSE en Terreno</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Un supervisor en obra pregunta en lenguaje natural desde su App: <em>"¿Cuáles son los elementos de protección obligatorios para soldadura en altura según nuestro protocolo?"</em>. La IA extrae el dato exacto de los PDFs internos y responde en segundos.
+          </p>
+        </div>
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green" style="background:rgba(22,163,74,0.06);"><i data-lucide="file-spreadsheet" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">📋 Auditoría de Calidad</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Permite cruzar múltiples registros de control. Al consultar: <em>"¿Qué desviaciones mecánicas se repitieron más en los reportes del mes pasado?"</em>, el sistema consolida los datos de inspecciones históricas en segundos.
+          </p>
+        </div>
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber" style="background:rgba(217,119,6,0.06);"><i data-lucide="history" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">📈 Historial Operativo</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Los planificadores consultan lecciones aprendidas o bitácoras de mantenimiento redactando una pregunta simple sobre repuestos anteriores de grúas Liebherr, agilizando la toma de decisiones.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout callout-green" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="lock" style="width:14px;height:14px;"></i>Seguridad y Trazabilidad del Conocimiento</div>
+        <div class="callout-body">
+          • <strong>Privacidad Total:</strong> Los datos de GSP se procesan de forma encriptada y privada, sin alimentar modelos de IA públicos.
+          <br>
+          • <strong>Trazabilidad:</strong> Cada respuesta entregada por el copiloto incluye la cita de origen (nombre de documento y página exacta) del repositorio de GSP.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 11: CRONOGRAMA ── -->
+    <section id="cronograma">
+      <h2 class="section-heading">11. Cronograma de Trabajo y Plan de Hitos</h2>
+      <p class="lead-paragraph">
+        Gracias al avance logrado en la fase de prototipado interactivo (Hito 1), el cual permitió acotar visualmente el alcance y congelar las especificaciones funcionales del sistema, se propone un plan de trabajo optimizado de <strong>7 semanas</strong> de duración total para la puesta en producción, sujeto a las condiciones operativas de integración definidas a continuación:
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:20%;">Hito / Fase</th>
+              <th style="width:55%;">Entregables y Objetivos Clave</th>
+              <th style="width:25%;">Plazo Estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Hito 1: Prototipo &amp; Dossier</strong></td>
+              <td>Alineación operativa, diseño del modelo de base de datos conceptual, desarrollo de la maqueta funcional interactiva y entrega de la presente propuesta formal.</td>
+              <td><span class="badge badge-green">Completado (Semana 1)</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 2: Configuración Técnica</strong></td>
+              <td>Mapeo de atributos específicos de izajes de GSP en el modelo de base de datos (Prisma), especificación de endpoints específicos y preparación del protocolo de comunicación de Laudus ERP.</td>
+              <td><span class="badge badge-blue">Semana 2 (1 Semana)</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 3: Adaptación, Integración &amp; QA</strong></td>
+              <td>Ajustes finos en App Móvil de Terreno, desarrollo del conector de sincronización con Laudus ERP (Cloud/On-Premise con contingencia XML/OCR), pruebas unitarias/QA, marcha blanca y capacitación.</td>
+              <td><span class="badge badge-purple">Semana 3 a 7 (5 Semanas)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-blue" style="margin-top: 16px;">
+        <div class="callout-title">
+          <i data-lucide="info" style="width:14px;height:14px;"></i> Condiciones y Supuestos Clave del Cronograma
+        </div>
+        <div class="callout-body" style="font-size: 13px; line-height: 1.5;">
+          • <strong>Habilitación de Entornos (Semana 2):</strong> Para cumplir con la salida en producción de la Semana 7, se establece como condición crítica la entrega de accesos de red y credenciales de Laudus ERP en la sesión de inicio. De existir retrasos técnicos en entornos On-Premise, se activará de forma inmediata la contingencia de lectura XML/OCR para no afectar el plazo de entrega.
+          <br>
+          • <strong>Marcha Blanca Acotada (Semana 7):</strong> La fase de pilotaje inicial y puesta en marcha se realizará de forma acotada sobre una selección inicial de grúas/servicios piloto, permitiendo estabilizar la operación antes del despliegue masivo a la flota completa.
+        </div>
+      </div>
+
+      <h3 class="sub-heading" style="margin-top: 28px;">Gantt de Implementación (7 Semanas)</h3>
+      <div class="gantt-container" style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 20px; overflow-x: auto; margin-bottom: 24px;">
+        <div style="min-width: 600px;">
+          <!-- Headers -->
+          <div style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; font-weight: 700; font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing:0.05em;">
+            <div style="width: 35%;">Fase / Actividad</div>
+            <div style="width: 9.28%; text-align: center;">S1</div>
+            <div style="width: 9.28%; text-align: center;">S2</div>
+            <div style="width: 9.28%; text-align: center;">S3</div>
+            <div style="width: 9.28%; text-align: center;">S4</div>
+            <div style="width: 9.28%; text-align: center;">S5</div>
+            <div style="width: 9.28%; text-align: center;">S6</div>
+            <div style="width: 9.28%; text-align: center;">S7</div>
+          </div>
+          <!-- Rows -->
+          <!-- Row 1 -->
+          <div style="display: flex; align-items: center; margin-bottom: 16px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Hito 1: Prototipo &amp; Alcance</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 14.28%; background: linear-gradient(90deg, var(--green), #34d399); height: 8px; border-radius: 4px;" title="Completado"></div>
+              <div style="width: 85.72%;"></div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div style="display: flex; align-items: center; margin-bottom: 16px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Hito 2: Configuración Base de Datos (Prisma)</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 14.28%;"></div>
+              <div style="width: 14.28%; background: linear-gradient(90deg, var(--blue), #60a5fa); height: 8px; border-radius: 4px;" title="Planificado Semana 2"></div>
+              <div style="width: 71.44%;"></div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div style="display: flex; align-items: center; margin-bottom: 16px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Conector Laudus ERP (Sync API)</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 28.56%;"></div>
+              <div style="width: 28.56%; background: linear-gradient(90deg, var(--amber), #fbbf24); height: 8px; border-radius: 4px;" title="Planificado Semana 3 y 4"></div>
+              <div style="width: 42.88%;"></div>
+            </div>
+          </div>
+          <!-- Row 4 -->
+          <div style="display: flex; align-items: center; margin-bottom: 16px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Adaptaciones App Terreno &amp; Offline</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 42.84%;"></div>
+              <div style="width: 28.56%; background: linear-gradient(90deg, var(--purple), #c084fc); height: 8px; border-radius: 4px;" title="Planificado Semana 4 y 5"></div>
+              <div style="width: 28.6%;"></div>
+            </div>
+          </div>
+          <!-- Row 5 -->
+          <div style="display: flex; align-items: center; margin-bottom: 16px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Pruebas QA, Integridad &amp; Seguridad</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 71.4%;"></div>
+              <div style="width: 14.28%; background: linear-gradient(90deg, #ec4899, #f472b6); height: 8px; border-radius: 4px;" title="Planificado Semana 6"></div>
+              <div style="width: 14.32%;"></div>
+            </div>
+          </div>
+          <!-- Row 6 -->
+          <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">Hito 3: Marcha Blanca &amp; Capacitación</div>
+            <div style="width: 65%; display: flex;">
+              <div style="width: 85.68%;"></div>
+              <div style="width: 14.32%; background: linear-gradient(90deg, var(--green), #34d399); height: 8px; border-radius: 4px;" title="Planificado Semana 7"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">Gestión del Alcance y Control de Cambios</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        El alcance técnico y funcional del proyecto está delimitado por las especificaciones, características y pantallas descritas en este dossier y en la maqueta interactiva provista. Cualquier requerimiento adicional se gestionará bajo la siguiente política:
+      </p>
+      <div class="callout callout-amber" style="margin-top: 12px; margin-bottom: 12px;">
+        <div class="callout-title">
+          <i data-lucide="shuffle" style="width:14px;height:14px;"></i> Política de Control de Cambios (Change Control)
+        </div>
+        <div class="callout-body" style="font-size: 13px; line-height: 1.5;">
+          • <strong>Identificación de Desviación:</strong> Si durante el desarrollo se identifica un requerimiento fuera del alcance delimitado (ej. nuevos conectores con otros sistemas o flujos no descritos), se formalizará una Solicitud de Cambio.
+          <br>
+          • <strong>Evaluación de Impacto:</strong> LeanGlobal evaluará el impacto de la solicitud sobre el cronograma (semanas) y el costo del proyecto, entregando un reporte técnico en un plazo máximo de 3 días hábiles.
+          <br>
+          • <strong>Aprobación Mutua:</strong> Ningún cambio de alcance se ejecutará sin la firma de un anexo de contrato técnico y comercial por los representantes autorizados de ambas partes, resguardando la estabilidad financiera y los plazos del proyecto.
+        </div>
+      </div>
+
+      <h3 class="sub-heading" style="margin-top: 32px;">Gantt de Roadmap Integrado y Planificación Temporal (Mes 1 a Mes 6+)</h3>
+      <div class="callout callout-blue" style="margin-bottom:16px;">
+        <div class="callout-title"><i data-lucide="info" style="width:14px;height:14px;"></i>Estrategia de Transición Contable y Laudus ERP</div>
+        <div class="callout-body" style="font-size: 13.5px; line-height: 1.5; color: var(--text-gray);">
+          • <strong>Fase 1 (Semanas 1-7):</strong> Se implementa el ecosistema de operaciones (Torre de Control, App y CRM) integrado temporalmente vía API bidireccional con <strong>Laudus ERP</strong>. Esto permite sincronizar clientes, cotizaciones y facturas en el corto plazo, resguardando la continuidad de la información actual de GSP.
+          <br>
+          • <strong>Fase 2 (Mes 6+):</strong> Se implementa el <strong>Módulo de Contabilidad Simple Nativa</strong> comprometido en esta propuesta. La integración con Laudus actúa como un plan temporal mientras esta contabilidad nativa se desarrolla e implementa. Al entrar en régimen, centralizará toda la facturación, el ciclo completo de egresos y compras (adquisiciones, OCs, facturas de compra y facturas de proveedores) y balances en un solo sistema, permitiendo a GSP prescindir por completo de Laudus ERP y ahorrar costos de licenciamiento recurrentes.
+        </div>
+      </div>
+
+      <!-- Detalle de Alcance de Facturación y Contabilidad -->
+      <div class="grid-2" style="margin-top: 20px; margin-bottom: 24px;">
+        <div class="card" style="border-top: 4px solid var(--amber);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="file-check" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Fase 4: Integración Facturación SII (Mes 4)</h4>
+          </div>
+          <p class="card-body" style="margin-top:10px;">
+            A partir del cuarto mes, una vez estabilizado el flujo de Torre de Control y OTs, habilitaremos el módulo de **Facturación DTE integrado**. Esto permitirá emitir facturas exentas/afectas de arriendo directamente al SII al cerrar el EDP en el sistema, permitiendo prescindir del sistema facturador externo que GSP contrata hoy.
+          </p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--purple); grid-column: span 2;">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="calculator" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Fase 5: Módulo de Contabilidad Simple Integrada (Mes 6)</h4>
+          </div>
+          <p class="card-body" style="margin-top:10px;">
+            <strong>Estrategia de Transición y Plan Temporal:</strong> Para garantizar una transición sin interrupciones, las operaciones se integrarán temporalmente con Laudus ERP mientras se desarrolla e implementa el <strong>Módulo de Contabilidad Simple Nativa</strong> comprometido en esta propuesta (Mes 6). Al finalizar esta fase, GSP contará con una plataforma unificada de facturación, compras y balances, permitiendo la <strong>desconexión definitiva y ahorro de licencias de Laudus ERP</strong>. La implementación activa tomará solo <strong>3 semanas</strong>, estructurándose de la siguiente manera:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px;">
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">1. Plan de Cuentas (Días 1-4)</h5>
+              Carga masiva del plan de cuentas de GSP. Consola para el contador con control de activos, pasivos, patrimonio, e integración completa de egresos (adquisiciones, OCs, facturas de compra y facturas de proveedores).
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">2. Asientos Automáticos (Días 5-10)</h5>
+              Triggers automáticos: las facturas de venta (DTE), facturas de compra (proveedores/adquisiciones y OCs), peajes, romana, combustible y operarios se auto-imputan como asientos de Cargo/Abono en el Libro Diario.
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">3. Libro Mayor &amp; Balances (Días 11-15)</h5>
+              Generación de Libro Mayor exportable y cálculo en tiempo real del Balance Tributario de 8 Columnas chileno y Estado de Resultados (P&amp;L).
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">4. Auditoría Paralela (Días 16-21)</h5>
+              Marcha blanca y cuadre de saldos en paralelo con Laudus ERP para auditoría de precisión y entrega final de llave en mano al contador de GSP.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Para la habilitación de los módulos y roadmaps detallados en esta propuesta, se establece la siguiente planificación temporal unificada:
+      </p>
+      <div class="gantt-container" style="background: rgba(15,23,42,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; overflow-x: auto; margin-top: 16px; margin-bottom: 24px;">
+        <div style="min-width: 700px;">
+          <!-- Headers -->
+          <div style="display: flex; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; font-weight: 800; font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing:0.05em;">
+            <div style="width: 35%;">Módulos e Hitos de Desarrollo</div>
+            <div style="width: 10.83%; text-align: center;">Mes 1 (M1)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 2 (M2)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 3 (M3)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 4 (M4)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 5 (M5)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 6 (M6+)</div>
+          </div>
+          <!-- Rows -->
+          <!-- Row 1 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">1. Ecosistema Base (Operación, CRM, App)</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 33.33%; background: linear-gradient(90deg, var(--green), #34d399); height: 10px; border-radius: 5px;" title="Implementación Hitos 1-3"></div>
+              <div style="width: 66.67%;"></div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">2. Mantenimiento &amp; Inspecciones HSEC</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 25%;"></div>
+              <div style="width: 25%; background: linear-gradient(90deg, var(--blue), #60a5fa); height: 10px; border-radius: 5px;" title="Implementación MNT"></div>
+              <div style="width: 50%;"></div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">3. Adquisiciones &amp; Bodegas WMS</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 33.33%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, var(--amber), #fbbf24); height: 10px; border-radius: 5px;" title="Implementación Bodegas"></div>
+              <div style="width: 50%;"></div>
+            </div>
+          </div>
+          <!-- Row 4 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">4. Facturación SII DTE Integrada</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 50%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, #ec4899, #f472b6); height: 10px; border-radius: 5px;" title="Facturación SII"></div>
+              <div style="width: 33.33%;"></div>
+            </div>
+          </div>
+          <!-- Row 5 -->
+          <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">5. Contabilidad Simple</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 83.33%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, var(--purple), #c084fc); height: 10px; border-radius: 5px;" title="Contabilidad Simple"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </section>
+
+    <!-- ── SECCIÓN 12: OFERTA COMERCIAL ── -->
+    <section id="oferta">
+      <h2 class="section-heading">12. Oferta Comercial y Acuerdo de Soporte (SLA)</h2>
+      <p class="lead-paragraph">
+        Con el objetivo de respaldar la toma de decisiones y entregar el máximo valor de software al costo más óptimo del mercado, se propone el siguiente **Convenio de Cierre por Ecosistema Integrado**. Este modelo hace explícita la inversión de la base y el adendum, aplicando un beneficio por el paquete completo:
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%;">Descripción del Componente</th>
+              <th style="width:30%;text-align:right;">Desarrollo e Implementación (Inversión UF)</th>
+              <th style="width:30%;text-align:right;">SaaS Licenciamiento Mensual (Soporte UF)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Propuesta Base (Despacho, Torre de Control, CRM, App y Gestor Documental)</strong>
+                <br><span style="font-size:11px;color:var(--text-light);">Estructura inicial acordada en el documento base para control logístico de izajes de alto tonelaje.</span>
+              </td>
+              <td style="text-align:right; vertical-align:middle;">150 UF</td>
+              <td style="text-align:right; vertical-align:middle;">12 UF / mes</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Adendum Incremental (Taller MNT, Bodegas WMS, Margen Operacional Directo, Facturación &amp; Contabilidad)</strong>
+                <br><span style="font-size:11px;color:var(--text-light);">Incorporación de suite de OTs preventivas/correctivas, pautas de inspección de patio con foto, bodegas de repuestos críticos y roadmap contable fiscal.</span>
+              </td>
+              <td style="text-align:right; vertical-align:middle;">80 UF</td>
+              <td style="text-align:right; vertical-align:middle;">4 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(245,166,35,0.03); font-weight:700; color:var(--amber);">
+              <td style="vertical-align:middle;">Valorización de Mercado Ecosistema Standalone (Total Teórico)</td>
+              <td style="text-align:right; vertical-align:middle;">230 UF</td>
+              <td style="text-align:right; vertical-align:middle;">16 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(16,185,129,0.03); font-weight:700; color:var(--green);">
+              <td style="vertical-align:middle;">Bono Especial de Convenio de Cierre (Bonificación Directa)</td>
+              <td style="text-align:right; vertical-align:middle;">-85 UF</td>
+              <td style="text-align:right; vertical-align:middle;">-4 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(59,130,246,0.03); font-weight:700; color:var(--blue);">
+              <td style="vertical-align:middle;">Descuento Comercial de Cierre Adicional (Ajuste GSP)</td>
+              <td style="text-align:right; vertical-align:middle;">-22.56 UF</td>
+              <td style="text-align:right; vertical-align:middle;">-2.205 UF / mes</td>
+            </tr>
+            <tr style="background:var(--bg-sidebar); color:#ffffff; font-weight:800; font-size:14px;">
+              <td style="vertical-align:middle; color:#ffffff !important;"><span style="color:#ffffff !important; font-weight: 800;">Inversión Final Unificada Acordada GSP (Todo Incluido)</span></td>
+              <td style="text-align:right; color:#f5a623 !important; vertical-align:middle;"><strong style="color:#f5a623 !important; font-size: 15px; font-weight: 800;">122.44 UF</strong></td>
+              <td style="text-align:right; color:#f5a623 !important; vertical-align:middle;"><strong style="color:#f5a623 !important; font-size: 15px; font-weight: 800;">9.795 UF / mes</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-green" style="margin-top:16px; margin-bottom: 16px;">
+        <div class="callout-title"><i data-lucide="check" style="width:14px;height:14px;"></i>Retorno de Inversión (ROI) y Ahorro Directo</div>
+        <div class="callout-body" style="font-size: 13px; line-height: 1.5; color: var(--text-gray);">
+          La unificación de la operación, el mantenimiento y la contabilidad simple sobre el ecosistema de LeanGlobal permite a GSP <strong>dar de baja las licencias recurrentes de su facturador externo actual y de Laudus ERP</strong> a contar del Mes 6, logrando amortizar por completo el licenciamiento SaaS de 9.795 UF mensual mediante el ahorro en licencias de software redundantes y la eliminación del costo administrativo de digitalización manual.
+        </div>
+      </div>
+
+      <p style="color:var(--text-gray);font-size:13px;margin-top:12px;margin-bottom:16px;">
+        • <strong>Forma de Pago (Desarrollo &amp; Implementación):</strong> 30% al inicio del desarrollo, 40% a la entrega de la configuración técnica (Hito 2) y 30% al cierre de Hito 3 (Marcha Blanca).
+        <br>
+        • <strong>Forma de Pago (Licenciamiento SaaS):</strong> Facturación mensual anticipada a partir del inicio de la puesta en producción (Semana 7).
+        <br>
+        • <strong>Nota de Conversión Referencial:</strong> La inversión final acordada equivale a un setup de desarrollo de $5.000.000 CLP y un licenciamiento SaaS de $400.000 CLP/mes, calculados en base al valor oficial de la UF de $40.836,63 para la fecha del cierre.
+      </p>
+
+      <div class="callout callout-blue" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="headphones" style="width:14px;height:14px;"></i>Soporte y Continuidad Operacional (Valor Agregado)</div>
+        <div class="callout-body" style="font-size: 13px; line-height: 1.5; color: var(--text-gray);">
+          Como valor agregado, Lean Global proporcionará soporte y mantención continua de la plataforma implementada para Gruas San Pablo, asegurando su estabilidad, disponibilidad y correcto funcionamiento. El servicio contempla la atención de incidencias, mantenimiento preventivo y correctivo, así como mantenciones evolutivas menores, tales como la incorporación de nuevos atributos en reportes, la creación o ajuste de plantillas (templates) para homologaciones dentro del sistema y otras configuraciones de bajo impacto que contribuyan a la continuidad operacional y mejora continua de la solución.
+        </div>
+      </div>
+
+      <div class="callout callout-green" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="check-square" style="width:14px;height:14px;"></i>Validez de la Propuesta</div>
+        <div class="callout-body">
+          Esta propuesta comercial y técnica tiene una validez de <strong>30 días corridos</strong> a contar de la fecha de entrega oficial de este dossier. Para proceder, se requiere la firma y aprobación de la cotización por parte de la Gerencia General de Grúas San Pablo.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<script>
+  // Initialize Lucide Icons
+  lucide.createIcons();
+
+  // Scrollspy Navigation Logic
+  const menuLinks = document.querySelectorAll('.sidebar-menu li');
+  const sections = document.querySelectorAll('section, header');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+      if (window.scrollY >= (sectionTop - 120)) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    menuLinks.forEach(li => {
+      li.classList.remove('active');
+      const href = li.querySelector('a').getAttribute('href').substring(1);
+      if (href === current) {
+        li.classList.add('active');
+      }
+    });
+  });
+</script>
+</body>
+</html>

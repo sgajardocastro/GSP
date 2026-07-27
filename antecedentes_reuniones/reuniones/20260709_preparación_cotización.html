@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP & LeanGlobal – Alineación Comercial Cotizaciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Mermaid Library for interactive mindmap -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.2.4/mermaid.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #030609;
+      --bg-base:    #070b14;
+      --bg-card:    #0c1220;
+      --bg-surface: #111827;
+      --bg-hover:   #161f32;
+      --amber:      #f5a623;
+      --amber-dim:  rgba(245,166,35,0.08);
+      --amber-glow: rgba(245,166,35,0.18);
+      --blue:       #3b82f6;
+      --blue-dim:   rgba(59,130,246,0.08);
+      --green:      #10b981;
+      --green-dim:  rgba(16,185,129,0.08);
+      --red:        #ef4444;
+      --purple:     #a78bfa;
+      --cyan:       #22d3ee;
+      --t-primary:  #f8fafc;
+      --t-sec:      #cbd5e1;
+      --t-muted:    #94a3b8;
+      --border:     rgba(255,255,255,0.08);
+      --border-md:  rgba(255,255,255,0.15);
+    }
+
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--t-primary);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-size: 15px;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--amber-glow); border-radius: 99px; }
+
+    #app { display: flex; flex-direction: column; height: 100vh; }
+    #header { flex-shrink: 0; }
+    #stage  { flex: 1; overflow: hidden; position: relative; }
+    #footer { flex-shrink: 0; }
+
+    /* Slide transitions */
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+      opacity: 0; transform: translateY(18px) scale(0.99);
+      pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1);
+      padding: 25px 40px;
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1; transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+    .slide.exit-left  { opacity: 0; transform: translateX(-30px) scale(0.98); }
+    .slide.exit-right { opacity: 0; transform: translateX(30px) scale(0.98); }
+
+    .amb-1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(245,166,35,0.04) 0%, transparent 70%); top: -200px; right: -100px; pointer-events:none; }
+    .amb-2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%); bottom: -150px; left: -100px; pointer-events:none; }
+
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .card:hover { border-color: var(--border-md); }
+
+    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.15), 0 8px 32px -8px rgba(245,166,35,0.1); }
+    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.15),  0 8px 32px -8px rgba(59,130,246,0.1); }
+    .glow-green  { box-shadow: 0 0 0 1px rgba(16,185,129,0.15),  0 8px 32px -8px rgba(16,185,129,0.1); }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid; white-space: nowrap;
+    }
+    .tag-amber  { background: rgba(245,166,35,0.1); color: var(--amber);  border-color: rgba(245,166,35,0.3); }
+    .tag-blue   { background: rgba(59,130,246,0.1); color: var(--blue);   border-color: rgba(59,130,246,0.3); }
+    .tag-green  { background: rgba(16,185,129,0.1); color: var(--green);  border-color: rgba(16,185,129,0.3); }
+
+    /* Matrix Table styles */
+    .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .matrix-table th, .matrix-table td { padding: 12px 14px; font-size: 14px; }
+    .matrix-table thead th {
+      font-family: 'Outfit', sans-serif; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--t-muted); text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+    }
+    .matrix-table thead th:not(:first-child) { text-align: center; }
+    .matrix-table tbody tr { transition: background 0.15s; }
+    .matrix-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .matrix-table tbody td {
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      text-align: left; vertical-align: middle;
+    }
+    .matrix-table tbody td:not(:first-child) { text-align: center; }
+    .matrix-table tbody td:first-child {
+      font-weight: 600; color: var(--t-primary);
+      font-family: 'Outfit', sans-serif; font-size: 14px;
+    }
+
+    /* Editable Styling */
+    [contenteditable="true"] {
+      border-bottom: 1px dashed rgba(245,166,35,0.3);
+      padding: 2px 4px;
+      border-radius: 4px;
+      outline: none;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    [contenteditable="true"]:focus {
+      background: rgba(245,166,35,0.08);
+      border-bottom: 1px solid var(--amber);
+    }
+
+    /* Styled Select Dropdown */
+    .select-critico {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--t-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      padding: 4px 8px;
+      outline: none;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .select-critico:focus {
+      border-color: var(--amber);
+      background: var(--bg-hover);
+    }
+    .critico-si { color: var(--amber); }
+    .critico-no { color: var(--t-muted); }
+
+    #header {
+      background: rgba(7,11,20,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 16px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    #footer {
+      background: rgba(7,11,20,0.85);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 16px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .nav-dot {
+      width: 8px; height: 8px; border-radius: 99px;
+      background: rgba(255,255,255,0.15);
+      border: none; cursor: pointer; padding: 0;
+      transition: width 0.3s, background 0.3s;
+    }
+    .nav-dot.active { width: 24px; background: var(--amber); }
+
+    .nav-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--t-sec); border-radius: 10px;
+      padding: 8px 18px; font-size: 13px; font-weight: 700;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--t-primary); border-color: rgba(255,255,255,0.15); }
+    .nav-btn:disabled { opacity: 0.25; pointer-events: none; }
+
+    .slide-inner { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; }
+    .section-eyebrow { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(20px, 2.2vw, 28px); font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; color: var(--t-primary); }
+    .section-sub { font-size: 13px; color: var(--t-muted); line-height: 1.6; }
+    .section-head { border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; }
+    .section-head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+
+    /* Highcharts mindmap container - MAXIMIZED & SCROLLABLE */
+    .mindmap-container {
+      width: 100%;
+      height: calc(100vh - 210px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden !important;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+    }
+
+    /* Engine rules card grid - MUCH LARGER & EDITABLE */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .rule-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .rule-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-md);
+    }
+    .rule-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .rule-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(245,166,35,0.1);
+      border: 1px solid rgba(245,166,35,0.25);
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .rule-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--t-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .rule-desc {
+      font-size: 14px;
+      color: var(--t-muted);
+      line-height: 1.7;
+      flex: 1;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      right: 40px;
+      background: var(--green);
+      color: #030609;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px -10px rgba(16,185,129,0.5);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mermaid svg {
+      max-width: none !important;
+      height: auto !important;
+    }
+  </style>
+</head>
+<body>
+<div class="amb-1"></div>
+<div class="amb-2"></div>
+
+<div id="app">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);display:flex;align-items:center;justify-content:center;color:var(--amber);">
+        <i data-lucide="calculator" style="width:20px;height:20px;"></i>
+      </div>
+      <div class="font-display" style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--t-primary);">
+        LEAN <span style="color:var(--amber);">GLOBAL</span>
+        <span style="color:rgba(255,255,255,0.12);margin:0 8px;">×</span>
+        GSP: MÓDULO DE COTIZACIONES
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <button class="nav-btn" onclick="saveData()" style="background: rgba(16,185,129,0.1); color: var(--green); border-color: rgba(16,185,129,0.3);">
+        <i data-lucide="save" style="width:16px;height:16px;"></i> Guardar Cambios
+      </button>
+      <button class="nav-btn" onclick="exportHTML()" style="background: rgba(59,130,246,0.1); color: var(--blue); border-color: rgba(59,130,246,0.3);">
+        <i data-lucide="download" style="width:16px;height:16px;"></i> Exportar HTML
+      </button>
+      <span id="hdr-label" style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t-muted);">Mapa Conceptual</span>
+      <div style="width:1px;height:18px;background:rgba(255,255,255,0.08);"></div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 12px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite;display:inline-block;"></span>
+        <span class="mono" style="font-size:11px;color:var(--t-muted);font-weight:600;"><span id="cnt-cur">1</span>/<span id="cnt-tot">4</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════════════════ STAGE ════════════════ -->
+  <main id="stage">
+
+    <!-- ─── SLIDE 1: PANTALLA DE REFERENCIA (VB ACTUAL) ─── -->
+    <div class="slide active" id="s1" data-label="Pantalla de Referencia">
+      <div class="slide-inner" style="max-width: 100%; width: 100%;">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Sistema GSP Original</div>
+            <h2 class="section-title">Pantalla de Origen (Visual Basic)</h2>
+            <p class="section-sub" style="margin-top:4px;">Criterios y campos actuales de valorización para requerimientos de arriendo en GSP.</p>
+          </div>
+          <div class="tag tag-amber">Toma Completa</div>
+        </div>
+
+        <div style="width: 100%; height: calc(100vh - 210px); background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.4); margin-top: 5px;">
+          <img src="VB_reference.png" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);" alt="VB Reference Screenshot">
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 2: MAPA CONCEPTUAL INTERACTIVO CON MERMAID (PAN & ZOOM) ─── -->
+    <div class="slide" id="s2" data-label="Mapa Conceptual Atributos">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Estructura de Datos Interactiva</div>
+            <h2 class="section-title">Análisis Conceptual: Atributos para Cotizaciones GSP</h2>
+            <p class="section-sub" style="margin-top:4px;">Arrastra para mover la pantalla • Usa la rueda del mouse para hacer Zoom.</p>
+          </div>
+          <div class="tag tag-amber">Mapa Interactivo Zoom 4x</div>
+        </div>
+
+        <div class="mindmap-container" id="mindmap-container" style="position: relative; overflow: hidden; cursor: grab; display: flex; align-items: center; justify-content: center;">
+          <div class="mermaid" id="mermaid-chart" style="display: inline-block; transform-origin: center center; cursor: grab; user-select: none;">
+            mindmap
+              root((Cotización GSP))
+                Cliente y Crédito
+                  Razón Social / RUT / Giro
+                  Tipo de Cliente
+                  Estado de Contrato
+                  DICOM
+                  Garantías
+                Detalle Logístico Obra
+                  Nombre y Dirección
+                  Ciudad
+                  Contactos Comercial y Terreno
+                  Fechas y Horario Salida
+                Viáticos del Personal
+                  Alojamiento
+                  Alimentación
+                  Traslados internos
+                Desafíos de Ruta
+                  Combustible
+                  Kilometraje total
+                  Camino Ripio / Asfalto
+                  Puentes / Vigas / Cuestas
+                  Zona Roja
+                Configuración Equipo
+                  Grúa específica
+                  Patente / N° Interno
+                  Operador
+                  Rigger
+                Ingeniería de Izaje
+                  Tipo de carga y Peso
+                  Dimensiones (Largo/Alto/Ancho)
+                  Radios de Trabajo
+                  Elementos: Estrobos, Eslingas, Grilletes
+                  Visita Terreno
+                Acuerdo Comercial
+                  Tipo de cobro
+                  Valores y Moneda
+                  Orden de Compra
+                  Tesorería y Facturación
+                  Vendedor y Sucursal
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 3: ÁRBOL COMERCIAL MATRIZ (EDITABLE) ─── -->
+    <div class="slide" id="s3" data-label="Árbol Comercial de Cobro">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Matriz Operativa (Editable durante la reunión)</div>
+            <h2 class="section-title">🌳 Árbol Comercial: Estructura de Cobro y Criterios de Validación</h2>
+            <p class="section-sub" style="margin-top:4px;">Alineación de los conceptos cotizables, su criticidad, unidades de medida y reglas de venta mínima (UMV).</p>
+          </div>
+          <div class="tag tag-blue">Modo Edición Activo</div>
+        </div>
+
+        <div class="card" style="padding:10px; overflow-x:auto;">
+          <table class="matrix-table" id="matrix-tbl">
+            <thead>
+              <tr>
+                <th style="width: 32%;">Concepto Jerárquico de Cobro</th>
+                <th style="width: 12%; text-align:center;">¿Crítico?</th>
+                <th style="width: 15%;">Unidad de Medida</th>
+                <th style="width: 25%;">Valor Referencial por Unidad</th>
+                <th style="width: 18%;">Venta Mínima Exigida (UMV)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Equipos -->
+              <tr style="background: rgba(59,130,246,0.02); pointer-events: none;">
+                <td style="color: var(--blue);">1. Arriendo de Equipos (Core)</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr data-row="1.1">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>1.1. Grúa Principal</strong> (Liebherr, Tadano, etc.)</td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Horas / Turno / Mes</td>
+                <td contenteditable="true">Tarifa base según capacidad (UF)</td>
+                <td contenteditable="true">Mínimo 8 Horas por Día</td>
+              </tr>
+              <tr data-row="1.2">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>1.2. Apoyo y Contrapesos</strong> (Cama baja, pluma)</td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Global / Día</td>
+                <td contenteditable="true">Tarifa fija según logística del izaje</td>
+                <td contenteditable="true">Turno de 8 Horas o Global</td>
+              </tr>
+              <!-- Personal -->
+              <tr style="background: rgba(167,139,250,0.02); pointer-events: none;">
+                <td style="color: var(--purple);">2. Tripulación y Viáticos</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr data-row="2.1">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>2.1. Servicio de Operador</strong></td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Día de servicio</td>
+                <td contenteditable="true">Costo HH diario de operation + viáticos</td>
+                <td contenteditable="true">1 Turno completo (8 Horas)</td>
+              </tr>
+              <tr data-row="2.2">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>2.2. Servicio de Rigger (Señalero)</strong></td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Horas / Día</td>
+                <td contenteditable="true">Tarifa HH del especialista</td>
+                <td contenteditable="true" style="font-weight:700; color:var(--amber);">Mínimo 8 Horas al Día</td>
+              </tr>
+              <tr data-row="2.3">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>2.3. Alojamiento de Tripulación</strong></td>
+                <td>
+                  <select class="select-critico critico-no" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si">Sí</option>
+                    <option value="No" class="critico-no" selected>No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Noches</td>
+                <td contenteditable="true">Costo real (Passthrough) o viático zona</td>
+                <td contenteditable="true">1 Noche</td>
+              </tr>
+              <tr data-row="2.4">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>2.4. Alimentación</strong> (D / A / C)</td>
+                <td>
+                  <select class="select-critico critico-no" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si">Sí</option>
+                    <option value="No" class="critico-no" selected>No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Día / Ración</td>
+                <td contenteditable="true">Viático diario fijo estándar GSP</td>
+                <td contenteditable="true">1 Día completo</td>
+              </tr>
+              <!-- Ruta -->
+              <tr style="background: rgba(16,185,129,0.02); pointer-events: none;">
+                <td style="color: var(--green);">3. Movilización y Desafíos de Ruta</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr data-row="3.1">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>3.1. Combustible</strong></td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Litros / Global</td>
+                <td contenteditable="true">Valor mercado diésel + recargo GSP</td>
+                <td contenteditable="true">Consumo real o base mínima flete</td>
+              </tr>
+              <tr data-row="3.2">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>3.2. Kilometraje</strong> (Ripio, Asfalto, Forestal)</td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Kilómetros</td>
+                <td contenteditable="true">Costo Km (Ripio x1.5, Forestal x2.0)</td>
+                <td contenteditable="true">Distancia total Ida/Vuelta</td>
+              </tr>
+              <tr data-row="3.3">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>3.3. Complejidad</strong> (Zona Roja / Cuestas / Puentes)</td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Global / Día</td>
+                <td contenteditable="true">Recargo % por riesgo (ej: +25%) o escolta</td>
+                <td contenteditable="true">Total del proyecto</td>
+              </tr>
+              <!-- Accesorios -->
+              <tr style="background: rgba(34,211,238,0.02); pointer-events: none;">
+                <td style="color: var(--cyan);">4. Accesorios de Izaje</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr data-row="4.1">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>4.1. Estrobos, Eslingas, Grilletes, Pulpos</strong></td>
+                <td>
+                  <select class="select-critico critico-no" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si">Sí</option>
+                    <option value="No" class="critico-no" selected>No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Unidad / Día</td>
+                <td contenteditable="true">Costo arriendo de kit por capacidad</td>
+                <td contenteditable="true">1 Día</td>
+              </tr>
+              <!-- Validación -->
+              <tr style="background: rgba(245,166,35,0.02); pointer-events: none;">
+                <td style="color: var(--amber);">5. Gestión y Validación</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr data-row="5.1">
+                <td>&nbsp;&nbsp;&nbsp;&nbsp; ↳ <strong>5.1. Visita Técnica en Terreno</strong></td>
+                <td>
+                  <select class="select-critico critico-si" onchange="toggleCriticoColor(this)">
+                    <option value="Sí" class="critico-si" selected>Sí</option>
+                    <option value="No" class="critico-no">No</option>
+                  </select>
+                </td>
+                <td contenteditable="true">Visita</td>
+                <td contenteditable="true">Costo HH de validación de maniobra</td>
+                <td contenteditable="true">1 Visita (bonificable al contratar)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SLIDE 4: CRITERIOS DE VALORIZACIÓN (EDITABLE Y AGRANDADO) ─── -->
+    <div class="slide" id="s4" data-label="Motor de Precios">
+      <div class="slide-inner">
+        <div class="section-head section-head-row">
+          <div>
+            <div class="section-eyebrow">Lógica del Sistema (Editable)</div>
+            <h2 class="section-title">Criterios de Valorización Clave para el Motor de Precios</h2>
+            <p class="section-sub" style="margin-top:4px;">Las 5 reglas lógicas que debe automatizar la plataforma tecnológica para estimar tarifas confiables.</p>
+          </div>
+          <div class="tag tag-green">Modo Edición Activo</div>
+        </div>
+
+        <div class="rules-grid" id="rules-grid-cnt">
+          <!-- Regla 1 -->
+          <div class="rule-card" data-rule="1">
+            <div class="rule-header">
+              <div class="rule-num">01</div>
+              <div class="rule-title" contenteditable="true">Tarifa por Grúa</div>
+            </div>
+            <div class="rule-desc" contenteditable="true">
+              Tarifas base configurables en UF según el modelo/tonelaje de la grúa asignada y tipo de contrato con el cliente.
+            </div>
+          </div>
+          <!-- Regla 2 -->
+          <div class="rule-card" data-rule="2">
+            <div class="rule-header">
+              <div class="rule-num">02</div>
+              <div class="rule-title" contenteditable="true">Horas Mínimas</div>
+            </div>
+            <div class="rule-desc" contenteditable="true">
+              Restricción automatizada para aplicar el cobro mínimo estipulado (ej: 8 horas) aunque la faena dure menos.
+            </div>
+          </div>
+          <!-- Regla 3 -->
+          <div class="rule-card" data-rule="3">
+            <div class="rule-header">
+              <div class="rule-num">03</div>
+              <div class="rule-title" contenteditable="true">Fletes y Apoyo</div>
+            </div>
+            <div class="rule-desc" contenteditable="true">
+              Valorización dinámica de traslados considerando la grúa principal y camiones camas bajas para contrapesos adicionales.
+            </div>
+          </div>
+          <!-- Regla 4 -->
+          <div class="rule-card" data-rule="4">
+            <div class="rule-header">
+              <div class="rule-num">04</div>
+              <div class="rule-title" contenteditable="true">Dificultad de Ruta</div>
+            </div>
+            <div class="rule-desc" contenteditable="true">
+              Recargos automáticos por kilometraje complejo (multiplicadores de ripio/forestal), peajes TAG y riesgo de Zona Roja.
+            </div>
+          </div>
+          <!-- Regla 5 -->
+          <div class="rule-card" data-rule="5" style="grid-column: span 2;">
+            <div class="rule-header">
+              <div class="rule-num">05</div>
+              <div class="rule-title" contenteditable="true">Costos Tripulación</div>
+            </div>
+            <div class="rule-desc" contenteditable="true">
+              Cálculo integrado de viáticos diarios (alimentación y alojamiento) si la obra está fuera de la zona urbana base.
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 15px; padding: 18px; background: rgba(16,185,129,0.04); border-color: rgba(16,185,129,0.2); display:flex; align-items:center; gap:16px;">
+          <div style="width:44px; height:44px; border-radius:50%; background:rgba(16,185,129,0.1); display:flex; align-items:center; justify-content:center; color:var(--green); flex-shrink:0;">
+            <i data-lucide="check-circle" style="width:22px; height:22px;"></i>
+          </div>
+          <div>
+            <span style="font-family:'Outfit',sans-serif; font-size:14px; font-weight:800; color:var(--t-primary); display:block; text-transform:uppercase; letter-spacing:0.04em;">Alineación Estratégica</span>
+            <p style="font-size:13px; color:var(--t-muted); line-height:1.5; margin-top:2px;">
+              Este motor simplificará la redundantemente supervisada valorización actual de GSP, reduciendo de 5 a solo 2 aprobadores en el flujo comercial. Puedes editar cualquier regla directamente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ════════════════ FOOTER ════════════════ -->
+  <footer id="footer">
+    <div style="display:flex;align-items:center;gap:8px;" id="dots-container">
+      <button class="nav-dot active" id="dot-1" onclick="goTo(1)"></button>
+      <button class="nav-dot" id="dot-2" onclick="goTo(2)"></button>
+      <button class="nav-dot" id="dot-3" onclick="goTo(3)"></button>
+      <button class="nav-dot" id="dot-4" onclick="goTo(4)"></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="nav-btn" id="btn-prev" onclick="move(-1)" disabled>
+        <i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Anterior
+      </button>
+      <button class="nav-btn" id="btn-next" onclick="move(1)">
+        Siguiente <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<!-- Toast element -->
+<div id="toast">
+  <i data-lucide="check" style="width:18px;height:18px;"></i>
+  <span id="toast-msg">¡Cambios guardados con éxito!</span>
+</div>
+
+<script>
+  // Mermaid interactive Mindmap configuration with Zoom & Pan
+  function initializeMermaidMindmap() {
+    try {
+      if (typeof mermaid === 'undefined') {
+        throw new Error("La librería de Mermaid no pudo cargarse desde internet. Verifica tu conexión.");
+      }
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          background: '#0c1220',
+          primaryColor: '#f5a623',
+          primaryTextColor: '#f8fafc',
+          lineColor: '#3b82f6',
+          fontSize: '14px'
+        }
+      });
+      
+      // Run rendering manually
+      mermaid.run({
+        querySelector: '.mermaid'
+      });
+
+      // Pan & Zoom state
+      let zoom = 1.3;
+      let panX = 0;
+      let panY = 0;
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+
+      const container = document.getElementById('mindmap-container');
+      const chart = document.getElementById('mermaid-chart');
+
+      function updateTransform() {
+        chart.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+      }
+
+      container.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        container.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        container.style.cursor = 'grab';
+      });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateTransform();
+      });
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = 1.08;
+        if (e.deltaY < 0) {
+          zoom *= zoomFactor;
+        } else {
+          zoom /= zoomFactor;
+        }
+        zoom = Math.min(Math.max(0.2, zoom), 5.0);
+        updateTransform();
+      }, { passive: false });
+
+      // Set robust fixed initial position (CSS flexbox in container handles centering)
+      zoom = 1.4;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+
+    } catch (e) {
+      console.error(e);
+      document.getElementById('mindmap-container').innerHTML = 
+        `<div style="color: #ef4444; padding: 20px; font-family: monospace; font-size: 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; margin: 20px; line-height: 1.6;">
+          <strong>Error de inicialización de Mermaid:</strong><br>${e.message}<br><br>
+          <small>Verifica si tu navegador está bloqueando los CDN externos o si estás sin conexión a internet.</small>
+        </div>`;
+    }
+  }
+
+  // Startup lucide
+  lucide.createIcons();
+
+  const TOTAL = 4;
+  let cur = 1;
+
+  const labels = {
+    1: 'Imagen de Referencia',
+    2: 'Mapa Conceptual',
+    3: 'Árbol Comercial de Cobro',
+    4: 'Motor de Precios'
+  };
+
+  function toggleCriticoColor(select) {
+    if (select.value === 'Sí') {
+      select.className = 'select-critico critico-si';
+    } else {
+      select.className = 'select-critico critico-no';
+    }
+  }
+
+  // Local Storage Save and Load Logic
+  const STORAGE_KEY_TABLE = 'gsp_cotizacion_table_state';
+  const STORAGE_KEY_RULES = 'gsp_cotizacion_rules_state';
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2500);
+  }
+
+  function saveData() {
+    // 1. Save Table Rows
+    const tableData = [];
+    const rows = document.querySelectorAll('#matrix-tbl tbody tr[data-row]');
+    rows.forEach(row => {
+      const id = row.getAttribute('data-row');
+      const select = row.querySelector('.select-critico');
+      const critico = select ? select.value : 'No';
+      const cells = row.querySelectorAll('td[contenteditable="true"]');
+      const rowState = {
+        id: id,
+        critico: critico,
+        unidad: cells[0] ? cells[0].innerHTML.trim() : '',
+        valor: cells[1] ? cells[1].innerHTML.trim() : '',
+        umv: cells[2] ? cells[2].innerHTML.trim() : ''
+      };
+      tableData.push(rowState);
+    });
+    localStorage.setItem(STORAGE_KEY_TABLE, JSON.stringify(tableData));
+
+    // 2. Save Rules
+    const rulesData = [];
+    const ruleCards = document.querySelectorAll('.rule-card');
+    ruleCards.forEach(card => {
+      const id = card.getAttribute('data-rule');
+      const titleEl = card.querySelector('.rule-title');
+      const descEl = card.querySelector('.rule-desc');
+      rulesData.push({
+        id: id,
+        title: titleEl ? titleEl.innerHTML.trim() : '',
+        desc: descEl ? descEl.innerHTML.trim() : ''
+      });
+    });
+    localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(rulesData));
+
+    showToast('¡Cambios guardados en LocalStorage!');
+  }
+
+  function loadData() {
+    // 1. Load Table Rows
+    const tableData = JSON.parse(localStorage.getItem(STORAGE_KEY_TABLE));
+    if (tableData) {
+      tableData.forEach(rowState => {
+        const row = document.querySelector(`#matrix-tbl tbody tr[data-row="${rowState.id}"]`);
+        if (row) {
+          const select = row.querySelector('.select-critico');
+          if (select) {
+            select.value = rowState.critico;
+            toggleCriticoColor(select);
+          }
+          const cells = row.querySelectorAll('td[contenteditable="true"]');
+          if (cells[0]) cells[0].innerHTML = rowState.unidad;
+          if (cells[1]) cells[1].innerHTML = rowState.valor;
+          if (cells[2]) cells[2].innerHTML = rowState.umv;
+        }
+      });
+    }
+
+    // 2. Load Rules
+    const rulesData = JSON.parse(localStorage.getItem(STORAGE_KEY_RULES));
+    if (rulesData) {
+      rulesData.forEach(ruleState => {
+        const card = document.querySelector(`.rule-card[data-rule="${ruleState.id}"]`);
+        if (card) {
+          const titleEl = card.querySelector('.rule-title');
+          const descEl = card.querySelector('.rule-desc');
+          if (titleEl) titleEl.innerHTML = ruleState.title;
+          if (descEl) descEl.innerHTML = ruleState.desc;
+        }
+      });
+    }
+  }
+
+  // Export modified HTML as file
+  function exportHTML() {
+    // Apply temporary values to the DOM structure so they are written in the downloaded HTML
+    const rows = document.querySelectorAll('#matrix-tbl tbody tr[data-row]');
+    rows.forEach(row => {
+      const select = row.querySelector('.select-critico');
+      if (select) {
+        const opts = select.querySelectorAll('option');
+        opts.forEach(opt => {
+          if (opt.value === select.value) {
+            opt.setAttribute('selected', 'selected');
+          } else {
+            opt.removeAttribute('selected');
+          }
+        });
+      }
+    });
+
+    const docType = "<!DOCTYPE html>\n";
+    const htmlContent = docType + document.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '20260709_preparación_cotización_modificado.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('¡HTML exportado! Sobrescribe el archivo actual si lo deseas.');
+  }
+
+  // Run on startup
+  window.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    initializeMermaidMindmap();
+  });
+
+  function goTo(n) {
+    if (n < 1 || n > TOTAL) return;
+    const prev = document.getElementById('s' + cur);
+    prev.classList.remove('active');
+    prev.classList.add(n > cur ? 'exit-left' : 'exit-right');
+    setTimeout(() => { prev.classList.remove('exit-left', 'exit-right'); }, 450);
+
+    document.getElementById('s' + n).classList.add('active');
+
+    for (let i = 1; i <= TOTAL; i++) {
+      document.getElementById('dot-' + i).classList.toggle('active', i === n);
+    }
+
+    document.getElementById('btn-prev').disabled = (n === 1);
+    const btnNext = document.getElementById('btn-next');
+    if (n === TOTAL) {
+      btnNext.classList.add('primary');
+      btnNext.disabled = true;
+    } else {
+      btnNext.classList.remove('primary');
+      btnNext.disabled = false;
+    }
+
+    document.getElementById('hdr-label').textContent = labels[n];
+    document.getElementById('cnt-cur').textContent = n;
+    cur = n;
+  }
+
+  function move(d) { goTo(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ')  { e.preventDefault(); move(1);  }
+    if (e.key === 'ArrowLeft')                     { e.preventDefault(); move(-1); }
+  });
+</script>
+</body>
+</html>

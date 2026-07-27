@@ -1,0 +1,136 @@
+{
+  "segmentos": [
+    {
+      "label": "FOR-SEG-006 REVISION EXTINTORES CALAMA",
+      "type": "checkListTransmacExtintoresCalama",
+      "posicion": 60,
+      "file": "60-checkListTransmacExtintoresCalama.json"
+    },
+    {
+      "label": "FOR-SEG-006 REVISION EXTINTORES LOS ANDES",
+      "type": "checkListTransmacExtintoresLosAndes",
+      "posicion": 61,
+      "file": "61-checkListTransmacExtintoresLosAndes.json"
+    },
+    {
+      "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA",
+      "type": "checkListTransmacFatigaSomnolencia",
+      "posicion": 62,
+      "file": "62-checkListTransmacFatigaSomnolencia.json"
+    },
+    {
+      "label": "CL-95 HERRAMIENTAS NEUMATICAS",
+      "type": "checkListTransmacHerramientasNeumaticas",
+      "posicion": 63,
+      "file": "63-checkListTransmacHerramientasNeumaticas.json"
+    },
+    {
+      "label": "CL-93 MINI CARGADOR",
+      "type": "checkListTransmacMiniCargador",
+      "posicion": 64,
+      "file": "64-checkListTransmacMiniCargador.json"
+    },
+    {
+      "label": "CL-92 CAMION ALJIBE",
+      "type": "checkListTransmacCamionAljibe",
+      "posicion": 65,
+      "file": "65-checkListTransmacCamionAljibe.json"
+    },
+    {
+      "label": "CL-91 CAMION PLUMA",
+      "type": "checkListTransmacCamionPluma",
+      "posicion": 66,
+      "file": "66-checkListTransmacCamionPluma.json"
+    },
+    {
+      "label": "CL-90 CARGADOR FRONTAL",
+      "type": "checkListTransmacCargadorFrontal",
+      "posicion": 67,
+      "file": "67-checkListTransmacCargadorFrontal.json"
+    },
+    {
+      "label": "CL-88 CAMION TOLVA",
+      "type": "checkListTransmacCamionTolva",
+      "posicion": 68,
+      "file": "68-checkListTransmacCamionTolva.json"
+    },
+    {
+      "label": "CL-87 BULLDOZER",
+      "type": "checkListTransmacBulldozer",
+      "posicion": 69,
+      "file": "69-checkListTransmacBulldozer.json"
+    },
+    {
+      "label": "CL-86 EXCAVADORA",
+      "type": "checkListTransmacExcavadora",
+      "posicion": 70,
+      "file": "70-checkListTransmacExcavadora.json"
+    },
+    {
+      "label": "CL-41 LLAVE DE IMPACTO NEUMATICA",
+      "type": "checkListTransmacLlaveImpactoNeumatica",
+      "posicion": 71,
+      "file": "71-checkListTransmacLlaveImpactoNeumatica.json"
+    },
+    {
+      "label": "CL-01 SOLDADORA",
+      "type": "checkListTransmacSoldadora",
+      "posicion": 72,
+      "file": "72-checkListTransmacSoldadora.json"
+    },
+    {
+      "label": "CL-03 ESMERIL ANGULAR",
+      "type": "checkListTransmacEsmerilAngular",
+      "posicion": 73,
+      "file": "73-checkListTransmacEsmerilAngular.json"
+    },
+    {
+      "label": "CL-16 ELEVADOR DE PLATAFORMA",
+      "type": "checkListTransmacElevadorPlataforma",
+      "posicion": 74,
+      "file": "74-checkListTransmacElevadorPlataforma.json"
+    },
+    {
+      "label": "CL-09 GANCHOS Y GRILLETES",
+      "type": "checkListTransmacGanchosGrilletes",
+      "posicion": 75,
+      "file": "75-checkListTransmacGanchosGrilletes.json"
+    },
+    {
+      "label": "CL-10 CHECK LIST CADENAS DE AMARRE",
+      "type": "checkListTransmacSpaCadenasAmarre",
+      "posicion": 76,
+      "file": "76-checkListTransmacSpaCadenasAmarre.json"
+    },
+    {
+      "label": "CL-11 CHECK LIST ESLINGAS DE AMARRE",
+      "type": "checkListTransmacSpaEslingasAmarre",
+      "posicion": 77,
+      "file": "77-checkListTransmacSpaEslingasAmarre.json"
+    },
+    {
+      "label": "CL-14 ELEMENTOS DE IZAJE",
+      "type": "checkListTransmacElementosIzaje",
+      "posicion": 78,
+      "file": "78-checkListTransmacElementosIzaje.json"
+    },
+    {
+      "label": "CL-96 EVALUACION TERRENO IZAJE",
+      "type": "checkListTransmacEvaluacionTerrenoIzaje",
+      "posicion": 79,
+      "file": "79-checkListTransmacEvaluacionTerrenoIzaje.json"
+    },
+    {
+      "label": "CL-SGI-OP-SPA-001 EQUIPOS TRANSPORTE",
+      "type": "checkListTransmacSpaEquiposTransporte",
+      "posicion": 80,
+      "file": "80-checkListTransmacSpaEquiposTransporte.json"
+    },
+    {
+      "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA SPA",
+      "type": "checkListTransmacFatigaSomnolenciaSpa",
+      "posicion": 81,
+      "file": "81-checkListTransmacFatigaSomnolenciaSpa.json"
+    }
+  ]
+}

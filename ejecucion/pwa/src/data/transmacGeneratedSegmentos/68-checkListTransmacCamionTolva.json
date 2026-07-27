@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-88 CAMION TOLVA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 68,
+      "attributes": [
+        {
+          "type": "checkListTransmacCamionTolva",
+          "label": "Camion tolva",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

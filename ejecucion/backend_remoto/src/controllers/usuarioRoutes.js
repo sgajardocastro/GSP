@@ -1,0 +1,21 @@
+const express = require('express');
+const router = express.Router();
+const usuarioController = require('../controllers/usuarioController');
+
+router.get('/', usuarioController.getUsuarios);
+//router.get('/:id', usuarioController.getUsuarioById);
+router.post('/', usuarioController.postUsuario);
+
+// ⚠️ IMPORTANTE: estas 3 ANTES de `/:id` de PUT
+router.put('/enrolamiento', usuarioController.putEnrolamiento);
+router.post('/inicioEnrolamiento', usuarioController.postInicioEnrolamiento);
+router.put('/updPassFes', usuarioController.putCambiarPassFes);
+router.post('/updUsuario', usuarioController.postUpdUsuario);
+
+
+// Esta debe ir al final de los PUT
+router.put('/:id', usuarioController.updateUsuario);
+router.get('/mail-rut/:rut', usuarioController.getMailRut);
+router.get('/by-rut/:rut', usuarioController.getUsuarioByRut);
+
+module.exports = router;

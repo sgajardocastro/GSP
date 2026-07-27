@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-92 CAMION ALJIBE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 65,
+      "attributes": [
+        {
+          "type": "checkListTransmacCamionAljibe",
+          "label": "Camion aljibe",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

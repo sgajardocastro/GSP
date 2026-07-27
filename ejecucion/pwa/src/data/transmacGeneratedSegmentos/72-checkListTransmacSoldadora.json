@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-01 SOLDADORA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 72,
+      "attributes": [
+        {
+          "type": "checkListTransmacSoldadora",
+          "label": "Soldadora",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adendum Técnico-Comercial: Módulos de Mantenimiento, Adquisiciones e Integración Financiera – Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ════════════════ DESIGN SYSTEM ════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-document: #ffffff;
+      --bg-sidebar: #0f172a;
+      --bg-card: #f8fafc;
+      --border-color: #e2e8f0;
+      
+      --text-dark: #0f172a;
+      --text-gray: #475569;
+      --text-light: #94a3b8;
+      --text-white: #f8fafc;
+      
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --purple: #7c3aed;
+      --purple-light: #f3e8ff;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
+      color: var(--text-dark);
+      line-height: 1.6;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .font-display { font-family: 'Outfit', sans-serif; }
+
+    /* Layout Shell */
+    #app {
+      display: flex;
+      min-height: 100vh;
+      max-width: 1440px;
+      margin: 0 auto;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Sidebar Index */
+    .sidebar {
+      width: 300px;
+      background: var(--bg-sidebar);
+      color: var(--text-white);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+      flex-shrink: 0;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 20px;
+    }
+
+    .sidebar-brand h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .sidebar-brand span {
+      color: #f5a623;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-menu a {
+      color: #cbd5e1;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .sidebar-menu a:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-white);
+    }
+
+    .sidebar-menu li.active a {
+      background: rgba(245, 166, 35, 0.12);
+      color: #f5a623;
+      font-weight: 600;
+      border-left: 3px solid #f5a623;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 20px;
+      margin-top: 20px;
+    }
+
+    .print-btn {
+      width: 100%;
+      background: #f5a623;
+      color: #050810;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      background: #ffb732;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
+    }
+
+    /* Content Container */
+    .content-wrapper {
+      flex: 1;
+      background: var(--bg-document);
+      padding: 60px 80px;
+      overflow-y: auto;
+    }
+
+    /* Covers and Sections */
+    section {
+      margin-bottom: 64px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 40px;
+    }
+
+    section:last-child {
+      border-bottom: none;
+    }
+
+    .cover-page {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--text-dark);
+      padding-bottom: 60px;
+      margin-bottom: 80px;
+    }
+
+    .cover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    .cover-body {
+      margin: 60px 0;
+    }
+
+    .cover-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 40px;
+      font-weight: 900;
+      line-height: 1.3;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .cover-subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      color: var(--text-gray);
+      max-width: 800px;
+      margin-bottom: 32px;
+      font-weight: 300;
+    }
+
+    .statement-card {
+      background: var(--bg-sidebar);
+      color: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 5px solid var(--amber);
+      margin-bottom: 40px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cover-meta {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 40px;
+      max-width: 800px;
+    }
+
+    .meta-col h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .meta-col p {
+      font-size: 13px;
+      color: var(--text-gray);
+      font-weight: 500;
+    }
+
+    h2.section-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      color: var(--text-dark);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2.section-heading::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background: var(--amber);
+      border-radius: 2px;
+    }
+
+    h3.sub-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-top: 28px;
+      margin-bottom: 12px;
+    }
+
+    p.lead-paragraph {
+      font-size: 14.5px;
+      color: var(--text-gray);
+      font-weight: 400;
+      margin-bottom: 20px;
+    }
+
+    strong { color: var(--text-dark); font-weight: 600; }
+    ul, ol { margin-left: 20px; margin-bottom: 20px; color: var(--text-gray); }
+    li { margin-bottom: 6px; }
+
+    /* Callouts */
+    .callout {
+      background: var(--bg-card);
+      border-left: 4px solid var(--border-color);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+    .callout-amber { border-left-color: var(--amber); background: rgba(217, 119, 6, 0.03); }
+    .callout-blue  { border-left-color: var(--blue);  background: rgba(37, 99, 235, 0.03); }
+    .callout-green { border-left-color: var(--green); background: rgba(22, 163, 74, 0.03); }
+    
+    .callout-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .callout-amber .callout-title { color: var(--amber); }
+    .callout-blue .callout-title  { color: var(--blue); }
+    .callout-green .callout-title { color: var(--green); }
+
+    .callout-body { font-size: 13px; color: var(--text-gray); }
+
+    /* Grid Structures */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card-header-icon {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-amber { background: var(--amber-light); color: var(--amber); }
+    .icon-blue  { background: var(--blue-light);  color: var(--blue); }
+    .icon-green { background: var(--green-light); color: var(--green); }
+    .icon-purple{ background: var(--purple-light);color: var(--purple); }
+    .icon-red   { background: var(--red-light);   color: var(--red); }
+
+    .card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      letter-spacing: 0.02em;
+    }
+
+    .card-body { font-size: 12.5px; color: var(--text-gray); line-height: 1.6; }
+
+    /* Image & Figure Styles */
+    .screenshot-figure {
+      margin: 24px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+
+    .screenshot-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .screenshot-caption {
+      padding: 12px 20px;
+      background: #f1f5f9;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-gray);
+      font-weight: 600;
+    }
+
+    /* Table Styles */
+    .table-wrapper {
+      margin: 24px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-card);
+      font-family: 'Outfit', sans-serif;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-gray);
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-gray);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* Badge / Tag */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-amber  { background: var(--amber-light); color: var(--amber); }
+    .badge-blue   { background: var(--blue-light);  color: var(--blue); }
+    .badge-green  { background: var(--green-light); color: var(--green); }
+    .badge-purple { background: var(--purple-light);color: var(--purple); }
+    .badge-red    { background: var(--red-light);   color: var(--red); }
+
+    /* Flowchart CSS */
+    .flow-pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .flow-step {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+    .flow-step-header {
+      background: var(--bg-sidebar);
+      color: #ffffff;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .flow-step-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--amber);
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .flow-step-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .flow-step-content {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .flow-sub-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .flow-sub-card h5 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+    .flow-sub-card p {
+      font-size: 11px;
+      color: var(--text-gray);
+      line-height: 1.4;
+    }
+
+    /* Print Settings */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 12px;
+      }
+      #app { box-shadow: none; max-width: 100%; }
+      .sidebar { display: none !important; }
+      .content-wrapper { padding: 0 !important; overflow: visible !important; }
+      section {
+        page-break-before: always !important;
+        break-before: page !important;
+        margin-bottom: 40px !important;
+        padding-bottom: 20px !important;
+        border-bottom: none !important;
+      }
+      .cover-page {
+        page-break-after: always !important;
+        break-after: page !important;
+        min-height: 100vh !important;
+      }
+      .card, table, tr, .screenshot-figure, .flow-step, .callout {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ════════════════ SIDEBAR ════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);display:flex;align-items:center;justify-content:center;color:#f5a623;">
+        <i data-lucide="plus-circle"></i>
+      </div>
+      <div>
+        <h1 class="font-display">LEAN <span>GLOBAL</span></h1>
+        <p style="font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Adendum de Propuesta</p>
+      </div>
+    </div>
+    
+    <nav style="flex:1;overflow-y:auto;margin-bottom:20px;">
+      <ul class="sidebar-menu">
+        <li class="active"><a href="#portada"><i data-lucide="file-text"></i> Portada Adendum</a></li>
+        <li><a href="#carretera-sgi"><i data-lucide="shield-check"></i> 1. Carretera SGI &amp; Auditorías</a></li>
+        <li><a href="#diagrama-flujo"><i data-lucide="git-commit"></i> 2. El Flujo GSP</a></li>
+        <li><a href="#pantallas-transmac"><i data-lucide="monitor"></i> 3. Pantallas de Control</a></li>
+        <li><a href="#inspecciones-hsec"><i data-lucide="clipboard-list"></i> 4. Biblioteca HSEC</a></li>
+        <li><a href="#extension-sgi"><i data-lucide="expand"></i> 5. Extensión SGI &amp; DS 44</a></li>
+        <li><a href="#ia-vectorial"><i data-lucide="brain"></i> 6. IA Vectorial &amp; RAG</a></li>
+        <li><a href="#roadmap-diferido"><i data-lucide="calendar"></i> 7. Roadmap Diferido</a></li>
+        <li><a href="#oferta-cierre"><i data-lucide="tags"></i> 8. Convenio Comercial</a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="print-btn" onclick="window.print()">
+        <i data-lucide="printer"></i> Exportar Adendum
+      </button>
+      <p style="font-size:10px;text-align:center;color:#64748b;margin-top:10px;">PDF en Orientación Horizontal</p>
+    </div>
+  </aside>
+
+  <!-- ════════════════ CONTENT WRAPPER ════════════════ -->
+  <main class="content-wrapper">
+
+    <!-- ── PORTADA ── -->
+    <header class="cover-page" id="portada">
+      <div class="cover-header">
+        <div class="logo-badge">
+          <i data-lucide="plus-circle" style="width:14px;height:14px;color:var(--amber);"></i>
+          <span>ADENDUM TÉCNICO-COMERCIAL COMPLEMENTARIO</span>
+        </div>
+        <div style="font-family:'Outfit';font-weight:900;font-size:18px;">
+          LEAN <span style="color:var(--amber);">GLOBAL</span>
+        </div>
+      </div>
+
+      <div class="cover-body">
+        <h1 class="cover-title">
+          Ampliación Ecosistema Digital GSP:<br>
+          Mantenimiento de Flota, Adquisiciones<br>
+          &amp; Integración Contable Financiera
+        </h1>
+        <p class="cover-subtitle">
+          Adendum formal que complementa la propuesta base incorporando la suite de talleres (OTs preventivas y correctivas), control de bodegas físicas, cálculo automatizado de márgenes del servicio, y el roadmap de desconexión de Laudus ERP.
+        </p>
+        
+        <div class="statement-card">
+          <i data-lucide="check-square" style="width:28px;height:28px;color:var(--amber);flex-shrink:0;"></i>
+          <span>LeanGlobal compromete el 100% de capacidad de cumplimiento del proceso operacional definido por GSP.</span>
+        </div>
+      </div>
+
+      <div class="cover-meta">
+        <div class="meta-col">
+          <h4>Preparado Para:</h4>
+          <p><strong>Arriendo de Maquinarias San Pablo EIRL (GSP)</strong></p>
+          <p class="mono" style="font-size:11px;color:var(--text-gray);">RUT: 52.004.162-1</p>
+          <p>Atención: Jorge Ponce, Omar Ghisellini y Marcelo Reyes</p>
+        </div>
+        <div class="meta-col">
+          <h4>Fecha de Emisión:</h4>
+          <p><strong>Julio 2026</strong></p>
+          <p style="margin-top: 4px;">Ecosistema Tecnológico Integrado</p>
+          <p style="font-size: 11px; color: var(--text-gray);">Asociado a Propuesta Comercial Base</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── SECCIÓN 1: CARRETERA SGI ── -->
+    <section id="carretera-sgi">
+      <h2 class="section-heading">1. La Carretera para la Gestión Integral (SGI) de GSP</h2>
+      <p class="lead-paragraph">
+        Al tomar la decisión de implementar la plataforma de LeanGlobal, Grúas San Pablo no adquiere una herramienta informática aislada, sino una <strong>Carretera Tecnológica de Crecimiento Infinito</strong>. La arquitectura modular, construida en la nube de Google Cloud Platform (GCP) y con bases de datos nativas de alto rendimiento, es la base fundacional para consolidar el **Sistema de Gestión Integral (SGI)** de la compañía.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="shield" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Blindaje en Auditorías</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Las grandes forestales (Arauco, CMPC) y mineras ejecutan auditorías rigurosas e imprevistas de contratos y HSEC. Nuestro SGI centraliza firmas FES de terreno, checklists preoperacionales, orómetros, mantenimiento de grúas y acreditación del personal en un solo expediente digital inalterable. El auditor obtiene toda la información histórica en 3 clics, garantizando un <strong>100% de cumplimiento y aprobación de auditorías futuras</strong>.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="git-pull-request" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Base Modular Sólida</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            GSP puede iniciar resolviendo el dolor del despacho operacional y checklists (Base). Sin embargo, la infraestructura queda "pavimentada" para activar Mantenimiento, Bodegas, Facturación e incluso Contabilidad en el futuro. Todo corre en la misma base de datos, eliminando las costosas y riesgosas migraciones de sistemas a mediano y largo plazo.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="briefcase" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Ganar Licitaciones</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Para adjudicarse contratos de izaje pesado de gran envergadura, los mandantes exigen que los proveedores posean un SGI auditable y certificado. Demostrar en sus carpetas técnicas de licitación que operan sobre esta plataforma digital les da una **ventaja competitiva arrolladora ante su competencia**.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 2: EL DIAGRAMA DE FLUJO INTEGRADO ── -->
+    <section id="diagrama-flujo">
+      <h2 class="section-heading">2. El Proceso Operacional Detallado de GSP</h2>
+      <p class="lead-paragraph">
+        LeanGlobal compromete el soporte y la automatización del proceso operativo unificado de GSP, estructurando el sistema en 5 fases lógicas que mapean exactamente la dinámica real de su negocio de izajes:
+      </p>
+
+      <div class="flow-pipeline">
+        <!-- Paso 1 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 1</span>
+            <span class="flow-step-name">Cotización &amp; Requerimiento</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Cotizador por Familia</h5>
+              <p>Mapea las 9 familias de productos (grúas telescópicas, plataformas PTA, tijeras, plumas, grúas horquilla, manipuladores, camas bajas, accesorios, y riggers) asociando condiciones y anexos específicos.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Programado vs. Disponibilidad</h5>
+              <p>Valida si el servicio reserva equipo "a todo evento" o si queda sujeto a disponibilidad logística diaria.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Datos Técnicos y Site Visit</h5>
+              <p>Captura pesos, dimensiones de carga, radios, alturas de trabajo y link de ubicación geográfica de la obra.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="flow-step">
+          <div class="flow-step-header" style="background:var(--bg-sidebar);">
+            <span class="flow-step-num">Fase 2</span>
+            <span class="flow-step-name">Aprobación &amp; Despacho</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Coordinación de OT</h5>
+              <p>El Coordinador aprueba y convierte el requerimiento en una Orden de Trabajo (OT) activa asignando operador, rigger y grúa.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Alertas al Personal</h5>
+              <p>Notificación automática y directa al teléfono/tablet del operador asignado, exigiendo su aceptación digital.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Control de Acreditación</h5>
+              <p>Cotejo automático de vigencia de licencias Clase D, exámenes médicos de altura y pases de faena del operador.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 3</span>
+            <span class="flow-step-name">Preparación &amp; Salida</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Jefe de Patio (Checklist)</h5>
+              <p>Generación de checklist digital pre-operacional en patio con registro fotográfico obligatorio del estado de la maquinaria.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Logística de Maniobras</h5>
+              <p>Jefe de Patio controla y valida por sistema la carga correcta de contrapesos y accesorios solicitados para el izaje.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Geocerca &amp; Permisos MOP</h5>
+              <p>Activación de geocerca GPS sobre la ruta y validación del almacenamiento del Permiso de Vialidad MOP sobredimensionado.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="flow-step">
+          <div class="flow-step-header" style="background:var(--bg-sidebar);">
+            <span class="flow-step-num">Fase 4</span>
+            <span class="flow-step-name">Ejecución en Faena (App)</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Trazado Desplazamiento</h5>
+              <p>El conductor inicia el viaje en la App, registrando telemetría GPS automática cada 5 minutos hasta su destino.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Inicio y Término en Faena</h5>
+              <p>El operador registra la hora exacta de inicio de posicionamiento, colación, y término de faena desde su App offline.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Reglas de Horas Mínimas</h5>
+              <p>Validación automática por software de las horas mínimas pactadas por contrato para evitar cobros sub-valuados.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Firma del Cliente (FES)</h5>
+              <p>El cliente en obra firma digitalmente en la pantalla de la tablet del operador, validando el servicio con geolocalización GPS.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 5 -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-num">Fase 5</span>
+            <span class="flow-step-name">Costos, Margen &amp; Facturación</span>
+          </div>
+          <div class="flow-step-content">
+            <div class="flow-sub-card">
+              <h5>Margen Operativo Directo</h5>
+              <p>Registro de costos del servicio (peajes, romana, combustible, alimentación, pensión de la tripulación y remuneración de operarios).</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Análisis 360° Financiero</h5>
+              <p>El Analista audita y valida que las horas reportadas en terreno cuadren matemáticamente con la cotización aprobada.</p>
+            </div>
+            <div class="flow-sub-card">
+              <h5>Facturación Eficiente</h5>
+              <p>Cierre de EDP por el Coordinador de Operaciones y emisión directa de la factura DTE vinculada a la OC del cliente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 3: PANTALLAS DE CONTROL PREMIUM ── -->
+    <section id="pantallas-transmac">
+      <h2 class="section-heading">3. Madurez de Software: Pantallas de Control Operativo y Seguridad (SGI)</h2>
+      <p class="lead-paragraph">
+        No estamos vendiendo una idea teórica. A continuación, te presentamos el estándar de diseño y madurez de interfaces de usuario que implementaremos para GSP, basado en el exitoso ecosistema de gestión en tiempo real con modo oscuro de alta fidelidad:
+      </p>
+
+      <!-- Pantalla A -->
+      <h3 class="sub-heading">A. Consola Ejecutiva y Dashboard SST Integrado</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Esta consola de Torre de Control SST consolida las observaciones conductuales y los checklists de seguridad en tiempo real. Permite visualizar de forma interactiva indicadores críticos como índices de severidad (IG), frecuencia (IF) y accidentabilidad (IA), así como tendencias históricas por faena o sucursal.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/dashboard_sst.png" alt="Dashboard SST Transmac" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 1. Tablero de control ejecutivo para HSEC, Clima Laboral y dotación activa de personal en faenas mineras.</figcaption>
+      </figure>
+
+      <!-- Pantalla B -->
+      <h3 class="sub-heading">B. Mantenimiento y Control de Disponibilidad Mecánica en OTs</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Interfaz premium de talleres y mantenimiento. Centraliza la planificación de Órdenes de Trabajo (OTs) preventivas y correctivas de la flota, el registro digital de horómetros de motor e izaje, y el control técnico del estado de las grúas de alto tonelaje para asegurar su disponibilidad en faena.
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/mantenimiento_gsp_mockup.png" alt="Modulo Mantenimiento Premium" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 2. Consola de taller para la imputación de actividades de mecánicos, check-lists preoperacionales de patio y control de OTs activas.</figcaption>
+      </figure>
+
+      <!-- Pantalla C -->
+      <h3 class="sub-heading">C. Maestro de Repuestos SKU, Bodegas y Valorización Logística (WMS)</h3>
+      <p style="color:var(--text-gray);margin-bottom:12px;">
+        Tablero de control para el departamento de adquisiciones y bodegas de repuestos críticos. Monitorea en tiempo real los niveles de stock (neumáticos, filtros, cables de izaje), valoriza existencias al costo promedio ponderado y gestiona de forma automatizada las alertas de quiebre de stock crítico bajo la **metodología de clasificación y priorización ABC** (según criticidad operacional, valor y rotación de los repuestos).
+      </p>
+      <figure class="screenshot-figure">
+        <img src="assets/inventario_gsp_mockup.png" alt="Modulo Inventario WMS Premium" class="screenshot-img">
+        <figcaption class="screenshot-caption">Figura 3. Maestro logístico de SKU con alertas de stock mínimo y quiebres mediante metodología ABC por sucursal, control de proveedores y salida de materiales integrada a OTs.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ── SECCIÓN 4: BIBLIOTECA HSEC ── -->
+    <section id="inspecciones-hsec">
+      <h2 class="section-heading">4. Biblioteca de Checklists e Inspecciones HSEC Técnicas</h2>
+      <p class="lead-paragraph">
+        Nuestra experiencia con Transmac nos ha permitido consolidar una suite de **más de 60 checklists, pautas mecánicas y formularios de seguridad en el trabajo** alineados con los estándares de mandantes mineros y forestales de Chile (como Codelco, Celulosa Arauco y Minera Los Pelambres).
+      </p>
+      
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        GSP tendrá acceso inmediato a estas plantillas pre-construidas en su base de datos para cargarlas a la App móvil de sus operadores sin incurrir en costos adicionales de desarrollo:
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:25%;">Categoría de Inspección</th>
+              <th style="width:40%;">Inspecciones y Checklists Específicos Soportados</th>
+              <th style="width:35%;">Efecto en Terreno y Acreditación GSP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Core de Seguridad &amp; Consentimiento</strong></td>
+              <td>
+                • Inspección de Seguridad General [FRM-SST-INSP-001]
+                <br>• Fatiga y Somnolencia del Operador [FOR-SEG-011]
+                <br>• Consentimiento Legal Uso Documentación Electrónica [ID-500]
+              </td>
+              <td>
+                <strong>Firma Legal Bind:</strong> Validez jurídica ante inspecciones del trabajo y la firma FES de consentimiento digital del operador.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>2. Equipos e Izaje Mayor</strong></td>
+              <td>
+                • Check list Grúas de Alto Tonelaje [CL-SGI-CDCH-02-SST-009]
+                <br>• Check List Camión Pluma / Camión Rampla [CL-MLP-02-002]
+                <br>• Check List Alzahombre / Man-Lift / Tijeras [CL-SGI-CDMH-020]
+              </td>
+              <td>
+                <strong>0% Papel en Taller:</strong> El operador o Jefe de Patio valida estado motor, mangueras hidráulicas, outriggers y orómetros.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>3. Accesorios de Izaje (No-Equipos)</strong></td>
+              <td>
+                • Check List Grilletes [CL-SGI-CDCH-02-SST-005]
+                <br>• Check List Eslingas de Cadenas / Poliester Plana [FOR-OP-DN-002]
+                <br>• Check List Estrobos de Acero / Accesorios de Amarre
+              </td>
+              <td>
+                <strong>Cumplimiento de Rigging:</strong> Asegura que no se realice ninguna maniobra si las eslingas o grilletes tienen vencimiento o daño físico.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>4. Conducta y Terreno HSEC</strong></td>
+              <td>
+                • Observación Conductual de Terreno [OBS-13-7]
+                <br>• Verificación de Estabilidad del Suelo de Izaje [FOR-SGI-CDMH-022]
+                <br>• Control de Velocidad de Viento en Pluma [CL-SGI-CDCH-008]
+              </td>
+              <td>
+                <strong>Derivación a Superior:</strong> Si se reporta viento sobre 15 m/s o suelo inestable (<35 t/m²), la App bloquea el izaje y notifica a gerencia.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 5: EXTENSIÓN SGI Y DS 44 (PRÓXIMOS PASOS) ── -->
+    <section id="extension-sgi">
+      <h2 class="section-heading">5. Extensión del Sistema de Gestión Integral (SGI) y Módulos del DS 44</h2>
+      
+      <div class="callout callout-amber" style="margin-bottom: 24px;">
+        <div class="callout-title">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Proyección de Futuro — Excluido de la Propuesta Actual
+        </div>
+        <div class="callout-body">
+          Los componentes descritos en esta sección representan una extensión tecnológica proyectada a mediano plazo para consolidar un SGI robusto bajo el estándar normativo chileno (incluyendo el DS 44). Esta especificación tiene carácter ilustrativo para demostrar la escalabilidad del sistema y <strong>no forma parte del alcance del desarrollo inicial ni de la oferta económica de esta propuesta</strong>.
+        </div>
+      </div>
+
+      <p class="lead-paragraph">
+        El ecosistema de LeanGlobal cuenta con la base arquitectónica necesaria para implementar módulos avanzados de seguridad y salud en el trabajo (SST) alineados con las auditorías exigidas por los grandes mandantes, estructurándose de la siguiente forma:
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-top:3px solid var(--amber);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="shield-alert" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo A: Gestión de Riesgos Dinámica (MIPER 2.0)</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Automatiza la Matriz de Identificación de Peligros y Evaluación de Riesgos (MIPER) de forma activa e interactiva:
+            <br>• <strong>Calculadora de Riesgo Puro y Residual:</strong> Campos parametrizados que calculan automáticamente la criticidad del riesgo (Probabilidad × Severidad) antes y después de las medidas de control.
+            <br>• <strong>Filtros de Enfoque Inclusivo:</strong> Checkboxes obligatorios para indicar si el riesgo evaluado afecta de manera diferenciada por perspectiva de género, discapacidad y trabajadores sensibles.
+            <br>• <strong>Alertas de Caducidad:</strong> Notificación automática y obligatoria de revisión al registrarse un accidente o transcurrir 12 meses.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--blue);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue"><i data-lucide="users" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo B: Ecosistema Comités Paritarios (CPHS)</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Automatiza la burocracia y validez legal de las actividades del Comité Paritario de Higiene y Seguridad:
+            <br>• <strong>Votación Electrónica:</strong> Pantalla de inscripción, votación encriptada (un voto por trabajador, secreto y auditable) y generación del Acta de Escrutinio y Acta de Constitución listas para firma digital.
+            <br>• <strong>Control del Curso OPR:</strong> Perfil de miembro con contador en reversa de 6 meses para capacitarse en Prevención de Riesgos (20 horas obligatorias).
+            <br>• <strong>Gestor de Actas Mensuales:</strong> Repositorio con firma electrónica simple que envía copias automáticas al prevencionista y representantes del comité.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--green);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green"><i data-lucide="clipboard-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo C: Planificador de Trabajo y Ciclo PHVA</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            El motor que mueve el Programa de Prevención de Riesgos de GSP:
+            <br>• <strong>Kanban Preventivo:</strong> Asignación y seguimiento de tareas derivadas de la MIPER, con responsables, plazos y niveles de criticidad.
+            <br>• <strong>Planes de Emergencia:</strong> Sección de descarga rápida en la App móvil para que los operadores tengan acceso offline al plan ante catástrofes climáticas.
+            <br>• <strong>Encuestas de Percepción:</strong> Envío periódico de cuestionarios anónimos para evaluar la cultura de seguridad de los trabajadores.
+          </p>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--purple);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="user-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">Módulo D: Portal del Trabajador y "Derecho a Saber"</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            La interfaz de cara al empleado, optimizada para smartphones:
+            <br>• <strong>Inducción Digital (ODI):</strong> Pantallas donde el nuevo trabajador revisa los riesgos de su puesto, ve videos formativos y rinde un test para generar el documento ODI firmado digitalmente.
+            <br>• <strong>Buzón de Reportes de Incidentes:</strong> Acceso rápido para tomar una foto a una condición insegura en terreno y enviarla al prevencionista o comité (con opción anónima).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 6: IA VECTORIAL & RAG (PRÓXIMOS PASOS) ── -->
+    <section id="ia-vectorial">
+      <h2 class="section-heading">6. Copiloto Inteligente: IA Vectorial &amp; RAG (Búsqueda Semántica de Operaciones)</h2>
+      
+      <div class="callout callout-amber" style="margin-bottom: 24px;">
+        <div class="callout-title">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Proyección de Futuro — Excluido de la Propuesta Actual
+        </div>
+        <div class="callout-body">
+          La funcionalidad de Inteligencia Artificial Vectorial y RAG descrita en esta sección representa una capacidad tecnológica que la plataforma de LeanGlobal está preparada para soportar de manera nativa. Su activación <strong>requiere de una estrategia de implementación específica (curaduría de documentos y entrenamiento) y no forma parte del alcance inicial de este proyecto</strong>, pudiendo planificarse como una fase de extensión a partir del <strong>sexto mes en adelante</strong>.
+        </div>
+      </div>
+
+      <p class="lead-paragraph">
+        En la gestión industrial moderna, los equipos de Operaciones, Calidad y HSE de GSP se enfrentan a un desafío crítico: manejar miles de procedimientos de izaje, manuales de fabricantes de grúas (Liebherr, Tadano), normativas mineras y reportes históricos. Para acelerar la consulta de datos en terreno sin búsquedas manuales ineficientes, la plataforma de LeanGlobal cuenta con la infraestructura tecnológica para integrar:
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-left:4px solid var(--blue); background:#ffffff;">
+          <h4 class="card-title" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><i data-lucide="database" style="width:14px;height:14px;color:var(--blue);"></i>IA Vectorial</h4>
+          <p class="card-body">
+            Convierte sus documentos, manuales de operación e incidentes en mapas conceptuales matemáticos. Esto permite al sistema entender el significado y contexto de las preguntas en lugar de limitarse a buscar palabras clave exactas.
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid var(--amber); background:#ffffff;">
+          <h4 class="card-title" style="margin-bottom:8px; display:flex; align-items:center; gap:6px;"><i data-lucide="message-square" style="width:14px;height:14px;color:var(--amber);"></i>Generación Aumentada por Recuperación (RAG)</h4>
+          <p class="card-body">
+            Conecta la base de datos de GSP con un modelo de lenguaje seguro. En lugar de que la IA invente respuestas, RAG extrae los fragmentos exactos del manual o procedimiento interno real y redacta una respuesta precisa y justificada.
+          </p>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">Ejemplos de uso potencial en GSP</h3>
+      <p style="color:var(--text-gray);margin-bottom:16px;">
+        La integración de esta tecnología transformará la velocidad de respuesta del personal técnico y supervisor en la obra:
+      </p>
+
+      <div class="grid-3">
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-blue" style="background:rgba(37,99,235,0.06);"><i data-lucide="shield-check" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">🛡️ HSE en Terreno</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Un supervisor en obra pregunta en lenguaje natural desde su App: <em>"¿Cuáles son los elementos de protección obligatorios para soldadura en altura según nuestro protocolo?"</em>. La IA extrae el dato exacto de los PDFs internos y responde en segundos.
+          </p>
+        </div>
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-green" style="background:rgba(22,163,74,0.06);"><i data-lucide="file-spreadsheet" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">📋 Auditoría de Calidad</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Permite cruzar múltiples registros de control. Al consultar: <em>"¿Qué desviaciones mecánicas se repitieron más en los reportes del mes pasado?"</em>, el sistema consolida los datos de inspecciones históricas en segundos.
+          </p>
+        </div>
+        <div class="card" style="background:var(--bg-card);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber" style="background:rgba(217,119,6,0.06);"><i data-lucide="history" style="width:16px;height:16px;"></i></div>
+            <h4 class="card-title">📈 Historial Operativo</h4>
+          </div>
+          <p class="card-body" style="margin-top:8px;">
+            Los planificadores consultan lecciones aprendidas o bitácoras de mantenimiento redactando una pregunta simple sobre repuestos anteriores de grúas Liebherr, agilizando la toma de decisiones.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout callout-green" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="lock" style="width:14px;height:14px;"></i>Seguridad y Trazabilidad del Conocimiento</div>
+        <div class="callout-body">
+          • <strong>Privacidad Total:</strong> Los datos de GSP se procesan de forma encriptada y privada, sin alimentar modelos de IA públicos.
+          <br>
+          • <strong>Trazabilidad:</strong> Cada respuesta entregada por el copiloto incluye la cita de origen (nombre de documento y página exacta) del repositorio de GSP.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 7: ROADMAP DIFERIDO ── -->
+    <section id="roadmap-diferido">
+      <h2 class="section-heading">7. Roadmap de Implementación Diferida y Mitigación de Riesgos</h2>
+      <p class="lead-paragraph">
+        Para garantizar el éxito en la adopción del software por parte del personal de GSP (operadores, mecánicos y administradores), proponemos un **despliegue por etapas (Roadmap secuencial)**. Esto mitiga el riesgo de saturar a la organización con demasiados cambios al mismo tiempo, garantizando una transición fluida y exitosa:
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-top: 4px solid var(--amber);">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-amber"><i data-lucide="file-check" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Fase 4: Integración Facturación SII (Mes 4)</h4>
+          </div>
+          <p class="card-body" style="margin-top:10px;">
+            A partir del cuarto mes, una vez estabilizado el flujo de Torre de Control y OTs, habilitaremos el módulo de **Facturación DTE integrado**. Esto permitirá emitir facturas exentas/afectas de arriendo directamente al SII al cerrar el EDP en el sistema, permitiendo prescindir del sistema facturador externo que GSP contrata hoy.
+          </p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--purple); grid-column: span 2;">
+          <div class="card-header-icon">
+            <div class="icon-wrapper icon-purple"><i data-lucide="calculator" style="width:18px;height:18px;"></i></div>
+            <h4 class="card-title">Fase 5: Módulo de Contabilidad Simple Integrada (Mes 6)</h4>
+          </div>
+          <p class="card-body" style="margin-top:10px;">
+            <strong>Estrategia de Transición y Plan Temporal:</strong> Para garantizar una transición sin interrupciones, las operaciones se integrarán temporalmente con Laudus ERP mientras se desarrolla e implementa el <strong>Módulo de Contabilidad Simple Nativa</strong> comprometido en esta propuesta (Mes 6). Al finalizar esta fase, GSP contará con una plataforma unificada de facturación, compras y balances, permitiendo la <strong>desconexión definitiva y ahorro de licencias de Laudus ERP</strong>. La implementación activa tomará solo <strong>3 semanas</strong>, estructurándose de la siguiente manera:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px;">
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">1. Plan de Cuentas (Días 1-4)</h5>
+              Carga masiva del plan de cuentas de GSP. Consola para el contador con control de activos, pasivos, patrimonio, e integración completa de egresos (adquisiciones, OCs, facturas de compra y facturas de proveedores).
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">2. Asientos Automáticos (Días 5-10)</h5>
+              Triggers automáticos: las facturas de venta (DTE), facturas de compra (proveedores/adquisiciones y OCs), peajes, romana, combustible y operarios se auto-imputan como asientos de Cargo/Abono en el Libro Diario.
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">3. Libro Mayor &amp; Balances (Días 11-15)</h5>
+              Generación de Libro Mayor exportable y cálculo en tiempo real del Balance Tributario de 8 Columnas chileno y Estado de Resultados (P&amp;L).
+            </div>
+            <div style="background:#ffffff; border:1px solid var(--border-color); padding:10px; border-radius:8px; font-size:11px; color:var(--text-gray);">
+              <h5 style="color:var(--text-dark); font-weight:700; margin-bottom:4px; font-size:11px;">4. Auditoría Paralela (Días 16-21)</h5>
+              Marcha blanca y cuadre de saldos en paralelo con Laudus ERP para auditoría de precisión y entrega final de llave en mano al contador de GSP.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub-heading" style="margin-top: 32px;">Gantt de Implementación y Roadmap Estratégico (Mes 1 a Mes 6+)</h3>
+      <div class="gantt-container" style="background: rgba(15,23,42,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; overflow-x: auto; margin-top: 16px;">
+        <div style="min-width: 700px;">
+          <!-- Headers -->
+          <div style="display: flex; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; font-weight: 800; font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing:0.05em;">
+            <div style="width: 35%;">Módulos e Hitos de Desarrollo</div>
+            <div style="width: 10.83%; text-align: center;">Mes 1 (M1)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 2 (M2)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 3 (M3)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 4 (M4)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 5 (M5)</div>
+            <div style="width: 10.83%; text-align: center;">Mes 6 (M6+)</div>
+          </div>
+          <!-- Rows -->
+          <!-- Row 1 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">1. Ecosistema Base (Operación, CRM, App)</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 33.33%; background: linear-gradient(90deg, var(--green), #34d399); height: 10px; border-radius: 5px;" title="Implementación Hitos 1-3"></div>
+              <div style="width: 66.67%;"></div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">2. Mantenimiento &amp; Inspecciones HSEC</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 25%;"></div>
+              <div style="width: 25%; background: linear-gradient(90deg, var(--blue), #60a5fa); height: 10px; border-radius: 5px;" title="Implementación MNT"></div>
+              <div style="width: 50%;"></div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">3. Adquisiciones &amp; Bodegas WMS</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 33.33%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, var(--amber), #fbbf24); height: 10px; border-radius: 5px;" title="Implementación Bodegas"></div>
+              <div style="width: 50%;"></div>
+            </div>
+          </div>
+          <!-- Row 4 -->
+          <div style="display: flex; align-items: center; margin-bottom: 20px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">4. Facturación SII DTE Integrada</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 50%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, #ec4899, #f472b6); height: 10px; border-radius: 5px;" title="Facturación SII"></div>
+              <div style="width: 33.33%;"></div>
+            </div>
+          </div>
+          <!-- Row 5 -->
+          <div style="display: flex; align-items: center; margin-bottom: 8px; font-size: 13px;">
+            <div style="width: 35%; font-weight: 600;">5. Contabilidad Simple</div>
+            <div style="width: 65%; display: flex; position: relative;">
+              <div style="width: 83.33%;"></div>
+              <div style="width: 16.67%; background: linear-gradient(90deg, var(--purple), #c084fc); height: 10px; border-radius: 5px;" title="Contabilidad Simple"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECCIÓN 8: CONVENIO COMERCIAL ── -->
+    <section id="oferta-cierre">
+      <h2 class="section-heading">8. Estructura Comercial Especial: Convenio de Cierre Unificado</h2>
+      <p class="lead-paragraph">
+        Con el objetivo de respaldar la toma de decisiones del responsable del proyecto y entregar el máximo valor de software al costo más óptimo del mercado, se propone el siguiente **Convenio de Cierre por Ecosistema Integrado**. Este modelo hace explícita la inversión de la base y el adendum, aplicando un beneficio por el paquete completo:
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%;">Descripción del Componente</th>
+              <th style="width:30%;text-align:right;">Desarrollo e Implementación (Inversión UF)</th>
+              <th style="width:30%;text-align:right;">SaaS Licenciamiento Mensual (Soporte UF)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Propuesta Base (Despacho, Torre de Control, CRM, App y Gestor Documental)</strong>
+                <br><span style="font-size:11px;color:var(--text-light);">Estructura inicial acordada en el documento base para control logístico de izajes de alto tonelaje.</span>
+              </td>
+              <td style="text-align:right; vertical-align:middle;">150 UF</td>
+              <td style="text-align:right; vertical-align:middle;">12 UF / mes</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Adendum Incremental (Taller MNT, Bodegas WMS, Margen Operacional Directo, Facturación &amp; Contabilidad)</strong>
+                <br><span style="font-size:11px;color:var(--text-light);">Incorporación de suite de OTs preventivas/correctivas, pautas de inspección de patio con foto, bodegas de repuestos críticos y roadmap contable fiscal.</span>
+              </td>
+              <td style="text-align:right; vertical-align:middle;">80 UF</td>
+              <td style="text-align:right; vertical-align:middle;">4 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(245,166,35,0.03); font-weight:700; color:var(--amber);">
+              <td style="vertical-align:middle;">Valorización de Mercado Ecosistema Standalone (Total Teórico)</td>
+              <td style="text-align:right; vertical-align:middle;">230 UF</td>
+              <td style="text-align:right; vertical-align:middle;">16 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(16,185,129,0.03); font-weight:700; color:var(--green);">
+              <td style="vertical-align:middle;">Bono Especial de Convenio de Cierre (Bonificación Directa)</td>
+              <td style="text-align:right; vertical-align:middle;">-85 UF</td>
+              <td style="text-align:right; vertical-align:middle;">-4 UF / mes</td>
+            </tr>
+            <tr style="background:rgba(59,130,246,0.03); font-weight:700; color:var(--blue);">
+              <td style="vertical-align:middle;">Descuento Comercial de Cierre Adicional (Ajuste GSP)</td>
+              <td style="text-align:right; vertical-align:middle;">-22.56 UF</td>
+              <td style="text-align:right; vertical-align:middle;">-2.205 UF / mes</td>
+            </tr>
+            <tr style="background:var(--bg-sidebar); color:#ffffff; font-weight:800; font-size:14px;">
+              <td style="vertical-align:middle; color:#ffffff !important;"><span style="color:#ffffff !important; font-weight: 800;">Inversión Final Unificada Acordada GSP (Todo Incluido)</span></td>
+              <td style="text-align:right; color:#f5a623 !important; vertical-align:middle;"><strong style="color:#f5a623 !important; font-size: 15px; font-weight: 800;">122.44 UF</strong></td>
+              <td style="text-align:right; color:#f5a623 !important; vertical-align:middle;"><strong style="color:#f5a623 !important; font-size: 15px; font-weight: 800;">9.795 UF / mes</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="color:var(--text-gray);font-size:13px;margin-top:12px;margin-bottom:16px;">
+        • <strong>Nota de Conversión Referencial:</strong> La inversión final acordada equivale a un setup de desarrollo de $5.000.000 CLP y un licenciamiento SaaS de $400.000 CLP/mes, calculados en base al valor oficial de la UF de $40.836,63 para la fecha del cierre.
+      </p>
+
+      <div class="callout callout-green" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="check" style="width:14px;height:14px;"></i>Retorno de Inversión (ROI) y Ahorro Directo</div>
+        <div class="callout-body">
+          La unificación de la operación, el mantenimiento y la contabilidad simple sobre el ecosistema de LeanGlobal permite a GSP <strong>dar de baja las licencias recurrentes de su facturador externo actual y de Laudus ERP</strong> a contar del Mes 6, logrando amortizar por completo el licenciamiento SaaS de 9.795 UF mensual mediante el ahorro en licencias de software redundantes y la eliminación del costo administrativo de digitalización manual.
+        </div>
+      </div>
+
+      <div class="callout callout-blue" style="margin-top:16px;">
+        <div class="callout-title"><i data-lucide="headphones" style="width:14px;height:14px;"></i>Soporte y Continuidad Operacional (Valor Agregado)</div>
+        <div class="callout-body" style="font-size: 13px; line-height: 1.5; color: var(--text-gray);">
+          Como valor agregado, Lean Global proporcionará soporte y mantención continua de la plataforma implementada para Gruas San Pablo, asegurando su estabilidad, disponibilidad y correcto funcionamiento. El servicio contempla la atención de incidencias, mantenimiento preventivo y correctivo, así como mantenciones evolutivas menores, tales como la incorporación de nuevos atributos en reportes, la creación o ajuste de plantillas (templates) para homologaciones dentro del sistema y otras configuraciones de bajo impacto que contribuyan a la continuidad operacional y mejora continua de la solución.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<script>
+  // Initialize Lucide Icons
+  lucide.createIcons();
+
+  // Scrollspy Navigation Logic
+  const menuLinks = document.querySelectorAll('.sidebar-menu li');
+  const sections = document.querySelectorAll('section, header');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+      if (window.scrollY >= (sectionTop - 120)) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    menuLinks.forEach(li => {
+      li.classList.remove('active');
+      const href = li.querySelector('a').getAttribute('href').substring(1);
+      if (href === current) {
+        li.classList.add('active');
+      }
+    });
+  });
+</script>
+</body>
+</html>

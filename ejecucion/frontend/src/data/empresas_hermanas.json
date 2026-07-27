@@ -1,0 +1,54 @@
+[
+  {
+    "razon_social": "SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA",
+    "nombre_fantasia": "BESTMAQ",
+    "rut": "76209534-3",
+    "direccion": "CAMINO LABRANZA KM 9.5",
+    "comuna": "TEMUCO",
+    "ciudad": "TEMUCO",
+    "email": "ventas@arriendosanpablo.cl",
+    "giro": "ARRIENDO DE MAQUINARIAS",
+    "telefono_1": "569 9443 7725",
+    "telefono_2": "56452337950",
+    "id_empresa": 1
+  },
+  {
+    "razon_social": "SERVICIOS INTEGRADOS LOGISTICOS DEL SUR LTDA.",
+    "nombre_fantasia": "LOGISTICA DEL SUR",
+    "rut": "76218576-8",
+    "direccion": "KM 9.5 CAMINO LABRANZA HJ 24 LUGAR BOTROLHUE",
+    "comuna": "TEMUCO",
+    "ciudad": "TEMUCO",
+    "email": "ventas@arriendosanpablo.cl",
+    "giro": "ARRIENDO DE MAQUINARIAS",
+    "telefono_1": "570 9443 7725",
+    "telefono_2": "56452337950",
+    "id_empresa": 2
+  },
+  {
+    "razon_social": "LUIS OMAR GHISELLINI JARA ARRENDAMIENTO DE MAQUINARIAS Y VEHICULOS MOTORIZADOS EN GENERAL E.I.R.L.",
+    "nombre_fantasia": "SAN PABLO",
+    "rut": "52004162-1",
+    "direccion": "BOTROLHUE KM 9.5 HIJUELA 24 CAMINO LABRANZA",
+    "comuna": "TEMUCO",
+    "ciudad": "TEMUCO",
+    "email": "ventas@arriendosanpablo.cl",
+    "giro": "ARRIENDO DE MAQUINARIAS",
+    "telefono_1": "571 9443 7725",
+    "telefono_2": "56452337950",
+    "id_empresa": 3
+  },
+  {
+    "razon_social": "ARRIENDO ROYAL RENTAL LIMITADA",
+    "nombre_fantasia": "ROYAL RENTAL",
+    "rut": "78254535-3",
+    "direccion": "CAMINO LABRANZA KM 9.5",
+    "comuna": "TEMUCO",
+    "ciudad": "TEMUCO",
+    "email": "ventas@arriendosanpablo.cl",
+    "giro": "ARRIENDO DE MAQUINARIAS",
+    "telefono_1": "573 9443 7725",
+    "telefono_2": "56452337950",
+    "id_empresa": 4
+  }
+]

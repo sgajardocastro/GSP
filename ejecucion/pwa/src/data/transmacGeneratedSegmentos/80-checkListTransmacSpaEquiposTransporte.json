@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-SGI-OP-SPA-001 EQUIPOS TRANSPORTE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 80,
+      "attributes": [
+        {
+          "type": "checkListTransmacSpaEquiposTransporte",
+          "label": "Equipos transporte SPA",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

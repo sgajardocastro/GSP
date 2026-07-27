@@ -1,0 +1,484 @@
+const bcrypt = require("bcryptjs");
+//const db = require("../config/dbConfig");
+const pool = require("../config/postgresPool");
+const MessageModel = require("./messageModel");
+const messageModel = new MessageModel();
+
+class Usuario {
+  constructor() {
+    this.pool = pool;
+    this.pool.on("error", (err) => console.error(err));
+  }
+
+  async getUsuarios(callback) {
+    try {
+      const sql = "SELECT * FROM tsec_users";
+      const respuesta = await this.pool.query(sql);
+      return respuesta.rows;
+    } catch (err) {
+      console.error("Error en getUsuarios:", err);
+      throw new Error("Error al obtener usuarios");
+    }
+  }
+
+  async getUsuarioById(id) {
+    try {
+      const sql = "SELECT * FROM usuarios WHERE id = $1";
+      const respuesta = await this.pool.query(sql, [id]);
+      return respuesta.rows[0] || null; // Retorna null si no hay usuario
+    } catch (err) {
+      console.error("Error en getUsuarioById:", err);
+      throw new Error("Error al obtener usuario");
+    }
+  }
+
+  async postAuth(username, password, is_deleted) {
+    const sql = `INSERT INTO public.auth(username, password, is_deleted)
+                 VALUES ($1, $2, $3) RETURNING id`;
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const { rows } = await this.pool.query(sql, [
+        username,
+        hashedPassword,
+        is_deleted,
+      ]);
+      return rows[0]?.id || null; // Si no hay fila, devuelve null
+    } catch (err) {
+      console.error("Error en postAuth:", err);
+      throw new Error("Error al crear usuario en auth");
+    }
+  }
+
+  async postUsuario(
+    auth_id,
+    empresa_id,
+    nombre,
+    correo,
+    edad,
+    altura,
+    peso,
+    is_deleted
+  ) {
+    const sql = `INSERT INTO public.usuarios(auth_id, empresa_id, nombre, correo, edad, altura, peso, is_deleted)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`;
+    try {
+      const { rows } = await this.pool.query(sql, [
+        auth_id,
+        empresa_id,
+        nombre,
+        correo,
+        edad,
+        altura,
+        peso,
+        is_deleted,
+      ]);
+      return rows[0]?.id || null;
+    } catch (err) {
+      console.error("Error en postUsuario:", err);
+      throw new Error("Error al crear usuario");
+    }
+  }
+
+  async createUsuario(
+    username,
+    password,
+    is_deleted,
+    empresa_id,
+    nombre,
+    correo,
+    edad,
+    altura,
+    peso,
+    callback
+  ) {
+    try {
+      const authId = await this.postAuth(username, password, is_deleted);
+      const userId = await this.postUsuario(
+        authId,
+        empresa_id,
+        nombre,
+        correo,
+        edad,
+        altura,
+        peso,
+        is_deleted
+      );
+      callback(null, { authId, userId });
+    } catch (err) {
+      callback(err, null);
+    }
+  }
+
+  async putUsuario(
+    id,
+    empresa_id,
+    nombre,
+    correo,
+    edad,
+    altura,
+    peso,
+    is_deleted
+  ) {
+    const sql = `UPDATE public.usuarios
+                 SET empresa_id=$2, nombre=$3, correo=$4, edad=$5, altura=$6, peso=$7, is_deleted=$8
+                 WHERE id = $1 RETURNING id`;
+    try {
+      const { rows } = await this.pool.query(sql, [
+        id,
+        empresa_id,
+        nombre,
+        correo,
+        edad,
+        altura,
+        peso,
+        is_deleted,
+      ]);
+      if (rows.length === 0) {
+        throw new Error("Usuario no encontrado");
+      }
+      return rows[0].id; // Devuelve el ID del usuario actualizado
+    } catch (err) {
+      console.error("Error en putUsuario:", err);
+      throw new Error("Error al actualizar usuario");
+    }
+  }
+
+  async iniciarEnrolamiento(rut, nombre, correo, roles, id_empresa) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        INSERT INTO tsec_users (rut, email, flag_proc_enrol, codi_user, id_empresa)
+        VALUES ($1, $2, true, $3, $4)
+        RETURNING id_user
+      `;
+
+      this.pool.query(query, [rut, correo, correo, id_empresa], async (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+
+        const id_user = result.rows[0].id_user;
+
+
+       // 2) Asignar roles
+        if (!Array.isArray(roles) || roles.length === 0) {
+          return reject(new Error("Se requiere al menos un rol para el enrolamiento"));
+        }
+        try {
+          for (const id_rol of roles) {
+            await this.pool.query(
+              `INSERT INTO tsec_user_roles (id_user, id_rol)
+               VALUES ($1, $2)`,
+              [id_user, id_rol]
+            );
+          }
+        } catch (roleErr) {
+          return reject(roleErr);
+        }
+
+
+
+        // Enviar correo de confirmación
+        try {
+          const cuerpoMensaje = `
+            Estimada/o,
+
+              Has sido invitado/a a enrolarte en nuestra Plataforma de Gestión de Protocolos de Terracon, la cual permite la firma electrónica simple (FES) de documentos laborales, conforme a la normativa vigente.
+
+              El acceso a esta plataforma se realiza mediante autenticación con tu correo corporativo Terracon. Para completar tu enrolamiento, por favor sigue estos pasos:
+
+              1. Accede al siguiente enlace de enrolamiento:
+                URL: https://servidor.leanglobal.cl/lg-terracon-qa/
+
+              2. Inicia sesión con tu correo corporativo y su clave.
+
+              3. Completa el formulario con los siguientes datos:
+                - Nombres y apellidos
+                - Número de teléfono celular
+                - Correo personal alternativo
+                - Una clave numérica de 4 dígitos, que será utilizada exclusivamente para firmar electrónicamente.
+
+              Esta clave será encriptada y almacenada de forma segura, y es independiente de tu clave de correo.
+
+              Una vez completado el proceso, recibirás otro correo con el acceso a la plataforma web y móvil.
+
+              Ante cualquier duda, contáctanos a soporte@leanglobal.cl.
+
+              Atentamente,
+              Terracon Ingeniería
+              Plataforma HSEC
+          `;
+
+          await messageModel.enviarYRegistrarCorreo({
+            para: correo,
+            asunto: `Confirmación de inicio de enrolamiento`,
+            cuerpo: cuerpoMensaje
+          });
+
+          console.log(`📧 Correo de enrolamiento enviado a ${correo}`);
+        } catch (mailError) {
+          console.error(`❌ Error al enviar correo a ${correo}:`, mailError.message);
+        }
+
+        resolve({ id_insertado: id_user });
+      });
+    });
+  }
+
+  async enrolamiento(
+    id_user,
+    name_frst,
+    name_sec,
+    apellido_pat,
+    apellido_mat,
+    email_alternativo,
+    movil,
+    pass_hash_fes
+  ) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE tsec_users
+        SET name_frst = $2,
+            name_sec = $3,
+            apellido_pat = $4,
+            apellido_mat = $5,
+            email_alternativo = $6,
+            movil = $7,
+            pass_hash_fes = $8,
+            flag_proc_enrol = false
+        WHERE id_user = $1
+        RETURNING id_user, email
+      `;
+
+      this.pool.query(
+        query,
+        [
+          id_user,
+          name_frst,
+          name_sec,
+          apellido_pat,
+          apellido_mat,
+          email_alternativo,
+          movil,
+          pass_hash_fes,
+        ],
+        async (err, result) => {
+          if (err) {
+            return reject(err);
+          }
+
+          const updatedUser = result.rows[0];
+
+          // Armar el mensaje de confirmación
+          const cuerpoMensaje = `
+            Hola ${name_frst} ${apellido_pat},
+
+            Te informamos que has completado correctamente tu proceso de enrolamiento en la Plataforma de Gestión de Protocolos de Terracon.
+
+            A partir de ahora, podrás firmar documentos laborales de manera electrónica simple (FES) utilizando tu clave FES personal de 4 dígitos, que fue registrada y almacenada de forma segura.
+
+            Puedes acceder a la plataforma desde los siguientes medios:
+
+            🔗 Acceso Web: https://servidor.leanglobal.cl/lg-terracon-qa/
+            📱 App Móvil: disponible para Android desde https://servidor.leanglobal.cl/pwa-terracon-qa/
+          `;
+
+          try {
+            await messageModel.enviarYRegistrarCorreo({
+              para: updatedUser.email || email_alternativo,
+              asunto: 'Confirmación de enrolamiento en Plataforma Terracon',
+              cuerpo: cuerpoMensaje
+            });
+
+            console.log(`📧 Correo de confirmación enviado a ${updatedUser.email || email_alternativo}`);
+          } catch (mailError) {
+            console.error(`❌ Error al enviar correo de confirmación:`, mailError.message);
+          }
+
+          resolve({ id_insertado: updatedUser.id_user });
+        }
+      );
+    });
+  }
+
+  async UpdPassFes(id_user, pass_hash_fes) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE tsec_users
+        SET pass_hash_fes = $2
+        WHERE id_user = $1
+        RETURNING id_user, email, name_frst, apellido_pat
+      `;
+
+      this.pool.query(
+        query,
+        [id_user, pass_hash_fes],
+        async (err, result) => {
+          if (err) {
+            return reject(err);
+          }
+
+          if (result.rowCount === 0) {
+            return reject(new Error('Usuario no encontrado'));
+          }
+
+          const updatedUser = result.rows[0];
+
+          const cuerpoMensaje = `
+  Hola ${updatedUser.name_frst} ${updatedUser.apellido_pat},
+
+  Te informamos que tu clave de Firma Electrónica Simple (FES) ha sido actualizada correctamente en la Plataforma de Gestión de Protocolos de Terracon.
+
+  Si tú no realizaste este cambio, contacta de inmediato al área de soporte para revisar tu cuenta.
+
+  Puedes acceder a la plataforma desde los siguientes medios:
+
+  🔗 Acceso Web: https://servidor.leanglobal.cl/lg-terracon-qa/
+  📱 App Móvil: disponible para Android desde https://servidor.leanglobal.cl/pwa-terracon-qa/
+
+  Saludos cordiales,
+  Equipo Terracon
+          `;
+
+          try {
+            await messageModel.enviarYRegistrarCorreo({
+              para: updatedUser.email,
+              asunto: 'Actualización de clave FES en Plataforma Terracon',
+              cuerpo: cuerpoMensaje
+            });
+
+            console.log(`📧 Correo de cambio de FES enviado a ${updatedUser.email}`);
+          } catch (mailError) {
+            console.error('❌ Error al enviar correo de cambio de FES:', mailError.message);
+          }
+
+          resolve({ id_user: updatedUser.id_user });
+        }
+      );
+    });
+  }
+
+  /**
+   * Actualiza los datos básicos de un usuario en tsec_users
+   * Se usa para la edición desde la WEB (Enrolamiento)
+   */
+  async updUsuarioDatos({
+    id_user,
+    email,
+    rut,
+    name_frst,
+    name_sec,
+    apellido_pat,
+    apellido_mat,
+    movil,
+    activo,
+    json_data,
+    id_empresa
+  }) {
+    const sql = `
+      UPDATE tsec_users
+      SET
+        rut           = COALESCE($2, rut),
+        email         = COALESCE($3, email),
+        name_frst     = COALESCE($4, name_frst),
+        name_sec      = COALESCE($5, name_sec),
+        apellido_pat  = COALESCE($6, apellido_pat),
+        apellido_mat  = COALESCE($7, apellido_mat),
+        movil         = COALESCE($8, movil),
+        activo        = COALESCE($9, activo),
+        json_data     = COALESCE($10, json_data),
+        id_empresa    = COALESCE($11, id_empresa),
+        fecha_actualizacion = NOW()
+      WHERE id_user = $1
+      RETURNING id_user;
+    `;
+
+    try {
+      const { rows } = await this.pool.query(sql, [
+        id_user,
+        rut,
+        email,
+        name_frst,
+        name_sec,
+        apellido_pat,
+        apellido_mat,
+        movil,
+        activo,
+        json_data,
+        id_empresa
+      ]);
+
+      if (rows.length === 0) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      return rows[0].id_user;
+    } catch (err) {
+      console.error('Error en updUsuarioDatos:', err);
+      throw new Error('Error al actualizar datos de usuario');
+    }
+  }
+
+  /**
+   * Actualiza los roles de un usuario:
+   *  - Borra todos los roles actuales
+   *  - Inserta los nuevos roles recibidos
+   */
+  async updUsuarioRoles(id_user, rolesIds) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // 1) Borrar roles actuales
+      await client.query(
+        'DELETE FROM tsec_user_roles WHERE id_user = $1',
+        [id_user]
+      );
+
+      // 2) Insertar nuevos roles (si viene alguno)
+      if (Array.isArray(rolesIds) && rolesIds.length > 0) {
+        for (const id_rol of rolesIds) {
+          await client.query(
+            `
+              INSERT INTO tsec_user_roles (id_user, id_rol)
+              VALUES ($1, $2)
+            `,
+            [id_user, id_rol]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+
+      return { id_user, roles: rolesIds };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error en updUsuarioRoles:', err);
+      throw new Error('Error al actualizar roles del usuario');
+    } finally {
+      client.release();
+    }
+  }
+
+  async getMailRut(rut) {
+    try {
+      const rutNorm = String(rut).trim().toUpperCase()
+
+      const sql = `
+        SELECT email
+        FROM tsec_users
+        WHERE UPPER(rut) = $1
+        LIMIT 1
+      `
+
+      const respuesta = await this.pool.query(sql, [rutNorm])
+      return respuesta.rows[0] || null
+    } catch (err) {
+      console.error("Error en getMailRut:", err)
+      throw new Error("Error al obtener email por rut")
+    }
+  }
+
+}
+
+module.exports = Usuario;

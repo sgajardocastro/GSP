@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-09 GANCHOS Y GRILLETES",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 75,
+      "attributes": [
+        {
+          "type": "checkListTransmacGanchosGrilletes",
+          "label": "Ganchos y grilletes",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

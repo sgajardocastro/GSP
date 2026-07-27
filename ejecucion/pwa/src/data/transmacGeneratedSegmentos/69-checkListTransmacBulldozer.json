@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-87 BULLDOZER",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 69,
+      "attributes": [
+        {
+          "type": "checkListTransmacBulldozer",
+          "label": "Bulldozer",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

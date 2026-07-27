@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-41 LLAVE DE IMPACTO NEUMATICA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 71,
+      "attributes": [
+        {
+          "type": "checkListTransmacLlaveImpactoNeumatica",
+          "label": "Llave de impacto neumatica",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

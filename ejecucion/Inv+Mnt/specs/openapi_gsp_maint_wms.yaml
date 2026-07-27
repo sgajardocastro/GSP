@@ -1,0 +1,944 @@
+openapi: 3.0.3
+info:
+  title: API de Inventario (WMS-Lite) y Mantenimiento GSP
+  version: 1.0.0
+  description: |-
+    Especificación de la API REST para los módulos de WMS-Lite (Inventario) y Mantenimiento de Órdenes de Trabajo del sistema Global Manager (GSP).
+servers:
+  - url: /lg-gsp/api
+    description: Servidor principal
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    # --- Comunes ---
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    PaginatedResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
+            
+    # --- Inventario (WMS-Lite) ---
+    Bodega:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_empresa:
+          type: integer
+        id_sucursal:
+          type: integer
+        nombre:
+          type: string
+        estado:
+          type: string
+    BodegaCreate:
+      type: object
+      required:
+        - id_empresa
+        - id_sucursal
+        - nombre
+      properties:
+        id_empresa:
+          type: integer
+        id_sucursal:
+          type: integer
+        nombre:
+          type: string
+    
+    Producto:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo_fabricante:
+          type: string
+        nombre:
+          type: string
+        tipo:
+          type: string
+        marca:
+          type: string
+        nivel_minimo:
+          type: integer
+    ProductoCreate:
+      type: object
+      required:
+        - codigo_fabricante
+        - nombre
+      properties:
+        codigo_fabricante:
+          type: string
+        nombre:
+          type: string
+        tipo:
+          type: string
+        marca:
+          type: string
+        nivel_minimo:
+          type: integer
+    
+    Existencia:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_producto:
+          type: integer
+        id_bodega:
+          type: integer
+        codigo_barras:
+          type: string
+        cantidad:
+          type: integer
+        costo:
+          type: number
+        estado:
+          type: string
+    ExistenciaIngreso:
+      type: object
+      required:
+        - id_producto
+        - id_bodega
+        - cantidad
+        - costo
+        - oc
+      properties:
+        id_producto:
+          type: integer
+        id_bodega:
+          type: integer
+        cantidad:
+          type: integer
+        costo:
+          type: number
+        oc:
+          type: string
+    ExistenciaBaja:
+      type: object
+      required:
+        - id_existencia
+        - motivo
+      properties:
+        id_existencia:
+          type: integer
+        motivo:
+          type: string
+          
+    Traspaso:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_bodega_origen:
+          type: integer
+        id_bodega_destino:
+          type: integer
+        estado:
+          type: string
+        fecha_creacion:
+          type: string
+          format: date-time
+    TraspasoCreate:
+      type: object
+      required:
+        - id_bodega_origen
+        - id_bodega_destino
+        - codigos_barras
+      properties:
+        id_bodega_origen:
+          type: integer
+        id_bodega_destino:
+          type: integer
+        codigos_barras:
+          type: array
+          items:
+            type: string
+    TraspasoRecepcion:
+      type: object
+      required:
+        - recibido_por
+      properties:
+        recibido_por:
+          type: integer
+          
+    Despacho:
+      type: object
+      required:
+        - folio_ot
+        - codigos_barras
+      properties:
+        folio_ot:
+          type: string
+        codigos_barras:
+          type: array
+          items:
+            type: string
+
+    # --- Mantenimiento ---
+    OrdenTrabajo:
+      type: object
+      properties:
+        folio:
+          type: string
+        patente:
+          type: string
+        estado:
+          type: string
+        fecha_creacion:
+          type: string
+          format: date-time
+    OTCreate:
+      type: object
+      required:
+        - patente
+        - descripcion
+      properties:
+        patente:
+          type: string
+        descripcion:
+          type: string
+    OTDetalle:
+      allOf:
+        - $ref: '#/components/schemas/OrdenTrabajo'
+        - type: object
+          properties:
+            actividades:
+              type: array
+              items:
+                $ref: '#/components/schemas/Actividad'
+            repuestos_planificados:
+              type: array
+              items:
+                $ref: '#/components/schemas/RepuestoPlanificado'
+            mano_obra:
+              type: array
+              items:
+                $ref: '#/components/schemas/ManosDeObra'
+            servicios_externos:
+              type: array
+              items:
+                $ref: '#/components/schemas/ServicioExterno'
+    OTCierre:
+      type: object
+      required:
+        - pin_supervisor
+      properties:
+        pin_supervisor:
+          type: string
+          
+    Actividad:
+      type: object
+      properties:
+        id:
+          type: integer
+        descripcion:
+          type: string
+        estado:
+          type: string
+    ActividadCreate:
+      type: object
+      required:
+        - descripcion
+      properties:
+        descripcion:
+          type: string
+          
+    RepuestoPlanificado:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_producto:
+          type: integer
+        cantidad:
+          type: integer
+        despachado:
+          type: boolean
+    RepuestoPlanificadoCreate:
+      type: object
+      required:
+        - id_producto
+        - cantidad
+      properties:
+        id_producto:
+          type: integer
+        cantidad:
+          type: integer
+          
+    ManosDeObra:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_tecnico:
+          type: integer
+        horas:
+          type: number
+    ManosDeObraCreate:
+      type: object
+      required:
+        - id_tecnico
+        - horas
+      properties:
+        id_tecnico:
+          type: integer
+        horas:
+          type: number
+          
+    ServicioExterno:
+      type: object
+      properties:
+        id:
+          type: integer
+        proveedor:
+          type: string
+        costo:
+          type: number
+    ServicioExternoCreate:
+      type: object
+      required:
+        - proveedor
+        - costo
+      properties:
+        proveedor:
+          type: string
+        costo:
+          type: number
+
+security:
+  - BearerAuth: []
+
+paths:
+  /inventario/bodegas:
+    get:
+      summary: Listar bodegas activas
+      tags: [Inventario - Bodegas]
+      parameters:
+        - name: id_empresa
+          in: query
+          schema:
+            type: integer
+        - name: id_sucursal
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bodega'
+    post:
+      summary: Crear bodega
+      tags: [Inventario - Bodegas]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodegaCreate'
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bodega'
+  /inventario/bodegas/{id}:
+    put:
+      summary: Actualizar bodega
+      tags: [Inventario - Bodegas]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodegaCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bodega'
+
+  /inventario/productos:
+    get:
+      summary: Listar productos
+      tags: [Inventario - Productos]
+      parameters:
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: marca
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: '#/components/schemas/Producto'
+    post:
+      summary: Crear producto
+      tags: [Inventario - Productos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoCreate'
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '409':
+          description: Conflicto (codigo_fabricante duplicado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /inventario/productos/{id}:
+    get:
+      summary: Obtener ficha de producto
+      tags: [Inventario - Productos]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+                
+  /inventario/existencias:
+    get:
+      summary: Listar existencias (Stock físico)
+      tags: [Inventario - Existencias]
+      parameters:
+        - name: id_bodega
+          in: query
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: id_producto
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Existencia'
+                  
+  /inventario/existencias/ingresar:
+    post:
+      summary: Ingresar material
+      tags: [Inventario - Existencias]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExistenciaIngreso'
+      responses:
+        '201':
+          description: Material ingresado
+        '422':
+          description: Unprocessable Entity (costo 0 o falta OC)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CostoCero:
+                  value:
+                    error_code: COSTO_CERO_NO_PERMITIDO
+                    message: El costo no puede ser 0
+                SinOC:
+                  value:
+                    error_code: OC_REQUERIDA
+                    message: El número de OC es obligatorio
+                    
+  /inventario/existencias/barcode/{codigo}:
+    get:
+      summary: Buscar existencia por código de barras
+      tags: [Inventario - Existencias]
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Existencia'
+                
+  /inventario/existencias/baja:
+    post:
+      summary: Dar de baja existencia
+      tags: [Inventario - Existencias]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExistenciaBaja'
+      responses:
+        '200':
+          description: Existencia dada de baja
+          
+  /inventario/traspasos:
+    post:
+      summary: Iniciar traspaso
+      tags: [Inventario - Traspasos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TraspasoCreate'
+      responses:
+        '201':
+          description: Traspaso iniciado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Traspaso'
+                
+  /inventario/traspasos/{id}/recibir:
+    post:
+      summary: Confirmar recepción de traspaso
+      tags: [Inventario - Traspasos]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TraspasoRecepcion'
+      responses:
+        '200':
+          description: Traspaso recibido
+          
+  /inventario/despacho:
+    post:
+      summary: Despachar repuestos a OT
+      tags: [Inventario - Despachos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Despacho'
+      responses:
+        '200':
+          description: Despacho completado
+        '422':
+          description: Repuesto no corresponde a lo planificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                NoCorresponde:
+                  value:
+                    error_code: REPUESTO_NO_CORRESPONDE
+                    message: El barcode escaneado no coincide con la planificación de la OT
+                    
+  /inventario/alertas/stock:
+    get:
+      summary: Listar productos bajo nivel mínimo
+      tags: [Inventario - Alertas]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+
+  /mantenimiento/ots:
+    get:
+      summary: Listar OTs
+      tags: [Mantenimiento - OTs]
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: patente
+          in: query
+          schema:
+            type: string
+        - name: fecha_inicio
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fecha_fin
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrdenTrabajo'
+    post:
+      summary: Crear OT
+      tags: [Mantenimiento - OTs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTCreate'
+      responses:
+        '201':
+          description: OT Creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdenTrabajo'
+        '422':
+          description: Equipo con OT activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                EquipoOTActiva:
+                  value:
+                    error_code: EQUIPO_CON_OT_ACTIVA
+                    message: El equipo ya tiene una OT abierta
+                    
+  /mantenimiento/ots/{folio}:
+    get:
+      summary: Obtener OT completa
+      tags: [Mantenimiento - OTs]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTDetalle'
+                
+  /mantenimiento/ots/{folio}/estado:
+    put:
+      summary: Transición de estado de OT
+      tags: [Mantenimiento - OTs]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado:
+                  type: string
+      responses:
+        '200':
+          description: Estado actualizado
+          
+  /mantenimiento/ots/{folio}/cerrar:
+    post:
+      summary: Cerrar OT
+      tags: [Mantenimiento - OTs]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTCierre'
+      responses:
+        '200':
+          description: OT Cerrada
+        '422':
+          description: Errores de validación para cierre
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PinInvalido:
+                  value:
+                    error_code: PIN_INVALIDO
+                    message: PIN de supervisor incorrecto
+                ActividadesPendientes:
+                  value:
+                    error_code: OT_CON_ACTIVIDADES_PENDIENTES
+                    message: Intento de cerrar OT con actividades sin completar
+                RepuestosPendientes:
+                  value:
+                    error_code: OT_CON_REPUESTOS_PENDIENTES
+                    message: Intento de cerrar OT con repuestos no despachados
+
+  /mantenimiento/ots/{folio}/actividades:
+    post:
+      summary: Agregar actividad a OT
+      tags: [Mantenimiento - Actividades]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActividadCreate'
+      responses:
+        '201':
+          description: Actividad agregada
+          
+  /mantenimiento/ots/{folio}/actividades/{id}:
+    put:
+      summary: Actualizar estado de actividad
+      tags: [Mantenimiento - Actividades]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado:
+                  type: string
+      responses:
+        '200':
+          description: Estado de actividad actualizado
+          
+  /mantenimiento/ots/{folio}/repuestos:
+    post:
+      summary: Planificar repuesto
+      tags: [Mantenimiento - Repuestos]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepuestoPlanificadoCreate'
+      responses:
+        '201':
+          description: Repuesto planificado
+          
+  /mantenimiento/ots/{folio}/repuestos/{id}:
+    delete:
+      summary: Eliminar repuesto planificado
+      tags: [Mantenimiento - Repuestos]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Repuesto eliminado
+          
+  /mantenimiento/ots/{folio}/hh:
+    post:
+      summary: Registrar horas de técnico
+      tags: [Mantenimiento - Mano de Obra]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManosDeObraCreate'
+      responses:
+        '201':
+          description: HH registrada
+          
+  /mantenimiento/ots/{folio}/hh/{id}:
+    delete:
+      summary: Eliminar registro de HH
+      tags: [Mantenimiento - Mano de Obra]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: HH eliminada
+          
+  /mantenimiento/ots/{folio}/servicios:
+    post:
+      summary: Registrar servicio externo
+      tags: [Mantenimiento - Servicios Externos]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioExternoCreate'
+      responses:
+        '201':
+          description: Servicio registrado
+          
+  /mantenimiento/ots/{folio}/servicios/{id}:
+    delete:
+      summary: Eliminar servicio externo
+      tags: [Mantenimiento - Servicios Externos]
+      parameters:
+        - name: folio
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Servicio eliminado

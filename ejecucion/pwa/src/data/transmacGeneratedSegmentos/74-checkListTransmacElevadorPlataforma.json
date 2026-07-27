@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-16 ELEVADOR DE PLATAFORMA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 74,
+      "attributes": [
+        {
+          "type": "checkListTransmacElevadorPlataforma",
+          "label": "Elevador de plataforma",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

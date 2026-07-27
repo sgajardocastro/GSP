@@ -1,0 +1,299 @@
+```json
+[
+  {
+    "segmentos": [
+      {
+        "posicion": 31,
+        "label": "INGRESO ZANJA (PRUEBA)",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "ingresoZanja",
+            "label": "Registro de ingreso por acceso",
+            "nullable": false,
+            "maxAccess": 8,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 32,
+        "label": "CHEQUEO EXTENSION ELECTRICA",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "chequeoExtensionElectrica",
+            "label": "Lista chequeo extension electrica",
+            "nullable": false,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 33,
+        "label": "CHECK LIST EQUIPOS Y HERRAMIENTAS ELÉCTRICAS MONOFÁSICO - TRIFÁSICO",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkMonofasicoTrifasico",
+            "label": "Checklist monofasico/trifasico",
+            "nullable": false,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 34,
+        "label": "CHECK LIST VIBROPISON",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "vibropison",
+            "label": "Checklist vibropison",
+            "nullable": false,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 35,
+        "label": "CHECK LIST BETONERA",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "chequeoSeguridadBetonera",
+            "label": "Checklist seguridad betonera",
+            "nullable": false,
+            "body": [],
+            "estado": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 36,
+        "label": "CHECK LIST MARTILLO DEMOLEDOR",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkeoMartilloDemoledor",
+            "label": "Checklist martillo demoledor",
+            "nullable": false,
+            "body": [],
+            "estado": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 37,
+        "label": "CHECK LIST EQUIPOS ILUMINACION",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkEquiposIluminacion",
+            "label": "Checklist equipos iluminacion",
+            "nullable": false,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 38,
+        "label": "CHECK LIST DISPENSADOR DE AGUA",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkDispensadorAguaPotable",
+            "label": "Checklist dispensador agua potable",
+            "nullable": false,
+            "body": [],
+            "responsable": "",
+            "fecha": "",
+            "observacionGeneral": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 39,
+        "label": "CHECK LIST HERRAMIENTAS MANUALES",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListHerramientasManuales",
+            "label": "Checklist herramientas manuales",
+            "nullable": false,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 30,
+        "label": "CHECK LIST TECLES",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "checkListTecles",
+            "label": "DE CADENA",
+            "nullable": false,
+            "options": [
+              { "id": "si", "label": "SI" },
+              { "id": "no", "label": "NO" },
+              { "id": "n/a", "label": "N/A" }
+            ],
+            "checkBoby": [
+              {
+                "id": 1,
+                "label": "Existe deterioro visible en su estructura?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 2,
+                "label": "Los seguros de los ganchos se encuentran en buen estado y operativo?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 3,
+                "label": "La cadena esta en buen estado (sin fisuras, eslabones torcidos o corrosion)?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 4,
+                "label": "El mecanismo de accionamiento del equipo se encuentra operativo?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 5,
+                "label": "Se encuentra impresa la capacidad de carga del equipo?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 6,
+                "label": "Las partes moviles se encuentran libres de corrosion, tierra u otros elementos que dificulten su operacion?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 7,
+                "label": "El mecanismo de accionamiento se encuentra lubricado para un mejor rendimiento?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              },
+              {
+                "id": 8,
+                "label": "Se realiza prueba de levante en vacio antes de usar el equipo?",
+                "days": { "l": false, "ma": false, "mi": false, "j": false, "v": false },
+                "default": "",
+                "obs": "",
+                "nullable": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "posicion": 31,
+        "label": "INGRESO ZANJA (PRUEBA)",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "ingresoZanja",
+            "label": "Registro de ingreso por acceso",
+            "nullable": false,
+            "maxAccess": 8,
+            "body": []
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+        "segmentos": [
+      {
+        "posicion": 41,
+        "label": "MATRIZ OBS Y RECOMENDACIONES (PRUEBA)",
+        "touch": false,
+        "collapsible": false,
+        "attributes": [
+          {
+            "type": "matrizMAObsyRecomenaciones",
+            "label": "Observaciones y recomendaciones",
+            "nullable": true,
+            "maxFotos": 3,
+            "compression": 0.25,
+            "body": []
+          }
+        ]
+      }
+      ]
+  }
+]

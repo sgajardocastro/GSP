@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-91 CAMION PLUMA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 66,
+      "attributes": [
+        {
+          "type": "checkListTransmacCamionPluma",
+          "label": "Camion pluma",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,486 @@
+[
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SEG-006 REVISION EXTINTORES CALAMA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 60,
+        "attributes": [
+          {
+            "type": "checkListTransmacExtintoresCalama",
+            "label": "Revision extintores Calama",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SEG-006 REVISION EXTINTORES LOS ANDES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 61,
+        "attributes": [
+          {
+            "type": "checkListTransmacExtintoresLosAndes",
+            "label": "Revision extintores Los Andes",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 62,
+        "attributes": [
+          {
+            "type": "checkListTransmacFatigaSomnolencia",
+            "label": "Fatiga y somnolencia",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-95 HERRAMIENTAS NEUMATICAS",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 63,
+        "attributes": [
+          {
+            "type": "checkListTransmacHerramientasNeumaticas",
+            "label": "Herramientas neumaticas",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-93 MINI CARGADOR",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 64,
+        "attributes": [
+          {
+            "type": "checkListTransmacMiniCargador",
+            "label": "Mini cargador",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-92 CAMION ALJIBE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 65,
+        "attributes": [
+          {
+            "type": "checkListTransmacCamionAljibe",
+            "label": "Camion aljibe",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-91 CAMION PLUMA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 66,
+        "attributes": [
+          {
+            "type": "checkListTransmacCamionPluma",
+            "label": "Camion pluma",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-90 CARGADOR FRONTAL",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 67,
+        "attributes": [
+          {
+            "type": "checkListTransmacCargadorFrontal",
+            "label": "Cargador frontal",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-88 CAMION TOLVA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 68,
+        "attributes": [
+          {
+            "type": "checkListTransmacCamionTolva",
+            "label": "Camion tolva",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-87 BULLDOZER",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 69,
+        "attributes": [
+          {
+            "type": "checkListTransmacBulldozer",
+            "label": "Bulldozer",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-86 EXCAVADORA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 70,
+        "attributes": [
+          {
+            "type": "checkListTransmacExcavadora",
+            "label": "Excavadora",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-41 LLAVE DE IMPACTO NEUMATICA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 71,
+        "attributes": [
+          {
+            "type": "checkListTransmacLlaveImpactoNeumatica",
+            "label": "Llave de impacto neumatica",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-01 SOLDADORA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 72,
+        "attributes": [
+          {
+            "type": "checkListTransmacSoldadora",
+            "label": "Soldadora",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-03 ESMERIL ANGULAR",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 73,
+        "attributes": [
+          {
+            "type": "checkListTransmacEsmerilAngular",
+            "label": "Esmeril angular",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-16 ELEVADOR DE PLATAFORMA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 74,
+        "attributes": [
+          {
+            "type": "checkListTransmacElevadorPlataforma",
+            "label": "Elevador de plataforma",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-09 GANCHOS Y GRILLETES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 75,
+        "attributes": [
+          {
+            "type": "checkListTransmacGanchosGrilletes",
+            "label": "Ganchos y grilletes",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-10 CHECK LIST CADENAS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 76,
+        "attributes": [
+          {
+            "type": "checkListTransmacSpaCadenasAmarre",
+            "label": "Cadenas de amarre SPA",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-11 CHECK LIST ESLINGAS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 77,
+        "attributes": [
+          {
+            "type": "checkListTransmacSpaEslingasAmarre",
+            "label": "Eslingas de amarre SPA",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-14 ELEMENTOS DE IZAJE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 78,
+        "attributes": [
+          {
+            "type": "checkListTransmacElementosIzaje",
+            "label": "Elementos de izaje",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-96 EVALUACION TERRENO IZAJE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 79,
+        "attributes": [
+          {
+            "type": "checkListTransmacEvaluacionTerrenoIzaje",
+            "label": "Evaluacion terreno izaje",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-OP-SPA-001 EQUIPOS TRANSPORTE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 80,
+        "attributes": [
+          {
+            "type": "checkListTransmacSpaEquiposTransporte",
+            "label": "Equipos transporte SPA",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA SPA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 81,
+        "attributes": [
+          {
+            "type": "checkListTransmacFatigaSomnolenciaSpa",
+            "label": "Fatiga y somnolencia SPA",
+            "nullable": false,
+            "datos": {},
+            "fotos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  }
+]

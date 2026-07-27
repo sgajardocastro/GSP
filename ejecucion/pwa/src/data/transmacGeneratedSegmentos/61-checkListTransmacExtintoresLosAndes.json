@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "FOR-SEG-006 REVISION EXTINTORES LOS ANDES",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 61,
+      "attributes": [
+        {
+          "type": "checkListTransmacExtintoresLosAndes",
+          "label": "Revision extintores Los Andes",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1090 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_results {
+  id               Int       @id(map: "audit_results_pkey1") @default(autoincrement())
+  audit_id         Int?
+  phase_id         String?   @db.VarChar(50)
+  item_internal_id String    @db.VarChar(50)
+  category_name    String?   @db.VarChar(200)
+  question_text    String?
+  score            Decimal?  @db.Decimal(5, 2)
+  is_na            Boolean?  @default(false)
+  observation      String?
+  evidence_urls    String[]
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  audits           audits?   @relation(fields: [audit_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "audit_results_audit_id_fkey1")
+
+  @@index([audit_id], map: "idx_dev_audit_results_audit_id")
+}
+
+model auditory_types {
+  id          Int       @id(map: "auditory_types_pkey1") @default(autoincrement())
+  name        String    @unique(map: "auditory_types_name_key1") @db.VarChar(50)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  audits      audits[]
+}
+
+model audits {
+  id              Int             @id(map: "audits_pkey1") @default(autoincrement())
+  type_id         Int?
+  version         String?         @db.VarChar(20)
+  division        String?         @db.VarChar(100)
+  company_name    String?         @db.VarChar(200)
+  service_name    String?
+  contract_number String?         @db.VarChar(100)
+  admin_eecc      String?         @db.VarChar(200)
+  apr_eecc        String?         @db.VarChar(200)
+  audit_date      DateTime        @db.Date
+  status          String?         @default("Borrador") @db.VarChar(50)
+  total_score     Decimal?        @db.Decimal(5, 2)
+  created_by      String?         @db.VarChar(100)
+  created_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  audit_results   audit_results[]
+  auditory_types  auditory_types? @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "audits_type_id_fkey1")
+}
+
+model tcla_campanas {
+  id_campana               Int                        @id @default(autoincrement())
+  id_empresa               Int
+  nombre                   String                     @db.VarChar(255)
+  descripcion              String?
+  fecha_inicio             DateTime                   @db.Date
+  fecha_termino            DateTime                   @db.Date
+  estado                   String?                    @default("ABIERTA") @db.VarChar(20)
+  fecha_creacion           DateTime?                  @default(now()) @db.Timestamp(6)
+  tcla_encuesta_control    tcla_encuesta_control[]
+  tcla_encuesta_respuestas tcla_encuesta_respuestas[]
+}
+
+model tcla_encuesta_control {
+  token_uuid          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_campana          Int
+  id_colaborador      Int
+  nombre_participante String?       @db.VarChar(255)
+  correo_participante String?       @db.VarChar(255)
+  cargo               String?       @db.VarChar(100)
+  departamento        String?       @db.VarChar(100)
+  sucursal            String?       @db.VarChar(100)
+  id_departamento     Int?
+  id_sucursal         Int?
+  completado          Boolean?      @default(false)
+  fecha_generacion    DateTime?     @default(now()) @db.Timestamp(6)
+  fecha_completado    DateTime?     @db.Timestamp(6)
+  tcla_campanas       tcla_campanas @relation(fields: [id_campana], references: [id_campana], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tcla_encuesta_respuestas {
+  id                 Int           @id @default(autoincrement())
+  id_campana         Int
+  id_empresa         Int
+  departamento       String?       @db.VarChar(100)
+  sucursal           String?       @db.VarChar(100)
+  id_departamento    Int?
+  id_sucursal        Int?
+  respuestas_json    Json
+  comentario_abierto String?
+  fecha_registro     DateTime?     @default(dbgenerated("CURRENT_DATE")) @db.Date
+  tcla_campanas      tcla_campanas @relation(fields: [id_campana], references: [id_campana], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tcnx_historico {
+  id            Int       @id @default(autoincrement())
+  ccta          String?   @db.VarChar(100)
+  instalador    String?   @db.VarChar(100)
+  contratista   String?   @db.VarChar(100)
+  certificadora String?   @db.VarChar(100)
+  proyecto      String?   @db.VarChar(255)
+  ic_sap        String?   @db.VarChar(100)
+  orden         String?   @db.VarChar(100)
+  gio           String?   @db.VarChar(100)
+  superv        String?   @db.VarChar(100)
+  gc            String?   @db.VarChar(100)
+  gex           String?   @db.VarChar(100)
+  fecha         DateTime? @db.Date
+  direccion     String?   @db.VarChar(255)
+  comuna        String?   @db.VarChar(100)
+  cliente       String?   @db.VarChar(255)
+  fono_1        String?   @db.VarChar(50)
+  fono_2        String?   @db.VarChar(50)
+  req_emp       String?   @db.VarChar(100)
+  observacion   String?
+  estado        String?   @db.VarChar(100)
+  obs           String?
+  dpto_casa     String?   @db.VarChar(50)
+  mes           Int?
+  area          String?   @db.VarChar(100)
+  tipo          String?   @db.VarChar(100)
+  no_ejecuta_x  String?   @db.VarChar(100)
+  fecha_carga   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tequ_documentacion_equipo {
+  id_acreditacion        Int       @id @default(autoincrement())
+  id_equipo              Int
+  registro_acreditacion  String
+  fecha_ult_calibracion  DateTime? @db.Date
+  fecha_prox_calibracion DateTime? @db.Date
+  documentos_adjuntos    Json?     @default("[]")
+  fotografias            Json?     @default("[]")
+  observacion_registro   String?
+  id_usuario_registro    Int
+  fecha_registro         DateTime? @default(now()) @db.Timestamp(6)
+  json_data              Json?     @default("{}")
+  estado                 String?   @default("Abierto") @db.VarChar(10)
+  id_usuario_responsable Int?
+
+  @@index([id_equipo], map: "idx_tequ_doc_idequipo")
+  @@index([fecha_prox_calibracion], map: "idx_tequ_doc_vencimiento")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tequ_equipo {
+  id_equipo           Int       @id @default(autoincrement())
+  marca               String    @db.VarChar(100)
+  modelo              String    @db.VarChar(100)
+  numero_serie        String    @db.VarChar(100)
+  tipo_equipo         String    @db.VarChar(50)
+  json_data           Json?     @default("{}")
+  fecha_registro      DateTime? @default(now()) @db.Timestamp(6)
+  id_usuario_creacion Int
+  fotos_ids           Json?     @default("[]")
+  observaciones       String?
+  estado              String?   @db.VarChar(10)
+}
+
+model test_persistence {
+  id Int @id @default(autoincrement())
+}
+
+model tfes_signatures {
+  id_fes               Int       @id(map: "fes_signatures_pkey") @default(autoincrement())
+  id_flow_stp          Int?
+  id_flow              Int?
+  id_user              Int?
+  id_doc               Int?
+  doc_version          Int?      @default(1)
+  hash_pdf             String?
+  hash_algoritmo       String?   @default("SHA-256") @db.VarChar(20)
+  fecha_firma          DateTime? @default(now()) @db.Timestamp(6)
+  ip_firma             String?   @db.VarChar(50)
+  user_agent           String?
+  geo_latitude         Decimal?  @db.Decimal(10, 6)
+  geo_longitude        Decimal?  @db.Decimal(10, 6)
+  codigo_validacion    String    @db.Uuid
+  estado_firma         String?   @default("Firmado") @db.VarChar(20)
+  observaciones        String?
+  aprueba_rechaza      String?   @db.VarChar(50)
+  id_motivo_rechazo    Int?
+  metodo_autenticacion String?   @db.VarChar(50)
+  tsa_token            Bytes?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tflw_fes_colectiva {
+  id_flow            Int
+  id_flow_step       Int
+  id_equipo_proyecto Int
+  id_usuario         Int
+  estado_fes         Boolean   @default(false)
+  fecha_fes          DateTime? @default(now()) @db.Timestamp(6)
+
+  @@id([id_flow, id_flow_step, id_equipo_proyecto, id_usuario], map: "pk_tflw_fes_colectiva")
+}
+
+model tflw_flow_log {
+  id_flow_log          Int       @id @default(autoincrement())
+  id_flow              Int
+  id_user              Int
+  id_rol               Int
+  flow_tmpl_step_orden Int
+  flow_tmpl_step_fase  String    @db.VarChar(50)
+  flow_step_event      String    @db.VarChar(50)
+  fecha_event          DateTime? @default(now()) @db.Timestamp(6)
+  latitud              Decimal?  @db.Decimal(10, 6)
+  longitud             Decimal?  @db.Decimal(10, 6)
+  id_doc_in            Int
+  id_doc_out           Int?
+}
+
+model tflw_flow_steps {
+  id_flow_stp          Int       @id @unique(map: "tflw_flow_steps_unique") @default(autoincrement())
+  id_flow              Int
+  id_flow_tmpl_step    Int
+  flow_tmpl_step_orden Int
+  flow_tmpl_step_fase  String?   @db.VarChar(50)
+  id_user              Int?
+  id_rol               Int
+  flow_step_event      String    @db.VarChar(50)
+  flow_step_obs        String?
+  fecha_event          DateTime? @default(now()) @db.Timestamp(6)
+  latitud              Decimal?  @db.Decimal(10, 6)
+  longitud             Decimal?  @db.Decimal(10, 6)
+  id_doc_in            Int?
+  id_doc_out           Int?
+  estado               String?   @db.VarChar
+  id_motivo_rechazo    Int?
+  id_fes               Int?
+  flag_flow_fin        Boolean?
+  flag_equipo          Boolean?  @default(false)
+}
+
+model tflw_flows {
+  id_flow        Int       @id @unique(map: "tflw_flows_unique") @default(autoincrement())
+  id_survey      Int
+  id_flow_tmpl   Int
+  flow_tmpl_fase String    @db.VarChar(50)
+  fecha_creacion DateTime? @default(now()) @db.Timestamp(6)
+  fecha_inicio   DateTime? @db.Timestamp(6)
+  fecha_cierre   DateTime? @db.Timestamp(6)
+}
+
+model tflw_motivo_rechazo {
+  id_motivo_rechazo Int       @id(map: "tflw_motivo_pkey") @default(autoincrement())
+  id_empresa        Int?
+  fecha_creacion    DateTime? @db.Date
+  motivo_rechazo    String    @db.VarChar(50)
+}
+
+model tflw_template_steps {
+  id_flow_tmpl_step    Int      @id @default(autoincrement())
+  id_flow_tmpl         Int
+  flow_tmpl_step_orden Int
+  flow_tmpl_step_fase  String   @db.VarChar(50)
+  flow_tmpl_step_name  String?  @db.VarChar(150)
+  obligatorio          Boolean? @default(false)
+  id_rol               Int
+  flag_flow_fin        Boolean?
+  flag_equipo          Boolean? @default(false)
+}
+
+model tflw_templates {
+  id_flow_tmpl     Int     @id @default(autoincrement())
+  flow_tmpl_name   String  @db.VarChar(150)
+  id_empresa       Int?
+  flow_tmpl_desc   String?
+  flow_tmpl_estado String  @db.Char(1)
+}
+
+model tfmg_archivo {
+  id_archivo          Int       @id @default(autoincrement())
+  id_empresa          Int?
+  id_empresa_cliente  Int?
+  id_proyecto         Int?
+  tipo_documento      String?   @db.VarChar(255)
+  id_survey           Int?
+  id_doc              Int?
+  observacion         String?
+  version             Int?
+  fecha_creacion      DateTime? @default(now()) @db.Timestamp(6)
+  id_usuario_creacion Int?
+  json_data           Json?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tfmg_cnx_load {
+  id_load                    Int       @id(map: "pk_tfmg_cnx_load") @default(autoincrement())
+  id_doc                     Int
+  id_user                    Int
+  fecha_carga                DateTime? @default(now()) @db.Timestamp(6)
+  fecha_proyectada_ejecucion DateTime  @db.Date
+  cant_total_excel           Int
+  cant_cargados              Int?      @default(0)
+  cant_rechazados            Int?      @default(0)
+  flag_recarga               Boolean?  @default(false)
+  geoloc_lat                 Decimal?  @db.Decimal(10, 8)
+  geoloc_lng                 Decimal?  @db.Decimal(11, 8)
+  estado_carga               String?   @db.VarChar(20)
+  observaciones              String?
+}
+
+model tfmg_file {
+  id_doc           Int       @id @default(autoincrement())
+  tipo_doc         String?   @db.VarChar(50)
+  fecha_creacion   DateTime? @default(now()) @db.Timestamp(6)
+  mimetype         String?   @db.VarChar(100)
+  name_doc_orig    String?   @db.VarChar(255)
+  name_doc_interno String?   @db.VarChar(255)
+  path_doc         String?   @db.VarChar(500)
+  id_proceso       Int?
+  id_user          Int?
+  estado           String?   @db.VarChar(10)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tntf_notfqueue {
+  id_notification BigInt    @id @default(autoincrement())
+  id_user_target  Int?
+  id_template     Int?
+  json_data       Json?
+  channels        Json
+  estado          String    @default("PENDING")
+  attempts        Int       @default(0)
+  last_error      String?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  processed_at    DateTime? @db.Timestamptz(6)
+}
+
+model tntf_templates {
+  id_template  Int      @id @default(autoincrement())
+  code         String
+  channel_code String?
+  version      Int      @default(1)
+  is_active    Boolean  @default(true)
+  subject      String?
+  body_md      String
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([code, channel_code, version])
+}
+
+model tpar_area {
+  id_area    Int       @id @default(autoincrement())
+  name_area  String
+  estado     String?   @db.VarChar(1)
+  id_empresa Int
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tpar_empresas {
+  id_empresa     Int       @id @default(autoincrement())
+  name_empresa   String?   @db.VarChar(45)
+  id_pais        Int?
+  rut_empresa    String?   @db.VarChar(12)
+  razon_social   String?   @db.VarChar(50)
+  giro           String?   @db.VarChar(100)
+  direccion      String?   @db.VarChar(200)
+  fono_contacto  String?   @db.VarChar(20)
+  fecha_creacion DateTime? @db.Date
+  logo_empresa   String?   @db.VarChar
+  flag_externo   Boolean?
+
+  @@ignore
+}
+
+model tpar_paises {
+  id_pais        Int       @id @default(autoincrement())
+  name_pais      String?   @db.VarChar(45)
+  fecha_creacion DateTime? @db.Date
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tpry_equipo_miembro {
+  id_equipo_miembro       Int       @id @default(autoincrement())
+  id_equipo_proyecto      Int
+  id_user                 Int
+  fecha_ingreso           DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  fecha_salida            DateTime? @db.Date
+  activo                  Boolean?  @default(true)
+  fecha_creacion          DateTime? @default(now()) @db.Timestamp(6)
+  fecha_actualizacion     DateTime? @default(now()) @db.Timestamp(6)
+  id_usuario_creacion     Int?
+  id_usuario_modificacion Int?
+
+  @@unique([id_equipo_proyecto, id_user], map: "uq_miembro_unico")
+  @@index([id_equipo_proyecto], map: "idx_eqp_miembro_eqp")
+  @@index([id_user], map: "idx_eqp_miembro_usr")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tpry_equipo_proyecto {
+  id_equipo_proyecto  Int       @id @default(autoincrement())
+  id_proyecto         Int
+  nombre_equipo       String    @db.VarChar(200)
+  descripcion_equipo  String?   @db.VarChar(1000)
+  id_usuario_lider    Int?
+  estado_equipo       String?   @default("ACTIVO") @db.VarChar(30)
+  fecha_creacion      DateTime? @default(now()) @db.Timestamp(6)
+  id_usuario_creacion Int?
+  json_field          Json?
+
+  @@unique([id_proyecto, nombre_equipo], map: "uq_equipo_por_proyecto")
+  @@index([id_proyecto], map: "idx_eqp_pry_idproy")
+  @@index([id_usuario_lider], map: "idx_eqp_pry_lider")
+}
+
+model tpry_estado {
+  id_proyecto_estado Int       @id @default(autoincrement())
+  nombre_estado      String?   @db.VarChar(45)
+  fecha_creacion     DateTime? @db.Date
+  fecha_modificacion DateTime? @db.Date
+  estado_estado      String?   @db.VarChar(2)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tpry_gantt {
+  id_gantt                Int       @id @default(autoincrement())
+  id_proyecto             Int
+  version                 Int       @default(0)
+  estado                  String    @default("creada") @db.VarChar(50)
+  observacion             String?   @db.VarChar(4000)
+  id_doc                  Int?
+  fecha_ini_plan          DateTime? @db.Date
+  fecha_fin_plan          DateTime? @db.Date
+  fecha_ini_real          DateTime? @db.Date
+  fecha_fin_real          DateTime? @db.Date
+  avance_plan             Int?      @default(0)
+  avance_real             Int?      @default(0)
+  id_usuario_creacion     Int
+  fecha_creacion          DateTime  @default(now()) @db.Timestamptz(6)
+  id_usuario_modificacion Int?
+  fecha_modificacion      DateTime? @db.Timestamptz(6)
+
+  @@unique([id_proyecto, version], map: "uq_proyecto_version")
+  @@index([id_proyecto], map: "idx_gantt_proyecto")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tpry_gantt_log {
+  id_gantt_log      Int      @id @default(autoincrement())
+  id_gantt          Int
+  id_proyecto       Int
+  evento            String   @db.VarChar(50)
+  fecha_evento      DateTime @default(now()) @db.Timestamptz(6)
+  id_usuario_evento Int
+  detalles          String?
+
+  @@index([id_gantt], map: "idx_gantt_log_gantt")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tpry_gantt_tarea {
+  id_tarea             Int       @id @default(autoincrement())
+  id_gantt             Int
+  id_proyecto          Int
+  id_tarea_padre       Int?
+  nombre_tarea         String    @db.VarChar(500)
+  fecha_ini_plan       DateTime? @db.Date
+  fecha_fin_plan       DateTime? @db.Date
+  fecha_ini_real       DateTime? @db.Date
+  fecha_fin_real       DateTime? @db.Date
+  avance_plan          Int?      @default(0)
+  avance_real          Int?      @default(0)
+  nivel                Int       @default(0)
+  unidad               String?   @db.VarChar(255)
+  ponderado            Decimal?  @db.Decimal
+  cantidad_objetivo    Decimal?  @db.Decimal
+  cantidad_avance      Decimal?  @db.Decimal
+  cantidad_avance_pct  Decimal?  @db.Decimal
+  avance_ponderado_pct Decimal?  @db.Decimal
+  json_data            Json?     @db.Json
+  plan_real            String?   @db.VarChar(10)
+  id_tarea_predesesora Int?
+  id_survey            Int?
+
+  @@index([id_gantt], map: "idx_gantt_tarea_gantt")
+  @@index([id_tarea_padre], map: "idx_gantt_tarea_padre")
+}
+
+model tpry_gantt_tarea_v2 {
+  id_tarea             Int       @id @default(autoincrement())
+  id_gantt             Int?
+  id_proyecto          Int?
+  id_tarea_padre       Int?
+  id_tarea_predesesora Int?
+  nombre_tarea         String?
+  nivel                Int?
+  cantidad_objetivo    Decimal?  @default(0) @db.Decimal
+  cantidad_avance      Decimal?  @default(0) @db.Decimal
+  cantidad_avance_pct  Decimal?  @default(0) @db.Decimal
+  avance_ponderado_pct Decimal?  @default(0) @db.Decimal
+  ponderado            Decimal?  @default(0) @db.Decimal
+  fecha_ini_plan       DateTime? @db.Date
+  fecha_fin_plan       DateTime? @db.Date
+  fecha_ini_real       DateTime? @db.Date
+  fecha_fin_real       DateTime? @db.Date
+  json_data            Json?
+  id_survey            Int?
+  unidad               String?
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tpry_gantt_tarea_v2_bak {
+  id_tarea             Int?
+  id_gantt             Int?
+  id_proyecto          Int?
+  id_tarea_padre       Int?
+  id_tarea_predesesora Int?
+  nombre_tarea         String?
+  nivel                Int?
+  cantidad_objetivo    Decimal?  @db.Decimal
+  cantidad_avance      Decimal?  @db.Decimal
+  cantidad_avance_pct  Decimal?  @db.Decimal
+  avance_ponderado_pct Decimal?  @db.Decimal
+  ponderado            Decimal?  @db.Decimal
+  fecha_ini_plan       DateTime? @db.Date
+  fecha_fin_plan       DateTime? @db.Date
+  fecha_ini_real       DateTime? @db.Date
+  fecha_fin_real       DateTime? @db.Date
+  json_data            Json?
+  id_survey            Int?
+  unidad               String?
+  created_at           DateTime? @db.Timestamp(6)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tpry_proyecto {
+  id_proyecto              Int       @id @default(autoincrement())
+  id_proyecto_padre        Int?
+  nombre_proyecto          String?   @db.VarChar(500)
+  objetivo_proyecto        String?   @db.VarChar(4000)
+  observacion_proyecto     String?   @db.VarChar(4000)
+  fecha_plan_ini           DateTime? @db.Date
+  fecha_plan_fin           DateTime? @db.Date
+  fecha_real_ini           DateTime? @db.Timestamp(6)
+  fecha_real_fin           DateTime? @db.Timestamp(6)
+  fecha_creacion           DateTime? @db.Date
+  fecha_modificacion       DateTime? @db.Timestamp(6)
+  duracion_plan            Int?
+  duracion_real            Int?
+  id_usuario_jefe_proyecto Int?
+  id_usuario_creacion      Int?
+  id_usuario_modificacion  Int?
+  id_usuario_cliente       Int?
+  id_proyecto_tipo         Int?
+  id_proyecto_estado       Int?
+  id_empresa               Int?
+  id_empresa_cliente       Int?
+  centro_costo             String?   @db.VarChar(50)
+  codi_proyecto            String?   @db.VarChar(50)
+  avance_real_proyecto     Int?
+  avance_plan_proyecto     Int?
+  json_field               Json?
+
+  @@ignore
+}
+
+model tpry_tipo {
+  id_proyecto_tipo   Int       @id @default(autoincrement())
+  descripcion_tipo   String?   @db.VarChar(45)
+  fecha_creacion     DateTime? @db.Date
+  fecha_modificacion DateTime? @db.Date
+  nombre_tipo        String?   @db.VarChar(45)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tsec_cargos {
+  id_cargo     Int    @id(map: "pk_tsec_cargos") @default(autoincrement())
+  id_empresa   Int
+  nombre_cargo String @db.VarChar(100)
+}
+
+model tsec_documentacion_persona {
+  id_acreditacion_per Int       @id @default(autoincrement())
+  id_user_sujeto      Int
+  tipo_documento      String    @db.VarChar(100)
+  fecha_emision       DateTime  @db.Date
+  fecha_vencimiento   DateTime  @db.Date
+  adjuntos_ids        Json?     @default("[]")
+  id_usuario_valida   Int
+  fecha_registro      DateTime? @default(now()) @db.Timestamp(6)
+  json_data           Json?     @default("{}")
+  estado              String?   @default("Abierto") @db.VarChar(10)
+
+  @@index([fecha_vencimiento], map: "idx_tsec_doc_per_vencimiento")
+}
+
+model tsec_modules {
+  id_module   Int     @id @default(autoincrement())
+  name_module String  @unique @db.VarChar(100)
+  description String?
+}
+
+model tsec_perm {
+  id_perm        Int       @id @default(autoincrement())
+  id_module      Int
+  code_perm      String    @db.VarChar(100)
+  description    String?
+  tipo_perm      String?   @db.VarChar(20)
+  fecha_creacion DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model tsec_rol_perm {
+  id_rol                Int
+  id_perm               Int
+  fecha_asignacion      DateTime? @default(now()) @db.Timestamp(6)
+  id_usuario_asignacion Int?
+
+  @@id([id_rol, id_perm])
+}
+
+model tsec_roles {
+  id_rol              Int       @id @default(autoincrement())
+  name_rol            String    @unique @db.VarChar(100)
+  description         String?
+  activo              Boolean?  @default(true)
+  fecha_creacion      DateTime? @default(now()) @db.Timestamp(6)
+  fecha_actualizacion DateTime? @default(now()) @db.Timestamp(6)
+  id_empresa          Int       @default(autoincrement())
+  flag_externo        Boolean?  @default(false)
+}
+
+model tsec_user_roles {
+  id_user Int
+  id_rol  Int
+
+  @@id([id_user, id_rol])
+}
+
+model tsec_users {
+  id_user             Int       @id @default(autoincrement())
+  email               String?   @db.VarChar(255)
+  password_hash       String?
+  name_frst           String?   @db.VarChar(100)
+  name_sec            String?   @db.VarChar(100)
+  apellido_pat        String?   @db.VarChar(100)
+  apellido_mat        String?   @db.VarChar(100)
+  rut                 String?   @db.VarChar(10)
+  id_empresa          Int?
+  movil               String?   @db.VarChar(12)
+  activo              Boolean?
+  id_user_creacion    Int?
+  fecha_creacion      DateTime? @db.Timestamp(6)
+  fecha_actualizacion DateTime? @db.Timestamp(6)
+  codi_user           String?   @db.VarChar
+  pass_hash_fes       String?   @db.VarChar(64)
+  flag_proc_enrol     Boolean?
+  email_alternativo   String?   @db.VarChar(255)
+  json_data           Json?     @db.Json
+}
+
+model tsrv_actividades {
+  id_actividad             Int     @id @default(autoincrement())
+  id_personalizado         Int
+  tipo_actividad           String  @db.VarChar(100)
+  periodicidad             String  @db.VarChar(50)
+  inspeccion               String? @db.VarChar(255)
+  meta_cantidad            Int
+  fechas_seleccionadas     Json?
+  actividades_programadas  Int?    @default(0)
+  actividades_verificacion Int?    @default(0)
+  actividades_terminadas   Int?    @default(0)
+  actividades_atrasadas    Int?    @default(0)
+  id_area                  Int
+  id_tipo_srv              Int
+  id_template              Int
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tsrv_periodos {
+  periodo            String   @id @db.VarChar(100)
+  fecha_ini          DateTime @db.Date
+  fecha_fin          DateTime @db.Date
+  estado             String   @default("Abierto") @db.VarChar(10)
+  id_usuario_creador Int?
+  fecha_creacion     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([fecha_ini], map: "idx_tsrv_periodos_fecha_ini")
+}
+
+model tsrv_personalizados {
+  id_personalizado         Int       @id @default(autoincrement())
+  id_empresa               Int
+  id_empresa_cliente       Int
+  id_proyecto              Int
+  periodo                  String    @db.VarChar(20)
+  id_rol                   Int
+  cantidad_usuarios        Int
+  fecha_inicio_plan        DateTime? @db.Date
+  fecha_fin_plan           DateTime? @db.Date
+  fecha_inicio_real        DateTime? @db.Date
+  fecha_fin_real           DateTime? @db.Date
+  porcentaje_avance        Int?      @default(0)
+  cantidad_actividades     Int?      @default(0)
+  actividades_programadas  Int?      @default(0)
+  actividades_verificacion Int?      @default(0)
+  actividades_terminadas   Int?      @default(0)
+  actividades_atrasadas    Int?      @default(0)
+  id_user_creacion         Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tsrv_personalizados_bak_20260108_172351 {
+  id_personalizado         Int?
+  id_empresa               Int?
+  id_empresa_cliente       Int?
+  id_proyecto              Int?
+  periodo                  String?   @db.VarChar(20)
+  id_rol                   Int?
+  cantidad_usuarios        Int?
+  fecha_inicio_plan        DateTime? @db.Date
+  fecha_fin_plan           DateTime? @db.Date
+  fecha_inicio_real        DateTime? @db.Date
+  fecha_fin_real           DateTime? @db.Date
+  porcentaje_avance        Int?
+  cantidad_actividades     Int?
+  actividades_programadas  Int?
+  actividades_verificacion Int?
+  actividades_terminadas   Int?
+  actividades_atrasadas    Int?
+  id_user_creacion         Int?
+
+  @@ignore
+}
+
+model tsrv_personalizados_usuarios {
+  id_personalizado_usuario Int @id @default(autoincrement())
+  id_personalizado         Int
+  id_usuario               Int
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tsrv_personalizados_usuarios_bak_20260108_172351 {
+  id_personalizado_usuario Int?
+  id_personalizado         Int?
+  id_usuario               Int?
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tsrv_survey {
+  id_survey          Int       @id @default(autoincrement())
+  id_tipo_srv        Int
+  id_template        Int
+  id_user            Int?
+  id_user_creacion   Int?
+  id_empresa_cliente Int
+  estado_srv         String?   @default("Creado") @db.VarChar(70)
+  header_seed        Json?
+  body_seed          Json?
+  approval_seed      Json?
+  header_exec        Json?
+  body_exec          Json?
+  approval_exec      Json?
+  created            DateTime? @default(now()) @db.Timestamp(6)
+  fecha_plan_ini     DateTime? @db.Date
+  fecha_plan_fin     DateTime? @db.Date
+  fecha_real_ini     DateTime? @db.Timestamp(6)
+  fecha_real_fin     DateTime? @db.Timestamp(6)
+  fecha_upload       DateTime? @db.Timestamp(6)
+  latitud            String?   @db.VarChar
+  longitud           String?   @db.VarChar
+  id_proyecto        Int?
+  fecha_ejec_fin     DateTime? @db.Timestamp(6)
+  fecha_verif_fin    DateTime? @db.Timestamp(6)
+  id_flow_tmpl       Int?
+  id_flow            Int?
+  id_personalizado   Int?
+  id_survey_padre    Int?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tsrv_templates {
+  id_template        Int       @id @default(autoincrement())
+  name_template_srv  String    @db.VarChar(70)
+  codi_template_srv  String    @db.VarChar(70)
+  desc_template_srv  String    @db.VarChar(70)
+  id_tipo_srv        Int
+  version            String    @db.VarChar(5)
+  estado             String?   @default("A") @db.VarChar(1)
+  id_empresa_cliente Int?
+  header_seed        Json?
+  body_seed          Json?
+  approval_seed      Json?
+  created            DateTime? @default(now()) @db.Date
+  name_srv           String?   @db.VarChar(64)
+  codi_srv           String?   @db.VarChar(50)
+  description        String?   @db.VarChar(50)
+  id_flow_tmpl       Int?
+  flag_registro      Boolean?  @default(false)
+  flag_autonomo      Boolean?  @default(false)
+  id_proyecto        Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tsrv_templates_backup_20260202 {
+  id_template        Int?
+  name_template_srv  String?   @db.VarChar(70)
+  codi_template_srv  String?   @db.VarChar(70)
+  desc_template_srv  String?   @db.VarChar(70)
+  id_tipo_srv        Int?
+  version            String?   @db.VarChar(5)
+  estado             String?   @db.VarChar(1)
+  id_empresa_cliente Int?
+  header_seed        Json?
+  body_seed          Json?
+  approval_seed      Json?
+  created            DateTime? @db.Date
+  name_srv           String?   @db.VarChar(64)
+  codi_srv           String?   @db.VarChar(50)
+  description        String?   @db.VarChar(50)
+  id_flow_tmpl       Int?
+  flag_registro      Boolean?
+
+  @@ignore
+}
+
+model tsrv_tipo_template {
+  id_tipo_srv        Int       @id @default(autoincrement())
+  name_tipo_srv      String    @db.VarChar(70)
+  codi_tipo_srv      String?   @db.VarChar(70)
+  id_area            Int?
+  id_empresa         Int
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  flag_personalizado Boolean?  @default(false)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tsst_accidentabilidad {
+  id_accidentabilidad    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_informe             String        @db.Uuid
+  nombre_trabajador      String        @db.VarChar(255)
+  rut                    String?       @db.VarChar(20)
+  sexo                   String?       @db.Char(1)
+  cargo                  String?       @db.VarChar(150)
+  empresa_trabajador     String?       @db.VarChar(200)
+  fecha_suceso           DateTime      @db.Timestamptz(6)
+  tipo_suceso            String?       @db.VarChar(100)
+  calificacion           String?       @db.VarChar(50)
+  fecha_calificacion     DateTime?     @db.Date
+  zona_afectada          String?       @db.VarChar(150)
+  fecha_ingreso_mutual   DateTime?     @db.Date
+  fecha_alta_mutual      DateTime?     @db.Date
+  stp_ctp                String?       @db.VarChar(50)
+  dias_perdidos          Int?          @default(0)
+  tarea_realizada        String?
+  lugar_especifico       String?
+  descripcion_hechos     String?
+  causa_raiz             String?
+  medidas_correctivas    String?
+  area                   String?       @db.VarChar(100)
+  obra_fase              String?       @db.VarChar(100)
+  jefatura               String?       @db.VarChar(255)
+  administrador_contrato String?       @db.VarChar(255)
+  fecha_registro         DateTime?     @default(now()) @db.Timestamptz(6)
+  tsst_informes          tsst_informes @relation(fields: [id_informe], references: [id_informe], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model tsst_audit_results {
+  id               Int          @id(map: "audit_results_pkey") @default(autoincrement())
+  audit_id         Int?
+  phase_id         String?      @db.VarChar(50)
+  item_internal_id String       @db.VarChar(50)
+  category_name    String?      @db.VarChar(200)
+  question_text    String?
+  score            Decimal?     @db.Decimal(5, 2)
+  is_na            Boolean?     @default(false)
+  observation      String?
+  evidence_urls    String[]
+  created_at       DateTime?    @default(now()) @db.Timestamptz(6)
+  tsst_audits      tsst_audits? @relation(fields: [audit_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "audit_results_audit_id_fkey")
+
+  @@index([audit_id], map: "idx_audit_results_audit_id")
+}
+
+model tsst_auditory_types {
+  id          Int           @id(map: "auditory_types_pkey") @default(autoincrement())
+  name        String        @unique(map: "auditory_types_name_key") @db.VarChar(50)
+  description String?
+  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
+  tsst_audits tsst_audits[]
+}
+
+model tsst_audits {
+  id                  Int                  @id(map: "audits_pkey") @default(autoincrement())
+  type_id             Int?
+  version             String?              @db.VarChar(20)
+  division            String?              @db.VarChar(100)
+  company_name        String?              @db.VarChar(200)
+  service_name        String?
+  contract_number     String?              @db.VarChar(100)
+  admin_eecc          String?              @db.VarChar(200)
+  apr_eecc            String?              @db.VarChar(200)
+  audit_date          DateTime             @db.Date
+  status              String?              @default("Borrador") @db.VarChar(50)
+  total_score         Decimal?             @db.Decimal(5, 2)
+  created_by          String?              @db.VarChar(100)
+  created_at          DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?            @default(now()) @db.Timestamptz(6)
+  periodo             String?              @db.VarChar(50)
+  url_pdf             String?
+  data_json           Json?
+  fecha_finalizacion  DateTime?            @db.Timestamptz(6)
+  tsst_audit_results  tsst_audit_results[]
+  tsst_auditory_types tsst_auditory_types? @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "audits_type_id_fkey")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tsst_incidentes {
+  id_incidente        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_informe          String        @db.Uuid
+  fecha_incidente     DateTime      @db.Date
+  hora_incidente      DateTime?     @db.Time(6)
+  empresa_trabajador  String?       @db.VarChar(200)
+  nombre_trabajador   String?       @db.VarChar(255)
+  rut                 String?       @db.VarChar(20)
+  sexo                String?       @db.Char(1)
+  cargo               String?       @db.VarChar(150)
+  lugar_incidente     String?
+  tarea_desarrollada  String?
+  descripcion_hechos  String?
+  causa_raiz          String?
+  medidas_correctivas String?
+  area                String?       @db.VarChar(100)
+  obra                String?       @db.VarChar(100)
+  jefatura_directa    String?       @db.VarChar(255)
+  administrador_obra  String?       @db.VarChar(255)
+  fecha_registro      DateTime?     @default(now()) @db.Timestamptz(6)
+  tsst_informes       tsst_informes @relation(fields: [id_informe], references: [id_informe], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model tsst_informes {
+  id_informe                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_empresa                Int
+  id_proyecto               Int
+  id_periodo                String                  @db.VarChar(20)
+  tipo_informe              String?                 @default("SST") @db.VarChar(50)
+  estado                    String?                 @default("borrador") @db.VarChar(20)
+  fecha_creacion            DateTime?               @default(now()) @db.Timestamptz(6)
+  fecha_finalizacion        DateTime?               @db.Timestamptz(6)
+  creado_por                String?                 @db.Uuid
+  promedio_trabajadores_dia Int?                    @default(0)
+  horas_trabajadas_dia      Decimal?                @default(9) @db.Decimal(5, 2)
+  horas_hombre_periodo      Decimal?                @default(0) @db.Decimal(12, 2)
+  url_pdf                   String?
+  data_json                 Json?                   @default("{}")
+  tsst_accidentabilidad     tsst_accidentabilidad[]
+  tsst_incidentes           tsst_incidentes[]
+
+  @@unique([id_proyecto, id_periodo, tipo_informe], map: "uq_tsst_proyecto_periodo_tipo")
+}
+
+model tsst_instrumentos {
+  id_instrumento         Int                      @id(map: "tss_instrumentos_pkey") @default(autoincrement())
+  id_empresa_duena       Int?
+  id_user_creacion       Int?
+  nombre                 String                   @db.VarChar(100)
+  descripcion            String?
+  activo                 Boolean?                 @default(true)
+  created_at             DateTime?                @default(now()) @db.Timestamp(6)
+  tsst_pautas            tsst_pautas[]
+  tsst_protocolos_minsal tsst_protocolos_minsal[]
+}
+
+model tsst_pautas {
+  id_pauta          Int                @id(map: "tss_pautas_pkey") @default(autoincrement())
+  id_instrumento    Int?
+  categoria         String?            @db.VarChar(100)
+  pregunta          String
+  es_critico        Boolean?           @default(false)
+  orden             Int?
+  activo            Boolean?           @default(true)
+  tsst_instrumentos tsst_instrumentos? @relation(fields: [id_instrumento], references: [id_instrumento], onDelete: NoAction, onUpdate: NoAction, map: "tss_pautas_id_instrumento_fkey")
+}
+
+model tsst_protocolos_minsal {
+  id_protocolo      Int                @id(map: "tss_protocolos_minsal_pkey") @default(autoincrement())
+  id_instrumento    Int?
+  codigo_guia       String?            @db.VarChar(20)
+  nombre_protocolo  String             @db.VarChar(100)
+  created_at        DateTime?          @default(now()) @db.Timestamp(6)
+  tsst_instrumentos tsst_instrumentos? @relation(fields: [id_instrumento], references: [id_instrumento], onDelete: NoAction, onUpdate: NoAction, map: "tss_protocolos_minsal_id_instrumento_fkey")
+}
+
+model tsst_registro_mensual {
+  id_registro         Int       @id @default(autoincrement())
+  periodo_anio        Int
+  periodo_mes         Int
+  id_proyecto         Int
+  dotacion_promedio   Int?      @default(0)
+  horas_hombre        Int?      @default(0)
+  dias_perdidos       Int?      @default(0)
+  dias_arrastre       Int?      @default(0)
+  accidentes_stp      Int?      @default(0)
+  accidentes_ctp      Int?      @default(0)
+  accidentes_trayecto Int?      @default(0)
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([periodo_anio, periodo_mes, id_proyecto])
+}
+
+model tpry_proyecto {
+  id_proyecto               Int                  @id @default(autoincrement())
+  id_empresa                Int                  @default(9)
+  id_cotizacion             Int?
+  id_cliente                Int?
+  codigo_maestro            String               @db.VarChar(50)
+  nombre_proyecto           String               @db.VarChar(255)
+  estado_proyecto           String?              @default("EN_PLANIFICACION") @db.VarChar(30)
+  condiciones_pensiones_json Json?               @default("{}")
+  creado_por                Int?
+  fecha_creacion            DateTime?            @default(now()) @db.Timestamp(6)
+  tpry_orden_trabajo        tpry_orden_trabajo[]
+}
+
+model tpry_orden_trabajo {
+  id_ot                     Int                     @id @default(autoincrement())
+  id_empresa                Int                     @default(9)
+  id_proyecto               Int
+  codigo_maestro            String                  @db.VarChar(50)
+  codigo_ot                 String                  @unique @db.VarChar(50)
+  
+  fecha_plan_desde          DateTime                @db.Date
+  fecha_plan_hasta          DateTime                @db.Date
+  hora_salida_plan          DateTime?               @db.Time(6)
+  hora_llegada_plan         DateTime?               @db.Time(6)
+  
+  fecha_real_desde          DateTime?               @db.Date
+  fecha_real_hasta          DateTime?               @db.Date
+  hora_salida_real          DateTime?               @db.Time(6)
+  hora_llegada_obra_real    DateTime?               @db.Time(6)
+  hora_inicio_faena_real    DateTime?               @db.Time(6)
+  hora_liberacion_real      DateTime?               @db.Time(6)
+  hora_retorno_base_real    DateTime?               @db.Time(6)
+  
+  aparejos_solicitados_json Json?                   @default("{}")
+  aparejos_asignados_json   Json?                   @default("{}")
+  
+  estado_ot                 String?                 @default("PROGRAMADA") @db.VarChar(30)
+  observaciones_operaciones String?
+  creado_por                Int?
+  fecha_creacion            DateTime?               @default(now()) @db.Timestamp(6)
+  
+  tpry_proyecto             tpry_proyecto           @relation(fields: [id_proyecto], references: [id_proyecto], onDelete: Cascade)
+  tpry_recurso_asignado     tpry_recurso_asignado[]
+}
+
+model tpry_recurso_asignado {
+  id_recurso_asignado Int                @id @default(autoincrement())
+  id_ot               Int
+  tipo_recurso        String             @db.VarChar(20)
+  id_equipo           Int?
+  id_personal         Int?
+  rol_desempenado     String?            @db.VarChar(50)
+  fecha_hora_desde    DateTime           @db.Timestamp(6)
+  fecha_hora_hasta    DateTime           @db.Timestamp(6)
+  estado_recurso      String?            @default("ASIGNADO") @db.VarChar(30)
+  
+  tpry_orden_trabajo  tpry_orden_trabajo @relation(fields: [id_ot], references: [id_ot], onDelete: Cascade)
+}
+
+model tcot_historial_envio {
+  id_envio      Int       @id @default(autoincrement())
+  id_cotizacion Int
+  destinatarios String
+  copias        String?
+  remitente     String    @default("notificaciones.gsp@leanglobal.cl") @db.VarChar(150)
+  fecha_hora    DateTime? @default(now()) @db.Timestamp(6)
+  enviado_por   Int?
+  estado_envio  String?   @default("ENVIADO") @db.VarChar(50)
+}
+

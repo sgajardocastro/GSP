@@ -1,0 +1,348 @@
+const fs = require('fs');
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+//const dbStoreProcedure = require('../dbStoreProcedure');
+const archivoModel = require("../models/archivoModel");
+const archivoM = new archivoModel();
+
+const baseDir = "/u05/LeanDocs/";
+
+module.exports = {
+  postArchivo: async (req, res) => {
+    try {
+      // ✅ NUEVO: si viene ya generado (desde exportarController)
+      if (req.filePath) {
+        console.log("✅ postArchivo: recibiendo filePath generado:", req.filePath);
+
+        const {
+          tipo_doc,
+          mimetype = 'application/pdf',
+          name_doc_orig = path.basename(req.filePath),
+          name_doc_interno = '',
+          path_doc,
+          id_user,
+          estado
+        } = req.body;
+
+        const filename = path.basename(req.filePath);
+
+        // Guardar en la base (ajusta a tu modelo)
+        const archivoCreado = await archivoM.insertarTfmgFile(
+          tipo_doc,
+          mimetype,
+          name_doc_orig,
+          name_doc_interno,
+          filename,
+          path_doc,
+          id_user,
+          estado
+        );
+
+        return res
+          .status(201)
+          .json({ message: "Archivo creado correctamente (filePath)", archivo: archivoCreado });
+      }
+
+      // ✅ ELSE: flujo normal de subir archivo con req.files
+      if (!req.files || !req.files.archivo) {
+        return res.status(400).send({
+          status: false,
+          message: 'No se recibió ningún archivo.'
+        });
+      }
+
+      const archivo = req.files.archivo;
+      const extension = path.extname(archivo.name);
+      const filename = `${uuidv4()}${extension}`;
+      const filepath = path.join(baseDir, filename);
+
+      await archivo.mv(filepath);
+
+      const {
+        tipo_doc,
+        mimetype,
+        name_doc_orig,
+        name_doc_interno,
+        path_doc,
+        id_user,
+        estado
+      } = req.body;
+
+      const archivoCreado = await archivoM.insertarTfmgFile(
+        tipo_doc,
+        mimetype,
+        name_doc_orig,
+        name_doc_interno,
+        filename,
+        path_doc,
+        id_user,
+        estado
+      );
+
+      res
+        .status(201)
+        .json({ message: "Archivo creado correctamente", archivo: archivoCreado });
+
+    } catch (err) {
+      console.error("Error en postArchivo:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+  postArchivoImagen: async (req, res) => {
+    try {
+
+      if (!req.files || !req.files.archivo) {
+        return res.status(400).send({
+          status: false,
+          message: 'No se recibió ningún archivo.'
+        });
+      }
+
+      const {
+        tipo_doc,
+        mimetype,
+        name_doc_orig,
+        name_doc_interno,
+        path_doc,
+        id_user,
+        estado
+      } = req.body;
+
+      console.log('path_doc:', path_doc);
+
+      const archivo = req.files.archivo;
+      const extension = path.extname(archivo.name);
+      const filename = `${uuidv4()}${extension}`;
+      const filepath = path.join(path_doc, filename);
+
+      await archivo.mv(filepath);
+      
+      const archivoCreado = await archivoM.insertarTfmgFile(
+        tipo_doc,
+        mimetype,
+        name_doc_orig,
+        filename,
+        path_doc,
+        id_user,
+        estado
+      );
+
+      res
+        .status(201)
+        .json({ message: "Archivo creado correctamente", server_uploaded_at: new Date().toISOString(), archivo: archivoCreado});
+    } catch (err) {
+      console.error("Error en postArchivo:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // NUEVA FUNCIÓN
+  guardarArchivoDesdeRuta: async (data) => {
+    try {
+      const {
+        filePath,
+        tipo_doc,
+        mimetype,
+        name_doc_orig,
+        name_doc_interno,
+        path_doc,
+        id_user,
+        estado
+      } = data;
+
+      if (!filePath) {
+        throw new Error('No se recibió ningún archivo.');
+      }
+
+      const extension = path.extname(filePath) || '.pdf';
+      const filename = `${uuidv4()}${extension}`;
+      const destino = path.join(path_doc, filename);
+
+      //console.log(`✅ Copiando archivo desde ${filePath} a ${destino}`);
+
+      // ✅ Copiar el archivo al nuevo destino
+      fs.copyFileSync(filePath, destino);
+
+      console.log('✅ Archivo copiado correctamente');
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`✅ Archivo original eliminado: ${filePath}`);
+      } else {
+        console.warn(`⚠️ Archivo original no encontrado para eliminar: ${filePath}`);
+      }
+
+      // Guardar en la base de datos
+      const archivoCreado = await archivoM.insertarTfmgFile(
+        tipo_doc,
+        mimetype,
+        path.basename(filePath),
+        filename,        
+        path_doc,
+        id_user,
+        estado
+      );
+
+      console.log('✅ Archivo guardado correctamente en la base desde ruta');
+      return archivoCreado;
+
+    } catch (error) {
+      console.error('❌ Error en guardarArchivoDesdeRuta:', error);
+      throw error;
+    }
+  },
+
+  getArchivo: async (req, res) => {
+    try {
+      // destructura los dos params
+      console.log('getArchivo: obteniendo archivo', req.params.nombre);
+
+      const { subcarpeta, nombre } = req.params;
+
+      // arma el path dinámicamente
+      const filePath = path.join(baseDir, subcarpeta, nombre);
+
+      console.log(`✅ Obteniendo archivo desde: ${filePath}`);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Archivo no encontrado' });
+      }
+
+      res.sendFile(filePath);
+    } catch (err) {
+      console.error("Error al obtener archivo:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  postCnxLoad: async (req, res) => {
+    try {
+      const {
+        id_doc,
+        id_user,
+        fecha_proyectada_ejecucion,
+        cant_total_excel,
+        cant_cargados = 0,
+        cant_rechazados = 0,
+        flag_recarga = false,
+        geoloc_lat = null,
+        geoloc_lng = null,
+        estado_carga = null,
+        observaciones = null
+      } = req.body;
+
+      // ✅ Validaciones mínimas (según tu DDL)
+      if (!id_doc) {
+        return res.status(400).json({ status: false, message: "Falta id_doc" });
+      }
+      if (!id_user) {
+        return res.status(400).json({ status: false, message: "Falta id_user" });
+      }
+      if (!fecha_proyectada_ejecucion) {
+        return res.status(400).json({ status: false, message: "Falta fecha_proyectada_ejecucion (date)" });
+      }
+      if (cant_total_excel === undefined || cant_total_excel === null || cant_total_excel === "") {
+        return res.status(400).json({ status: false, message: "Falta cant_total_excel" });
+      }
+
+      const idDocNum = Number(id_doc);
+      const idUserNum = Number(id_user);
+
+      if (!Number.isFinite(idDocNum) || idDocNum <= 0) {
+        return res.status(400).json({ status: false, message: "id_doc inválido" });
+      }
+      if (!Number.isFinite(idUserNum) || idUserNum <= 0) {
+        return res.status(400).json({ status: false, message: "id_user inválido" });
+      }
+
+      const totalExcelNum = Number(cant_total_excel);
+      const cargadosNum = Number(cant_cargados);
+      const rechazadosNum = Number(cant_rechazados);
+
+      if (!Number.isFinite(totalExcelNum) || totalExcelNum < 0) {
+        return res.status(400).json({ status: false, message: "cant_total_excel inválido" });
+      }
+      if (!Number.isFinite(cargadosNum) || cargadosNum < 0) {
+        return res.status(400).json({ status: false, message: "cant_cargados inválido" });
+      }
+      if (!Number.isFinite(rechazadosNum) || rechazadosNum < 0) {
+        return res.status(400).json({ status: false, message: "cant_rechazados inválido" });
+      }
+      if (cargadosNum + rechazadosNum > totalExcelNum) {
+        return res.status(400).json({
+          status: false,
+          message: "Inconsistencia: cant_cargados + cant_rechazados no puede ser mayor que cant_total_excel"
+        });
+      }
+
+      // ✅ date simple (YYYY-MM-DD). No te rompo si viene ISO completo, tomo la parte date.
+      const fechaProy = String(fecha_proyectada_ejecucion).slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaProy)) {
+        return res.status(400).json({
+          status: false,
+          message: "fecha_proyectada_ejecucion inválida. Formato esperado: YYYY-MM-DD"
+        });
+      }
+
+      // ✅ Normalización booleana
+      const flagRecargaBool =
+        flag_recarga === true ||
+        flag_recarga === "true" ||
+        flag_recarga === 1 ||
+        flag_recarga === "1";
+
+      // ✅ Normalización geoloc (permitir null)
+      const latNum = geoloc_lat === null || geoloc_lat === "" ? null : Number(geoloc_lat);
+      const lngNum = geoloc_lng === null || geoloc_lng === "" ? null : Number(geoloc_lng);
+
+      if (latNum !== null && !Number.isFinite(latNum)) {
+        return res.status(400).json({ status: false, message: "geoloc_lat inválido" });
+      }
+      if (lngNum !== null && !Number.isFinite(lngNum)) {
+        return res.status(400).json({ status: false, message: "geoloc_lng inválido" });
+      }
+
+      // ✅ Inserta
+      const loadCreado = await archivoM.insertarTfmgCnxLoad({
+        id_doc: idDocNum,
+        id_user: idUserNum,
+        fecha_proyectada_ejecucion: fechaProy,
+        cant_total_excel: totalExcelNum,
+        cant_cargados: cargadosNum,
+        cant_rechazados: rechazadosNum,
+        flag_recarga: flagRecargaBool,
+        geoloc_lat: latNum,
+        geoloc_lng: lngNum,
+        estado_carga,
+        observaciones
+      });
+
+      return res.status(201).json({
+        status: true,
+        message: "Carga registrada correctamente",
+        server_created_at: new Date().toISOString(),
+        load: loadCreado
+      });
+
+    } catch (err) {
+      console.error("Error en postCnxLoad:", err);
+      return res.status(500).json({ status: false, error: err.message });
+    }
+  },
+
+  getArchivoById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) return res.status(400).json({ error: 'Falta ID' });
+
+      const archivo = await archivoM.getArchivoById(id);
+      if (!archivo) return res.status(404).json({ error: 'Archivo no encontrado' });
+
+      res.status(200).json({ data: archivo });
+    } catch (err) {
+      console.error("Error en getArchivoById:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+};

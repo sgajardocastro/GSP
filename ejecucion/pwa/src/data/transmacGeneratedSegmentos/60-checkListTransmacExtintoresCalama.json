@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "FOR-SEG-006 REVISION EXTINTORES CALAMA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 60,
+      "attributes": [
+        {
+          "type": "checkListTransmacExtintoresCalama",
+          "label": "Revision extintores Calama",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

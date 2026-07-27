@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-95 HERRAMIENTAS NEUMATICAS",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 63,
+      "attributes": [
+        {
+          "type": "checkListTransmacHerramientasNeumaticas",
+          "label": "Herramientas neumaticas",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

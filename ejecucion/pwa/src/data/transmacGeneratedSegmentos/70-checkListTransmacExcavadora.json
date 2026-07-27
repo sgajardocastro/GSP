@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-86 EXCAVADORA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 70,
+      "attributes": [
+        {
+          "type": "checkListTransmacExcavadora",
+          "label": "Excavadora",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

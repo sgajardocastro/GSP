@@ -1,0 +1,467 @@
+[
+  {
+    "uri": "/ejemplo",
+    "tipo": "normal",
+    "query": "SELECT 'Hola desde SQL' AS mensaje",
+    "where": false
+  },
+  {
+    "uri": "/ejemplo2",
+    "tipo": "normal",
+    "query": "SELECT * FROM tsec_users",
+    "where": false
+  },
+  {
+    "uri": "/prueba",
+    "tipo": "normal",
+    "query": "SELECT * FROM prueba WHERE id = 1"
+  },
+  {
+    "nombre": "/leandglobal/prueba2",
+    "uri": "/prueba2",
+    "comentario": "Llenado de la vista/tabla de Stock",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": "select 1 valor",
+    "datos": "select * from prueba where 1=1 AND fecha_desde >= TO_DATE('$fecha_desde', 'yyyy-mm-dd') AND fecha_hasta <= TO_DATE('$fecha_hasta', 'yyyy-mm-dd') $secatrib $teratrib $in"
+  },
+  {
+    "uri": "/leanglobal/archivos",
+    "tipo": "normal",
+    "query": "SELECT * FROM tfmg_file",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/procesosSurvey",
+    "tipo": "normal",
+    "query": "select ts.id_survey, ar.name_area, te.name_template_srv , te.codi_template_srv , te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, ts.id_user, ts.estado_srv from sch_leangsp.tsrv_survey ts join sch_leangsp.tsrv_templates te on ts.id_template = te.id_template join sch_leangsp.tsrv_tipo_template tt on ts.id_tipo_srv = tt.id_tipo_srv join sch_leangsp.tpar_area ar on tt.id_area = ar.id_area join sch_leangsp.tpar_empresas em on ts.id_empresa_cliente = em.id_empresa left join sch_leangsp.tpry_proyecto py on ts.id_proyecto = py.id_proyecto order by ts.id_survey",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/procesosSurveyDetail",
+    "tipo": "normal",
+    "query": "select ts.id_survey, ar.name_area, ts.fecha_ejec_fin, tt.name_tipo_srv, tt.codi_tipo_srv , te.name_template_srv , te.codi_template_srv , te.desc_template_srv, te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, to_char(ts.fecha_plan_fin, 'yyyy-mm-dd') fecha_plan_fin, to_char(ts.fecha_real_ini, 'yyyy-mm-dd') fecha_real_ini, to_char(ts.fecha_real_fin, 'yyyy-mm-dd') fecha_real_fin, ts.id_user, ts.estado_srv, ts.latitud, ts.longitud, ts.header_exec, ts.body_exec, ts.approval_exec from tsrv_survey ts, tsrv_templates te, tsrv_tipo_template tt, tpar_area ar, tpar_empresas em, tpry_proyecto py where ts.id_template = te.id_template and ts.id_tipo_srv = tt.id_tipo_srv and tt.id_area = ar.id_area and ts.id_empresa_cliente = em.id_empresa and ts.id_proyecto = py.id_proyecto",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerAreas",
+    "tipo": "normal",
+    "query": "select a.*, (select count(*) from tsrv_templates t join tsrv_tipo_template tt on t.id_tipo_srv = tt.id_tipo_srv where tt.id_area = a.id_area) as count_templates from tpar_area a where a.estado = 'A'",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerTipoTemplate",
+    "tipo": "normal",
+    "query": "select tt.*, (select count(*) from tsrv_templates t where t.id_tipo_srv = tt.id_tipo_srv) as count_templates from tsrv_tipo_template tt",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerTemplates",
+    "tipo": "normal",
+    "query": "select t.*, f.flow_tmpl_name, f.flow_tmpl_desc from tsrv_templates t left join tflw_templates f on t.id_flow_tmpl = f.id_flow_tmpl",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerEmpresas",
+    "tipo": "normal",
+    "query": "select * from tpar_empresas",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerProyectos",
+    "tipo": "normal",
+    "query": "select * from tpry_proyecto",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerAreas",
+    "tipo": "normal",
+    "query": "select id_area, name_area, id_empresa from tpar_area",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerFamilias",
+    "tipo": "normal",
+    "query": "select t.id_tipo_srv, t.name_tipo_srv, t.id_area, a.name_area, t.id_empresa, t.flag_personalizado from tsrv_tipo_template t, tpar_area a where a.id_area  = t.id_area",
+    "where": true
+  },
+  {
+    "nombre": "/leandglobal/procesosSurveyV3",
+    "uri": "/leanglobal/procesosSurveyV3",
+    "comentario": "Otener Surveys con filtros",
+    "tipo": "indicador",
+    "filtro": "ts.id_empresa_cliente",
+    "secatrib": "ts.id_proyecto",
+    "in": "ciudad",
+    "indicador": "select 1 valor from tsrv_survey ts JOIN tsrv_tipo_template tt ON ts.id_tipo_srv = tt.id_tipo_srv",
+    "cumplimiento": "select 1 valor from tsrv_survey ts JOIN tsrv_tipo_template tt ON ts.id_tipo_srv = tt.id_tipo_srv",
+    "datos": "SELECT ts.id_survey, ts.id_flow, ar.id_area, ar.name_area, tt.name_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, ts.id_empresa_cliente, ts.id_proyecto, em.name_empresa AS name_empresa_cliente, ts.id_user, ts.longitud, ts.latitud, COALESCE(us.name_frst || ' ' || us.name_sec || ' ' || us.apellido_pat, 'SIN USUARIO') AS nombre_user, TO_CHAR(ts.fecha_plan_ini, 'YYYY-MM-DD') AS fecha_plan_ini, TO_CHAR(ts.fecha_plan_fin, 'YYYY-MM-DD') AS fecha_plan_fin, TO_CHAR(ts.fecha_real_ini, 'YYYY-MM-DD HH24:MI') AS fecha_real_ini, TO_CHAR(ts.fecha_real_fin, 'YYYY-MM-DD HH24:MI') AS fecha_real_fin, TO_CHAR(ts.fecha_ejec_fin, 'YYYY-MM-DD HH24:MI') AS fecha_ejec_fin, TO_CHAR(ts.fecha_verif_fin, 'YYYY-MM-DD HH24:MI') AS fecha_verif_fin, ts.estado_srv, CASE WHEN ts.fecha_real_fin IS NULL THEN CASE WHEN ts.fecha_plan_fin < CURRENT_DATE THEN 'Rojo' WHEN ts.fecha_plan_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '1 day' THEN 'Amarillo' WHEN ts.fecha_plan_fin > CURRENT_DATE + INTERVAL '1 day' THEN 'Azul' ELSE 'Desconocido' END ELSE 'Verde' END AS estado_color, fl.name_doc_interno AS id_doc FROM tsrv_survey ts JOIN tsrv_templates te ON ts.id_template = te.id_template JOIN tsrv_tipo_template tt ON ts.id_tipo_srv = tt.id_tipo_srv JOIN tpar_area ar ON tt.id_area = ar.id_area JOIN tpar_empresas em ON ts.id_empresa_cliente = em.id_empresa JOIN tpry_proyecto py ON ts.id_proyecto = py.id_proyecto LEFT JOIN tsec_users us ON ts.id_user = us.id_user LEFT JOIN vw_flow_last_doc d ON ts.id_flow = d.id_flow LEFT JOIN tfmg_file fl ON d.max_id_doc = fl.id_doc WHERE DATE(ts.fecha_plan_ini) >= DATE('$fecha_desde') AND DATE(ts.fecha_plan_fin) <= DATE('$fecha_hasta') $filtro $secatrib ORDER BY ts.id_survey",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerUsuarios",
+    "tipo": "normal",
+    "query": "select id_user, email, name_frst, name_sec, apellido_pat, apellido_mat, rut, id_empresa, movil, activo, id_user_creacion, fecha_creacion, fecha_actualizacion, codi_user, COALESCE(name_frst, '') || ' ' || COALESCE(name_sec, '') || ' ' || COALESCE(apellido_pat, '') AS nombre_user, pass_hash_fes, flag_proc_enrol, json_data FROM tsec_users",
+    "where": true
+  },
+  {
+    "nombre": "/leandglobal/flujosAprobacion",
+    "uri": "/leanglobal/flujosAprobacion",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": "select 1 valor",
+    "datos": "SELECT ts.id_survey, fl.id_flow, ar.name_area, tt.name_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, ts.id_empresa_cliente, ts.id_proyecto, em.name_empresa as name_empresa_cliente, ts.id_user, ts.longitud, ts.latitud, us.name_frst || ' ' || us.name_sec || ' ' || us.apellido_pat AS nombre_user, TO_CHAR(ts.fecha_plan_ini, 'yyyy-mm-dd') as fecha_plan_ini, TO_CHAR(ts.fecha_plan_fin, 'yyyy-mm-dd') as fecha_plan_fin, TO_CHAR(ts.fecha_real_ini, 'yyyy-mm-dd hh24:mi') as fecha_real_ini, TO_CHAR(ts.fecha_real_fin, 'yyyy-mm-dd hh24:mi') as fecha_real_fin, TO_CHAR(ts.fecha_ejec_fin, 'yyyy-mm-dd hh24:mi') as fecha_ejec_fin, TO_CHAR(ts.fecha_verif_fin, 'yyyy-mm-dd hh24:mi') as fecha_verif_fin, COALESCE(avance.pct_avance, 0) AS pct_avance, ts.estado_srv, CASE WHEN ts.fecha_real_fin IS NULL THEN CASE WHEN ts.fecha_plan_fin < CURRENT_DATE THEN 'Rojo' WHEN ts.fecha_plan_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '1 day' THEN 'Amarillo' WHEN ts.fecha_plan_fin > CURRENT_DATE + INTERVAL '1 day' THEN 'Azul' ELSE 'Desconocido' END ELSE 'Verde' END AS estado_color FROM tsrv_survey ts JOIN tsrv_templates te ON ts.id_template = te.id_template JOIN tsrv_tipo_template tt ON ts.id_tipo_srv = tt.id_tipo_srv JOIN tpar_area ar ON tt.id_area = ar.id_area JOIN tpar_empresas em ON ts.id_empresa_cliente = em.id_empresa JOIN tpry_proyecto py ON ts.id_proyecto = py.id_proyecto JOIN tsec_users us ON ts.id_user = us.id_user JOIN tflw_flows fl ON ts.id_survey = fl.id_survey LEFT JOIN ( SELECT id_flow, CASE WHEN COUNT(*) = 0 THEN 0 ELSE ROUND( 100.0 * SUM( CASE WHEN UPPER(estado) = 'APROBADO' THEN 1 ELSE 0 END ) / COUNT(*) , 2) END AS pct_avance FROM tflw_flow_steps GROUP BY id_flow ) avance ON avance.id_flow = fl.id_flow WHERE DATE(ts.fecha_plan_ini) >= DATE('$fecha_desde') AND DATE(ts.fecha_plan_fin) <= DATE('$fecha_hasta') ORDER BY ts.id_survey",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/flujosAprobacionSteps",
+    "tipo": "normal",
+    "query": "select fws.id_flow, fws.id_flow_stp, fws.flow_tmpl_step_orden, fws.flow_tmpl_step_fase, flag_equipo, fws.id_user, us.name_frst || ' ' || us.name_sec || ' ' || us.apellido_pat as nombre_user, fws.id_rol, fws.flow_step_obs, fws.fecha_event, fws.id_doc_in, fl1.name_doc_orig name_doc_orig_in, fl1.name_doc_interno name_doc_interno_in, fws.id_doc_out, fl2.name_doc_orig name_doc_orig_out, fl2.name_doc_interno name_doc_interno_out, fws.estado, fws.id_motivo_rechazo, rl.name_rol, mr.motivo_rechazo from tflw_flow_steps fws left join tsec_users us on fws.id_user = us.id_user left join tsec_roles rl on fws.id_rol = rl.id_rol left join tflw_motivo_rechazo mr on fws.id_motivo_rechazo = mr.id_motivo_rechazo left join tfmg_file fl1 on fws.id_doc_in = fl1.id_doc left join tfmg_file fl2 on fws.id_doc_out = fl2.id_doc order by flow_tmpl_step_orden",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtnerMotivosRechazo",
+    "tipo": "normal",
+    "query": "select id_motivo_rechazo, id_empresa, motivo_rechazo from tflw_motivo_rechazo",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerRoles",
+    "tipo": "normal",
+    "query": "select id_rol, name_rol, description from tsec_roles",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerUsuariosRoles",
+    "tipo": "normal",
+    "query": "select id_user, id_rol from tsec_user_roles",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/general/protocolosPlanificados",
+    "uri": "/calidad/dashboard/general/protocolosPlanificados",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib ",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/general/protocolosAprobados",
+    "uri": "/calidad/dashboard/general/protocolosAprobados",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.estado_srv = 'APROBADO' and (v.fecha_real_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_real_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib ",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.estado_srv = 'APROBADO' and  (v.fecha_real_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_real_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/general/protocolosRechazados",
+    "uri": "/calidad/dashboard/general/protocolosRechazados",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.estado_srv = 'RECHAZADO' and (v.fecha_real_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_real_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.estado_srv = 'RECHAZADO' and  (v.fecha_real_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_real_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/general/protocolosPendientes",
+    "uri": "/calidad/dashboard/general/protocolosPendientes",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.estado_srv not in ('APROBADO','RECHAZADO') and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib ",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.estado_srv not in ('APROBADO','RECHAZADO') and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/movimientoTierras",
+    "uri": "/calidad/dashboard/familias/movimientoTierras",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Movimiento de tierras' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Movimiento de tierras' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/areaMecanica",
+    "uri": "/calidad/dashboard/familias/areaMecanica",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Area Mecánica' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Area Mecánica' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/cierreReconstruccion",
+    "uri": "/calidad/dashboard/familias/cierreReconstruccion",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Cierre y Restitución' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Cierre y Restitución' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/ensayosPruebas",
+    "uri": "/calidad/dashboard/familias/ensayosPruebas",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Ensayos y Pruebas' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Ensayos y Pruebas' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/crucesTuneles",
+    "uri": "/calidad/dashboard/familias/crucesTuneles",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Cruces y Túneles' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Cruces y Túneles' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/conexiones",
+    "uri": "/calidad/dashboard/familias/conexiones",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Conexiones y Reparaciones' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Conexiones y Reparaciones' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/senalizacion",
+    "uri": "/calidad/dashboard/familias/senalizacion",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Señalización y Control' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Señalización y Control' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/calidad/dashboard/familias/obras",
+    "uri": "/calidad/dashboard/familias/obras",
+    "comentario": "",
+    "tipo": "indicador",
+    "filtro": "v.id_empresa_cliente",
+    "secatrib": "v.id_proyecto",
+    "indicador": "SELECT COUNT(*) AS valor FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Obras Civiles' and (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_ini::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Obras Civiles' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') $filtro $secatrib GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/flow/general/cantidadFlujos",
+    "uri": "/flow/general/cantidadFlujos",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT COUNT(*) AS valor FROM tflw_flows WHERE (fecha_inicio :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_cierre :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT (v.fecha_real_fin::timestamp)::date AS serie, COUNT(*) AS cantidad FROM vw_procesosSurvey v WHERE v.name_tipo_srv = 'Obras Civiles' and  (v.fecha_plan_ini::timestamp)::date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (v.fecha_plan_fin::timestamp)::date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD') GROUP BY serie ORDER BY serie",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/medioAmbiente",
+    "uri": "/ma/kpi/medioAmbiente",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(desempeno_num) AS valor FROM vw_ma_kpi_medio_ambiente WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT desempeno_num AS valor, fecha_real_ini AS fecha FROM vw_ma_kpi_medio_ambiente WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/medioAmbienteDocumentos",
+    "uri": "/ma/kpi/medioAmbienteDocumentos",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT * FROM vw_ma_kpi_medio_ambiente_documentos WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT * FROM vw_ma_kpi_medio_ambiente_documentos WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAm",
+    "uri": "/ma/kpi/evalDesemAm",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(promedio) AS valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, promedio AS valor, mx_impactos_ma valor1, mx_legal valor2, politica valor3, plan_riesgos valor4, gest_amb valor5, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAmMxImpMA",
+    "uri": "/ma/kpi/evalDesemAmMxImpMA",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(mx_impactos_ma) AS valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, promedio AS valor, mx_impactos_ma valor1, mx_legal valor2, politica valor3, plan_riesgos valor4, gest_amb valor5, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAmLegal",
+    "uri": "/ma/kpi/evalDesemAmLegal",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(mx_legal) AS valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, promedio AS valor, mx_impactos_ma valor1, mx_legal valor2, politica valor3, plan_riesgos valor4, gest_amb valor5, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAmPolitica",
+    "uri": "/ma/kpi/evalDesemAmPolitica",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(politica) valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, politica valor, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAmRiesgos",
+    "uri": "/ma/kpi/evalDesemAmRiesgos",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(plan_riesgos) AS valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, plan_riesgos valor, gest_amb valor5, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "nombre": "/ma/kpi/evalDesemAmGestion",
+    "uri": "/ma/kpi/evalDesemAmGestion",
+    "comentario": "",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": " SELECT avg(gest_amb) valor FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "datos": " SELECT id_survey, gest_amb valor, fecha_real_ini, fecha_plan_ini, nombre, codigo, ejecutor, id_doc, estado_srv FROM vw_ma_kpi_eval_desem_ambiental WHERE (fecha_real_ini :: timestamp) :: date >= TO_DATE('$fecha_desde', 'YYYY-MM-DD') AND (fecha_real_ini :: timestamp) :: date <= TO_DATE('$fecha_hasta', 'YYYY-MM-DD')",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerNortificaciones",
+    "tipo": "normal",
+    "query": "select id_notification, id_user_target, json_data, channels from tntf_notfqueue where estado = 'PENDING'",
+    "where": true
+  },
+  {
+    "nombre": "/leanglobal/seguridad/obtenerPersonalizados",
+    "uri": "/leanglobal/seguridad/obtenerPersonalizados",
+    "comentario": "Consulta de Personalizados",
+    "tipo": "indicador",
+    "secatrib": "id_empresa",
+    "teratrib": "id_proyecto",
+    "indicador": "select 1 valor",
+    "datos": "SELECT p.id_personalizado, p.id_empresa_cliente, cli.name_empresa AS nombre_cliente, p.id_proyecto, pr.nombre_proyecto, COALESCE(us.name_frst || ' ' || us.name_sec || ' ' || us.apellido_pat, 'SIN USUARIO') AS nombre_user, p.periodo, p.id_rol, r.name_rol, p.cantidad_usuarios, p.fecha_inicio_plan, p.fecha_fin_plan, p.fecha_inicio_real, p.fecha_fin_real, p.porcentaje_avance, p.cantidad_actividades, p.actividades_programadas, p.actividades_terminadas, p.actividades_atrasadas, p.actividades_verificacion FROM tsrv_personalizados p JOIN tpar_empresas cli ON p.id_empresa_cliente = cli.id_empresa JOIN tpry_proyecto pr ON p.id_proyecto = pr.id_proyecto JOIN tsec_roles r ON p.id_rol = r.id_rol LEFT JOIN tsec_users us ON p.id_user_creacion = us.id_user WHERE p.fecha_inicio_plan >= TO_DATE('$fecha_desde', 'yyyy-mm-dd') AND p.fecha_fin_plan <= TO_DATE('$fecha_hasta', 'yyyy-mm-dd') $secatrib $teratrib $in "
+  },
+  {
+    "uri": "/leanglobal/obtenerPeriodos",
+    "tipo": "normal",
+    "query": "select periodo, fecha_ini, fecha_fin, estado, id_usuario_creador, fecha_creacion from tsrv_periodos",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerActividadesSurvey",
+    "tipo": "normal",
+    "query": "SELECT ts.id_personalizado, ts.id_survey, te.name_template_srv, te.codi_template_srv, ts.id_user, COALESCE( NULLIF(CONCAT_WS(' ', us.name_frst, us.name_sec, us.apellido_pat), ''), 'SIN USUARIO' ) AS nombre_user, TO_CHAR(ts.fecha_plan_ini, 'YYYY-MM-DD') AS fecha_plan_ini, TO_CHAR(ts.fecha_real_fin, 'YYYY-MM-DD HH24:MI') AS fecha_real_fin, TO_CHAR(ts.fecha_verif_fin, 'YYYY-MM-DD HH24:MI') AS fecha_verif_fin, ts.estado_srv, CASE WHEN ts.fecha_real_fin IS NULL THEN CASE WHEN ts.fecha_plan_fin < CURRENT_DATE THEN 'Rojo' WHEN ts.fecha_plan_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '1 day' THEN 'Amarillo' WHEN ts.fecha_plan_fin > CURRENT_DATE + INTERVAL '1 day' THEN 'Azul' ELSE 'Desconocido' END ELSE 'Verde' END AS estado_color, fl.name_doc_interno AS id_doc FROM tsrv_survey ts JOIN tsrv_templates te ON ts.id_template = te.id_template JOIN tsec_users us ON ts.id_user = us.id_user LEFT JOIN vw_flow_last_doc d ON ts.id_flow = d.id_flow LEFT JOIN tfmg_file fl ON d.max_id_doc = fl.id_doc WHERE ts.id_personalizado IS NOT NULL",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerEquiposProyectos",
+    "tipo": "normal",
+    "query": "SELECT * from tpry_equipo_proyecto",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerEquiposProyectosMiembros",
+    "tipo": "normal",
+    "query": "SELECT e.id_proyecto, e.id_equipo_proyecto, e.nombre_equipo, e.descripcion_equipo, e.state_equipo as estado_equipo, e.id_usuario_lider, m.id_user, COALESCE( NULLIF(CONCAT_WS(' ', u.name_frst, u.name_sec, u.apellido_pat), ''), 'SIN USUARIO' ) nombre_user, m.activo from tpry_equipo_proyecto e LEFT JOIN tpry_equipo_miembro m ON e.id_equipo_proyecto = m.id_equipo_proyecto AND m.activo = true LEFT JOIN tsec_users u ON m.id_user = u.id_user",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerEquiposProyectosMiembrosFES",
+    "tipo": "normal",
+    "query": "SELECT e.id_proyecto, e.id_equipo_proyecto, fes.id_usuario, COALESCE( NULLIF(CONCAT_WS(' ', u.name_frst, u.name_sec, u.apellido_pat), ''), 'SIN USUARIO' ) nombre_user, fes.id_flow, fes.id_flow_step, fes.estado_fes, fes.fecha_fes from tpry_equipo_proyecto e, tflw_fes_colectiva fes, tsec_users u where e.id_equipo_proyecto = fes.id_equipo_proyecto and fes.id_usuario = u.id_user",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerGantts",
+    "tipo": "normal",
+    "query": "SELECT g.* from tpry_gantt g",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerGanttsTareas",
+    "tipo": "normal",
+    "query": "SELECT gt.* from tpry_gantt_tarea gt",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerTareasData",
+    "tipo": "normal",
+    "query": "SELECT t.id_tarea, t.id_tarea_padre, t.id_gantt, t.id_proyecto, t.nivel, t.nombre_tarea, unidad, elemento ->> 'fecha' AS fecha, elemento ->> 'value' AS value, elemento ->> 'real' AS real, t.json_data FROM tpry_gantt_tarea AS t LEFT JOIN LATERAL json_array_elements(t.json_data) AS elemento ON true",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerGanttPlanReal",
+    "tipo": "normal",
+    "query": "SELECT * from vw_gantt_avance_diario",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerFlujoTemplates",
+    "tipo": "normal",
+    "query": "select id_flow_tmpl, flow_tmpl_name, flow_tmpl_desc from tflw_templates",
+    "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerFlujoTemplateSteps",
+    "tipo": "normal",
+    "query": "select ts.id_flow_tmpl, ts.flow_tmpl_step_name, ts.flow_tmpl_step_orden, ts.id_rol, rl.name_rol, ts.flag_equipo from tflw_template_steps ts left join tsec_roles rl on ts.id_rol = rl.id_rol",
+    "where": true
+  }
+]

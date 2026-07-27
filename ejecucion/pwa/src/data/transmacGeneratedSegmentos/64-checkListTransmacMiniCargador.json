@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-93 MINI CARGADOR",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 64,
+      "attributes": [
+        {
+          "type": "checkListTransmacMiniCargador",
+          "label": "Mini cargador",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

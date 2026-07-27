@@ -1,0 +1,380 @@
+[
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-004 GRUA HORQUILLA (+POST USO)",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 21,
+        "attributes": [
+          {
+            "type": "checkListGruaHorquillaPostUsoAmsa",
+            "label": "Checklist AMSA Grua Horquilla Post Uso",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-004 GRUA HORQUILLA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 22,
+        "attributes": [
+          {
+            "type": "checkListGruaHorquillaAmsa",
+            "label": "Checklist AMSA Grua Horquilla",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-005 GRUA MOVIL REV.2",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 23,
+        "attributes": [
+          {
+            "type": "checkListGruaMovilAmsa",
+            "label": "Checklist AMSA Grua Movil",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-006 CANCAMOS",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 24,
+        "attributes": [
+          {
+            "type": "checkListCancamosAmsa",
+            "label": "Checklist AMSA Cancamos",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-007 ESLINGA DE CADENAS",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 25,
+        "attributes": [
+          {
+            "type": "checkListEslingaCadenasAmsa",
+            "label": "Checklist AMSA Eslinga de Cadenas",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-008 ESLINGAS DE POLIESTER PLANA",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 26,
+        "attributes": [
+          {
+            "type": "checkListEslingasPoliesterAmsa",
+            "label": "Checklist AMSA Eslingas de Poliester",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-009 ESLINGAS TUBULARES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 27,
+        "attributes": [
+          {
+            "type": "checkListEslingasTubularesAmsa",
+            "label": "Checklist AMSA Eslingas Tubulares",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-010 ESTROBOS DE ACERO",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 28,
+        "attributes": [
+          {
+            "type": "checkListEstrobosAceroAmsa",
+            "label": "Checklist AMSA Estrobos de Acero",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-011 FAJAS DE AMARRE",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 29,
+        "attributes": [
+          {
+            "type": "checkListFajasAmarreAmsa",
+            "label": "Checklist AMSA Fajas de Amarre",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-012 GRILLETES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 30,
+        "attributes": [
+          {
+            "type": "checkListGrilletesAmsa",
+            "label": "Checklist AMSA Grilletes",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-013 ARNES DE SEGURIDAD",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 31,
+        "attributes": [
+          {
+            "type": "checkListArnesSeguridadAmsa",
+            "label": "Checklist AMSA Arnes de Seguridad",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-014 CAJA INVIERNO REV 0",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 32,
+        "attributes": [
+          {
+            "type": "checkListCajaInviernoAmsa",
+            "label": "Checklist AMSA Caja Invierno",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-015 ESCALAS PORTATILES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 33,
+        "attributes": [
+          {
+            "type": "checkListEscalasPortatilesAmsa",
+            "label": "Checklist AMSA Escalas Portatiles",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-016 INSPECCION DE EPP REV.0",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 34,
+        "attributes": [
+          {
+            "type": "checkListInspeccionEppAmsa",
+            "label": "Checklist AMSA Inspeccion de EPP",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-017 CHECK-LIST-EXTINTORES",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 35,
+        "attributes": [
+          {
+            "type": "checkListExtintoresAmsa",
+            "label": "Checklist AMSA Extintores",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-018 CONTROL DE LICENCIAS REV.0",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 36,
+        "attributes": [
+          {
+            "type": "checkListControlLicenciasAmsa",
+            "label": "Checklist AMSA Control de Licencias",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-019 CHECK LIST CANCAMOS",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 37,
+        "attributes": [
+          {
+            "type": "checkListCancamosPdfAmsa",
+            "label": "Checklist AMSA Cancamos PDF",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "segmentos": [
+      {
+        "label": "CL-SGI-MLP-02-020 CHECK LIST ESCALA TIPO AVION",
+        "touch": false,
+        "collapsible": false,
+        "posicion": 38,
+        "attributes": [
+          {
+            "type": "checkListEscalaTipoAvionAmsa",
+            "label": "Checklist AMSA Escala Tipo Avion",
+            "nullable": false,
+            "datos": {},
+            "grupos": [],
+            "observacionesGenerales": "",
+            "desviaciones": []
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,405 @@
+Now using node v16.20.2 (npm v8.19.4)
+[TAILING] Tailing last 200 lines for [lean-services-gsp] process (change the value with --lines option)
+/home/nodeadmin/.pm2/logs/lean-services-gsp-error.log last 200 lines:
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 112,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '73',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 188,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: 'Probablemente quiera hacer referencia a la columna «vw$123.id_empresa».',
+10|lean-se |   position: '376',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 113,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '105',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 187,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: 'Probablemente quiera hacer referencia a la columna «vw$123.id_empresa».',
+10|lean-se |   position: '66',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 113,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '675',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 112,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '62',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:130:25) {
+10|lean-se |   length: 112,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '82',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | ❌ Error en dbQuery: error: no existe la columna «_id_empresa»
+10|lean-se |     at /home/nodeadmin/proyectos/lean-services-gsp/node_modules/pg/lib/client.js:535:17
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:19:20)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:146:23) {
+10|lean-se |   length: 112,
+10|lean-se |   severity: 'ERROR',
+10|lean-se |   code: '42703',
+10|lean-se |   detail: undefined,
+10|lean-se |   hint: undefined,
+10|lean-se |   position: '48',
+10|lean-se |   internalPosition: undefined,
+10|lean-se |   internalQuery: undefined,
+10|lean-se |   where: undefined,
+10|lean-se |   schema: undefined,
+10|lean-se |   table: undefined,
+10|lean-se |   column: undefined,
+10|lean-se |   dataType: undefined,
+10|lean-se |   constraint: undefined,
+10|lean-se |   file: 'parse_relation.c',
+10|lean-se |   line: '3675',
+10|lean-se |   routine: 'errorMissingColumn'
+10|lean-se | }
+10|lean-se | AT Error Error: no existe la columna «_id_empresa»
+10|lean-se |     at dbQuery (/home/nodeadmin/proyectos/lean-services-gsp/src/config/dbQuery.js:23:11)
+10|lean-se |     at processTicksAndRejections (node:internal/process/task_queues:96:5)
+10|lean-se |     at async servicioGeneral (/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/servicioController.js:146:23)
+
+/home/nodeadmin/.pm2/logs/lean-services-gsp-out.log last 200 lines:
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (
+10|lean-se |     select
+10|lean-se |     vp.id_proyecto,
+10|lean-se |     vp.id_proyecto_padre,
+10|lean-se |     vp.nombre_proyecto,
+10|lean-se |     vp.objetivo_proyecto,
+10|lean-se |     vp.observacion_proyecto,
+10|lean-se |     vp.fecha_plan_ini,
+10|lean-se |     vp.fecha_plan_fin,
+10|lean-se |     vp.fecha_real_ini,
+10|lean-se |     vp.fecha_real_fin,
+10|lean-se |     vp.fecha_creacion,
+10|lean-se |     vp.fecha_modificacion,
+10|lean-se |     vp.duracion_plan,
+10|lean-se |     vp.duracion_real,
+10|lean-se |     vp.id_usuario_jefe_proyecto,
+10|lean-se |     vp.nombre_jefe_proyecto,
+10|lean-se |     vp.id_usuario_creacion,
+10|lean-se |     vp.id_usuario_modificacion,
+10|lean-se |     vp.id_usuario_cliente,
+10|lean-se |     vp.id_proyecto_tipo,
+10|lean-se |     vp.id_proyecto_estado,
+10|lean-se |     vp.id_empresa,
+10|lean-se |     vp.id_empresa_cliente,
+10|lean-se |     vp.name_empresa_cliente,
+10|lean-se |     vp.centro_costo,
+10|lean-se |     vp.codi_proyecto,
+10|lean-se |     va.unidades_reales,
+10|lean-se |     va.unidades_planificadas,
+10|lean-se |     '% ' ||to_char(va.pct_desviacion, 'FM999,999,990.00') pct_desviacion,
+10|lean-se |     vp.json_field
+10|lean-se |     from vw_proyectos_full vp
+10|lean-se |         left join vw_gantt_avance_proyecto va on va.id_proyecto = vp.id_proyecto
+10|lean-se |     where vp.id_proyecto > -1
+10|lean-se |   ) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (SELECT * from tpry_equipo_proyecto) vw$123  WHERE _id_empresa='9'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_user, email, name_frst, name_sec, apellido_pat, apellido_mat, rut, id_empresa, movil, activo, id_user_creacion, fecha_creacion, fecha_actualizacion, codi_user, COALESCE(name_frst, '') || ' ' || COALESCE(name_sec, '') || ' ' || COALESCE(apellido_pat, '') AS nombre_user, pass_hash_fes, flag_proc_enrol, json_data FROM tsec_users) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_rol, name_rol, description, flag_externo from tsec_roles) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_user, id_rol from tsec_user_roles) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select * from tpar_empresas) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (SELECT * FROM tsec_perm) vw$123  WHERE _id_empresa='9'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (
+10|lean-se |     select
+10|lean-se |     vp.id_proyecto,
+10|lean-se |     vp.id_proyecto_padre,
+10|lean-se |     vp.nombre_proyecto,
+10|lean-se |     vp.objetivo_proyecto,
+10|lean-se |     vp.observacion_proyecto,
+10|lean-se |     vp.fecha_plan_ini,
+10|lean-se |     vp.fecha_plan_fin,
+10|lean-se |     vp.fecha_real_ini,
+10|lean-se |     vp.fecha_real_fin,
+10|lean-se |     vp.fecha_creacion,
+10|lean-se |     vp.fecha_modificacion,
+10|lean-se |     vp.duracion_plan,
+10|lean-se |     vp.duracion_real,
+10|lean-se |     vp.id_usuario_jefe_proyecto,
+10|lean-se |     vp.nombre_jefe_proyecto,
+10|lean-se |     vp.id_usuario_creacion,
+10|lean-se |     vp.id_usuario_modificacion,
+10|lean-se |     vp.id_usuario_cliente,
+10|lean-se |     vp.id_proyecto_tipo,
+10|lean-se |     vp.id_proyecto_estado,
+10|lean-se |     vp.id_empresa,
+10|lean-se |     vp.id_empresa_cliente,
+10|lean-se |     vp.name_empresa_cliente,
+10|lean-se |     vp.centro_costo,
+10|lean-se |     vp.codi_proyecto,
+10|lean-se |     va.unidades_reales,
+10|lean-se |     va.unidades_planificadas,
+10|lean-se |     '% ' ||to_char(va.pct_desviacion, 'FM999,999,990.00') pct_desviacion,
+10|lean-se |     vp.json_field
+10|lean-se |     from vw_proyectos_full vp
+10|lean-se |         left join vw_gantt_avance_proyecto va on va.id_proyecto = vp.id_proyecto
+10|lean-se |     where vp.id_proyecto > -1
+10|lean-se |   ) vw$123  WHERE _id_empresa='9'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (SELECT * from tpry_equipo_proyecto) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_user, email, name_frst, name_sec, apellido_pat, apellido_mat, rut, id_empresa, movil, activo, id_user_creacion, fecha_creacion, fecha_actualizacion, codi_user, COALESCE(name_frst, '') || ' ' || COALESCE(name_sec, '') || ' ' || COALESCE(apellido_pat, '') AS nombre_user, pass_hash_fes, flag_proc_enrol, json_data FROM tsec_users) vw$123  WHERE _id_empresa='9'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_rol, name_rol, description, flag_externo from tsec_roles) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select * from tpar_empresas) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (
+10|lean-se |       SELECT
+10|lean-se |         e.id_proyecto,
+10|lean-se |         e.id_equipo_proyecto,
+10|lean-se |         e.nombre_equipo,
+10|lean-se |         e.descripcion_equipo,
+10|lean-se |         e.estado_equipo,
+10|lean-se |         e.id_usuario_lider,
+10|lean-se |         m.id_user,
+10|lean-se |         COALESCE(
+10|lean-se |           NULLIF(CONCAT_WS(' ', u.name_frst, u.name_sec, u.apellido_pat), ''),
+10|lean-se |           'SIN USUARIO'
+10|lean-se |         ) AS nombre_user,
+10|lean-se |         COALESCE(m.activo, false) AS activo
+10|lean-se |       FROM tpry_equipo_proyecto e
+10|lean-se |       LEFT JOIN tpry_equipo_miembro m
+10|lean-se |         ON e.id_equipo_proyecto = m.id_equipo_proyecto
+10|lean-se |       LEFT JOIN tsec_users u
+10|lean-se |         ON m.id_user = u.id_user
+10|lean-se |       ORDER BY e.id_equipo_proyecto DESC, nombre_user ASC
+10|lean-se |     ) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟢 SQL final XXXXXX: SELECT p.id_proyecto, p.nombre_proyecto, COUNT(DISTINCT em.id_user) as total_usuarios FROM tpry_proyecto p LEFT JOIN tpry_equipo_proyecto ep ON p.id_proyecto = ep.id_proyecto LEFT JOIN tpry_equipo_miembro em ON ep.id_equipo_proyecto = em.id_equipo_proyecto AND em.activo = true GROUP BY p.id_proyecto, p.nombre_proyecto ORDER BY total_usuarios DESC
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (SELECT * FROM tsec_perm) vw$123  WHERE _id_empresa='9'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo normal
+10|lean-se | Ejecutando consulta REQQUERY { _id_empresa: '9' }
+10|lean-se | 🟡 WHERE generado:  WHERE _id_empresa='9'
+10|lean-se | 🟢 SQL final XXXXXX: SELECT vw$123.* FROM (select id_user, id_rol from tsec_user_roles) vw$123  WHERE _id_empresa='9'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | Consulta terminada
+10|lean-se | 'AT Error'
+10|lean-se | 'AT Error'
+10|lean-se | Entró a servicioGeneral
+10|lean-se | servicio.tipo indicador
+10|lean-se | Entró a servicioGeneral TRY!!!!!!!!!!!!!!!!!!!!!!
+10|lean-se | queryParams {
+10|lean-se |   fecha_desde: '2025-01-01',
+10|lean-se |   fecha_hasta: '2026-07-22',
+10|lean-se |   _id_empresa: '0'
+10|lean-se | }
+10|lean-se | queryParams {
+10|lean-se |   fecha_desde: '2025-01-01',
+10|lean-se |   fecha_hasta: '2026-07-22',
+10|lean-se |   _id_empresa: '0'
+10|lean-se | }
+10|lean-se | 🟢 SQL final XXXXXX: select 1 valor from vw_procesossurvey ts WHERE _id_empresa = 0
+10|lean-se | [notificaciones] +1 en medioAmbiente -> 8

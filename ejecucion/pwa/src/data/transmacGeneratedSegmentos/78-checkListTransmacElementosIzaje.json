@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "CL-14 ELEMENTOS DE IZAJE",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 78,
+      "attributes": [
+        {
+          "type": "checkListTransmacElementosIzaje",
+          "label": "Elementos de izaje",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

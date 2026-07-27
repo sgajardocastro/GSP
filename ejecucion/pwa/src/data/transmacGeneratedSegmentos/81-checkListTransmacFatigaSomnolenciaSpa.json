@@ -1,0 +1,22 @@
+{
+  "segmentos": [
+    {
+      "label": "FOR-SEG-011 FATIGA Y SOMNOLENCIA SPA",
+      "touch": false,
+      "collapsible": false,
+      "posicion": 81,
+      "attributes": [
+        {
+          "type": "checkListTransmacFatigaSomnolenciaSpa",
+          "label": "Fatiga y somnolencia SPA",
+          "nullable": false,
+          "datos": {},
+          "fotos": {},
+          "grupos": [],
+          "observacionesGenerales": "",
+          "desviaciones": []
+        }
+      ]
+    }
+  ]
+}

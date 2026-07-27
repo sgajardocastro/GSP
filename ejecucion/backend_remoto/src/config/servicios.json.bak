@@ -1,0 +1,133 @@
+[
+  {
+    "uri": "/ejemplo",
+    "tipo": "normal",
+    "query": "SELECT 'Hola desde SQL' AS mensaje",
+    "where": false
+  },
+  {
+    "uri": "/ejemplo2",
+    "tipo": "normal",
+    "query": "SELECT * FROM .tsec_users",
+    "where": false
+  },
+  {
+    "uri": "/prueba",
+    "tipo": "normal",
+    "query": "SELECT * FROM prueba WHERE id = 1"
+  },
+  {
+    "nombre": "/leandglobal/prueba2",   
+    "uri": "/prueba2",
+    "comentario": "Llenado de la vista/tabla de Stock",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": "select 1 valor",
+    "datos": "select * from prueba where 1=1 AND fecha_desde >= TO_DATE('$fecha_desde', 'yyyy-mm-dd') AND fecha_hasta <= TO_DATE('$fecha_hasta', 'yyyy-mm-dd') $secatrib $teratrib $in"
+  },
+  {
+    "uri": "/leanglobal/archivos",
+    "tipo": "normal",
+    "query": "SELECT * FROM .tfmg_file",
+    "where": true
+  }
+  ,
+  {
+    "uri": "/leanglobal/procesosSurvey",
+    "tipo": "normal",
+    "query": "select ts.id_survey, ar.name_area, te.name_template_srv , te.codi_template_srv , te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, ts.id_user, ts.estado_srv from tsrv_survey ts, tsrv_templates te, tsrv_tipo_template tt, tpar_area ar, tpar_empresas em, tpry_proyecto py where ts.id_template = te.id_template and ts.id_tipo_srv = tt.id_tipo_srv and tt.id_area = ar.id_area and ts.id_empresa_cliente = em.id_empresa and ts.id_proyecto = py.id_proyecto order by ts.id_survey",
+    "where": false
+  }
+
+  ,
+  {
+    "uri": "/leanglobal/procesosSurveyDetail",
+    "tipo": "normal",
+    "query": "select ts.id_survey, ar.name_area, tt.name_tipo_srv, tt.codi_tipo_srv , te.name_template_srv , te.codi_template_srv , te.desc_template_srv, te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, to_char(ts.fecha_plan_fin, 'yyyy-mm-dd') fecha_plan_fin, to_char(ts.fecha_real_ini, 'yyyy-mm-dd') fecha_real_ini, to_char(ts.fecha_real_fin, 'yyyy-mm-dd') fecha_real_fin, ts.id_user, ts.estado_srv, ts.latitud, ts.longitud, ts.header_exec, ts.body_exec from tsrv_survey ts, tsrv_templates te, tsrv_tipo_template tt, tpar_area ar, tpar_empresas em, tpry_proyecto py where ts.id_template = te.id_template and ts.id_tipo_srv = tt.id_tipo_srv and tt.id_area = ar.id_area and ts.id_empresa_cliente = em.id_empresa and ts.id_proyecto = py.id_proyecto ",
+    "where": true
+  }
+
+  ,
+  {
+    "uri": "/leanglobal/obtenerAreas",
+    "tipo": "normal",
+    "query": "select * from tpar_area where estado = 'A'",
+    "where": true
+  }
+
+  ,
+  {
+    "uri": "/leanglobal/obtenerTipoTemplate",
+    "tipo": "normal",
+    "query": "select * from tsrv_tipo_template",
+    "where": true
+  }
+
+  ,
+  {
+    "uri": "/leanglobal/obtenerTemplates",
+    "tipo": "normal",
+    "query": "select * from tsrv_templates",
+    "where": true
+  }
+
+  ,
+  {
+    "uri": "/leanglobal/obtenerEmpresas",
+    "tipo": "normal",
+    "query": "select * from tpar_empresas where id_empresa <> 2",
+    "where": true
+  }
+  ,
+  {
+    "uri": "/leanglobal/obtenerProyectos",
+    "tipo": "normal",
+    "query": "select * from tpry_proyecto",
+    "where": true
+  }
+  ,
+  {
+    "uri": "/leanglobal/obtenerAreas",
+    "tipo": "normal",
+    "query": "select id_area, name_area, id_empresa from tpar_area",
+    "where": true
+  }
+  ,
+  {
+    "uri": "/leanglobal/obtenerFamilias",
+    "tipo": "normal",
+    "query": "select t.id_tipo_srv, t.name_tipo_srv, t.id_area, a.name_area, t.id_empresa from tsrv_tipo_template t, tpar_area a where a.id_area  = t.id_area",
+    "where": true
+  }
+  
+  ,
+  {
+    "uri": "/leanglobal/procesosSurveyV2",
+    "tipo": "normal",
+    "query": "SELECT ts.id_survey, ar.name_area, tt.name_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, em.name_empresa AS name_empresa_cliente, TO_CHAR(ts.fecha_plan_ini, 'yyyy-mm-dd') AS fecha_plan_ini, TO_CHAR(ts.fecha_plan_fin, 'yyyy-mm-dd') AS fecha_plan_fin, TO_CHAR(ts.fecha_real_fin, 'yyyy-mm-dd') AS fecha_real_fin, ts.id_user, ts.estado_srv, CASE WHEN ts.fecha_real_fin IS NULL THEN CASE WHEN ts.fecha_plan_fin < CURRENT_DATE THEN 'Rojo' WHEN ts.fecha_plan_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '1 day' THEN 'Amarillo' WHEN ts.fecha_plan_fin > CURRENT_DATE + INTERVAL '1 day' THEN 'Azul' ELSE 'Desconocido' END ELSE 'Verde' END AS estado_color FROM tsrv_survey ts, tsrv_templates te, tsrv_tipo_template tt, tpar_area ar, tpar_empresas em, tpry_proyecto py WHERE ts.id_template = te.id_template AND ts.id_tipo_srv = tt.id_tipo_srv AND tt.id_area = ar.id_area AND ts.id_empresa_cliente = em.id_empresa AND ts.id_proyecto = py.id_proyecto ORDER BY ts.id_survey",
+    "where": false
+  }
+
+  ,
+  {
+    "nombre": "/leandglobal/procesosSurveyV3",
+    "uri": "/leanglobal/procesosSurveyV3",
+    "comentario": "Otener Surveys con filtros",
+    "tipo": "indicador",
+    "secatrib": "nombre",
+    "teratrib": "edad",
+    "in": "ciudad",
+    "indicador": "select 1 valor",
+    "query": "select ts.id_survey, ar.name_area, tt.name_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, ts.id_empresa_cliente, ts.id_proyecto, em.name_empresa as name_empresa_cliente, ts.id_user, ts.longitud, ts.latitud, us.name_frst || ' ' || us.name_sec || ' ' || us.apellido_pat nombre_user, TO_CHAR(ts.fecha_plan_ini, 'yyyy-mm-dd') as fecha_plan_ini, TO_CHAR(ts.fecha_plan_fin, 'yyyy-mm-dd') as fecha_plan_fin, TO_CHAR(ts.fecha_real_ini, 'yyyy-mm-dd hh24:mi') as fecha_real_ini, TO_CHAR(ts.fecha_real_fin, 'yyyy-mm-dd hh24:mi') as fecha_real_fin, TO_CHAR(ts.fecha_ejec_fin, 'yyyy-mm-dd hh24:mi') as fecha_ejec_fin, TO_CHAR(ts.fecha_verif_fin, 'yyyy-mm-dd hh24:mi') as fecha_verif_fin, ts.estado_srv, case when ts.fecha_real_fin is null then case when ts.fecha_plan_fin < CURRENT_DATE then 'Rojo' when ts.fecha_plan_fin between CURRENT_DATE and CURRENT_DATE + interval '1 day' then 'Amarillo' when ts.fecha_plan_fin > CURRENT_DATE + interval '1 day' then 'Azul' else 'Desconocido' end else 'Verde' end as estado_color from tsrv_survey ts, tsrv_templates te, tsrv_tipo_template tt, tpar_area ar, tpar_empresas em, tpry_proyecto py, tsec_users us where ts.id_template = te.id_template and ts.id_tipo_srv = tt.id_tipo_srv and tt.id_area = ar.id_area and ts.id_empresa_cliente = em.id_empresa and ts.id_proyecto = py.id_proyecto and ts.id_user = us.id_user and DATE(ts.fecha_plan_ini) >= DATE('$fecha_desde') and DATE(ts.fecha_plan_fin) <= DATE('$fecha_hasta') order by ts.id_survey",
+    "where": true
+  }
+  ,
+  {
+    "uri": "/leanglobal/obtenerUsuarios",
+    "tipo": "normal",
+    "query": "select id_user, email, name_frst, name_sec, apellido_pat, apellido_mat, rut, id_empresa, movil, activo, id_user_creacion, fecha_creacion, fecha_actualizacion, codi_user, COALESCE(name_frst, '') || ' ' || COALESCE(name_sec, '') || ' ' || COALESCE(apellido_pat, '') AS nombre_user FROM tsec_users",
+    "where": true
+  }
+]
