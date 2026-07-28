@@ -26,6 +26,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Middleware de inyección de Tenant Multiempresa simulado (simula JWT decodificado)
+// En producción, esto provendría de un middleware tipo express-jwt
+app.use((req, res, next) => {
+  if (!req.user) {
+    req.user = { id_empresa: 9 }; // Mock id_empresa
+  }
+  next();
+});
+
 // Registrar endpoints según especificaciones
 app.use('/api/auth', authRoutes);
 app.use('/api/operators', operatorRoutes);

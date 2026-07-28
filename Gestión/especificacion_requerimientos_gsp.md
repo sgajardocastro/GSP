@@ -117,3 +117,24 @@ Para resguardar la operatividad de GSP sin interrumpir su contabilidad actual, s
 *   **RF-5.4 [Transición Preventa y Cierre]:** El botón `GUARDAR EN PREVENTA` envía el payload al backend (disparando el RF-4.3). El botón `REGISTRAR Y GANAR (ASIGNAR)` hace transicionar la oportunidad comercial a un proyecto operativo formal, habilitando la asignación de recursos.
 *   **RF-5.5 [Ciclo de Vida Comercial - Estados]:** Todo proyecto/cotización debe mantener estricta integridad referencial hacia una tabla paramétrica de estados (`tpry_estado`). El ciclo de vida de nacimiento comercial contempla 4 fases obligatorias: 1. "Oportunidad Registrada" (Nacimiento de la ficha sin líneas), 2. "Preparación de Cotización" (Ingreso de equipos y valores), 3. "Cotización Asignada" (Aprobación del cliente, salto a operación) y 4. "Cotización no Asignada" (Rechazo/Pérdida).
 *   **RF-5.6 [Control de Versiones y Nomenclatura de Cotizaciones]:** Cada cotización generada tendrá un identificador correlativo único (`id_cotizacion`) obtenido de una secuencia de base de datos (`seq_id_cotizacion`). El nombre del archivo PDF generado debe seguir estrictamente el formato: `[CODI_PROYECTO]V[VERSION]-[ID_COTIZACION].pdf` (donde VERSION es la iteración del proceso y ID_COTIZACION es el valor de la secuencia). El historial del CRM debe desplegar al lado del link al PDF la fecha de generación y el monto neto cotizado real de esa versión sin simular datos.
+
+---
+
+### Módulo 6: Inventario WMS-Lite (RF-WMS)
+*   **RF-WMS-01 [Maestro de Bodegas]:** Registro y control de bodegas por empresa (`id_empresa`) y sucursal.
+*   **RF-WMS-02 [Catálogo de Productos]:** Maestro de repuestos e insumos con prefijo de SKU de 4 letras mayúsculas por empresa.
+*   **RF-WMS-03 [Existencias y Lotes]:** Control de existencias físicas serializadas o por lotes con registro de `costo_adquisicion > 0` y `numero_oc` obligatorios (validaciones HTTP 422 `COSTO_CERO_NO_PERMITIDO` y `OC_REQUERIDA`).
+*   **RF-WMS-04 [Movimientos de Stock]:** Bitácora transaccional de ingresos, despachos, traspasos y bajas.
+*   **RF-WMS-05 [Traspaso entre Bodegas]:** Transferencia de existencias con estado "En Tránsito" y confirmación de recepción en destino.
+*   **RF-WMS-06 [Despacho a Orden de Trabajo]:** Descuento directo de stock mediante escaneo de código de barras físico validando correspondencia con repuestos planificados (`REPUESTO_NO_CORRESPONDE`).
+*   **RF-WMS-07 [Alertas de Stock Crítico]:** Alerta automática cuando el nivel disponible cae por debajo del `nivel_minimo`.
+
+---
+
+### Módulo 7: Mantenimiento y Gestión de Flota OTs (RF-MNT)
+*   **RF-MNT-01 [Apertura de OT]:** Registro y apertura de Órdenes de Trabajo vinculadas a equipos activos (`tequ_equipo`), validando que el equipo no posea otra OT abierta (`EQUIPO_CON_OT_ACTIVA`).
+*   **RF-MNT-02 [Checklist de Actividades]:** Definición y seguimiento de tareas/actividades planificadas por OT.
+*   **RF-MNT-03 [Planificación e Imputación de Repuestos]:** Requerimientos de repuestos despachados desde el módulo WMS-Lite.
+*   **RF-MNT-04 [Imputación de Mano de Obra HH]:** Registro de Horas Hombre por técnico con cálculo automático de costo (`horas * tarifa`).
+*   **RF-MNT-05 [Servicios Externos]:** Imputación de trabajos contratados a terceros con número de documento de compra obligatorio.
+*   **RF-MNT-06 [Cierre Autorizado con PIN]:** Cierre definitivo de OT que valida mediante Trigger en BD (`trg_chk_cierre_ot`) e Invariant API que no existan tareas ni repuestos pendientes, requiriendo el PIN de 4 dígitos del supervisor (`PIN_INVALIDO`).

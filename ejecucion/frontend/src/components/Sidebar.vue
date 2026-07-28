@@ -32,7 +32,7 @@
           class="flex items-center rounded-xl transition-all duration-200 group relative border border-transparent"
           :class="[
             navStore.isCollapsed ? 'justify-center py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full',
-            $route.name === item.routeName 
+            $route?.name === item.routeName 
               ? activeClass 
               : 'text-muted-foreground hover:text-white hover:bg-white/5'
           ]"
@@ -68,7 +68,7 @@
             class="flex items-center rounded-xl transition-all duration-200 cursor-pointer border border-transparent"
             :class="[
               navStore.isCollapsed ? 'justify-center py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full justify-between',
-              item.children.some(child => $route.name === child.routeName)
+              item.children.some(child => $route?.name === child.routeName)
                 ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5`
                 : 'text-muted-foreground hover:text-white hover:bg-white/5'
             ]"
@@ -98,7 +98,7 @@
               :to="{ name: sub.routeName }"
               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs font-medium border border-transparent"
               :class="[
-                $route.name === sub.routeName
+                $route?.name === sub.routeName
                   ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5 border-${activeTheme.colorName}-500/10`
                   : 'text-muted-foreground hover:text-white hover:bg-white/5'
               ]"
@@ -121,7 +121,7 @@
               :to="{ name: sub.routeName }"
               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs font-medium border border-transparent text-left"
               :class="[
-                $route.name === sub.routeName
+                $route?.name === sub.routeName
                   ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5 border-${activeTheme.colorName}-500/10`
                   : 'text-muted-foreground hover:text-white hover:bg-white/5'
               ]"
@@ -296,10 +296,21 @@ const menuItems = computed(() => {
     { 
       name: 'Gestión de Flota', 
       icon: Orbit,
-      subtitle: 'Control de Activos',
+      subtitle: 'Control & Mantenimiento',
       children: [
         { name: 'Vista Equipos 360', routeName: 'vista360' },
-        { name: 'Inspecciones de Equipos', routeName: 'inspecciones' }
+        { name: 'Inspecciones de Equipos', routeName: 'inspecciones' },
+        { name: 'Órdenes de Trabajo (OTs)', routeName: 'mantenimiento' }
+      ]
+    },
+    {
+      name: 'Inventario (WMS-Lite)',
+      icon: Package,
+      subtitle: 'Global Manager WMS',
+      children: [
+        { name: '1. Bodegas & Existencias', routeName: 'inventario_bodegas' },
+        { name: '2. Maestro de Productos', routeName: 'inventario_productos' },
+        { name: '3. Alertas & Quiebres', routeName: 'inventario_alertas' }
       ]
     },
     { 
@@ -307,7 +318,7 @@ const menuItems = computed(() => {
       routeName: 'acreditacion', 
       icon: ShieldCheck, 
       count: blockedOperatorsCount.value || null,
-      countClass: 'border-red-500/30 text-red-500 !bg-red-500/10' // Keep red since it's a blocker alert
+      countClass: 'border-red-500/30 text-red-500 !bg-red-500/10'
     },
     { 
       name: 'Gestor Documental', 

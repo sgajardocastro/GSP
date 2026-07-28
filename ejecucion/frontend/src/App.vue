@@ -60,11 +60,7 @@
 
       <!-- Viewport Area -->
       <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-        <router-view v-slot="{ Component }">
-          <transition enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-4" enter-to-class="opacity-100 translate-y-0" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <router-view />
       </div>
     </main>
   </div>

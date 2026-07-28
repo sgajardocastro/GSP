@@ -4,7 +4,7 @@ import app from './app.js';
 // Cargar variables de entorno
 dotenv.config();
 
-const PORT = process.env.PORT || 8086;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`=================================================`);

@@ -102,7 +102,7 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] Configurar notificaciones:** Implementar el envío automático de cotizaciones desde el sistema configurando copias predeterminadas a los contactos pertinentes (Omar, Luis y Gisel).
 *   [ ] **[Sergio Gajardo] Configurar credenciales:** Configurar el acceso al dominio corporativo para el login del sistema tras la creación de las credenciales de prueba.
 *   [x] **[Sergio Gajardo] Agregar campos de facturación:** Incluir los campos de región, ciudad y dirección de facturación en el formulario de creación de clientes.
-*   [ ] **[Sergio Gajardo] Implementar buscador de direcciones:** Integrar un buscador de direcciones en el mapa dentro del módulo de cotizaciones para facilitar la ubicación de obras.
+*   [x] **[Sergio Gajardo] Implementar buscador de direcciones:** Integrar un buscador de direcciones en el mapa dentro del módulo de cotizaciones para facilitar la ubicación de obras.
 *   [x] **[Sergio Gajardo] Importar flota:** Realizar la carga de los datos de flota utilizando la información técnica disponible en el Drive (Base de datos y estructura de frontend integradas).
 *   [ ] **[Sergio Gajardo] Compartir acceso Kanban:** Reenviar el enlace de acceso a la herramienta de gestión al equipo.
 *   [x] **[Sergio Gajardo] Ajustar categorías:** Cambiar el nombre de familia a categoría y asegurar la correcta vinculación con la subcategoría dependiente en el estructurador.
@@ -112,8 +112,8 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] Actualizar firma cliente:** Añadir espacios para el ingreso de identificación, nombre y firma manual del cliente en el bloque de firmas.
 *   [ ] **[Jorge Ponce, Jesús] Crear manuales:** Crear manuales y videos instructivos para los módulos del sistema para facilitar el uso de los usuarios.
 *   [ ] **[Jorge Ponce, Jesús] Recopilar datos técnicos:** Completar la información de tara y largo para los equipos mediante la revisión por patente.
-*   [ ] **[Jorge Ponce] Gestionar accesos:** Compartir el acceso a las carpetas de Drive de equipos y trabajadores con los colaboradores técnicos.
-*   [ ] **[Jorge Ponce] Solicitar accesos:** Solicitar a Dayana la autorización de acceso a las carpetas compartidas para los usuarios correspondientes.
+*   [x] **[Jorge Ponce] Gestionar accesos:** Compartir el acceso a las carpetas de Drive de equipos y trabajadores con los colaboradores técnicos.
+*   [x] **[Jorge Ponce] Solicitar accesos:** Solicitar a Dayana la autorización de acceso a las carpetas compartidas para los usuarios correspondientes.
 *   [ ] **[Jorge Ponce] Enviar notas:** Remitir las observaciones discutidas, incluyendo cambios en el formulario de servicios, a través de correo electrónico.
 *   [ ] **[Jesus] Apoyar carga de datos:** Colaborar en la carga manual de equipos en caso de que el proceso masivo presente complicaciones.
 
@@ -126,7 +126,7 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] Formato PDF Impresión de OT:** Diseñar el layout de impresión física de la OT con mapa, firma física de cliente y códigos QR de acreditación.
 *   [x] **[Sergio Gajardo] Categorías e Implementación de Traslado:** Ajustar el estructurador de servicios para consumir categorías desde la base de datos e incluir la categoría "Traslado".
 *   [x] **[Sergio Gajardo] Proyección de Pensiones:** Agregar en Condiciones Comerciales los campos de costo para Alojamiento, Alimentación (Desayuno, Almuerzo, Cena) y Traslado.
-*   [ ] **[Jesús & Sergio Gajardo] Códigos QR de Acreditación:** Finalizar la generación de códigos QR para operadores, riggers y flota, exportando el PDF para la entrega de la próxima semana.
+*   [x] **[Jesús & Sergio Gajardo] Códigos QR de Acreditación:** Finalizar la generación de códigos QR para operadores, riggers y flota, exportando el PDF para la entrega de la próxima semana.
 *   [ ] **[Sergio Gajardo] PWA Marcaciones en Tiempo Real [PENDIENTE]:** Habilitar en la PWA los botones de marcación real (`hora_salida_real`, `hora_llegada_obra_real`, `hora_liberacion_real` y firma) *(Fase PWA en desarrollo gradual)*.
 *   [ ] **[Consultas Desplazamiento/Inspección]:** Definir quién hace la inspección de salida y si se usará el formato de Jorge. Aclarar quién marca el inicio del viaje (Conductor/Rigger), si el desplazamiento se marcará por GPS (frecuencia), si hay inspección al llegar a destino, y si se inspecciona solo la grúa o todos los equipos (¿inspecciones autónomas?).
-*   [ ] **[Sergio Gajardo] Búsqueda por Dirección en Mapa [PENDIENTE]:** Investigar e implementar funcionalidad para buscar direcciones directamente en el componente del mapa de Google Maps.
+*   [x] **[Sergio Gajardo] Búsqueda por Dirección en Mapa [COMPLETADO]:** Investigar e implementar funcionalidad para buscar direcciones directamente en el componente del mapa de Google Maps.

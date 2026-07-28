@@ -44,13 +44,14 @@ router.get('/ots', async (req, res, next) => {
 
 router.post('/ots', async (req, res, next) => {
   try {
+    const id_empresa = req.user?.id_empresa || 9;
     const { patente, descripcion, tipo_mantenimiento, id_equipo, id_supervisor } = req.body;
     if (!patente) {
       return res.status(400).json({ error_code: 'CAMPOS_INVALIDOS', message: 'Patente es obligatoria' });
     }
 
     // Regla de negocio: No abrir OT si ya hay una activa en el mismo equipo
-    const otActiva = otsStore.find(o => o.patente === patente && o.estado !== 'CERRADA');
+    const otActiva = otsStore.find(o => o.patente === patente && o.estado !== 'CERRADA' && o.id_empresa === id_empresa);
     if (otActiva) {
       return res.status(422).json({
         error_code: 'EQUIPO_CON_OT_ACTIVA',
@@ -61,6 +62,7 @@ router.post('/ots', async (req, res, next) => {
     const nuevoFolio = `OT-${10000 + otsStore.length + 1}`;
     const nuevaOt = {
       folio: nuevoFolio,
+      id_empresa,
       id_equipo: id_equipo || 100,
       patente,
       tipo_mantenimiento: tipo_mantenimiento || 'CORRECTIVO',
@@ -201,6 +203,15 @@ router.post('/ots/:folio/repuestos', async (req, res, next) => {
     const { id_producto, cantidad } = req.body;
     const ot = otsStore.find(o => o.folio === folio);
     if (!ot) return res.status(404).json({ message: 'OT no encontrada' });
+
+    // Regla de negocio: REPUESTO_NO_CORRESPONDE
+    // (Ejemplo: si id_producto es inválido, en la vida real validarías contra el maestro de compatibilidad o inventario)
+    if (!id_producto || id_producto < 0) {
+      return res.status(422).json({
+        error_code: 'REPUESTO_NO_CORRESPONDE',
+        message: 'El repuesto indicado no corresponde o es inválido para este equipo.'
+      });
+    }
 
     const nuevoRep = {
       id: Date.now(),
