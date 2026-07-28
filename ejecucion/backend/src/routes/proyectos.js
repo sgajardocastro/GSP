@@ -27,6 +27,10 @@ const resolverLogoBase64Empresa = (logoEmpresaNombre) => {
   try {
     const filename = logoEmpresaNombre || 'logo_gsp.png';
     const posiblesRutas = [
+      path.join(__dirname, '../../public', filename),
+      path.join(__dirname, '../../public', 'logo-sanpablo.png'),
+      path.join(__dirname, '../../public', 'logo_gsp.png'),
+      path.join(__dirname, '../public', filename),
       path.join(__dirname, '../../../frontend/public', filename),
       path.join(__dirname, '../../../frontend/public', 'logo_gsp.png'),
       path.join(__dirname, '../../../frontend/public', 'logo-sanpablo.png')

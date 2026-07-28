@@ -201,7 +201,7 @@ watch(() => props.show, (newVal) => {
     fetchEnrolledUsers()
 
     // Auto-cargar correo del cliente
-    const emailContacto = props.cliente?.email || props.proyecto?.email_contacto || props.proyecto?.cliente_email || 'contacto@cliente.cl'
+    const emailContacto = props.cliente?.email || props.proyecto?.email_contacto || props.proyecto?.cliente_email || 'sgajardoc@gmail.com'
     destinatariosCliente.value = [emailContacto]
 
     const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || 'GSP-2607-001'
@@ -272,8 +272,7 @@ const sendEmail = async () => {
       para: destinatariosCliente.value.join(', '),
       cc: destinatariosGSP.value.join(', '),
       asunto: `${asunto.value} [${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}]`,
-      cuerpo: cuerpoTextFallback,
-      html: htmlContent
+      cuerpo: htmlContent
     })
 
     const eventoEnvio = {

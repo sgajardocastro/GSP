@@ -15,6 +15,7 @@ import AlertasQuiebresView from '../views/inventario/AlertasQuiebresView.vue'
 import MantenimientoView from '../views/MantenimientoView.vue'
 import Vista360 from '../views/Vista360.vue'
 import InspeccionEquipos from '../views/InspeccionEquipos.vue'
+import verSurveyPrint from '../pages/verSurveyPrint.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL || '/'),
@@ -22,6 +23,12 @@ const router = createRouter({
     {
       path: '/',
       redirect: '/dashboard'
+    },
+    {
+      path: '/versurveyprint',
+      name: 'versurveyprint',
+      component: verSurveyPrint,
+      meta: { layout: 'auth' }
     },
     {
       path: '/dashboard',
