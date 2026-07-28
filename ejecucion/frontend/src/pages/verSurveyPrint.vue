@@ -333,7 +333,16 @@
                       class="value-cell"
                       style="width: 25%;"
                     >
-                      {{ displayAttrValue(fila[0]) }}
+                      <template v-if="isImageDoc(displayAttrValue(fila[0]) || fila[0])">
+                        <img
+                          :src="resolveImgSrc(displayAttrValue(fila[0]) || fila[0])"
+                          alt="Firma / Imagen"
+                          style="max-height: 120px; max-width: 100%; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px; background: #ffffff; display: block; margin: 4px 0;"
+                        >
+                      </template>
+                      <template v-else>
+                        {{ displayAttrValue(fila[0]) }}
+                      </template>
                     </td>
                     <td
                       class="label-cell"
@@ -349,7 +358,7 @@
                     </td>
                   </template>
 
-                  <!-- Caso: 2 atributos (como ya lo tenías) -->
+                  <!-- Caso: 2 atributos -->
                   <template v-else>
                     <template
                       v-for="(attr, i) in fila"
@@ -365,7 +374,16 @@
                         class="value-cell"
                         style="width: 25%;"
                       >
-                        {{ displayAttrValue(attr) }}
+                        <template v-if="isImageDoc(displayAttrValue(attr) || attr)">
+                          <img
+                            :src="resolveImgSrc(displayAttrValue(attr) || attr)"
+                            alt="Firma / Imagen"
+                            style="max-height: 120px; max-width: 100%; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px; background: #ffffff; display: block; margin: 4px 0;"
+                          >
+                        </template>
+                        <template v-else>
+                          {{ displayAttrValue(attr) }}
+                        </template>
                       </td>
                     </template>
                   </template>
@@ -395,13 +413,22 @@
                         :key="idx"
                         class="mb-2"
                       >
+                        <!-- ✅ Visualización directa de Firma / Imagen si es archivo de imagen -->
+                        <div v-if="isImageDoc(file || attr)" class="my-2">
+                          <img
+                            :src="resolveImgSrc(file.name_doc_interno || file.url || file.name || file)"
+                            alt="Firma / Imagen"
+                            style="max-height: 120px; max-width: 100%; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px; background: #ffffff; display: block;"
+                          >
+                        </div>
                         <a
-                          :href="file.url"
+                          :href="resolveImgSrc(file.name_doc_interno || file.url || file.name || file)"
                           :download="file.nombre || file.name"
                           target="_blank"
                           rel="noopener"
+                          style="font-size: 11px; font-weight: bold; color: #0284c7;"
                         >
-                          {{ file.name_doc_orig || file.name }}
+                          📄 {{ file.name_doc_orig || file.name || 'Ver Archivo' }}
                         </a>
 
                         <!-- ✅ NUEVO: Fecha + horas -->
@@ -3806,6 +3833,7 @@ import { useRoute } from 'vue-router'
 import { useSurveyDetailStore } from "@/stores/surveyDetail";
 import QRCode from 'qrcode'
 import Highcharts from 'highcharts';
+import axios from 'axios'
 import apiAxios from '@/services/api.js'
 import VerDoc from '@/components/VerDoc.vue'
 import { getMockSurveys } from '@/data/mockSurveys'
@@ -4533,8 +4561,7 @@ const flowStepsActuales = ref([])
 const equiposProyectosMiembrosFES = ref([])
 
 // Inicial
-idSurvey.value = route.query.idInspeccion
-//idSurvey.value = 2309;
+idSurvey.value = route.query.idInspeccion || route.query.idSurvey || route.query.id_survey || ''
 
 const qrMap = ref({})
 
@@ -4617,8 +4644,11 @@ function getLng(attr) {
 }
 
 // Watch para cambios
-watch(() => route.query.idInspeccion, (newId) => {
-  idSurvey.value = newId
+watch(() => route.query.idInspeccion || route.query.idSurvey || route.query.id_survey, async (newId) => {
+  if (newId && newId !== idSurvey.value) {
+    idSurvey.value = newId
+    await getSurvey()
+  }
 })
 
 onMounted(async () => {
@@ -4695,6 +4725,13 @@ function resolveImgSrc(x) {
   }
 
   return '';
+}
+
+function isImageDoc(x) {
+  if (!x) return false;
+  const str = (typeof x === 'string' ? x : (x.name_doc_interno || x.url || x.name || x.nombre || '')).toLowerCase();
+  if (str.startsWith('data:image/')) return true;
+  return /\.(png|jpe?g|gif|webp|svg)($|\?)/.test(str) || str.includes('firma') || (x?.type === 'photo' || x?.type === 'photoCapture');
 }
 
 function getObsRecRows(attr) {
@@ -6165,21 +6202,34 @@ async function getSurvey() {
       }
     }
 
-    const response = await apiAxios.get("/servicio/leanglobal/procesosSurveyDetail?id_survey=" + idSurvey.value);
+    const apiBase = apiAxios.defaults.baseURL || 'https://servidor.leanglobal.cl/lean-services-transmac-dev/api';
+    const response = await axios.get(`${apiBase}/servicio/leanglobal/procesosSurveyDetail?id_survey=${idSurvey.value}`);
     console.log("=================SURVEY Detail ========", response.data);
     surveys.value = response.data;
     surveyDetailStore.surveyDetail = response.data;
     console.log("surveyDetail", surveyDetailStore.surveyDetail);
-    const responseObtenerEmpresa = await apiAxios.get("/servicio/leanglobal/obtenerEmpresas?name_empresa=" + surveyDetailStore.surveyDetail[0]?.name_empresa_cliente);
-    console.log(surveyDetailStore.surveyDetail[0]?.name_empresa_cliente);
-    console.log("responseObtenerEmpresa", responseObtenerEmpresa.data);
-    imagenEmpresa.value = responseObtenerEmpresa.data[0]?.logo_empresa || null;
-    const responseObtenerTransmac = await apiAxios.get("/servicio/leanglobal/obtenerEmpresas?id_empresa=9");
-    console.log("responseObtenerTransmac", responseObtenerTransmac.data);
-    imagenEmpresaTransmac.value = responseObtenerTransmac.data[0]?.logo_empresa;
-    const responseUser = await apiAxios.get("/servicio/leanglobal/obtenerUsuarios?id_user=" + surveyDetailStore.surveyDetail[0]?.id_user);
-    user.value = responseUser.data[0];
-    console.log(user.value);
+    if (surveyDetailStore.surveyDetail[0]?.name_empresa_cliente) {
+      try {
+        const responseObtenerEmpresa = await apiAxios.get("/servicio/leanglobal/obtenerEmpresas?name_empresa=" + encodeURIComponent(surveyDetailStore.surveyDetail[0].name_empresa_cliente));
+        imagenEmpresa.value = responseObtenerEmpresa.data?.[0]?.logo_empresa || null;
+      } catch (errEmp) {
+        console.warn("⚠️ Error obteniendo logo empresa cliente:", errEmp);
+      }
+    }
+    try {
+      const responseObtenerTransmac = await apiAxios.get("/servicio/leanglobal/obtenerEmpresas?id_empresa=9");
+      imagenEmpresaTransmac.value = responseObtenerTransmac.data?.[0]?.logo_empresa || null;
+    } catch (errTrans) {
+      console.warn("⚠️ Error obteniendo logo Transmac:", errTrans);
+    }
+    if (surveyDetailStore.surveyDetail[0]?.id_user) {
+      try {
+        const responseUser = await apiAxios.get("/servicio/leanglobal/obtenerUsuarios?id_user=" + surveyDetailStore.surveyDetail[0].id_user);
+        user.value = responseUser.data?.[0] || {};
+      } catch (errUser) {
+        console.warn("⚠️ Error obteniendo usuario ejecutor:", errUser);
+      }
+    }
 
     // Obtener superior asignado si existe en los datos
     superiorUser.value = null
@@ -7144,15 +7194,18 @@ function resolveDocName(attr) {
 /* Segment titles */
 .segment-title {
   font-family: 'Outfit', sans-serif;
-  margin-top: 28px;
+  margin-top: 36px !important;
+  padding-top: 12px !important;
   font-size: 14px;
   font-weight: 700;
   color: #0f172a;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 6px;
-  margin-bottom: 16px;
+  border-bottom: 2px solid #f59e0b;
+  padding-bottom: 8px;
+  margin-bottom: 18px !important;
+  clear: both;
+  page-break-after: avoid;
 }
 
 /* Imágenes */

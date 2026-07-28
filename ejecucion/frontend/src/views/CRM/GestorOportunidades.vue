@@ -1096,7 +1096,7 @@
     <!-- Modal Nuevo Cliente -->
     <ModalNuevoCliente v-if="mostrarModalCliente" @close="mostrarModalCliente = false" @cliente-creado="onClienteCreado" />
     <!-- Modal Enviar Cotización por Email -->
-    <ModalEnviarCotizacion :show="showModalEnviar" :proyecto-id="props.proyectoId || currentProyectoId || opportunity?.id_proyecto || opportunity?.id" :proyecto="opportunity" :cliente="selectedClient" :version-data="selectedVersionForEmail" @close="showModalEnviar = false" @sent="onEmailSent" />
+    <ModalEnviarCotizacion :show="showModalEnviar" :proyecto-id="props.proyectoId || currentProyectoId || opportunity?.id_proyecto || opportunity?.id" :proyecto="buildPayload()" :cliente="selectedClient" :version-data="selectedVersionForEmail" @close="showModalEnviar = false" @sent="onEmailSent" />
     <!-- Ver Survey Visor Modal -->
     <VerSurveyModal v-model="showVisorModal" :id-survey="visorSurveyId" />
     <!-- Global Loading Overlay -->
@@ -1192,7 +1192,11 @@ const loading = ref(true)
 const snapshotComercial = ref({})
 
 const hasDiff = (field, index = 0) => {
-  if (!snapshotComercial.value) return false
+  // El control de cambios (diff) SOLO aplica en la etapa de Operaciones (estado 3 o tab Operaciones)
+  if (opportunity.value.id_proyecto_estado !== 3 && topTab.value !== 'operaciones') {
+    return false
+  }
+  if (!snapshotComercial.value || Object.keys(snapshotComercial.value).length === 0) return false
   
   if (field === 'peso_carga') return (siteVisit.value.peso_carga || '') !== (snapshotComercial.value.peso_carga || '')
   if (field === 'radios_trabajo') return (siteVisit.value.radios_trabajo || '') !== (snapshotComercial.value.radios_trabajo || '')

@@ -1,9 +1,14 @@
-# 🏗️ Arquitectura y Dominio del Sistema: LeanGlobal / GSP
-
 ## 1. Backend & Infraestructura
-- **Entorno de Servidor Remoto:** Servidor Linux bajo la cuenta `nodeadmin`.
-- **Backend Node.js:** Ubicado en `/home/nodeadmin/proyectos/lean-services-gsp/` (`backend_remoto`).
-- **Gestor de Procesos:** PM2 con el nombre `lean-services-gsp`.
+- **Entorno de Servidor Remoto:** Servidor Linux CentOS (`servidor.leanglobal.cl`).
+- **Conexión SSH:**
+  - **Host / IP:** `servidor.leanglobal.cl` (138.255.103.18)
+  - **Puerto SSH:** `1295` (Protocolo SSHv2)
+  - **Usuario Root:** `root`
+  - **Password Root:** `lgbl2025.`
+  - **Cuenta de Administración Backend:** `su - nodeadmin` (Ejecución de `git pull` y `pm2 restart 10` / `lean-services-gsp`).
+- **Restricción Estricta de Ámbito:** Queda estrictamente prohibido modificar, detener o reiniciar cualquier otro backend o proceso distinto a `lean-services-gsp` (PID / PM2 ID: 10).
+- **Ruta Backend Node.js:** Ubicado en `/home/nodeadmin/proyectos/lean-services-gsp/`.
+- **Gestor de Procesos:** PM2 con el nombre `lean-services-gsp` (ID: 10).
 - **Puerto Local Backend:** `3006`.
 - **Base URL API:** `https://servidor.leanglobal.cl/lg-gsp/api`.
 - **Proxy Nginx:** `/etc/nginx/sites-enabled/https_le.conf` (mapea `/lg-gsp/` al puerto `3006`).

@@ -192,6 +192,7 @@ const decision = ref('APRUEBA')
 const motivoRechazo = ref(null)
 const motivosRechazo = ref([])
 const passFes = ref('')
+const trazoFirmaBase64 = ref('')
 const loadingFirma = ref(false)
 const dialogCambiarFes = ref(false)
 
@@ -332,6 +333,7 @@ watch(
     if (isOpen) {
       observaciones.value = ''
       passFes.value = ''
+      trazoFirmaBase64.value = ''
       motivoRechazo.value = null
       tieneDesviacionDerivada.value = false
       decision.value = 'APRUEBA'
@@ -437,7 +439,9 @@ const crearFirmaSurvey = async () => {
           user_agent: 'DESCONOCIDO',
           geo_latitude: -33.456,
           geo_longitude: -70.648,
-          qrUrl: filenameQr
+          qrUrl: filenameQr,
+          firma_img: trazoFirmaBase64.value || null,
+          firma_base64: trazoFirmaBase64.value || null
         }
       }
     }
@@ -488,7 +492,8 @@ const crearFirmaSurvey = async () => {
         userDetailStore.userDetail.apellido_mat,
       id_survey: flujo.id_survey,
       pass_fes: hash,
-      filenameQr: filenameQr
+      filenameQr: filenameQr,
+      firma_base64: trazoFirmaBase64.value || null
     }
 
     console.log('✅ Datos para crear firma:', data)

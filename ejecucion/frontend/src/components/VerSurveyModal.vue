@@ -1,7 +1,8 @@
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 md:p-6 backdrop-blur-sm"
+    class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-2 md:p-6 backdrop-blur-sm isolation-auto"
+    style="z-index: 99999 !important;"
     @click.self="cerrar"
   >
     <div class="relative w-full max-w-7xl h-[95vh] overflow-hidden rounded-[2rem] border border-white/10 bg-[#101114] shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">

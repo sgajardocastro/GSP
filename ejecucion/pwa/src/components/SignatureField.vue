@@ -2,19 +2,20 @@
   <div class="w-full mb-4">
     <label class="block text-sm font-medium text-gray-700 mb-2">{{ label }}</label>
     
-    <div class="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white relative">
+    <div class="border-2 border-solid border-amber-500/40 rounded-xl overflow-hidden bg-white relative shadow-inner">
       <!-- Clear button -->
       <button 
         @click.prevent="clear" 
-        class="absolute top-2 right-2 bg-gray-100 hover:bg-gray-200 text-gray-700 p-1 rounded-md text-xs z-10 font-medium transition-colors"
+        class="absolute top-3 right-3 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs z-10 font-bold transition-all shadow-sm border border-red-200"
       >
-        Limpiar
+        🗑️ Limpiar
       </button>
 
       <!-- Signature canvas -->
       <canvas 
         ref="canvas" 
-        class="w-full h-48 cursor-crosshair touch-none"
+        class="w-full h-48 cursor-crosshair touch-none bg-white"
+        style="background-color: #ffffff !important;"
         @mousedown="startDrawing"
         @mousemove="draw"
         @mouseup="stopDrawing"
@@ -25,8 +26,8 @@
       ></canvas>
 
       <!-- Placeholder / Instructions -->
-      <div v-if="!hasDrawn && !modelValue" class="absolute inset-0 pointer-events-none flex items-center justify-center text-gray-400">
-        Firme aquí
+      <div v-if="!hasDrawn && !modelValue" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 font-semibold text-sm">
+        ✍️ Dibuje su firma aquí
       </div>
     </div>
   </div>
@@ -86,9 +87,10 @@ const draw = (e) => {
     ctx.value.beginPath()
     ctx.value.moveTo(lastPos.value.x, lastPos.value.y)
     ctx.value.lineTo(currentPos.x, currentPos.y)
-    ctx.value.strokeStyle = '#000000'
-    ctx.value.lineWidth = 2
+    ctx.value.strokeStyle = '#0f172a'
+    ctx.value.lineWidth = 3
     ctx.value.lineCap = 'round'
+    ctx.value.lineJoin = 'round'
     ctx.value.stroke()
   }
   

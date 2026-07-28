@@ -4,6 +4,27 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.16
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-28 14:02:00 (-04:00)
+- **Ruta Web CRM:** `/var/www/html/lg-gsp-dev/` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Visor de Encuesta (verSurveyPrint):** Corregido fallo en la carga del protocolo que dejaba en blanco encuestas guardadas (ej. Survey 193). Se incorporó `encodeURIComponent` en la consulta por nombre de cliente (`name_empresa_cliente`) y aislamiento `try/catch` en peticiones secundarias de logos y usuario ejecutor para evitar interrupciones de renderizado.
+
+---
+
+## [Portal Web GSP & PWA] - Versión 1.0.15
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-28 13:09:30 (-04:00)
+- **Ruta Web CRM:** `/var/www/html/lg-gsp-dev/` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta PWA:** `/var/www/html/pwa-gsp-dev/` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Control de Cambios (Diffs) en Preventa:** Restringida la alerta y formateo de modificaciones (línea roja y valores originales) para que opere exclusivamente en la etapa "En Preparación Operaciones" (`id_proyecto_estado === 3`), permitiendo edición limpia en etapa "Cotización".
+  - **[FIX]** **Plantilla HTML de Correos B2B:** Eliminado el saludo inicial repetido y el párrafo final redundante de despedida.
+  - **[FIX]** **Obra y Versión Dinámicas:** Inyectado el objeto completo del proyecto (`buildPayload()`) al modal de envíos para resolver correctamente el nombre real de la obra (`siteVisit.obra_nombre`) y el número de versión enviado (`v5`, `v25`, etc.).
+
+---
+
 ## [Portal Web GSP & PWA] - Versión 1.0.14
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-07-28 12:25:00 (-04:00)

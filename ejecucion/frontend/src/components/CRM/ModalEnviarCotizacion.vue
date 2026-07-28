@@ -204,10 +204,10 @@ watch(() => props.show, (newVal) => {
     const emailContacto = props.cliente?.email || props.proyecto?.email_contacto || props.proyecto?.cliente_email || 'sgajardoc@gmail.com'
     destinatariosCliente.value = [emailContacto]
 
-    const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || 'GSP-2607-001'
+    const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || props.proyecto?.codi_proyecto || 'GSP-2607-001'
     const clienteName = props.cliente?.razon_social || props.cliente?.name_empresa || props.proyecto?.razon_social || props.proyecto?.cliente_nombre || 'Cliente Mandante'
-    const verCod = props.versionData?.version_codigo || 'v1.0'
-    const obra = props.proyecto?.nombre_obra || 'Obra Principal'
+    const verCod = props.versionData?.version_codigo || (props.versionData?.version ? `v${props.versionData.version}` : 'v1.0')
+    const obra = props.proyecto?.json_field?.crm_v1?.obra_nombre || props.proyecto?.obra_nombre || props.proyecto?.nombre_obra || props.proyecto?.nombre_proyecto || props.proyecto?.body_exec?.nombre_obra || 'Obra Principal'
 
     asunto.value = `Cotización Grúas San Pablo: ${codProj} - ${clienteName}`
     cuerpoMensaje.value = `Estimado(a) ${clienteName},\n\nJunto con saludar, adjuntamos la propuesta de cotización oficial ${verCod} (Código: ${codProj}) correspondiente al servicio solicitado para la obra "${obra}".\n\nQuedamos atentos a sus comentarios para coordinar los detalles operativos de la faena.\n\nSaludos cordiales,\nEquipo Comercial — Grúas San Pablo`
@@ -236,7 +236,7 @@ const close = () => {
 const generateCommercialHtmlEmail = ({ clienteNombre, codProyecto, verCodigo, obraNombre, cuerpoTexto, pdfUrl }) => {
   const formattedBody = (cuerpoTexto || '').replace(/\n/g, '<br>')
 
-  return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f1116; border: 1px solid #f59e0b; border-radius: 16px; overflow: hidden; padding: 25px; color: #e2e8f0;"><div style="text-align: center; border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;"><h2 style="color: #f59e0b; margin: 0; font-size: 20px;">🏗️ GRÚAS SAN PABLO S.A.</h2><p style="color: #94a3b8; font-size: 12px; margin: 5px 0 0 0;">COTIZACIÓN OFICIAL DE SERVICIOS DE IZAJE</p></div><div style="font-size: 14px; line-height: 1.6;"><p style="margin-top: 0;">Estimado(a) <strong>${clienteNombre || 'Cliente Mandante'}</strong>,</p><div style="margin: 15px 0;">${formattedBody}</div><div style="background-color: #14171f; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;"><div style="color: #f59e0b; font-weight: bold; margin-bottom: 5px;">📋 FICHA RESUMEN DE LA COTIZACIÓN</div><div>Código Proyecto: <strong>${codProyecto || 'GSP-2607-001'}</strong></div><div>Versión Documento: <strong>${verCodigo || 'v1.0'}</strong></div><div>Obra / Destino: <strong>${obraNombre || 'Obra Principal'}</strong></div></div>${pdfUrl ? `<div style="text-align: center; margin: 25px 0;"><a href="${pdfUrl}" target="_blank" style="background-color: #f59e0b; color: #020617; font-weight: bold; text-decoration: none; padding: 12px 26px; border-radius: 8px; font-size: 13px; display: inline-block;">📄 DESCARGAR PROPUESTA PDF (${verCodigo || 'v1.0'})</a></div>` : ''}<p>Quedamos atentos a sus comentarios.</p><p style="margin-bottom: 0;">Saludos cordiales,<br><strong>Equipo Comercial — Grúas San Pablo S.A.</strong></p></div><div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;">Grúas San Pablo S.A. | notificaciones.gsp@leanglobal.cl</div></div>`
+  return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f1116; border: 1px solid #f59e0b; border-radius: 16px; overflow: hidden; padding: 25px; color: #e2e8f0;"><div style="text-align: center; border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;"><h2 style="color: #f59e0b; margin: 0; font-size: 20px;">🏗️ GRÚAS SAN PABLO S.A.</h2><p style="color: #94a3b8; font-size: 12px; margin: 5px 0 0 0;">COTIZACIÓN OFICIAL DE SERVICIOS DE IZAJE</p></div><div style="font-size: 14px; line-height: 1.6;"><div style="margin: 15px 0;">${formattedBody}</div><div style="background-color: #14171f; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;"><div style="color: #f59e0b; font-weight: bold; margin-bottom: 5px;">📋 FICHA RESUMEN DE LA COTIZACIÓN</div><div>Código Proyecto: <strong>${codProyecto || 'GSP-2607-001'}</strong></div><div>Versión Documento: <strong>${verCodigo || 'v1.0'}</strong></div><div>Obra / Destino: <strong>${obraNombre || 'Obra Principal'}</strong></div></div>${pdfUrl ? `<div style="text-align: center; margin: 25px 0;"><a href="${pdfUrl}" target="_blank" style="background-color: #f59e0b; color: #020617; font-weight: bold; text-decoration: none; padding: 12px 26px; border-radius: 8px; font-size: 13px; display: inline-block;">📄 DESCARGAR PROPUESTA PDF (${verCodigo || 'v1.0'})</a></div>` : ''}</div><div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;">Grúas San Pablo S.A. | notificaciones.gsp@leanglobal.cl</div></div>`
 }
 
 const sendEmail = async () => {
@@ -250,10 +250,10 @@ const sendEmail = async () => {
 
   try {
     const pdfUrl = props.versionData?.url ? `https://servidor.leanglobal.cl${props.versionData.url}` : ''
-    const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || 'GSP-2607-001'
+    const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || props.proyecto?.codi_proyecto || 'GSP-2607-001'
     const clienteName = props.cliente?.razon_social || props.cliente?.name_empresa || props.proyecto?.razon_social || props.proyecto?.cliente_nombre || 'Cliente Mandante'
-    const verCod = props.versionData?.version_codigo || 'v1.0'
-    const obra = props.proyecto?.nombre_obra || 'Obra Principal'
+    const verCod = props.versionData?.version_codigo || (props.versionData?.version ? `v${props.versionData.version}` : 'v1.0')
+    const obra = props.proyecto?.json_field?.crm_v1?.obra_nombre || props.proyecto?.obra_nombre || props.proyecto?.nombre_obra || props.proyecto?.nombre_proyecto || props.proyecto?.body_exec?.nombre_obra || 'Obra Principal'
 
     const htmlContent = generateCommercialHtmlEmail({
       clienteNombre: clienteName,
