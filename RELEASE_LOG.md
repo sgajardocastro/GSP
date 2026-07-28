@@ -4,6 +4,26 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP & PWA] - Versión 1.0.14
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-28 12:25:00 (-04:00)
+- **Ruta Web CRM:** `/var/www/html/lg-gsp-dev/` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta PWA:** `/var/www/html/pwa-gsp-dev/` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Visor Web de Inspecciones (`/versurveyprint`):** Integrada la ruta e iframe de previsualización de reportes de visitas a terreno en el Vue Router y Web CRM.
+  - **[FEAT]** **Correos B2B Enriquecidos:** Estandarizado el despacho de cotizaciones vía `POST /message` con maquetas HTML comerciales responsivas de tarjetas corporativas.
+  - **[FIX]** **Resolución Paramétrica de Logos en PDF:** Incorporada la resolución física de `logo-sanpablo.png` desde la carpeta `/public` del backend con permisos de `nodeadmin`.
+
+## [Backend GSP] - Versión 1.0.14
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-28 12:25:00 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Logos en PDFs de Cotizaciones:** Corregida la ruta de lectura de logos en `proyectoModel.js` a la carpeta local del proyecto con fallback dinámico in-memory.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.13
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-07-22 23:27:33 (-04:00)
