@@ -2,13 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 
-// Importar rutas (se crearán a continuación)
+// Importar rutas
 import authRoutes from './routes/auth.js';
 import operatorRoutes from './routes/operators.js';
 import craneRoutes from './routes/cranes.js';
 import serviceRoutes from './routes/services.js';
 import inventarioRoutes from './routes/inventario.js';
 import mantenimientoRoutes from './routes/mantenimiento.js';
+import proyectosRoutes from './routes/proyectos.js';
 
 const app = express();
 
@@ -26,11 +27,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Middleware de inyección de Tenant Multiempresa simulado (simula JWT decodificado)
-// En producción, esto provendría de un middleware tipo express-jwt
+// Middleware de inyección de Tenant Multiempresa
 app.use((req, res, next) => {
   if (!req.user) {
-    req.user = { id_empresa: 9 }; // Mock id_empresa
+    req.user = { id_empresa: 9 };
   }
   next();
 });
@@ -41,13 +41,16 @@ app.use('/api/operators', operatorRoutes);
 app.use('/api/cranes', craneRoutes);
 app.use('/api/services', serviceRoutes);
 
-// Nuevos Módulos: Inventario (WMS-Lite) y Mantenimiento (OTs)
+// Módulo Proyectos & Cotizaciones
+app.use('/api/proyectos', proyectosRoutes);
+app.use('/lg-gsp/api/proyectos', proyectosRoutes);
+
+// Módulos: Inventario (WMS-Lite) y Mantenimiento (OTs)
 app.use('/api/inventario', inventarioRoutes);
 app.use('/lg-gsp/api/inventario', inventarioRoutes);
 
 app.use('/api/mantenimiento', mantenimientoRoutes);
 app.use('/lg-gsp/api/mantenimiento', mantenimientoRoutes);
-
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

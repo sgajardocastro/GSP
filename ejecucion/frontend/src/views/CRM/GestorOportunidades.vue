@@ -33,7 +33,7 @@
         </button>
         <button v-if="opportunity.id_proyecto_estado !== 3" @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          <span>Generar PDF</span>
+          <span>Generar Cotización</span>
         </button>
         <button v-if="opportunity.id_proyecto_estado !== 3" @click="guardarEnPreventa" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <span>Guardar en Preventa</span>
@@ -574,23 +574,65 @@
             </select>
           </div>
 
-          <!-- VERSION CONTROL (MOVIDO AQUÍ) -->
+          <!-- VERSION CONTROL & ENVÍO DE EMAIL -->
           <div class="space-y-4 mt-2">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
-              2. Control de Versiones
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 flex justify-between items-center">
+              <span>2. Control de Versiones & Envíos</span>
+              <span class="text-[10px] text-slate-500 font-mono font-normal">Mostrando más nueva primero</span>
             </div>
             <div class="flex flex-col gap-2">
-              <div v-for="(v, i) in cotizaciones_historicas" :key="i" class="bg-white/[0.02] border border-white/5 rounded-lg p-2 flex justify-between items-center w-full">
-                <div class="flex items-center gap-2 flex-1 min-w-0">
-                  <span class="px-1.5 py-0.5 bg-white/5 text-slate-400 border border-white/5 text-[9px] font-bold rounded flex-shrink-0">v{{ v.version }}</span>
-                  <span class="text-[10px] text-amber-500 font-bold font-mono flex-shrink-0">{{ formatCurrency(v.monto) }}</span>
-                  <span class="text-[9px] text-slate-500 flex-shrink-0">{{ new Date(v.fecha).toLocaleString() }}</span>
+              <div
+                v-for="(v, i) in sortedCotizacionesHistoricas"
+                :key="i"
+                class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2 w-full shadow-md"
+              >
+                <div class="flex justify-between items-center w-full gap-2">
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black font-mono rounded">
+                      {{ v.version_codigo || ('v' + v.version) }}
+                    </span>
+                    <span class="text-xs text-emerald-400 font-black font-mono">{{ formatCurrency(v.monto) }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">{{ new Date(v.fecha).toLocaleString() }}</span>
+                  </div>
+
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <!-- Botón Rojo Icónico PDF -->
+                    <a
+                      :href="'https://servidor.leanglobal.cl' + v.url"
+                      target="_blank"
+                      class="text-[10px] px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg font-bold transition-all no-underline flex items-center gap-1"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                      <span>PDF</span>
+                    </a>
+
+                    <!-- Botón Enviar Cotización (Solo en la última versión i === 0) -->
+                    <button
+                      v-if="i === 0"
+                      @click="openModalEnviar(v)"
+                      class="text-[10px] px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg transition-all flex items-center gap-1 uppercase shadow"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                      <span>Enviar Cotización</span>
+                    </button>
+                  </div>
                 </div>
-                <a :href="'https://servidor.leanglobal.cl' + v.url" target="_blank" class="text-[9px] px-2 py-1 bg-slate-800 hover:bg-slate-700 hover:text-amber-400 text-slate-300 rounded font-bold transition-all no-underline">
-                  PDF
-                </a>
+
+                <!-- Historial Completo de Eventos de Envío de Email -->
+                <div v-if="(v.eventos_envio && v.eventos_envio.length > 0) || v.evento_envio" class="mt-1 space-y-1">
+                  <div v-for="(evt, eIdx) in (v.eventos_envio || [v.evento_envio])" :key="eIdx" class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-[10px] text-emerald-400 font-mono flex items-center justify-between">
+                    <div class="truncate">
+                      ✉️ <strong>Envío #{{ eIdx + 1 }}:</strong> {{ new Date(evt.fecha_envio).toLocaleString() }}
+                      <span class="text-slate-300"> ➔ {{ evt.destinatarios_cliente?.join(', ') }}</span>
+                    </div>
+                    <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold uppercase ml-2 flex-shrink-0">ENTREGADO</span>
+                  </div>
+                </div>
               </div>
-              <div v-if="cotizaciones_historicas.length === 0" class="text-[10px] text-slate-500 italic">No hay versiones previas.</div>
+
+              <div v-if="sortedCotizacionesHistoricas.length === 0" class="text-[10px] text-slate-500 italic p-2">
+                No hay versiones previas de cotización.
+              </div>
             </div>
           </div>
 
@@ -1053,6 +1095,8 @@
 
     <!-- Modal Nuevo Cliente -->
     <ModalNuevoCliente v-if="mostrarModalCliente" @close="mostrarModalCliente = false" @cliente-creado="onClienteCreado" />
+    <!-- Modal Enviar Cotización por Email -->
+    <ModalEnviarCotizacion :show="showModalEnviar" :proyecto-id="props.proyectoId || currentProyectoId || opportunity?.id_proyecto || opportunity?.id" :proyecto="opportunity" :cliente="selectedClient" :version-data="selectedVersionForEmail" @close="showModalEnviar = false" @sent="onEmailSent" />
     <!-- Ver Survey Visor Modal -->
     <VerSurveyModal v-model="showVisorModal" :id-survey="visorSurveyId" />
     <!-- Global Loading Overlay -->
@@ -1118,6 +1162,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import ModalNuevoCliente from '../../components/CRM/ModalNuevoCliente.vue'
+import ModalEnviarCotizacion from '../../components/CRM/ModalEnviarCotizacion.vue'
 import MapSelector from '../../components/CRM/MapSelector.vue'
 import apiAxios from '../../services/api'
 import VerSurveyModal from '../../components/VerSurveyModal.vue'
@@ -1302,6 +1347,56 @@ const antecedentes = ref({
 
 const cotizaciones_historicas = ref([])
 const generandoPDF = ref(false)
+
+const showModalEnviar = ref(false)
+const selectedVersionForEmail = ref(null)
+
+const sortedCotizacionesHistoricas = computed(() => {
+  if (!Array.isArray(cotizaciones_historicas.value)) return []
+  return [...cotizaciones_historicas.value].sort((a, b) => {
+    const fechaA = new Date(a.fecha || 0).getTime()
+    const fechaB = new Date(b.fecha || 0).getTime()
+    return fechaB - fechaA
+  })
+})
+
+const openModalEnviar = (v) => {
+  selectedVersionForEmail.value = v
+  showModalEnviar.value = true
+}
+
+const onEmailSent = async (eventoData) => {
+  if (selectedVersionForEmail.value) {
+    if (!Array.isArray(selectedVersionForEmail.value.eventos_envio)) {
+      selectedVersionForEmail.value.eventos_envio = []
+    }
+    if (selectedVersionForEmail.value.evento_envio && !selectedVersionForEmail.value.eventos_envio.some(e => e.fecha_envio === selectedVersionForEmail.value.evento_envio.fecha_envio)) {
+      selectedVersionForEmail.value.eventos_envio.push(selectedVersionForEmail.value.evento_envio)
+    }
+    selectedVersionForEmail.value.eventos_envio.push(eventoData)
+    selectedVersionForEmail.value.evento_envio = eventoData
+  }
+
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (!projectId) return
+
+  try {
+    const token = localStorage.getItem('token') || ''
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const payload = buildPayload()
+    
+    // Inyectar cotizaciones_historicas actualizadas con traza acumulada en crm_v1
+    payload.json_field.crm_v1.cotizaciones_historicas = cotizaciones_historicas.value
+    payload.id_user_modificacion = currentUser.id_user || null
+
+    await apiAxios.put(`/proyectos/${projectId}`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    console.log('✔ Traza acumulada de envíos guardada en PostgreSQL para proyecto', projectId)
+  } catch (error) {
+    console.error('Error al guardar traza acumulada de envíos en PostgreSQL:', error)
+  }
+}
 
 const opportunity = ref({
   id_empresa_emisora: '9',
