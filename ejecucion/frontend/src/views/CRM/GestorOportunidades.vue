@@ -114,7 +114,8 @@
           </div>
         </div>
 
-        <!-- Secciones A + B Unificadas en Panel Continuo -->
+        <!-- Secciones A + B Unificadas en Panel Continuo (Bloqueadas si el requerimiento está Aprobado) -->
+        <fieldset :disabled="isRequerimientoAprobado" class="contents">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Columna Izquierda: Pestaña A (Datos Servicio & Visita con MAPA Completo) -->
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
@@ -312,6 +313,7 @@
             </div>
           </div>
         </div>
+        </fieldset>
       </div>
 
       <!-- SUB-TAB 2: PESTAÑA C - ASIGNACIÓN DE RECURSOS (OT) (HABILITADA CONDICIONALMENTE TRAS APROBACIÓN) -->
@@ -2211,6 +2213,26 @@ onMounted(async () => {
               equipo_valor: lines.value[0]?.valorUnitario || 0
             }))
           }
+        }
+
+        // Mapear json_field.ejecucion_v1 si existe
+        const ejecucion = p.json_field?.ejecucion_v1
+        if (ejecucion) {
+          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || p.id_proyecto_estado === 4) {
+            requerimientoAprobado.value = true
+            topTab.value = 'operaciones'
+            operacionesSubTab.value = 'asignacion'
+          }
+          if (ejecucion.observaciones) {
+            operacionesAssignment.value.observaciones_operaciones = ejecucion.observaciones
+          }
+          if (ejecucion.equipo_id) operacionesAssignment.value.equipo_id = ejecucion.equipo_id
+          if (ejecucion.equipos_extra) operacionesAssignment.value.equipos_extra = ejecucion.equipos_extra
+          if (ejecucion.fecha_salida_plan) operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan
+          if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
+          if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
+          if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
+          if (ejecucion.aparejos_asignados_json) operacionesAssignment.value.aparejos = ejecucion.aparejos_asignados_json
         }
 
         // Cargar empresa cliente
