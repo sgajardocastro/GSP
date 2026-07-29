@@ -571,7 +571,19 @@
         <div class="bg-[#050810] border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
           <div class="flex justify-between items-center border-b border-white/10 pb-3">
             <div class="flex items-center gap-3">
-              <span class="text-xl">🏗️</span>
+              <svg class="w-7 h-7 text-purple-400" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+                <rect x="4" y="40" width="56" height="9" rx="2" fill="#1e293b" stroke="currentColor" stroke-width="2"/>
+                <circle cx="10" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                <circle cx="20" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                <circle cx="30" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                <circle cx="44" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                <circle cx="54" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                <path d="M5 40 V34 H14 L18 40 Z" fill="#475569" stroke="currentColor" stroke-width="2"/>
+                <path d="M22 38 L54 10" stroke="#a855f7" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M24 36 L48 15" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="54" y1="10" x2="54" y2="26" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="2 2"/>
+                <path d="M52 26 C52 30 56 30 56 27" stroke="#a855f7" stroke-width="2" fill="none"/>
+              </svg>
               <div>
                 <span class="text-sm font-bold text-white uppercase tracking-wider block">ARQUITECTURA DE FLUJO: PREPARACIÓN SALIDA DE PATIO</span>
                 <span class="text-xs text-slate-400">Pasos 1 y 3 Concurrentes (Paralelos) | Paso 2 Secuencial de Paso 1</span>
@@ -624,18 +636,18 @@
                   <!-- NODO 2: INSPECCIÓN SALIDA PATIO -->
                   <div :class="[
                     'p-3 rounded-lg border transition-all duration-300 relative flex flex-col justify-between min-h-[90px]',
-                    statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-md' : 'bg-[#050810] border-white/10 opacity-75')
+                    statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500/10 border-amber-500 shadow-md shadow-amber-500/10' : 'bg-[#050810] border-white/10 opacity-75')
                   ]">
                     <div class="flex justify-between items-center mb-1">
                       <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">
                         2. Inspección Patio
                       </span>
                       <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')" class="text-[10px] font-bold">
-                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado en App' : '🔴 Bloqueado (Esperando 1)') }}
+                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado' : '🔴 Bloqueado (Esperando 1)') }}
                       </span>
                     </div>
                     <h4 class="text-xs font-bold text-white mb-0.5">🚜 Check List & Contrapesos</h4>
-                    <span class="text-[10px] text-slate-400">Jefe de Patio ejecuta Survey en App</span>
+                    <span class="text-[10px] text-slate-400">Jefe de Patio ejecuta Survey</span>
                   </div>
                 </div>
               </div>
@@ -649,7 +661,7 @@
                 
                 <div :class="[
                   'p-3 rounded-lg border transition-all duration-300 flex justify-between items-center min-h-[60px]',
-                  statusSegmento3 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-md' : 'bg-[#050810] border-white/10')
+                  statusSegmento3 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500/10 border-amber-500 shadow-md shadow-amber-500/10' : 'bg-[#050810] border-white/10')
                 ]">
                   <div>
                     <div class="flex items-center gap-2 mb-0.5">
@@ -683,8 +695,22 @@
                 Hito Final
               </span>
               <div>
-                <span class="text-3xl block mb-1">🏗️</span>
-                <h4 class="text-xs font-bold text-white mb-1">Pase a Ejecución Terreno App</h4>
+                <div class="flex justify-center mb-1">
+                  <svg class="w-8 h-8 text-amber-400" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+                    <rect x="4" y="40" width="56" height="9" rx="2" fill="#1e293b" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="10" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="20" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="30" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="44" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="54" cy="49" r="3.5" fill="#0f172a" stroke="currentColor" stroke-width="2"/>
+                    <path d="M5 40 V34 H14 L18 40 Z" fill="#475569" stroke="currentColor" stroke-width="2"/>
+                    <path d="M22 38 L54 10" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M24 36 L48 15" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="54" y1="10" x2="54" y2="26" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="2 2"/>
+                    <path d="M52 26 C52 30 56 30 56 27" stroke="#f59e0b" stroke-width="2" fill="none"/>
+                  </svg>
+                </div>
+                <h4 class="text-xs font-bold text-white mb-1">Pase a Ejecución Terreno</h4>
                 <p class="text-[10px] text-slate-400 leading-tight">
                   Exige <strong>Paso 2 🟢</strong> y <strong>Paso 3 🟢</strong> completados.
                 </p>
