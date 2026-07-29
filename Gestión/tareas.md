@@ -135,3 +135,18 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Definición Global de Roles]:** Definir y levantar la matriz completa de roles para todo el proceso (Ventas, Cotizaciones, Visita a Terreno, Operaciones, Mantención e Izaje), mapeando permisos bajo la nomenclatura estándar LeanGlobal (`_ADMIN`, `_PROG`, `_EJEC`, `_APROB`).
 *   [ ] **[Matriz de Notificaciones a Operaciones]:** Definir a qué roles y usuarios específicos se les debe notificar automáticamente al generarse un requerimiento a Operaciones (Candidatos a evaluar: Omar, Jorge, Coordinador de Operaciones).
 *   [ ] **[Flujo y Roles Aprobación ➔ Asignación]:** Definir los roles y perfiles autorizados para realizar el paso formal de la aprobación del requerimiento a la asignación efectiva de recursos (equipos, operadores y rigger).
+
+---
+
+### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Herencia Global Manager - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c`)
+*(Vinculado a la referencia funcional de Global Manager en `presentaciones/index.html` y especificaciones Spec-Driven `17_wms_inventario_spec.md` y `18_mantenimiento_ots_spec.md`)*
+*   [x] **[Análisis Funcional Legacy]:** Recuperar blueprint funcional de Global Manager (`index.html`), estructurando campos, reglas de negocio duras (OC requerida, costo > 0, PIN de cierre) y roles de ejecutor.
+*   [x] **[Integración Maestro de Flota]:** Confirmar reutilización y consumo directo del módulo de Flota/Equipos (`tequ_equipo`) ya implementado y activo en GSP (sin re-diseño redundante).
+*   [x] **[Especificaciones Spec-Driven]:** Formalizar las especificaciones `.agents/specs/17_wms_inventario_spec.md` (RF-WMS-01 a 07) y `.agents/specs/18_mantenimiento_ots_spec.md` (RF-MNT-01 a 06).
+*   [ ] **[RF-WMS-01/02] Backend WMS-Lite:** Implementar modelos de datos PostgreSQL `tinv_bodega`, `tinv_producto`, `tinv_existencia` y restricciones duras HTTP 422 (`COSTO_CERO_NO_PERMITIDO`, `OC_REQUERIDA`).
+*   [ ] **[RF-WMS-03/04] Endpoints REST & Traspasos:** Desarrollar controladores Node.js para movimientos de stock, estados `EN_TRANSITO` y despacho por escaneo de código de barras a OTs.
+*   [ ] **[RF-WMS-05/06] UI WMS-Lite Consola GSP:** Construir vistas Vue 3 de Bodegas, Catálogo de Productos, Registro de Existencias y Alertas de Stock Mínimo.
+*   [ ] **[RF-MNT-01/02] Backend Mantenimiento OTs:** Implementar tablas `tmnt_ot`, `tmnt_ot_actividad`, `tmnt_ot_hh`, `tmnt_ot_cierre` y triggers de BD/API (`EQUIPO_CON_OT_ACTIVA`, `OT_CON_ACTIVIDADES_PENDIENTES`).
+*   [ ] **[RF-MNT-03/04] Cierre OT con PIN 4 Dígitos:** Implementar flujo seguro de firma digital de cierre de OT mediante hash de PIN de supervisor e imputación automática de repuestos, HH y servicios externos.
+*   [ ] **[RF-MNT-05/06] UI Mantenimiento Consola GSP:** Construir panel Kanban y Ficha de OT con checklist reactivo, imputaciones de HH/repuestos y modal de cierre con PIN.
+

@@ -1,7 +1,3 @@
-TMAC:
-- Obs comnductual no es obligatoria la foto.
-
-
 # PRINCIPIO SPEC-DRIVEN 
 - Todo debe ser Spec-Driven
 
@@ -41,10 +37,3 @@ TMAC:
     Esta asignación es lo que se conoce como OT	
  
 			
-
-Aprobación Requerimiento
-Creción OT / Retorno a Comercial
-Asignación Recursos humanos y técnicos
-
-
-Tarea investigar tema correo 
