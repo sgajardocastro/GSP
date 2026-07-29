@@ -567,47 +567,133 @@
       <!-- SUB-TAB 4: PESTAÑA 4 - PREPARACIÓN DE SALIDA (BPM PROGRESS HEADER & 3 SEGMENTOS OPERACIONALES) -->
       <div v-if="operacionesSubTab === 'preparacion_salida'" class="space-y-6">
         
-        <!-- ENCABEZADO BPM DE PROGRESO DE PREPARACIÓN -->
-        <div class="bg-[#050810] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 rounded-lg flex items-center justify-center text-indigo-400 font-black font-mono">
-              BPM
+        <!-- DIAGRAMA VISUAL BPM DE FLUJO OPERACIONAL (WORKFLOW INTERACTIVO) -->
+        <div class="bg-[#050810] border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 bg-indigo-500/20 border border-indigo-500/40 rounded-xl flex items-center justify-center text-indigo-400 font-black font-mono text-sm shadow-md">
+                BPM
+              </div>
+              <div>
+                <span class="text-sm font-black text-white uppercase tracking-wider block">📊 DIAGRAMA BPM: FLUJO DE PREPARACIÓN DE SALIDA DE PATIO</span>
+                <span class="text-xs text-slate-400">Modelador de Procesos en Tiempo Real (Coordinación ➔ Patio ➔ Analista GPS)</span>
+              </div>
             </div>
-            <div>
-              <span class="text-xs font-black text-white uppercase tracking-wider block">📊 PROGRESO DE PREPARACIÓN DE SALIDA DE PATIO</span>
-              <span class="text-[10px] text-slate-400">Diagrama de Hitos Operacionales (Notificación CC ➔ Inspección Patio ➔ Analista)</span>
+            <div class="flex items-center gap-3 text-[11px] font-bold">
+              <span class="flex items-center gap-1.5 text-red-400"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> 🔴 No Iniciado</span>
+              <span class="flex items-center gap-1.5 text-amber-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span> 🟡 En Ejecución</span>
+              <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 🟢 Terminado</span>
             </div>
           </div>
-          
-          <!-- Hitos BPM con Semáforos Visuales -->
-          <div class="flex items-center gap-3 bg-[#0a0f1e] px-4 py-2 rounded-xl border border-white/5 text-xs font-bold">
-            <!-- Hito 1: Control Calidad -->
-            <div class="flex items-center gap-1.5">
-              <span v-if="statusSegmento1 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
-              <span v-else-if="statusSegmento1 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
-              <span :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-slate-400'">1. Notif. Calidad</span>
+
+          <!-- DIAGRAMA DE NODOS BPM CONECTADOS CON CONECTORES DIRECCIONALES -->
+          <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr] gap-3 items-center pt-1">
+            
+            <!-- NODO 1: CONTROL DE CALIDAD -->
+            <div :class="[
+              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
+              statusSegmento1 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'bg-[#0a0f1e] border-white/10'
+            ]">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Paso 1 • Calidad
+                </span>
+                <span :class="[
+                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
+                  statusSegmento1 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                ]">
+                  <span :class="['w-2 h-2 rounded-full', statusSegmento1 === 'GREEN' ? 'bg-emerald-500' : 'bg-red-500']"></span>
+                  {{ statusSegmento1 === 'GREEN' ? '🟢 Terminado' : '🔴 No Iniciado' }}
+                </span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
+                  <span>🛡️ Notificación a Control de Calidad</span>
+                </h4>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                  Envío formal de antecedentes técnicos del servicio y requerimientos de EPP / riesgo a Calidad.
+                </p>
+              </div>
+              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
+                <span>Rol: <strong>Coordinador</strong></span>
+                <span>Canal: <strong>Email System</strong></span>
+              </div>
+            </div>
+
+            <!-- CONECTOR BPM 1 ➔ 2 -->
+            <div class="hidden lg:flex flex-col items-center justify-center text-slate-500 font-black">
+              <span :class="['text-xs font-mono mb-1', statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-slate-600']">FLOW 1.2</span>
+              <svg class="w-6 h-6 text-slate-500" :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400 animate-pulse' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+
+            <!-- NODO 2: INSPECCIÓN DE SALIDA DE PATIO -->
+            <div :class="[
+              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
+              statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
+            ]">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Paso 2 • Patio
+                </span>
+                <span :class="[
+                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
+                  statusSegmento2 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30')
+                ]">
+                  <span :class="['w-2 h-2 rounded-full', statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')]"></span>
+                  {{ statusSegmento2 === 'GREEN' ? '🟢 Carga Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado' : '🔴 No Iniciado') }}
+                </span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
+                  <span>🚜 Inspección Salida & Contrapesos</span>
+                </h4>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                  Survey digital Jefe de Patio: Check list operativo (fotos/taller), verificación de contrapesos y maniobras.
+                </p>
+              </div>
+              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
+                <span>Rol: <strong>Jefe de Patio</strong></span>
+                <span>Checklist: <strong>Digital Survey</strong></span>
+              </div>
+            </div>
+
+            <!-- CONECTOR BPM 2 ➔ 3 -->
+            <div class="hidden lg:flex flex-col items-center justify-center text-slate-500 font-black">
+              <span :class="['text-xs font-mono mb-1', statusSegmento2 === 'GREEN' ? 'text-emerald-400' : 'text-slate-600']">FLOW 2.3</span>
+              <svg class="w-6 h-6 text-slate-500" :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400 animate-pulse' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+
+            <!-- NODO 3: ANALISTA DE OPERACIONES -->
+            <div :class="[
+              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
+              statusSegmento3 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
+            ]">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Paso 3 • Analista
+                </span>
+                <span :class="[
+                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
+                  statusSegmento3 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30')
+                ]">
+                  <span :class="['w-2 h-2 rounded-full', statusSegmento3 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')]"></span>
+                  {{ statusSegmento3 === 'GREEN' ? '🟢 Habilitado' : (statusSegmento3 === 'YELLOW' ? '🟡 En Proceso' : '🔴 No Iniciado') }}
+                </span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
+                  <span>💻 Análisis 360 & Geocerca GPS</span>
+                </h4>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                  Instrucción del coordinador, revisión 360 de la OT y activación del perímetro GPS para la maniobra.
+                </p>
+              </div>
+              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
+                <span>Rol: <strong>Analista Op.</strong></span>
+                <span>GPS: <strong>Geocerca Activa</strong></span>
+              </div>
             </div>
             
-            <span class="text-slate-600 font-mono">➔</span>
-            
-            <!-- Hito 2: Inspección Patio -->
-            <div class="flex items-center gap-1.5">
-              <span v-if="statusSegmento2 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
-              <span v-else-if="statusSegmento2 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
-              <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')">2. Inspección Patio</span>
-            </div>
-            
-            <span class="text-slate-600 font-mono">➔</span>
-            
-            <!-- Hito 3: Analista -->
-            <div class="flex items-center gap-1.5">
-              <span v-if="statusSegmento3 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
-              <span v-else-if="statusSegmento3 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
-              <span :class="statusSegmento3 === 'GREEN' ? 'text-emerald-400' : (statusSegmento3 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')">3. Analista Op.</span>
-            </div>
           </div>
         </div>
 
