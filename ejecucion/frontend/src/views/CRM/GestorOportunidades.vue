@@ -27,9 +27,9 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
           <span>No Ganada</span>
         </button>
-        <button v-if="opportunity.id_proyecto_estado !== 3" @click="enviarCotizacionPorCorreo" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-          <span>Enviar por Correo</span>
+        <button v-if="opportunity.id_proyecto_estado === 3 && topTab === 'operaciones' && !isRequerimientoAprobado" @click="abrirModalAprobarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
         </button>
         <button v-if="opportunity.id_proyecto_estado !== 3" @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -38,7 +38,7 @@
         <button v-if="opportunity.id_proyecto_estado !== 3" @click="guardarEnPreventa" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <span>Guardar en Preventa</span>
         </button>
-        <button v-if="opportunity.id_proyecto_estado !== 3" @click="generarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1">
+        <button v-if="opportunity.id_proyecto_estado !== 3" @click="abrirModalGenerarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
           <span>Generar Requerimiento</span>
         </button>
@@ -296,17 +296,19 @@
 
             <div>
               <label class="block text-[10px] text-slate-400 font-semibold mb-1">Observaciones de Operaciones / Motivos de Ajuste:</label>
-              <textarea v-model="operacionesAssignment.observaciones_operaciones" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none"></textarea>
+              <textarea v-model="operacionesAssignment.observaciones_operaciones" :disabled="isRequerimientoAprobado" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-75 disabled:bg-slate-900/60"></textarea>
             </div>
 
-            <div class="pt-2">
-              <button 
-                @click="aprobarYGenerarOT" 
-                class="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
-              </button>
+            <div v-if="isRequerimientoAprobado" class="pt-2">
+              <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 text-center flex items-center justify-center gap-2 text-xs text-emerald-300 font-bold">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <span>🔒 Requerimiento Aprobado por Operaciones — Formulario en Modo Lectura</span>
+              </div>
+            </div>
+            <div v-else class="pt-2">
+              <p class="text-[11px] text-slate-400 italic text-center">
+                💡 Para aprobar el requerimiento y pasar a Asignación de Recursos, presiona el botón amarillo en la barra superior.
+              </p>
             </div>
           </div>
         </div>
@@ -329,67 +331,155 @@
             </span>
           </div>
 
-          <!-- Referencia a Visita a Terreno -->
-          <div class="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg mb-4 flex items-start gap-3">
-            <div class="mt-1"><svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-            <div>
-              <h4 class="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">📋 Referencia: Visita a Terreno</h4>
-              <p class="text-[11px] text-slate-300 mb-1">
-                <strong class="text-white">Equipo Solicitado Inicialmente:</strong> {{ siteVisit.equipo_sugerido || 'No especificado' }} 
-                | <strong class="text-white">Carga:</strong> {{ siteVisit.peso_carga || 0 }}T 
-                | <strong class="text-white">Radio:</strong> {{ siteVisit.radio_trabajo || 0 }}m
-              </p>
-              <p class="text-[10px] text-slate-400">
-                <em v-if="siteVisit.observaciones">"{{ siteVisit.observaciones }}"</em>
-                <em v-else>Sin observaciones adicionales de terreno.</em>
-              </p>
+          <!-- Referencia a Inspecciones Visita a Terreno -->
+          <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-4 space-y-2">
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📋 Referencia: Visita a Terreno & Levantamientos</span>
+              </h4>
+              <span class="text-[10px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded font-mono font-bold">
+                {{ visitasDelProyecto.length }} Inspección(es) Registrada(s)
+              </span>
+            </div>
+            
+            <div v-if="visitasDelProyecto.length > 0" class="space-y-1.5">
+              <div v-for="v in visitasDelProyecto" :key="'st3-v-'+v.id_survey" class="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-white/5 text-xs">
+                <div class="flex flex-col">
+                  <span class="font-bold text-white">Visita #{{ v.id_survey }} ({{ v.estado_srv || 'Realizada' }})</span>
+                  <span class="text-[10px] text-slate-400">{{ v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || siteVisit.obra_nombre || 'Obra Terreno' }}</span>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <span class="text-[10px] text-slate-300 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</span>
+                  <button @click="abrirVisorWeb(v.id_survey)" type="button" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 font-bold px-2.5 py-1 text-[10px] rounded transition-colors" title="Visualizar detalles de la visita en Web">
+                    Ver Web
+                  </button>
+                  <a v-if="v.id_doc" :href="`${archivoBaseUrl}/archivo/transmac/${v.id_doc}`" target="_blank" class="inline-flex items-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold px-2.5 py-1 text-[10px] rounded transition-colors" title="Visualizar reporte PDF firmado">
+                    Ver PDF
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-xs text-slate-400 italic">
+              Sin inspecciones previas registradas para este proyecto. Datos tomados del formulario base de preventa.
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="lg:col-span-2">
-              <label class="block text-[11px] text-slate-400 font-semibold mb-1">Seleccionar Equipo Principal Asignado *</label>
-              <select v-model="operacionesAssignment.equipo_id" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-white outline-none">
-                <option value="CRN-DEFAULT">[{{ lines[0]?.descripcion || 'EQUIPO ESTRUCTURADOR' }}] - Selección Sugerida</option>
-                <option value="CRN-01">Liebherr LTM 1220 (220 Ton) - Patente HW-8842 [OPERATIVA]</option>
-                <option value="CRN-02">Tadano ATF 110G (110 Ton) - Patente GR-1029 [OPERATIVA]</option>
-                <option value="CRN-03">Grove GMK 5250L (250 Ton) - Patente PL-9021 [MANTENCION]</option>
-              </select>
-            </div>
-            
-            <div class="lg:col-span-2">
-              <label class="block text-[11px] text-slate-400 font-semibold mb-1">Equipos Adicionales / Apoyo a Maniobra</label>
-              <div class="flex gap-2">
-                <select v-model="operacionesAssignment.equipo_adicional" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none">
-                  <option value="">-- Sin equipo adicional --</option>
-                  <option value="CAM-01">Camión Pluma - PK 50002 [OPERATIVO]</option>
-                  <option value="CAMA-01">Cama Baja - Patente XY-1234 [OPERATIVA]</option>
-                  <option value="CRN-04">Grúa RT 50T - Patente RT-5566 [OPERATIVA]</option>
-                </select>
-                <button type="button" @click="if(operacionesAssignment.equipo_adicional) { if(!operacionesAssignment.equipos_extra) operacionesAssignment.equipos_extra = []; operacionesAssignment.equipos_extra.push(operacionesAssignment.equipo_adicional); operacionesAssignment.equipo_adicional = ''; }" class="bg-blue-500/20 text-blue-400 px-3 py-2 rounded-lg text-xs font-bold hover:bg-blue-500/30 transition-colors">+</button>
-              </div>
-              <div v-if="operacionesAssignment.equipos_extra?.length > 0" class="mt-2 flex flex-wrap gap-1">
-                <span v-for="(eq, idx) in operacionesAssignment.equipos_extra" :key="idx" class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded text-[10px] flex items-center gap-1">
-                  {{ eq }}
-                  <button @click="operacionesAssignment.equipos_extra.splice(idx, 1)" class="hover:text-white">&times;</button>
+          <!-- ASIGNACIÓN DE RECURSOS EN 2 COLUMNAS MATRICIALES -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- COLUMNA 1: MATRIZ DE EQUIPOS -->
+            <div class="bg-[#0a0f1e] border border-white/10 rounded-xl p-4 space-y-4">
+              <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  🏗️ 1. Asignación de Equipos (Grúas / Transporte)
                 </span>
+                <span class="text-[10px] text-slate-400 font-mono">Semáforo Certificados</span>
+              </div>
+
+              <!-- Equipo Principal -->
+              <div class="space-y-2 bg-black/30 p-3 rounded-lg border border-white/5">
+                <div class="flex justify-between items-center">
+                  <label class="text-[11px] font-bold text-slate-200">Equipo Principal Solicitado:</label>
+                  <span class="text-[10px] text-amber-300 font-mono font-bold">{{ lines[0]?.descripcion || 'Grúa Liebherr LTM 1220' }}</span>
+                </div>
+                <select v-model="operacionesAssignment.equipo_id" class="w-full bg-[#050810] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                  <option value="CRN-DEFAULT">[{{ lines[0]?.descripcion || 'EQUIPO ESTRUCTURADOR' }}] - Selección Sugerida</option>
+                  <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente">
+                    {{ eq.nombre_equipo || eq.patente }} ({{ eq.tipo || 'Grúa' }}) - Patente: {{ eq.patente || 'HW-8842' }}
+                  </option>
+                </select>
+                
+                <!-- Semáforo Equipo Principal -->
+                <div class="pt-1 flex items-center justify-between">
+                  <span class="text-[10px] text-slate-400 font-mono">Estado Certificado:</span>
+                  <span v-if="getSemaforoEquipo(operacionesAssignment.equipo_id) === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                    🟢 CERTIFICADO VIGENTE (Al día)
+                  </span>
+                  <span v-else-if="getSemaforoEquipo(operacionesAssignment.equipo_id) === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                    🟡 POR VENCER (< 30 DÍAS)
+                  </span>
+                  <span v-else class="bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                    🔴 VENCIDO / REQUIERE REVISIÓN
+                  </span>
+                </div>
+              </div>
+
+              <!-- Equipos Adicionales -->
+              <div class="space-y-2 bg-black/30 p-3 rounded-lg border border-white/5">
+                <label class="text-[11px] font-bold text-slate-200 block">Equipos Adicionales / Apoyo a Maniobra:</label>
+                <div class="flex gap-2">
+                  <select v-model="operacionesAssignment.equipo_adicional" class="w-full bg-[#050810] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                    <option value="">-- Seleccionar Equipo Adicional --</option>
+                    <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.nombre_equipo || eq.patente">
+                      {{ eq.nombre_equipo || eq.patente }} ({{ eq.patente || 'S/P' }})
+                    </option>
+                  </select>
+                  <button type="button" @click="agregarEquipoAdicional" class="bg-blue-500/20 text-blue-400 px-3.5 py-2 rounded-lg text-xs font-bold hover:bg-blue-500/30 transition-colors">+</button>
+                </div>
+                <div v-if="operacionesAssignment.equipos_extra?.length > 0" class="mt-2 space-y-1.5">
+                  <div v-for="(eq, idx) in operacionesAssignment.equipos_extra" :key="idx" class="bg-blue-500/10 border border-blue-500/30 p-2 rounded-lg text-xs flex justify-between items-center text-blue-200">
+                    <span class="font-medium">{{ eq }}</span>
+                    <button @click="operacionesAssignment.equipos_extra.splice(idx, 1)" class="text-red-400 hover:text-white font-bold">&times;</button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label class="block text-[11px] text-slate-400 font-semibold mb-1">Operador Principal *</label>
-              <select v-model="operacionesAssignment.operador_id" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none">
-                <option value="OP-101">Juan Pérez (Lic. A4 - Acreditación VIGENTE)</option>
-                <option value="OP-102">Roberto Soto (Lic. A4 - Acreditación VIGENTE)</option>
-              </select>
-            </div>
+            <!-- COLUMNA 2: MATRIZ DE PERSONAS / TRIPULACIÓN -->
+            <div class="bg-[#0a0f1e] border border-white/10 rounded-xl p-4 space-y-4">
+              <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  👷 2. Tripulación & Personal Operativo
+                </span>
+                <button @click="agregarTripulante" type="button" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors">
+                  + Agregar Tripulante
+                </button>
+              </div>
 
-            <div>
-              <label class="block text-[11px] text-slate-400 font-semibold mb-1">Rigger Asignado</label>
-              <select v-model="operacionesAssignment.rigger_id" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none">
-                <option value="RIG-201">Gonzalo Parra (Rigger RII)</option>
-                <option value="RIG-202">Claudio Muñoz (Rigger RI)</option>
-              </select>
+              <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                <div v-for="(t, idx) in tripulacionAsignada" :key="'trip-'+idx" class="bg-black/30 p-3 rounded-lg border border-white/5 space-y-2">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-amber-400 uppercase">Integrante #{{ idx + 1 }}</span>
+                    <button v-if="tripulacionAsignada.length > 1" @click="eliminarTripulante(idx)" type="button" class="text-slate-500 hover:text-red-400 text-xs font-bold">&times; Eliminar</button>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="text-[10px] text-slate-400 block mb-1">Cargo en Maniobra:</label>
+                      <select v-model="t.cargo" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
+                        <option value="Operador Grúa">Operador Grúa Principal</option>
+                        <option value="Operador Camión Pluma">Operador Camión Pluma</option>
+                        <option value="Rigger / Señalero">Rigger / Señalero</option>
+                        <option value="Chofer Cama Baja">Chofer Cama Baja</option>
+                        <option value="Escolta / Guía">Escolta / Guía</option>
+                        <option value="Supervisor Faena">Supervisor Faena</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-400 block mb-1">Personal Asignado:</label>
+                      <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
+                        <option value="">-- Seleccionar Persona --</option>
+                        <option v-for="u in usuarios" :key="u.id_user" :value="u.id_user">
+                          {{ u.nombre_user || u.name_user }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Semáforo Persona -->
+                  <div class="flex justify-between items-center pt-1 border-t border-white/5">
+                    <span class="text-[9px] text-slate-400 font-mono">Certificación Personal:</span>
+                    <span v-if="t.semaforo === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[9px] font-bold">
+                      🟢 ACREDITACIÓN AL DÍA
+                    </span>
+                    <span v-else-if="t.semaforo === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[9px] font-bold">
+                      🟡 DOC. POR VENCER
+                    </span>
+                    <span v-else class="bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded text-[9px] font-bold">
+                      🔴 SIN ACREDITACIÓN / VENCIDO
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1156,6 +1246,105 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: GENERAR REQUERIMIENTO A OPERACIONES -->
+  <div v-if="showModalGenerarRequerimiento" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-xl bg-[#0f172a] border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+        <h3 class="text-base font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+          <span>🏆 Confirmar Requerimiento a Operaciones</span>
+        </h3>
+        <button @click="showModalGenerarRequerimiento = false" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
+      </div>
+
+      <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-xs text-amber-200 leading-relaxed font-medium">
+        ℹ️ <strong>Propuesta Ganada:</strong> La propuesta ha sido marcada como ganada y en este momento el proceso pasa a ser un requerimiento oficial para el área de Operaciones.
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Seleccionar Destinatarios para Notificación Interna de Requerimiento:</label>
+        <div class="max-h-48 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
+          <label v-for="u in usuarios" :key="'req-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+            <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosRequerimiento" class="accent-amber-500 rounded" />
+            <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
+            <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-3 border-t border-white/10">
+        <button @click="showModalGenerarRequerimiento = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
+          Cancelar
+        </button>
+        <button @click="confirmarGenerarRequerimiento" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
+          <span>Confirmar y Enviar Requerimiento</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: APROBAR REQUERIMIENTO DE OPERACIONES -->
+  <div v-if="showModalAprobarRequerimiento" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-xl bg-[#0f172a] border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-amber-500/20 pb-3">
+        <h3 class="text-base font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+          <span>✅ Aprobación de Requerimiento de Operaciones</span>
+        </h3>
+        <button @click="showModalAprobarRequerimiento = false" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-slate-300">Modo de Aprobación del Requerimiento:</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button 
+            type="button" 
+            @click="modoAprobacionRequerimiento = 'SIN_OBSERVACIONES'" 
+            :class="modoAprobacionRequerimiento === 'SIN_OBSERVACIONES' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold' : 'bg-slate-900 border-white/10 text-slate-400'"
+            class="p-3 border rounded-xl text-xs uppercase tracking-wider transition-all text-center"
+          >
+            🟢 Sin Observaciones (OK)
+          </button>
+          <button 
+            type="button" 
+            @click="modoAprobacionRequerimiento = 'CON_OBSERVACIONES'" 
+            :class="modoAprobacionRequerimiento === 'CON_OBSERVACIONES' ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold' : 'bg-slate-900 border-white/10 text-slate-400'"
+            class="p-3 border rounded-xl text-xs uppercase tracking-wider transition-all text-center"
+          >
+            🟡 Con Observaciones
+          </button>
+        </div>
+      </div>
+
+      <div v-if="modoAprobacionRequerimiento === 'CON_OBSERVACIONES'">
+        <label class="block text-xs font-bold text-slate-300 mb-1">Detalle de Observaciones / Motivo de Ajuste:</label>
+        <textarea v-model="operacionesAssignment.observaciones_operaciones" rows="3" placeholder="Indica las desviaciones u observaciones de operaciones..." class="w-full bg-[#020617] border border-amber-500/30 rounded-xl p-3 text-xs text-white outline-none resize-none"></textarea>
+      </div>
+
+      <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300">
+        ✉️ <strong>Notificación al Comercial:</strong> Se enviará una notificación por correo enriquecida al ejecutivo comercial de preventa y a los integrantes seleccionados.
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios a Notificar (Lista Abierta):</label>
+        <div class="max-h-36 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
+          <label v-for="u in usuarios" :key="'aprob-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+            <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosAprobacion" class="accent-amber-500 rounded" />
+            <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
+            <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-3 border-t border-white/10">
+        <button @click="showModalAprobarRequerimiento = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
+          Cancelar
+        </button>
+        <button @click="confirmarAprobacionRequerimiento" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+          <span>Aprobar Requerimiento & Habilitar Asignación</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -1188,6 +1377,187 @@ const noAsignacionMotivo = ref('Desistido por el cliente')
 const noAsignacionObservacion = ref('')
 const currentProyectoId = ref(null)
 const loading = ref(true)
+
+// Modales de Requerimiento y Aprobación
+const showModalGenerarRequerimiento = ref(false)
+const selectedUsuariosRequerimiento = ref([])
+
+const showModalAprobarRequerimiento = ref(false)
+const modoAprobacionRequerimiento = ref('SIN_OBSERVACIONES')
+const selectedUsuariosAprobacion = ref([])
+
+const isRequerimientoAprobado = computed(() => {
+  return requerimientoAprobado.value || operacionesAssignment.value.estado_requerimiento === 'APROBADO' || opportunity.value.id_proyecto_estado === 4
+})
+
+const listaEquiposMaster = ref([
+  { id_equipo: 'CRN-01', nombre_equipo: 'Liebherr LTM 1220 (220 Ton)', patente: 'HW-8842', tipo: 'Grúa Telescópica', semaforo: 'GREEN' },
+  { id_equipo: 'CRN-02', nombre_equipo: 'Tadano ATF 110G (110 Ton)', patente: 'GR-1029', tipo: 'Grúa Telescópica', semaforo: 'GREEN' },
+  { id_equipo: 'CRN-03', nombre_equipo: 'Grove GMK 5250L (250 Ton)', patente: 'PL-9021', tipo: 'Grúa Telescópica', semaforo: 'YELLOW' },
+  { id_equipo: 'CAM-01', nombre_equipo: 'Camión Pluma Palfinger 50T', patente: 'PK-5002', tipo: 'Camión Pluma', semaforo: 'GREEN' },
+  { id_equipo: 'CAMA-01', nombre_equipo: 'Cama Baja 60 Toneladas', patente: 'XY-1234', tipo: 'Traslado', semaforo: 'GREEN' }
+])
+
+const tripulacionAsignada = ref([
+  { id_user: '', cargo: 'Operador Grúa', semaforo: 'GREEN' },
+  { id_user: '', cargo: 'Rigger / Señalero', semaforo: 'GREEN' }
+])
+
+const agregarTripulante = () => {
+  tripulacionAsignada.value.push({ id_user: '', cargo: 'Rigger / Señalero', semaforo: 'GREEN' })
+}
+
+const eliminarTripulante = (idx) => {
+  if (tripulacionAsignada.value.length > 1) {
+    tripulacionAsignada.value.splice(idx, 1)
+  }
+}
+
+const agregarEquipoAdicional = () => {
+  if (operacionesAssignment.value.equipo_adicional) {
+    if (!operacionesAssignment.value.equipos_extra) operacionesAssignment.value.equipos_extra = []
+    operacionesAssignment.value.equipos_extra.push(operacionesAssignment.value.equipo_adicional)
+    operacionesAssignment.value.equipo_adicional = ''
+  }
+}
+
+const getSemaforoEquipo = (equipoId) => {
+  if (!equipoId || equipoId === 'CRN-DEFAULT') return 'GREEN'
+  const found = listaEquiposMaster.value.find(e => e.id_equipo === equipoId || e.patente === equipoId)
+  return found?.semaforo || 'GREEN'
+}
+
+const actualizarSemaforoTripulante = (t) => {
+  if (!t.id_user) {
+    t.semaforo = 'RED'
+    return
+  }
+  const u = usuarios.value.find(user => user.id_user === t.id_user)
+  if (u && u.flag_activo === false) {
+    t.semaforo = 'RED'
+  } else {
+    t.semaforo = 'GREEN'
+  }
+}
+
+const abrirModalGenerarRequerimiento = () => {
+  if (!opportunity.value.rut_cliente) {
+    alert('⚠️ Debe seleccionar un Cliente Mandante antes de Generar el Requerimiento.')
+    return
+  }
+  selectedUsuariosRequerimiento.value = usuarios.value.map(u => u.id_user)
+  showModalGenerarRequerimiento.value = true
+}
+
+const confirmarGenerarRequerimiento = async () => {
+  showModalGenerarRequerimiento.value = false
+  
+  // Snapshot inalterable de Preventa Comercial
+  snapshotComercial.value = {
+    peso_carga: siteVisit.value.peso_carga || '',
+    volumen_carga: siteVisit.value.volumen_carga || '',
+    radios_trabajo: siteVisit.value.radios_trabajo || '',
+    alturas_trabajo: siteVisit.value.alturas_trabajo || '',
+    tipo_carga: siteVisit.value.tipo_carga || '',
+    obra_nombre: siteVisit.value.obra_nombre || '',
+    obra_direccion: siteVisit.value.obra_direccion || '',
+    obra_ciudad: siteVisit.value.obra_ciudad || '',
+    lines: JSON.parse(JSON.stringify(lines.value)),
+    equipo_descripcion: lines.value[0]?.descripcion || '',
+    equipo_cantidad: lines.value[0]?.cantidad || 1,
+    equipo_valor: lines.value[0]?.valorUnitario || 0,
+    pensiones: { ...comercial.value.pensiones }
+  }
+
+  opportunity.value.id_proyecto_estado = 3
+  await guardarEnPreventa()
+  
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
+      <div style="border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="color: #f59e0b; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+        <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Notificación Interna de Nuevo Requerimiento de Operaciones</p>
+      </div>
+      <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid #f59e0b; padding: 18px; border-radius: 10px;">
+        Estimado Equipo de Operaciones,<br><br>
+        La propuesta comercial <strong>${antecedentes.value.identificador_formal || 'COT'}</strong> para el cliente <strong>${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente || 'Cliente'}</strong> ha sido marcada como <strong>PROPUESTA GANADA</strong>.<br><br>
+        En este momento, el proceso ha pasado a ser un <strong>Requerimiento Oficial</strong> para el área de Operaciones.
+      </div>
+      <div style="background-color: #1e293b; border-radius: 10px; padding: 15px; margin-bottom: 25px; font-size: 13px;">
+        <div style="color: #f59e0b; font-weight: bold; margin-bottom: 8px;">📋 Resumen de la Oportunidad</div>
+        <div>Código: <strong>${antecedentes.value.identificador_formal || 'COT'}</strong></div>
+        <div>Cliente Mandante: <strong>${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente}</strong></div>
+        <div>Obra / Faena: <strong>${siteVisit.value.obra_nombre || siteVisit.value.obra_direccion || 'Obra Terreno'}</strong></div>
+        <div>Monto Total Neto: <strong>${formatCurrency(totalNeto.value)}</strong></div>
+      </div>
+      <div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b;">
+        Grúas San Pablo S.A. | Notificación Interna de Operaciones
+      </div>
+    </div>
+  `
+
+  const targetUsers = usuarios.value.filter(u => selectedUsuariosRequerimiento.value.includes(u.id_user) && u.email)
+  const emailProms = targetUsers.map(u => apiAxios.post('/message', {
+    para: u.email,
+    asunto: `🏆 Nuevo Requerimiento a Operaciones: ${antecedentes.value.identificador_formal || 'COT'} - ${clienteSeleccionado.value?.razon_social || 'Cliente'}`,
+    cuerpo: htmlBody,
+    html: htmlBody
+  }).catch(e => console.warn(`Error enviando correo a ${u.email}:`, e)))
+
+  await Promise.allSettled(emailProms)
+  alert('🏆 Requerimiento a Operaciones generado exitosamente y notificado al equipo.')
+  topTab.value = 'operaciones'
+  operacionesSubTab.value = 'validacion'
+}
+
+const abrirModalAprobarRequerimiento = () => {
+  selectedUsuariosAprobacion.value = usuarios.value.map(u => u.id_user)
+  showModalAprobarRequerimiento.value = true
+}
+
+const confirmarAprobacionRequerimiento = async () => {
+  showModalAprobarRequerimiento.value = false
+  operacionesAssignment.value.estado_requerimiento = 'APROBADO'
+  requerimientoAprobado.value = true
+  
+  await aprobarYGenerarOT()
+  
+  const isConObs = modoAprobacionRequerimiento.value === 'CON_OBSERVACIONES'
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
+      <div style="border-bottom: 2px solid #10b981; padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="color: #10b981; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+        <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Notificación de Requerimiento Aprobado por Operaciones</p>
+      </div>
+      <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid ${isConObs ? '#f59e0b' : '#10b981'}; padding: 18px; border-radius: 10px;">
+        Estimado Ejecutivo Comercial,<br><br>
+        El requerimiento operacional de la cotización <strong>${antecedentes.value.identificador_formal || 'COT'}</strong> ha sido <strong>${isConObs ? 'APROBADO CON OBSERVACIONES' : 'APROBADO SIN OBSERVACIONES'}</strong> por el área de Operaciones.<br><br>
+        ${isConObs && operacionesAssignment.value.observaciones_operaciones ? `<strong>Observaciones de Operaciones:</strong><br><em>"${operacionesAssignment.value.observaciones_operaciones}"</em>` : ''}
+      </div>
+      <div style="background-color: #1e293b; border-radius: 10px; padding: 15px; margin-bottom: 25px; font-size: 13px;">
+        <div style="color: #10b981; font-weight: bold; margin-bottom: 8px;">📋 Estado del Requerimiento</div>
+        <div>Código: <strong>${antecedentes.value.identificador_formal || 'COT'}</strong></div>
+        <div>Cliente: <strong>${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente}</strong></div>
+        <div>Estado: <strong style="color: ${isConObs ? '#fbbf24' : '#34d399'};">${isConObs ? 'APROBADO CON OBSERVACIONES' : 'APROBADO OK'}</strong></div>
+      </div>
+      <div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b;">
+        Grúas San Pablo S.A. | Notificación de Operaciones a Comercial
+      </div>
+    </div>
+  `
+
+  const targetUsers = usuarios.value.filter(u => selectedUsuariosAprobacion.value.includes(u.id_user) && u.email)
+  const emailProms = targetUsers.map(u => apiAxios.post('/message', {
+    para: u.email,
+    asunto: `✅ Requerimiento Aprobado (${isConObs ? 'Con Observaciones' : 'OK'}): ${antecedentes.value.identificador_formal || 'COT'}`,
+    cuerpo: htmlBody,
+    html: htmlBody
+  }).catch(e => console.warn(`Error enviando correo a ${u.email}:`, e)))
+
+  await Promise.allSettled(emailProms)
+  operacionesSubTab.value = 'asignacion'
+  alert(`✅ Requerimiento Aprobado (${isConObs ? 'Con Observaciones' : 'Sin Observaciones'}).\n\nNotificación enviada al comercial. La Pestaña C: Asignación de Recursos ha sido activada y el formulario quedó bloqueado en Modo Lectura.`)
+}
 
 const snapshotComercial = ref({})
 

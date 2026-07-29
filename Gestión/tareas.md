@@ -130,3 +130,8 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] PWA Marcaciones en Tiempo Real [PENDIENTE]:** Habilitar en la PWA los botones de marcación real (`hora_salida_real`, `hora_llegada_obra_real`, `hora_liberacion_real` y firma) *(Fase PWA en desarrollo gradual)*.
 *   [ ] **[Consultas Desplazamiento/Inspección]:** Definir quién hace la inspección de salida y si se usará el formato de Jorge. Aclarar quién marca el inicio del viaje (Conductor/Rigger), si el desplazamiento se marcará por GPS (frecuencia), si hay inspección al llegar a destino, y si se inspecciona solo la grúa o todos los equipos (¿inspecciones autónomas?).
 *   [x] **[Sergio Gajardo] Búsqueda por Dirección en Mapa [COMPLETADO]:** Investigar e implementar funcionalidad para buscar direcciones directamente en el componente del mapa de Google Maps.
+
+**Definición de Roles & Notificaciones (Pendientes de Definición):**
+*   [ ] **[Definición Global de Roles]:** Definir y levantar la matriz completa de roles para todo el proceso (Ventas, Cotizaciones, Visita a Terreno, Operaciones, Mantención e Izaje), mapeando permisos bajo la nomenclatura estándar LeanGlobal (`_ADMIN`, `_PROG`, `_EJEC`, `_APROB`).
+*   [ ] **[Matriz de Notificaciones a Operaciones]:** Definir a qué roles y usuarios específicos se les debe notificar automáticamente al generarse un requerimiento a Operaciones (Candidatos a evaluar: Omar, Jorge, Coordinador de Operaciones).
+*   [ ] **[Flujo y Roles Aprobación ➔ Asignación]:** Definir los roles y perfiles autorizados para realizar el paso formal de la aprobación del requerimiento a la asignación efectiva de recursos (equipos, operadores y rigger).
