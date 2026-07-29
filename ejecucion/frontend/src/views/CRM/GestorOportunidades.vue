@@ -1262,12 +1262,13 @@
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2">Seleccionar Destinatarios para Notificación Interna de Requerimiento:</label>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Seleccionar Destinatarios para Notificación Interna de Requerimiento (Usuarios Enrolados FES):</label>
         <div class="max-h-48 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
-          <label v-for="u in usuarios" :key="'req-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+          <label v-for="u in usuariosEnroladosFes" :key="'req-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
             <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosRequerimiento" class="accent-amber-500 rounded" />
             <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
             <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
+            <span v-if="u.flag_proc_enrol" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">FES PIN</span>
           </label>
         </div>
       </div>
@@ -1293,44 +1294,44 @@
         <button @click="showModalAprobarRequerimiento = false" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
       </div>
 
+      <!-- ESTADO CALCULADO DE FORMA AUTOMÁTICA -->
       <div class="space-y-2">
-        <label class="block text-xs font-bold text-slate-300">Modo de Aprobación del Requerimiento:</label>
-        <div class="grid grid-cols-2 gap-3">
-          <button 
-            type="button" 
-            @click="modoAprobacionRequerimiento = 'SIN_OBSERVACIONES'" 
-            :class="modoAprobacionRequerimiento === 'SIN_OBSERVACIONES' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold' : 'bg-slate-900 border-white/10 text-slate-400'"
-            class="p-3 border rounded-xl text-xs uppercase tracking-wider transition-all text-center"
-          >
-            🟢 Sin Observaciones (OK)
-          </button>
-          <button 
-            type="button" 
-            @click="modoAprobacionRequerimiento = 'CON_OBSERVACIONES'" 
-            :class="modoAprobacionRequerimiento === 'CON_OBSERVACIONES' ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold' : 'bg-slate-900 border-white/10 text-slate-400'"
-            class="p-3 border rounded-xl text-xs uppercase tracking-wider transition-all text-center"
-          >
-            🟡 Con Observaciones
-          </button>
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Estado de Aprobación Calculado (Basado en Diferencias):</label>
+        <div v-if="modoAprobacionRequerimiento === 'CON_OBSERVACIONES'" class="bg-amber-500/20 border border-amber-500/50 rounded-xl p-4 text-center text-amber-300 font-bold space-y-1">
+          <div class="text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+            <span>🟡 APROBADO CON OBSERVACIONES</span>
+          </div>
+          <p class="text-xs font-normal text-amber-200">
+            Se registraron {{ diffsCount }} cambio(s) respecto a la preventa comercial o existen observaciones agregadas por Operaciones.
+          </p>
+        </div>
+        <div v-else class="bg-emerald-500/20 border border-emerald-500/50 rounded-xl p-4 text-center text-emerald-300 font-bold space-y-1">
+          <div class="text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+            <span>🟢 APROBADO SIN OBSERVACIONES (OK)</span>
+          </div>
+          <p class="text-xs font-normal text-emerald-200">
+            No existen diferencias con la preventa comercial. El requerimiento está 100% conforme.
+          </p>
         </div>
       </div>
 
-      <div v-if="modoAprobacionRequerimiento === 'CON_OBSERVACIONES'">
-        <label class="block text-xs font-bold text-slate-300 mb-1">Detalle de Observaciones / Motivo de Ajuste:</label>
-        <textarea v-model="operacionesAssignment.observaciones_operaciones" rows="3" placeholder="Indica las desviaciones u observaciones de operaciones..." class="w-full bg-[#020617] border border-amber-500/30 rounded-xl p-3 text-xs text-white outline-none resize-none"></textarea>
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Observaciones de Operaciones / Motivo de Ajuste:</label>
+        <textarea v-model="operacionesAssignment.observaciones_operaciones" rows="2" placeholder="Detalle cualquier indicación u observación técnica de operaciones..." class="w-full bg-[#020617] border border-white/10 rounded-xl p-3 text-xs text-white outline-none resize-none"></textarea>
       </div>
 
       <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300">
-        ✉️ <strong>Notificación al Comercial:</strong> Se enviará una notificación por correo enriquecida al ejecutivo comercial de preventa y a los integrantes seleccionados.
+        ✉️ <strong>Notificación al Comercial:</strong> Se enviará una notificación por correo al ejecutivo comercial de preventa y a los integrantes enrolados FES seleccionados.
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios a Notificar (Lista Abierta):</label>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios a Notificar (Usuarios Enrolados FES):</label>
         <div class="max-h-36 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
-          <label v-for="u in usuarios" :key="'aprob-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+          <label v-for="u in usuariosEnroladosFes" :key="'aprob-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
             <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosAprobacion" class="accent-amber-500 rounded" />
             <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
             <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
+            <span v-if="u.flag_proc_enrol" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">FES PIN</span>
           </label>
         </div>
       </div>
@@ -1383,7 +1384,6 @@ const showModalGenerarRequerimiento = ref(false)
 const selectedUsuariosRequerimiento = ref([])
 
 const showModalAprobarRequerimiento = ref(false)
-const modoAprobacionRequerimiento = ref('SIN_OBSERVACIONES')
 const selectedUsuariosAprobacion = ref([])
 
 const isRequerimientoAprobado = computed(() => {
@@ -1559,31 +1559,73 @@ const confirmarAprobacionRequerimiento = async () => {
   alert(`✅ Requerimiento Aprobado (${isConObs ? 'Con Observaciones' : 'Sin Observaciones'}).\n\nNotificación enviada al comercial. La Pestaña C: Asignación de Recursos ha sido activada y el formulario quedó bloqueado en Modo Lectura.`)
 }
 
+const usuariosEnroladosFes = computed(() => {
+  const list = usuarios.value.filter(u => u.flag_activo !== false)
+  const enroladosStrict = list.filter(u => u.flag_proc_enrol === true || u.pin_fes || u.pin || u.flag_enrolado === true)
+  return enroladosStrict.length > 0 ? enroladosStrict : list
+})
+
+const tieneObservacionesOMotivos = computed(() => {
+  const tieneTextoObs = operacionesAssignment.value.observaciones_operaciones && operacionesAssignment.value.observaciones_operaciones.trim().length > 0
+  return diffsCount.value > 0 || tieneTextoObs
+})
+
+const modoAprobacionRequerimiento = computed(() => {
+  return tieneObservacionesOMotivos.value ? 'CON_OBSERVACIONES' : 'SIN_OBSERVACIONES'
+})
+
 const snapshotComercial = ref({})
 
 const hasDiff = (field, index = 0) => {
-  // El control de cambios (diff) SOLO aplica en la etapa de Operaciones (estado 3 o tab Operaciones)
-  if (opportunity.value.id_proyecto_estado !== 3 && topTab.value !== 'operaciones') {
+  // El control de cambios (diff) SOLO aplica en la Pestaña de Operaciones / Sub-Pestaña Validación & Diff
+  if (topTab.value !== 'operaciones' || operacionesSubTab.value !== 'validacion') {
+    return false
+  }
+  if (opportunity.value.id_proyecto_estado !== 3) {
     return false
   }
   if (!snapshotComercial.value || Object.keys(snapshotComercial.value).length === 0) return false
   
-  if (field === 'peso_carga') return (siteVisit.value.peso_carga || '') !== (snapshotComercial.value.peso_carga || '')
-  if (field === 'radios_trabajo') return (siteVisit.value.radios_trabajo || '') !== (snapshotComercial.value.radios_trabajo || '')
-  if (field === 'alturas_trabajo') return (siteVisit.value.alturas_trabajo || '') !== (snapshotComercial.value.alturas_trabajo || '')
-  if (field === 'tipo_carga') return (siteVisit.value.tipo_carga || '') !== (snapshotComercial.value.tipo_carga || '')
-  if (field === 'obra_nombre') return (siteVisit.value.obra_nombre || '') !== (snapshotComercial.value.obra_nombre || '')
-  if (field === 'obra_direccion') return (siteVisit.value.obra_direccion || '') !== (snapshotComercial.value.obra_direccion || '')
-  if (field === 'obra_ciudad') return (siteVisit.value.obra_ciudad || '') !== (snapshotComercial.value.obra_ciudad || '')
-  if (field === 'volumen_carga') return (siteVisit.value.volumen_carga || '') !== (snapshotComercial.value.volumen_carga || '')
+  if (field === 'peso_carga') return !!snapshotComercial.value.peso_carga && (siteVisit.value.peso_carga || '') !== (snapshotComercial.value.peso_carga || '')
+  if (field === 'radios_trabajo') return !!snapshotComercial.value.radios_trabajo && (siteVisit.value.radios_trabajo || '') !== (snapshotComercial.value.radios_trabajo || '')
+  if (field === 'alturas_trabajo') return !!snapshotComercial.value.alturas_trabajo && (siteVisit.value.alturas_trabajo || '') !== (snapshotComercial.value.alturas_trabajo || '')
+  if (field === 'tipo_carga') return !!snapshotComercial.value.tipo_carga && (siteVisit.value.tipo_carga || '') !== (snapshotComercial.value.tipo_carga || '')
+  if (field === 'obra_nombre') return !!snapshotComercial.value.obra_nombre && (siteVisit.value.obra_nombre || '') !== (snapshotComercial.value.obra_nombre || '')
+  if (field === 'obra_direccion') return !!snapshotComercial.value.obra_direccion && (siteVisit.value.obra_direccion || '') !== (snapshotComercial.value.obra_direccion || '')
+  if (field === 'obra_ciudad') return !!snapshotComercial.value.obra_ciudad && (siteVisit.value.obra_ciudad || '') !== (snapshotComercial.value.obra_ciudad || '')
+  if (field === 'volumen_carga') return !!snapshotComercial.value.volumen_carga && (siteVisit.value.volumen_carga || '') !== (snapshotComercial.value.volumen_carga || '')
   
   // Diff en Líneas del Estructurador (Tabla B)
-  if (field === 'equipo_descripcion') return (lines.value[index]?.descripcion || '') !== (snapshotComercial.value.lines?.[index]?.descripcion || snapshotComercial.value.equipo_descripcion || '')
-  if (field === 'equipo_cantidad') return (lines.value[index]?.cantidad || 1) !== (snapshotComercial.value.lines?.[index]?.cantidad || snapshotComercial.value.equipo_cantidad || 1)
-  if (field === 'equipo_valor') return (lines.value[index]?.valorUnitario || 0) !== (snapshotComercial.value.lines?.[index]?.valorUnitario !== undefined ? snapshotComercial.value.lines[index].valorUnitario : (snapshotComercial.value.equipo_valor || 0))
-  if (field === 'equipo_tipo') return (lines.value[index]?.tipo || '') !== (snapshotComercial.value.lines?.[index]?.tipo || '')
-  if (field === 'equipo_subcategoria') return (lines.value[index]?.subcategoria || '') !== (snapshotComercial.value.lines?.[index]?.subcategoria || '')
-  if (field === 'equipo_unidad') return (lines.value[index]?.unidad || '') !== (snapshotComercial.value.lines?.[index]?.unidad || '')
+  if (field === 'equipo_descripcion') {
+    const orig = snapshotComercial.value.lines?.[index]?.descripcion || snapshotComercial.value.equipo_descripcion
+    if (!orig) return false
+    return (lines.value[index]?.descripcion || '') !== orig
+  }
+  if (field === 'equipo_cantidad') {
+    const orig = snapshotComercial.value.lines?.[index]?.cantidad || snapshotComercial.value.equipo_cantidad
+    if (orig === undefined) return false
+    return (lines.value[index]?.cantidad || 1) !== orig
+  }
+  if (field === 'equipo_valor') {
+    const orig = snapshotComercial.value.lines?.[index]?.valorUnitario !== undefined ? snapshotComercial.value.lines[index].valorUnitario : snapshotComercial.value.equipo_valor
+    if (orig === undefined) return false
+    return (lines.value[index]?.valorUnitario || 0) !== orig
+  }
+  if (field === 'equipo_tipo') {
+    const orig = snapshotComercial.value.lines?.[index]?.tipo
+    if (!orig) return false
+    return (lines.value[index]?.tipo || '') !== orig
+  }
+  if (field === 'equipo_subcategoria') {
+    const orig = snapshotComercial.value.lines?.[index]?.subcategoria
+    if (!orig) return false
+    return (lines.value[index]?.subcategoria || '') !== orig
+  }
+  if (field === 'equipo_unidad') {
+    const orig = snapshotComercial.value.lines?.[index]?.unidad
+    if (!orig) return false
+    return (lines.value[index]?.unidad || '') !== orig
+  }
   
   return false
 }
