@@ -2665,23 +2665,42 @@ onMounted(async () => {
         }
 
         // Mapear json_field.ejecucion_v1 si existe
+        opportunity.value.json_field = p.json_field || {}
         const ejecucion = p.json_field?.ejecucion_v1
         if (ejecucion) {
+          rawEjecucionJson.value = { ...ejecucion }
+          
           if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || p.id_proyecto_estado === 4) {
             requerimientoAprobado.value = true
             topTab.value = 'operaciones'
+          }
+
+          if (ejecucion.subtab_activa) {
+            operacionesSubTab.value = ejecucion.subtab_activa
+          } else if (requerimientoAprobado.value) {
             operacionesSubTab.value = 'asignacion'
           }
+
           if (ejecucion.observaciones) {
             operacionesAssignment.value.observaciones_operaciones = ejecucion.observaciones
           }
           if (ejecucion.equipo_id) operacionesAssignment.value.equipo_id = ejecucion.equipo_id
+          if (ejecucion.operador_id) operacionesAssignment.value.operador_id = ejecucion.operador_id
+          if (ejecucion.rigger_id) operacionesAssignment.value.rigger_id = ejecucion.rigger_id
+          if (ejecucion.chofer_id) operacionesAssignment.value.chofer_id = ejecucion.chofer_id
           if (ejecucion.equipos_extra) operacionesAssignment.value.equipos_extra = ejecucion.equipos_extra
           if (ejecucion.fecha_salida_plan) operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan
           if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
           if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
           if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
           if (ejecucion.aparejos_asignados_json) operacionesAssignment.value.aparejos = ejecucion.aparejos_asignados_json
+          
+          if (ejecucion.preparacion_salida) {
+            preparacionSalidaState.value = { ...preparacionSalidaState.value, ...ejecucion.preparacion_salida }
+          }
+          if (Array.isArray(ejecucion.traza_correos)) {
+            trazaCorreosList.value = ejecucion.traza_correos
+          }
         }
 
         // Cargar empresa cliente
@@ -2816,10 +2835,20 @@ const buildPayload = () => {
         snapshot_comercial: snapshotComercial.value
       },
       ejecucion_v1: {
+        ...(rawEjecucionJson.value || {}),
         ...(opportunity.value.json_field?.ejecucion_v1 || {}),
         subtab_activa: operacionesSubTab.value,
         traza_correos: trazaCorreosList.value,
-        preparacion_salida: preparacionSalidaState.value
+        preparacion_salida: preparacionSalidaState.value,
+        equipo_id: operacionesAssignment.value.equipo_id,
+        operador_id: operacionesAssignment.value.operador_id,
+        rigger_id: operacionesAssignment.value.rigger_id,
+        chofer_id: operacionesAssignment.value.chofer_id,
+        fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
+        hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
+        fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
+        hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
+        observaciones: operacionesAssignment.value.observaciones_operaciones
       }
     }
   }
