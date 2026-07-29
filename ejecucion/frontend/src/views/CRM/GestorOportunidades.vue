@@ -571,11 +571,11 @@
         <div class="bg-[#050810] border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
           <div class="flex justify-between items-center border-b border-white/10 pb-3">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 bg-indigo-500/20 border border-indigo-500/40 rounded-xl flex items-center justify-center text-indigo-400 font-black font-mono text-sm shadow-md">
+              <div class="w-9 h-9 bg-purple-500/20 border border-purple-500/40 rounded-xl flex items-center justify-center text-purple-400 font-black font-mono text-sm shadow-md">
                 BPM
               </div>
               <div>
-                <span class="text-sm font-black text-white uppercase tracking-wider block">📊 DIAGRAMA BPM: ARQUITECTURA DE FLUJO PREPARACIÓN SALIDA DE PATIO</span>
+                <span class="text-sm font-black text-purple-400 uppercase tracking-wider block">📊 DIAGRAMA BPM: ARQUITECTURA DE FLUJO PREPARACIÓN SALIDA DE PATIO</span>
                 <span class="text-xs text-slate-400">Pasos 1 y 3 Concurrentes (Paralelos) | Paso 2 Secuencial de Paso 1 | Cierre exige Paso 2 🟢 + Paso 3 🟢</span>
               </div>
             </div>
@@ -594,7 +594,7 @@
               
               <!-- RAMA A (SECUENCIAL): PASO 1 ➔ PASO 2 -->
               <div class="bg-[#0a0f1e]/80 border border-indigo-500/20 rounded-xl p-3 space-y-2">
-                <div class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider flex justify-between items-center border-b border-indigo-500/20 pb-1">
+                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-indigo-500/20 pb-1">
                   <span>RAMA A • SECUENCIAL: CALIDAD (1) ➔ PATIO (2)</span>
                   <span class="text-[9px] text-slate-400 font-mono">Paso 2 Requiere Paso 1 🟢</span>
                 </div>
@@ -613,7 +613,7 @@
                         {{ statusSegmento1 === 'GREEN' ? '🟢 Notificado' : '🔴 Pendiente' }}
                       </span>
                     </div>
-                    <h4 class="text-xs font-bold text-white mb-0.5">🛡️ Notificación a Control de Calidad</h4>
+                    <h4 class="text-xs font-bold text-purple-400 mb-0.5">🛡️ Notificación a Control de Calidad</h4>
                     <span class="text-[10px] text-slate-400">Coordinador envía antecedentes y EPP</span>
                   </div>
 
@@ -633,18 +633,18 @@
                         2. Inspección Patio
                       </span>
                       <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')" class="text-[10px] font-bold">
-                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado' : '🔴 Bloqueado (Esperando 1)') }}
+                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado en PWA' : '🔴 Bloqueado (Esperando 1)') }}
                       </span>
                     </div>
-                    <h4 class="text-xs font-bold text-white mb-0.5">🚜 Check List & Contrapesos</h4>
-                    <span class="text-[10px] text-slate-400">Jefe de Patio verifica estado y carga</span>
+                    <h4 class="text-xs font-bold text-purple-400 mb-0.5">🚜 Check List & Contrapesos</h4>
+                    <span class="text-[10px] text-slate-400">Jefe de Patio ejecuta Survey en PWA</span>
                   </div>
                 </div>
               </div>
 
               <!-- RAMA B (PARALELA CONCURRENTE): PASO 3 -->
               <div class="bg-[#0a0f1e]/80 border border-emerald-500/20 rounded-xl p-3 space-y-2">
-                <div class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider flex justify-between items-center border-b border-emerald-500/20 pb-1">
+                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-emerald-500/20 pb-1">
                   <span>RAMA B • PARALELA CONCURRENTE: ANALISTA OPERACIONES (3)</span>
                   <span class="text-[9px] text-slate-400 font-mono">Ejecución Inmediata en Paralelo con Paso 1</span>
                 </div>
@@ -658,7 +658,7 @@
                       <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                         3. Analista Op. (Concurrente)
                       </span>
-                      <h4 class="text-xs font-bold text-white">💻 Análisis 360 & Geocerca GPS</h4>
+                      <h4 class="text-xs font-bold text-purple-400">💻 Análisis 360 & Geocerca GPS</h4>
                     </div>
                     <span class="text-[10px] text-slate-400">Instrucción de tareas, revisión 360 y radio GPS en metros</span>
                   </div>
@@ -686,7 +686,7 @@
               </span>
               <div>
                 <span class="text-2xl block mb-1">🚀</span>
-                <h4 class="text-xs font-bold text-white mb-1">Pase a Ejecución Terreno PWA</h4>
+                <h4 class="text-xs font-bold text-purple-400 mb-1">Pase a Ejecución Terreno PWA</h4>
                 <p class="text-[10px] text-slate-400 leading-tight">
                   Exige <strong>Paso 2 🟢</strong> y <strong>Paso 3 🟢</strong> completados en paralelo.
                 </p>
@@ -742,14 +742,14 @@
           </div>
         </div>
 
-        <!-- SEGMENTO 2: INSPECCIÓN DE SALIDA DE PATIO (SURVEY JEFE DE PATIO) -->
+        <!-- SEGMENTO 2: INSPECCIÓN DE SALIDA DE PATIO (ASIGNACIÓN SURVEY PWA AL JEFE DE PATIO) -->
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
           <div class="flex justify-between items-center border-b border-white/5 pb-3">
             <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
-              2. Inspección de Salida de Patio (Jefe de Patio)
+              2. Inspección de Salida de Patio (Asignación Survey PWA al Jefe de Patio)
             </span>
-            <span class="text-[10px] text-slate-400">Survey Digital de Chequeo Operativo & Carga de Contrapesos</span>
+            <span class="text-[10px] text-slate-400">Ejecución Digital Inyectada a la PWA del Jefe de Patio</span>
           </div>
 
           <!-- 2.1 Programación por el Coordinador -->
@@ -774,67 +774,48 @@
               <button 
                 @click="programarInspeccionPatio" 
                 :disabled="preparacionSalidaState.patio_checklist_completado" 
-                class="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+                class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors shadow-md shadow-amber-500/10"
               >
-                <span>{{ preparacionSalidaState.patio_programado ? 'Inspección Programada' : 'Programar Inspección Jefe de Patio' }}</span>
+                <span>{{ preparacionSalidaState.patio_programado ? 'Programación PWA Registrada' : 'Programar e Inyectar Survey PWA a Jefe de Patio' }}</span>
               </button>
             </div>
           </div>
 
-          <!-- 2.2 Survey Checklist Digital del Jefe de Patio (Diagrama Imagen 1) -->
-          <div class="bg-[#0a0f1e] p-4 rounded-lg border border-amber-500/20 space-y-4">
+          <!-- 2.2 Estado de Ejecución del Survey PWA (Sin Formulario Duplicado en la Web) -->
+          <div class="bg-[#0a0f1e] p-4 rounded-lg border border-amber-500/20 space-y-3">
             <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider block border-b border-white/5 pb-2">
-              📝 Check List Operativo Digital & Confirmación de Carga en Patio
+              📱 Estado de Ejecución en PWA Terreno / Patio
             </span>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Estado Mecánico & Estructura:</label>
-                <select v-model="preparacionSalidaState.patio_estado_mecanico" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
-                  <option value="CONFORME">🟢 CONFORME (Operativo)</option>
-                  <option value="OBSERVADO">🟡 OBSERVADO (Menor)</option>
-                  <option value="NO_CONFORME">🔴 NO CONFORME (Taller)</option>
-                </select>
+            <div v-if="!preparacionSalidaState.patio_programado" class="bg-[#050810] p-4 rounded-lg text-center border border-white/5 text-xs text-slate-400">
+              🔴 Inspección en Patio aún no agendada. Seleccione al Jefe de Patio y la fecha programada para inyectar el Survey PWA.
+            </div>
+            
+            <div v-else-if="!preparacionSalidaState.patio_checklist_completado" class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/30 flex flex-col md:flex-row justify-between items-center gap-3">
+              <div class="space-y-1">
+                <span class="text-xs font-bold text-amber-400 block">🟡 Survey Inyectado a la PWA del Jefe de Patio (Esperando Ejecución)</span>
+                <span class="text-[11px] text-slate-300 block">Asignado a: <strong>{{ usuariosEnroladosFes.find(u => u.id_user === preparacionSalidaState.jefe_patio_id)?.nombre_user || 'Jefe de Patio' }}</strong></span>
+                <span class="text-[10px] text-slate-400">Fecha/Hora: {{ preparacionSalidaState.fecha_inspeccion_plan }} a las {{ preparacionSalidaState.hora_inspeccion_plan }} hrs</span>
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Estado Neumáticos / Orugas:</label>
-                <select v-model="preparacionSalidaState.patio_estado_neumaticos" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
-                  <option value="CONFORME">🟢 CONFORME</option>
-                  <option value="NO_CONFORME">🔴 REVISAR PRESIÓN/DESGASTE</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Documentación a Bordo (Padron/Cert):</label>
-                <select v-model="preparacionSalidaState.patio_documentacion" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
-                  <option value="CONFORME">🟢 AL DÍA / COMPLETA</option>
-                  <option value="INCOMPLETA">🔴 REQUERIR PAPELERA</option>
-                </select>
-              </div>
+              <button @click="confirmarInspeccionSalidaPatio" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow-md">
+                <span>Simular / Confirmar Recepción Survey PWA 🟢</span>
+              </button>
             </div>
 
-            <!-- Carga de Contrapesos & Aparejos -->
-            <div class="bg-[#050810] p-3 rounded border border-white/5 space-y-2 text-xs">
-              <span class="text-[10px] font-bold text-slate-300 block">🚛 Verificación de Carga de Contrapesos & Aparejos:</span>
-              <div class="flex flex-wrap gap-6">
-                <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-                  <input type="checkbox" v-model="preparacionSalidaState.patio_contrapesos_cargados" :disabled="preparacionSalidaState.patio_checklist_completado" class="accent-amber-500" />
-                  <span>Contrapesos Cargados & Asegurados</span>
-                </label>
-                <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
-                  <input type="checkbox" v-model="preparacionSalidaState.patio_aparejos_cargados" :disabled="preparacionSalidaState.patio_checklist_completado" class="accent-amber-500" />
-                  <span>Eslingas, Grilletes y Maniobras Verificadas</span>
-                </label>
+            <div v-else class="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/30 flex justify-between items-center">
+              <div>
+                <span class="text-xs font-bold text-emerald-300 block">🟢 Survey PWA "Inspección de Salida de Patio" Completado & Conforme</span>
+                <span class="text-[11px] text-slate-300 block">Ejecutado por Jefe de Patio • Carga de contrapesos y maniobras verificadas</span>
+              </div>
+              <div class="flex gap-2">
+                <button @click="abrirVerSurvey('Inspección de Salida de Patio')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold">
+                  Ver Web
+                </button>
+                <button @click="abrirVerSurvey('Inspección de Salida de Patio')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold">
+                  Ver PDF
+                </button>
               </div>
             </div>
-
-            <button 
-              @click="confirmarInspeccionSalidaPatio" 
-              :disabled="preparacionSalidaState.patio_checklist_completado" 
-              class="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-emerald-500/20 disabled:text-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              <span>{{ preparacionSalidaState.patio_checklist_completado ? '✅ Inspección de Patio Conforme & Carga Confirmada' : 'Confirmar Carga Completa & Inspección Salida Patio' }}</span>
-            </button>
           </div>
         </div>
 
@@ -895,6 +876,39 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 <span>{{ preparacionSalidaState.preparacion_finalizada ? '🎉 Preparación de Salida Completada' : 'Finalizar Preparación & Pasar a Ejecución Terreno' }}</span>
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BITÁCORA / TRAZA DE ENVÍOS DE CORREO ELECTRÓNICO (AUDITORÍA HISTÓRICA INALTERABLE) -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-3">
+          <div class="flex justify-between items-center border-b border-white/5 pb-2">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              📜 Traza Inalterable de Notificaciones & Envíos de Correo Electrónico
+            </span>
+            <span class="text-[10px] text-slate-400 font-mono">Total Registrados: {{ trazaCorreosList.length }}</span>
+          </div>
+
+          <div v-if="trazaCorreosList.length === 0" class="text-center py-3 text-xs text-slate-500 italic">
+            No se han registrado envíos de correo aún para esta oportunidad.
+          </div>
+
+          <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div v-for="(t, idx) in trazaCorreosList" :key="idx" class="bg-[#0a0f1e] p-3 rounded-lg border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 text-xs">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    {{ t.tipo }}
+                  </span>
+                  <span class="font-bold text-white">{{ t.asunto }}</span>
+                </div>
+                <div class="text-[11px] text-slate-400">
+                  Para: <strong class="text-slate-200">{{ t.para }}</strong>
+                </div>
+              </div>
+              <div class="text-right text-[10px] text-slate-400 font-mono bg-[#050810] px-2.5 py-1 rounded border border-white/5">
+                ⏱️ {{ t.fecha_hora }}
+              </div>
             </div>
           </div>
         </div>
@@ -2631,6 +2645,19 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
+const trazaCorreosList = ref([])
+
+const registrarTrazaCorreo = (tipo, para, asunto, resumen) => {
+  const registro = {
+    fecha_hora: new Date().toLocaleString('es-CL'),
+    tipo,
+    para,
+    asunto,
+    resumen
+  }
+  trazaCorreosList.value.unshift(registro)
+}
+
 const buildPayload = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   return {
@@ -2681,6 +2708,12 @@ const buildPayload = () => {
         condicion_servicio: comercial.value.condicion_servicio,
         pensiones: comercial.value.pensiones,
         snapshot_comercial: snapshotComercial.value
+      },
+      ejecucion_v1: {
+        ...(opportunity.value.json_field?.ejecucion_v1 || {}),
+        subtab_activa: operacionesSubTab.value,
+        traza_correos: trazaCorreosList.value,
+        preparacion_salida: preparacionSalidaState.value
       }
     }
   }
