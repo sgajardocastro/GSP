@@ -567,7 +567,7 @@
       <!-- SUB-TAB 4: PESTAÑA 4 - PREPARACIÓN DE SALIDA (BPM PROGRESS HEADER & 3 SEGMENTOS OPERACIONALES) -->
       <div v-if="operacionesSubTab === 'preparacion_salida'" class="space-y-6">
         
-        <!-- DIAGRAMA VISUAL BPM DE FLUJO OPERACIONAL (WORKFLOW INTERACTIVO) -->
+        <!-- DIAGRAMA VISUAL BPM DE FLUJO OPERACIONAL (PARALELO & SECUENCIAL FORK-JOIN) -->
         <div class="bg-[#050810] border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
           <div class="flex justify-between items-center border-b border-white/10 pb-3">
             <div class="flex items-center gap-3">
@@ -575,8 +575,8 @@
                 BPM
               </div>
               <div>
-                <span class="text-sm font-black text-white uppercase tracking-wider block">📊 DIAGRAMA BPM: FLUJO DE PREPARACIÓN DE SALIDA DE PATIO</span>
-                <span class="text-xs text-slate-400">Modelador de Procesos en Tiempo Real (Coordinación ➔ Patio ➔ Analista GPS)</span>
+                <span class="text-sm font-black text-white uppercase tracking-wider block">📊 DIAGRAMA BPM: ARQUITECTURA DE FLUJO PREPARACIÓN SALIDA DE PATIO</span>
+                <span class="text-xs text-slate-400">Pasos 1 y 3 Concurrentes (Paralelos) | Paso 2 Secuencial de Paso 1 | Cierre exige Paso 2 🟢 + Paso 3 🟢</span>
               </div>
             </div>
             <div class="flex items-center gap-3 text-[11px] font-bold">
@@ -586,111 +586,118 @@
             </div>
           </div>
 
-          <!-- DIAGRAMA DE NODOS BPM CONECTADOS CON CONECTORES DIRECCIONALES -->
-          <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr] gap-3 items-center pt-1">
+          <!-- DIAGRAMA DE FLUJO PARALELO FORK & JOIN EN 2 RAMAS -->
+          <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_0.8fr] gap-4 items-center pt-2">
             
-            <!-- NODO 1: CONTROL DE CALIDAD -->
-            <div :class="[
-              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
-              statusSegmento1 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'bg-[#0a0f1e] border-white/10'
-            ]">
-              <div class="flex justify-between items-start mb-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  Paso 1 • Calidad
-                </span>
-                <span :class="[
-                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
-                  statusSegmento1 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+            <!-- RAMA SUPERIOR A + RAMA INFERIOR B -->
+            <div class="col-span-3 space-y-3">
+              
+              <!-- RAMA A (SECUENCIAL): PASO 1 ➔ PASO 2 -->
+              <div class="bg-[#0a0f1e]/80 border border-indigo-500/20 rounded-xl p-3 space-y-2">
+                <div class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider flex justify-between items-center border-b border-indigo-500/20 pb-1">
+                  <span>RAMA A • SECUENCIAL: CALIDAD (1) ➔ PATIO (2)</span>
+                  <span class="text-[9px] text-slate-400 font-mono">Paso 2 Requiere Paso 1 🟢</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                  <!-- NODO 1: CONTROL DE CALIDAD -->
+                  <div :class="[
+                    'p-3 rounded-lg border transition-all duration-300 relative flex flex-col justify-between min-h-[90px]',
+                    statusSegmento1 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : 'bg-[#050810] border-white/10'
+                  ]">
+                    <div class="flex justify-between items-center mb-1">
+                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        1. Calidad (Concurrente)
+                      </span>
+                      <span :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-red-400'" class="text-[10px] font-bold">
+                        {{ statusSegmento1 === 'GREEN' ? '🟢 Notificado' : '🔴 Pendiente' }}
+                      </span>
+                    </div>
+                    <h4 class="text-xs font-bold text-white mb-0.5">🛡️ Notificación a Control de Calidad</h4>
+                    <span class="text-[10px] text-slate-400">Coordinador envía antecedentes y EPP</span>
+                  </div>
+
+                  <!-- FLECHA SECUENCIAL 1 ➔ 2 -->
+                  <div class="flex flex-col items-center justify-center">
+                    <span :class="['text-[9px] font-mono', statusSegmento1 === 'GREEN' ? 'text-emerald-400 font-bold' : 'text-slate-600']">Secuencial</span>
+                    <svg class="w-5 h-5" :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400 animate-pulse' : 'text-slate-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  </div>
+
+                  <!-- NODO 2: INSPECCIÓN SALIDA PATIO -->
+                  <div :class="[
+                    'p-3 rounded-lg border transition-all duration-300 relative flex flex-col justify-between min-h-[90px]',
+                    statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-md' : 'bg-[#050810] border-white/10 opacity-75')
+                  ]">
+                    <div class="flex justify-between items-center mb-1">
+                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        2. Inspección Patio
+                      </span>
+                      <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')" class="text-[10px] font-bold">
+                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado' : '🔴 Bloqueado (Esperando 1)') }}
+                      </span>
+                    </div>
+                    <h4 class="text-xs font-bold text-white mb-0.5">🚜 Check List & Contrapesos</h4>
+                    <span class="text-[10px] text-slate-400">Jefe de Patio verifica estado y carga</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RAMA B (PARALELA CONCURRENTE): PASO 3 -->
+              <div class="bg-[#0a0f1e]/80 border border-emerald-500/20 rounded-xl p-3 space-y-2">
+                <div class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider flex justify-between items-center border-b border-emerald-500/20 pb-1">
+                  <span>RAMA B • PARALELA CONCURRENTE: ANALISTA OPERACIONES (3)</span>
+                  <span class="text-[9px] text-slate-400 font-mono">Ejecución Inmediata en Paralelo con Paso 1</span>
+                </div>
+                
+                <div :class="[
+                  'p-3 rounded-lg border transition-all duration-300 flex justify-between items-center min-h-[60px]',
+                  statusSegmento3 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-md' : 'bg-[#050810] border-white/10')
                 ]">
-                  <span :class="['w-2 h-2 rounded-full', statusSegmento1 === 'GREEN' ? 'bg-emerald-500' : 'bg-red-500']"></span>
-                  {{ statusSegmento1 === 'GREEN' ? '🟢 Terminado' : '🔴 No Iniciado' }}
-                </span>
+                  <div>
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        3. Analista Op. (Concurrente)
+                      </span>
+                      <h4 class="text-xs font-bold text-white">💻 Análisis 360 & Geocerca GPS</h4>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Instrucción de tareas, revisión 360 y radio GPS en metros</span>
+                  </div>
+                  <span :class="statusSegmento3 === 'GREEN' ? 'text-emerald-400' : (statusSegmento3 === 'YELLOW' ? 'text-amber-400' : 'text-red-400')" class="text-[10px] font-bold">
+                    {{ statusSegmento3 === 'GREEN' ? '🟢 Habilitado' : (statusSegmento3 === 'YELLOW' ? '🟡 En Proceso' : '🔴 No Iniciado') }}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
-                  <span>🛡️ Notificación a Control de Calidad</span>
-                </h4>
-                <p class="text-[11px] text-slate-400 leading-tight">
-                  Envío formal de antecedentes técnicos del servicio y requerimientos de EPP / riesgo a Calidad.
-                </p>
-              </div>
-              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
-                <span>Rol: <strong>Coordinador</strong></span>
-                <span>Canal: <strong>Email System</strong></span>
-              </div>
+
             </div>
 
-            <!-- CONECTOR BPM 1 ➔ 2 -->
+            <!-- CONECTOR JOIN (CONVERGENCIA 2 Y 3) -->
             <div class="hidden lg:flex flex-col items-center justify-center text-slate-500 font-black">
-              <span :class="['text-xs font-mono mb-1', statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-slate-600']">FLOW 1.2</span>
-              <svg class="w-6 h-6 text-slate-500" :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400 animate-pulse' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              <span :class="['text-[9px] font-mono mb-1', (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 font-bold' : 'text-slate-600']">JOIN (2 AND 3)</span>
+              <svg class="w-6 h-6" :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 animate-pulse' : 'text-slate-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
             </div>
 
-            <!-- NODO 2: INSPECCIÓN DE SALIDA DE PATIO -->
+            <!-- NODO FINAL JOIN: CIERRE PREPARACIÓN / PASE A TERRENO PWA -->
             <div :class="[
-              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
-              statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
+              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[160px] text-center',
+              (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-950/30 border-emerald-500 shadow-xl shadow-emerald-500/20' : 'bg-[#0a0f1e] border-white/10 opacity-60'
             ]">
-              <div class="flex justify-between items-start mb-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Paso 2 • Patio
-                </span>
-                <span :class="[
-                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
-                  statusSegmento2 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30')
-                ]">
-                  <span :class="['w-2 h-2 rounded-full', statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')]"></span>
-                  {{ statusSegmento2 === 'GREEN' ? '🟢 Carga Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado' : '🔴 No Iniciado') }}
-                </span>
-              </div>
+              <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 self-center mb-1">
+                Hito Final • Join
+              </span>
               <div>
-                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
-                  <span>🚜 Inspección Salida & Contrapesos</span>
-                </h4>
-                <p class="text-[11px] text-slate-400 leading-tight">
-                  Survey digital Jefe de Patio: Check list operativo (fotos/taller), verificación de contrapesos y maniobras.
+                <span class="text-2xl block mb-1">🚀</span>
+                <h4 class="text-xs font-bold text-white mb-1">Pase a Ejecución Terreno PWA</h4>
+                <p class="text-[10px] text-slate-400 leading-tight">
+                  Exige <strong>Paso 2 🟢</strong> y <strong>Paso 3 🟢</strong> completados en paralelo.
                 </p>
               </div>
-              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
-                <span>Rol: <strong>Jefe de Patio</strong></span>
-                <span>Checklist: <strong>Digital Survey</strong></span>
-              </div>
-            </div>
-
-            <!-- CONECTOR BPM 2 ➔ 3 -->
-            <div class="hidden lg:flex flex-col items-center justify-center text-slate-500 font-black">
-              <span :class="['text-xs font-mono mb-1', statusSegmento2 === 'GREEN' ? 'text-emerald-400' : 'text-slate-600']">FLOW 2.3</span>
-              <svg class="w-6 h-6 text-slate-500" :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400 animate-pulse' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </div>
-
-            <!-- NODO 3: ANALISTA DE OPERACIONES -->
-            <div :class="[
-              'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[120px]',
-              statusSegmento3 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
-            ]">
-              <div class="flex justify-between items-start mb-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Paso 3 • Analista
-                </span>
+              <div class="mt-2 pt-2 border-t border-white/5">
                 <span :class="[
-                  'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1',
-                  statusSegmento3 === 'GREEN' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/30')
+                  'px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider block',
+                  (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30' : 'bg-slate-800 text-slate-400'
                 ]">
-                  <span :class="['w-2 h-2 rounded-full', statusSegmento3 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500 animate-pulse' : 'bg-red-500')]"></span>
-                  {{ statusSegmento3 === 'GREEN' ? '🟢 Habilitado' : (statusSegmento3 === 'YELLOW' ? '🟡 En Proceso' : '🔴 No Iniciado') }}
+                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 ETAPA COMPLETADA' : '🔒 BLOQUEADO (ESPERA 2 Y 3)' }}
                 </span>
-              </div>
-              <div>
-                <h4 class="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
-                  <span>💻 Análisis 360 & Geocerca GPS</span>
-                </h4>
-                <p class="text-[11px] text-slate-400 leading-tight">
-                  Instrucción del coordinador, revisión 360 de la OT y activación del perímetro GPS para la maniobra.
-                </p>
-              </div>
-              <div class="mt-2 text-[10px] text-slate-400 font-mono flex justify-between border-t border-white/5 pt-2">
-                <span>Rol: <strong>Analista Op.</strong></span>
-                <span>GPS: <strong>Geocerca Activa</strong></span>
               </div>
             </div>
             
@@ -2968,6 +2975,10 @@ const notificarControlCalidad = async () => {
 }
 
 const programarInspeccionPatio = async () => {
+  if (!preparacionSalidaState.value.cc_notificado) {
+    alert('⚠️ Paso 2 es secuencial de Paso 1. Debe notificar a Control de Calidad (Paso 1) antes de programar la Inspección de Patio.')
+    return
+  }
   if (!preparacionSalidaState.value.jefe_patio_id) {
     alert('⚠️ Por favor seleccione el Jefe de Patio asignado.')
     return
@@ -2988,6 +2999,10 @@ const programarInspeccionPatio = async () => {
 }
 
 const confirmarInspeccionSalidaPatio = async () => {
+  if (!preparacionSalidaState.value.cc_notificado) {
+    alert('⚠️ Debe notificar previamente a Control de Calidad (Paso 1).')
+    return
+  }
   preparacionSalidaState.value.patio_checklist_completado = true
   preparacionSalidaState.value.patio_contrapesos_cargados = true
   preparacionSalidaState.value.patio_aparejos_cargados = true
@@ -3022,6 +3037,10 @@ const notificarAnalistaOperaciones = async () => {
 }
 
 const finalizarPreparacionSalida = async () => {
+  if (!preparacionSalidaState.value.patio_checklist_completado) {
+    alert('⚠️ La etapa de Preparación de Salida exige que la Inspección de Patio (Paso 2) esté TERMINADA (🟢) antes de cerrar la etapa.')
+    return
+  }
   preparacionSalidaState.value.analista_revision_360 = true
   preparacionSalidaState.value.analista_geocerca_activa = true
   preparacionSalidaState.value.preparacion_finalizada = true
@@ -3036,7 +3055,7 @@ const finalizarPreparacionSalida = async () => {
     headers: { Authorization: `Bearer ${token}` }
   })
   
-  alert('🎉 Preparación de Salida Completada Exitosamente. El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
+  alert('🎉 Preparación de Salida Completada Exitosamente (Paso 2 Patio 🟢 Y Paso 3 Analista 🟢). El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
 }
 
 const generarPDF = async () => {
