@@ -705,7 +705,7 @@
         <!-- SEGMENTO 1: NOTIFICACIÓN A CONTROL DE CALIDAD (CC) -->
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
           <div class="flex justify-between items-center border-b border-white/5 pb-3">
-            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento1 === 'GREEN' ? 'bg-emerald-500' : 'bg-red-500'"></span>
               1. Notificación a Control de Calidad (CC)
             </span>
@@ -736,18 +736,37 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                 <span>{{ preparacionSalidaState.cc_notificado ? 'Control de Calidad Notificado' : 'Notificar a Control de Calidad por Correo' }}</span>
               </button>
+
+              <!-- TRAZA CONTEXTUAL DE NOTIFICACIÓN ENVIADA -->
+              <div v-if="preparacionSalidaState.cc_notificado" class="p-3 bg-[#0a0f1e] rounded-lg border border-emerald-500/30 text-xs space-y-1">
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                  <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                    📜 Traza de Envío Realizado — Control de Calidad
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-mono">⏱️ {{ trazaCalidad?.fecha_hora || preparacionSalidaState.cc_fecha_notificacion || 'Registrado' }}</span>
+                </div>
+                <div class="text-slate-300 text-[11px]">
+                  Para: <strong class="text-white">{{ trazaCalidad?.para || 'calidad@arriendosanpablo.cl' }}</strong>
+                </div>
+                <div class="text-[11px] text-slate-300">
+                  Asunto: <strong class="text-amber-400">{{ trazaCalidad?.asunto || '🛡️ Requerimientos de Calidad OT' }}</strong>
+                </div>
+                <div class="text-[10px] text-slate-300 italic bg-[#050810] p-2 rounded border border-white/5 mt-1">
+                  Mensaje: {{ trazaCalidad?.resumen || preparacionSalidaState.cc_notas_riesgo || 'Antecedentes y notas de riesgo enviados' }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- SEGMENTO 2: INSPECCIÓN DE SALIDA DE PATIO (ASIGNACIÓN SURVEY PWA AL JEFE DE PATIO) -->
+        <!-- SEGMENTO 2: INSPECCIÓN DE SALIDA DE PATIO (ASIGNACIÓN SURVEY AL JEFE DE PATIO) -->
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
           <div class="flex justify-between items-center border-b border-white/5 pb-3">
-            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
-              2. Inspección de Salida de Patio (Asignación Survey PWA al Jefe de Patio)
+              2. Inspección de Salida de Patio (Asignación Survey al Jefe de Patio)
             </span>
-            <span class="text-[10px] text-slate-400">Ejecución Digital Inyectada a la PWA del Jefe de Patio</span>
+            <span class="text-[10px] text-slate-400">Ejecución Digital en App Móvil del Jefe de Patio</span>
           </div>
 
           <!-- 2.1 Programación por el Coordinador -->
@@ -774,35 +793,35 @@
                 :disabled="preparacionSalidaState.patio_checklist_completado" 
                 class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors shadow-md shadow-amber-500/10"
               >
-                <span>{{ preparacionSalidaState.patio_programado ? 'Programación PWA Registrada' : 'Programar e Inyectar Survey PWA a Jefe de Patio' }}</span>
+                <span>{{ preparacionSalidaState.patio_programado ? 'Programación Registrada' : 'Programar e Inyectar Survey a Jefe de Patio' }}</span>
               </button>
             </div>
           </div>
 
-          <!-- 2.2 Estado de Ejecución del Survey PWA (Sin Formulario Duplicado en la Web) -->
+          <!-- 2.2 Estado de Ejecución del Survey -->
           <div class="bg-[#0a0f1e] p-4 rounded-lg border border-amber-500/20 space-y-3">
             <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider block border-b border-white/5 pb-2">
-              📱 Estado de Ejecución en PWA Terreno / Patio
+              📱 Estado de Ejecución del Survey en Terreno / Patio
             </span>
 
             <div v-if="!preparacionSalidaState.patio_programado" class="bg-[#050810] p-4 rounded-lg text-center border border-white/5 text-xs text-slate-400">
-              🔴 Inspección en Patio aún no agendada. Seleccione al Jefe de Patio y la fecha programada para inyectar el Survey PWA.
+              🔴 Inspección en Patio aún no agendada. Seleccione al Jefe de Patio y la fecha programada para inyectar el Survey.
             </div>
             
             <div v-else-if="!preparacionSalidaState.patio_checklist_completado" class="bg-amber-500/10 p-4 rounded-lg border border-amber-500/30 flex flex-col md:flex-row justify-between items-center gap-3">
               <div class="space-y-1">
-                <span class="text-xs font-bold text-amber-400 block">🟡 Survey Inyectado a la PWA del Jefe de Patio (Esperando Ejecución)</span>
+                <span class="text-xs font-bold text-amber-400 block">🟡 Survey Inyectado al Jefe de Patio (Esperando Ejecución)</span>
                 <span class="text-[11px] text-slate-300 block">Asignado a: <strong>{{ usuariosEnroladosFes.find(u => u.id_user === preparacionSalidaState.jefe_patio_id)?.nombre_user || 'Jefe de Patio' }}</strong></span>
                 <span class="text-[10px] text-slate-400">Fecha/Hora: {{ preparacionSalidaState.fecha_inspeccion_plan }} a las {{ preparacionSalidaState.hora_inspeccion_plan }} hrs</span>
               </div>
               <button @click="confirmarInspeccionSalidaPatio" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow-md">
-                <span>Simular / Confirmar Recepción Survey PWA 🟢</span>
+                <span>Simular / Confirmar Recepción Survey 🟢</span>
               </button>
             </div>
 
             <div v-else class="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/30 flex justify-between items-center">
               <div>
-                <span class="text-xs font-bold text-emerald-300 block">🟢 Survey PWA "Inspección de Salida de Patio" Completado & Conforme</span>
+                <span class="text-xs font-bold text-emerald-300 block">🟢 Survey "Inspección de Salida de Patio" Completado & Conforme</span>
                 <span class="text-[11px] text-slate-300 block">Ejecutado por Jefe de Patio • Carga de contrapesos y maniobras verificadas</span>
               </div>
               <div class="flex gap-2">
@@ -814,13 +833,32 @@
                 </button>
               </div>
             </div>
+
+            <!-- TRAZA CONTEXTUAL DE NOTIFICACIÓN INYECTADA A JEFE PATIO -->
+            <div v-if="preparacionSalidaState.patio_programado" class="p-3 bg-[#050810] rounded-lg border border-amber-500/30 text-xs space-y-1 mt-3">
+              <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                  📜 Traza de Inyección PWA — Jefe de Patio
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">⏱️ {{ trazaPatio?.fecha_hora || preparacionSalidaState.fecha_inspeccion_plan }}</span>
+              </div>
+              <div class="text-slate-300 text-[11px]">
+                Para: <strong class="text-white">{{ trazaPatio?.para || usuariosEnroladosFes.find(u => u.id_user === preparacionSalidaState.jefe_patio_id)?.email || 'jefe_patio@leanglobal.cl' }}</strong>
+              </div>
+              <div class="text-[11px] text-slate-300">
+                Asunto: <strong class="text-amber-400">{{ trazaPatio?.asunto || '🚜 Inyección Survey Inspección Patio' }}</strong>
+              </div>
+              <div class="text-[10px] text-slate-300 italic bg-[#0a0f1e] p-2 rounded border border-white/5 mt-1">
+                Detalle: Survey programado para {{ preparacionSalidaState.fecha_inspeccion_plan }} a las {{ preparacionSalidaState.hora_inspeccion_plan }} hrs
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- SEGMENTO 3: INSTRUCCIÓN A ANALISTA DE OPERACIONES & TAREAS OPERATIVAS -->
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
           <div class="flex justify-between items-center border-b border-white/5 pb-3">
-            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento3 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
               3. Instrucción a Analista de Operaciones & Tareas Operativas
             </span>
@@ -842,6 +880,25 @@
               >
                 <span>{{ preparacionSalidaState.analista_notificado ? 'Analista Notificado' : 'Enviar Instrucción a Analista de Operaciones' }}</span>
               </button>
+
+              <!-- TRAZA CONTEXTUAL DE NOTIFICACIÓN A ANALISTA -->
+              <div v-if="preparacionSalidaState.analista_notificado" class="p-3 bg-[#0a0f1e] rounded-lg border border-emerald-500/30 text-xs space-y-1">
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                  <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                    📜 Traza de Envío Realizado — Analista de Operaciones
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-mono">⏱️ {{ trazaAnalista?.fecha_hora || 'Registrado' }}</span>
+                </div>
+                <div class="text-slate-300 text-[11px]">
+                  Para: <strong class="text-white">{{ trazaAnalista?.para || usuariosEnroladosFes.find(u => u.id_user === preparacionSalidaState.analista_id)?.email || 'analista@leanglobal.cl' }}</strong>
+                </div>
+                <div class="text-[11px] text-slate-300">
+                  Asunto: <strong class="text-amber-400">{{ trazaAnalista?.asunto || '💻 Instrucción Operativa OT' }}</strong>
+                </div>
+                <div class="text-[10px] text-slate-300 italic bg-[#050810] p-2 rounded border border-white/5 mt-1">
+                  Instrucción: {{ trazaAnalista?.resumen || preparacionSalidaState.analista_instrucciones || 'Realizar Análisis 360 y Geocerca GPS' }}
+                </div>
+              </div>
             </div>
 
             <!-- 3.2 Tareas del Analista (Diagrama Imagen 2) -->
@@ -2645,6 +2702,10 @@ onUnmounted(() => {
 
 const rawEjecucionJson = ref({})
 const trazaCorreosList = ref([])
+
+const trazaCalidad = computed(() => trazaCorreosList.value.find(t => t.tipo === 'CONTROL_CALIDAD'))
+const trazaPatio = computed(() => trazaCorreosList.value.find(t => t.tipo === 'JEFE_PATIO_PWA'))
+const trazaAnalista = computed(() => trazaCorreosList.value.find(t => t.tipo === 'ANALISTA_OP'))
 
 const cambiarYPersistirSubTab = async (subtabName) => {
   topTab.value = 'operaciones'
