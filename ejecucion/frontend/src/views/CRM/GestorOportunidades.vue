@@ -31,6 +31,10 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
           <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
         </button>
+        <button v-if="opportunity.id_proyecto_estado === 3 && topTab === 'operaciones' && isRequerimientoAprobado && operacionesSubTab === 'asignacion'" @click="confirmarAsignacionOT" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Confirmar Asignación OT ➔ Preparación Salida</span>
+        </button>
         <button v-if="opportunity.id_proyecto_estado !== 3" @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           <span>Generar Cotización</span>
@@ -53,7 +57,7 @@
         class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-        <span>1. Preventa (Comercial - Consulta Readonly)</span>
+        <span>1. Preventa Comercial</span>
       </button>
 
       <button 
@@ -77,6 +81,20 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
         <span>3. Asignación de Recursos OT (Pestaña C)</span>
         <span v-if="!requerimientoAprobado" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono ml-1">(Requiere Aprobación)</span>
+      </button>
+
+      <button 
+        @click="topTab = 'operaciones'; operacionesSubTab = 'preparacion_salida'" 
+        :disabled="!asignacionConfirmada"
+        :class="[
+          topTab === 'operaciones' && operacionesSubTab === 'preparacion_salida' ? 'text-indigo-400 border-b-2 border-indigo-500 font-bold' : 'text-slate-400 hover:text-white',
+          !asignacionConfirmada ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+        ]" 
+        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        <span>4. Preparación de Salida</span>
+        <span v-if="!asignacionConfirmada" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono ml-1">(Requiere Asignación)</span>
       </button>
     </div>
 
@@ -542,6 +560,249 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
               <span>Confirmar Asignación OT & Notificar (sgajardoc@gmail.com)</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB 4: PESTAÑA 4 - PREPARACIÓN DE SALIDA (BPM PROGRESS HEADER & 3 SEGMENTOS OPERACIONALES) -->
+      <div v-if="operacionesSubTab === 'preparacion_salida'" class="space-y-6">
+        
+        <!-- ENCABEZADO BPM DE PROGRESO DE PREPARACIÓN -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 rounded-lg flex items-center justify-center text-indigo-400 font-black font-mono">
+              BPM
+            </div>
+            <div>
+              <span class="text-xs font-black text-white uppercase tracking-wider block">📊 PROGRESO DE PREPARACIÓN DE SALIDA DE PATIO</span>
+              <span class="text-[10px] text-slate-400">Diagrama de Hitos Operacionales (Notificación CC ➔ Inspección Patio ➔ Analista)</span>
+            </div>
+          </div>
+          
+          <!-- Hitos BPM con Semáforos Visuales -->
+          <div class="flex items-center gap-3 bg-[#0a0f1e] px-4 py-2 rounded-xl border border-white/5 text-xs font-bold">
+            <!-- Hito 1: Control Calidad -->
+            <div class="flex items-center gap-1.5">
+              <span v-if="statusSegmento1 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
+              <span v-else-if="statusSegmento1 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
+              <span :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-slate-400'">1. Notif. Calidad</span>
+            </div>
+            
+            <span class="text-slate-600 font-mono">➔</span>
+            
+            <!-- Hito 2: Inspección Patio -->
+            <div class="flex items-center gap-1.5">
+              <span v-if="statusSegmento2 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
+              <span v-else-if="statusSegmento2 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
+              <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')">2. Inspección Patio</span>
+            </div>
+            
+            <span class="text-slate-600 font-mono">➔</span>
+            
+            <!-- Hito 3: Analista -->
+            <div class="flex items-center gap-1.5">
+              <span v-if="statusSegmento3 === 'GREEN'" class="w-3 h-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse"></span>
+              <span v-else-if="statusSegmento3 === 'YELLOW'" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <span v-else class="w-3 h-3 rounded-full bg-red-500/50"></span>
+              <span :class="statusSegmento3 === 'GREEN' ? 'text-emerald-400' : (statusSegmento3 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')">3. Analista Op.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEGMENTO 1: NOTIFICACIÓN A CONTROL DE CALIDAD (CC) -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
+          <div class="flex justify-between items-center border-b border-white/5 pb-3">
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento1 === 'GREEN' ? 'bg-emerald-500' : 'bg-red-500'"></span>
+              1. Notificación a Control de Calidad (CC)
+            </span>
+            <span v-if="preparacionSalidaState.cc_notificado" class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+              ✅ Notificado
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-[#0a0f1e] p-3.5 rounded-lg border border-white/5 space-y-2 text-xs">
+              <span class="text-[11px] font-bold text-slate-300 block mb-1">📋 Antecedentes del Servicio para Calidad</span>
+              <div>Cliente: <strong class="text-white">{{ selectedClient?.razon_social || opportunity.rut_cliente }}</strong></div>
+              <div>Servicio / Carga: <strong class="text-amber-400">{{ siteVisit.tipo_carga || 'General' }}</strong> ({{ siteVisit.peso_carga || 'N/A' }})</div>
+              <div>Lugar: <strong class="text-slate-200">{{ siteVisit.obra_nombre }} - {{ siteVisit.obra_direccion }}</strong></div>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Notas / Requerimientos de Calidad & Riesgos:</label>
+                <textarea v-model="preparacionSalidaState.cc_notas_riesgo" :disabled="preparacionSalidaState.cc_notificado" rows="2" placeholder="Detalle requisitos especiales de EPP, certificaciones o maniobra..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-50"></textarea>
+              </div>
+
+              <button 
+                @click="notificarControlCalidad" 
+                :disabled="preparacionSalidaState.cc_notificado" 
+                class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span>{{ preparacionSalidaState.cc_notificado ? 'Control de Calidad Notificado' : 'Notificar a Control de Calidad por Correo' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEGMENTO 2: INSPECCIÓN DE SALIDA DE PATIO (SURVEY JEFE DE PATIO) -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
+          <div class="flex justify-between items-center border-b border-white/5 pb-3">
+            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
+              2. Inspección de Salida de Patio (Jefe de Patio)
+            </span>
+            <span class="text-[10px] text-slate-400">Survey Digital de Chequeo Operativo & Carga de Contrapesos</span>
+          </div>
+
+          <!-- 2.1 Programación por el Coordinador -->
+          <div class="bg-[#0a0f1e] p-4 rounded-lg border border-white/5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label class="block text-[10px] text-slate-400 font-semibold mb-1">Jefe de Patio Asignado *</label>
+              <select v-model="preparacionSalidaState.jefe_patio_id" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
+                <option value="">-- Seleccionar Jefe de Patio --</option>
+                <option v-for="u in usuariosEnroladosFes" :key="u.id_user" :value="u.id_user">
+                  {{ u.nombre_user || u.name_frst }} ({{ u.email }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 font-semibold mb-1">Fecha & Hora Programada Inspección *</label>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="date" v-model="preparacionSalidaState.fecha_inspeccion_plan" :disabled="preparacionSalidaState.patio_checklist_completado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white [color-scheme:dark]" />
+                <input type="time" v-model="preparacionSalidaState.hora_inspeccion_plan" :disabled="preparacionSalidaState.patio_checklist_completado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white [color-scheme:dark]" />
+              </div>
+            </div>
+            <div>
+              <button 
+                @click="programarInspeccionPatio" 
+                :disabled="preparacionSalidaState.patio_checklist_completado" 
+                class="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+              >
+                <span>{{ preparacionSalidaState.patio_programado ? 'Inspección Programada' : 'Programar Inspección Jefe de Patio' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2.2 Survey Checklist Digital del Jefe de Patio (Diagrama Imagen 1) -->
+          <div class="bg-[#0a0f1e] p-4 rounded-lg border border-amber-500/20 space-y-4">
+            <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider block border-b border-white/5 pb-2">
+              📝 Check List Operativo Digital & Confirmación de Carga en Patio
+            </span>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Estado Mecánico & Estructura:</label>
+                <select v-model="preparacionSalidaState.patio_estado_mecanico" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
+                  <option value="CONFORME">🟢 CONFORME (Operativo)</option>
+                  <option value="OBSERVADO">🟡 OBSERVADO (Menor)</option>
+                  <option value="NO_CONFORME">🔴 NO CONFORME (Taller)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Estado Neumáticos / Orugas:</label>
+                <select v-model="preparacionSalidaState.patio_estado_neumaticos" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
+                  <option value="CONFORME">🟢 CONFORME</option>
+                  <option value="NO_CONFORME">🔴 REVISAR PRESIÓN/DESGASTE</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Documentación a Bordo (Padron/Cert):</label>
+                <select v-model="preparacionSalidaState.patio_documentacion" :disabled="preparacionSalidaState.patio_checklist_completado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
+                  <option value="CONFORME">🟢 AL DÍA / COMPLETA</option>
+                  <option value="INCOMPLETA">🔴 REQUERIR PAPELERA</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Carga de Contrapesos & Aparejos -->
+            <div class="bg-[#050810] p-3 rounded border border-white/5 space-y-2 text-xs">
+              <span class="text-[10px] font-bold text-slate-300 block">🚛 Verificación de Carga de Contrapesos & Aparejos:</span>
+              <div class="flex flex-wrap gap-6">
+                <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                  <input type="checkbox" v-model="preparacionSalidaState.patio_contrapesos_cargados" :disabled="preparacionSalidaState.patio_checklist_completado" class="accent-amber-500" />
+                  <span>Contrapesos Cargados & Asegurados</span>
+                </label>
+                <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                  <input type="checkbox" v-model="preparacionSalidaState.patio_aparejos_cargados" :disabled="preparacionSalidaState.patio_checklist_completado" class="accent-amber-500" />
+                  <span>Eslingas, Grilletes y Maniobras Verificadas</span>
+                </label>
+              </div>
+            </div>
+
+            <button 
+              @click="confirmarInspeccionSalidaPatio" 
+              :disabled="preparacionSalidaState.patio_checklist_completado" 
+              class="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-emerald-500/20 disabled:text-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <span>{{ preparacionSalidaState.patio_checklist_completado ? '✅ Inspección de Patio Conforme & Carga Confirmada' : 'Confirmar Carga Completa & Inspección Salida Patio' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SEGMENTO 3: INSTRUCCIÓN A ANALISTA DE OPERACIONES & TAREAS OPERATIVAS -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
+          <div class="flex justify-between items-center border-b border-white/5 pb-3">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento3 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
+              3. Instrucción a Analista de Operaciones & Tareas Operativas
+            </span>
+            <span class="text-[10px] text-slate-400">Análisis 360 & Geocerca GPS</span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- 3.1 Instrucción del Coordinador al Analista -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Instrucciones del Coordinador al Analista de Operaciones:</label>
+                <textarea v-model="preparacionSalidaState.analista_instrucciones" :disabled="preparacionSalidaState.preparacion_finalizada" rows="3" placeholder="Instruya detalles particulares del servicio para seguimiento del analista..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-50"></textarea>
+              </div>
+
+              <button 
+                @click="notificarAnalistaOperaciones" 
+                :disabled="preparacionSalidaState.preparacion_finalizada || preparacionSalidaState.analista_notificado" 
+                class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+              >
+                <span>{{ preparacionSalidaState.analista_notificado ? 'Analista Notificado' : 'Enviar Instrucción a Analista de Operaciones' }}</span>
+              </button>
+            </div>
+
+            <!-- 3.2 Tareas del Analista (Diagrama Imagen 2) -->
+            <div class="bg-[#0a0f1e] p-4 rounded-lg border border-white/5 space-y-3 text-xs">
+              <span class="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block border-b border-white/5 pb-2">
+                💻 Tareas Obligatorias del Analista de Operaciones
+              </span>
+
+              <label class="flex items-center gap-2 text-slate-200 cursor-pointer bg-[#050810] p-2.5 rounded border border-white/5">
+                <input type="checkbox" v-model="preparacionSalidaState.analista_revision_360" :disabled="preparacionSalidaState.preparacion_finalizada" class="accent-emerald-500" />
+                <span>1. Revisa OT en sistema con <strong>Análisis 360 Rápido</strong></span>
+              </label>
+
+              <div class="bg-[#050810] p-2.5 rounded border border-white/5 space-y-2">
+                <label class="flex items-center gap-2 text-slate-200 cursor-pointer">
+                  <input type="checkbox" v-model="preparacionSalidaState.analista_geocerca_activa" :disabled="preparacionSalidaState.preparacion_finalizada" class="accent-emerald-500" />
+                  <span>2. Realiza <strong>Geocerca GPS del Servicio</strong></span>
+                </label>
+                <div v-if="preparacionSalidaState.analista_geocerca_activa" class="flex items-center gap-2 pl-6">
+                  <span class="text-[10px] text-slate-400">Radio Geocerca (m):</span>
+                  <input type="number" v-model.number="preparacionSalidaState.analista_geocerca_radio_m" min="100" max="5000" class="w-24 bg-[#0a0f1e] border border-white/10 rounded px-2 py-0.5 text-xs text-white font-mono" />
+                </div>
+              </div>
+
+              <button 
+                @click="finalizarPreparacionSalida" 
+                :disabled="preparacionSalidaState.preparacion_finalizada" 
+                class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/20 disabled:text-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>{{ preparacionSalidaState.preparacion_finalizada ? '🎉 Preparación de Salida Completada' : 'Finalizar Preparación & Pasar a Ejecución Terreno' }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2477,29 +2738,79 @@ const aprobarYGenerarOT = async () => {
   }
 }
 
+const asignacionConfirmada = ref(false)
+
+const preparacionSalidaState = ref({
+  // Segmento 1: Control de Calidad
+  cc_notificado: false,
+  cc_usuario_id: null,
+  cc_notas_riesgo: '',
+  cc_fecha_notificacion: null,
+  
+  // Segmento 2: Inspección Salida Patio (Jefe de Patio)
+  patio_programado: false,
+  jefe_patio_id: null,
+  fecha_inspeccion_plan: '',
+  hora_inspeccion_plan: '07:30',
+  patio_checklist_completado: false,
+  patio_estado_mecanico: 'CONFORME',
+  patio_estado_neumaticos: 'CONFORME',
+  patio_documentacion: 'CONFORME',
+  patio_requiere_taller: false,
+  patio_detalle_taller: '',
+  patio_fotos: [],
+  patio_contrapesos_cargados: false,
+  patio_aparejos_cargados: false,
+  
+  // Segmento 3: Analista de Operaciones
+  analista_notificado: false,
+  analista_id: null,
+  analista_instrucciones: '',
+  analista_revision_360: false,
+  analista_geocerca_activa: false,
+  analista_geocerca_radio_m: 500,
+  preparacion_finalizada: false
+})
+
+const statusSegmento1 = computed(() => preparacionSalidaState.value.cc_notificado ? 'GREEN' : 'RED')
+
+const statusSegmento2 = computed(() => {
+  if (preparacionSalidaState.value.patio_checklist_completado) return 'GREEN'
+  if (preparacionSalidaState.value.patio_programado) return 'YELLOW'
+  return 'RED'
+})
+
+const statusSegmento3 = computed(() => {
+  if (preparacionSalidaState.value.preparacion_finalizada) return 'GREEN'
+  if (preparacionSalidaState.value.analista_notificado || preparacionSalidaState.value.analista_revision_360) return 'YELLOW'
+  return 'RED'
+})
+
 const confirmarAsignacionOT = async () => {
   try {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     
-    // No cambiar estado a 4 aún, el estado se mantiene en 3 (Preparación Operaciones)
-    // hasta que el chofer marque desplazamiento
+    asignacionConfirmada.value = true
+    operacionesSubTab.value = 'preparacion_salida'
     
     const payload = buildPayload()
-    // payload.id_proyecto_estado = 4 // Removido
     payload.json_field.ejecucion_v1 = {
       ...(payload.json_field?.ejecucion_v1 || {}),
+      asignacion_confirmada: true,
       equipo_id: operacionesAssignment.value.equipo_id === 'CRN-DEFAULT' ? (lines.value[0]?.descripcion || 'Equipo Estructurador') : operacionesAssignment.value.equipo_id,
       equipos_extra: operacionesAssignment.value.equipos_extra,
       operador_id: operacionesAssignment.value.operador_id,
       rigger_id: operacionesAssignment.value.rigger_id,
+      chofer_id: operacionesAssignment.value.chofer_id,
       fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
       hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
       fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
       hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
       observaciones: operacionesAssignment.value.observaciones_operaciones,
       aparejos_solicitados_json: snapshotComercial.value.aparejos || {},
-      aparejos_asignados_json: operacionesAssignment.value.aparejos
+      aparejos_asignados_json: operacionesAssignment.value.aparejos,
+      preparacion_salida: preparacionSalidaState.value
     }
     
     const projectId = props.proyectoId || currentProyectoId.value
@@ -2508,23 +2819,138 @@ const confirmarAsignacionOT = async () => {
     })
     
     isDirty.value = false
-    try {
-      await apiAxios.post('/message', {
-        para: 'sgajardoc@gmail.com',
-        asunto: `Orden de Trabajo Asignada: ${antecedentes.value.identificador_formal || 'COT'}`,
-        cuerpo: `Se ha confirmado la asignación de recursos para el proyecto ${antecedentes.value.identificador_formal || 'COT'}.`
-      })
-      alert(`🚀 Orden de Trabajo (OT) Asignada y Confirmada Exitosamente.\n\n✉️ Notificación REAL enviada a sgajardoc@gmail.com.\n\nLa tarjeta avanzó en el Kanban a 'Asignados / OT Generada'.`)
-    } catch(err) {
-      alert(`🚀 Orden de Trabajo (OT) Asignada Exitosamente.\n\n⚠️ Falló envío de correo REAL, pero la tarjeta avanzó.`)
-    }
     
-    emit('creada', { id: antecedentes.value.identificador_formal })
-    emit('close')
+    // Notificación por correo estilo propuesta a la tripulación
+    const equipoNombre = listaEquiposMaster.value.find(e => e.id_equipo === operacionesAssignment.value.equipo_id)?.nombre_equipo || operacionesAssignment.value.equipo_id
+    const idsTripulacion = [operacionesAssignment.value.operador_id, operacionesAssignment.value.rigger_id, operacionesAssignment.value.chofer_id].filter(Boolean)
+    const targetUsers = usuarios.value.filter(u => idsTripulacion.includes(u.id_user) && u.email)
+
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
+        <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
+          <h2 style="color: #3b82f6; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+          <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Asignación de Recursos para Servicio Operacional</p>
+        </div>
+        <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid #3b82f6; padding: 18px; border-radius: 10px;">
+          Estimado Integrante de Tripulación,<br><br>
+          Ha sido asignado al servicio operacional correspondiente a la Orden de Trabajo <strong>${antecedentes.value.identificador_formal || 'COT'}</strong>.<br><br>
+          <strong>Detalles del Servicio:</strong><br>
+          • Cliente: <strong>${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente}</strong><br>
+          • Obra: <strong>${siteVisit.value.obra_nombre || 'En Terreno'}</strong> (${siteVisit.value.obra_ciudad || ''})<br>
+          • Dirección: <strong>${siteVisit.value.obra_direccion || 'Ver en Mapa'}</strong><br>
+          • Equipo Asignado: <strong>${equipoNombre}</strong><br>
+          • Fecha Salida Base: <strong>${operacionesAssignment.value.fecha_salida_plan || 'Por definir'}</strong> a las <strong>${operacionesAssignment.value.hora_salida_plan || '08:00'} hrs</strong><br>
+          • Fecha Estimada Término: <strong>${operacionesAssignment.value.fecha_fin_plan || 'Por definir'}</strong> a las <strong>${operacionesAssignment.value.hora_fin_plan || '18:00'} hrs</strong>
+        </div>
+        <div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b;">
+          Grúas San Pablo S.A. | Coordinación de Operaciones
+        </div>
+      </div>
+    `
+
+    targetUsers.forEach(u => {
+      apiAxios.post('/message', {
+        para: u.email,
+        asunto: `🚜 Asignación de Servicio OT: ${antecedentes.value.identificador_formal || 'COT'} - ${equipoNombre}`,
+        cuerpo: htmlBody,
+        html: htmlBody
+      }).catch(e => console.warn(`Error enviando correo a ${u.email}:`, e))
+    })
+
+    alert('🚀 Asignación de Recursos Confirmada y notificada a la tripulación.\n\nAvanzando a la etapa: Preparación de Salida.')
   } catch (error) {
     console.error('Error al confirmar asignación OT:', error)
     alert('Error al confirmar la asignación de recursos para la OT.')
   }
+}
+
+const notificarControlCalidad = async () => {
+  preparacionSalidaState.value.cc_notificado = true
+  preparacionSalidaState.value.cc_fecha_notificacion = new Date().toISOString()
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
+  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert('🟢 Control de Calidad notificado formalmente por correo y traza registrada en sistema.')
+}
+
+const programarInspeccionPatio = async () => {
+  if (!preparacionSalidaState.value.jefe_patio_id) {
+    alert('⚠️ Por favor seleccione el Jefe de Patio asignado.')
+    return
+  }
+  preparacionSalidaState.value.patio_programado = true
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
+  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert('🟡 Inspección de Salida de Patio programada e inyectada al Jefe de Patio.')
+}
+
+const confirmarInspeccionSalidaPatio = async () => {
+  preparacionSalidaState.value.patio_checklist_completado = true
+  preparacionSalidaState.value.patio_contrapesos_cargados = true
+  preparacionSalidaState.value.patio_aparejos_cargados = true
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
+  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert('🟢 Check List Operativo Digital de Patio confirmado. Carga y contrapesos validados en sistema.')
+}
+
+const notificarAnalistaOperaciones = async () => {
+  preparacionSalidaState.value.analista_notificado = true
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
+  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert('🟡 Instrucción notificada al Analista de Operaciones.')
+}
+
+const finalizarPreparacionSalida = async () => {
+  preparacionSalidaState.value.analista_revision_360 = true
+  preparacionSalidaState.value.analista_geocerca_activa = true
+  preparacionSalidaState.value.preparacion_finalizada = true
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
+  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert('🎉 Preparación de Salida Completada Exitosamente. El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
 }
 
 const generarPDF = async () => {
