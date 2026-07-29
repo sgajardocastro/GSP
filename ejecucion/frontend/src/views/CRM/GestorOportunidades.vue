@@ -1560,9 +1560,7 @@ const confirmarAprobacionRequerimiento = async () => {
 }
 
 const usuariosEnroladosFes = computed(() => {
-  const list = usuarios.value.filter(u => u.flag_activo !== false)
-  const enroladosStrict = list.filter(u => u.flag_proc_enrol === true || u.pin_fes || u.pin || u.flag_enrolado === true)
-  return enroladosStrict.length > 0 ? enroladosStrict : list
+  return usuarios.value.filter(u => u.flag_activo !== false && (u.pass_hash_fes || u.flag_proc_enrol === true || u.pin_fes || u.pin || u.flag_enrolado === true))
 })
 
 const tieneObservacionesOMotivos = computed(() => {
