@@ -1517,12 +1517,14 @@ const abrirModalAprobarRequerimiento = () => {
 
 const confirmarAprobacionRequerimiento = async () => {
   showModalAprobarRequerimiento.value = false
+  // 1. Evaluar decisión de aprobación ANTES de cualquier cambio de pestaña o guardado
+  const isConObs = modoAprobacionRequerimiento.value === 'CON_OBSERVACIONES'
+  
   operacionesAssignment.value.estado_requerimiento = 'APROBADO'
   requerimientoAprobado.value = true
   
+  // 2. Persistir aprobación en BD y habilitar Asignación OT
   await aprobarYGenerarOT()
-  
-  const isConObs = modoAprobacionRequerimiento.value === 'CON_OBSERVACIONES'
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
       <div style="border-bottom: 2px solid #10b981; padding-bottom: 15px; margin-bottom: 20px;">
