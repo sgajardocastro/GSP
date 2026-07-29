@@ -567,16 +567,14 @@
       <!-- SUB-TAB 4: PESTAÑA 4 - PREPARACIÓN DE SALIDA (BPM PROGRESS HEADER & 3 SEGMENTOS OPERACIONALES) -->
       <div v-if="operacionesSubTab === 'preparacion_salida'" class="space-y-6">
         
-        <!-- DIAGRAMA VISUAL BPM DE FLUJO OPERACIONAL (PARALELO & SECUENCIAL FORK-JOIN) -->
+        <!-- DIAGRAMA VISUAL DE FLUJO OPERACIONAL (PARALELO & SECUENCIAL FORK-JOIN) -->
         <div class="bg-[#050810] border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
           <div class="flex justify-between items-center border-b border-white/10 pb-3">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 bg-purple-500/20 border border-purple-500/40 rounded-xl flex items-center justify-center text-purple-400 font-black font-mono text-sm shadow-md">
-                BPM
-              </div>
+              <span class="text-xl">🏗️</span>
               <div>
-                <span class="text-sm font-black text-purple-400 uppercase tracking-wider block">📊 DIAGRAMA BPM: ARQUITECTURA DE FLUJO PREPARACIÓN SALIDA DE PATIO</span>
-                <span class="text-xs text-slate-400">Pasos 1 y 3 Concurrentes (Paralelos) | Paso 2 Secuencial de Paso 1 | Cierre exige Paso 2 🟢 + Paso 3 🟢</span>
+                <span class="text-sm font-bold text-white uppercase tracking-wider block">ARQUITECTURA DE FLUJO: PREPARACIÓN SALIDA DE PATIO</span>
+                <span class="text-xs text-slate-400">Pasos 1 y 3 Concurrentes (Paralelos) | Paso 2 Secuencial de Paso 1</span>
               </div>
             </div>
             <div class="flex items-center gap-3 text-[11px] font-bold">
@@ -593,8 +591,8 @@
             <div class="col-span-3 space-y-3">
               
               <!-- RAMA A (SECUENCIAL): PASO 1 ➔ PASO 2 -->
-              <div class="bg-[#0a0f1e]/80 border border-indigo-500/20 rounded-xl p-3 space-y-2">
-                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-indigo-500/20 pb-1">
+              <div class="bg-[#0a0f1e]/80 border border-white/10 rounded-xl p-3 space-y-2">
+                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-white/10 pb-1">
                   <span>RAMA A • SECUENCIAL: CALIDAD (1) ➔ PATIO (2)</span>
                   <span class="text-[9px] text-slate-400 font-mono">Paso 2 Requiere Paso 1 🟢</span>
                 </div>
@@ -606,15 +604,15 @@
                     statusSegmento1 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : 'bg-[#050810] border-white/10'
                   ]">
                     <div class="flex justify-between items-center mb-1">
-                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">
                         1. Calidad (Concurrente)
                       </span>
                       <span :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400' : 'text-red-400'" class="text-[10px] font-bold">
                         {{ statusSegmento1 === 'GREEN' ? '🟢 Notificado' : '🔴 Pendiente' }}
                       </span>
                     </div>
-                    <h4 class="text-xs font-bold text-purple-400 mb-0.5">🛡️ Notificación a Control de Calidad</h4>
-                    <span class="text-[10px] text-slate-400">Coordinador envía antecedentes y EPP</span>
+                    <h4 class="text-xs font-bold text-white mb-0.5">🛡️ Notificación a Control de Calidad</h4>
+                    <span class="text-[10px] text-slate-400">Antecedentes técnicos y EPP enviados</span>
                   </div>
 
                   <!-- FLECHA SECUENCIAL 1 ➔ 2 -->
@@ -629,24 +627,24 @@
                     statusSegmento2 === 'GREEN' ? 'bg-emerald-950/20 border-emerald-500/40 shadow-md' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-950/20 border-amber-500/40 shadow-md' : 'bg-[#050810] border-white/10 opacity-75')
                   ]">
                     <div class="flex justify-between items-center mb-1">
-                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">
                         2. Inspección Patio
                       </span>
                       <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400' : 'text-slate-400')" class="text-[10px] font-bold">
-                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado en PWA' : '🔴 Bloqueado (Esperando 1)') }}
+                        {{ statusSegmento2 === 'GREEN' ? '🟢 Conforme' : (statusSegmento2 === 'YELLOW' ? '🟡 Programado en App' : '🔴 Bloqueado (Esperando 1)') }}
                       </span>
                     </div>
-                    <h4 class="text-xs font-bold text-purple-400 mb-0.5">🚜 Check List & Contrapesos</h4>
-                    <span class="text-[10px] text-slate-400">Jefe de Patio ejecuta Survey en PWA</span>
+                    <h4 class="text-xs font-bold text-white mb-0.5">🚜 Check List & Contrapesos</h4>
+                    <span class="text-[10px] text-slate-400">Jefe de Patio ejecuta Survey en App</span>
                   </div>
                 </div>
               </div>
 
               <!-- RAMA B (PARALELA CONCURRENTE): PASO 3 -->
-              <div class="bg-[#0a0f1e]/80 border border-emerald-500/20 rounded-xl p-3 space-y-2">
-                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-emerald-500/20 pb-1">
-                  <span>RAMA B • PARALELA CONCURRENTE: ANALISTA OPERACIONES (3)</span>
-                  <span class="text-[9px] text-slate-400 font-mono">Ejecución Inmediata en Paralelo con Paso 1</span>
+              <div class="bg-[#0a0f1e]/80 border border-white/10 rounded-xl p-3 space-y-2">
+                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider flex justify-between items-center border-b border-white/10 pb-1">
+                  <span>RAMA B • ANALISTA OPERACIONES (3)</span>
+                  <span class="text-[9px] text-slate-400 font-mono">Ejecución Inmediata con Paso 1</span>
                 </div>
                 
                 <div :class="[
@@ -655,10 +653,10 @@
                 ]">
                   <div>
                     <div class="flex items-center gap-2 mb-0.5">
-                      <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">
                         3. Analista Op. (Concurrente)
                       </span>
-                      <h4 class="text-xs font-bold text-purple-400">💻 Análisis 360 & Geocerca GPS</h4>
+                      <h4 class="text-xs font-bold text-white">💻 Análisis 360 & Geocerca GPS</h4>
                     </div>
                     <span class="text-[10px] text-slate-400">Instrucción de tareas, revisión 360 y radio GPS en metros</span>
                   </div>
@@ -672,31 +670,31 @@
 
             <!-- CONECTOR JOIN (CONVERGENCIA 2 Y 3) -->
             <div class="hidden lg:flex flex-col items-center justify-center text-slate-500 font-black">
-              <span :class="['text-[9px] font-mono mb-1', (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 font-bold' : 'text-slate-600']">JOIN (2 AND 3)</span>
+              <span :class="['text-[9px] font-mono mb-1', (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 font-bold' : 'text-slate-600']">JOIN (2 Y 3)</span>
               <svg class="w-6 h-6" :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 animate-pulse' : 'text-slate-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
             </div>
 
-            <!-- NODO FINAL JOIN: CIERRE PREPARACIÓN / PASE A TERRENO PWA -->
+            <!-- NODO FINAL JOIN: CIERRE PREPARACIÓN / PASE A TERRENO -->
             <div :class="[
               'p-4 rounded-xl border transition-all duration-300 relative flex flex-col justify-between min-h-[160px] text-center',
               (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-950/30 border-emerald-500 shadow-xl shadow-emerald-500/20' : 'bg-[#0a0f1e] border-white/10 opacity-60'
             ]">
-              <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 self-center mb-1">
-                Hito Final • Join
+              <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 text-slate-300 self-center mb-1">
+                Hito Final
               </span>
               <div>
-                <span class="text-2xl block mb-1">🚀</span>
-                <h4 class="text-xs font-bold text-purple-400 mb-1">Pase a Ejecución Terreno PWA</h4>
+                <span class="text-3xl block mb-1">🏗️</span>
+                <h4 class="text-xs font-bold text-white mb-1">Pase a Ejecución Terreno App</h4>
                 <p class="text-[10px] text-slate-400 leading-tight">
-                  Exige <strong>Paso 2 🟢</strong> y <strong>Paso 3 🟢</strong> completados en paralelo.
+                  Exige <strong>Paso 2 🟢</strong> y <strong>Paso 3 🟢</strong> completados.
                 </p>
               </div>
               <div class="mt-2 pt-2 border-t border-white/5">
                 <span :class="[
-                  'px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider block',
+                  'px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider block',
                   (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30' : 'bg-slate-800 text-slate-400'
                 ]">
-                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 ETAPA COMPLETADA' : '🔒 BLOQUEADO (ESPERA 2 Y 3)' }}
+                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 LISTO PARA GO!' : '🔒 BLOQUEADO (ESPERA 2 Y 3)' }}
                 </span>
               </div>
             </div>
@@ -2987,8 +2985,6 @@ const confirmarAsignacionOT = async () => {
           • Dirección: <strong>${siteVisit.value.obra_direccion || 'Ver en Mapa'}</strong><br>
           • Equipo Asignado: <strong>${equipoNombre}</strong><br>
           • Fecha Salida Base: <strong>${operacionesAssignment.value.fecha_salida_plan || 'Por definir'}</strong> a las <strong>${operacionesAssignment.value.hora_salida_plan || '08:00'} hrs</strong><br>
-          • Fecha Estimada Término: <strong>${operacionesAssignment.value.fecha_fin_plan || 'Por definir'}</strong> a las <strong>${operacionesAssignment.value.hora_fin_plan || '18:00'} hrs</strong>
-        </div>
         <div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b;">
           Grúas San Pablo S.A. | Coordinación de Operaciones
         </div>
@@ -3002,6 +2998,13 @@ const confirmarAsignacionOT = async () => {
         cuerpo: htmlBody,
         html: htmlBody
       }).catch(e => console.warn(`Error enviando correo a ${u.email}:`, e))
+
+      registrarTrazaCorreo(
+        'TRIPULACION',
+        u.email,
+        `🚜 Asignación de Servicio OT: ${antecedentes.value.identificador_formal || 'COT'} - ${equipoNombre}`,
+        `Notificación de asignación enviada a integrante de tripulación`
+      )
     })
 
     alert('🚀 Asignación de Recursos Confirmada y notificada a la tripulación.\n\nAvanzando a la etapa: Preparación de Salida.')
@@ -3015,10 +3018,15 @@ const notificarControlCalidad = async () => {
   preparacionSalidaState.value.cc_notificado = true
   preparacionSalidaState.value.cc_fecha_notificacion = new Date().toISOString()
   
+  registrarTrazaCorreo(
+    'CONTROL_CALIDAD',
+    'calidad@arriendosanpablo.cl, sgajardoc@gmail.com',
+    `🛡️ Requerimientos de Calidad OT: ${antecedentes.value.identificador_formal || 'COT'}`,
+    `Notificación a Control de Calidad con notas de riesgo: "${preparacionSalidaState.value.cc_notas_riesgo || 'Sin observaciones de riesgo'}"`
+  )
+  
   const token = localStorage.getItem('token') || ''
   const payload = buildPayload()
-  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
-  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
   
   const projectId = props.proyectoId || currentProyectoId.value
   await apiAxios.put(`/proyectos/${projectId}`, payload, {
@@ -3039,10 +3047,16 @@ const programarInspeccionPatio = async () => {
   }
   preparacionSalidaState.value.patio_programado = true
   
+  const jefeUser = usuariosEnroladosFes.value.find(u => u.id_user === preparacionSalidaState.value.jefe_patio_id)
+  registrarTrazaCorreo(
+    'JEFE_PATIO_PWA',
+    jefeUser?.email || 'jefe_patio@leanglobal.cl',
+    `🚜 Inyección Survey PWA Inspección Patio: ${antecedentes.value.identificador_formal || 'COT'}`,
+    `Programado para ${preparacionSalidaState.value.fecha_inspeccion_plan} a las ${preparacionSalidaState.value.hora_inspeccion_plan} hrs`
+  )
+
   const token = localStorage.getItem('token') || ''
   const payload = buildPayload()
-  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
-  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
   
   const projectId = props.proyectoId || currentProyectoId.value
   await apiAxios.put(`/proyectos/${projectId}`, payload, {
@@ -3063,8 +3077,6 @@ const confirmarInspeccionSalidaPatio = async () => {
   
   const token = localStorage.getItem('token') || ''
   const payload = buildPayload()
-  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
-  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
   
   const projectId = props.proyectoId || currentProyectoId.value
   await apiAxios.put(`/proyectos/${projectId}`, payload, {
@@ -3077,10 +3089,16 @@ const confirmarInspeccionSalidaPatio = async () => {
 const notificarAnalistaOperaciones = async () => {
   preparacionSalidaState.value.analista_notificado = true
   
+  const analistaUser = usuariosEnroladosFes.value.find(u => u.id_user === preparacionSalidaState.value.analista_id)
+  registrarTrazaCorreo(
+    'ANALISTA_OP',
+    analistaUser?.email || 'analista@leanglobal.cl',
+    `💻 Instrucción Operativa OT: ${antecedentes.value.identificador_formal || 'COT'}`,
+    `Instrucción: "${preparacionSalidaState.value.analista_instrucciones || 'Realizar Análisis 360 y Geocerca GPS'}"`
+  )
+
   const token = localStorage.getItem('token') || ''
   const payload = buildPayload()
-  payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
-  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
   
   const projectId = props.proyectoId || currentProyectoId.value
   await apiAxios.put(`/proyectos/${projectId}`, payload, {
