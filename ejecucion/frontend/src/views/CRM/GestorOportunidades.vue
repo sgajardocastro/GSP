@@ -2670,13 +2670,19 @@ onMounted(async () => {
         if (ejecucion) {
           rawEjecucionJson.value = { ...ejecucion }
           
-          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || p.id_proyecto_estado === 4) {
+          if (ejecucion.asignacion_confirmada || ejecucion.subtab_activa === 'preparacion_salida' || ejecucion.preparacion_salida?.patio_programado) {
+            asignacionConfirmada.value = true
+          }
+
+          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || p.id_proyecto_estado === 4 || asignacionConfirmada.value) {
             requerimientoAprobado.value = true
             topTab.value = 'operaciones'
           }
 
           if (ejecucion.subtab_activa) {
             operacionesSubTab.value = ejecucion.subtab_activa
+          } else if (asignacionConfirmada.value) {
+            operacionesSubTab.value = 'preparacion_salida'
           } else if (requerimientoAprobado.value) {
             operacionesSubTab.value = 'asignacion'
           }
