@@ -61,7 +61,7 @@
       </button>
 
       <button 
-        @click="topTab = 'operaciones'; operacionesSubTab = 'validacion'" 
+        @click="cambiarYPersistirSubTab('validacion')" 
         :class="topTab === 'operaciones' && operacionesSubTab === 'validacion' ? 'text-amber-400 border-b-2 border-amber-500 font-bold' : 'text-slate-400 hover:text-white'" 
         class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none"
       >
@@ -70,7 +70,7 @@
       </button>
 
       <button 
-        @click="topTab = 'operaciones'; operacionesSubTab = 'asignacion'" 
+        @click="cambiarYPersistirSubTab('asignacion')" 
         :disabled="!requerimientoAprobado"
         :class="[
           topTab === 'operaciones' && operacionesSubTab === 'asignacion' ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold' : 'text-slate-400 hover:text-white',
@@ -84,7 +84,7 @@
       </button>
 
       <button 
-        @click="topTab = 'operaciones'; operacionesSubTab = 'preparacion_salida'" 
+        @click="cambiarYPersistirSubTab('preparacion_salida')" 
         :disabled="!asignacionConfirmada"
         :class="[
           topTab === 'operaciones' && operacionesSubTab === 'preparacion_salida' ? 'text-indigo-400 border-b-2 border-indigo-500 font-bold' : 'text-slate-400 hover:text-white',
@@ -2645,7 +2645,28 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
+const rawEjecucionJson = ref({})
 const trazaCorreosList = ref([])
+
+const cambiarYPersistirSubTab = async (subtabName) => {
+  topTab.value = 'operaciones'
+  operacionesSubTab.value = subtabName
+  rawEjecucionJson.value.subtab_activa = subtabName
+  
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (projectId) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      console.log(`✅ Subtab persistente en PostgreSQL: ${subtabName}`)
+    } catch (e) {
+      console.warn('Error al guardar subtab en PostgreSQL:', e)
+    }
+  }
+}
 
 const registrarTrazaCorreo = (tipo, para, asunto, resumen) => {
   const registro = {
