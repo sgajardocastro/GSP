@@ -16,6 +16,7 @@ import MantenimientoView from '../views/MantenimientoView.vue'
 import Vista360 from '../views/Vista360.vue'
 import InspeccionEquipos from '../views/InspeccionEquipos.vue'
 import verSurveyPrint from '../pages/verSurveyPrint.vue'
+import FichaEquipoPublica from '../views/FichaEquipoPublica.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL || '/'),
@@ -116,6 +117,12 @@ const router = createRouter({
       name: 'login',
       component: Login,
       meta: { layout: 'auth' }
+    },
+    {
+      path: '/equipo/:patente',
+      name: 'ficha_equipo',
+      component: FichaEquipoPublica,
+      meta: { layout: 'public' }
     }
   ]
 })
