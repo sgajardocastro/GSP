@@ -5,40 +5,24 @@ La Torre de Control no es un simple Kanban de operaciones; es el cerebro de ejec
 
 ---
 
-## 2. Ciclo de Vida y Máquina de Estados (FSM `faseActual`)
+## 2. Ciclo de Vida y Estructura Kanban de 7 Columnas
 
-El flujo transaccional se compone de 6 estados duros. El paso entre estados está gobernado por reglas estrictas de negocio que QA debe certificar.
+El tablero de la Torre de Control se compone de **7 columnas**, incluyendo el carril concurrente de Acreditación Documental B2B:
 
-### 🔴 FASE 1: COTIZACIÓN Y GESTIÓN COMERCIAL (Estado 1)
-- **Generador de Cotizaciones (PDF Engine):** El sistema toma los datos técnicos (Site Visit, Equipos, Personal, Hitos de Facturación) y compila un Dossier/Cotización Formal en PDF.
-- **Control de Versiones:** Cada vez que se modifica una cotización, el sistema incrementa la versión (ej. `v1.0` -> `v1.1`). La BD mantiene el historial inmutable.
-- **Despacho B2B y Traza:** Las cotizaciones se envían directamente desde el sistema (`/message`). Genera una traza de auditoría: Cuándo se envió, a quién, y si el cliente lo abrió (Tracking).
-- **Transición:** Al aprobarse la cotización, la oportunidad pasa a "Ganada" y entra al Kanban operativo (Fase 2).
-
-### 🟠 FASE 2: VALIDACIÓN DIFF Y ACREDITACIÓN (Estado 2)
-El Jefe de Operaciones recibe el proyecto ganado e ingresa al Tablero de Operaciones.
-- **Análisis de Brechas (Diff):** El sistema muestra 3 columnas comparativas: "Datos Servicio Cotizado" vs "Recursos Reales Necesarios". El Jefe debe conciliar la teoría comercial con la práctica logística.
-- **Marcado de Diferencias (Aprobación con Observaciones):** Si los recursos comerciales difieren de los necesarios (ej. se requiere una grúa más grande), el Jefe selecciona el modo de aprobación `"CON_OBSERVACIONES"`.
-- **Notificaciones Automáticas (Email):** Al aprobar con observaciones, el sistema dispara correos electrónicos automatizados (`POST /message`) al Ejecutivo Comercial responsable y a los integradores enrolados (FES).
-- **Traza Inalterable:** Todo correo disparado queda registrado en una bitácora inalterable (`Traza Inalterable de Notificaciones & Envíos`).
-- **Checklist de Acreditaciones (Hard-Stop):** El sistema despliega la grilla de exigencias (F30, SOAP, Exámenes). No se permite pasar a Fase 3 hasta marcar 100% de cumplimiento (OK).
-
-### 🟡 FASE 3: ASIGNACIÓN DE RECURSOS (Estado 3)
-Fase crítica de Hard-Allocation. La tarjeta de proyecto no puede avanzar si no cumple:
-- **Regla de Asignación Física:** Se debe vincular explícitamente al menos un Equipo (identificado por su Patente única) y al menos un Operador/Rigger (identificado por su RUT de usuario).
-- **Estructura de Datos Exigida:** El avance a "Preparación de Patio" se bloquea a menos que el array `json_field.operaciones_v1.recursos` contenga objetos válidos que referencien `id_user` y `id_equipo`.
-
-### 🟢 FASE 4: PREPARACIÓN DE PATIO (Estado 4)
-- Fase logística interna (Lavado, check pre-operacional, estiba).
-
-### 🔵 FASE 5: EN FAENA (Estado 5)
-- **Bloqueo Hacia Atrás:** Un proyecto jamás puede retroceder de "En Faena" a "Asignación". Solo puede avanzar a Terminado o ser pausado por un "Incidente" (el cual dispara correos y altera la traza).
-- **Generación de PPD:** Se habilitan los endpoints para que los operadores en terreno envíen sus Partes de Producción Diaria (FES) hacia el sistema central.
-
-### ⚫ FASE 6: TERMINADO (Estado 6)
-Cierre comercial y paso a facturación.
+1. **Columna 1: Requerimiento Registrado** (`id_proyecto_estado = 1 / 2` - Oportunidad / Cotización Preventa)
+2. **Columna 2: En Verificación Operaciones** (`id_proyecto_estado = 3` & `subtab_activa === 'validacion'` - Auditoría Diff Cotizado vs Real)
+3. **Columna 3: En Asignación Recursos** (`id_proyecto_estado = 3` & `subtab_activa === 'asignacion'` - Asignación de OT, Tripulación y Patentes)
+4. **Columna 4: En Preparación Operaciones** (`id_proyecto_estado = 4 / 5` o `subtab_activa === 'preparacion_salida'` - Logística de Patio y Salida de Flota)
+5. 🟢 **Columna 5: En Acreditación (Carril Concurrente Documental)**  
+   - **Simultaneidad:** Transcurre de forma **concurrente y paralela** con la Columna 4 (*En Preparación Operaciones*) y la Columna 6 (*En Ejecución / Faena*). Un mismo proyecto figura en su carril operativo Y en la Columna 5 hasta que el Analista de Gestión apruebe el 100% del dossier FES.
+   - **Micro-Gauge Porcentual:** Cada tarjeta despliega un indicador gráfico SVG circular de avance porcentual (`0% - 100%`).
+   - **Modal Central Estándar:** Al presionar la tarjeta o el botón *🔎 Auditar Dossier FES*, se abre directamente el **Modal Central Oscuro (`GestorOportunidades.vue`)** en la sub-pestaña `acreditaciones`.
+   - **Efecto Espejo (Mirror Hover Glow):** Al posar el mouse sobre una tarjeta concurrente (ej. `GSP-2608-557-002`), su tarjeta gemela en la otra columna resplandece simultáneamente en pantalla con el distintivo `🔗 Hilo Concurrente`.
+6. **Columna 6: En Ejecución / Faena** (`id_proyecto_estado = 7` o `fase === 'maniobra'` - Maniobras e Izajes en Terreno)
+7. **Columna 7: Finalizado / Devengado** (`id_proyecto_estado = 8` - Cierre del Servicio y Devengado)
 
 ---
 
-## 3. Renderizado Asíncrono
-La vista de Torre de Control requiere re-renderización optimizada. Cualquier actualización (Drag & Drop) dispara un request `PUT /api/proyectos/:id` y, de ser exitoso, actualiza el estado optimista en el frontend.
+## 3. Renderizado y Navegación
+- **Modal Central Estándar:** Todo flujo de auditoría, edición y asignación utiliza la ventana modal central única (`GestorOportunidades.vue`), evitando bisecciones con paneles laterales o drawers desfasados.
+- **Renderizado Optimizado:** Las consultas a `/api/proyectos` categorizan los arreglos reactivos (`preventa`, `verificacion`, `asignados`, `desplazamiento`, `acreditaciones`, `maniobra`, `completados`) para garantizar 0 parpadeos en el renderizado.
