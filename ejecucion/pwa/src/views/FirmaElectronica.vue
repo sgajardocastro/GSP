@@ -471,7 +471,7 @@ const BASE_API = (process.env.VUE_APP_API_BASE_URL || '').replace(/\/$/, '')
 function abrirPdf (detalle) {
   const docName = resolverDocumentoFirmas(detalle)
   if (!docName || !isOnline.value) return
-  const url = `${BASE_API}/archivo/transmac/${docName}`
+  const url = `${BASE_API}/v1/storage/view/${docName}`
   window.open(url, '_blank')
 }
 
@@ -525,7 +525,7 @@ async function abrirModal (detalle, notifMeta) {
 
   const docName = resolverDocumentoFirmas(detalle)
   const API_BASE_URL = apiAxios.defaults.baseURL || process.env.VUE_APP_API_BASE_URL || ''
-  const pdfUrl = docName ? `${API_BASE_URL}/archivo/transmac/${docName}` : ''
+  const pdfUrl = docName ? `${API_BASE_URL}/v1/storage/view/${docName}` : ''
 
   pdfUrlFirma.value = pdfUrl
   detalleCrearFirma.value = detalle

@@ -42,6 +42,10 @@ function routerApi(app) {
     app.use('/api/templates', templateRouter);
     app.use('/api/empresas', empresasRouter);
     app.use('/api/acreditacion', acreditacionRouter);
+    app.use('/api/acreditaciones', acreditacionRouter);
+    app.use('/api/v1/storage', require('./storageRoutes.js'));
+    app.use('/api/visitas', require('./visitaTerrenoRoutes.js'));
 }
+
 
 module.exports = routerApi;

@@ -1,6 +1,6 @@
 {
   "name": "gsp-pwa",
-  "version": "1.0.13",
+  "version": "1.0.20",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

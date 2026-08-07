@@ -4,6 +4,109 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web & Backend GSP] - Versión 1.0.24
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-07 01:13:25 (-04:00)
+- **Ruta de Despliegue Web:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Proceso PM2 Backend:** `lean-services-gsp` (ID 10)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT] Identidad Google Workspace OAuth 2.0:** Autenticación federada corporativa exclusiva para dominios `@arriendosanpablo.cl` y correos autorizados. Eliminada autenticación legacy `@transmac.cl` y sockets POP3.
+  - **[FEAT] Rediseño UI Split-Screen Industrial (`Login.vue`):** Interfaz dark mode de alto impacto con fotografía industrial de grúas en faena, telemetría IoT (`99.8% Disponibilidad Flota`, `Estándar ISO 45001 / Rigging Level 5`) y botón de Google integrado limpiamente sin marcos dobles.
+  - **[FIX] Generación & Render de Consentimiento FES (Template 500):** Restaurada la clasificación `id_tipo_srv = 0` ('Consentimiento') en PostgreSQL y la consulta API con `LEFT JOIN`, produciendo PDFs de consentimiento 100% poblados con texto legal y metadatos de protocolo.
+  - **[FEAT] Asignación Automática de Rol `USR-CONSENT` (id_rol 3):** Removido el desplegable manual de roles del frontend en enrolamiento e implementada inserción automática transparente en `tsec_user_roles` al registrar usuario.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.22
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 15:35:42 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.22
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 15:35:42 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
+## [Portal Web GSP] - Versión 1.0.21
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 14:30:35 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.21
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 14:30:35 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
+## [Portal Web GSP] - Versión 1.0.20
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 11:38:59 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.20
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-03 11:38:59 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
+## [Portal Web GSP] - Versión 1.0.19
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 16:46:52 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.19
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 16:46:52 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
+## [Portal Web GSP] - Versión 1.0.18
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 16:37:49 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.18
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 16:37:49 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
+## [Portal Web GSP] - Versión 1.0.17
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 11:56:21 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios.
+
+## [Backend GSP] - Versión 1.0.17
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-07-30 11:56:21 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP.
+
 ## [Portal Web GSP] - Versión 1.0.16
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-07-28 14:02:00 (-04:00)

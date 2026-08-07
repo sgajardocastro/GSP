@@ -7,13 +7,13 @@
     </div>
 
     <!-- Kanban Columns -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-210px)] overflow-y-auto">
-      <!-- Columna 1: Preventa (Cotizando) -->
+    <div class="grid grid-cols-1 lg:grid-cols-7 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
+      <!-- Columna 1: Requerimiento Registrado -->
       <div class="bg-[#0f1629] border-t-4 border-[#6366f1] border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 bg-[#6366f1] rounded-full"></span>
-            <span class="text-xs font-black uppercase text-white">Preventa (Cotizando)</span>
+            <span class="text-xs font-black uppercase text-white">Requerimiento Registrado</span>
           </div>
           <span class="bg-black/20 text-[10px] text-slate-400 font-bold px-2 py-0.5 rounded border border-white/5">
             {{ preventa.length }}
@@ -53,17 +53,20 @@
         </div>
       </div>
 
-      <!-- Columna 2: En Preparación Operaciones -->
+      <!-- Columna 2: En Verificación Operaciones -->
       <div class="bg-[#0f1629] border-t-4 border-amber-500 border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">En Preparación Operaciones</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs">🔥</span>
+            <span class="text-xs font-black uppercase text-white">En Verificación Operaciones</span>
+          </div>
           <span class="bg-black/20 text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded border border-amber-500/20">
-            {{ asignados.length }}
+            {{ verificacion.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in asignados" 
+            v-for="p in verificacion" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto)"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-amber-500/5 transition-all cursor-pointer text-left"
@@ -92,17 +95,17 @@
         </div>
       </div>
 
-      <!-- Columna 3: Desplazamiento -->
+      <!-- Columna 3: En Asignación Recursos -->
       <div class="bg-[#0f1629] border-t-4 border-blue-500 border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">Desplazamiento</span>
+          <span class="text-xs font-black uppercase text-white">En Asignación Recursos</span>
           <span class="bg-black/20 text-[10px] text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/20">
-            {{ desplazamiento.length }}
+            {{ asignados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in desplazamiento" 
+            v-for="p in asignados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto)"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-blue-500/5 transition-all cursor-pointer text-left"
@@ -118,21 +121,130 @@
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
+              <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_ini" class="text-blue-400/70"><span class="font-semibold">Inicio:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
+              <p v-if="p.fecha_plan_ini" class="text-blue-400/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
             </div>
             <div class="flex gap-1.5 mt-3">
-              <span class="text-[8px] font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 text-blue-400">En Ruta</span>
+              <span class="text-[8px] font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 text-blue-400">Asignando OT</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Columna 4: En Maniobra -->
+      <!-- Columna 4: En Preparación Operaciones -->
+      <div class="bg-[#0f1629] border-t-4 border-cyan-500 border border-white/5 rounded-xl p-3 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-xs font-black uppercase text-white">En Preparación Operaciones</span>
+          <span class="bg-black/20 text-[10px] text-cyan-400 font-bold px-2 py-0.5 rounded border border-cyan-500/20">
+            {{ desplazamiento.length }}
+          </span>
+        </div>
+        <div class="space-y-3 flex-1 overflow-y-auto">
+          <div 
+            v-for="p in desplazamiento" 
+            :key="p.id_proyecto" 
+            @click="abrirProyecto(p.id_proyecto)"
+            @mouseenter="hoveredProyectoId = p.id_proyecto"
+            @mouseleave="hoveredProyectoId = null"
+            class="bg-[#151d35] border rounded-lg p-3 hover:bg-cyan-500/5 transition-all cursor-pointer text-left select-none space-y-2"
+            :class="[
+              p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-cyan-500/40',
+              hoveredProyectoId === p.id_proyecto ? 'ring-2 ring-cyan-400 shadow-xl shadow-cyan-500/20 scale-[1.01]' : ''
+            ]"
+          >
+            <div class="flex justify-between items-start">
+              <span class="text-[9px] font-mono text-cyan-400 font-bold">{{ p.codi_proyecto || '—' }}</span>
+              <div class="flex items-center gap-1">
+                <span v-if="p.json_field?.crm_v1?.requiere_acreditacion" class="text-[8px] font-bold uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 flex items-center gap-0.5">
+                  🔗 Hilo Concurrente
+                </span>
+                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+                  🔥 Alta
+                </span>
+              </div>
+            </div>
+
+            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
+            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
+
+            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
+              <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
+              <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
+              <p v-if="p.fecha_plan_ini" class="text-cyan-400/70"><span class="font-semibold">Inicio:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
+            </div>
+
+            <div class="flex items-center justify-between gap-1.5 mt-3 pt-1 border-t border-white/5">
+              <span class="text-[8px] font-bold uppercase bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/25 text-cyan-400">Patio / Salida</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna 5: En Acreditación (Carril Concurrente Documental) -->
+      <div class="bg-[#0f1629] border-t-4 border-emerald-500 border border-white/5 rounded-xl p-3 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-black uppercase text-white">En Acreditación</span>
+          </div>
+          <span class="bg-emerald-500/10 text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">
+            {{ acreditaciones.length }}
+          </span>
+        </div>
+
+        <div class="space-y-3 flex-1 overflow-y-auto">
+          <div 
+            v-for="p in acreditaciones" 
+            :key="p.id_proyecto"
+            @click="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+            @mouseenter="hoveredProyectoId = p.id_proyecto"
+            @mouseleave="hoveredProyectoId = null"
+            class="bg-[#151d35] border border-white/5 hover:border-emerald-500/40 rounded-lg p-3 hover:bg-emerald-500/5 transition-all cursor-pointer text-left select-none space-y-2 relative"
+            :class="hoveredProyectoId === p.id_proyecto ? 'ring-2 ring-emerald-400 shadow-xl shadow-emerald-500/20 scale-[1.01]' : ''"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[9px] font-mono text-emerald-400 font-bold block">{{ p.codi_proyecto || '—' }}</span>
+                <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border bg-emerald-500/10 border-emerald-500/30 text-emerald-400 inline-flex items-center gap-0.5 mt-1">
+                  🔗 Hilo Concurrente
+                </span>
+              </div>
+
+              <!-- Micro-Gauge Avance -->
+              <div class="relative w-8 h-8 flex items-center justify-center shrink-0" :title="`Avance Acreditación: ${calcularPorcentajeAcreditacion(p)}%`">
+                <svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
+                  <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path class="text-emerald-400 transition-all duration-700" stroke-width="3.5" :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="absolute text-[7px] font-extrabold font-mono text-emerald-400">{{ calcularPorcentajeAcreditacion(p) }}%</span>
+              </div>
+            </div>
+
+            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
+            <p class="text-[10px] text-slate-400 truncate">{{ p.nombre_proyecto }}</p>
+
+            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
+              <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
+              <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
+            </div>
+
+            <div class="text-[9px] text-slate-400 pt-1.5 flex justify-between items-center border-t border-white/5">
+              <span class="text-emerald-400 font-bold flex items-center gap-1">
+                <span>📑 Dossier FES</span>
+              </span>
+              <span class="text-slate-300 text-[8px] bg-white/5 px-1.5 py-0.5 rounded border border-white/10">🔎 Auditar</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna 5: En Ejecución / Faena -->
       <div class="bg-[#0f1629] border-t-4 border-purple-400 border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">En Maniobra</span>
+          <span class="text-xs font-black uppercase text-white">En Ejecución / Faena</span>
           <span class="bg-black/20 text-[10px] text-purple-400 font-bold px-2 py-0.5 rounded border border-purple-500/20">
             {{ maniobra.length }}
           </span>
@@ -166,10 +278,10 @@
         </div>
       </div>
 
-      <!-- Columna 5: Completado -->
+      <!-- Columna 6: Finalizado / Devengado -->
       <div class="bg-[#0f1629] border-t-4 border-emerald-500 border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">Completado</span>
+          <span class="text-xs font-black uppercase text-white">Finalizado / Devengado</span>
           <span class="bg-black/20 text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">
             {{ completados.length }}
           </span>
@@ -295,29 +407,49 @@
         </div>
       </div>
     </div>
+    <!-- Componente Modal Drawer de Acreditaciones -->
+    <AcreditacionDrawer 
+      :is-open="drawerAcreditacionAbierto"
+      :acreditacion-id="acreditacionIdSeleccionada"
+      @close="drawerAcreditacionAbierto = false"
+      @updated="cargarProyectos"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import GestorOportunidades from './CRM/GestorOportunidades.vue'
+import AcreditacionDrawer from '../components/acreditacion/AcreditacionDrawer.vue'
 import apiAxios from '../services/api'
 import { navStore } from '../stores/navStore'
 
 const mostrarModalCotizacion = ref(false)
 const proyectoSeleccionadoId  = ref(null)
 
+const acreditacionesList = ref([])
+const acreditacionIdSeleccionada = ref(null)
+const drawerAcreditacionAbierto = ref(false)
+
+const abrirAcreditacionDrawer = (id_acreditacion) => {
+  acreditacionIdSeleccionada.value = id_acreditacion
+  drawerAcreditacionAbierto.value = true
+}
+
 watch(() => navStore.activeEmpresa, () => {
   cargarProyectos()
 })
 
 const mostrarModalBiblioteca = ref(false)
+const hoveredProyectoId = ref(null)
 const noAsignadas = ref([])
 
 // Proyectos agrupados por estado
 const preventa       = ref([])
+const verificacion   = ref([])
 const asignados      = ref([])
 const desplazamiento = ref([])
+const acreditaciones = ref([])
 const maniobra       = ref([])
 const completados    = ref([])
 
@@ -327,13 +459,41 @@ const cargarProyectos = async () => {
     const proyectos = data.proyectos || []
 
     preventa.value       = proyectos.filter(p => p.id_proyecto_estado === 1 || p.id_proyecto_estado === 2)
-    asignados.value      = proyectos.filter(p => p.id_proyecto_estado === 3)
     
-    // Proyectos en Desplazamiento / OT Generada (estado 4 o 5)
-    desplazamiento.value = proyectos.filter(p => p.id_proyecto_estado === 4 || p.id_proyecto_estado === 5 || p.json_field?.ejecucion_v1?.fase === 'desplazamiento')
+    // Columna 2: En Verificación Operaciones (Sub-tab validación o sin subtab)
+    verificacion.value   = proyectos.filter(p => p.id_proyecto_estado === 3 && (!p.json_field?.ejecucion_v1?.subtab_activa || p.json_field?.ejecucion_v1?.subtab_activa === 'validacion'))
+
+    // Columna 3: En Asignación Recursos (Sub-tab asignacion)
+    asignados.value      = proyectos.filter(p => p.id_proyecto_estado === 3 && p.json_field?.ejecucion_v1?.subtab_activa === 'asignacion')
+
+    // Columna 4: En Preparación Operaciones (Sub-tab preparacion_salida, acreditaciones, patio_programado, asignacionConfirmada o estado 4/5)
+    desplazamiento.value = proyectos.filter(p => 
+      p.id_proyecto_estado === 4 || 
+      p.id_proyecto_estado === 5 || 
+      (p.id_proyecto_estado === 3 && (
+        ['preparacion_salida', 'acreditaciones'].includes(p.json_field?.ejecucion_v1?.subtab_activa) ||
+        p.json_field?.ejecucion_v1?.preparacion_salida?.patio_programado ||
+        p.json_field?.ejecucion_v1?.asignacionConfirmada
+      ))
+    )
+
+    // Columna 5: En Acreditación (Carril Concurrente Documental - Todo proyecto que requiera acreditación)
+    acreditaciones.value = proyectos.filter(p => 
+      p.json_field?.crm_v1?.requiere_acreditacion || 
+      p.json_field?.ejecucion_v1?.subtab_activa === 'acreditaciones' ||
+      p.json_field?.ejecucion_v1?.requiere_acreditacion
+    )
+
     maniobra.value       = proyectos.filter(p => p.id_proyecto_estado === 7 || p.json_field?.ejecucion_v1?.fase === 'maniobra')
     completados.value    = proyectos.filter(p => p.id_proyecto_estado === 8)
     noAsignadas.value    = proyectos.filter(p => p.id_proyecto_estado === 6)
+
+    try {
+      const resAcr = await apiAxios.get('/acreditaciones')
+      acreditacionesList.value = resAcr.data || []
+    } catch(errAcr) {
+      console.warn("No se cargaron acreditaciones:", errAcr.message)
+    }
   } catch (e) {
     console.error('Error cargando proyectos:', e)
   }
@@ -347,6 +507,19 @@ const abrirCotizacion = () => {
 const abrirProyecto = (id) => {
   proyectoSeleccionadoId.value = id
   mostrarModalCotizacion.value = true
+}
+
+const calcularPorcentajeAcreditacion = (p) => {
+  if (p.json_field?.ejecucion_v1?.porcentaje_acreditacion !== undefined) {
+    return p.json_field.ejecucion_v1.porcentaje_acreditacion
+  }
+  const docs = p.json_field?.crm_v1?.acreditacion_docs
+  if (!docs) return 60
+  const total = (docs.empresa?.length || 0) + (docs.equipos?.length || 0) + (docs.personas?.length || 0)
+  if (total === 0) return 100
+  const cumps = Object.keys(p.json_field?.ejecucion_v1?.cumplimiento_acreditaciones || {}).length
+  const pct = Math.round((cumps / total) * 100)
+  return Math.min(100, Math.max(0, pct > 0 ? pct : 60))
 }
 
 const onModalClose = () => {

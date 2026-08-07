@@ -245,7 +245,8 @@ const firmar = async () => {
     // Payload compatible con el endpoint /api/signature/
     const payload = {
       origenPath: props.origenPath,
-      destinoFolder: props.destinoFolder || '/u05/LeanDocs/transmac/',
+      tenant_code: props.tenant_code || 'gsp',
+      modulo: props.modulo || 'firmas',
       id_user: props.user?.id_user || 1,
       id_doc: Number(props.idDoc),
       pass_fes: hashedPin,

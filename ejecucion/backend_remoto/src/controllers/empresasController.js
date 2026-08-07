@@ -59,8 +59,8 @@ exports.createEmpresa = async (req, res) => {
       INSERT INTO tpar_empresas (
         rut_empresa, razon_social, name_empresa, 
         giro, direccion, fono_contacto, flag_externo,
-        region_facturacion, comuna_facturacion, direccion_facturacion
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        region_facturacion, comuna_facturacion, direccion_facturacion, json_field
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *;
     `;
     const values = [
@@ -73,13 +73,90 @@ exports.createEmpresa = async (req, res) => {
       flag_externo !== undefined ? flag_externo : false,
       region_facturacion || null,
       comuna_facturacion || null,
-      direccion_facturacion || null
+      direccion_facturacion || null,
+      req.body.json_field || null
     ];
 
     const { rows } = await pool.query(query, values);
     res.status(201).json(rows[0]);
   } catch (error) {
     console.error("Error createEmpresa:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateEmpresa = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      rut_empresa,
+      razon_social,
+      name_empresa,
+      giro,
+      direccion,
+      fono_contacto,
+      flag_externo,
+      region_facturacion,
+      comuna_facturacion,
+      direccion_facturacion,
+      json_field
+    } = req.body;
+
+    const finalName = name_empresa || razon_social;
+
+    const query = `
+      UPDATE tpar_empresas SET
+        rut_empresa = $1,
+        razon_social = $2,
+        name_empresa = $3,
+        giro = $4,
+        direccion = $5,
+        fono_contacto = $6,
+        flag_externo = $7,
+        region_facturacion = $8,
+        comuna_facturacion = $9,
+        direccion_facturacion = $10,
+        json_field = $11
+      WHERE id_empresa = $12
+      RETURNING *;
+    `;
+    const values = [
+      rut_empresa || null,
+      razon_social || null,
+      finalName || null,
+      giro || null,
+      direccion || null,
+      fono_contacto || null,
+      flag_externo !== undefined ? flag_externo : false,
+      region_facturacion || null,
+      comuna_facturacion || null,
+      direccion_facturacion || null,
+      json_field || null,
+      Number(id)
+    ];
+
+    const { rows } = await pool.query(query, values);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Empresa no encontrada" });
+    }
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error("Error updateEmpresa:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteEmpresa = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `DELETE FROM tpar_empresas WHERE id_empresa = $1 RETURNING *;`;
+    const { rows } = await pool.query(query, [Number(id)]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Empresa no encontrada" });
+    }
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error("Error deleteEmpresa:", error);
     res.status(500).json({ error: error.message });
   }
 };

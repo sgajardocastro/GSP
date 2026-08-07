@@ -414,7 +414,8 @@ const showQR = ref(false)
 const qrValue = computed(() => {
   if (!form.rut) return ''
   const cleanRut = form.rut.replace(/[^0-9kK]/g, '').toUpperCase()
-  return `${window.location.origin}/trabajador/${cleanRut}`
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
+  return `${window.location.origin}${basePath}/trabajador/${cleanRut}`
 })
 
 const certificados = ref([])
@@ -450,16 +451,17 @@ const uploadFile = async () => {
     const formData = new FormData()
     formData.append('archivo', selectedFile.value)
     formData.append('tipo_doc', 'CERTIFICADO_PERSONA')
-    formData.append('path_doc', '/u05/LeanDocs/personal')
+    formData.append('tenant_code', 'gsp')
+    formData.append('modulo', 'personal')
     formData.append('id_user', props.userId)
     formData.append('estado', 'ACTIVO')
 
-    const res = await apiAxios.post('/archivo', formData, {
+    const res = await apiAxios.post('/v1/storage/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    return res.data.archivo?.id_doc || null
+    return res.data.data?.id_doc || null
   } catch (err) {
     console.error("Error al subir archivo:", err)
     alert("Error al subir archivo físico al servidor.")

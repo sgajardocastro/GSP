@@ -137,12 +137,13 @@ class Archivo {
 
   async getArchivoById(id) {
     try {
-      const sql = 'SELECT * FROM tfmg_file WHERE id_doc = $1';
-      const { rows } = await this.pool.query(sql, [id]);
+      const cleanId = String(id || '').trim();
+      const sql = 'SELECT * FROM tfmg_file WHERE id_doc::text = $1 OR name_doc_interno = $1';
+      const { rows } = await this.pool.query(sql, [cleanId]);
       return rows[0];
     } catch (err) {
       console.error("Error en getArchivoById:", err);
-      throw new Error("Error al obtener archivo por ID");
+      return null;
     }
   }
 

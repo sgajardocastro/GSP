@@ -19,33 +19,58 @@ function encryptToken(token, secret) {
 
 function verificarPOP3(email, password) {
   return new Promise((resolve, reject) => {
-    console.log(`[POP3] Conectando al servidor POP3 con ${email}`);
-    const client = new POP3Client(process.env.POP3_PORT, process.env.POP3_HOST, {
-      tlserrs: false,
-      enabletls: true,
-      debug: false,
-    });
-
-    client.on("connect", () => {
-      console.log("[POP3] Conectado. Intentando login...");
-      client.login(email, password);
-    });
-
-    client.on("login", (status) => {
-      if (status) {
-        console.log("[POP3] Autenticación exitosa");
-        client.quit();
-        resolve(true);
-      } else {
-        console.log("[POP3] Falló autenticación");
-        reject(new Error("Credenciales POP3 inválidas"));
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn(`[POP3] Timeout (1500ms) alcanzado para ${email}`);
+        reject(new Error("Servidor de correo no responde. Verifique sus credenciales o use Google Login."));
       }
-    });
+    }, 1500);
 
-    client.on("error", (err) => {
-      console.error("[POP3] Error:", err.message);
-      reject(new Error("Error POP3: " + err.message));
-    });
+    try {
+      console.log(`[POP3] Conectando al servidor POP3 para ${email}`);
+      const client = new POP3Client(process.env.POP3_PORT || 110, process.env.POP3_HOST || 'localhost', {
+        tlserrs: false,
+        enabletls: true,
+        debug: false,
+      });
+
+      client.on("connect", () => {
+        console.log("[POP3] Conectado. Intentando login...");
+        client.login(email, password);
+      });
+
+      client.on("login", (status) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          if (status) {
+            console.log("[POP3] Autenticación exitosa");
+            try { client.quit(); } catch(e) {}
+            resolve(true);
+          } else {
+            console.log("[POP3] Falló autenticación");
+            reject(new Error("Credenciales de correo inválidas."));
+          }
+        }
+      });
+
+      client.on("error", (err) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          console.error("[POP3] Error socket:", err.message);
+          reject(new Error("Error al conectar con servidor de correo: " + err.message));
+        }
+      });
+    } catch (e) {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        reject(new Error("Error al verificar credenciales: " + e.message));
+      }
+    }
   });
 }
 
@@ -107,13 +132,10 @@ exports.login = async (req, res) => {
 
     console.log(`[LOGIN] Usuario encontrado. Email: ${email}`);
 
-    if (email && email.toLowerCase() === 'sgajardoc@gmail.com') {
-      console.log('[LOGIN] Bypass de POP3 para sgajardoc@gmail.com');
-    } else if (email && email.toLowerCase().endsWith('@transmac.cl')) {
-      await verificarOutlook(email, password);
-    } else {
-      await verificarPOP3(user.codi_user, password);
+    if (email && (email.toLowerCase().endsWith('@arriendosanpablo.cl') || email.toLowerCase().endsWith('@gmail.com'))) {
+      console.log(`[LOGIN] Verificando usuario de dominio GSP: ${email}`);
     }
+    await verificarPOP3(user.codi_user || email, password);
 
     const payload = {
       rut: user.rut,
@@ -170,13 +192,10 @@ exports.loginPorEmail = async (req, res) => {
 
     console.log(`[LOGIN] Usuario encontrado. Email: ${user.codi_user}`);
 
-    if (email && email.toLowerCase() === 'sgajardoc@gmail.com') {
-      console.log('[LOGIN] Bypass de POP3 para sgajardoc@gmail.com');
-    } else if (email && email.toLowerCase().endsWith('@transmac.cl')) {
-      await verificarOutlook(email, password);
-    } else {
-      await verificarPOP3(email, password);
+    if (email && (email.toLowerCase().endsWith('@arriendosanpablo.cl') || email.toLowerCase().endsWith('@gmail.com'))) {
+      console.log(`[LOGIN] Verificando usuario de dominio GSP por email: ${email}`);
     }
+    await verificarPOP3(email, password);
 
     const payload = {
       rut: user.rut,
@@ -285,16 +304,25 @@ exports.loginGoogle = async (req, res) => {
       return res.status(400).json({ message: "No se pudo obtener el email desde Google" });
     }
 
-    const expectedAud =
-      process.env.GOOGLE_CLIENT_ID ||
-      "377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com";
-    const localAud = "377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com";
+    const allowedAudiences = [
+      process.env.GOOGLE_CLIENT_ID,
+      "961053663096-s2a3uhics25fg1h0b20ocmqlqi3tvvdu.apps.googleusercontent.com",
+      "900336188439-v2jr120b65dcvbi5j26kst05ldl73uou.apps.googleusercontent.com",
+      "377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com"
+    ].filter(Boolean);
 
-    if (audience !== expectedAud && audience !== localAud) {
+    if (!allowedAudiences.includes(audience)) {
       console.warn(
-        `[LOGIN GOOGLE] Audience inválida. Esperado=${expectedAud} o ${localAud}, recibido=${audience}`
+        `[LOGIN GOOGLE] Audience inválida. Esperado=${allowedAudiences.join(' o ')}, recibido=${audience}`
       );
       return res.status(401).json({ message: "Token de Google inválido (audience incorrecta)" });
+    }
+
+    const lowerEmail = String(email).toLowerCase();
+    const isAllowedDomain = lowerEmail.endsWith('@arriendosanpablo.cl') || lowerEmail.endsWith('@gmail.com');
+    if (!isAllowedDomain) {
+      console.warn(`[LOGIN GOOGLE] Intento de acceso denegado para dominio no permitido: ${email}`);
+      return res.status(403).json({ message: "Acceso denegado: solo se permiten correos @arriendosanpablo.cl y @gmail.com autorizados" });
     }
 
     console.log(`[LOGIN GOOGLE] Email verificado por Google: ${email}`);

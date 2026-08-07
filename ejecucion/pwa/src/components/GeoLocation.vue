@@ -18,6 +18,26 @@
         <span><strong>Latitud:</strong> {{ local.lat }}</span>
         <span><strong>Longitud:</strong> {{ local.lng }}</span>
       </div>
+
+      <!-- Botones de Navegación GPS (Google Maps & Waze) -->
+      <div class="mt-3 d-flex gap-2">
+        <a 
+          :href="`https://www.google.com/maps/dir/?api=1&destination=${local.lat},${local.lng}`" 
+          target="_blank" 
+          class="v-btn border border-white/10 text-white font-weight-bold text-caption flex-grow-1 text-center py-2 px-3 rounded-lg text-decoration-none shadow"
+          style="background-color: #1a73e8 !important;"
+        >
+          🗺️ Navegar con Google Maps
+        </a>
+        <a 
+          :href="`https://waze.com/ul?ll=${local.lat},${local.lng}&navigate=yes`" 
+          target="_blank" 
+          class="v-btn border border-white/10 text-slate-950 font-weight-black text-caption flex-grow-1 text-center py-2 px-3 rounded-lg text-decoration-none shadow"
+          style="background-color: #33ccff !important; color: #000000 !important;"
+        >
+          🚙 Navegar con Waze
+        </a>
+      </div>
     </div>
   </div>
 </template>

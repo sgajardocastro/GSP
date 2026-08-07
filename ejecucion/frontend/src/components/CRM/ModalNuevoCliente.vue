@@ -28,7 +28,7 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Dirección Comercial</label>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Dirección Comercial <span class="text-red-500">*</span></label>
             <input type="text" v-model="form.direccion" placeholder="Ej: Av. Vitacura 1234" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none transition-colors" />
           </div>
           <div>
@@ -41,17 +41,52 @@
           <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block mb-2">Datos de Facturación</span>
           <div class="grid grid-cols-2 gap-4 mb-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1">Región de Facturación</label>
+              <label class="block text-xs font-semibold text-slate-400 mb-1">Región de Facturación <span class="text-red-500">*</span></label>
               <input type="text" v-model="form.region_facturacion" placeholder="Ej: Metropolitana" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none transition-colors" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1">Ciudad / Comuna</label>
+              <label class="block text-xs font-semibold text-slate-400 mb-1">Ciudad / Comuna <span class="text-red-500">*</span></label>
               <input type="text" v-model="form.comuna_facturacion" placeholder="Ej: Las Condes" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none transition-colors" />
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Dirección de Facturación</label>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Dirección de Facturación <span class="text-red-500">*</span></label>
             <input type="text" v-model="form.direccion_facturacion" placeholder="Ej: Av. Andrés Bello 456, Of 12" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none transition-colors" />
+          </div>
+        </div>
+
+        <div class="border-t border-white/5 pt-3 mt-1">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">Puntos de Contacto</span>
+            <button type="button" @click="agregarContacto" class="px-2 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white rounded text-xs transition-colors">+ Añadir</button>
+          </div>
+          <div v-if="!form.json_field.puntos_contacto || form.json_field.puntos_contacto.length === 0" class="text-xs text-slate-500 italic mb-2">
+            Sin contactos registrados.
+          </div>
+          <div v-for="(contacto, index) in form.json_field.puntos_contacto" :key="index" class="bg-white/5 p-3 rounded-lg mb-2 relative">
+            <button @click="eliminarContacto(index)" class="absolute top-2 right-2 text-red-400 hover:text-red-300">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="grid grid-cols-2 gap-3 mb-2 pr-6">
+              <div>
+                <label class="block text-[10px] text-slate-400">Nombre</label>
+                <input type="text" v-model="contacto.nombre" class="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs" />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Correo</label>
+                <input type="email" v-model="contacto.correo" class="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pr-6">
+              <div>
+                <label class="block text-[10px] text-slate-400">Teléfono</label>
+                <input type="text" v-model="contacto.telefono" class="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs" />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Observaciones</label>
+                <input type="text" v-model="contacto.observaciones" class="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs" />
+              </div>
+            </div>
           </div>
         </div>
         
@@ -96,20 +131,36 @@ const form = ref({
   region_facturacion: '',
   comuna_facturacion: '',
   direccion_facturacion: '',
-  flag_externo: true
+  flag_externo: true,
+  json_field: {
+    puntos_contacto: []
+  }
 })
 
 onMounted(() => {
   if (props.clienteAEditar) {
     form.value = { ...form.value, ...props.clienteAEditar }
+    if (!form.value.json_field) {
+      form.value.json_field = { puntos_contacto: [] }
+    } else if (!form.value.json_field.puntos_contacto) {
+      form.value.json_field.puntos_contacto = []
+    }
   }
 })
 
 const guardando = ref(false)
 
+const agregarContacto = () => {
+  form.value.json_field.puntos_contacto.push({ nombre: '', correo: '', telefono: '', observaciones: '' })
+}
+
+const eliminarContacto = (index) => {
+  form.value.json_field.puntos_contacto.splice(index, 1)
+}
+
 const guardarCliente = async () => {
-  if (!form.value.rut_empresa || !form.value.razon_social) {
-    alert('RUT y Razón Social son obligatorios.')
+  if (!form.value.rut_empresa || !form.value.razon_social || !form.value.direccion || !form.value.region_facturacion || !form.value.comuna_facturacion) {
+    alert('RUT, Razón Social, Dirección Comercial, Región y Ciudad/Comuna son obligatorios.')
     return
   }
 

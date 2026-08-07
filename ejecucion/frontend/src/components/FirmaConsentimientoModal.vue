@@ -261,7 +261,8 @@ const firmar = async () => {
       id_survey: props.detalle.id_survey,
       pass_fes: hashedPin, // Enviamos el hash para que el backend compare contra lo guardado
       filenameQr: filenameQr,
-      destinoFolder: '/u05/LeanDocs/transmac/'
+      tenant_code: 'gsp',
+      modulo: 'firmas'
     })
 
     emit('firmado')

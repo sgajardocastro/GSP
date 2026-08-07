@@ -59,11 +59,14 @@ Este bloque unifica y valida los datos de preventa, permitiendo el switch de con
   - Input tipo *Autocomplete* conectado a la base de datos (con debounce de 300ms y mínimo 3 caracteres de input).
   - Permite buscar de forma dual por **Razón Social / Nombre** o por **RUT del Cliente** (sin puntos ni guiones).
   - Al seleccionar, auto-completa en la ficha: Razón Social, RUT Cliente, Dirección Comercial y Giro Comercial.
-- **f. Nombre de Contacto:** Texto libre para registrar al solicitante directo de la obra.
-- **g. Número de Contacto:** Campo numérico/teléfono de contacto.
+- **f-g. Puntos de Contacto Múltiples:** La entidad permite registrar un array de contactos asociados a la empresa (`json_field.puntos_contacto`). Cada contacto posee: Nombre, Correo, Teléfono y Observaciones. Al seleccionar un cliente, se despliega un selector para escoger el Contacto Específico para esta oportunidad, almacenando su referencia en `opportunity.value.json_field.crm_v1.contacto_id`.
 - **h. Tipo de Pago:** Selector con opciones: Efectivo, Transferencia, Crédito, Débito, Cheque, Otros.
 - **i. Requiere OC / HES:** Toggle/Checkbox para indicar si la facturación exige Orden de Compra u HES obligatoria.
-- **j. Requiere Acreditación:** Toggle/Checkbox que al activarse permite listar y adjuntar documentos requeridos por el mandante (F30, F30-1, Certificaciones, etc.).
+- **j. Requiere Acreditación (Checklist Avanzado):** 
+  - Toggle que habilita el panel de requerimientos documentales.
+  - Se presenta una grilla visual de 3 columnas (Empresa, Equipos, Personas).
+  - Cada columna lista las exigencias estáticas del mandante (ej. Empresa: F30, F30-1, Matriz de Riesgo; Equipos: SOAP, Revisión Técnica; Personas: Examen Ocupacional, Contrato).
+  - El estado de cumplimiento se serializa y guarda en `opportunity.acreditacion_docs` (o `json_field.operaciones_v1.cumplimiento_acreditaciones`) permitiendo a Operaciones validar los documentos físicos con botones Toggle (OK / NO OK) en la vista de Validación (Diff).
 
 ### 🏗️ 3.2. Panel Derecho (Tab: Site Visit & Viabilidad): Datos Generales del Servicio
 Formulario técnico descriptivo para la planificación e ingeniería de izajes:

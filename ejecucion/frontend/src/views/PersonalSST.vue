@@ -352,7 +352,8 @@ const qrDataUrl = ref('')
 async function openQR() {
   if (!selectedPerson.value) return
   
-  const baseUrl = window.location.origin
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const baseUrl = window.location.origin + basePath
   // Generar ruta de trabajador limpia de puntos y guión
   const rutClean = selectedPerson.value.rut.replace(/[^0-9Kk]/g, '')
   const url = `${baseUrl}/trabajador/${rutClean}`

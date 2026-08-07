@@ -31,3 +31,10 @@ const fesClienteData = {
 ## 3. REGLAS DE UI/UX Y VALIDACIÓN
 - **Firma Obligatoria:** El lienzo de firma (HTML5 Canvas) no puede estar en blanco. Se debe validar que contenga trazos pintados antes de permitir el envío.
 - **RUT Chileno:** El Rut del receptor del servicio debe pasar por validación de dígito verificador estándar antes de habilitar el botón de envío.
+
+---
+
+## 4. RENDERIZADO DE EXPORTACIÓN PDF (PUPPETEER)
+- **Bug de Miniatura (Thumbnail Bug):** En versiones previas, la firma FES se renderizaba como una imagen minúscula distorsionada al exportar el Survey a PDF.
+- **Solución Arquitectónica:** El bloque de la firma `signature` DEBE ser extraído de cualquier esquema tabular o grilla de SurveyJS. Debe inyectarse como un contenedor `div` bloque (100% width) en el DOM final antes de que Puppeteer capture la página.
+- **Helper de Renderizado:** Se debe utilizar un helper CSS forzado (`page-break-inside: avoid;`) sobre el contenedor de la firma para asegurar que el canvas no se corte entre dos páginas del PDF final.

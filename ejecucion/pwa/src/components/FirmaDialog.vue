@@ -463,12 +463,11 @@ const crearFirmaSurvey = async () => {
       ? (motivosRechazo.value.find(m => m.id_motivo_rechazo === motivoRechazo.value)?.motivo_rechazo || null)
       : null
 
-    const docInterno =
-      paso.name_doc_interno_in || paso.name_doc_interno_out || ''
+
 
     const data = {
-      origenPath: '/u05/LeanDocs/transmac/' + docInterno,
-      destinoFolder: '/u05/LeanDocs/transmac/',
+      tenant_code: 'transmac',
+      modulo: 'firmas',
       id_flow_stp: paso.id_flow_stp,
       id_flow: flujo.id_flow,
       id_user: userDetailStore.userDetail.id_user,

@@ -8,7 +8,7 @@ const flujoM = new flujoModel();
 const { v4: uuidv4 } = require("uuid");
 const fs = require('fs').promises;
 const { generarPDF } = require('../services/exportService');
-const { TRANSMAC_DOCS_DIR } = require('../config/docsConfig');
+// const { TRANSMAC_DOCS_DIR } = require('../config/docsConfig');
 
 async function generarYGuardarPDF(req, res) {
   try {
@@ -31,22 +31,31 @@ async function generarYGuardarPDF(req, res) {
     const generatedFileName = path.basename(pdfPath);
     const filename = `${uuidv4()}.pdf`;
 
-    // 3️⃣ Obtener carpeta destino (misma carpeta donde estaba)
-    const folder = path.dirname(pdfPath);
-    const newPath = path.join(folder, filename);
+    // 3️⃣ Calcular ruta en el Storage Engine
+    const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+    const fsSync = require('fs');
+    const path_relativo = buildStoragePath('GSP', 'surveys');
+    const targetDir = path.join(STORAGE_ROOT, path_relativo);
+    
+    if (!fsSync.existsSync(targetDir)) {
+      fsSync.mkdirSync(targetDir, { recursive: true });
+    }
+
+    const newPath = path.join(targetDir, filename);
 
     // 4️⃣ Renombrar (mover)
     await fs.rename(pdfPath, newPath);
-    console.log('✅ Archivo renombrado a:', newPath);
+    console.log('✅ Archivo movido a:', newPath);
 
-    // 2. Guardar PDF en tfmg_file
+    // 2. Guardar PDF en tfmg_file con Storage Engine
+
     const archivoData = {
       filePath: newPath,
       tipo_doc,
       mimetype,
       name_doc_orig: generatedFileName,
       name_doc_interno: filename,
-      path_doc: TRANSMAC_DOCS_DIR,
+      path_doc: path_relativo,
       id_user,
       estado
     };
@@ -100,11 +109,18 @@ async function generarYGuardarPDF2({ body }) {
     const pdfPath = await exportService.generarPDF(idInspeccion);
     const generatedFileName = path.basename(pdfPath);
 
-    // 2. Mover al nombre final
-    const folder = path.dirname(pdfPath);
-    const newPath = path.join(folder, filename);
+    // 2. Calcular ruta en Storage Engine
+    const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+    const path_relativo = buildStoragePath('global', 'reportes');
+    const targetDir = path.join(STORAGE_ROOT, path_relativo);
+    
+    if (!require('fs').existsSync(targetDir)) {
+      require('fs').mkdirSync(targetDir, { recursive: true });
+    }
+
+    const newPath = path.join(targetDir, filename);
     await fs.rename(pdfPath, newPath);
-    console.log('✅ Archivo renombrado a:', newPath);
+    console.log('✅ Archivo movido a:', newPath);
 
     // 3. Guardar en base de datos
     const archivoData = {
@@ -113,7 +129,7 @@ async function generarYGuardarPDF2({ body }) {
       mimetype,
       name_doc_orig: generatedFileName,
       name_doc_interno: filename,
-      path_doc: TRANSMAC_DOCS_DIR,
+      path_doc: path_relativo,
       id_user,
       estado
     };
@@ -178,21 +194,30 @@ async function generarYGuardarPDFCore(input) {
   const pdfPath = await exportService.generarPDF(idInspeccion);
   const generatedFileName = path.basename(pdfPath); // nombre original generado
 
-  // 2) Renombrar a UUID
-  const folder = path.dirname(pdfPath);
+  // 2) Renombrar a UUID en Storage Engine
+  const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+  const moduloName = (typeof input === 'object' && input.modulo) ? input.modulo : 'enrolamiento';
+  const path_relativo = buildStoragePath(process.env.TENANT_CODE || 'GSP', moduloName, process.env.APP_ENV || 'dev');
+  const targetDir = path.join(STORAGE_ROOT, path_relativo);
+  
+  if (!require('fs').existsSync(targetDir)) {
+    require('fs').mkdirSync(targetDir, { recursive: true });
+  }
+
   const filename = `${uuidv4()}.pdf`;
-  const newPath = path.join(folder, filename);
+  const newPath = path.join(targetDir, filename);
 
   await fs.rename(pdfPath, newPath);
-  console.log('✅ [generarYGuardarPDFCore] Archivo renombrado a:', newPath);
+  console.log('✅ [generarYGuardarPDFCore] Archivo movido a:', newPath);
 
   // 3) Registrar en tfmg_file
   const archivoData = {
+    filePath: newPath,
     tipo_doc,
     mimetype,
     name_doc_orig: generatedFileName, // nombre original generado por puppeteer
     name_doc_interno: filename,       // 🔴 ESTE es el UUID
-    path_doc: TRANSMAC_DOCS_DIR,
+    path_doc: path_relativo,
     id_user,
     estado
   };
@@ -201,7 +226,7 @@ async function generarYGuardarPDFCore(input) {
 
   return {
     id_doc: idDocIn,
-    path_doc: TRANSMAC_DOCS_DIR,
+    path_doc: path_relativo,
     name_doc_interno: filename,       // UUID
     name_doc_orig: generatedFileName  // original
   };

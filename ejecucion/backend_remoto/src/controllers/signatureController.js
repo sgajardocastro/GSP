@@ -10,14 +10,16 @@ const Archivo = require("../models/archivoModel");
 const { generarYGuardarPDF, generarYGuardarPDF2 } = require('../controllers/exportarController');
 const archivo = new Archivo();
 const { validarTsa } = require('../services/tsaValidateService');
-const {
-  TRANSMAC_DOCS_DIR,
-  TRANSMAC_DOCS_FOLDER,
-  normalizeDocsFilePath
-} = require('../config/docsConfig');
+const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+const LEAN_DOCS_BASE_DIR = process.env.STORAGE_ROOT || '/u05/LeanDocs';
+const normalizeDocsFilePath = (filePath) => {
+  if (!filePath) return filePath;
+  if (path.isAbsolute(filePath)) return filePath;
+  return path.join(LEAN_DOCS_BASE_DIR, filePath);
+};
 
 // URL donde el usuario puede ir a validar el documento
-const VALIDATION_URL = 'https://servidor.leanglobal.cl/validador-doc';
+const VALIDATION_URL = `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/validador-doc`;
 
 // Servicio TSA (FreeTSA)
 const { obtenerSelloTiempo } = require('../services/tsaService');
@@ -132,7 +134,9 @@ module.exports = {
       } = req.body;
 
       const origenPathNormalizado = normalizeDocsFilePath(origenPath);
-      const destinoFolderNormalizado = TRANSMAC_DOCS_DIR;
+      const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const path_relativo = buildStoragePath('global', 'firmas');
+      const destinoFolderNormalizado = require('path').join(STORAGE_ROOT, path_relativo);
 
       if (!origenPathNormalizado || !id_user) {
         console.error('❌ Validación fallida: faltan campos requeridos');
@@ -197,7 +201,7 @@ module.exports = {
 
       console.log('⚙️ Generando QR...');
       const qrDataUrl = await QRCode.toDataURL(
-        `https://servidor.leanglobal.cl/lean-services/api/archivo/${TRANSMAC_DOCS_FOLDER}/${nuevoNombre}`
+        `${process.env.API_BASE_URL || ''}/api/v1/storage/view/${nuevoNombre}` // Or a proper ID later
       );
       const qrImageBytes = qrDataUrl.split(',')[1];
       const qrImageBuffer = Buffer.from(qrImageBytes, 'base64');
@@ -333,7 +337,7 @@ module.exports = {
         mimetype: 'application/pdf',
         name_doc_orig: path.basename(origenPathNormalizado),
         name_doc_interno: nuevoNombre,
-        path_doc: destinoFolderNormalizado,
+        path_doc: path_relativo,
         id_user: id_user,
         estado: 'CREADO'
       });
@@ -412,7 +416,9 @@ module.exports = {
       }
 
       const origenPathNormalizado = normalizeDocsFilePath(origenPath);
-      const destinoFolderNormalizado = TRANSMAC_DOCS_DIR;
+      const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const path_relativo = buildStoragePath('global', 'firmas');
+      const destinoFolderNormalizado = path.join(STORAGE_ROOT, path_relativo);
 
       if (!origenPathNormalizado || !id_user) {
         console.error('❌ Validación fallida: faltan campos requeridos');
@@ -478,7 +484,7 @@ module.exports = {
 
       console.log('⚙️ Generando QR...');
       const qrDataUrl = await QRCode.toDataURL(
-        `https://servidor.leanglobal.cl/lean-services/api/archivo/${TRANSMAC_DOCS_FOLDER}/${nuevoNombre}`
+        `${process.env.API_BASE_URL || ''}/api/v1/storage/view/${nuevoNombre}`
       );
       const qrImageBytes = qrDataUrl.split(',')[1];
       const qrImageBuffer = Buffer.from(qrImageBytes, 'base64');
@@ -607,7 +613,7 @@ module.exports = {
         mimetype: 'application/pdf',
         name_doc_orig: path.basename(origenPathNormalizado),
         name_doc_interno: nuevoNombre,
-        path_doc: destinoFolderNormalizado,
+        path_doc: path_relativo,
         id_user: id_user,
         estado: 'CREADO'
       });
@@ -738,7 +744,7 @@ module.exports = {
         tipo_doc: tipo_doc || "PDF",
         mimetype: mimetype || "application/pdf",
         name_doc_interno: '',
-        path_doc: TRANSMAC_DOCS_DIR,
+        path_doc: buildStoragePath('global', 'firmas'),
         id_user: id_user,
         estado: 'CREADO',
         filename: filenameQr || filename
@@ -765,7 +771,7 @@ module.exports = {
       // QR pequeño para el footer: usamos el nombre interno del archivo
       const internalName = path.basename(pdfPath);
       const qrFooterDataUrl = await QRCode.toDataURL(
-        `https://servidor.leanglobal.cl/lean-services/api/archivo/${TRANSMAC_DOCS_FOLDER}/${internalName}`
+        `${process.env.API_BASE_URL || ''}/api/v1/storage/view/${internalName}`
       );
       const qrFooterBytes = qrFooterDataUrl.split(',')[1];
       const qrFooterBuffer = Buffer.from(qrFooterBytes, 'base64');
@@ -992,7 +998,7 @@ module.exports = {
 
       // 5) Link HTTP al PDF (mismo patrón que usas en el QR)
       const link_pdf = name_doc_interno
-        ? `https://servidor.leanglobal.cl/lean-services-dev/api/archivo/${TRANSMAC_DOCS_FOLDER}/${name_doc_interno}`
+        ? `${process.env.API_BASE_URL || ''}/api/v1/storage/view/${name_doc_interno}`
         : null;
 
       return res.status(200).json({

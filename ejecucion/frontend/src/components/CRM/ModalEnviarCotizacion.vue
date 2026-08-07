@@ -249,7 +249,16 @@ const sendEmail = async () => {
   errorMessage.value = ''
 
   try {
-    const pdfUrl = props.versionData?.url ? `https://servidor.leanglobal.cl${props.versionData.url}` : ''
+    const rawPdfUrl = props.versionData?.url || ''
+    let pdfUrl = ''
+    if (rawPdfUrl) {
+      if (rawPdfUrl.startsWith('http')) {
+        pdfUrl = rawPdfUrl
+      } else {
+        const cleanPath = rawPdfUrl.startsWith('/lg-gsp') ? rawPdfUrl.replace(/^\/lg-gsp/, '') : rawPdfUrl
+        pdfUrl = `https://servidor.leanglobal.cl/lg-gsp${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`
+      }
+    }
     const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || props.proyecto?.codi_proyecto || 'GSP-2607-001'
     const clienteName = props.cliente?.razon_social || props.cliente?.name_empresa || props.proyecto?.razon_social || props.proyecto?.cliente_nombre || 'Cliente Mandante'
     const verCod = props.versionData?.version_codigo || (props.versionData?.version ? `v${props.versionData.version}` : 'v1.0')

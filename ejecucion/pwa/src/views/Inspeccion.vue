@@ -5403,7 +5403,8 @@ const exportarInspeccion = async (idInspeccion) => {
   formData.append('mimetype', 'application/pdf');
   formData.append('name_doc_orig', '')
   formData.append('name_doc_interno', '')
-  formData.append('path_doc', '/u05/LeanDocs/transmac/')
+  formData.append('tenant_code', 'transmac')
+  formData.append('modulo', 'inspecciones')
   formData.append('id_user', userDetailStore.userDetail.id_user)
   formData.append('estado', '1')
   try {
@@ -6708,11 +6709,11 @@ async function onPickImageMatriz(event, attr, rIdx, cIdx) {
     const compressedDataUrl = await compressImageToDataURL(file, quality, 800, 800);
     // sube al backend y obtiene URL
     const dataArchivo = await uploadFileFromBase64(compressedDataUrl, file.name, file.type);
-    if (dataArchivo?.archivo?.name_doc_interno) {
+    if (dataArchivo?.data?.id_doc) {
       const obj = {
         base64: '',
-        url: '/archivo/transmac/' + dataArchivo.archivo.name_doc_interno,
-        nombre: dataArchivo.archivo.name_doc_interno
+        url: dataArchivo.data.url_view,
+        nombre: dataArchivo.data.name_doc_interno
       };
       cell.galeria = [obj];   // igual que FotoCheck: una imagen
       cell.value = obj.nombre || 'foto';
@@ -6769,14 +6770,14 @@ async function uploadFileFromBase64(base64Data, originalName, mimeType) {
   formData.append('tipo_doc', 'DOCUMENTO');
   formData.append('mimetype', file.type);
   formData.append('name_doc_orig', file.name);
-  formData.append('name_doc_interno', '');
-  formData.append('path_doc', '/u05/LeanDocs/transmac/');
-  formData.append('id_user', 1); // ajusta si corresponde
+  formData.append('tenant_code', 'transmac');
+  formData.append('modulo', 'inspecciones');
+  formData.append('id_user', 1);
   formData.append('estado', '1');
 
   try {
     const { data } = await apiAxios.post(
-      '/archivo/imagen',
+      '/v1/storage/upload',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );

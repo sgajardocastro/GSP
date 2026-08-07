@@ -216,7 +216,7 @@ onMounted(async () => {
         nombre: doc.nombre_tipo || doc.name_doc_orig || 'Certificado',
         fechaVencimiento: displayDate || 'S/I',
         estado: getStatusText(doc.fecha_vencimiento),
-        url: doc.id_doc ? `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${doc.id_doc}` : '#'
+        url: doc.id_doc ? `${String(apiAxios.defaults.baseURL || '').replace(/\/$/, '')}/archivo/ver/${doc.id_doc}` : '#'
       }
     }
 

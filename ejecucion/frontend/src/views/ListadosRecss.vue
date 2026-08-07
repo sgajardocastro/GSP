@@ -250,7 +250,8 @@
       :pdf-url="signaturePdfUrl"
       :id-doc="signatureIdDoc"
       :origen-path="signatureOrigenPath"
-      :destino-folder="signatureDestinoFolder"
+      :modulo="signatureModulo"
+      :tenant-code="'transmac'"
       :user="loggedInUser"
       rol-nombre="Auditor RECSS"
       @firmado="ejecutarCierreReporte"
@@ -279,7 +280,7 @@ const showSignatureModal = ref(false)
 const signaturePdfUrl = ref('')
 const signatureIdDoc = ref(null)
 const signatureOrigenPath = ref('')
-const signatureDestinoFolder = ref('/u05/LeanDocs/transmac/sst/recss_informes/')
+const signatureModulo = ref('sst/recss_informes')
 const loggedInUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 
 // Helpers for PostgreSQL array columns
@@ -710,8 +711,8 @@ const prepararFirma = async () => {
     if (data.url_pdf) {
       urlStoredPdf.value = data.url_pdf
       signatureIdDoc.value = data.id_doc || activeInformeId.value
-      signatureOrigenPath.value = data.origenPath || (data.url_pdf ? data.url_pdf.replace('/archivo/', '/u05/LeanDocs/') : '')
-      signatureDestinoFolder.value = data.destinoFolder || '/u05/LeanDocs/transmac/sst/recss_informes/'
+      signatureOrigenPath.value = data.origenPath || data.url_pdf || ''
+      signatureModulo.value = data.modulo || 'sst/recss_informes'
       
       const BASE_URL = import.meta.env.VITE_API_BASE_URL_CORE || import.meta.env.VITE_API_BASE_URL || ''
       signaturePdfUrl.value = BASE_URL.includes('/api') ? BASE_URL + data.url_pdf : BASE_URL + '/api' + data.url_pdf
@@ -735,7 +736,7 @@ const ejecutarCierreReporte = async (signedData) => {
     
     let finalPdfUrl = urlStoredPdf.value
     if (signedData && signedData.origenPathFirmado) {
-      finalPdfUrl = signedData.origenPathFirmado.replace('/u05/LeanDocs/', '/archivo/').replace(/\\/g, '/')
+      finalPdfUrl = signedData.url_firmada || signedData.url_pdf || urlStoredPdf.value
       urlStoredPdf.value = finalPdfUrl
     }
     

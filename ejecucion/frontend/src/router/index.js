@@ -123,24 +123,94 @@ const router = createRouter({
       name: 'ficha_equipo',
       component: FichaEquipoPublica,
       meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/equipo/:patente',
+      name: 'ficha_equipo_dev',
+      component: FichaEquipoPublica,
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/equipo/:patente',
+      name: 'ficha_equipo_qa',
+      component: FichaEquipoPublica,
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/equipo/:patente',
+      name: 'ficha_equipo_prod',
+      component: FichaEquipoPublica,
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/asignar-visita/:token(.*)',
+      name: 'asignar_visita',
+      component: () => import('../views/AsignacionVisita.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/asignar-visita/:token(.*)',
+      name: 'asignar_visita_dev',
+      component: () => import('../views/AsignacionVisita.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/asignar-visita/:token(.*)',
+      name: 'asignar_visita_qa',
+      component: () => import('../views/AsignacionVisita.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/asignar-visita/:token(.*)',
+      name: 'asignar_visita_prod',
+      component: () => import('../views/AsignacionVisita.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/trabajador/:rut(.*)',
+      name: 'ficha_trabajador',
+      component: () => import('../views/FichaTrabajadorPublica.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/trabajador/:rut(.*)',
+      name: 'ficha_trabajador_dev',
+      component: () => import('../views/FichaTrabajadorPublica.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/trabajador/:rut(.*)',
+      name: 'ficha_trabajador_qa',
+      component: () => import('../views/FichaTrabajadorPublica.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/trabajador/:rut(.*)',
+      name: 'ficha_trabajador_prod',
+      component: () => import('../views/FichaTrabajadorPublica.vue'),
+      meta: { layout: 'public' }
     }
   ]
 })
 
-// Middleware de verificación de sesión con auto-inicialización de dev user
+// Middleware de verificación de sesión
 router.beforeEach((to, from, next) => {
-  let token = localStorage.getItem('token')
-  let user = JSON.parse(localStorage.getItem('user') || '{}')
-  
-  if (!token || token === 'dummy_jwt_token_for_preventa_tests') {
-    token = 'gsp_dev_jwt_token_valid'
-    user = { id: 1, name_frst: 'Sergio', apellido_pat: 'Gajardo', role: 'Administrador GSP', id_empresa: 9 }
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
-  }
+  const token = localStorage.getItem('token')
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
 
   if (to.name === 'login') {
-    return next({ name: 'dashboard' })
+    return next()
+  }
+
+  if (!token && to.name !== 'login') {
+    return next({ name: 'login' })
+  }
+
+  // Regla de Arquitectura FES: Si flag_proc_enrol está activo, exige completar el enrolamiento
+  const isEnrolPending = user && (user.flag_proc_enrol === true || user.flag_proc_enrol === 't' || user.flag_proc_enrol === 1)
+  if (isEnrolPending && to.name !== 'enrolamiento' && to.meta?.layout !== 'public') {
+    return next({ name: 'enrolamiento' })
   }
 
   next()

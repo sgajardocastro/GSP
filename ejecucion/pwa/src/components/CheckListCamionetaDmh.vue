@@ -549,10 +549,11 @@ async function uploadFileFromBase64(base64Data, originalName, mimeType) {
   formData.append('mimetype', file.type)
   formData.append('name_doc_orig', file.name)
   formData.append('name_doc_interno', '')
-  formData.append('path_doc', '/u05/LeanDocs/transmac')
+  formData.append('tenant_code', 'transmac')
+  formData.append('modulo', 'inspecciones')
   formData.append('id_user', 1)
   formData.append('estado', '1')
-  const response = await apiAxios.post('/archivo/imagen', formData, {
+  const response = await apiAxios.post('/v1/storage/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
   return response.data

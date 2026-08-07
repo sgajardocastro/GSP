@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '900336188439-v2jr120b65dcvbi5j26kst05ldl73uou.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '961053663096-s2a3uhics25fg1h0b20ocmqlqi3tvvdu.apps.googleusercontent.com'
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8086/api'
 
 export function useAuth() {
@@ -53,11 +53,14 @@ export function useAuth() {
 
   const renderGoogleButton = () => {
     if (window.google?.accounts?.id && googleBtnRef.value) {
+      googleBtnRef.value.innerHTML = ''
       window.google.accounts.id.renderButton(googleBtnRef.value, {
         theme: 'outline',
         size: 'large',
-        width: '100%',
-        text: 'signin_with'
+        width: 380,
+        text: 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left'
       })
     }
   }
@@ -83,7 +86,13 @@ export function useAuth() {
   const handleLoginSuccess = (data) => {
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(data.user))
-    router.push('/')
+    
+    const isEnrolPending = data.user?.flag_proc_enrol === true || data.user?.flag_proc_enrol === 't' || data.user?.flag_proc_enrol === 1
+    if (isEnrolPending) {
+      router.push({ name: 'enrolamiento' })
+    } else {
+      router.push('/')
+    }
   }
 
   return {

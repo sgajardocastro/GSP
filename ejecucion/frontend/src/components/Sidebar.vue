@@ -252,7 +252,7 @@ const fetchRealData = async () => {
 
     // 2. Obtener operadores con pase vencido
     const { data: usuariosData } = await apiAxios.get('/usuarios')
-    const usuarios = usuariosData || []
+    const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData?.usuarios || usuariosData?.data || [])
     const vencidos = usuarios.filter(u => u.estado_acreditacion === 'vencido' || u.id_usuario_estado === 3)
     blockedOperatorsCount.value = vencidos.length || 1 // Fallback seguro a 1
   } catch (err) {
@@ -265,7 +265,7 @@ const fetchRealData = async () => {
 const logout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  window.location.reload()
+  router.push({ name: 'login' })
 }
 
 const menuItems = computed(() => {

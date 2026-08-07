@@ -693,6 +693,35 @@
                   </td>
                 </tr>
 
+                <!-- signature -->
+                <tr
+                  v-for="(attr, index) in (segmento.attributes || []).filter(a => a.type === 'signature')"
+                  :key="'signature-' + index"
+                >
+                  <td
+                    class="label-cell"
+                    style="width: 30%; vertical-align: middle;"
+                  >
+                    <strong>{{ attr.label }}</strong>
+                  </td>
+                  <td
+                    class="value-cell"
+                    style="width: 70%;"
+                    colspan="3"
+                  >
+                    <div v-if="attr.default" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 10px 0;">
+                        <img
+                          :src="resolveImgSrc(attr.default)"
+                          alt="Firma del Cliente"
+                          style="max-width: 350px; max-height: 200px; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #ffffff;"
+                        >
+                    </div>
+                    <div v-else style="color: #94a3b8; font-style: italic; text-align: center; width: 100%; padding: 20px 0;">
+                      Sin firma
+                    </div>
+                  </td>
+                </tr>
+
                 <!-- ====== CHECKLIST (3 columnas fijas) ====== -->
                 <tr v-if="(segmento.attributes || []).some(a => a.type === 'checkList')">
                   <td
@@ -5976,6 +6005,7 @@ const INLINE_EXCLUDED_TYPES = new Set([
   'labelLineH4',
   'labelLineH5',
   'verDoc',
+  'signature'
 ]);
 
 // Únicos preservando orden (para strings)

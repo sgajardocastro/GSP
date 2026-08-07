@@ -3,12 +3,12 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const archivoModel = require("../models/archivoModel");
 const archivoM = new archivoModel();
-const {
-  LEAN_DOCS_BASE_DIR,
-  normalizeDocsDir,
-  resolvePublicDocsFolder
-} = require("../config/docsConfig");
-
+const LEAN_DOCS_BASE_DIR = process.env.STORAGE_ROOT || '/u05/LeanDocs';
+const normalizeDocsDir = (dir) => {
+  if (!dir) return LEAN_DOCS_BASE_DIR;
+  return dir.startsWith('/') ? dir : path.join(LEAN_DOCS_BASE_DIR, dir);
+};
+const resolvePublicDocsFolder = (folder) => folder || '';
 const baseDir = `${LEAN_DOCS_BASE_DIR}/`;
 
 module.exports = {
@@ -205,7 +205,14 @@ module.exports = {
       const filePath = path.join(baseDir, publicFolder, nombreFull);
 
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Archivo no encontrado' });
+        // Fallback de compatibilidad legacy: si la ruta dura /archivo/transmac/UUID.pdf no existe físicamente, buscar en DB por id_doc
+        const possibleId = nombreFull.replace(/\.[^/.]+$/, "");
+        const archivoDb = await archivoM.getArchivoById(possibleId);
+        if (archivoDb) {
+          req.params.id = possibleId;
+          return module.exports.verArchivoById(req, res);
+        }
+        return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
       }
 
       res.sendFile(filePath);
@@ -269,12 +276,89 @@ module.exports = {
   verArchivoById: async (req, res) => {
     try {
       const { id } = req.params;
-      const archivo = await archivoM.getArchivoById(id);
-      if (!archivo) return res.status(404).send('Archivo no encontrado');
+      if (!id) return res.status(400).send('ID de archivo no proporcionado');
+
+      const cleanId = String(id).replace(/\.[^/.]+$/, '');
       
-      const fullPath = path.join(archivo.path_doc, archivo.name_doc_interno);
-      if (!fs.existsSync(fullPath)) {
-        return res.status(404).send('El archivo físico no se encuentra en el servidor');
+      // Si el ID corresponde a una encuesta (id_survey) en tsrv_survey, generar y servir el PDF de la inspección en caliente
+      if (!isNaN(cleanId)) {
+        try {
+          const pool = require('../config/postgresPool');
+          const survResult = await pool.query('SELECT id_survey FROM tsrv_survey WHERE id_survey = $1 LIMIT 1', [cleanId]);
+          if (survResult.rows.length > 0) {
+            const exportService = require('../services/exportService');
+            const pdfPath = await exportService.generarPDF(cleanId);
+            if (pdfPath && fs.existsSync(pdfPath)) {
+              res.setHeader('Content-Type', 'application/pdf');
+              return res.sendFile(pdfPath);
+            }
+          }
+        } catch (errSurv) {
+          console.warn(`⚠️ No se pudo generar PDF en caliente para id_survey ${cleanId}:`, errSurv.message);
+        }
+      }
+
+      let archivo;
+      if (!isNaN(cleanId)) {
+        archivo = await archivoM.getArchivoById(cleanId);
+      }
+      if (!archivo) {
+        const pool = require('../config/postgresPool');
+        const sql = 'SELECT * FROM tfmg_file WHERE name_doc_interno = $1 OR name_doc_interno LIKE $2 OR id_doc::text = $3 LIMIT 1';
+        const result = await pool.query(sql, [id, `%${cleanId}%`, cleanId]);
+        archivo = result.rows[0];
+      }
+
+      if (!archivo) return res.status(404).send('Archivo no encontrado en la base de datos');
+      
+      const { resolveStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      
+      const possibleNames = [
+        archivo.name_doc_interno,
+        archivo.name_doc_interno ? archivo.name_doc_interno.replace(/\.pdf$/i, '.PDF') : null,
+        archivo.name_doc_interno ? archivo.name_doc_interno.replace(/\.PDF$/, '.pdf') : null,
+        archivo.name_doc_orig,
+        archivo.name_doc_orig ? archivo.name_doc_orig.replace(/\s+/g, '_') : null
+      ].filter(Boolean);
+
+      let fullPath = '';
+      for (const nameCandidate of possibleNames) {
+        const candidatePath = resolveStoragePath(archivo.path_doc || '', nameCandidate);
+        if (fs.existsSync(candidatePath)) {
+          fullPath = candidatePath;
+          break;
+        }
+        const cleanSubfolder = String(archivo.path_doc || '').replace(/^gsp\/?/i, '');
+        const directSubfolderPath = path.join(STORAGE_ROOT, cleanSubfolder, nameCandidate);
+        if (fs.existsSync(directSubfolderPath)) {
+          fullPath = directSubfolderPath;
+          break;
+        }
+        const publicPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', nameCandidate);
+        if (fs.existsSync(publicPath)) {
+          fullPath = publicPath;
+          break;
+        }
+      }
+
+      if (!fullPath || !fs.existsSync(fullPath)) {
+        // Fallback: si el archivo original tiene un nombre de encuesta (ej: "205-20260804_214625.pdf"), regenerar el PDF en caliente con Puppeteer
+        const origName = archivo.name_doc_orig || archivo.name_doc_interno || '';
+        const surveyMatch = origName.match(/^(\d+)-/);
+        if (surveyMatch && surveyMatch[1]) {
+          try {
+            const exportService = require('../services/exportService');
+            const genPath = await exportService.generarPDF(surveyMatch[1]);
+            if (genPath && fs.existsSync(genPath)) {
+              res.setHeader('Content-Type', 'application/pdf');
+              return res.sendFile(genPath);
+            }
+          } catch (errGen) {
+            console.error(`⚠️ Error regenerando PDF para encuesta ${surveyMatch[1]}:`, errGen);
+          }
+        }
+        console.error(`❌ Archivo físico no encontrado para ID ${id}. Probado en: ${fullPath}`);
+        return res.status(404).send(`El archivo físico (${archivo.name_doc_orig || archivo.name_doc_interno}) no se encuentra en la ruta esperada del servidor`);
       }
 
       if (archivo.mimetype) {

@@ -1,0 +1,1 @@
+import { NodeSSH } from 'node-ssh'; const ssh = new NodeSSH(); async function run() { try { await ssh.connect({ host: 'servidor.leanglobal.cl', port: 1295, username: 'root', password: 'lgbl2025.' }); const res = await ssh.execCommand('cat .env | grep DB_', { cwd: '/home/nodeadmin/proyectos/lean-services-gsp' }); console.log(res.stdout); } finally { ssh.dispose(); } } run();

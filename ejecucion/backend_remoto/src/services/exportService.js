@@ -2,7 +2,7 @@ const os = require('os');
 const fs = require('fs').promises;
 const path = require('path');
 const puppeteer = require('puppeteer');
-const { TRANSMAC_DOCS_DIR } = require('../config/docsConfig');
+const TRANSMAC_DOCS_DIR = process.env.STORAGE_ROOT || '/u05/LeanDocs';
 
 function resolveBaseWebUrl() {
   const raw = String(process.env.BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp-dev').trim();

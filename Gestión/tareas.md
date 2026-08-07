@@ -95,11 +95,11 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [x] **[Jorge Ponce] Compartir contacto:** Compartir el contacto de Jesús con Sergio.
 *   [x] **[Sergio Gajardo] Solicitar datos:** Revisar la carpeta de datos reales compartida y solicitar puntualmente lo que falte.
 *   [x] **[Jorge Ponce] Enviar datos:** Enviar la información faltante o corregir columnas de las maestras si es necesario.
-*   [ ] **[Jorge Ponce] Enviar borrador comercial:** Enviar el borrador del acuerdo comercial / Términos y Condiciones estándar en formato Word (texto simple).
-*   [ ] **[Sergio Gajardo] Planificar reuniones:** Enviar una propuesta de agenda/invitación para reuniones de seguimiento periódicas (Lunes a las 11:00 AM y Jueves, además de un control extra los Miércoles).
+*   [x] **[Jorge Ponce] Enviar borrador comercial:** Enviar el borrador del acuerdo comercial / Términos y Condiciones estándar en formato Word (texto simple).
+*   [x] **[Sergio Gajardo] Planificar reuniones:** Enviar una propuesta de agenda/invitación para reuniones de seguimiento periódicas (Lunes a las 11:00 AM y Jueves, además de un control extra los Miércoles).
 
 **Reunión 20-Jul-2026 (Seguimiento Operativo):**
-*   [ ] **[Sergio Gajardo] Configurar notificaciones:** Implementar el envío automático de cotizaciones desde el sistema configurando copias predeterminadas a los contactos pertinentes (Omar, Luis y Gisel).
+*   [x] **[Sergio Gajardo] Configurar notificaciones:** Implementar el envío automático de cotizaciones desde el sistema configurando copias predeterminadas a los contactos pertinentes (Omar, Luis y Gisel).
 *   [ ] **[Sergio Gajardo] Configurar credenciales:** Configurar el acceso al dominio corporativo para el login del sistema tras la creación de las credenciales de prueba.
 *   [x] **[Sergio Gajardo] Agregar campos de facturación:** Incluir los campos de región, ciudad y dirección de facturación en el formulario de creación de clientes.
 *   [x] **[Sergio Gajardo] Implementar buscador de direcciones:** Integrar un buscador de direcciones en el mapa dentro del módulo de cotizaciones para facilitar la ubicación de obras.
@@ -109,13 +109,13 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [x] **[Sergio Gajardo] Ajustar etiquetas:** Reemplazar el término global por fijo y viaje por flete en las unidades de cobro, y renombrar el encabezado a "Unidad de cobro".
 *   [x] **[Sergio Gajardo] Incluir geolocalización:** Incorporar la captura de coordenadas como datos generales del servicio.
 *   [x] **[Sergio Gajardo] Optimizar Inputs de Template (photoCheck):** Transformar los comboBox de SI/NO a photoCheck en el template de Visita a Terreno para habilitar fotos y comentarios dinámicos.
-*   [ ] **[Sergio Gajardo] Actualizar firma cliente:** Añadir espacios para el ingreso de identificación, nombre y firma manual del cliente en el bloque de firmas.
+*   [x] **[Sergio Gajardo] Actualizar firma cliente:** Añadir espacios para el ingreso de identificación, nombre y firma manual del cliente en el bloque de firmas.
 *   [ ] **[Jorge Ponce, Jesús] Crear manuales:** Crear manuales y videos instructivos para los módulos del sistema para facilitar el uso de los usuarios.
 *   [ ] **[Jorge Ponce, Jesús] Recopilar datos técnicos:** Completar la información de tara y largo para los equipos mediante la revisión por patente.
 *   [x] **[Jorge Ponce] Gestionar accesos:** Compartir el acceso a las carpetas de Drive de equipos y trabajadores con los colaboradores técnicos.
 *   [x] **[Jorge Ponce] Solicitar accesos:** Solicitar a Dayana la autorización de acceso a las carpetas compartidas para los usuarios correspondientes.
-*   [ ] **[Jorge Ponce] Enviar notas:** Remitir las observaciones discutidas, incluyendo cambios en el formulario de servicios, a través de correo electrónico.
-*   [ ] **[Jesus] Apoyar carga de datos:** Colaborar en la carga manual de equipos en caso de que el proceso masivo presente complicaciones.
+*   [x] **[Jorge Ponce] Enviar notas:** Remitir las observaciones discutidas, incluyendo cambios en el formulario de servicios, a través de correo electrónico.
+*   [x] **[Jesus] Apoyar carga de datos:** Colaborar en la carga manual de equipos en caso de que el proceso masivo presente complicaciones.
 
 **Reunión 24-Jul-2026 (Análisis de OT & Flujo Comercial-Operativo):**
 *   [x] **[Sergio Gajardo] Modelo de datos Spec-Driven `tpry_*`:** Migrar en Prisma/Postgres las tablas `tpry_proyecto`, `tpry_orden_trabajo` (con tiempos planificados/reales y aparejos en JSONB) y `tpry_recurso_asignado`.
@@ -128,13 +128,29 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [x] **[Sergio Gajardo] Proyección de Pensiones:** Agregar en Condiciones Comerciales los campos de costo para Alojamiento, Alimentación (Desayuno, Almuerzo, Cena) y Traslado.
 *   [x] **[Jesús & Sergio Gajardo] Códigos QR de Acreditación:** Finalizar la generación de códigos QR para operadores, riggers y flota, exportando el PDF para la entrega de la próxima semana.
 *   [ ] **[Sergio Gajardo] PWA Marcaciones en Tiempo Real [PENDIENTE]:** Habilitar en la PWA los botones de marcación real (`hora_salida_real`, `hora_llegada_obra_real`, `hora_liberacion_real` y firma) *(Fase PWA en desarrollo gradual)*.
-*   [ ] **[Consultas Desplazamiento/Inspección]:** Definir quién hace la inspección de salida y si se usará el formato de Jorge. Aclarar quién marca el inicio del viaje (Conductor/Rigger), si el desplazamiento se marcará por GPS (frecuencia), si hay inspección al llegar a destino, y si se inspecciona solo la grúa o todos los equipos (¿inspecciones autónomas?).
+*   [x] **[Consultas Desplazamiento/Inspección]:** Definir quién hace la inspección de salida y si se usará el formato de Jorge. Aclarar quién marca el inicio del viaje (Conductor/Rigger), si el desplazamiento se marcará por GPS (frecuencia), si hay inspección al llegar a destino, y si se inspecciona solo la grúa o todos los equipos (¿inspecciones autónomas?).
 *   [x] **[Sergio Gajardo] Búsqueda por Dirección en Mapa [COMPLETADO]:** Investigar e implementar funcionalidad para buscar direcciones directamente en el componente del mapa de Google Maps.
 
 **Definición de Roles & Notificaciones (Pendientes de Definición):**
 *   [ ] **[Definición Global de Roles]:** Definir y levantar la matriz completa de roles para todo el proceso (Ventas, Cotizaciones, Visita a Terreno, Operaciones, Mantención e Izaje), mapeando permisos bajo la nomenclatura estándar LeanGlobal (`_ADMIN`, `_PROG`, `_EJEC`, `_APROB`).
-*   [ ] **[Matriz de Notificaciones a Operaciones]:** Definir a qué roles y usuarios específicos se les debe notificar automáticamente al generarse un requerimiento a Operaciones (Candidatos a evaluar: Omar, Jorge, Coordinador de Operaciones).
-*   [ ] **[Flujo y Roles Aprobación ➔ Asignación]:** Definir los roles y perfiles autorizados para realizar el paso formal de la aprobación del requerimiento a la asignación efectiva de recursos (equipos, operadores y rigger).
+*   [x] **[Matriz de Notificaciones a Operaciones]:** Definir a qué roles y usuarios específicos se les debe notificar automáticamente al generarse un requerimiento a Operaciones (Candidatos a evaluar: Omar, Jorge, Coordinador de Operaciones).
+*   [x] **[Flujo y Roles Aprobación ➔ Asignación]:** Definir los roles y perfiles autorizados para realizar el paso formal de la aprobación del requerimiento a la asignación efectiva de recursos (equipos, operadores y rigger).
+
+**Sprint Acreditaciones Post-Asignación & Dossier B2B (04-Ago-2026):**
+*   [x] **[Sergio Gajardo] Especificación UX 23 Acreditaciones:** Especificar e implementar el Dossier de Acreditaciones Post-Asignación en `GestorOportunidades.vue` (Sub-tab 4) en 3 columnas espaciales (Empresa, Equipos, Personas) con carga in-situ (`[Subir PDF]`), exigencias ad-hoc (`[+ Exigir Doc]`), semáforo estricto de vencimientos (< 30 días), historial de despachos con links y visor de correo HTML exacto (`Ver Correo 👁️`).
+*   [x] **[Sergio Gajardo] Limpieza Kanban & Clasificación Inmutable (`Torre.vue`):** Eliminar legacy de `DossierDrawer.vue` en la Torre de Control y asegurar la inmutabilidad de la clasificación de proyectos en la columna "En Preparación Operaciones".
+
+**Reunión 06-Ago-2026 (Seguimiento Plataforma, Acreditaciones & Inspección):**
+*   [ ] **[Sergio Gajardo] Incidente RUT en Terreno:** Resolver el bug que copia erróneamente el RUT de empresa en los campos de ramas y cables eléctricos en el reporte de Visita a Terreno.
+*   [x] **[Sergio Gajardo] Lista Tipos de Documentos:** Compartir la nómina de tipos de documentos cargados en el sistema para contrastarla con la lista de la prevencionista.
+*   [ ] **[Sergio Gajardo] Homologación de Documentos:** Modificar la validación en el sistema para comparar contra el `tipo_documento` en lugar del nombre/observación del archivo subido.
+*   [ ] **[Sergio Gajardo] Columna/Vista Acreditaciones:** Diseñar e implementar vista o columna dedicada para que Comercial gestione acreditaciones pendientes sin entrar a la vista de Operaciones.
+*   [ ] **[Sergio Gajardo] Campos Obligatorios Visita Terreno:** Agregar campos obligatorios de horario de visita y equipo/vehículo asignado en la PWA/formulario de visita.
+*   [ ] **[Sergio Gajardo] Configuración Dominio:** Habilitar el acceso e integración con el dominio corporativo `arriendosanpablo.cl`.
+*   [ ] **[Sergio Gajardo] Propuesta Control Combustible:** Realizar análisis y redactar propuesta técnica/funcional para el control de combustible en faenas.
+*   [ ] **[Jorge Ponce] Ajuste Checklist Inspección:** Revisar con la prevencionista y enviar Excel corregido del checklist de inspección de patio (sin campos de cantidad para variables cualitativas).
+*   [ ] **[Jorge Ponce] Enviar Formatos Plan Izaje & ART:** Enviar archivos PDF del Plan de Izaje y Análisis de Riesgo de Trabajo para integración en la PWA.
+*   [ ] **[Jorge Ponce] Involucrar Líder Operativo:** Definir e incorporar a un líder operativo de GSP en el equipo de seguimiento del proyecto.
 
 ---
 
@@ -150,3 +166,30 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[RF-MNT-03/04] Cierre OT con PIN 4 Dígitos:** Implementar flujo seguro de firma digital de cierre de OT mediante hash de PIN de supervisor e imputación automática de repuestos, HH y servicios externos.
 *   [ ] **[RF-MNT-05/06] UI Mantenimiento Consola GSP:** Construir panel Kanban y Ficha de OT con checklist reactivo, imputaciones de HH/repuestos y modal de cierre con PIN.
 
+### Fase 11: Sprint 5 (Plan de Trabajo Antigravity 2.0 - Refinamiento Operativo)
+*(Ver especificaciones detalladas en [plan_de_trabajo_ag2.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/Gestión/plan_de_trabajo_ag2.md))*
+*   [ ] **[RBAC]** Configurar roles por sucursal (`Ejecutivo_comercial_[sucursal]`) y permisos de solo lectura global para `Gerencia`.
+*   [x] **[Clientes]** Implementar creación de múltiples puntos de contacto por cliente con teléfono, correo y observaciones.
+*   [ ] **[Preventa]** Habilitar categoría "Accesorios", flag inicial "REQUIERE ACREDITACIÓN" y excluir FES por el momento.
+*   [x] **[Terreno]** Crear template `Solicitud_Visita_Terreno` en PWA con geolocalización (Lat/Long) y asignación por el Coordinador.
+*   [ ] **[Operaciones]** Carga predeterminada de aparejos de izaje desde la visita a terreno y opción de completado manual del catálogo completo.
+*   [x] **[Operaciones]** Restricción de sustitución equivalente de grúas y activación de marcadores de diferencia (Diffs) en aprobación.
+*   [ ] **[Notificaciones]** Configurar copias obligatorias a Gerencia/Luis/Omar/Analista/Coordinador en eventos de cotización Ganada y confirmación con observaciones.
+
+
+### Fase ajustes pendientes 
+* [x] Corregir rol enrolamiento. Asignación automática del rol `USR-CONSENT` (id_rol = 3) al enrolar usuarios, removiendo selector manual de roles del frontend y auto-insertando en `tsec_user_roles`.
+* [ ] **[Google OAuth Consent Screen Name]** Cambiar el nombre de la aplicación de "Transamac-sst" a "**Acceso a LeanGlobal Platform**" en Google Cloud Console (`console.cloud.google.com ➔ APIs y Servicios ➔ Pantalla de consentimiento de OAuth`).
+* [x] categrorias y subcategorias. Se están desplegando bien, pero debemos agrergar algunas mas.
+    Categorias	                Subcategorias
+        OTROS	                OTROS
+        PERSONAL CERTIFICADO	RIGGER
+                                OPERADOR
+                                PREVENCIONISTA
+                                OTROS  
+* [x] Creación de Visita a terreno desde comercial > coordinador > Ejecutor visita
+Actualmente la visita a terreno se puede crear desde el comercial. Esto no es correcto. El comercial debe solicitar al coordinador que este asigne la visita a terreno. Para simplificar el proceso, creo que bastaría con un correo con un link de asignación de unica ejecución abra un link que esté alojado en el sistema y el coordinador asigne al usuario con la fecha del proceso, quedando vinculado al proyecto que lo origina.
+* [ ] Falta la matriz de pensiones.
+* [ ] Falta que el tratamiento de  acreditaciones por comnercial post asignación.
+* [ ] faltan las condiciones comerciales.
+* [x] Modelamiento proyectos asignación de  personas y equipos (Spec 22 en `.agents/specs/22_asignacion_recursos_db_spec.md`)

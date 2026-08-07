@@ -16,24 +16,9 @@
           <label class="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Nombre Completo</label>
           <input v-model="nombre" type="text" placeholder="Ej: Juan Pérez" class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
-        <div class="space-y-1 md:col-span-1 lg:col-span-2">
+        <div class="space-y-1 md:col-span-1 lg:col-span-3">
           <label class="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Correo Electrónico</label>
           <input v-model="correo" type="email" placeholder="usuario@correo.cl" class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
-        </div>
-        <div class="space-y-1">
-          <label class="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Roles</label>
-          <div class="relative group">
-            <button @click="showRoleSelector = !showRoleSelector" class="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-[10px] font-bold text-white text-left flex justify-between items-center">
-              {{ rolesSeleccionados.length ? `${rolesSeleccionados.length} Seleccionados` : 'Seleccionar...' }}
-              <ChevronDown class="w-3 h-3" />
-            </button>
-            <div v-if="showRoleSelector" class="absolute z-10 top-full left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-2 max-h-48 overflow-y-auto">
-              <div v-for="r in rolesFiltrados" :key="r.id_rol" @click="toggleRole(r.id_rol)" class="flex items-center gap-2 p-2 hover:bg-white/5 rounded-lg cursor-pointer transition-colors">
-                <div :class="['w-3 h-3 rounded border', rolesSeleccionados.includes(r.id_rol) ? 'bg-emerald-500 border-emerald-500' : 'border-white/20']"></div>
-                <span class="text-[10px] text-white/70">{{ r.name_rol }}</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -183,8 +168,7 @@ const showEmpresas = computed(() => {
   })
 })
 
-const ROLES_EXCLUIDOS = ['USR-CONSEN', 'Eq-FESCOL', 'SUP', 'JTRR', 'ADCO']
-
+const ROLES_EXCLUIDOS = ['Eq-FESCOL', 'SUP', 'JTRR', 'ADCO']
 const rolesFiltrados = computed(() => roles.value.filter(r => !ROLES_EXCLUIDOS.includes(r.name_rol)))
 
 /* ================= HELPERS ================= */
@@ -241,16 +225,10 @@ async function enviarIniciarEnrolamiento() {
     errorMessage.value = 'Debe ingresar un correo electrónico'
     return
   }
-  if (!rolesSeleccionados.value.length) {
-    errorMessage.value = 'Debe seleccionar al menos un rol'
-    return
-  }
-  
   loadingEnroll.value = true
   try {
-    const idRolConsent = roles.value.find(r => r.name_rol === 'USR-CONSEN')?.id_rol
-    const finalRoles = [...rolesSeleccionados.value]
-    if (idRolConsent && !finalRoles.includes(idRolConsent)) finalRoles.push(idRolConsent)
+    const idRolConsent = roles.value.find(r => r.name_rol === 'USR-CONSENT' || r.id_rol === 3)?.id_rol || 3
+    const finalRoles = Array.from(new Set([...rolesSeleccionados.value, idRolConsent]))
 
     const response = await apiAxios.post('/usuarios/inicioEnrolamiento/', {
       rut: rut.value,

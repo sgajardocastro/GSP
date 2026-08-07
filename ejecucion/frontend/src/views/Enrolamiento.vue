@@ -123,6 +123,8 @@ import { ShieldCheck } from 'lucide-vue-next'
 import apiAxios from '@/services/api'
 import FirmaConsentimientoModal from '@/components/FirmaConsentimientoModal.vue'
 
+import { getStorageUrl } from '@/utils/storage'
+
 const router = useRouter()
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://servidor.leanglobal.cl:3005'
 
@@ -196,10 +198,9 @@ const submitEnrolamiento = async () => {
     })
 
     consentDetail.value = consentResp
+    const docId = consentResp?.detalles?.[0]?.id_doc_in || consentResp?.id_doc
     const docName = consentResp?.detalles?.[0]?.name_doc_interno_in
-    consentPdfUrl.value = docName 
-      ? `${API_URL}/archivo/transmac/${docName}`
-      : ''
+    consentPdfUrl.value = docId ? getStorageUrl(docId) : (docName ? getStorageUrl(docName) : '')
 
     showSignatureModal.value = true
     

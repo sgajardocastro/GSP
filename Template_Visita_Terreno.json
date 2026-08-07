@@ -1,6 +1,27 @@
 {
   "segmentos": [
     {
+      "label": "1. DATOS DE LA EMPRESA",
+      "attributes": [
+        {
+          "type": "textField",
+          "label": "RUT",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        },
+        {
+          "type": "textField",
+          "label": "RAZON SOCIAL",
+          "nullable": false,
+          "roles": [
+            "SYSTEM"
+          ]
+        }
+      ]
+    },
+    {
       "label": "2. DATOS GENERALES DEL SERVICIO",
       "attributes": [
         {
@@ -919,6 +940,21 @@
           "maxFotos": 3,
           "obs": "",
           "galeria": [],
+          "nullable": true
+        },
+        {
+          "type": "textField",
+          "label": "RUT DEL CLIENTE",
+          "nullable": false
+        },
+        {
+          "type": "textField",
+          "label": "NOMBRE DEL CLIENTE",
+          "nullable": false
+        },
+        {
+          "type": "signature",
+          "label": "FIRMA DEL CLIENTE",
           "nullable": true
         }
       ]

@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP – Especificación Funcional & Diagrama E2E | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #03060a;
+      --bg-base:    #060a12;
+      --bg-card:    #0b111e;
+      --bg-surface: #101726;
+      --bg-hover:   #162034;
+      --amber:      #f5a623;
+      --amber-dim:  rgba(245,166,35,0.08);
+      --amber-glow: rgba(245,166,35,0.22);
+      --blue:       #3b82f6;
+      --blue-dim:   rgba(59,130,246,0.08);
+      --green:      #10b981;
+      --green-dim:  rgba(16,185,129,0.08);
+      --red:        #ef4444;
+      --purple:     #8b5cf6;
+      --cyan:       #06b6d4;
+      --indigo:     #6366f1;
+      --t-primary:  #f8fafc;
+      --t-sec:      #cbd5e1;
+      --t-muted:    #94a3b8;
+      --border:     rgba(255,255,255,0.07);
+      --border-md:  rgba(255,255,255,0.14);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-deep);
+      color: var(--t-primary);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-size: 15px;
+    }
+
+    body {
+      min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.25); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ── Header fijo ── */
+    #top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(4, 7, 13, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .nav-link {
+      color: var(--t-muted); text-decoration: none; font-size: 12px; font-weight: 600;
+      font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 6px 12px; border-radius: 8px; transition: all 0.2s;
+    }
+    .nav-link:hover { color: var(--amber); background: rgba(245,166,35,0.08); }
+
+    /* ── Layout container ── */
+    .page-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 100px 32px 60px 32px;
+      display: flex; flex-direction: column; gap: 48px;
+    }
+
+    /* ── Typography & Headings ── */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .section-eyebrow {
+      font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    }
+    .section-title {
+      font-family: 'Outfit', sans-serif; font-size: clamp(24px, 2.5vw, 36px);
+      font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; color: var(--t-primary);
+    }
+    .section-sub { font-size: 14px; color: var(--t-muted); line-height: 1.6; margin-top: 4px; }
+    .section-head { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+
+    /* ── Cards & Panels ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .card:hover { border-color: var(--border-md); }
+
+    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.18), 0 12px 36px -10px rgba(245,166,35,0.15); }
+    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.18),  0 12px 36px -10px rgba(59,130,246,0.15); }
+    .glow-green  { box-shadow: 0 0 0 1px rgba(16,185,129,0.18),  0 12px 36px -10px rgba(16,185,129,0.15); }
+    .glow-purple { box-shadow: 0 0 0 1px rgba(139,92,246,0.18),  0 12px 36px -10px rgba(139,92,246,0.15); }
+    .glow-indigo { box-shadow: 0 0 0 1px rgba(99,102,241,0.18),  0 12px 36px -10px rgba(99,102,241,0.15); }
+
+    /* ── Tag / Badges ── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid; white-space: nowrap;
+    }
+    .tag-amber  { background: rgba(245,166,35,0.1); color: var(--amber);  border-color: rgba(245,166,35,0.3); }
+    .tag-blue   { background: rgba(59,130,246,0.1); color: var(--blue);   border-color: rgba(59,130,246,0.3); }
+    .tag-green  { background: rgba(16,185,129,0.1); color: var(--green);  border-color: rgba(16,185,129,0.3); }
+    .tag-purple { background: rgba(139,92,246,0.1); color: var(--purple); border-color: rgba(139,92,246,0.3); }
+    .tag-cyan   { background: rgba(6,182,212,0.1);   color: var(--cyan);   border-color: rgba(6,182,212,0.3); }
+    .tag-red    { background: rgba(239,68,68,0.1);  color: var(--red);    border-color: rgba(239,68,68,0.3); }
+    .tag-indigo { background: rgba(99,102,241,0.1); color: var(--indigo); border-color: rgba(99,102,241,0.3); }
+    .tag-slate  { background: rgba(100,116,139,0.12); color: var(--t-sec);  border-color: rgba(100,116,139,0.25); }
+
+    /* ── Role pills ── */
+    .role-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      white-space: nowrap;
+    }
+    .role-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── ESTILO DEL DIAGRAMA DE FLUJO CONSULTIVO SENIOR (CUSTOM ARCHITECTURE) ── */
+    .flow-architecture {
+      display: flex; flex-direction: column; gap: 28px; position: relative;
+    }
+
+    .phase-block {
+      background: linear-gradient(145deg, rgba(11, 17, 30, 0.9) 0%, rgba(16, 23, 38, 0.95) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    .phase-block:hover { border-color: var(--border-md); }
+
+    .phase-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .phase-number {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 15px;
+    }
+
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: stretch;
+    }
+
+    .step-card {
+      background: rgba(7, 11, 20, 0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .step-card:hover { transform: translateY(-2px); border-color: var(--border-md); box-shadow: 0 8px 24px -6px rgba(0,0,0,0.5); }
+
+    .step-code {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+      color: var(--amber); letter-spacing: 0.05em;
+    }
+
+    .step-title {
+      font-family: 'Outfit', sans-serif; font-size: 13.5px; font-weight: 800;
+      color: var(--t-primary); line-height: 1.35;
+    }
+
+    .step-desc {
+      font-size: 12px; color: var(--t-muted); line-height: 1.5; flex: 1;
+    }
+
+    .step-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* Decision Diamond Card */
+    .decision-card {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(59,130,246,0.08) 100%);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .decision-label {
+      font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--indigo);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .decision-question {
+      font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800; color: var(--t-primary);
+    }
+
+    .branch-badge {
+      font-size: 10px; font-weight: 800; font-family: 'Outfit', sans-serif;
+      padding: 3px 8px; border-radius: 6px; text-transform: uppercase;
+    }
+    .branch-yes { background: rgba(16,185,129,0.2); color: var(--green); border: 1px solid rgba(16,185,129,0.4); }
+    .branch-no  { background: rgba(245,166,35,0.2); color: var(--amber); border: 1px solid rgba(245,166,35,0.4); }
+
+    /* Flow Connectors */
+    .phase-connector {
+      display: flex; justify-content: center; align-items: center; gap: 12px;
+      margin: -10px 0; z-index: 2;
+    }
+    .connector-line {
+      height: 24px; width: 2px; background: linear-gradient(to bottom, rgba(245,166,35,0.5), rgba(59,130,246,0.5));
+    }
+    .connector-pill {
+      background: rgba(11, 17, 30, 0.95); border: 1px solid var(--border-md);
+      padding: 4px 14px; border-radius: 99px; font-size: 11px; font-weight: 700;
+      font-family: 'Outfit', sans-serif; color: var(--t-sec);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── Matrix Table ── */
+    .matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .matrix-table th, .matrix-table td { padding: 12px 14px; font-size: 13px; }
+    .matrix-table thead th {
+      font-family: 'Outfit', sans-serif; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--t-muted); text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      font-size: 11px; background: rgba(255,255,255,0.02);
+    }
+    .matrix-table tbody tr { transition: background 0.18s; }
+    .matrix-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .matrix-table tbody td {
+      border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle;
+    }
+
+    /* ── Attribute Grids ── */
+    .attr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+    .attr-item {
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 10px 14px; font-size: 12px;
+    }
+    .attr-name { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--amber); }
+    .attr-type { font-size: 10px; color: var(--cyan); font-family: 'JetBrains Mono', monospace; margin-left: 6px; }
+    .attr-desc { color: var(--t-muted); font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════ TOP NAVIGATION BAR ════════════════ -->
+  <header id="top-nav">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);display:flex;align-items:center;justify-content:center;color:var(--amber);">
+        <i data-lucide="shield-check" style="width:22px;height:22px;"></i>
+      </div>
+      <div>
+        <div class="font-display" style="font-size:16px;font-weight:900;letter-spacing:-0.01em;color:var(--t-primary);">
+          GRÚAS SAN PABLO <span style="color:var(--amber);">(GSP)</span>
+        </div>
+        <div style="font-size:11px;color:var(--t-muted);font-weight:500;">Especificación Funcional &amp; Arquitectura E2E</div>
+      </div>
+    </div>
+    <nav style="display:flex;align-items:center;gap:8px;">
+      <a href="#diagrama" class="nav-link">📊 Diagrama E2E</a>
+      <a href="#kanban" class="nav-link">🗺️ Mapeo Kanban</a>
+      <a href="#fases" class="nav-link">🔍 Fases &amp; Atributos</a>
+      <a href="#artefactos" class="nav-link">🔄 Artefactos B2B</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="tag tag-amber" style="font-size:10px;">Senior Spec Official</span>
+    </div>
+  </header>
+
+  <!-- ════════════════ PAGE CONTENT CONTAINER ════════════════ -->
+  <main class="page-container">
+
+    <!-- ─── HERO HEADER ─── -->
+    <section style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px;padding:30px 0 10px 0;">
+      <div class="tag tag-amber" style="padding:6px 18px;font-size:12px;">
+        <i data-lucide="award" style="width:14px;height:14px;"></i> Especificación Maestra &amp; Modelo Operacional
+      </div>
+      <h1 class="font-display" style="font-size:clamp(32px,4vw,56px);font-weight:900;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.1;color:var(--t-primary);">
+        Ciclo de Vida Operativo &amp; Comercial<br>
+        <span style="color:var(--amber);font-style:italic;">Grúas San Pablo (GSP)</span>
+      </h1>
+      <p style="font-size:15.5px;color:var(--t-muted);max-width:760px;line-height:1.7;">
+        Modelamiento integral continuo: desde el registro de la Oportunidad Comercial y levantamiento en terreno (Survey PWA), pasando por la estructuración de la matriz B2B, auditoría Diff de operaciones, asignación de OT, dossier de acreditaciones B2B y ejecución en faena.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px 28px;margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+          <i data-lucide="layers" style="width:16px;height:16px;color:var(--amber);"></i> <strong>7 Fases</strong> E2E
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+          <i data-lucide="kanban" style="width:16px;height:16px;color:var(--blue);"></i> <strong>6 Columnas</strong> Kanban (`Torre.vue`)
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+          <i data-lucide="database" style="width:16px;height:16px;color:var(--green);"></i> <strong>100% Atributos</strong> &amp; JSON Schemas
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t-muted);">
+          <i data-lucide="mail" style="width:16px;height:16px;color:var(--purple);"></i> <strong>Eventos Asincrónicos</strong> &amp; PDFs B2B
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ SECCIÓN 1: DIAGRAMA DE FLUJO E2E ELEGANTE Y CONTINUO ════════════════ -->
+    <section id="diagrama">
+      <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+          <div class="section-eyebrow"><i data-lucide="git-merge"></i> Arquitectura de Procesos</div>
+          <h2 class="section-title">Diagrama de Flujo del Proceso E2E</h2>
+          <p class="section-sub">Diagrama de flujo continuo de alta dirección con trazabilidad por rol, sistema y decisiones.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="tag tag-indigo">Comercial</span>
+          <span class="tag tag-green">Operaciones</span>
+          <span class="tag tag-amber">Patio</span>
+          <span class="tag tag-slate">Sistema</span>
+          <span class="tag tag-purple">Kanban</span>
+        </div>
+      </div>
+
+      <div class="flow-architecture">
+
+        <!-- FASE 1 -->
+        <div class="phase-block" style="border-color:rgba(99,102,241,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(99,102,241,0.15);color:var(--indigo);border:1px solid rgba(99,102,241,0.4);">F1</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 1: Preventa &amp; Solicitud de Visita a Terreno</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Levantamiento técnico inicial y validación de factibilidad en terreno.</span>
+              </div>
+            </div>
+            <span class="tag tag-indigo">Ejecutivo Comercial &amp; Inspector</span>
+          </div>
+
+          <div class="steps-grid">
+            <!-- 1.1 -->
+            <div class="step-card">
+              <span class="step-code">PASO 1.1 · VISTA UI</span>
+              <div class="step-title">Registrar Oportunidad Comercial</div>
+              <div class="step-desc">El Ejecutivo Comercial ingresa el cliente, obra, pesos tentativos y alturas en `GestorOportunidades.vue`.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--indigo);"></span>Comercial</span>
+                <span class="tag tag-slate" style="font-size:9px;">Borrador</span>
+              </div>
+            </div>
+
+            <!-- Decision -->
+            <div class="decision-card">
+              <div class="decision-label"><i data-lucide="help-circle" style="width:14px;height:14px;"></i> Evaluador Técnico</div>
+              <div class="decision-question">¿Requiere Visita Terreno?</div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <span class="branch-badge branch-yes">Sí ➔ Asignar Inspector</span>
+                <span class="branch-badge branch-no">No ➔ Ir a Matriz</span>
+              </div>
+            </div>
+
+            <!-- 1.2 & 1.3 -->
+            <div class="step-card">
+              <span class="step-code">PASO 1.2 / 1.3 · API &amp; EMAIL</span>
+              <div class="step-title">Solicitar Visita &amp; Token UUID</div>
+              <div class="step-desc">Llamado a `POST /api/visitas/solicitar/:id`. Se envía email con link único `/asignar-visita/:token` al Coordinador.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--t-muted);"></span>Sistema</span>
+                <span class="tag tag-blue" style="font-size:9px;">tnot_queue</span>
+              </div>
+            </div>
+
+            <!-- 1.4 & 1.5 -->
+            <div class="step-card">
+              <span class="step-code">PASO 1.4 / 1.5 · PWA INSPECCIÓN</span>
+              <div class="step-title">Ejecución Survey en Terreno</div>
+              <div class="step-desc">El Inspector levanta en PWA: tipo suelo, radio máx, obstáculos y aparejos sugeridos (`tsrv_survey`).</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Inspector Operaciones</span>
+                <span class="tag tag-green" style="font-size:9px;">Survey Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="arrow-down" style="width:14px;height:14px;color:var(--amber);"></i> Importación de Datos Visita al Borrador Comercial</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 2 -->
+        <div class="phase-block" style="border-color:rgba(245,166,35,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(245,166,35,0.15);color:var(--amber);border:1px solid rgba(245,166,35,0.4);">F2</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 2: Estructuración Comercial &amp; Cotización B2B</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Valorización económica, viáticos de pensiones y emisión de propuesta oficial.</span>
+              </div>
+            </div>
+            <span class="tag tag-amber">Ejecutivo Comercial</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <span class="step-code">PASO 2.1 · MATRIZ</span>
+              <div class="step-title">Cargar Matriz de Servicios</div>
+              <div class="step-desc">Selección de categorías duras (Grúas, Plumas, Personal, Fletes) y unidades (`DIA`, `HORA`, `GLOBAL`).</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Comercial</span>
+                <span class="tag tag-amber" style="font-size:9px;">Categorías Duras</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 2.2 · VIÁTICOS</span>
+              <div class="step-title">Definir Viáticos &amp; Pensiones</div>
+              <div class="step-desc">Captura explícita de costos: Alojamiento, Desayuno, Almuerzo, Cena y Traslado/Combustible.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Comercial</span>
+                <span class="tag tag-amber" style="font-size:9px;">json_pensiones</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 2.3 / 2.4 · PDF &amp; B2B</span>
+              <div class="step-title">Generar PDF &amp; Despacho HTML</div>
+              <div class="step-desc">Backend genera `[CODIGO_MAESTRO]V1.pdf` y despacha vía correo corporativo registrando la traza.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--t-muted);"></span>Sistema</span>
+                <span class="tag tag-blue" style="font-size:9px;">GSP-2608-013V1.pdf</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="arrow-down" style="width:14px;height:14px;color:var(--green);"></i> Cliente Aprueba Cotización (Adjudicación Ganada)</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 3 -->
+        <div class="phase-block" style="border-color:rgba(59,130,246,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.4);">F3</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 3: Adjudicación &amp; Requerimiento Operativo</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Transición formal a operaciones y definición de exigencias HSEC.</span>
+              </div>
+            </div>
+            <span class="tag tag-blue">Comercial ➔ Operaciones</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="decision-card">
+              <div class="decision-label"><i data-lucide="check-circle" style="width:14px;height:14px;"></i> Estado Comercial</div>
+              <div class="decision-question">¿Cotización Ganada?</div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <span class="branch-badge branch-yes">Sí ➔ Generar Requerimiento</span>
+                <span class="branch-badge branch-no">No ➔ Cerrar Oportunidad</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 3.1 / 3.2 · EXIGENCIAS</span>
+              <div class="step-title">Activar Acreditaciones</div>
+              <div class="step-desc">Marca `requiere_acreditacion = true` y selecciona checklist de documentos exigidos (Empresa, Equipos, Personas).</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Comercial</span>
+                <span class="tag tag-cyan" style="font-size:9px;">Checklist Exigencias</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 3.3 · KANBAN TRIGGER</span>
+              <div class="step-title">Notificación &amp; Kanban Columna 1</div>
+              <div class="step-desc">Se envía email automático a Operaciones y el proyecto ingresa a **Columna 1: Requerimiento Registrado**.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Kanban Torre.vue</span>
+                <span class="tag tag-purple" style="font-size:9px;">COTIZACION_GANADA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="arrow-down" style="width:14px;height:14px;color:var(--cyan);"></i> Auditoría de Factibilidad Técnica por Operaciones</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 4 -->
+        <div class="phase-block" style="border-color:rgba(6,182,212,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(6,182,212,0.15);color:var(--cyan);border:1px solid rgba(6,182,212,0.4);">F4</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 4: Verificación Operativa, Diff &amp; Auditoría KPI</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Revisión técnica Pestaña B: Propuesto Comercial vs Factibilidad Real.</span>
+              </div>
+            </div>
+            <span class="tag tag-cyan">Coordinador de Operaciones</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <span class="step-code">PASO 4.1 · PESTAÑA B (DIFF)</span>
+              <div class="step-title">Auditoría Comparativa Diff</div>
+              <div class="step-desc">Operaciones compara las capacidades, grúas y horas cotizadas contra la disponibilidad y factibilidad real.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Coordinador Operaciones</span>
+                <span class="tag tag-cyan" style="font-size:9px;">Auditoría Diff</span>
+              </div>
+            </div>
+
+            <div class="decision-card">
+              <div class="decision-label"><i data-lucide="git-commit" style="width:14px;height:14px;"></i> Resultado Auditoría</div>
+              <div class="decision-question">¿Ajustes Técnicos Necesarios?</div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <span class="branch-badge branch-yes">Sin Cambios ➔ APROBADO</span>
+                <span class="branch-badge branch-no">Con Cambios ➔ APROBADO_CON_OBS</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 4.2 · PENALIZACIÓN KPI</span>
+              <div class="step-title">Castigo KPI Comercial &amp; Columna 2</div>
+              <div class="step-desc">Aprobación con observaciones registra un castigo negativo en el KPI del Comercial por subdimensionamiento. Avanza a **Columna 2**.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--red);"></span>KPI System</span>
+                <span class="tag tag-red" style="font-size:9px;">Penalización Calidad</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="arrow-down" style="width:14px;height:14px;color:var(--green);"></i> Asignación Efectiva de Flota, Tripulación y Aparejos</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 5 -->
+        <div class="phase-block" style="border-color:rgba(16,185,129,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.4);">F5</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 5: Asignación de Recursos OT &amp; Aparejos Master</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Asignación densa en Pestaña C, aparejos master y generación de Orden de Trabajo.</span>
+              </div>
+            </div>
+            <span class="tag tag-green">Coordinador de Operaciones</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <span class="step-code">PASO 5.1 / 5.2 · PESTAÑA C</span>
+              <div class="step-title">Asignación Flota &amp; Tripulación</div>
+              <div class="step-desc">Misma estructura de categorías. Selecciona grúa principal (`tequ_equipo`), Operador y Rigger (`tsec_users`).</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operaciones</span>
+                <span class="tag tag-green" style="font-size:9px;">Invariante Categorías</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 5.3 / 5.4 · APAREJOS MASTER</span>
+              <div class="step-title">Equipos Apoyo &amp; Aparejos Master</div>
+              <div class="step-desc">Agrega Camiones Pluma, Camas Bajas y define la Matriz Master de Aparejos (Cadenas, Estrobos, Grilletes, Canastillos).</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operaciones</span>
+                <span class="tag tag-amber" style="font-size:9px;">json_aparejos</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 5.5 · OT &amp; TRIGGERS</span>
+              <div class="step-title">Confirmar Asignación OT</div>
+              <div class="step-desc">Genera `tpry_orden_trabajo`, notifica emails a tripulación y patio, **DESBLOQUEA SUB-TAB 4** y pasa a **Columna 3**.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--t-muted);"></span>Sistema Triggers</span>
+                <span class="tag tag-purple" style="font-size:9px;">OT Generada + Auto Unlock</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="lock" style="width:14px;height:14px;color:var(--purple);"></i> Sub-tab 4 Desbloqueado ➔ Despacho Acreditación + Checklist Patio</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 6 -->
+        <div class="phase-block" style="border-color:rgba(139,92,246,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(139,92,246,0.15);color:var(--purple);border:1px solid rgba(139,92,246,0.4);">F6</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 6: Dossier de Acreditaciones B2B &amp; Preparación de Patio</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Empaquetamiento documental en 3 columnas, semáforo de vigencias y check de patio.</span>
+              </div>
+            </div>
+            <span class="tag tag-purple">Comercial &amp; Coordinador Patio</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <span class="step-code">PASO 6.1 / 6.2 · SUB-TAB 4</span>
+              <div class="step-title">Audit 3 Columnas &amp; Homologación</div>
+              <div class="step-desc">Comercial homologa a mano 3 columnas: 1. Empresa | 2. Equipos Asignados | 3. Personas Asignadas.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Comercial</span>
+                <span class="tag tag-purple" style="font-size:9px;">3 Columnas Visor</span>
+              </div>
+            </div>
+
+            <div class="decision-card">
+              <div class="decision-label"><i data-lucide="shield-alert" style="width:14px;height:14px;"></i> Semáforo HSEC</div>
+              <div class="decision-question">¿Semáforo Vigencia Completo?</div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <span class="branch-badge branch-yes">100% Verde ➔ Despachar</span>
+                <span class="branch-badge branch-no">Rojo/Amarillo ➔ Cargar PDF In-Situ</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 6.3 / 6.4 · DESPACHO &amp; PATIO</span>
+              <div class="step-title">Despacho B2B &amp; Check Patio</div>
+              <div class="step-desc">Se despacha correo B2B con versión (`v1.0`). Coordinador de Patio aprueba checklist pre-salida. Pasa a **Columna 4**.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Patio &amp; B2B</span>
+                <span class="tag tag-green" style="font-size:9px;">Flota Lista Salida</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="phase-connector">
+          <div class="connector-line"></div>
+          <div class="connector-pill"><i data-lucide="truck" style="width:14px;height:14px;color:var(--indigo);"></i> Flota Sale del Patio Rumbo a Obra del Cliente</div>
+          <div class="connector-line"></div>
+        </div>
+
+        <!-- FASE 7 -->
+        <div class="phase-block" style="border-color:rgba(99,102,241,0.3);">
+          <div class="phase-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="phase-number" style="background:rgba(99,102,241,0.15);color:var(--indigo);border:1px solid rgba(99,102,241,0.4);">F7</div>
+              <div>
+                <h3 class="font-display" style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--t-primary);">FASE 7: Salida a Faena &amp; Ejecución PWA</h3>
+                <span style="font-size:11px;color:var(--t-muted);">Marcaciones móviles en tiempo real, firma digital FES y cierre de devengado.</span>
+              </div>
+            </div>
+            <span class="tag tag-indigo">Operador Móvil / Tripulación PWA</span>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <span class="step-code">PASO 7.1 · TORRE KANBAN</span>
+              <div class="step-title">Ingreso a Columna 5 (Faena)</div>
+              <div class="step-desc">Al salir del patio, el proyecto transiciona automáticamente a **Columna 5: En Ejecución / Faena**.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Kanban Torre.vue</span>
+                <span class="tag tag-indigo" style="font-size:9px;">EN_FAENA</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 7.2 · PWA OPERADOR</span>
+              <div class="step-title">Marcaciones PWA &amp; Firma FES</div>
+              <div class="step-desc">Operador registra en PWA: hora salida/llegada, orómetros, check pre-operacional y captura firma FES del cliente.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operador PWA</span>
+                <span class="tag tag-green" style="font-size:9px;">FES Stamp Validated</span>
+              </div>
+            </div>
+
+            <div class="step-card">
+              <span class="step-code">PASO 7.3 · CIERRE &amp; DEVENGADO</span>
+              <div class="step-title">Columna 6: Devengado Contable</div>
+              <div class="step-desc">Liberación de equipos. Transición a **Columna 6: Finalizado / Devengado** para valorización y facturación.</div>
+              <div class="step-footer">
+                <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Contabilidad</span>
+                <span class="tag tag-slate" style="font-size:9px;">DEVENGADO_READY</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ════════════════ SECCIÓN 2: MAPEO KANBAN DE OPERACIONES ════════════════ -->
+    <section id="kanban">
+      <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+          <div class="section-eyebrow"><i data-lucide="columns"></i> Torre de Control</div>
+          <h2 class="section-title">Mapeo Explícito del Kanban (`Torre.vue`)</h2>
+          <p class="section-sub">Matriz de correspondencia entre el flujo del servicio y las 6 columnas del tablero Kanban.</p>
+        </div>
+        <span class="tag tag-purple">Torre.vue Kanban</span>
+      </div>
+
+      <div class="card glow-purple" style="padding:16px;overflow-x:auto;">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="width:4%;">Col</th>
+              <th style="width:20%;">Nombre Columna Kanban</th>
+              <th style="width:22%;">Estado Transaccional (`id_proyecto_estado`)</th>
+              <th style="width:24%;">Evento / Gatillo de Entrada</th>
+              <th style="width:15%;">Responsable</th>
+              <th style="width:15%;">Acciones en UI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">1</td>
+              <td><strong style="color:var(--t-primary);">Requerimiento Registrado</strong></td>
+              <td><span class="tag tag-blue">COTIZACION_GANADA</span></td>
+              <td style="color:var(--t-sec);">Comercial marca "Generar Requerimiento" y activa exigencias de acreditación.</td>
+              <td><span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Ejecutivo Comercial</span></td>
+              <td style="color:var(--t-muted);">Visualización de exigencias preliminares.</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">2</td>
+              <td><strong style="color:var(--t-primary);">En Verificación Operaciones</strong></td>
+              <td><span class="tag tag-cyan">EN_VERIFICACION_OPERACIONES</span></td>
+              <td style="color:var(--t-sec);">Ingreso a la cola de auditoría de factibilidad técnica de Operaciones.</td>
+              <td><span class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Coordinador Operaciones</span></td>
+              <td style="color:var(--t-muted);">Pestaña B (Diff): Aprobar o Aprobar con Obs.</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">3</td>
+              <td><strong style="color:var(--t-primary);">En Asignación Recursos</strong></td>
+              <td><span class="tag tag-green">APROBADO / EN_ASIGNACION</span></td>
+              <td style="color:var(--t-sec);">Operaciones aprueba la factibilidad técnica del Requerimiento.</td>
+              <td><span class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Coordinador Operaciones</span></td>
+              <td style="color:var(--t-muted);">Pestaña C: Asignar flota, tripulación y aparejos.</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">4</td>
+              <td><strong style="color:var(--t-primary);">En Preparación Operaciones / Acred.</strong></td>
+              <td><span class="tag tag-purple">ASIGNADO / EN_PREPARACION_PATIO</span></td>
+              <td style="color:var(--t-sec);">Operaciones confirma la asignación formal de la OT.</td>
+              <td>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Ejecutivo Comercial</span>
+                  <span class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Coordinador Patio</span>
+                </div>
+              </td>
+              <td style="color:var(--t-muted);">Sub-tab 4 Dossier Acreditaciones + Checklist Patio.</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">5</td>
+              <td><strong style="color:var(--t-primary);">En Ejecución / Faena</strong></td>
+              <td><span class="tag tag-indigo">EN_TRANSLADO / EN_FAENA</span></td>
+              <td style="color:var(--t-sec);">Flota sale del patio rumbo a la obra del cliente.</td>
+              <td><span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Operador Móvil / Tripulación</span></td>
+              <td style="color:var(--t-muted);">PWA Operador: Marcaciones, firmas FES y orómetros.</td>
+            </tr>
+            <tr>
+              <td class="mono" style="color:var(--amber);font-weight:900;">6</td>
+              <td><strong style="color:var(--t-primary);">Finalizado / Devengado</strong></td>
+              <td><span class="tag tag-slate">FAENA_FINALIZADA / DEVENGADO</span></td>
+              <td style="color:var(--t-sec);">Liberación de equipos y cierre operacional de la OT.</td>
+              <td><span class="role-pill"><span class="role-dot" style="background:var(--cyan);"></span>Contabilidad / Devengado</span></td>
+              <td style="color:var(--t-muted);">Cierre OT, Balanza de Facturación y Devengado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════════ SECCIÓN 3: DETALLE DE FASES Y ATRIBUTOS (100%) ════════════════ -->
+    <section id="fases" style="display:flex;flex-direction:column;gap:32px;">
+      <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+          <div class="section-eyebrow"><i data-lucide="database"></i> Fichas Técnicas &amp; Modelo Data</div>
+          <h2 class="section-title">Detalle de Fases &amp; 100% Atributos por Entidad</h2>
+          <p class="section-sub">Documentación técnica formal de reglas de negocio y esquemas de base de datos PostgreSQL / JSONB.</p>
+        </div>
+        <span class="tag tag-green">Zero Assumptions Standard</span>
+      </div>
+
+      <!-- FASES 1 & 2 -->
+      <div class="card glow-amber" style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:14px;">
+          <div>
+            <span class="tag tag-amber">Fase 1 &amp; Fase 2</span>
+            <h3 class="font-display" style="font-size:18px;font-weight:900;text-transform:uppercase;color:var(--t-primary);margin-top:6px;">Preventa Comercial, Visita Terreno &amp; Cotización B2B</h3>
+          </div>
+          <span class="role-pill"><span class="role-dot" style="background:var(--amber);"></span>Ejecutivo Comercial &amp; Inspector</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--amber);text-transform:uppercase;margin-bottom:10px;">⚙️ Reglas de Negocio E2E</h4>
+            <ul style="font-size:12.5px;color:var(--t-muted);line-height:1.6;display:flex;flex-direction:column;gap:8px;padding-left:16px;">
+              <li><strong style="color:var(--t-primary);">Solicitud Visita:</strong> Llamado a `POST /api/visitas/solicitar/:id_proyecto`. Genera UUID único `token_visita`.</li>
+              <li><strong style="color:var(--t-primary);">Asignación Inspector:</strong> Email con link `/asignar-visita/:token`. Coordinador define inspector y `fecha_visita`.</li>
+              <li><strong style="color:var(--t-primary);">Survey PWA:</strong> Captura tipo suelo, obstáculos, radio máx, peso máx y aparejos sugeridos (`tsrv_survey`).</li>
+              <li><strong style="color:var(--t-primary);">Importación en Borrador:</strong> Botón *"Importar Visita"* precarga coordenadas y datos técnicos a la propuesta comercial.</li>
+              <li><strong style="color:var(--t-primary);">Categorías &amp; Pensiones:</strong> Selección desde `tpar_categorias` (`FIJO`, `FLETE`, `DIA`, `HORA`, `MES`, `GLOBAL`) y desglose de viáticos.</li>
+              <li><strong style="color:var(--t-primary);">PDF Definitivo:</strong> Autogenera `[CODIGO_MAESTRO]V[VERSION].pdf` (ej: `GSP-2608-013V1.pdf`) y registra traza en `tnot_queue`.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--cyan);text-transform:uppercase;margin-bottom:10px;">🗃️ 100% Atributos &amp; Campos Backend</h4>
+            <div class="attr-grid">
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.id_proyecto</span><span class="attr-type">SERIAL PK</span><div class="attr-desc">Identificador único del proyecto</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.codigo_maestro</span><span class="attr-type">VARCHAR</span><div class="attr-desc">Código correlativo (ej: GSP-2608-013)</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.token_visita</span><span class="attr-type">UUID</span><div class="attr-desc">Token único para asignación pública</div></div>
+              <div class="attr-item"><span class="attr-name">tsrv_survey.body_exec</span><span class="attr-type">JSONB</span><div class="attr-desc">Radio máx, peso máx, suelo, obstáculos</div></div>
+              <div class="attr-item"><span class="attr-name">json_field.servicios</span><span class="attr-type">ARRAY JSON</span><div class="attr-desc">id_categoria, unidad_cobro, cantidad, val_unit</div></div>
+              <div class="attr-item"><span class="attr-name">json_field.pensiones</span><span class="attr-type">JSONB</span><div class="attr-desc">Alojamiento, Desayuno, Almuerzo, Cena, Traslado</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASES 3 & 4 -->
+      <div class="card glow-blue" style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:14px;">
+          <div>
+            <span class="tag tag-blue">Fase 3 &amp; Fase 4</span>
+            <h3 class="font-display" style="font-size:18px;font-weight:900;text-transform:uppercase;color:var(--t-primary);margin-top:6px;">Adjudicación, Requerimiento &amp; Diff Operativo</h3>
+          </div>
+          <span class="role-pill"><span class="role-dot" style="background:var(--blue);"></span>Coordinador de Operaciones</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--blue);text-transform:uppercase;margin-bottom:10px;">⚙️ Reglas de Negocio E2E</h4>
+            <ul style="font-size:12.5px;color:var(--t-muted);line-height:1.6;display:flex;flex-direction:column;gap:8px;padding-left:16px;">
+              <li><strong style="color:var(--t-primary);">Exigencias de Acreditación:</strong> Al marcar "Ganada", se exige seleccionar los certificados requeridos por el cliente para Empresa, Equipos y Personas.</li>
+              <li><strong style="color:var(--t-primary);">Ingreso a Kanban:</strong> Proyecto transiciona a estado `COTIZACION_GANADA` e ingresa a **Columna 1: Requerimiento Registrado**.</li>
+              <li><strong style="color:var(--t-primary);">Comparador Visual Diff (Pestaña B):</strong> Muestra a dos columnas la propuesta Comercial vs la factibilidad técnica ajustada por Operaciones.</li>
+              <li><strong style="color:var(--t-primary);">Aprobación Operativa:</strong> Estado `APROBADO` (sin cambios) o `APROBADO_CON_OBS` (con modificaciones de grúa/tiempos).</li>
+              <li><strong style="color:var(--t-primary);">Penalización KPI Comercial:</strong> Aprobación con observaciones aplica un castigo negativo directo al indicador de desempeño del Comercial por subdimensionamiento.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--purple);text-transform:uppercase;margin-bottom:10px;">🗃️ 100% Atributos &amp; Campos Backend</h4>
+            <div class="attr-grid">
+              <div class="attr-item"><span class="attr-name">json_field.acreditacion_exigencias</span><span class="attr-type">JSONB</span><div class="attr-desc">Arrays exigencias empresa, equipos, personas</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.id_proyecto_estado</span><span class="attr-type">VARCHAR</span><div class="attr-desc">EN_VERIFICACION_OPERACIONES, APROBADO...</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.observaciones_operaciones</span><span class="attr-type">TEXT</span><div class="attr-desc">Observaciones y ajustes del coordinador</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_proyecto.kpi_penalizacion_comercial</span><span class="attr-type">BOOLEAN/SCORE</span><div class="attr-desc">Penalización registrada por descalce técnico</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 5 -->
+      <div class="card glow-green" style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:14px;">
+          <div>
+            <span class="tag tag-green">Fase 5</span>
+            <h3 class="font-display" style="font-size:18px;font-weight:900;text-transform:uppercase;color:var(--t-primary);margin-top:6px;">Asignación de Recursos OT &amp; Aparejos Master</h3>
+          </div>
+          <span class="role-pill"><span class="role-dot" style="background:var(--green);"></span>Coordinador Operaciones</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--green);text-transform:uppercase;margin-bottom:10px;">⚙️ Reglas de Negocio E2E</h4>
+            <ul style="font-size:12.5px;color:var(--t-muted);line-height:1.6;display:flex;flex-direction:column;gap:8px;padding-left:16px;">
+              <li><strong style="color:var(--t-primary);">Invariante Visual:</strong> Pestaña C respeta **exactamente la misma estructura de tabla por categorías** que la propuesta comercial.</li>
+              <li><strong style="color:var(--t-primary);">Asignación Densa:</strong> Vincula `id_equipo` real (`tequ_equipo`) y tripulación humana (`tsec_users` Operador + Rigger).</li>
+              <li><strong style="color:var(--t-primary);">Equipos de Apoyo Extra:</strong> Permite agregar líneas de Camiones Pluma, Camas Bajas, Escoltas y personal auxiliar.</li>
+              <li><strong style="color:var(--t-primary);">Matriz Aparejos Master:</strong> Cadenas, estrobos, pulpos, grilletes, balancines. Precargados desde Survey o editados a mano.</li>
+              <li><strong style="color:var(--t-primary);">Confirmación OT &amp; Triggers:</strong> Botón *"Confirmar Asignación OT"* genera `tpry_orden_trabajo`, notifica emails a tripulación/patio, **DESBLOQUEA SUB-TAB 4** y pasa a **Columna 3**.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--amber);text-transform:uppercase;margin-bottom:10px;">🗃️ 100% Atributos &amp; Tablas Físicas</h4>
+            <div class="attr-grid">
+              <div class="attr-item"><span class="attr-name">tpry_rel_equipo</span><span class="attr-type">TABLA RELACIONAL</span><div class="attr-desc">id_proyecto, id_equipo, rol_equipo, fechas, horas</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_rel_persona</span><span class="attr-type">TABLA RELACIONAL</span><div class="attr-desc">id_proyecto, id_user, rol_asignado, fechas, horas</div></div>
+              <div class="attr-item"><span class="attr-name">tpry_orden_trabajo</span><span class="attr-type">TABLA FISICA</span><div class="attr-desc">id_orden_trabajo, codigo_maestro, estado_ot</div></div>
+              <div class="attr-item"><span class="attr-name">json_aparejos</span><span class="attr-type">JSONB</span><div class="attr-desc">Inventario completo de aparejos master asignados</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 6 & 7 -->
+      <div class="card glow-purple" style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:14px;">
+          <div>
+            <span class="tag tag-purple">Fase 6 &amp; Fase 7</span>
+            <h3 class="font-display" style="font-size:18px;font-weight:900;text-transform:uppercase;color:var(--t-primary);margin-top:6px;">Dossier Acreditaciones B2B, Patio &amp; Ejecución PWA</h3>
+          </div>
+          <span class="role-pill"><span class="role-dot" style="background:var(--purple);"></span>Comercial, Patio &amp; Operador PWA</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--purple);text-transform:uppercase;margin-bottom:10px;">⚙️ Reglas de Negocio E2E</h4>
+            <ul style="font-size:12.5px;color:var(--t-muted);line-height:1.6;display:flex;flex-direction:column;gap:8px;padding-left:16px;">
+              <li><strong style="color:var(--t-primary);">Desbloqueo Condicionado:</strong> Sub-tab 4 bloqueado hasta confirmación formal de la OT.</li>
+              <li><strong style="color:var(--t-primary);">Visor 3 Columnas:</strong> 1. Empresa Mandante | 2. Equipos Asignados | 3. Personas Asignadas. Homologación manual a mano.</li>
+              <li><strong style="color:var(--t-primary);">Semáforo Vencimientos:</strong> Verde `DISPONIBLE` (>30d), Amarillo `ALERTA` (<30d), Rojo `PENDIENTE`.</li>
+              <li><strong style="color:var(--t-primary);">Despacho B2B:</strong> Envío de paquete acreditado en correo corporativo con versión (`v1.0`, `v1.1`) y visor HTML exacto.</li>
+              <li><strong style="color:var(--t-primary);">Checklist Patio &amp; Faena:</strong> Patio liquida check de salida (**Columna 4**). Flota sale a faena (**Columna 5**). PWA registra orómetros, marcaciones y firma FES cliente (**Columna 6 Devengado**).</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-display" style="font-size:13px;color:var(--green);text-transform:uppercase;margin-bottom:10px;">🗃️ 100% Atributos &amp; JSON Schema</h4>
+            <div class="attr-grid">
+              <div class="attr-item"><span class="attr-name">json_field.dossier_acreditacion</span><span class="attr-type">JSONB</span><div class="attr-desc">version_dossier, documentos_empresa, equipos, personas</div></div>
+              <div class="attr-item"><span class="attr-name">historial_despachos</span><span class="attr-type">ARRAY JSON</span><div class="attr-desc">version, fecha, destinatarios, id_notificacion</div></div>
+              <div class="attr-item"><span class="attr-name">tsrv_survey (PWA)</span><span class="attr-type">REGISTRO FES</span><div class="attr-desc">hora_salida_real, hora_llegada_real, firma_fes_cliente</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ SECCIÓN 4: MATRIZ DE ARTEFACTOS Y CORREOS ════════════════ -->
+    <section id="artefactos">
+      <div class="section-head" style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+          <div class="section-eyebrow"><i data-lucide="mail"></i> Trazabilidad &amp; Eventos Asincrónicos</div>
+          <h2 class="section-title">Matriz de Documentos, Correos &amp; Integraciones</h2>
+          <p class="section-sub">Consolidado formal de artefactos salientes, notificaciones HTML y triggers de sistema.</p>
+        </div>
+        <span class="tag tag-slate">System Integrations</span>
+      </div>
+
+      <div class="card" style="padding:16px;overflow-x:auto;">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Tipo Artefacto</th>
+              <th>Nombre / Plantilla</th>
+              <th>Gatillo Transaccional</th>
+              <th>Destinatario</th>
+              <th>Canal / Tabla</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-blue">Email Token</span></td>
+              <td><strong style="color:var(--t-primary);">Asignación Visita Terreno</strong></td>
+              <td style="color:var(--t-sec);">Comercial solicita visita (`POST /api/visitas/solicitar`)</td>
+              <td>Coordinador Operaciones</td>
+              <td><span class="mono" style="color:var(--amber);">tnot_queue</span> + Link Token UUID</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-amber">PDF B2B</span></td>
+              <td><strong style="color:var(--t-primary);">Cotización Definitiva (`GSP-XXXX-XXXV1.pdf`)</strong></td>
+              <td style="color:var(--t-sec);">Generación formal de Cotización Comercial</td>
+              <td>Cliente Mandante</td>
+              <td><span class="mono" style="color:var(--cyan);">tfmg_file</span> + Puppeteer Engine</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-green">Notificación</span></td>
+              <td><strong style="color:var(--t-primary);">Requerimiento Operativo Registrado</strong></td>
+              <td style="color:var(--t-sec);">Comercial marca "Ganada / Generar Requerimiento"</td>
+              <td>Coordinador Operaciones</td>
+              <td><span class="mono" style="color:var(--amber);">tnot_queue</span> (Email HTML Corporativo)</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-purple">Documento OT</span></td>
+              <td><strong style="color:var(--t-primary);">Orden de Trabajo GSP (`tpry_orden_trabajo`)</strong></td>
+              <td style="color:var(--t-sec);">Operaciones hace clic en "Confirmar Asignación OT"</td>
+              <td>Patio &amp; Tripulación Humana</td>
+              <td>Registro BD + Email a Operador/Rigger</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-cyan">Dossier Email</span></td>
+              <td><strong style="color:var(--t-primary);">Paquete Acreditación B2B (`v1.0`)</strong></td>
+              <td style="color:var(--t-sec);">Comercial despacha dossier acreditado al 100%</td>
+              <td>Prevencionista / Cliente Obra</td>
+              <td><span class="mono" style="color:var(--amber);">tnot_queue</span> + Visor HTML integrador</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOOTER INFORMATIVO -->
+    <footer style="border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;align-items:center;color:var(--t-muted);font-size:12px;">
+      <div>
+        <strong>Grúas San Pablo (GSP) &amp; LeanGlobal Ecosistema</strong> · Documento Funcional &amp; Técnico Compilado en Conformidad con la Constitución del Proyecto.
+      </div>
+      <div class="mono">v2.0-CONTINUOUS-SENIOR</div>
+    </footer>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

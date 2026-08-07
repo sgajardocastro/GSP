@@ -321,22 +321,21 @@ class ProyectoModel {
         nombre_archivo: fileName,
         monto: Number(monto || 0),
         fecha: new Date().toISOString(),
-        url: `/lg-gsp/api/archivo/cotizaciones/${fileName}`
+        fecha: new Date().toISOString()
       };
-      
-      jsonField.crm_v1.cotizaciones_historicas.push(nuevaCotizacion);
-      
-      const updateResult = await client.query(
-        'UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2 RETURNING *',
-        [jsonField, id_proyecto]
-      );
-      
+      // We will set url after inserting into tfmg_file.
+
+      // We will update the project later.
+
       // Escribir un archivo PDF real e imprimible (HTML-to-PDF)
       const fs = require('fs');
       const path = require('path');
       const { exec } = require('child_process');
-      const { LEAN_DOCS_BASE_DIR } = require('../config/docsConfig');
-      const targetDir = path.join(LEAN_DOCS_BASE_DIR, 'cotizaciones');
+      const { buildStoragePath, resolveStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const archivoModel = require('./archivoModel');
+
+      const path_relativo = buildStoragePath('gsp', 'cotizaciones');
+      const targetDir = path.join(STORAGE_ROOT, path_relativo);
       const filepath = path.join(targetDir, fileName);
       
       if (!fs.existsSync(targetDir)) {
@@ -416,8 +415,18 @@ class ProyectoModel {
       };
 
       let finalLogoPath = emisor.logoPath;
-      if (finalLogoPath && !finalLogoPath.startsWith('data:image')) {
-        finalLogoPath = 'file://' + path.join('/var/www/html/lg-gsp', finalLogoPath);
+      try {
+        const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
+        const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const fs = require('fs');
+        if (fs.existsSync(diskPath)) {
+          const imgBuf = fs.readFileSync(diskPath);
+          finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
+        } else {
+           console.warn(`Logo no encontrado en disco: ${diskPath}`);
+        }
+      } catch (err) {
+        console.error('Error leyendo logo desde disco:', err);
       }
 
       // 3. Extraer datos estructurados de json_field.crm_v1
@@ -742,6 +751,26 @@ class ProyectoModel {
           resolve();
         });
       });
+
+      // Guardar en Storage Engine
+      const archivoM = new archivoModel();
+      const doc = await archivoM.insertarTfmgFile(
+          'COTIZACION',
+          'application/pdf',
+          fileName,
+          fileName,
+          path_relativo,
+          null, // id_user 
+          'A'
+      );
+
+      nuevaCotizacion.url = `/api/archivo/ver/${doc.id_doc}`;
+      jsonField.crm_v1.cotizaciones_historicas.push(nuevaCotizacion);
+      
+      const updateResult = await client.query(
+        'UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2 RETURNING *',
+        [jsonField, id_proyecto]
+      );
 
       await client.query('COMMIT');
       

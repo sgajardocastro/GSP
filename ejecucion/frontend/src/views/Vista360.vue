@@ -302,7 +302,7 @@
                                               'background-color: #ef4444 !important; border-color: #ef4444 !important; color: #ffffff !important;'">
                                      {{ doc.status === 0 ? 'LIBERADO' : doc.status === 1 ? 'ALERTA' : 'VENCIDO' }}
                                    </span>
-                                   <a :href="doc.fileUrl || `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${doc.fileId}`" target="_blank" class="text-zinc-400 hover:text-blue-600 dark:text-muted-foreground dark:hover:text-blue-500 transition-all p-1">
+                                   <a :href="doc.fileUrl || getDocUrl(doc.fileId)" target="_blank" class="text-zinc-400 hover:text-blue-600 dark:text-muted-foreground dark:hover:text-blue-500 transition-all p-1">
                                      <Eye class="w-4 h-4" />
                                    </a>
                                 </div>
@@ -333,7 +333,7 @@
                                               'background-color: #ef4444 !important; border-color: #ef4444 !important; color: #ffffff !important;'">
                                      {{ doc.status === 0 ? 'LIBERADO' : doc.status === 1 ? 'ALERTA' : 'VENCIDO' }}
                                    </span>
-                                   <a :href="doc.fileUrl || `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${doc.fileId}`" target="_blank" class="text-zinc-400 hover:text-blue-600 dark:text-muted-foreground dark:hover:text-blue-500 transition-all p-1">
+                                   <a :href="doc.fileUrl || getDocUrl(doc.fileId)" target="_blank" class="text-zinc-400 hover:text-blue-600 dark:text-muted-foreground dark:hover:text-blue-500 transition-all p-1">
                                      <Eye class="w-4 h-4" />
                                    </a>
                                 </div>
@@ -451,6 +451,13 @@ import { ref, onMounted, computed } from 'vue'
 import * as XLSX from 'xlsx'
 import QRCode from 'qrcode'
 import apiAxios from '@/services/api'
+
+const getDocUrl = (docOrId) => {
+  const fileId = typeof docOrId === 'object' ? (docOrId?.fileId || docOrId?.id_doc) : docOrId
+  if (!fileId) return '#'
+  const base = String(apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+  return `${base}/archivo/ver/${fileId}`
+}
 import ModalCrearEditarEquipo from '../components/ModalCrearEditarEquipo.vue'
 import { 
   Truck, Search, Plus, Eye, FileText, X, ChevronDown, ChevronRight, CheckCircle, AlertTriangle, 

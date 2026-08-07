@@ -58,7 +58,8 @@ export function useFlujoAprobacion() {
     formData.append('mimetype', 'application/pdf')
     formData.append('name_doc_orig', '')
     formData.append('name_doc_interno', '')
-    formData.append('path_doc', '/u05/LeanDocs/transmac/')
+    formData.append('tenant_code', 'transmac')
+    formData.append('modulo', 'inspecciones')
     formData.append('id_user', userDetailStore.userDetail.id_user)
     formData.append('estado', '1')
 

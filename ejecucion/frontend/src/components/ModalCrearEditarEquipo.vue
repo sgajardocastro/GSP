@@ -526,20 +526,21 @@ const onFileSelected = async (e) => {
   try {
     const formData = new FormData()
     formData.append('archivo', file)
-    formData.append('path_doc', 'GSP/Equipos')
+    formData.append('tenant_code', 'gsp')
+    formData.append('modulo', 'equipos')
     formData.append('tipo_doc', 'CERTIFICADO')
     formData.append('mimetype', file.type)
     formData.append('name_doc_orig', file.name)
     formData.append('estado', 'A')
 
-    const res = await apiAxios.post('/archivo', formData, {
+    const res = await apiAxios.post('/v1/storage/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
 
-    if (res.data?.archivo?.id_doc) {
-      newDoc.value.id_doc = res.data.archivo.id_doc
+    if (res.data?.data?.id_doc) {
+      newDoc.value.id_doc = res.data.data.id_doc
     }
   } catch (err) {
     console.error('Error al subir archivo:', err)

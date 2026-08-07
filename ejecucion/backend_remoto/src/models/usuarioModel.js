@@ -70,10 +70,14 @@ class Usuario {
 
       // 1) Upsert manual del usuario en tsec_users
       let id_user;
-      const checkRes = await this.pool.query('SELECT id_user FROM tsec_users WHERE UPPER(rut) = $1', [rutNorm]);
+      const checkRes = await this.pool.query('SELECT id_user, email FROM tsec_users WHERE UPPER(rut) = $1', [rutNorm]);
       
       if (checkRes.rows.length > 0) {
         id_user = checkRes.rows[0].id_user;
+        const existingEmail = checkRes.rows[0].email;
+        if (existingEmail && existingEmail.toLowerCase() !== String(correo).toLowerCase()) {
+          throw new Error(`El RUT ${rutNorm} ya se encuentra registrado en el sistema con el correo ${existingEmail}. No es posible sobrescribir una cuenta existente.`);
+        }
         await this.pool.query(
           'UPDATE tsec_users SET email = $1, flag_proc_enrol = true, codi_user = $1, id_empresa = $2, fecha_actualizacion = NOW() WHERE id_user = $3',
           [correo, id_empresa, id_user]
@@ -151,6 +155,12 @@ class Usuario {
        const user = resUpd.rows[0];
 
        if (!user) throw new Error("Usuario no encontrado");
+
+       // 1.5. Asignar automáticamente el rol de enrolamiento USR-CONSENT (id_rol = 3)
+       await client.query(
+         `INSERT INTO tsec_user_roles (id_user, id_rol, id_empresa) VALUES ($1, 3, 1) ON CONFLICT DO NOTHING`,
+         [user.id_user]
+       );
 
        // 2. Crear Consentimiento usando el servicio
        await crearConsentimientoEnrolamiento({ id_user: user.id_user, rut: user.rut });

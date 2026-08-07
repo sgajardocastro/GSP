@@ -465,14 +465,15 @@ async function uploadFile (file) {
   formData.append('mimetype', file.type || 'application/octet-stream')
   formData.append('name_doc_orig', file.name)
   formData.append('name_doc_interno', '')
-  formData.append('path_doc', '/u05/LeanDocs/transmac')
+  formData.append('tenant_code', 'transmac')
+  formData.append('modulo', 'inspecciones')
 
   // ⚠️ ojo: ideal tomarlo de tu sesión/store, pero lo dejo igual a tu ejemplo
   formData.append('id_user', 1)
   formData.append('estado', '1')
 
   try {
-    const response = await apiAxios.post('/archivo/imagen', formData, {
+    const response = await apiAxios.post('/v1/storage/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     return response.data
