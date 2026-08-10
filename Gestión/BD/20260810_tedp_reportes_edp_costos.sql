@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS sch_leangsp.tedp_reporte_avance (
     id_user_operador INT NOT NULL,
     fecha_reporte DATE NOT NULL,
     unidad_cobro VARCHAR(20) NOT NULL, -- 'HRS_DIA', 'HRS_MENSUAL', 'FIJO', 'FLETE'
+    incluye_flete_independiente BOOLEAN DEFAULT TRUE, -- TRUE (Con Flete): inicio en faena / FALSE (Sin Flete): inicio en salida patio
+    -- 5 Marcas de Tiempo Exactas (Timestamps PWA)
+    fecha_salida_patio TIMESTAMP WITH TIME ZONE,
+    fecha_llegada_faena TIMESTAMP WITH TIME ZONE,
+    fecha_inicio_servicio TIMESTAMP WITH TIME ZONE,
+    fecha_termino_servicio TIMESTAMP WITH TIME ZONE,
+    fecha_llegada_patio TIMESTAMP WITH TIME ZONE,
     horas_operadas NUMERIC(5, 2) DEFAULT 0,
     horas_standby NUMERIC(5, 2) DEFAULT 0,
     horas_colacion NUMERIC(5, 2) DEFAULT 0,
