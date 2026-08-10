@@ -5,16 +5,23 @@
 -- ESPECIFICACIÓN: .agents/specs/27_modelo_ppd_devengado_edp_spec.md
 -- =============================================================================
 
--- 1. Log de Desplazamiento de Equipos (Pings GPS en Ruta)
+-- 1. Log de Desplazamiento de Equipos (1 Registro por Viaje/Trayecto con JSONB)
 CREATE TABLE IF NOT EXISTS sch_leangsp.tequ_log_desplazamiento (
-    id_log BIGSERIAL PRIMARY KEY,
+    id_log_desplazamiento BIGSERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL REFERENCES sch_leangsp.tpry_proyecto(id_proyecto),
     id_equipo INT REFERENCES sch_leangsp.tequ_equipo(id_equipo),
     patente VARCHAR(20),
-    latitud NUMERIC(10, 7) NOT NULL,
-    longitud NUMERIC(10, 7) NOT NULL,
-    velocidad_kmh NUMERIC(5, 2) DEFAULT 0,
-    evento VARCHAR(50) DEFAULT 'PING_RUTA', -- 'INICIO_DESPLAZAMIENTO', 'PING_RUTA', 'LLEGADA_FAENA', 'RETORNO_BASE'
+    tipo_trayecto VARCHAR(30) DEFAULT 'IDA', -- 'IDA' (Base ➔ Faena), 'RETORNO' (Faena ➔ Base)
+    fecha_inicio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_llegada TIMESTAMP WITH TIME ZONE,
+    latitud_origen NUMERIC(10, 7),
+    longitud_origen NUMERIC(10, 7),
+    latitud_destino NUMERIC(10, 7),
+    longitud_destino NUMERIC(10, 7),
+    km_inicial NUMERIC(10, 2),
+    km_final NUMERIC(10, 2),
+    estado_trayecto VARCHAR(30) DEFAULT 'EN_RUTA', -- 'EN_RUTA', 'LLEGADO'
+    pings_ruta JSONB DEFAULT '[]'::jsonb, -- [{ "lat": -33.4, "lng": -70.6, "kmh": 65, "ts": "2026-08-10T15:30:00Z" }]
     fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
