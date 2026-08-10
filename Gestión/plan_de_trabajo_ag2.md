@@ -1,66 +1,93 @@
-# Plan de Trabajo para Antigravity 2.0 - Gestión Operación Grúas San Pablo
+# 📅 PLAN DE TRABAJO TÉCNICO Y OPERACIONAL
+### **Módulo de Registro Diario de Avance (PPD), Estados de Pago (EDP) y Control de Costos 360°**
+**Proyecto:** Sistema de Gestión Operativa — Grúas San Pablo (GSP) / Ecosistema LeanGlobal  
+**Periodo de Ejecución:** Lunes 10 al Miércoles 12 de Agosto de 2026  
+**Entregable:** Sub-sistema completo de captura en terreno, devengado diario, conciliación de costos y cierre con factura ERP.
 
-Este documento contiene las especificaciones técnicas y requerimientos de negocio extraídos de la reunión de análisis y refinados con las observaciones del equipo, estructurados para ser ejecutados por Antigravity 2.0.
+---
 
-## 1. Gestión de Roles y Permisos (RBAC)
-- **Roles Requeridos**:
-  - `Gerencia`: Visibilidad total (global) de todos los negocios, pero en modo **solo lectura** (sin capacidad de edición).
-  - `Administrador`: Acceso total.
-  - `Ejecutivo_comercial_[sucursal]`: Vendedor. Solo puede visualizar y editar su propia cartera de clientes y cotizaciones. (Ej: `ejecutivo_comercial_temuco`, `ejecutivo_comercial_puerto_montt`).
-- **Regla de Negocio**: No habrá restricciones por empresa; cualquier persona puede trabajar con cualquier cliente, el filtro de visibilidad es estrictamente por el propietario (vendedor) del negocio.
+## 🎯 OBJETIVO GENERAL
+Implementar la captura digital en terreno de los Partes de Producción Diarios (PPD) mediante firmas FES en PWA, la trazabilidad de ruta por GPS, la conciliación 360° de costos operativos reales (combustible, viáticos, peajes), y la consolidación de Estados de Pago (EDP) listos para su recepción de factura mediante el ERP actual del cliente.
 
-## 2. Módulo de Clientes y Contactos
-- **Campos Obligatorios Nuevos**: En el registro de cliente, hacer obligatorios: Dirección, Ciudad, Región y Comuna.
-- **Puntos de Contacto**:
-  - Habilitar la funcionalidad para **agregar nuevos contactos** asociados a un cliente (un cliente puede tener múltiples puntos de contacto).
-  - Campos por contacto:
-    - **Nombre del contacto**
-    - **Correo electrónico**
-    - **Teléfono del contacto**
-    - **Observaciones** (Ej: "no llamar el fin de semana").
-  - **Selección de Contacto**: En la creación y edición de cotizaciones/preventa, el usuario podrá **seleccionar el contacto específico** desde una lista desplegable que muestre todos los puntos de contacto guardados de ese cliente.
+---
 
-## 3. Módulo de Preventa y Cotizaciones
-- **Estructurador de Servicios**: Agregar la categoría **"Accesorios"** (para incluir elementos como canastillos). Mantener el resto de las categorías de recopilación.
-- **Categorías y Subcategorías de Equipos**: *(Pendiente)* La estructura definitiva de categorías y subcategorías de equipos está pendiente de entrega por parte de GSP (mediante archivo Excel para la carga limpia en sistema).
-- **Acreditaciones (Etapa Temprana)**: En la creación de la cotización, incluir únicamente un checkbox/flag simple de **"REQUIERE ACREDITACIÓN"**. (No incluir la lista desplegable múltiple para no saturar al vendedor).
-- **Emisor de Correos**: Mientras no se resuelva el uso del dominio oficial de GSP, se continuará trabajando con la casilla de correo actual en uso para el envío de cotizaciones.
-- **Firma de Cotización**: Por ahora, la cotización final **NO** llevará FES (Firma Electrónica Simple).
-- **Lista de Acreditaciones (Etapa Ganada)**: Al ganar la cotización, habilitar y hacer obligatoria una lista desplegable de selección múltiple con los requerimientos de acreditación de prevención.
+## 🗓️ DESGLOSE DETALLADO DE ACTIVIDADES Y HITOS
 
-## 4. Módulo de Visita a Terreno
-- **Template y Flujo de Solicitud (`Solicitud_Visita_Terreno`)**: 
-  - Generar un template con lógica de renderizado en la PWA denominado **`Solicitud_Visita_Terreno`**.
-  - El **Vendedor/Usuario Comercial** genera esta solicitud/survey desde la interfaz web (ingresando fecha solicitada, horario, cliente y observaciones).
-  - El **Coordinador de Operaciones** recibe la solicitud y planifica una inspección de "Visita a Terreno" indicando: Cliente, dirección y ubicación geográfica (**Latitud/Longitud** si está disponible), asignando la tarea a un ejecutor específico para una fecha determinada.
-- **Corrección de Template**: Evitar que se envíe el `.json` del estructurador de servicios en la plantilla actual de visita a terreno.
-- **App Móvil (Terreno)**:
-  - Asegurar captura de Geolocalización en los formularios.
-  - Habilitar captura de Firma Digital (Nombre, RUT y trazado de firma) del cliente.
+### 📍 FASE 1: ESPECIFICACIÓN, BASE DE DATOS Y ARQUITECTURA
+**Periodo:** Lunes 10 de Agosto (Jornada Mañana y Tarde)
 
-## 5. Módulo de Operaciones y Validación (Coordinación)
-- **Aparejos y Elementos de Izaje**:
-  - Tomar como referencia el catálogo completo de elementos de izaje y aparejos disponibles en el template de Visita a Terreno (desplegar todos los ítems disponibles, aunque estén vacíos).
-  - Los aparejos que tengan algún valor registrado durante la visita a terreno se desplegarán prellenados como valor por defecto (*default*).
-  - El Coordinador tendrá a mano todo el catálogo para agregar o completar manualmente los valores de aquellos aparejos que no hayan sido registrados en la visita a terreno.
-- **Asignación de Equipos de Apoyo**:
-  - El Coordinador puede agregar *solo*: Vehículos livianos (camionetas/furgones), vehículos de apoyo, accesorios y personal.
-  - **Restricción Grúas**: El Coordinador **NO** puede agregar grúas ni maquinaria principal extra. Solo está autorizado a **cambiarlas** por una máquina equivalente del mismo tipo (para cuadrar costos).
-- **Validación de Certificados de Flota**: Al asignar equipos, el sistema debe leer los certificados vigentes. Si un certificado está próximo a vencer, mostrar una advertencia visual (indicador amarillo).
-- **Marcadores de Diferencia (Diffs)**:
-  - En la etapa de *Validación y Diff* (aprobación de operaciones), **activar** los marcadores de diferencia (texto tachado en rojo).
-  - Esto aplica a cualquier cambio realizado por el coordinador sobre textos, combos o datos arrastrados de la cotización original. (Nota: Estos marcadores deben estar *apagados* durante la etapa de preparación inicial).
+* **1.1 Validación de Reglas de Negocio con Cliente (Mañana):**
+  * Confirmación de horas mínimas garantizadas por jornada.
+  * Definición de campos obligatorios en el diálogo de Firma FES en terreno (RUT, Nombre, Cargo).
+  * Validación de categorías de gastos operacionales e hitos de corte de Estados de Pago.
+* **1.2 Redacción de Especificación Maestra N° 27 (`.agents/specs/27_modelo_ppd_devengado_edp_spec.md`):**
+  * Documentación formal de la arquitectura de datos, flujos de pantalla y contratos de API REST.
+* **1.3 Creación del Modelo de Datos SQL (`sch_leangsp`):**
+  * Tabla `tlog_telemetria_desplazamiento`: Registro de pings GPS de ruta (latitud, longitud, velocidad, timestamp).
+  * Tabla `tppd_reporte_avance`: Registro de reportes diarios de producción PWA + Firma FES.
+  * Tabla `topr_costos_servicio`: Imputación de costos reales (combustible, viáticos, peajes, pensión).
+  * Tabla `tedp_estado_pago`: Encabezado de Estados de Pago consolidados.
+  * Tabla `tedp_rel_edp_ppd`: Tabla pivote de cierre para prevenir doble devengado.
 
-## 6. Módulo de Inspecciones y Preparación Final
-- **Control de Calidad e Inspección de Patio**:
-  - Incluir en el flujo del Coordinador la notificación de Control de Calidad.
-  - El Coordinador debe poder programar y asignar la "Inspección de patio" al Jefe de Patio.
-  - El sistema debe visualizar el estado de la inspección (Verde = Finalizado, Rojo = Rechazado/Falla condición).
-- **Finalización de Preparación**: Agregar un checkbox de tareas obligatorias que el Analista de Operaciones debe marcar para dar por finalizada la preparación comercial.
+---
 
-## 7. Eventos de Notificación y Correos Automáticos
-- **Corrección Bug**: Arreglar el error tipográfico en el dominio del correo de prueba (quitar la doble "s" en arriendos).
-- **Copias Obligatorias Centralizadas**:
-  Se deben emitir correos con copia obligatoria (indelebles por el vendedor) a: Gerencia (Luis y Omar obligatoriamente), Vendedor, Analista de Operaciones y Coordinador de Operaciones, en los siguientes eventos gatilladores:
-  1. Al registrar la cotización como **Ganada**.
-  2. Al confirmar el requerimiento con observaciones (**Diff de operador**) en el área de operaciones.
+### 📍 FASE 2: CAPTURA EN TERRENO Y PWA OPERADOR
+**Periodo:** Martes 11 de Agosto (Jornada Mañana)
+
+* **2.1 Módulo de Desplazamiento y Ruta (PWA Móvil):**
+  * Botón *"Iniciar Desplazamiento"* en PWA con registro de punto de partida (Casa Matriz).
+  * Emisión automática de pings de telemetría GPS periódicos durante el trayecto en carretera.
+  * Botón *"Llegada a Faena / Destino"* con validación de geocerca GPS.
+* **2.2 Formulario de Reporte Diario de Producción (Survey PPD):**
+  * Formulario móvil precargado con datos del servicio, equipo (patente) y tripulación.
+  * Captura de: Horas Grúa de Operación, Horas Standby, Horario de Colación, Descripción de Trabajos Realizados.
+  * Cálculo automático instantáneo del **Devengado del Día ($)** según tarifa contractual.
+* **2.3 Módulo de Consentimiento y Firma Digital FES (Mandante):**
+  * Diálogo modal interactivo para que el supervisor del cliente en obra ingrese RUT, Nombre, Cargo y estampe su **Firma Digital FES** en la pantalla del celular.
+  * Generación del sello hash de trazabilidad de la firma.
+
+---
+
+### 📍 FASE 3: AUDITORÍA 360°, COSTOS REALES Y MARGEN OPERACIONAL
+**Periodo:** Martes 11 de Agosto (Jornada Tarde)
+
+* **3.1 Módulo de Imputación de Costos Reales (Analista de Operaciones Web):**
+  * Formulario web para ingresar los gastos reales incurridos en la OT:
+    1. Combustible (Litros cargados + $ Monto + KM Odómetro).
+    2. Viáticos / Alimentación de Tripulación.
+    3. Peajes / TAG.
+    4. Pensión / Alojamiento.
+    5. Movilización / Escoltas.
+    6. Gastos Extraordinarios.
+  * Carga de archivos adjuntos (Fotos/PDFs de boletas y facturas de compra).
+* **3.2 Visor 360° de Margen Operacional (Torre de Control & Gerencia):**
+  * Panel gráfico comparativo en tiempo real por Proyecto/OT:
+    * $\text{Monto Ofertado Commercial}$ vs $\text{Monto Devengado Real (PPDs)}$ vs $\text{Costos Imputados}$ = $\mathbf{\text{Margen Bruto Real (\%)}}$.
+
+---
+
+### 📍 FASE 4: ESTADOS DE PAGO (EDP) Y ANEXO DE FACTURA ERP
+**Periodo:** Miércoles 12 de Agosto (Jornada Mañana y Tarde)
+
+* **4.1 Módulo de Agrupación y Generación de Estados de Pago (EDP):**
+  * Interfaz web para seleccionar un rango de fechas o listado de PPDs aprobados y generar un **Estado de Pago (EDP)**.
+  * Bloqueo automático de PPDs consolidados para evitar duplicidad de cobro.
+* **4.2 Emisión de Dossier PDF del Estado de Pago:**
+  * Generación automática del documento PDF resumen del EDP, adjuntando la hoja de resumen y la copia digital de los PPDs con sus firmas FES para envío al cliente.
+* **4.3 Botón de Cierre con Anexo de Factura ERP:**
+  * Formulario de cierre de EDP: Ingreso del N° de Folio de Factura emitida en el ERP del cliente + Botón para **Adjuntar el archivo PDF/XML de la Factura**.
+  * Transición automática del estado del EDP a **`FACTURADO`** y cierre del ciclo de la OT.
+* **4.4 Certificación Empírica y Cierre:**
+  * Pruebas de compilación `npm run build` local con **0 errores**.
+  * Ejecución de `git commit` de checkpoint final.
+
+---
+
+## 📊 MATRIZ DE ENTREGABLES
+
+| Entregable | Plataforma | Usuario Responsable | Impacto en el Negocio |
+| :--- | :--- | :--- | :--- |
+| **PWA Desplazamiento & Survey PPD** | PWA Móvil | Operador / Rigger | Elimina el papel y captura las horas reales con firma FES en obra. |
+| **Imputación Costos Reales** | Portal Web | Analista Operaciones | Registra combustible y gastos exactos del servicio. |
+| **Visor Margen 360°** | Torre de Control | Gerencia / Operaciones | Muestra la rentabilidad real de cada OT en tiempo real. |
+| **Módulo EDP + Adjunto ERP** | Portal Web | Coordinador Operaciones | Agrupa cobros y los vincula con la factura emitida en su ERP. |
