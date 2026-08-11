@@ -4442,7 +4442,13 @@ const buildPayload = () => {
         moneda: comercial.value.moneda,
         condicion_servicio: comercial.value.condicion_servicio,
         pensiones: comercial.value.pensiones,
-        snapshot_comercial: snapshotComercial.value
+        snapshot_comercial: {
+          ...snapshotComercial.value,
+          lines: JSON.parse(JSON.stringify(lines.value)),
+          equipo_descripcion: lines.value[0]?.descripcion || '',
+          equipo_cantidad: lines.value[0]?.cantidad || 1,
+          equipo_valor: lines.value[0]?.valorUnitario || 0
+        }
       },
       ejecucion_v1: {
         ...(rawEjecucionJson.value || {}),

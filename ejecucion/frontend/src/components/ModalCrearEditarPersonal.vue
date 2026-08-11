@@ -287,13 +287,20 @@
                   class="w-full bg-zinc-950 border border-white/10 rounded-lg p-2 text-[10px] text-white focus:outline-none"
                 />
               </div>
-              <!-- Vencimiento -->
+              <!-- Vencimiento / Permanente -->
               <div class="space-y-1">
-                <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fec. Vencimiento</label>
+                <div class="flex items-center justify-between">
+                  <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fec. Vencimiento</label>
+                  <label class="inline-flex items-center cursor-pointer gap-1">
+                    <input type="checkbox" v-model="isPermanente" @change="onPermanenteChange" class="rounded text-emerald-500 bg-zinc-900 border-white/10 text-xs" />
+                    <span class="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Permanente</span>
+                  </label>
+                </div>
                 <input 
                   type="date" 
                   v-model="newCert.fecha_vencimiento"
-                  class="w-full bg-zinc-950 border border-white/10 rounded-lg p-2 text-[10px] text-white focus:outline-none"
+                  :disabled="isPermanente"
+                  class="w-full bg-zinc-950 border border-white/10 rounded-lg p-2 text-[10px] text-white focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -340,7 +347,7 @@
             </button>
             <button 
               @click="addCertificado"
-              :disabled="isUploading || !newCert.id_tipo_certificado_persona || !newCert.fecha_vencimiento"
+              :disabled="isUploading || !newCert.id_tipo_certificado_persona || (!isPermanente && !newCert.fecha_vencimiento)"
               class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors"
             >
               {{ isUploading ? 'Subiendo...' : 'Vincular' }}
@@ -420,6 +427,13 @@ const qrValue = computed(() => {
 
 const certificados = ref([])
 const docTypes = ref([])
+const isPermanente = ref(false)
+
+const onPermanenteChange = () => {
+  if (isPermanente.value) {
+    newCert.fecha_vencimiento = ''
+  }
+}
 
 const selectedFile = ref(null)
 const fileInput = ref(null)
@@ -484,6 +498,19 @@ const fetchDocTypes = async () => {
   } catch (err) {
     console.error("Error al obtener tipos de certificados:", err)
   }
+
+  // Fallback garantizado si la API retorna vacio o falla
+  if (!docTypes.value || docTypes.value.length === 0) {
+    docTypes.value = [
+      { id_tipo_certificado_persona: 1, nombre_tipo: 'Licencia de Conducir (A-5 / B / A-2)', obligatorio: true },
+      { id_tipo_certificado_persona: 2, nombre_tipo: 'Certificación Rigger Especialista', obligatorio: true },
+      { id_tipo_certificado_persona: 3, nombre_tipo: 'Examen de Salud Ocupacional (Grandes Alturas)', obligatorio: true },
+      { id_tipo_certificado_persona: 4, nombre_tipo: 'Pase de Ingreso Minero / Censo HSEC', obligatorio: false },
+      { id_tipo_certificado_persona: 5, nombre_tipo: 'Cédula de Identidad Vigente', obligatorio: true },
+      { id_tipo_certificado_persona: 6, nombre_tipo: 'Contrato de Trabajo GSP / Anexos', obligatorio: true },
+      { id_tipo_certificado_persona: 7, nombre_tipo: 'Inducción de Seguridad HSEC', obligatorio: false }
+    ]
+  }
 }
 
 const fetchUserDetail = async () => {
@@ -525,8 +552,8 @@ const addCertificado = async () => {
     alert("Por favor seleccione un tipo de certificado.")
     return
   }
-  if (!newCert.fecha_vencimiento) {
-    alert("Por favor ingrese la fecha de vencimiento.")
+  if (!isPermanente.value && !newCert.fecha_vencimiento) {
+    alert("Por favor ingrese la fecha de vencimiento o marque Permanente.")
     return
   }
 
