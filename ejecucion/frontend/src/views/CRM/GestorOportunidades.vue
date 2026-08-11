@@ -660,7 +660,7 @@
                         <div class="flex items-center gap-2">
                           <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t); marcarDirtyAsignacion()" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
                             <option value="">-- Seleccionar Persona --</option>
-                            <option v-for="u in usuarios" :key="u.id_user" :value="u.id_user">
+                            <option v-for="u in getUsuariosPorCargo(t.cargo)" :key="u.id_user" :value="u.id_user">
                               {{ u.nombre_user || u.name_user }}
                             </option>
                           </select>
@@ -705,23 +705,39 @@
             </div>
 
             <!-- Grilla Limpia 3 Columnas -->
-            <div v-if="operacionesAssignment.implementos_survey && operacionesAssignment.implementos_survey.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2.5 bg-[#050810] rounded-lg border transition-all duration-200" :class="item.requerido ? 'border-amber-500/40 bg-amber-500/[0.03]' : 'border-white/5 opacity-70 hover:opacity-100'">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                  <label class="flex items-center gap-2 text-xs font-bold cursor-pointer select-none" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
-                    <input type="checkbox" v-model="item.requerido" class="accent-amber-500 w-4 h-4 rounded" />
-                    <span>{{ item.label }}</span>
-                  </label>
-                  <span v-if="item.requerido" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">REQUERIDO</span>
-                </div>
-                <div>
-                  <input type="text" v-model="item.detalle" placeholder="Capacidad / Cantidad / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-amber-500/50" />
+            <template v-if="operacionesAssignment.implementos_survey && operacionesAssignment.implementos_survey.length > 0">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2.5 bg-[#050810] rounded-lg border transition-all duration-200" :class="item.requerido ? 'border-amber-500/40 bg-amber-500/[0.03]' : 'border-white/5 opacity-70 hover:opacity-100'">
+                  <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <label class="flex items-center gap-2 text-xs font-bold cursor-pointer select-none" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
+                      <input type="checkbox" v-model="item.requerido" class="accent-amber-500 w-4 h-4 rounded" />
+                      <span>{{ item.label }}</span>
+                    </label>
+                    <span v-if="item.requerido" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">REQUERIDO</span>
+                  </div>
+                  <div>
+                    <input type="text" v-model="item.detalle" placeholder="Capacidad / Cantidad / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-amber-500/50" />
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
             <div v-else class="text-xs text-slate-400 italic">
               No se encontraron datos de implementos en la visita a terreno. (Asegúrate de cargar los datos del survey).
             </div>
+          </div>
+
+          <!-- Bloque Observaciones libres de Operaciones -->
+          <div class="bg-[#0a0f1e] border border-white/10 p-4 rounded-xl space-y-2 mt-4">
+            <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">
+              💬 Observaciones / Comentarios Adicionales de Operaciones
+            </label>
+            <textarea 
+              v-model="operacionesAssignment.observaciones_operaciones" 
+              @input="marcarDirtyAsignacion"
+              rows="3" 
+              placeholder="Ingrese comentarios u observaciones operativas del coordinador para la preparación de faena..."
+              class="w-full bg-[#020617] border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
+            ></textarea>
           </div>
         </div>
       </div>
@@ -3145,6 +3161,34 @@ const eliminarTripulante = (idx) => {
   if (tripulacionAsignada.value.length > 1) {
     tripulacionAsignada.value.splice(idx, 1)
   }
+}
+
+const getUsuariosPorCargo = (cargo) => {
+  if (!usuarios.value || !Array.isArray(usuarios.value)) return []
+  if (!cargo) return usuarios.value
+  
+  const cargoLower = cargo.toLowerCase()
+  return usuarios.value.filter(u => {
+    if (u.activo === false || u.is_active === false) return false
+    const name = (u.nombre_user || u.name_user || u.username || '').toLowerCase()
+    if (name.includes('isis') && name.includes('oses')) return false
+
+    const userCargo = (u.cargo || u.role_name || u.tipo_usuario || '').toLowerCase()
+
+    if (cargoLower.includes('rigger')) {
+      return userCargo.includes('rigger') || name.includes('rigger')
+    }
+    if (cargoLower.includes('operador')) {
+      return userCargo.includes('operador') || userCargo.includes('operario') || name.includes('operador')
+    }
+    if (cargoLower.includes('chofer') || cargoLower.includes('cama baja')) {
+      return userCargo.includes('chofer') || userCargo.includes('conductor') || userCargo.includes('operador')
+    }
+    if (cargoLower.includes('supervisor')) {
+      return userCargo.includes('supervis') || userCargo.includes('jefe') || userCargo.includes('coordinad')
+    }
+    return true
+  })
 }
 
 const agregarEquipoAdicional = () => {

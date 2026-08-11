@@ -183,13 +183,13 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-3 gap-4">
             <!-- Estado Operativo -->
             <div class="space-y-1.5">
               <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Estado Operativo</label>
               <select 
                 v-model="form.estado" 
-                class="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500/50 uppercase"
+                class="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500/50 uppercase"
               >
                 <option value="OPERATIVO">OPERATIVO 🟢</option>
                 <option value="MANTENCION">MANTENCIÓN 🟡</option>
@@ -203,7 +203,17 @@
                 type="text" 
                 v-model="form.tipo_equipo" 
                 placeholder="EJ. GRÚA MÓVIL" 
-                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500/50 uppercase tracking-wider"
+                class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500/50 uppercase tracking-wider"
+              />
+            </div>
+            <!-- Capacidad Estanque Combustible -->
+            <div class="space-y-1.5">
+              <label class="text-[9px] font-black text-amber-400 uppercase tracking-widest block">Capacidad Estanque (Lts)</label>
+              <input 
+                type="number" 
+                v-model.number="form.capacidad_estanque_combustible_litros" 
+                placeholder="EJ. 350 Lts" 
+                class="w-full bg-white/5 border border-amber-500/40 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
               />
             </div>
           </div>
@@ -416,6 +426,7 @@ const form = ref({
   id_subcategoria: null,
   estado: 'OPERATIVO',
   tipo_equipo: '',
+  capacidad_estanque_combustible_litros: null,
   observaciones: ''
 })
 
