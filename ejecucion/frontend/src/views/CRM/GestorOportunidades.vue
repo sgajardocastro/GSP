@@ -297,12 +297,10 @@
                         Orig: {{ getOriginalValue('equipo_unidad', idx) }}
                       </div>
                       <select v-model="line.unidad" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full" :class="hasDiff('equipo_unidad', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
-                        <option value="Hrs">Hrs</option>
-                        <option value="Días">Días</option>
-                        <option value="Semanas">Semanas</option>
-                        <option value="Meses">Meses</option>
-                        <option value="Fijo">Fijo</option>
-                        <option value="Flete">Flete</option>
+                        <option value="Hrs día">Hrs día (Mínimas Diarias)</option>
+                        <option value="Hrs Mensual">Hrs Mensual (Mínimas Mensuales)</option>
+                        <option value="Fijo">Fijo (Servicio Puntual)</option>
+                        <option value="Flete">Flete (Traslado/Movilización)</option>
                       </select>
                     </td>
                     <td class="p-2">
@@ -1641,12 +1639,10 @@
                     </td>
                     <td class="p-2">
                       <select v-model="line.unidad" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-full">
-                        <option value="Hrs">Hrs</option>
-                        <option value="Días">Días</option>
-                        <option value="Semanas">Semanas</option>
-                        <option value="Meses">Meses</option>
-                        <option value="Fijo">Fijo</option>
-                        <option value="Flete">Flete</option>
+                        <option value="Hrs día">Hrs día (Mínimas Diarias)</option>
+                        <option value="Hrs Mensual">Hrs Mensual (Mínimas Mensuales)</option>
+                        <option value="Fijo">Fijo (Servicio Puntual)</option>
+                        <option value="Flete">Flete (Traslado/Movilización)</option>
                       </select>
                     </td>
                     <td class="p-2">
@@ -3650,7 +3646,7 @@ const alCambiarContacto = () => {
 }
 
 const lines = ref([
-  { tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: 'Grúas Liebherr LTM 1220 (220T)', cantidad: 1, unidad: 'Hrs', valorUnitario: 500000 }
+  { tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: 'Grúas Liebherr LTM 1220 (220T)', cantidad: 1, unidad: 'Hrs día', valorUnitario: 500000 }
 ])
 
 const isHydrating = ref(true)
@@ -3979,7 +3975,7 @@ const enviarCotizacionPorCorreo = async () => {
 }
 
 const agregarLinea = () => {
-  lines.value.push({ tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: '', cantidad: 1, unidad: 'Hrs', valorUnitario: 0 })
+  lines.value.push({ tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: '', cantidad: 1, unidad: 'Hrs día', valorUnitario: 0 })
 }
 
 const eliminarLinea = (idx) => {
