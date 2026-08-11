@@ -45,6 +45,7 @@ function routerApi(app) {
     app.use('/api/acreditaciones', acreditacionRouter);
     app.use('/api/v1/storage', require('./storageRoutes.js'));
     app.use('/api/visitas', require('./visitaTerrenoRoutes.js'));
+    app.use('/api/estado-pago', require('./estadoPagoRoutes.js'));
 }
 
 
