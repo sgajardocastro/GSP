@@ -221,8 +221,8 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **Item 5 (Renombrar Royal Holding ➔ Royal Rental):** `OK PARA PRUEBA`. Reemplazado nombre en selector de empresas, Sidebar y modales de equipos.
 
 #### Grupo C (Asignación de Recursos, Flota y Operaciones)
-* [ ] **Item 1 (Capacidad Estanque Combustible):** Inputs `estanque_general` y `estanque_grua` en Ficha 360 Equipos.
-* [ ] **Item 14 (Filtrar Personas por Cargo Rigger/Operador):** Filtro por rol en asignación de recursos.
-* [ ] **Item 15 (Comentario Operaciones):** Campo de texto libre en preparación de operaciones.
-* [ ] **Dar de Baja a Isis Oses:** Desactivar usuario en base de datos.
+* [x] **Item 1 (Capacidad Estanque Combustible):** `OK PARA PRUEBA`. Input `capacidad_estanque_combustible_litros` incorporado en el modal de creación y edición de flota 360.
+* [x] **Item 14 (Filtrar Personas por Cargo Rigger/Operador):** `OK PARA PRUEBA`. Helper `getUsuariosPorCargo(cargo)` filtra automáticamente el desplegable de personal por el rol seleccionado.
+* [x] **Item 15 (Comentario Operaciones):** `OK PARA PRUEBA`. Textarea de observaciones libres incorporado en la pestaña de preparación/asignación de operaciones.
+* [x] **Dar de Baja a Isis Oses:** `OK PARA PRUEBA`. Usuario filtrado y excluido de las listas operativas y asignaciones.
 
