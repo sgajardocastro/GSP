@@ -1,64 +1,37 @@
 ---
 name: gsp_pdf_and_email_standards
-description: Estándar y guía técnica para la generación de documentos PDF con logos paramétricos y el despacho de correos B2B enriquecidos en LeanGlobal / GSP.
+description: Adaptador local de GSP para el despacho de correos B2B enriquecidos y la generación de documentos PDF con logos paramétricos, basándose en los estándares generales de producto LeanGlobal Platform.
 ---
 
-# 📄 Estándar Técnico: Generación de PDFs y Envíos de Correos B2B
+# 📄 Adaptador GSP: Generación de PDFs y Envíos de Correos B2B
 
-## 1. 🏗️ Generación de Documentos PDF con Logos Paramétricos
+Este documento vincula los estándares del producto LeanGlobal con los parámetros específicos del proyecto **Grúas San Pablo (GSP)**.
 
-Cuando se requiera generar un PDF oficial (cotizaciones, informes de visitas, OTs, actas):
-
-### A. Consulta de Datos de la Empresa Emisora
-1. Consultar la tabla `tpry_proyecto` para obtener `id_empresa` (o `id_empresa_emisora`).
-2. Consultar `tpar_empresas` en PostgreSQL:
-   ```sql
-   SELECT id_empresa, name_empresa, razon_social, rut_empresa, giro, logo_empresa
-   FROM tpar_empresas
-   WHERE id_empresa = $1;
-   ```
-
-### B. Resolución Física de la Imagen del Logo (Opción 1 Estándar)
-- Los archivos físicos de los logos (`logo-sanpablo.png`, `logo_gsp.png`, etc.) deben ubicarse en la carpeta estática del backend:
-  `/home/nodeadmin/proyectos/lean-services-gsp/public/`
-- El propietario de los archivos en el servidor Linux debe ser `nodeadmin:nodeadmin`.
-- En el modelo backend Node.js (`proyectoModel.js`), leer la imagen y convertirla in-memory a **Base64 Data URI** antes de pasarla a la plantilla HTML de Puppeteer:
-  ```javascript
-  let finalLogoPath = emisor.logoPath;
-  try {
-    const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
-    const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
-    if (fs.existsSync(diskPath)) {
-      const imgBuf = fs.readFileSync(diskPath);
-      finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
-    }
-  } catch (err) {
-    console.error('Error leyendo logo desde disco:', err);
-  }
-  ```
-- **Nunca** utilizar rutas relativas `file:///var/www/html/...` que dependan de carpetas inexistentes.
+> [!NOTE]
+> Para la especificación técnica desacoplada del producto, consúltense:
+> - **[`leanglobal_email_standards`](file:///D:/SGajardo/Google%20Drive/Antigravity/LeanGlobal%20-%20Product/.agents/skills/leanglobal_email_standards/SKILL.md)**
+> - **[`leanglobal_pdf_standards`](file:///D:/SGajardo/Google%20Drive/Antigravity/LeanGlobal%20-%20Product/.agents/skills/leanglobal_pdf_standards/SKILL.md)**
 
 ---
 
-## 2. ✉️ Despacho de Correos B2B Enriquecidos (`POST /message`)
+## 1. ✉️ Despacho de Correos GSP (Nodemailer + Magic Links)
 
-Cuando se envíen correos comerciales o notificaciones formales hacia clientes o usuarios:
+- **Servidor SMTP:** `powercp2.zglobalhost.com` (Puerto 465 SSL)
+- **Cuenta Emisora:** `"GSP Platform" <notificaciones.gsp@leanglobal.cl>`
+- **Endpoint:** `POST /api/message`
+- **Generador de HTML:** `obtenerPlantillaHTML()` en `messageModel.js`.
+- **Botón de Acción (Solicitud Visita a Terreno):**
+  `https://sistema.leanglobal.cl/gsp/asignacion-visita?id_proyecto=${id_proyecto}&token=${token}`
 
-### A. Formato Obligatorio del Payload
-En el backend de LeanGlobal (`messageModel.js`), el servidor mapea la propiedad `cuerpo` del JSON directamente al campo `html` de Nodemailer (`html: req.body.cuerpo`).
+---
 
-**Regla de Oro del Frontend / Llamador de API:**
-- Se DEBE enviar la maqueta HTML comercial completa dentro del campo `cuerpo`:
-  ```javascript
-  await apiAxios.post('/message', {
-    para: destinatariosCliente.join(', '),
-    cc: destinatariosGSP.join(', '),
-    asunto: 'Subject de la Notificación',
-    cuerpo: htmlContent // <--- EL HTML COMPLETO SE ENVÍA EN "cuerpo"
-  });
-  ```
-- **Jamás** enviar un string de texto plano dentro del parámetro `cuerpo` esperando que la propiedad `html` lo reemplace.
+## 2. 🖼️ Generación de PDFs GSP (Emisores & Logos Base64)
 
-### B. Validación de Casillas de Destino
-- Nunca dejar casillas ficticias o dominios inexistentes por defecto (`@cliente.cl`).
-- Si la información del cliente no posee correo registrado, auto-cargar el correo del usuario operador en sesión (ej: `sgajardoc@gmail.com`) para prevenir rechazos en los registros MX de Exim.
+- **Empresas Emisoras (`tpar_empresas`):**
+  - ID `9`: Grúas San Pablo (`logo-sanpablo.png`)
+  - ID `7`: Bestmaq Arriendos (`logo-bestmaq.png`)
+  - ID `8`: Logística del Sur (`logo-logistica.png`)
+  - ID `11`: Royal Rental (`logo-royal.png`)
+- **Directorio de Logos:** `/home/nodeadmin/proyectos/lean-services-gsp/public/`
+- **Conversión Base64:** Obligatoria con `fs.readFileSync()` in-memory.
+- **Compilador:** Binario `wkhtmltopdf` vía `xvfb-run`.
