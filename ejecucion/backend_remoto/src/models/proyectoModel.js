@@ -622,14 +622,21 @@ class ProyectoModel {
           <table class="info-table">
             <tr>
               <td class="info-label">Nombre Obra/Proyecto:</td>
-              <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
-              <td class="info-label">Revisión/Visita:</td>
-              <td class="info-value">${crm.visita_terreno || 'No'}</td>
-              <td class="info-label">Ubicación Obra:</td>
-              <td class="info-value">
-                ${crm.obra_direccion || '—'}${crm.obra_ciudad ? ', ' + crm.obra_ciudad : ''}
-                ${crm.coordenadas_mapa?.lat ? `<br><span style="font-size: 8px; color: #718096; font-family: monospace;">Coord: ${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
+              <td class="info-value" colspan="3">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Ubicación Faena/Obra:</td>
+              <td class="info-value" colspan="3">
+                • <strong>Dirección:</strong> ${crm.obra_direccion || '—'}<br>
+                • <strong>Comuna/Ciudad:</strong> ${crm.obra_ciudad || '—'}
+                ${crm.coordenadas_mapa?.lat ? `<br>• <strong>Coordenadas GPS:</strong> <span style="font-family: monospace; font-size: 8.5px;">${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
               </td>
+            </tr>
+            <tr>
+              <td class="info-label">Horario Inicio Servicio:</td>
+              <td class="info-value">${crm.fecha_hora_inicio ? new Date(crm.fecha_hora_inicio).toLocaleString('es-CL') : 'A coordinar con Operaciones'}</td>
+              <td class="info-label">Término Estimado:</td>
+              <td class="info-value">${crm.fecha_hora_termino ? new Date(crm.fecha_hora_termino).toLocaleString('es-CL') : 'Según avance de faena'}</td>
             </tr>
             <tr>
               <td class="info-label">Detalle del Servicio:</td>
@@ -646,6 +653,14 @@ class ProyectoModel {
               <td class="info-value">${crm.volumen_carga || '—'}</td>
               <td class="info-label">Radios / Alturas Trab:</td>
               <td class="info-value">Radio: ${crm.radios_trabajo || '—'} | Altura: ${crm.alturas_trabajo || '—'}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Condiciones Operativas:</td>
+              <td class="info-value" colspan="3">
+                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Rigger / Señalero:</strong> ${crm.requiere_rigger ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Acreditación HSEC:</strong> ${crm.requiere_acreditacion ? 'SÍ' : 'NO'}
+              </td>
             </tr>
             <tr>
               <td class="info-label">Visita Técnica Terreno:</td>

@@ -49,7 +49,7 @@ class ProyectoModel {
   }
 
   // ✅ Generar código transaccional (codi_proyecto)
-  async generarCodigoTransaccional(id_empresa, providedClient = null) {
+  async generarCodigoTransaccional(id_empresa, id_cliente = null, providedClient = null) {
     const client = providedClient || await this.pool.connect();
     let localTransaction = !providedClient;
     
@@ -69,24 +69,29 @@ class ProyectoModel {
 
       // Aseguramos que exista el registro para el mes actual
       await client.query(`
-        INSERT INTO tpry_correlativos (id_empresa, prefijo, anio_mes, ultimo_valor)
-        VALUES ($1, $2, $3, 0)
-        ON CONFLICT (id_empresa, anio_mes) DO NOTHING;
-      `, [id_empresa, prefijo, anio_mes]);
+        INSERT INTO tpry_correlativos (prefijo, anio_mes, ultimo_valor)
+        VALUES ($1, $2, 0)
+        ON CONFLICT (prefijo, anio_mes) DO NOTHING;
+      `, [prefijo, anio_mes]);
 
       // Bloqueamos e incrementamos de forma atómica
       const result = await client.query(`
         UPDATE tpry_correlativos 
         SET ultimo_valor = ultimo_valor + 1
-        WHERE id_empresa = $1 AND anio_mes = $2
+        WHERE prefijo = $1 AND anio_mes = $2
         RETURNING ultimo_valor, prefijo;
-      `, [id_empresa, anio_mes]);
+      `, [prefijo, anio_mes]);
 
       const nuevoValor = result.rows[0].ultimo_valor;
       const pref = result.rows[0].prefijo;
       const correlativo = String(nuevoValor).padStart(3, '0');
       
-      const codigo = `${pref}-${anio_mes}-${correlativo}`;
+      let codigo = '';
+      if (id_cliente) {
+        codigo = `${pref}-${anio_mes}-${id_cliente}-${correlativo}`;
+      } else {
+        codigo = `${pref}-${anio_mes}-${correlativo}`;
+      }
 
       if (localTransaction) await client.query('COMMIT');
       return codigo;
@@ -294,7 +299,7 @@ class ProyectoModel {
       
       let codi = p.codi_proyecto;
       if (!codi) {
-        codi = await this.generarCodigoTransaccional(p.id_empresa, client);
+        codi = await this.generarCodigoTransaccional(p.id_empresa, p.id_empresa_cliente, client);
         await client.query('UPDATE tpry_proyecto SET codi_proyecto = $1 WHERE id_proyecto = $2', [codi, id_proyecto]);
       }
       
@@ -316,22 +321,21 @@ class ProyectoModel {
         nombre_archivo: fileName,
         monto: Number(monto || 0),
         fecha: new Date().toISOString(),
-        url: `/lg-gsp/api/archivo/cotizaciones/${fileName}`
+        fecha: new Date().toISOString()
       };
-      
-      jsonField.crm_v1.cotizaciones_historicas.push(nuevaCotizacion);
-      
-      const updateResult = await client.query(
-        'UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2 RETURNING *',
-        [jsonField, id_proyecto]
-      );
-      
+      // We will set url after inserting into tfmg_file.
+
+      // We will update the project later.
+
       // Escribir un archivo PDF real e imprimible (HTML-to-PDF)
       const fs = require('fs');
       const path = require('path');
       const { exec } = require('child_process');
-      const { LEAN_DOCS_BASE_DIR } = require('../config/docsConfig');
-      const targetDir = path.join(LEAN_DOCS_BASE_DIR, 'cotizaciones');
+      const { buildStoragePath, resolveStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const archivoModel = require('./archivoModel');
+
+      const path_relativo = buildStoragePath('gsp', 'cotizaciones');
+      const targetDir = path.join(STORAGE_ROOT, path_relativo);
       const filepath = path.join(targetDir, fileName);
       
       if (!fs.existsSync(targetDir)) {
@@ -411,8 +415,18 @@ class ProyectoModel {
       };
 
       let finalLogoPath = emisor.logoPath;
-      if (finalLogoPath && !finalLogoPath.startsWith('data:image')) {
-        finalLogoPath = 'file://' + path.join('/var/www/html/lg-gsp', finalLogoPath);
+      try {
+        const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
+        const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const fs = require('fs');
+        if (fs.existsSync(diskPath)) {
+          const imgBuf = fs.readFileSync(diskPath);
+          finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
+        } else {
+           console.warn(`Logo no encontrado en disco: ${diskPath}`);
+        }
+      } catch (err) {
+        console.error('Error leyendo logo desde disco:', err);
       }
 
       // 3. Extraer datos estructurados de json_field.crm_v1
@@ -608,14 +622,21 @@ class ProyectoModel {
           <table class="info-table">
             <tr>
               <td class="info-label">Nombre Obra/Proyecto:</td>
-              <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
-              <td class="info-label">Revisión/Visita:</td>
-              <td class="info-value">${crm.visita_terreno || 'No'}</td>
-              <td class="info-label">Ubicación Obra:</td>
-              <td class="info-value">
-                ${crm.obra_direccion || '—'}${crm.obra_ciudad ? ', ' + crm.obra_ciudad : ''}
-                ${crm.coordenadas_mapa?.lat ? `<br><img src="https://static-maps.yandex.ru/1.x/?ll=${crm.coordenadas_mapa.lng},${crm.coordenadas_mapa.lat}&z=15&l=map&size=200,120&pt=${crm.coordenadas_mapa.lng},${crm.coordenadas_mapa.lat},pm2rdl" style="margin-top: 5px; max-width: 200px; border: 1px solid #e2e8f0; border-radius: 4px;" alt="Mapa de Ubicación" /><br><span style="font-size: 8px; color: #718096; font-family: monospace;">Coord: ${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
+              <td class="info-value" colspan="3">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Ubicación Faena/Obra:</td>
+              <td class="info-value" colspan="3">
+                • <strong>Dirección:</strong> ${crm.obra_direccion || '—'}<br>
+                • <strong>Comuna/Ciudad:</strong> ${crm.obra_ciudad || '—'}
+                ${crm.coordenadas_mapa?.lat ? `<br>• <strong>Coordenadas GPS:</strong> <span style="font-family: monospace; font-size: 8.5px;">${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
               </td>
+            </tr>
+            <tr>
+              <td class="info-label">Horario Inicio Servicio:</td>
+              <td class="info-value">${crm.fecha_hora_inicio ? new Date(crm.fecha_hora_inicio).toLocaleString('es-CL') : 'A coordinar con Operaciones'}</td>
+              <td class="info-label">Término Estimado:</td>
+              <td class="info-value">${crm.fecha_hora_termino ? new Date(crm.fecha_hora_termino).toLocaleString('es-CL') : 'Según avance de faena'}</td>
             </tr>
             <tr>
               <td class="info-label">Detalle del Servicio:</td>
@@ -632,6 +653,14 @@ class ProyectoModel {
               <td class="info-value">${crm.volumen_carga || '—'}</td>
               <td class="info-label">Radios / Alturas Trab:</td>
               <td class="info-value">Radio: ${crm.radios_trabajo || '—'} | Altura: ${crm.alturas_trabajo || '—'}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Condiciones Operativas:</td>
+              <td class="info-value" colspan="3">
+                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Rigger / Señalero:</strong> ${crm.requiere_rigger ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Acreditación HSEC:</strong> ${crm.requiere_acreditacion ? 'SÍ' : 'NO'}
+              </td>
             </tr>
             <tr>
               <td class="info-label">Visita Técnica Terreno:</td>
@@ -716,7 +745,7 @@ class ProyectoModel {
       fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
       await new Promise((resolve, reject) => {
-        const cmd = `xvfb-run --server-args="-screen 0 1024x768x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait "${tempHtmlPath}" "${filepath}"`;
+        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 10mm --margin-bottom 10mm --margin-left 10mm --margin-right 10mm "${tempHtmlPath}" "${filepath}"`;
         exec(cmd, (error, stdout, stderr) => {
           // Limpiar archivo temporal HTML
           try {
@@ -737,6 +766,26 @@ class ProyectoModel {
           resolve();
         });
       });
+
+      // Guardar en Storage Engine
+      const archivoM = new archivoModel();
+      const doc = await archivoM.insertarTfmgFile(
+          'COTIZACION',
+          'application/pdf',
+          fileName,
+          fileName,
+          path_relativo,
+          null, // id_user 
+          'A'
+      );
+
+      nuevaCotizacion.url = `/api/archivo/ver/${doc.id_doc}`;
+      jsonField.crm_v1.cotizaciones_historicas.push(nuevaCotizacion);
+      
+      const updateResult = await client.query(
+        'UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2 RETURNING *',
+        [jsonField, id_proyecto]
+      );
 
       await client.query('COMMIT');
       

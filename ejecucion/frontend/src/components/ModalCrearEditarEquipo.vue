@@ -129,7 +129,7 @@
                 <option :value="9">Grúas San Pablo</option>
                 <option :value="7">Bestmaq Arriendos</option>
                 <option :value="8">Logística del Sur</option>
-                <option :value="11">Royal Holding</option>
+                <option :value="11">Royal Rental</option>
               </select>
             </div>
             <!-- Año Fabricación -->

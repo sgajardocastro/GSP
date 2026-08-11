@@ -224,7 +224,7 @@ const companyThemes = {
   },
   11: {
     id: 11,
-    name: 'Royal Holding',
+    name: 'Royal Rental',
     brand: 'ROYAL CONSOLE',
     colorName: 'emerald',
     primary: '#10b981',

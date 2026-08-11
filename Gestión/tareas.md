@@ -216,9 +216,9 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **Item 13 (Horarios Inicio y Término Tentativo):** `OK PARA PRUEBA`. Inputs `datetime-local` en Sección 2 Datos de Operación e Ingeniería.
 * [x] **Item 8 (Expandir Estructurador):** `OK PARA PRUEBA`. Ampliados anchos de columnas en tabla de líneas para evitar truncado.
 * [x] **Item 9 (Eliminar Categoría de Servicio):** `OK PARA PRUEBA`. Removido el dropdown innecesario en Datos de Oportunidad.
-* [ ] **Item 10 (Ajustar Ubicación PDF):** Reubicar formato de ubicación a bullets/puntos.
-* [ ] **Item 11 (Eliminar Duplicado Visita Terreno PDF):** Eliminar referencia duplicada a la visita en el PDF.
-* [ ] **Item 5 (Renombrar Royal Holding ➔ Royal Rental):** Actualizado en emisores y maestras.
+* [x] **Item 10 (Ajustar Ubicación PDF):** `OK PARA PRUEBA`. Formato de ubicación estructurado en bullets (Dirección, Comuna, GPS) eliminando espacio en blanco.
+* [x] **Item 11 (Eliminar Duplicado Visita Terreno PDF):** `OK PARA PRUEBA`. Removida la fila duplicada de Visita en Sección 2 del reporte impreso.
+* [x] **Item 5 (Renombrar Royal Holding ➔ Royal Rental):** `OK PARA PRUEBA`. Reemplazado nombre en selector de empresas, Sidebar y modales de equipos.
 
 #### Grupo C (Asignación de Recursos, Flota y Operaciones)
 * [ ] **Item 1 (Capacidad Estanque Combustible):** Inputs `estanque_general` y `estanque_grua` en Ficha 360 Equipos.
