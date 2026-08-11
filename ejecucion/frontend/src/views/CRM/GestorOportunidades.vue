@@ -1401,31 +1401,24 @@
             </div>
           </div>
 
-          <div>
-            <div class="flex items-center gap-2 mb-1.5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+            <div class="flex items-center gap-2">
               <input type="checkbox" v-model="opportunity.requiere_acreditacion" id="left_acred" class="accent-amber-500" />
-              <label for="left_acred" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Acreditación (Detalle al Ganar)</label>
+              <label for="left_acred" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Acreditación</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" v-model="opportunity.incluye_flete" id="left_flete" class="accent-amber-500" />
+              <label for="left_flete" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Servicio incluye Traslado</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" v-model="opportunity.requiere_rigger" id="left_rigger" class="accent-amber-500" />
+              <label for="left_rigger" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Rigger / Señalero</label>
             </div>
           </div>
 
           <div>
             <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Descripción del Proyecto / Faena:</label>
             <textarea v-model="opportunity.descripcion" rows="3" placeholder="Ej. Montaje Reactores Planta, detalles operativos..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-3 text-xs focus:border-amber-500 outline-none text-white resize-none"></textarea>
-          </div>
-
-          <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Categoría de Servicio:</label>
-            <select v-model="opportunity.familia_servicio" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white transition-colors">
-              <option value="Grúas Telescópicas">1. Grúas Telescópicas</option>
-              <option value="Camiones Pluma">2. Camiones Pluma</option>
-              <option value="Grúas Horquillas">3. Grúas Horquillas</option>
-              <option value="Camiones con rampla">4. Camiones con rampla</option>
-              <option value="Manipuladores Telescópicos">5. Manipuladores Telescópicos</option>
-              <option value="Plataformas articuladas">6. Plataformas articuladas</option>
-              <option value="Plataformas Tijeras">7. Plataformas Tijeras</option>
-              <option value="Plataformas Telescópicas">8. Plataformas Telescópicas</option>
-              <option value="Servicios de personal acreditado">9. Servicios de personal acreditado</option>
-            </select>
           </div>
 
           <!-- VERSION CONTROL & ENVÍO DE EMAIL -->
@@ -1603,20 +1596,20 @@
               <table class="w-full text-left text-xs">
                 <thead>
                   <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                    <th class="p-3">Categoría</th>
-                    <th class="p-3 w-40">Subcategoría</th>
-                    <th class="p-3">Descripción / Equipo</th>
-                    <th class="p-3 text-center w-16">Cant.</th>
-                    <th class="p-3 w-28">Unidad de cobro</th>
-                    <th class="p-3 text-right w-28">Valor Unit.</th>
-                    <th class="p-3 text-right w-28">Subtotal</th>
+                    <th class="p-3 w-36">Tipo</th>
+                    <th class="p-3 min-w-[180px]">Subcategoría</th>
+                    <th class="p-3 min-w-[250px]">Descripción / Equipo</th>
+                    <th class="p-3 text-center w-20">Cant.</th>
+                    <th class="p-3 min-w-[160px]">Unidad de cobro</th>
+                    <th class="p-3 text-right w-32">Valor Unit.</th>
+                    <th class="p-3 text-right w-32">Subtotal</th>
                     <th class="p-3 text-center w-12"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
                   <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02]">
                     <td class="p-2">
-                      <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-32">
+                      <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
                         <option value="">-- Tipo --</option>
                         <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria">
                           {{ cat.nombre_categoria }}
@@ -1624,7 +1617,7 @@
                       </select>
                     </td>
                     <td class="p-2">
-                      <select v-model="line.subcategoria" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-full">
+                      <select v-model="line.subcategoria" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
                         <option value="">-- Seleccionar --</option>
                         <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria">
                           {{ sub.nombre_subcategoria }}
@@ -1681,6 +1674,15 @@
                   <div class="col-span-2">
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">Ciudad de la Obra</label>
                     <input type="text" v-model="siteVisit.obra_ciudad" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" />
+                  </div>
+                  <!-- Horarios de Inicio y Término Tentativo del Servicio -->
+                  <div>
+                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Fecha/Hora Inicio Servicio <span class="text-red-400">*</span></label>
+                    <input type="datetime-local" v-model="siteVisit.fecha_hora_inicio" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white focus:border-amber-400 outline-none" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Fecha/Hora Término (Tentativo)</label>
+                    <input type="datetime-local" v-model="siteVisit.fecha_hora_termino" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white focus:border-amber-400 outline-none" />
                   </div>
                   <div>
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">
