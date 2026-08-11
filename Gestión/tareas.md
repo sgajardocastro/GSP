@@ -152,6 +152,14 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Enviar Formatos Plan Izaje & ART:** Enviar archivos PDF del Plan de Izaje y Análisis de Riesgo de Trabajo para integración en la PWA.
 *   [ ] **[Jorge Ponce] Involucrar Líder Operativo:** Definir e incorporar a un líder operativo de GSP en el equipo de seguimiento del proyecto.
 
+**Reunión 10-Ago-2026 (Análisis de Reporte Diario & Estados de Pago EDP):**
+*   [ ] **[Sergio Gajardo] Ampliar Modelo BD:** Agregar tablas faltantes al modelo de base de datos para Reporte Diario, Horas Mínimas y EDP.
+*   [ ] **[Sergio Gajardo] Lógica Cálculo Horas (Flete vs Sin Flete):** Programar lógica de cálculo diferenciando reglas Con Flete (Inicio a Término) vs Sin Flete / Radio Urbano < 30km (Salida Base a Término).
+*   [ ] **[Sergio Gajardo] Sistema Reporte Diario PWA/Web:** Construir UI para tiempos (salida, inicio, colación, término, retorno), observaciones, orómetros, fotos y firma digital FES del cliente.
+*   [ ] **[Sergio Gajardo] Envío Automático Reporte Firmado:** Implementar procedimiento para enviar el reporte diario firmado al cliente de forma automática (`tnot_queue`).
+*   [ ] **[Jorge Ponce] Reglas Edición Manual Horarios:** Consultar con Omar sobre las reglas de negocio para la modificación manual de horarios de inicio y término por parte de operadores.
+*   [ ] **[Jorge Ponce] Lógica Comercial Categorías de Cobro:** Evaluar categorías de cobro vigentes (Hora, Día, Mes, Fijo) y coordinar definición final con Contabilidad, Comercial y Omar.
+
 ---
 
 ### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Herencia Global Manager - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c`)
@@ -193,3 +201,28 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [ ] Falta que el tratamiento de  acreditaciones por comnercial post asignación.
 * [ ] faltan las condiciones comerciales.
 * [x] Modelamiento proyectos asignación de  personas y equipos (Spec 22 en `.agents/specs/22_asignacion_recursos_db_spec.md`)
+
+---
+
+### 📌 Sprint Backlog Reunión (11-Ago-2026) - Prioridades Vendedores
+
+#### Grupo A (Bugs Críticos Inmediatos)
+* [x] **Item 6 (Acreditación Personal):** `OK PARA PRUEBA`. Fallback de tipos de certificados en selector y casilla de duración "Permanente" (sin fecha vencimiento).
+* [x] **Item 7 (Modificar Precio Cotización):** `OK PARA PRUEBA`. Sincronización de `snapshot_comercial.lines` al guardar ediciones de cotización.
+* [x] **Item 12 (Modal "+Nuevo Cliente"):** `OK PARA PRUEBA`. Rediseño con scroll interno (`max-h-[90vh]`), sticky footer para botón Registrar y contraste alto en modo oscuro.
+
+#### Grupo B (Mejoras en Cotización y PDF)
+* [x] **Item 20 (Flags Flete & Rigger en Sección 1):** `OK PARA PRUEBA`. Reubicados los checkboxes `incluye_flete` y `requiere_rigger` en Sección 1 Datos de Oportunidad junto a Acreditación.
+* [x] **Item 13 (Horarios Inicio y Término Tentativo):** `OK PARA PRUEBA`. Inputs `datetime-local` en Sección 2 Datos de Operación e Ingeniería.
+* [x] **Item 8 (Expandir Estructurador):** `OK PARA PRUEBA`. Ampliados anchos de columnas en tabla de líneas para evitar truncado.
+* [x] **Item 9 (Eliminar Categoría de Servicio):** `OK PARA PRUEBA`. Removido el dropdown innecesario en Datos de Oportunidad.
+* [ ] **Item 10 (Ajustar Ubicación PDF):** Reubicar formato de ubicación a bullets/puntos.
+* [ ] **Item 11 (Eliminar Duplicado Visita Terreno PDF):** Eliminar referencia duplicada a la visita en el PDF.
+* [ ] **Item 5 (Renombrar Royal Holding ➔ Royal Rental):** Actualizado en emisores y maestras.
+
+#### Grupo C (Asignación de Recursos, Flota y Operaciones)
+* [ ] **Item 1 (Capacidad Estanque Combustible):** Inputs `estanque_general` y `estanque_grua` en Ficha 360 Equipos.
+* [ ] **Item 14 (Filtrar Personas por Cargo Rigger/Operador):** Filtro por rol en asignación de recursos.
+* [ ] **Item 15 (Comentario Operaciones):** Campo de texto libre en preparación de operaciones.
+* [ ] **Dar de Baja a Isis Oses:** Desactivar usuario en base de datos.
+
