@@ -10,67 +10,6 @@ exports.getAcreditacionesKanban = async (req, res) => {
   }
 };
 
-exports.getPersonalAcreditacion = async (req, res) => {
-  try {
-    const q = req.query.q || req.query.query || '';
-    const data = await acreditacionModel.getPersonalAcreditacion(q);
-    res.status(200).json({ status: "success", data });
-  } catch (error) {
-    console.error("[ACREDITACION] Error obteniendo personal:", error.message);
-    res.status(500).json({ message: "Error al obtener personal de acreditación", error: error.message });
-  }
-};
-
-exports.getPersonalDetail = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await acreditacionModel.getPersonalDetail(id);
-    if (!data) {
-      return res.status(404).json({ message: "Trabajador no encontrado" });
-    }
-    res.status(200).json({ status: "success", data });
-  } catch (error) {
-    console.error("[ACREDITACION] Error obteniendo detalle de personal:", error.message);
-    res.status(500).json({ message: "Error al obtener detalle de personal", error: error.message });
-  }
-};
-
-exports.getPersonalByRut = async (req, res) => {
-  try {
-    const { rut } = req.params;
-    const data = await acreditacionModel.getPersonalByRut(rut);
-    if (!data) {
-      return res.status(404).json({ message: "Trabajador no encontrado" });
-    }
-    res.status(200).json({ status: "success", data });
-  } catch (error) {
-    console.error("[ACREDITACION] Error obteniendo personal por RUT:", error.message);
-    res.status(500).json({ message: "Error al obtener personal por RUT", error: error.message });
-  }
-};
-
-exports.updatePersonalDetail = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await acreditacionModel.updatePersonalDetail(id, req.body);
-    res.status(200).json({ status: "success", data });
-  } catch (error) {
-    console.error("[ACREDITACION] Error actualizando personal:", error.message);
-    res.status(500).json({ message: "Error al actualizar personal", error: error.message });
-  }
-};
-
-exports.addPersonalCertificado = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const cert = await acreditacionModel.addPersonalCertificado(id, req.body);
-    res.status(201).json({ status: "success", data: cert });
-  } catch (error) {
-    console.error("[ACREDITACION] Error vinculando certificado:", error.message);
-    res.status(500).json({ message: "Error al vincular certificado", error: error.message });
-  }
-};
-
 exports.getDetalleAcreditacion = async (req, res) => {
   try {
     const { id } = req.params;

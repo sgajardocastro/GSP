@@ -134,43 +134,37 @@ onMounted(async () => {
   rut = rut.trim()
 
   try {
-    const rutClean = rut.replace(/[^0-9kK]/g, '')
-    let det = null
-    try {
-      const rutRes = await apiAxios.get(`/acreditacion/personal/rut/${rutClean}`)
-      det = rutRes.data.data
-    } catch (err) {
-      console.warn("Búsqueda directa por RUT no encontró registros, probando fallback lista:", err)
-    }
-
-    if (!det) {
-      const res = await apiAxios.get('/acreditacion/personal')
-      const personalItems = res.data.data || []
-      const normalizeRut = (r) => (r || '').replace(/[^0-9kK]/g, '').toLowerCase()
-      const item = personalItems.find(i => normalizeRut(i.rut) === normalizeRut(rut))
-      if (item) {
-        const detRes = await apiAxios.get(`/acreditacion/personal/${item.id_user}`)
-        det = detRes.data.data
-      }
-    }
-
-    if (!det) {
+    // 1. Obtener lista de personal
+    const res = await apiAxios.get('/acreditacion/personal')
+    const personalItems = res.data.data || []
+    
+    // Buscar el trabajador por rut (removiendo puntos, guiones y espacios)
+    const normalizeRut = (r) => (r || '').replace(/[^0-9kK]/g, '').toLowerCase()
+    
+    const item = personalItems.find(i => normalizeRut(i.rut) === normalizeRut(rut))
+    
+    if (!item) {
       valid.value = false
       loading.value = false
       return
     }
 
     valid.value = true
-    const certs = det.certificados || []
+    const pId = item.id_user
+
+    // 2. Obtener certificados y detalles
+    const detRes = await apiAxios.get(`/acreditacion/personal/${pId}`)
+    const det = detRes.data.data
+    const certs = det?.certificados || []
 
     trabajador.value = {
-      rut: det.rut || rut,
-      nombre: `${det.name_frst || ''} ${det.name_sec || ''} ${det.apellido_pat || ''} ${det.apellido_mat || ''}`.trim().replace(/\s+/g, ' ') || 'Sin Nombre',
+      rut: det.rut || item.rut,
+      nombre: `${det.name_frst || ''} ${det.apellido_pat || ''} ${det.apellido_mat || ''}`.trim().replace(/\s+/g, ' ') || item.nombre || 'Sin Nombre',
       foto: null,
       specs: [
-        { label: 'Cargo', value: det.cargo || 'Operador' },
+        { label: 'Cargo', value: det.cargo || item.rol || 'S/I' },
         { label: 'Empresa', value: 'Grúas San Pablo' },
-        { label: 'Estado', value: det.activo ? 'Habilitado' : 'Inactivo' }
+        { label: 'Estado', value: item.estado || (det.activo ? 'Activo' : 'Inactivo') }
       ]
     }
 
