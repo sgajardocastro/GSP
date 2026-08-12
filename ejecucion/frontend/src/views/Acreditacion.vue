@@ -3,7 +3,7 @@
     <!-- CABECERA -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-white/5 pb-5 gap-4">
       <div>
-        <h2 class="text-xl font-black text-white uppercase tracking-wider font-display">Acreditación Personal (HSEC)</h2>
+        <h2 class="text-xl font-black text-white uppercase tracking-wider font-display">Acreditación Personal</h2>
         <p class="text-xs text-slate-400 mt-1">Monitoreo en tiempo real de pases vigentes de operadores y riggers para ingreso a plantas industriales.</p>
       </div>
       
@@ -95,7 +95,7 @@
               <th class="p-4 text-left font-black">Cargo</th>
               <th class="p-4 text-left font-black">Correo Electrónico</th>
               <th class="p-4 text-center font-black">Control</th>
-              <th class="p-4 text-center font-black">Estado HSEC</th>
+              <th class="p-4 text-center font-black">Estado</th>
               <th class="p-4 text-center font-black">Acción</th>
             </tr>
           </thead>
