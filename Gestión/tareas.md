@@ -218,6 +218,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **Item 9 (Eliminar Categoría de Servicio):** `OK PARA PRUEBA`. Removido el dropdown innecesario en Datos de Oportunidad.
 * [x] **Item 10 (Ajustar Ubicación PDF):** `OK PARA PRUEBA`. Formato de ubicación estructurado en bullets (Dirección, Comuna, GPS) eliminando espacio en blanco.
 * [x] **Item 11 (Eliminar Duplicado Visita Terreno PDF):** `OK PARA PRUEBA`. Removida la fila duplicada de Visita en Sección 2 del reporte impreso.
+* [x] **Item 4 (Renombrar Unidades de Medida):** `OK PARA PRUEBA`. Opciones del selector de unidades actualizadas exactamente a: `Horas`, `Diario`, `Semanal`, `Mensual`, `Fijo` y `Flete`.
 * [x] **Item 5 (Renombrar Royal Holding ➔ Royal Rental):** `OK PARA PRUEBA`. Reemplazado nombre en selector de empresas, Sidebar y modales de equipos.
 
 #### Grupo C (Asignación de Recursos, Flota y Operaciones)

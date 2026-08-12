@@ -84,6 +84,19 @@ Formulario técnico descriptivo para la planificación e ingeniería de izajes:
   - **Mecanismo de Conexión de Datos:** Al activarse, habilita un selector desplegable de inspecciones/visitas ya completadas y aprobadas en terreno (`tsrv_survey`).
   - Al seleccionar una visita, el sistema realiza una consulta asíncrona a la base de datos y **rellena automáticamente** todos los datos generales de la obra y maniobra (campos a a i anteriores) reduciendo el reingreso de información.
 
+## 3.3. Estructurador de Servicios y Catálogo de Unidades de Cobro
+
+En el estructurador multi-línea de la cotización (`lines`), la columna **Unidad de Cobro** (`line.unidad`) debe ofrecer exclusivamente el catálogo exacto, limpio y estandarizado de unidades de medida (sin paréntesis ni textos adicionales):
+
+* `Horas`
+* `Diario`
+* `Semanal`
+* `Mensual`
+* `Fijo`
+* `Flete`
+
+---
+
 ## 4. Flujo Operativo y Gatillos (Triggers)
 - **Inicio:** Se crea la oportunidad desde el Kanban de Preventa o desde la Ficha 360 del Cliente, usando el botón "Nueva Oportunidad".
 - **Desarrollo:** El equipo comercial busca al cliente (RUT o Nombre), se auto-completan los campos del mandante y se ingresan las condiciones de pago.
