@@ -38,6 +38,33 @@ El módulo de **Acreditaciones Post-Venta Ganada** gestiona de forma asíncrona 
 - `created_at` (TIMESTAMP DEFAULT NOW())
 - `updated_at` (TIMESTAMP DEFAULT NOW())
 
+### 2.3 Query SQL Oficial de Consulta (`GET /api/acreditacion`)
+```sql
+SELECT 
+  a.id_acreditacion,
+  a.id_proyecto,
+  p.nombre_proyecto,
+  p.codi_proyecto,
+  COALESCE(c.name_empresa, 'Cliente GSP') AS nombre_cliente,
+  a.estado_acreditacion,
+  a.porcentaje_avance,
+  a.fecha_inicio,
+  a.fecha_aprobacion_final,
+  com.name_frst || ' ' || com.apellido_pat AS nombre_comercial,
+  ana.name_frst || ' ' || ana.apellido_pat AS nombre_analista,
+  COUNT(d.id_acreditacion_doc) AS total_docs,
+  COUNT(CASE WHEN d.estado_doc = 'APROBADO' THEN 1 END) AS docs_aprobados,
+  COUNT(CASE WHEN d.estado_doc = 'RECHAZADO' THEN 1 END) AS docs_rechazados
+FROM sch_leangsp.tpry_acreditacion a
+JOIN sch_leangsp.tpry_proyecto p ON a.id_proyecto = p.id_proyecto
+LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
+LEFT JOIN sch_leangsp.tsec_users com ON a.id_user_comercial = com.id_user
+LEFT JOIN sch_leangsp.tsec_users ana ON a.id_user_analista = ana.id_user
+LEFT JOIN sch_leangsp.tpry_acreditacion_doc d ON a.id_acreditacion = d.id_acreditacion
+GROUP BY a.id_acreditacion, p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, c.name_empresa, com.name_frst, com.apellido_pat, ana.name_frst, ana.apellido_pat
+ORDER BY a.updated_at DESC;
+```
+
 ---
 
 ## 🚦 3. Matriz de Estados y Reglas de Negocio

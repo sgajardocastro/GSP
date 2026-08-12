@@ -7,9 +7,9 @@ const acreditacionModel = {
       SELECT 
         a.id_acreditacion,
         a.id_proyecto,
-        p.name_proyecto,
+        p.nombre_proyecto,
         p.codi_proyecto,
-        c.name_fantasia AS nombre_cliente,
+        c.name_empresa AS nombre_cliente,
         a.estado_acreditacion,
         a.porcentaje_avance,
         a.fecha_inicio,
@@ -21,11 +21,11 @@ const acreditacionModel = {
         COUNT(CASE WHEN d.estado_doc = 'RECHAZADO' THEN 1 END) AS docs_rechazados
       FROM sch_leangsp.tpry_acreditacion a
       JOIN sch_leangsp.tpry_proyecto p ON a.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tcli_cliente c ON p.id_cliente = c.id_cliente
+      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       LEFT JOIN sch_leangsp.tsec_users com ON a.id_user_comercial = com.id_user
       LEFT JOIN sch_leangsp.tsec_users ana ON a.id_user_analista = ana.id_user
       LEFT JOIN sch_leangsp.tpry_acreditacion_doc d ON a.id_acreditacion = d.id_acreditacion
-      GROUP BY a.id_acreditacion, p.id_proyecto, p.name_proyecto, p.codi_proyecto, c.name_fantasia, com.name_frst, com.apellido_pat, ana.name_frst, ana.apellido_pat
+      GROUP BY a.id_acreditacion, p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, c.name_empresa, com.name_frst, com.apellido_pat, ana.name_frst, ana.apellido_pat
       ORDER BY a.updated_at DESC
     `;
     const result = await db.query(sql);
@@ -37,12 +37,12 @@ const acreditacionModel = {
     const sqlHead = `
       SELECT 
         a.*,
-        p.name_proyecto,
+        p.nombre_proyecto,
         p.codi_proyecto,
-        c.name_fantasia AS nombre_cliente
+        COALESCE(c.name_empresa, 'Cliente GSP') AS nombre_cliente
       FROM sch_leangsp.tpry_acreditacion a
       JOIN sch_leangsp.tpry_proyecto p ON a.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tcli_cliente c ON p.id_cliente = c.id_cliente
+      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       WHERE a.id_acreditacion = $1
     `;
     const resHead = await db.query(sqlHead, [id_acreditacion]);
