@@ -32,6 +32,157 @@ const acreditacionModel = {
     return result.rows;
   },
 
+  // Obtener nómina de personal para la vista Acreditación Personal
+  async getPersonalAcreditacion(q = '') {
+    let sql = `
+      SELECT 
+        u.id_user,
+        TRIM(COALESCE(u.name_frst,'') || ' ' || COALESCE(u.name_sec,'') || ' ' || COALESCE(u.apellido_pat,'') || ' ' || COALESCE(u.apellido_mat,'')) AS nombre,
+        u.rut,
+        COALESCE(u.json_data->>'cargo', 'ESPECIALISTA') AS rol,
+        u.email,
+        u.json_data->>'fecha_vencimiento_hsec' AS "fechaControl",
+        COALESCE(u.json_data->>'estado_hsec', 'habilitado') AS estado
+      FROM sch_leangsp.tsec_users u
+      WHERE u.activo = true
+    `;
+    const params = [];
+    if (q && q.trim() !== '') {
+      params.push(`%${q.trim()}%`);
+      sql += ` AND (
+        UPPER(u.name_frst) LIKE UPPER($1) OR 
+        UPPER(u.apellido_pat) LIKE UPPER($1) OR 
+        UPPER(u.rut) LIKE UPPER($1) OR
+        UPPER(COALESCE(u.json_data->>'cargo', '')) LIKE UPPER($1)
+      )`;
+    }
+    sql += ` ORDER BY u.id_user DESC`;
+    const result = await db.query(sql, params);
+    return result.rows;
+  },
+
+  // Obtener detalle completo de expediente de trabajador
+  async getPersonalDetail(id_user) {
+    const sqlUser = `
+      SELECT 
+        u.id_user,
+        u.name_frst,
+        u.name_sec,
+        u.apellido_pat,
+        u.apellido_mat,
+        u.rut,
+        u.email,
+        u.movil,
+        COALESCE(u.json_data->>'cargo', 'Operador') AS cargo,
+        u.activo,
+        u.json_data
+      FROM sch_leangsp.tsec_users u
+      WHERE u.id_user = $1
+    `;
+    const resUser = await db.query(sqlUser, [id_user]);
+    if (resUser.rows.length === 0) return null;
+    const user = resUser.rows[0];
+
+    let certificados = [];
+    if (user.json_data && Array.isArray(user.json_data.certificados)) {
+      certificados = user.json_data.certificados;
+    }
+
+    return {
+      ...user,
+      certificados
+    };
+  },
+
+  // Obtener trabajador por RUT (normalizando guiones y puntos)
+  async getPersonalByRut(rutParam) {
+    const cleanRut = (rutParam || '').replace(/[^0-9kK]/g, '').toUpperCase();
+    const sqlUser = `
+      SELECT 
+        u.id_user,
+        u.name_frst,
+        u.name_sec,
+        u.apellido_pat,
+        u.apellido_mat,
+        u.rut,
+        u.email,
+        u.movil,
+        COALESCE(u.json_data->>'cargo', 'Operador') AS cargo,
+        u.activo,
+        u.json_data
+      FROM sch_leangsp.tsec_users u
+      WHERE UPPER(REGEXP_REPLACE(u.rut, '[^0-9kK]', '', 'g')) = $1
+    `;
+    const resUser = await db.query(sqlUser, [cleanRut]);
+    if (resUser.rows.length === 0) return null;
+    const user = resUser.rows[0];
+
+    let certificados = [];
+    if (user.json_data && Array.isArray(user.json_data.certificados)) {
+      certificados = user.json_data.certificados;
+    }
+
+    return {
+      ...user,
+      certificados
+    };
+  },
+
+  // Actualizar datos básicos de trabajador
+  async updatePersonalDetail(id_user, data) {
+    const { name_frst, name_sec, apellido_pat, apellido_mat, rut, email, movil, cargo, activo } = data;
+    
+    const check = await db.query('SELECT json_data FROM sch_leangsp.tsec_users WHERE id_user = $1', [id_user]);
+    const currentJson = check.rows[0]?.json_data || {};
+    currentJson.cargo = cargo || currentJson.cargo || 'Operador';
+
+    const sql = `
+      UPDATE sch_leangsp.tsec_users
+      SET name_frst = $2,
+          name_sec = $3,
+          apellido_pat = $4,
+          apellido_mat = $5,
+          rut = $6,
+          email = $7,
+          movil = $8,
+          activo = $9,
+          json_data = $10,
+          fecha_actualizacion = NOW()
+      WHERE id_user = $1
+      RETURNING *
+    `;
+    const res = await db.query(sql, [id_user, name_frst || '', name_sec || '', apellido_pat || '', apellido_mat || '', rut || '', email || '', movil || '', activo !== false, JSON.stringify(currentJson)]);
+    return res.rows[0];
+  },
+
+  // Vincular certificado a expediente de trabajador
+  async addPersonalCertificado(id_user, certData) {
+    const { id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, observaciones, id_doc } = certData;
+
+    const check = await db.query('SELECT json_data FROM sch_leangsp.tsec_users WHERE id_user = $1', [id_user]);
+    if (check.rows.length === 0) return null;
+
+    const currentJson = check.rows[0].json_data || {};
+    if (!Array.isArray(currentJson.certificados)) {
+      currentJson.certificados = [];
+    }
+
+    const newCert = {
+      id_cert: Date.now(),
+      id_tipo_certificado_persona,
+      fecha_emision,
+      fecha_vencimiento,
+      observaciones,
+      id_doc,
+      created_at: new Date().toISOString()
+    };
+
+    currentJson.certificados.push(newCert);
+
+    await db.query('UPDATE sch_leangsp.tsec_users SET json_data = $2 WHERE id_user = $1', [id_user, JSON.stringify(currentJson)]);
+    return newCert;
+  },
+
   // Obtener detalle de expediente por id_acreditacion
   async getDetalleAcreditacion(id_acreditacion) {
     const sqlHead = `

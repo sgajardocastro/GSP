@@ -63,3 +63,18 @@ const fleetMantencionState = {
   - **Operativos:** Se incrementa para todas las demás grúas que no estén en taller ni posean alertas/vencimientos vigentes.
 - **Interacción Ficha 360°:** El botón de acción "Ver Ficha 360" en la última columna ejecuta la función `openFichaEquipo(plate)`. Carga en tiempo de ejecución los metadatos correspondientes de la patente (Liebherr GZBC-71, GZBC-61, GZBC-58 o GZBC-43) y actualiza de forma dinámica las pestañas de especificaciones técnicas, documentos legales vigentes/vencidos, checklist de inspecciones y mantenimientos correctivos.
 - **Exportación Segura:** Exporta la tabla mediante `exportTableToExcel('fleet-table', 'Control_Flota_GSP.csv')`. Remueve del flujo del archivo CSV el botón "Ver Ficha 360" y la columna de Acción para que sólo contenga datos útiles de la flota.
+
+---
+
+## 4. ⛽ ESPECIFICACIÓN DE ESTANQUES DE COMBUSTIBLE (FICHA Y CREACIÓN 360°)
+
+### A. Modelo de Datos de Combustible (`tequ_equipo` / `ModalCrearEditarEquipo.vue`)
+- `cantidad_estanques`: Number (`1` o `2`, por defecto `1`).
+- `capacidad_estanque_chasis_litros`: Litros del Estanque 1 (Chasis / Motor Traslado) — Campo obligatorio.
+- `capacidad_estanque_grua_litros`: Litros del Estanque 2 (Superestructura / Motor Izaje Grúa) — Se habilita únicamente cuando `cantidad_estanques === 2`.
+- `capacidad_estanque_combustible_litros`: Campo legacy de retrocompatibilidad (suma total).
+
+### B. UI/UX de Selección (1 Clic) e Inferencia Automática
+- **Botonera Toggle:** Permite alternar entre `[ ⛽ 1 Estanque (Monomotor / Camión) ]` y `[ 🏗️ 2 Estanques (Bimotor / Grúa AT) ]`.
+- **Inferencia por Categoría:** Al seleccionar categorías con la palabra *"Grúa"*, *"Grua"* o *"Telescópica"*, la UI conmuta automáticamente a `cantidad_estanques = 2`. Para camiones, camas bajas o camionetas, conmuta automáticamente a `cantidad_estanques = 1`.
+- **Mapeo de Datos Antiguos (`loadData`):** Si un equipo existente posee solo `capacidad_estanque_combustible_litros`, se asigna a `capacidad_estanque_chasis_litros` y fija `cantidad_estanques = 1` sin corromper registros históricos.
