@@ -302,7 +302,6 @@
                         <option value="Semanal">Semanal</option>
                         <option value="Mensual">Mensual</option>
                         <option value="Fijo">Fijo</option>
-                        <option value="Flete">Flete</option>
                       </select>
                     </td>
                     <td class="p-2">
@@ -1655,7 +1654,6 @@
                         <option value="Semanal">Semanal</option>
                         <option value="Mensual">Mensual</option>
                         <option value="Fijo">Fijo</option>
-                        <option value="Flete">Flete</option>
                       </select>
                     </td>
                     <td class="p-2">

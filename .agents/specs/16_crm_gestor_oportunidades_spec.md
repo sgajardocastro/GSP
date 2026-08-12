@@ -84,16 +84,36 @@ Formulario técnico descriptivo para la planificación e ingeniería de izajes:
   - **Mecanismo de Conexión de Datos:** Al activarse, habilita un selector desplegable de inspecciones/visitas ya completadas y aprobadas en terreno (`tsrv_survey`).
   - Al seleccionar una visita, el sistema realiza una consulta asíncrona a la base de datos y **rellena automáticamente** todos los datos generales de la obra y maniobra (campos a a i anteriores) reduciendo el reingreso de información.
 
-## 3.3. Estructurador de Servicios y Catálogo de Unidades de Cobro
+## 3.3. Estructurador de Servicios, Catálogo de Unidades y Reglas Comerciales de Flete / Fijo
 
-En el estructurador multi-línea de la cotización (`lines`), la columna **Unidad de Cobro** (`line.unidad`) debe ofrecer exclusivamente el catálogo exacto, limpio y estandarizado de unidades de medida (sin paréntesis ni textos adicionales):
+### A. Catálogo Estandarizado de Unidades de Cobro (`line.unidad`)
+En la grilla del estructurador de cotización (`lines`), la columna **Unidad de Cobro** expone los valores limpios y estandarizados:
 
-* `Horas`
-* `Diario`
-* `Semanal`
-* `Mensual`
-* `Fijo`
-* `Flete`
+* `Horas`: Cobro por hora de servicio efectivo.
+* `Diario`: Cobro por jornada / mínima diaria.
+* `Semanal`: Cobro por semana de servicio.
+* `Mensual`: Cobro por mes / mínima mensual.
+* `Fijo`: Monto global cerrado (Suma Alzada).
+
+---
+
+### B. ⚠️ Reglas Comerciales y Puntos Críticos a Clarificar con el Cliente
+
+> [!WARNING]
+> **PUNTO DE AUDITORÍA COMERCIAL 1: TRATAMIENTO DEL FLETE / MOVILIZACIÓN**
+> 1. **Naturaleza del Flete:** El Flete es un sobrecargo interno en el valor del servicio que **NO se expone como una línea explícita independiente al cliente** en la propuesta comercial final, sino que se incorpora/prorratea en el monto global o tarifa.
+> 2. **Gatillo de Activación:** Se activa mediante un **Flag Binario (`incluye_flete`)** en la Sección 1 (Datos de Oportunidad) cuando la distancia a faena supera el umbral operativo (ej. > 30 kilómetros de la base).
+> 3. **📌 PENDIENTE ESSENCIAL CON EL CLIENTE:** Clarificar la fórmula exacta del sobrecargo por flete:
+>    - ¿Genera un porcentaje (%) de recargo automático sobre el total de la cotización?
+>    - ¿Genera un delta fijo ($/km) por tramo de distancia?
+>    - ¿Se prorratea en las tarifas unitarias de los equipos o se añade al subtotal neto?
+
+> [!IMPORTANT]
+> **PUNTO DE AUDITORÍA COMERCIAL 2: IMPACTO DE LA UNIDAD "FIJO" (SUMA ALZADA)**
+> 1. **Naturaleza de "Fijo":** La unidad `Fijo` debe incluirse en el catálogo para representar montos cerrados por maniobra o servicio puntual.
+> 2. **📌 PENDIENTE ESSENCIAL CON EL CLIENTE:** Clarificar la lógica del calculador:
+>    - ¿Seleccionar la unidad `Fijo` otorga un precio cerrado independiente de la composición detallada de cantidad/valor unitario de las líneas en el estructurador?
+>    - ¿O aplica únicamente como etiqueta de cobro por línea sin alterar la suma del estructurador?
 
 ---
 
