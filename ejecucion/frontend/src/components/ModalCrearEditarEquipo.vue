@@ -206,15 +206,60 @@
                 class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-blue-500/50 uppercase tracking-wider"
               />
             </div>
-            <!-- Capacidad Estanque Combustible -->
-            <div class="space-y-1.5">
-              <label class="text-[9px] font-black text-amber-400 uppercase tracking-widest block">Capacidad Estanque (Lts)</label>
-              <input 
-                type="number" 
-                v-model.number="form.capacidad_estanque_combustible_litros" 
-                placeholder="EJ. 350 Lts" 
-                class="w-full bg-white/5 border border-amber-500/40 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
-              />
+          </div>
+
+          <!-- BLOQUE CAPACIDAD DE COMBUSTIBLE (CONFIGURACIÓN 1 O 2 ESTANQUES) -->
+          <div class="bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20 space-y-3">
+            <div class="flex justify-between items-center border-b border-amber-500/10 pb-2">
+              <label class="text-[10px] font-black text-amber-400 uppercase tracking-wider">
+                ⛽ Configuración de Motores y Estanques de Combustible
+              </label>
+              <div class="flex gap-2">
+                <button 
+                  type="button"
+                  @click="form.cantidad_estanques = 1; form.capacidad_estanque_grua_litros = null"
+                  :class="form.cantidad_estanques === 1 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20' : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'"
+                  class="px-3 py-1 rounded-lg text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  ⛽ 1 Estanque (Monomotor / Camión)
+                </button>
+                <button 
+                  type="button"
+                  @click="form.cantidad_estanques = 2"
+                  :class="form.cantidad_estanques === 2 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20' : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'"
+                  class="px-3 py-1 rounded-lg text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  🏗️ 2 Estanques (Bimotor / Grúa AT)
+                </button>
+              </div>
+            </div>
+
+            <div class="grid gap-3" :class="form.cantidad_estanques === 2 ? 'grid-cols-2' : 'grid-cols-1'">
+              <!-- Estanque 1: Chasis / Traslado -->
+              <div class="space-y-1.5">
+                <label class="text-[9px] font-black text-amber-300 uppercase tracking-wider block">
+                  Estanque 1: Chasis / Motor Traslado (Lts)
+                </label>
+                <input 
+                  type="number" 
+                  v-model.number="form.capacidad_estanque_chasis_litros" 
+                  placeholder="Ej. 480 Lts" 
+                  class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <!-- Estanque 2: Superestructura / Izaje Grúa -->
+              <div v-if="form.cantidad_estanques === 2" class="space-y-1.5">
+                <label class="text-[9px] font-black text-amber-300 uppercase tracking-wider block">
+                  Estanque 2: Grúa / Motor Izaje (Lts) <span class="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <input 
+                  type="number" 
+                  v-model.number="form.capacidad_estanque_grua_litros" 
+                  placeholder="Ej. 250 Lts" 
+                  class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
             </div>
           </div>
 
@@ -426,6 +471,9 @@ const form = ref({
   id_subcategoria: null,
   estado: 'OPERATIVO',
   tipo_equipo: '',
+  cantidad_estanques: 1,
+  capacidad_estanque_chasis_litros: null,
+  capacidad_estanque_grua_litros: null,
   capacidad_estanque_combustible_litros: null,
   observaciones: ''
 })
@@ -484,6 +532,10 @@ const loadData = async () => {
           id_subcategoria: eq.id_subcategoria || null,
           estado: eq.estado || 'OPERATIVO',
           tipo_equipo: eq.tipo_equipo || '',
+          cantidad_estanques: eq.cantidad_estanques || (eq.capacidad_estanque_grua_litros ? 2 : 1),
+          capacidad_estanque_chasis_litros: eq.capacidad_estanque_chasis_litros || eq.capacidad_estanque_combustible_litros || null,
+          capacidad_estanque_grua_litros: eq.capacidad_estanque_grua_litros || null,
+          capacidad_estanque_combustible_litros: eq.capacidad_estanque_combustible_litros || null,
           observaciones: eq.observaciones || ''
         }
 
@@ -510,6 +562,13 @@ const onCategoryChange = () => {
   if (selectedCategory.value) {
     subcategories.value = selectedCategory.value.subcategories || []
     form.value.id_subcategoria = null
+    const catName = (selectedCategory.value.nombre_categoria || '').toLowerCase()
+    if (catName.includes('grúa') || catName.includes('grua') || catName.includes('telescópica')) {
+      form.value.cantidad_estanques = 2
+    } else {
+      form.value.cantidad_estanques = 1
+      form.value.capacidad_estanque_grua_litros = null
+    }
   } else {
     subcategories.value = []
     form.value.id_subcategoria = null
