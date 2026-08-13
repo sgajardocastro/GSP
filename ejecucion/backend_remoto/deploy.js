@@ -1,60 +1,29 @@
-const { NodeSSH } = require('node-ssh');
-const path = require('path');
-
+﻿const { NodeSSH } = require('node-ssh');
 const ssh = new NodeSSH();
 
 async function deploy() {
   try {
-    console.log('Connecting to server...');
     await ssh.connect({
-      host: '138.255.103.18',
+      host: 'servidor.leanglobal.cl',
       username: 'root',
       password: 'lgbl2025.',
-      port: 1295
+      port: 1295,
+      readyTimeout: 10000
     });
-    console.log('Connected!');
-
-    const localSrcDir = path.join(__dirname, 'src');
-    const remoteDestDir = '/home/nodeadmin/proyectos/lean-services-gsp/src';
-
-    console.log(`Uploading ${localSrcDir} to ${remoteDestDir}...`);
+    console.log('Conectado exitosamente como root.');
     
-    // uploadDirectory uploads all files recursively
-    const failed = [];
-    const successful = [];
-    await ssh.putDirectory(localSrcDir, remoteDestDir, {
-      recursive: true,
-      concurrency: 10,
-      tick: function(localPath, remotePath, error) {
-        if (error) {
-          failed.push(localPath);
-          console.error(`Failed to upload ${localPath}:`, error);
-        } else {
-          successful.push(localPath);
-        }
-      }
-    });
-
-    console.log(`Upload complete. ${successful.length} successful, ${failed.length} failed.`);
-
-    console.log('Fixing permissions...');
-    await ssh.execCommand('chown -R nodeadmin:nodeadmin /home/nodeadmin/proyectos/lean-services-gsp/src');
-
-    console.log('Restarting PM2 process as nodeadmin...');
-    const result = await ssh.execCommand('su - nodeadmin -c "pm2 restart lean-services-gsp"');
-    console.log('PM2 restart output:');
-    console.log(result.stdout);
-    if (result.stderr) {
-      console.error('PM2 restart error:');
-      console.error(result.stderr);
-    }
-
-    console.log('Deployment completely successful!');
-  } catch (err) {
-    console.error('Deployment failed:', err);
-  } finally {
+    const command = 'su - nodeadmin -c "cd /home/nodeadmin/proyectos/lean-services-gsp && git pull origin refactor-maquina-estados-fsm && pm2 restart 10"';
+    console.log('Ejecutando comando:', command);
+    const result = await ssh.execCommand(command);
+    
+    console.log('STDOUT:', result.stdout);
+    if (result.stderr) console.error('STDERR:', result.stderr);
+    console.log('CODE:', result.code);
+    
     ssh.dispose();
+  } catch (err) {
+    console.error('Error de conexión o ejecución:', err);
+    process.exit(1);
   }
 }
-
 deploy();

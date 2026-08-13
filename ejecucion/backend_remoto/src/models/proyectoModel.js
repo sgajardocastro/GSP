@@ -479,9 +479,22 @@ class ProyectoModel {
 
       // Generar secciones extra dinámicas para los tabs del CRM (ej. Datos Servicio & Visita)
       let extraSectionsHtml = '';
+
+      const requiresRigger = jsonField.preventa_v1?.requiere_rigger ? 'SÍ' : 'NO';
+      const requerimientosHtml = `
+        <table class="info-table" style="width: 100%; margin-top: 10px;">
+          <tr>
+            <td style="width: 25%; font-weight: bold;">REQUIERE RIGGER:</td>
+            <td style="width: 75%; font-weight: bold; color: ${jsonField.preventa_v1?.requiere_rigger ? '#000' : '#666'};">${requiresRigger}</td>
+          </tr>
+        </table>
+      `;
+      extraSectionsHtml += requerimientosHtml;
+
       const standardKeys = ['lineas_servicio', 'cotizaciones_historicas', 'condiciones_pdf', 'prioridad', 'contacto_nombre', 'contacto_telefono', 'tipo_pago', 'requiere_oc_hes', 'obra_nombre', 'obra_direccion', 'obra_ciudad', 'coordenadas_mapa', 'detalle_servicio', 'tipo_carga', 'peso_carga', 'volumen_carga', 'radios_trabajo', 'alturas_trabajo', 'visita_terreno', 'validez_dias', 'moneda', 'condicion_servicio'];
       let sectionCounter = 4; // Empezamos en 4 porque 1, 2 y 3 ya están definidos arriba (la sección de Condiciones Comerciales será la última)
       
+      /*
       for (const key in crm) {
         if (!standardKeys.includes(key) && crm[key] !== null && crm[key] !== undefined && crm[key] !== '') {
            let valHtml = '';
@@ -510,6 +523,7 @@ class ProyectoModel {
            sectionCounter++;
         }
       }
+      */
 
       // 5. Generar plantilla HTML
       const htmlContent = `
@@ -622,11 +636,9 @@ class ProyectoModel {
           <table class="info-table">
             <tr>
               <td class="info-label">Nombre Obra/Proyecto:</td>
-              <td class="info-value" colspan="3">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
-            </tr>
-            <tr>
-              <td class="info-label">Ubicación Faena/Obra:</td>
-              <td class="info-value" colspan="3">
+              <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+              <td class="info-label">Ubicación Obra:</td>
+              <td class="info-value">
                 • <strong>Dirección:</strong> ${crm.obra_direccion || '—'}<br>
                 • <strong>Comuna/Ciudad:</strong> ${crm.obra_ciudad || '—'}
                 ${crm.coordenadas_mapa?.lat ? `<br>• <strong>Coordenadas GPS:</strong> <span style="font-family: monospace; font-size: 8.5px;">${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}

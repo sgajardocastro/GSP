@@ -203,7 +203,7 @@ router.beforeEach((to, from, next) => {
     return next()
   }
 
-  if (!token && to.name !== 'login') {
+  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.meta?.layout !== 'public') {
     return next({ name: 'login' })
   }
 

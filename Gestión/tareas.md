@@ -227,3 +227,8 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **Item 15 (Comentario Operaciones):** `OK PARA PRUEBA`. Textarea de observaciones libres incorporado en la pestaña de preparación/asignación de operaciones.
 * [x] **Dar de Baja a Isis Oses:** `OK PARA PRUEBA`. Usuario filtrado y excluido de las listas operativas y asignaciones.
 
+#### Grupo D (Lógica de Negocio: Flags Flete y Rigger - 12-Ago-2026)
+* [x] **Punto 1 (Flete):** Inyección automática de Flete por $500.000 en el Estructurador al encender el flag, y visibilidad explícita en el PDF. `VERIFICADO POR EL USUARIO`.
+* [x] **Punto 2 (Rigger - Bidireccionalidad):** Sincronización bidireccional entre flag y línea del Estructurador. (Incluye limpieza automática al apagar el flag).
+* [ ] **Punto 3 (Rigger - PDF):** Indicador SÍ/NO explícito en el PDF generado.
+* [ ] **Punto 4 (Rigger - Operaciones):** Bloqueo mandatorio en el tab de Asignación si falta seleccionar Rigger.

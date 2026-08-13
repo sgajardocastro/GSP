@@ -97,19 +97,41 @@ En la grilla del estructurador de cotización (`lines`), la columna **Unidad de 
 
 ---
 
-### B. ⚠️ Reglas Comerciales y Puntos Críticos a Clarificar con el Cliente
+### B. Reglas Comerciales y Comportamiento de Flags (Definiciones del Cliente)
 
-> [!WARNING]
-> **PUNTO DE AUDITORÍA COMERCIAL 1: TRATAMIENTO DEL FLETE / MOVILIZACIÓN**
-> 1. **Naturaleza del Flete:** El Flete es un sobrecargo interno en el valor del servicio que **NO se expone como una línea explícita independiente al cliente** en la propuesta comercial final, sino que se incorpora/prorratea en el monto global o tarifa.
-> 2. **Gatillo de Activación:** Se activa mediante un **Flag Binario (`incluye_flete`)** en la Sección 1 (Datos de Oportunidad) cuando la distancia a faena supera el umbral operativo (ej. > 30 kilómetros de la base).
-> 3. **📌 PENDIENTE ESSENCIAL CON EL CLIENTE:** Clarificar la fórmula exacta del sobrecargo por flete:
->    - ¿Genera un porcentaje (%) de recargo automático sobre el total de la cotización?
->    - ¿Genera un delta fijo ($/km) por tramo de distancia?
->    - ¿Se prorratea en las tarifas unitarias de los equipos o se añade al subtotal neto?
+A continuación se detallan las reglas de negocio establecidas para los flags operativos y comerciales de la Oportunidad:
+
+1. **Flag "Requiere OC/HES"**: 
+   - **Comportamiento**: Se mantiene en la configuración de la oportunidad.
+   - **Impacto**: Afecta directamente al analista al final del proceso, específicamente en la etapa de facturación y EDP (Estado de Pago), indicando la obligatoriedad de adjuntar Orden de Compra u HES para procesar la factura.
+
+2. **Flag "Requiere Acreditación"**: 
+   - **Comportamiento**: Se mantiene en la configuración de la oportunidad.
+   - **Impacto**: Al momento de declarar la oportunidad como "Ganada", este flag gatilla que la Acreditación se maneje como una fase adicional e íntegra del proceso operativo, ejecutándose de manera asincrónica con la asignación.
+
+3. **Flag "Servicio Incluye Traslado" (Flete)**:
+   - **Concepto**: Define cómo se presenta y gestiona comercialmente el costo de movilización de los equipos.
+   - **Comportamiento**: El flag está en ON y en el Estructurador Económico se agrega una línea de Flete por $500.000.
+   - **Impacto**: En el PDF de la Cotización que recibe el cliente, aparecerá una línea visible y explícita detallando "Servicio de Traslado/Flete: $500.000".
+
+4. **Flag "Requiere Riger"**:
+   - **Concepto**: Especifica si la maniobra exige normativamente la presencia de un Riger certificado.
+   - **Estado del Flag**: ON (Activado).
+   - **Comercial - Cotización**: SIEMPRE se muestra si el servicio incluye Rigger o no, dejando por explícito con un Si o un no.
+   - **Comercial - Estructurador de Servicios**: Si el flag está en "Si", en el estructurador se agrega en forma automática la línea de Rigger. Si el flag Rigger estuviera en No pero en el estructurador se agrega Rigger, entonces el Flag automáticamente se debe marcar en Si. Ambos elementos (flag en preventa e ítem en estructurador de servicios) son reflejos de la misma condición. En el estructurador este ítem puede tener valor Cero.
+   - **Impacto Operativo (Asignación)**: Al pasar a la etapa de Asignación, el despachador verá un requerimiento obligatorio en la pantalla que dice "Asignar Riger".
+
+5. **Flag "Combustible a Cargo del Cliente"**: 
+   - **Comportamiento**: Nuevo flag que establece quién asume el costo y gestión del combustible durante la operación.
+   - **Impacto en Cotización**: Debe ser incluido y especificado de forma clara en el documento de Cotización, dentro de "2. DATOS DE OPERACIÓN E INGENIERÍA".
+   - **Impacto en Operaciones/Facturación**: No aparece ni tiene impacto en la Asignación de Recursos (matriz Tripulación). Sin embargo, sí se muestra y es vinculante en la fase final de Facturación.
+
+---
+
+### C. ⚠️ Puntos Críticos Aún Pendientes a Clarificar con el Cliente
 
 > [!IMPORTANT]
-> **PUNTO DE AUDITORÍA COMERCIAL 2: IMPACTO DE LA UNIDAD "FIJO" (SUMA ALZADA)**
+> **PUNTO DE AUDITORÍA COMERCIAL: IMPACTO DE LA UNIDAD "FIJO" (SUMA ALZADA)**
 > 1. **Naturaleza de "Fijo":** La unidad `Fijo` debe incluirse en el catálogo para representar montos cerrados por maniobra o servicio puntual.
 > 2. **📌 PENDIENTE ESSENCIAL CON EL CLIENTE:** Clarificar la lógica del calculador:
 >    - ¿Seleccionar la unidad `Fijo` otorga un precio cerrado independiente de la composición detallada de cantidad/valor unitario de las líneas en el estructurador?

@@ -72,16 +72,50 @@
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div class="space-y-1">
-                <label class="text-[10px] font-black uppercase text-muted-foreground ml-1">Cargo Transmac</label>
-                <select v-model="jsonData.cargo" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:ring-1 focus:ring-emerald-500 outline-none">
-                  <option v-for="c in CARGOS_LIST" :key="c" :value="c">{{ c }}</option>
-                </select>
+                <label class="text-[10px] font-black uppercase text-muted-foreground ml-1">Cargo</label>
+                <div class="relative w-full">
+                  <div class="relative">
+                    <input 
+                      v-model="jsonData.cargo" 
+                      @focus="showCargosDropdown = true"
+                      @blur="hideCargosDropdown"
+                      placeholder="Seleccionar o escribir..." 
+                      autocomplete="off"
+                      class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 pr-8 text-xs text-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                    >
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+                  <ul v-if="showCargosDropdown" class="absolute z-50 w-full mt-1 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+                    <template v-if="cargosList.length === 0">
+                      <li class="px-4 py-3 text-xs text-white/50 italic text-center">
+                        No hay cargos en la base de datos.<br>Escriba uno nuevo.
+                      </li>
+                    </template>
+                    <template v-else-if="filteredCargos.length === 0">
+                      <li class="px-4 py-3 text-xs text-emerald-400 italic font-semibold text-center bg-emerald-500/10">
+                        + Se creará "{{ jsonData.cargo }}"
+                      </li>
+                    </template>
+                    <template v-else>
+                      <li 
+                        v-for="c in filteredCargos" 
+                        :key="c" 
+                        @mousedown.prevent="selectCargo(c)" 
+                        class="px-4 py-2 text-xs text-white hover:bg-emerald-500/20 cursor-pointer"
+                      >
+                        {{ c }}
+                      </li>
+                    </template>
+                  </ul>
+                </div>
               </div>
               <div class="space-y-1">
                 <label class="text-[10px] font-black uppercase text-muted-foreground ml-1">Género</label>
                 <select v-model="jsonData.genero" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:ring-1 focus:ring-emerald-500 outline-none">
-                  <option value="H">Hombre</option>
-                  <option value="M">Mujer</option>
+                  <option value="H" class="bg-zinc-900 text-white">Hombre</option>
+                  <option value="M" class="bg-zinc-900 text-white">Mujer</option>
                 </select>
               </div>
               <div class="space-y-1">
@@ -120,12 +154,12 @@
                   <tr v-for="(p, i) in pertenencias" :key="i" class="hover:bg-white/5">
                     <td class="px-4 py-2">
                       <select v-model="p.id_proyecto" class="w-full bg-transparent border-none text-xs text-white focus:ring-0">
-                        <option v-for="pr in proyectos" :key="pr.id_proyecto" :value="pr.id_proyecto">{{ pr.nombre_proyecto }}</option>
+                        <option v-for="pr in proyectos" :key="pr.id_proyecto" :value="pr.id_proyecto" class="bg-zinc-900 text-white">{{ pr.nombre_proyecto }}</option>
                       </select>
                     </td>
                     <td class="px-4 py-2">
                       <select v-model="p.id_equipo_proyecto" class="w-full bg-transparent border-none text-xs text-white focus:ring-0">
-                        <option v-for="e in getEquiposDelProyecto(p.id_proyecto)" :key="e.id_equipo_proyecto" :value="e.id_equipo_proyecto">{{ e.nombre_equipo }}</option>
+                        <option v-for="e in getEquiposDelProyecto(p.id_proyecto)" :key="e.id_equipo_proyecto" :value="e.id_equipo_proyecto" class="bg-zinc-900 text-white">{{ e.nombre_equipo }}</option>
                       </select>
                     </td>
                     <td class="px-4 py-2 text-right">
@@ -166,14 +200,24 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show', 'guardar'])
 
-const CARGOS_LIST = [
-  'Administrador de Contrato de terreno', 'Asistente Administrativo', 'Encargado Adquisiones',
-  'Encargado Calidad', 'Encargado Control de Proyectos', 'Encargado Logística',
-  'Encargado Prevención de Riesgos', 'Encargado RR.HH', 'Jefe de Terreno',
-  'Lider en Prevencion de Riesgos', 'Maestro Mayor Piping', 'Maestro Primera Piping',
-  'Operador Camión Pluma', 'Operador de Maquinaria', 'Operador de Terreno',
-  'Supervisor Terreno'
-].sort()
+const cargosList = ref([])
+const showCargosDropdown = ref(false)
+
+const filteredCargos = computed(() => {
+  if (!jsonData.value.cargo) return cargosList.value
+  const lower = jsonData.value.cargo.toLowerCase()
+  return cargosList.value.filter(c => c.toLowerCase().includes(lower))
+})
+
+function selectCargo(c) {
+  jsonData.value.cargo = c
+  showCargosDropdown.value = false
+}
+
+function hideCargosDropdown() {
+  // Pequeño timeout para permitir que el mousedown del li se dispare antes del blur
+  setTimeout(() => { showCargosDropdown.value = false }, 150)
+}
 
 const localUser = ref(null)
 const selectedRolesCodes = ref([])
@@ -185,11 +229,23 @@ const equipos = ref([])
 function cerrar() { emit('update:show', false) }
 
 async function cargarData() {
-  const [{ data: prjs }, { data: eqs }] = await Promise.all([
+  const [{ data: prjs }, { data: eqs }, cargosRes] = await Promise.all([
     apiAxios.get('/servicio/leanglobal/obtenerProyectos'),
-    apiAxios.get('/servicio/leanglobal/obtenerEquiposProyectos')
+    apiAxios.get('/servicio/leanglobal/obtenerEquiposProyectos'),
+    apiAxios.get('/servicio/leanglobal/obtenerCargosUnicos').catch(err => {
+      console.warn("Fallo al obtener cargos:", err)
+      return { data: [] } // El router de servicios devuelve el array directo o wrapped?
+    })
   ])
-  proyectos.value = prjs; equipos.value = eqs
+  proyectos.value = prjs; equipos.value = eqs;
+  
+  // El backend con dbQuery() devuelve un array de filas directamente a veces, o envuelto en data.
+  const extracted = cargosRes?.data?.data || cargosRes?.data || [];
+  // Como agregamos id_empresa, cada row es { cargo: '...', id_empresa: '...' }
+  // Necesitamos mapearlo a un array de strings.
+  cargosList.value = Array.isArray(extracted) 
+    ? extracted.map(row => typeof row === 'string' ? row : row.cargo).filter(Boolean)
+    : [];
 }
 
 function getEquiposDelProyecto(idPrj) {
@@ -313,6 +369,12 @@ function guardar() {
   })
   cerrar()
 }
+
+watch(() => props.show, (val) => {
+  if (val) {
+    cargarData()
+  }
+})
 
 onMounted(cargarData)
 </script>

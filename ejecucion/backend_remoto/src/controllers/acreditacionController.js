@@ -121,3 +121,27 @@ exports.auditarDocumento = async (req, res) => {
     res.status(500).json({ message: "Error al auditar documento", error: error.message });
   }
 };
+
+exports.getTiposCertificadoPersona = async (req, res) => {
+  try {
+    const data = await acreditacionModel.getTiposCertificadoPersona();
+    res.status(200).json({ status: "success", data });
+  } catch (error) {
+    console.error("[ACREDITACION] Error obteniendo tipos:", error.message);
+    res.status(500).json({ message: "Error al obtener tipos", error: error.message });
+  }
+};
+
+exports.deleteCertificado = async (req, res) => {
+  try {
+    const { id, id_cert } = req.params;
+    const success = await acreditacionModel.deleteCertificado(id, id_cert);
+    if (!success) {
+      return res.status(404).json({ message: "Certificado no encontrado" });
+    }
+    res.status(200).json({ status: "success", message: "Certificado eliminado correctamente" });
+  } catch (error) {
+    console.error("[ACREDITACION] Error eliminando certificado:", error.message);
+    res.status(500).json({ message: "Error al eliminar certificado", error: error.message });
+  }
+};

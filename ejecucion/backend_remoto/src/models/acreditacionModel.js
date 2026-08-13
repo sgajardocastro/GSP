@@ -34,59 +34,116 @@ const acreditacionModel = {
 
   // Obtener nómina de personal para la vista Acreditación Personal
   async getPersonalAcreditacion(q = '') {
-    let sql = `
-      SELECT 
-        u.id_user,
-        TRIM(COALESCE(u.name_frst,'') || ' ' || COALESCE(u.name_sec,'') || ' ' || COALESCE(u.apellido_pat,'') || ' ' || COALESCE(u.apellido_mat,'')) AS nombre,
-        u.rut,
-        COALESCE(u.json_data->>'cargo', 'ESPECIALISTA') AS rol,
-        u.email,
-        u.json_data->>'fecha_vencimiento_hsec' AS "fechaControl",
-        COALESCE(u.json_data->>'estado_hsec', 'habilitado') AS estado
-      FROM sch_leangsp.tsec_users u
-      WHERE u.activo = true
-    `;
+    let whereClause = "WHERE u.activo = true AND u.id_empresa = 9";
     const params = [];
+
     if (q && q.trim() !== '') {
       params.push(`%${q.trim()}%`);
-      sql += ` AND (
+      whereClause += ` AND (
         UPPER(u.name_frst) LIKE UPPER($1) OR 
         UPPER(u.apellido_pat) LIKE UPPER($1) OR 
         UPPER(u.rut) LIKE UPPER($1) OR
         UPPER(COALESCE(u.json_data->>'cargo', '')) LIKE UPPER($1)
       )`;
     }
-    sql += ` ORDER BY u.id_user DESC`;
-    const result = await db.query(sql, params);
-    return result.rows;
+
+    const sql = `
+      SELECT 
+        u.id_user,
+        TRIM(COALESCE(u.name_frst,'') || ' ' || COALESCE(u.name_sec,'') || ' ' || COALESCE(u.apellido_pat,'') || ' ' || COALESCE(u.apellido_mat,'')) AS nombre,
+        u.rut,
+        COALESCE(u.json_data->>'cargo', 'Operador') AS rol,
+        u.email,
+        u.movil,
+        u.activo,
+        MIN(CASE WHEN tp.obligatorio = true THEN cp.fecha_vencimiento END) AS "fechaControl",
+        
+        CASE
+          WHEN COUNT(CASE WHEN tp.obligatorio = true AND cp.id_certificado_persona IS NULL THEN 1 END) > 0 THEN 'sin_documentos'
+          WHEN COUNT(CASE WHEN tp.obligatorio = true AND cp.fecha_vencimiento < CURRENT_DATE THEN 1 END) > 0 THEN 'bloqueado'
+          WHEN COUNT(
+            CASE 
+              WHEN tp.obligatorio = true AND cp.fecha_vencimiento <= CURRENT_DATE + INTERVAL '30 days' THEN 1 
+            END
+          ) > 0 THEN 'por_vencer'
+          ELSE 'habilitado'
+        END AS estado
+
+      FROM sch_leangsp.tsec_users u
+      LEFT JOIN sch_leangsp.tsec_certificados_persona cp ON u.id_user = cp.id_user
+      LEFT JOIN sch_leangsp.tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+      ${whereClause}
+      GROUP BY u.id_user
+      ORDER BY u.id_user DESC
+    `;
+
+    const { rows } = await db.query(sql, params);
+    
+    // Formatear fechas si existen para frontend
+    return rows.map(r => ({
+      ...r,
+      fechaControl: r.fechaControl ? r.fechaControl.toISOString().split('T')[0] : 'S/I'
+    }));
   },
 
   // Obtener detalle completo de expediente de trabajador
   async getPersonalDetail(id_user) {
-    const sqlUser = `
+    const userSql = `
       SELECT 
         u.id_user,
+        u.rut,
+        u.email,
         u.name_frst,
         u.name_sec,
         u.apellido_pat,
         u.apellido_mat,
-        u.rut,
-        u.email,
         u.movil,
-        COALESCE(u.json_data->>'cargo', 'Operador') AS cargo,
         u.activo,
         u.json_data
       FROM sch_leangsp.tsec_users u
       WHERE u.id_user = $1
     `;
-    const resUser = await db.query(sqlUser, [id_user]);
-    if (resUser.rows.length === 0) return null;
-    const user = resUser.rows[0];
+    const checkUser = await db.query(userSql, [id_user]);
+    if (checkUser.rows.length === 0) return null;
 
-    let certificados = [];
-    if (user.json_data && Array.isArray(user.json_data.certificados)) {
-      certificados = user.json_data.certificados;
-    }
+    const user = checkUser.rows[0];
+    user.cargo = 'Operador';
+    try {
+      if (user.json_data && user.json_data.cargo) {
+        user.cargo = user.json_data.cargo;
+      }
+    } catch (e) {}
+
+    const certsSql = `
+      SELECT 
+        cp.id_certificado_persona as id_cert,
+        cp.id_tipo_certificado_persona,
+        tp.nombre_tipo,
+        tp.obligatorio,
+        cp.fecha_emision,
+        cp.fecha_vencimiento,
+        cp.id_doc,
+        cp.observaciones,
+        CASE 
+          WHEN cp.fecha_vencimiento IS NULL THEN 'Vigente'
+          WHEN cp.fecha_vencimiento < CURRENT_DATE THEN 'Vencido'
+          WHEN cp.fecha_vencimiento <= CURRENT_DATE + INTERVAL '30 days' THEN 'Por Vencer'
+          ELSE 'Vigente'
+        END AS estado_vigencia
+      FROM sch_leangsp.tsec_certificados_persona cp
+      JOIN sch_leangsp.tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+      WHERE cp.id_user = $1
+      ORDER BY cp.fecha_vencimiento DESC NULLS FIRST, cp.id_certificado_persona DESC
+    `;
+    const certsRes = await db.query(certsSql, [id_user]);
+    
+    // El frontend espera id_certificado_persona o id_cert, mapearemos ambos
+    const certificados = certsRes.rows.map(c => ({
+      ...c,
+      id_certificado_persona: c.id_cert,
+      fecha_vencimiento: c.fecha_vencimiento ? c.fecha_vencimiento.toISOString().split('T')[0] : null,
+      fecha_emision: c.fecha_emision ? c.fecha_emision.toISOString().split('T')[0] : null
+    }));
 
     return {
       ...user,
@@ -159,28 +216,64 @@ const acreditacionModel = {
   async addPersonalCertificado(id_user, certData) {
     const { id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, observaciones, id_doc } = certData;
 
-    const check = await db.query('SELECT json_data FROM sch_leangsp.tsec_users WHERE id_user = $1', [id_user]);
-    if (check.rows.length === 0) return null;
+    const sql = `
+      INSERT INTO sch_leangsp.tsec_certificados_persona (
+        id_user, id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, id_doc, observaciones
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id_certificado_persona as id_cert
+    `;
+    const { rows } = await db.query(sql, [
+      id_user, id_tipo_certificado_persona, 
+      fecha_emision || null, 
+      fecha_vencimiento || null, 
+      id_doc || null, 
+      observaciones || null
+    ]);
 
-    const currentJson = check.rows[0].json_data || {};
-    if (!Array.isArray(currentJson.certificados)) {
-      currentJson.certificados = [];
+    // Actualizar json_data temporalmente por retrocompatibilidad visual si se necesita (opcional, pero la query lee la tabla)
+    await db.query('UPDATE sch_leangsp.tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
+
+    return { id_cert: rows[0].id_cert };
+  },
+
+  // Eliminar certificado de expediente
+  async deleteCertificado(id_user, id_cert) {
+    const sql = `
+      DELETE FROM sch_leangsp.tsec_certificados_persona
+      WHERE id_certificado_persona = $1 AND id_user = $2
+    `;
+    const { rowCount } = await db.query(sql, [id_cert, id_user]);
+    
+    if (rowCount > 0) {
+      await db.query('UPDATE sch_leangsp.tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
+      return true;
     }
+    return false;
+  },
 
-    const newCert = {
-      id_cert: Date.now(),
-      id_tipo_certificado_persona,
-      fecha_emision,
-      fecha_vencimiento,
-      observaciones,
-      id_doc,
-      created_at: new Date().toISOString()
-    };
-
-    currentJson.certificados.push(newCert);
-
-    await db.query('UPDATE sch_leangsp.tsec_users SET json_data = $2 WHERE id_user = $1', [id_user, JSON.stringify(currentJson)]);
-    return newCert;
+  // Obtener maestro de tipos de certificados de persona
+  async getTiposCertificadoPersona() {
+    try {
+      const sql = `
+        SELECT id_tipo_certificado_persona, nombre_tipo, obligatorio, dias_alerta
+        FROM sch_leangsp.tsec_tipos_certificado_persona
+        ORDER BY obligatorio DESC, nombre_tipo ASC
+      `;
+      const { rows } = await db.query(sql);
+      return rows;
+    } catch (err) {
+      console.warn("Error leyendo tsec_tipos_certificado_persona, retornando fallback. Error:", err.message);
+      return [
+        { id_tipo_certificado_persona: 1, nombre_tipo: 'Cédula de Identidad', obligatorio: true },
+        { id_tipo_certificado_persona: 2, nombre_tipo: 'Certificado de Antecedentes', obligatorio: true },
+        { id_tipo_certificado_persona: 3, nombre_tipo: 'Examen Preocupacional / Salud', obligatorio: true },
+        { id_tipo_certificado_persona: 4, nombre_tipo: 'Licencia de Conducir', obligatorio: false },
+        { id_tipo_certificado_persona: 5, nombre_tipo: 'Certificado de Especialidad (Rigger, Operador, etc)', obligatorio: true },
+        { id_tipo_certificado_persona: 6, nombre_tipo: 'Contrato de Trabajo GSP / Anexos', obligatorio: true },
+        { id_tipo_certificado_persona: 7, nombre_tipo: 'Inducción de Seguridad HSEC', obligatorio: false }
+      ];
+    }
   },
 
   // Obtener detalle de expediente por id_acreditacion

@@ -463,5 +463,11 @@
     "tipo": "normal",
     "query": "select ts.id_flow_tmpl, ts.flow_tmpl_step_name, ts.flow_tmpl_step_orden, ts.id_rol, rl.name_rol, ts.flag_equipo from tflw_template_steps ts left join tsec_roles rl on ts.id_rol = rl.id_rol",
     "where": true
+  },
+  {
+    "uri": "/leanglobal/obtenerCargosUnicos",
+    "tipo": "normal",
+    "query": "SELECT DISTINCT TRIM(json_data->>'cargo') AS cargo, id_empresa FROM sch_leangsp.tsec_users WHERE json_data->>'cargo' IS NOT NULL AND TRIM(json_data->>'cargo') != ''",
+    "where": true
   }
 ]

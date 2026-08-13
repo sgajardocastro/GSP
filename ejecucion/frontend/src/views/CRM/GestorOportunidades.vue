@@ -58,7 +58,7 @@
     </div>
 
     <!-- Barra de Tabs Vuetify Style Unificada -->
-    <div v-if="(opportunity?.id_proyecto_estado || 1) >= 3 || isAsignacionConfirmada" class="flex border-b border-white/10 bg-[#080d1a] px-2 pt-2 flex-shrink-0 transition-all duration-200 gap-4">
+    <div v-if="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF || isAsignacionConfirmada" class="flex border-b border-white/10 bg-[#080d1a] px-2 pt-2 flex-shrink-0 transition-all duration-200 gap-4">
       <button 
         @click="topTab = 'comercial'" 
         :class="topTab === 'comercial' ? 'text-amber-400 border-b-2 border-amber-500 font-bold' : 'text-slate-400 hover:text-white'" 
@@ -1609,18 +1609,18 @@
               </button>
             </div>
             
-            <div class="flex-1 border border-white/5 rounded-lg overflow-hidden bg-black/20 overflow-y-auto scrollbar-hide">
+            <div class="flex-1 border border-white/5 rounded-lg bg-black/20 overflow-auto scrollbar-hide">
               <table class="w-full text-left text-xs">
                 <thead>
                   <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                    <th class="p-3 w-36">Tipo</th>
-                    <th class="p-3 min-w-[180px]">Subcategoría</th>
-                    <th class="p-3 min-w-[250px]">Descripción / Equipo</th>
-                    <th class="p-3 text-center w-20">Cant.</th>
-                    <th class="p-3 min-w-[160px]">Unidad de cobro</th>
-                    <th class="p-3 text-right w-32">Valor Unit.</th>
-                    <th class="p-3 text-right w-32">Subtotal</th>
-                    <th class="p-3 text-center w-12"></th>
+                    <th class="p-3 min-w-[210px]">Categoría</th>
+                    <th class="p-3 min-w-[170px]">Subcategoría</th>
+                    <th class="p-3 min-w-[150px] w-full">Descripción / Equipo</th>
+                    <th class="p-3 text-center min-w-[70px]">Cant.</th>
+                    <th class="p-3 min-w-[110px]">Unidad</th>
+                    <th class="p-3 text-right min-w-[110px]">Valor Unit.</th>
+                    <th class="p-3 text-right min-w-[120px]">Subtotal</th>
+                    <th class="p-3 text-center min-w-[40px]"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
@@ -1752,7 +1752,7 @@
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">Coordinador a Notificar</label>
                     <select v-model="emailCoordinadorSeleccionado" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white">
                       <option value="" disabled class="bg-[#0a0f1e] text-white">-- Seleccionar Coordinador --</option>
-                      <option v-for="u in usuarios" :key="u.id_user" :value="u.email || u.correo || u.username" class="bg-[#0a0f1e] text-white">
+                      <option v-for="u in coordinadoresVisita" :key="u.id_user" :value="u.email || u.correo || u.username" class="bg-[#0a0f1e] text-white">
                         {{ u.nombre_user || u.name_user || u.username }} ({{ u.email || u.correo || u.username }})
                       </option>
                     </select>
@@ -2603,22 +2603,28 @@ const ESTADOS_PROCESO = {
   COMPLETADO: 80
 }
 
-const faseActual = computed(() => {
-  const estado = opportunity.value?.id_proyecto_estado || 1;
-  if (estado === ESTADO_DB_OPERACIONES) {
-    if (operacionesSubTab.value === 'validacion') return ESTADOS_PROCESO.VALIDACION_DIFF;
-    if (operacionesSubTab.value === 'asignacion') return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
-    if (operacionesSubTab.value === 'acreditaciones') return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
-    if (operacionesSubTab.value === 'preparacion_salida') return ESTADOS_PROCESO.PREPARACION_PATIO;
-    return ESTADOS_PROCESO.VALIDACION_DIFF; // fallback
+/**
+ * Adapter Pattern: Traduce el estado relacional legacy (id_proyecto_estado) 
+ * y la subtab de json_field a una Fase de Dominio inmutable.
+ */
+const resolveFaseDeDominio = (estadoDb, subtabActiva, asignacionConfirmadaFlag) => {
+  const dbState = parseInt(estadoDb) || 1;
+  
+  if (dbState === 1) return ESTADOS_PROCESO.COTIZACION;
+  if (dbState === 2) return ESTADOS_PROCESO.PREP_COTIZACION;
+  if (dbState === 4 || dbState === 5) return ESTADOS_PROCESO.DESPLAZAMIENTO;
+  if (dbState === 6) return ESTADOS_PROCESO.NO_ASIGNADA;
+  if (dbState === 7) return ESTADOS_PROCESO.EN_FAENA;
+  if (dbState === 8) return ESTADOS_PROCESO.COMPLETADO;
+  
+  if (dbState === ESTADO_DB_OPERACIONES) {
+    if (asignacionConfirmadaFlag || subtabActiva === 'preparacion_salida') return ESTADOS_PROCESO.PREPARACION_PATIO;
+    if (subtabActiva === 'asignacion' || subtabActiva === 'acreditaciones') return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
+    return ESTADOS_PROCESO.VALIDACION_DIFF;
   }
   
-  if (estado === 1) return ESTADOS_PROCESO.COTIZACION;
-  if (estado === 2) return ESTADOS_PROCESO.PREP_COTIZACION;
-  if (estado === 4 || estado === 5) return ESTADOS_PROCESO.DESPLAZAMIENTO;
-  if (estado === 6) return ESTADOS_PROCESO.NO_ASIGNADA;
-  return ESTADOS_PROCESO.COTIZACION;
-})
+  return ESTADOS_PROCESO.COTIZACION; // fallback
+};
 
 const isAsignacionConfirmada = computed(() => {
   return asignacionConfirmada.value === true ||
@@ -2628,11 +2634,19 @@ const isAsignacionConfirmada = computed(() => {
     Boolean(rawEjecucionJson.value?.preparacion_salida?.patio_programado)
 })
 
+const faseActual = computed(() => {
+  return resolveFaseDeDominio(
+    opportunity.value?.id_proyecto_estado, 
+    operacionesSubTab.value, 
+    isAsignacionConfirmada.value
+  );
+})
+
 const isRequerimientoAprobado = computed(() => {
   return requerimientoAprobado.value === true ||
     rawEjecucionJson.value?.decision === 'APROBADO' ||
     rawEjecucionJson.value?.estado_requerimiento === 'APROBADO' ||
-    (opportunity.value?.id_proyecto_estado || 1) >= 3 ||
+    faseActual.value > ESTADOS_PROCESO.VALIDACION_DIFF ||
     isAsignacionConfirmada.value
 })
 
@@ -3516,6 +3530,7 @@ const formVisita = ref({
   fecha_visita: ''
 })
 const usuarios = ref([])
+const coordinadoresVisita = computed(() => usuarios.value.filter(u => u.json_data?.cargo === 'Coordinador'))
 const cargandoVisita = ref(false)
 const estadoAsignacion = ref(null)
 const emailCoordinadorSeleccionado = ref('')
@@ -3755,7 +3770,9 @@ const siteVisit = ref({
   volumen_carga: '',
   radios_trabajo: '',
   alturas_trabajo: '',
-  visita_terreno: false
+  visita_terreno: false,
+  fecha_hora_inicio: '',
+  fecha_hora_termino: ''
 })
 
 const filteredClientes = computed(() => {
@@ -4087,6 +4104,41 @@ const fetchClientes = async (query = '') => {
 // ==========================================
 // PREVENCIÓN DE PÉRDIDA DE DATOS
 // ==========================================
+watch(() => opportunity.value.incluye_flete, (newVal) => {
+  if (newVal) {
+    const hasFlete = lines.value.some(l => l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete')))
+    if (!hasFlete) {
+      lines.value.push({ 
+        tipo: 'TRASLADOS', subcategoria: '', descripcion: 'Servicio de Traslado/Flete', 
+        cantidad: 1, unidad: 'Fijo', valorUnitario: 500000 
+      })
+    }
+  } else {
+    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete'))))
+  }
+})
+
+watch(() => opportunity.value.requiere_rigger, (newVal) => {
+  if (newVal) {
+    const hasRigger = lines.value.some(l => l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger')))
+    if (!hasRigger) {
+      lines.value.push({ 
+        tipo: 'PERSONAL CERTIFICADO', subcategoria: 'RIGGER', descripcion: 'Servicio de Rigger Certificado', 
+        cantidad: 1, unidad: 'Diario', valorUnitario: 0 
+      })
+    }
+  } else {
+    lines.value = lines.value.filter(l => !(l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger'))))
+  }
+})
+
+watch(lines, (newLines) => {
+  const hasRigger = newLines.some(l => l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger')))
+  if (hasRigger && !opportunity.value.requiere_rigger) {
+    opportunity.value.requiere_rigger = true
+  }
+}, { deep: true })
+
 watch(
   [opportunity, antecedentes, lines, siteVisit, comercial],
   () => {
@@ -4209,6 +4261,8 @@ const cargarDatosCotizacion = async () => {
           siteVisit.value.radios_trabajo = crm.radios_trabajo || ''
           siteVisit.value.alturas_trabajo = crm.alturas_trabajo || ''
           siteVisit.value.visita_terreno = crm.visita_terreno || false
+          siteVisit.value.fecha_hora_inicio = crm.fecha_hora_inicio || ''
+          siteVisit.value.fecha_hora_termino = crm.fecha_hora_termino || ''
           
           if (crm.coordenadas_mapa) {
             siteVisit.value.lat = crm.coordenadas_mapa.lat
@@ -4252,9 +4306,12 @@ const cargarDatosCotizacion = async () => {
             asignacionConfirmada.value = true
           }
 
-          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || p.id_proyecto_estado >= 3 || asignacionConfirmada.value) {
-            requerimientoAprobado.value = true
+          const computedFase = resolveFaseDeDominio(p.id_proyecto_estado, ejecucion.subtab_activa, asignacionConfirmada.value);
+          if (computedFase >= ESTADOS_PROCESO.VALIDACION_DIFF) {
             topTab.value = 'operaciones'
+          }
+          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || computedFase > ESTADOS_PROCESO.VALIDACION_DIFF || asignacionConfirmada.value) {
+            requerimientoAprobado.value = true
           }
 
           if (props.initialSubTab) {
@@ -4479,6 +4536,8 @@ const buildPayload = () => {
         obra_nombre: siteVisit.value.obra_nombre,
         obra_direccion: siteVisit.value.obra_direccion,
         obra_ciudad: siteVisit.value.obra_ciudad,
+        fecha_hora_inicio: siteVisit.value.fecha_hora_inicio,
+        fecha_hora_termino: siteVisit.value.fecha_hora_termino,
         tipo_carga: siteVisit.value.tipo_carga,
         detalle_servicio: siteVisit.value.detalle_servicio,
         peso_carga: siteVisit.value.peso_carga,
@@ -4880,6 +4939,11 @@ watch(() => operacionesSubTab.value, (newTab) => {
 }, { immediate: true })
 
 const confirmarAsignacionOT = async () => {
+  // VALIDACIÓN STRICTA (NUEVO)
+  if (opportunity.value.requiere_rigger && !operacionesAssignment.value.rigger_id) {
+    alert('⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar Rigger.')
+    return
+  }
   try {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -5338,20 +5402,26 @@ const generarPDF = async () => {
   try {
     let projectId = props.proyectoId || currentProyectoId.value
     
-    // Si es un proyecto nuevo no registrado, lo registramos automáticamente primero
+    // Auto-guardado de la cotización antes de generar el PDF para asegurar que 
+    // los detalles del estructurador estén actualizados en la base de datos.
+    const token = localStorage.getItem('token') || ''
+    const payload = buildPayload()
+    
     if (!projectId) {
-      const token = localStorage.getItem('token') || ''
-      const payload = buildPayload()
       const { data } = await apiAxios.post('/proyectos/preventa', payload, {
         headers: { Authorization: `Bearer ${token}` }
       })
       projectId = data.proyecto.id_proyecto
       currentProyectoId.value = projectId
       console.log('Proyecto auto-guardado para cotización. ID:', projectId)
+    } else {
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      console.log('Proyecto actualizado previo a cotización. ID:', projectId)
     }
     
     // Llamar al endpoint del backend para generar la versión (Firma FES desactivada temporalmente)
-    const token = localStorage.getItem('token') || ''
     const { data } = await apiAxios.post(`/proyectos/${projectId}/generar-cotizacion`, {
       monto: totalNeto.value,
       omitir_firma_fes: true

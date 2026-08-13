@@ -665,7 +665,7 @@ module.exports =
     "uri": "/leanglobal/obtenerEquiposProyectos",
     "tipo": "normal",
     "query": "SELECT * from tpry_equipo_proyecto",
-    "where": true
+    "where": false
   }
 
   ,
@@ -2098,5 +2098,11 @@ module.exports =
                 LIMIT 1
               ) c_last ON true;`,
     "where": false
+  },
+  {
+    "uri": "/leanglobal/obtenerCargosUnicos",
+    "tipo": "normal",
+    "query": "SELECT DISTINCT TRIM(json_data->>'cargo') AS cargo, id_empresa FROM sch_leangsp.tsec_users WHERE json_data->>'cargo' IS NOT NULL AND TRIM(json_data->>'cargo') != ''",
+    "where": true
   }
 ]

@@ -29,7 +29,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 5173
+      port: 5173,
+      proxy: {
+        '/api': {
+          target: 'https://servidor.leanglobal.cl/lg-gsp',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     }
 
   }
