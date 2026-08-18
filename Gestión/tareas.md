@@ -162,7 +162,7 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 
 **Reunión 17-Ago-2026 (Seguimiento App Móvil, Condiciones Comerciales & Validación Operativa):**
 *   [ ] **[Sergio Gajardo] Finalizar Inspecciones PWA:** Finalizar ajustes en la aplicación móvil de inspecciones de terreno (saneamiento de cabecera, datos de obra/contacto, barra de progreso y comentarios dinámicos) y formato de checklist de salida de patio.
-*   [ ] **[Sergio Gajardo] Desglose Viáticos y Pensiones:** Incorporar campos independientes de Alojamiento y Alimentación (Desayuno, Almuerzo, Cena) en Condiciones Comerciales especificando responsabilidad de pago (Cliente vs GSP).
+*   [x] **[Sergio Gajardo] Desglose Viáticos y Pensiones:** Incorporar campos independientes de Alojamiento y Alimentación (Desayuno, Almuerzo, Cena) en Condiciones Comerciales especificando responsabilidad de pago (Cliente vs GSP).
 *   [ ] **[Jorge Ponce] Coordinar y Confirmar Reunión Presencial:** Coordinar con Omar la fecha definitiva de la reunión presencial (semana del 24-Ago) y confirmar a Sergio para itinerario de viaje.
 *   [ ] **[Jorge Ponce] Pruebas Piloto de Plataforma:** Realizar pruebas de campo con equipo comercial (Richard) y operaciones/analista para recopilar feedback previo a la sesión presencial.
 
@@ -204,9 +204,9 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
                                 OTROS  
 * [x] Creación de Visita a terreno desde comercial > coordinador > Ejecutor visita
 Actualmente la visita a terreno se puede crear desde el comercial. Esto no es correcto. El comercial debe solicitar al coordinador que este asigne la visita a terreno. Para simplificar el proceso, creo que bastaría con un correo con un link de asignación de unica ejecución abra un link que esté alojado en el sistema y el coordinador asigne al usuario con la fecha del proceso, quedando vinculado al proyecto que lo origina.
-* [ ] Falta la matriz de pensiones.
-* [ ] Falta que el tratamiento de  acreditaciones por comnercial post asignación.
-* [ ] faltan las condiciones comerciales.
+* [x] Matriz de pensiones: Apertura en 5 conceptos independientes (Alojamiento, Desayuno, Almuerzo, Cena, Traslado) con selección de pagador y valorización.
+* [ ] Falta el tratamiento de acreditaciones por comercial post asignación.
+* [x] Condiciones comerciales: Generación modular sin encabezado general estático y preservación de texto editado en preventa.
 * [x] Modelamiento proyectos asignación de  personas y equipos (Spec 22 en `.agents/specs/22_asignacion_recursos_db_spec.md`)
 
 ---
