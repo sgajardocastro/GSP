@@ -618,7 +618,7 @@
                       <img
                         v-for="(image, i) in attr.galeria"
                         :key="i"
-                        :src="image.url || image.base64"
+                        :src="resolveImgSrc(image)"
                         style="width: 100%; height: 280px; object-fit: contain; display: block;"
                         class="photo-img"
                       >
@@ -678,7 +678,7 @@
                       <img
                         v-for="(image, i) in attr.galeria"
                         :key="i"
-                        :src="image.url || image.base64"
+                        :src="resolveImgSrc(image)"
                         alt="Foto"
                         class="photo-img"
                         style="width: 120px; height: 120px; object-fit: contain; margin: 4px; border: 1px solid #ddd;"
@@ -919,9 +919,19 @@
                     Geolocalización:
                   </td>
                   <td class="value-cell" colspan="3">
-                    <div class="mb-2">
-                      <strong>Latitud:</strong> {{ getLat(attr) ?? '—' }} |
-                      <strong>Longitud:</strong> {{ getLng(attr) ?? '—' }}
+                    <div class="mb-1">
+                      <strong>📍 Obra (Destino):</strong>
+                      <span v-if="getLat(attr) && getLng(attr)">
+                        Lat: {{ Number(getLat(attr)).toFixed(6) }} | Lng: {{ Number(getLng(attr)).toFixed(6) }}
+                      </span>
+                      <span v-else class="text-slate-400 italic">Sin coordenadas fijadas</span>
+                    </div>
+                    <div v-if="attr.geoVisita || attr.default?.geoVisita || attr.value?.lat" class="mt-1 pt-1 border-t border-slate-200">
+                      <strong>📍 Registro Técnico en Terreno:</strong>
+                      <span>
+                        Lat: {{ Number(attr.geoVisita?.lat || attr.default?.geoVisita?.lat || attr.value?.lat || 0).toFixed(6) }} | Lng: {{ Number(attr.geoVisita?.lng || attr.default?.geoVisita?.lng || attr.value?.lng || 0).toFixed(6) }}
+                        <span v-if="attr.geoVisita?.hora || attr.default?.geoVisita?.hora || attr.value?.hora"> ({{ attr.geoVisita?.hora || attr.default?.geoVisita?.hora || attr.value?.hora }})</span>
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -4646,7 +4656,7 @@ function getCabeceraLng() {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const BASE_URL = `${API_BASE_URL}/archivo/transmac/`
+const BASE_URL = `${API_BASE_URL}/archivo/gsp/`
 
 const getLogoUrl = (logoName) => {
   if (!logoName) return '';
@@ -4659,7 +4669,7 @@ const getLogoUrl = (logoName) => {
     const baseUrl = base.endsWith('/') ? base : `${base}/`;
     return `${host}${baseUrl}${logoName}`;
   }
-  return `${API_BASE_URL}/archivo/transmac/${logoName}`;
+  return `${API_BASE_URL}/archivo/gsp/${logoName}`;
 };
 
 function getLat(attr) {
@@ -4737,19 +4747,42 @@ function resolveImgSrc(x) {
     const s = x.trim();
     if (!s) return '';
     if (s.startsWith('data:image/')) return s;
-    if (/^https?:\/\//i.test(s)) return s;
-    return BASE_URL + s; // filename -> URL absoluta
+    if (/^https?:\/\//i.test(s)) {
+      if (s.includes('/archivo/transmac/')) {
+        return s.replace('/archivo/transmac/', '/archivo/gsp/');
+      }
+      return s;
+    }
+    return BASE_URL + s; // filename -> URL absoluta gsp
   }
 
-  // object: {url} o {base64}
+  // object: {url}, {base64}, {id_doc}, {name_doc_interno}
   if (typeof x === 'object') {
-    if (x.base64) return x.base64;
+    if (x.base64 && typeof x.base64 === 'string' && x.base64.startsWith('data:image/')) {
+      return x.base64;
+    }
+    if (x.id_doc) {
+      return `${API_BASE_URL}/v1/storage/view/${x.id_doc}`;
+    }
+    if (x.name_doc_interno || x.nombre) {
+      const name = String(x.name_doc_interno || x.nombre).trim();
+      if (name.includes('.')) {
+        return `${API_BASE_URL}/archivo/gsp/${name}`;
+      }
+    }
     if (x.url) {
-      const s = String(x.url).trim();
+      let s = String(x.url).trim();
       if (!s) return '';
-      if (/^https?:\/\//i.test(s) || s.startsWith('data:image/')) return s;
-      // si viene relativo tipo "/archivo/transmac/xxx.jpg"
-      return API_BASE_URL + s;
+      if (s.startsWith('data:image/')) return s;
+      if (s.includes('/archivo/transmac/')) {
+        s = s.replace('/archivo/transmac/', '/archivo/gsp/');
+      }
+      if (/^https?:\/\//i.test(s)) return s;
+      // si viene relativo tipo "/archivo/gsp/xxx.jpg"
+      return API_BASE_URL + (s.startsWith('/') ? '' : '/') + s;
+    }
+    if (x.base64 && typeof x.base64 === 'string') {
+      return x.base64;
     }
   }
 

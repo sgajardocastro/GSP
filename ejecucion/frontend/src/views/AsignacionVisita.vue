@@ -54,6 +54,19 @@
           <span class="text-xs text-zinc-400">Dirección</span>
           <span class="text-xs font-bold text-white">{{ proyectoData.obra_direccion }}</span>
         </div>
+
+        <div v-if="proyectoData.contacto_nombre" class="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
+          <span class="text-xs text-zinc-400">Contacto Terreno</span>
+          <span class="text-xs font-bold text-amber-400">{{ proyectoData.contacto_nombre }}</span>
+        </div>
+        <div v-if="proyectoData.contacto_telefono" class="flex justify-between items-center pt-1">
+          <span class="text-xs text-zinc-400">Teléfono Contacto</span>
+          <span class="text-xs font-mono text-white">{{ proyectoData.contacto_telefono }}</span>
+        </div>
+        <div v-if="proyectoData.contacto_email" class="flex justify-between items-center pt-1">
+          <span class="text-xs text-zinc-400">Correo Contacto</span>
+          <span class="text-xs text-slate-300">{{ proyectoData.contacto_email }}</span>
+        </div>
       </div>
 
       <form @submit.prevent="solicitarFirma" class="space-y-5">
@@ -238,12 +251,19 @@ const confirmarConPin = async () => {
     if (Array.isArray(bodySeed.segmentos)) {
       bodySeed.segmentos.forEach(seg => {
         if (Array.isArray(seg.attributes)) {
+          // Eliminar permanentemente REFERENCIA DE LA DIRECCION
+          seg.attributes = seg.attributes.filter(attr => {
+            const label = (attr.label || '').toUpperCase()
+            return !label.includes('REFERENCIA')
+          })
+
           seg.attributes.forEach(attr => {
             const label = (attr.label || '').toUpperCase()
+            const dirObra = proyectoData.value.obra_direccion || proyectoData.value.direccion || proyectoData.value.observacion_proyecto || ''
             if (label.includes('RAZON') || label.includes('SOCIAL')) attr.default = proyectoData.value.cliente_nombre || ''
             if (label.includes('RUT')) attr.default = proyectoData.value.cliente_rut || ''
             if (label.includes('NOMBRE DE LA OBRA')) attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
-            if (label.includes('DIRECCION') && !label.includes('REFERENCIA')) attr.default = proyectoData.value.obra_direccion || ''
+            if (label.includes('DIRECCION')) attr.default = dirObra
             if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
               attr.default = proyectoData.value.coordenadas_mapa
             }

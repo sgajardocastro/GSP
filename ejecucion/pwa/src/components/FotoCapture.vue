@@ -34,8 +34,8 @@
 
     <v-row>
       <v-col v-for="(image, index) in galeria" :key="index" class="d-flex child-flex" cols="3">
-        <v-img :src="image.url || image.base64" aspect-ratio="1" class="bg-grey-lighten-2 photo-thumb" cover
-          @click="openPreview(image.url || image.base64)">
+        <v-img :src="image.base64 || image.url" aspect-ratio="1" class="bg-grey-lighten-2 photo-thumb" cover
+          @click="openPreview(image.base64 || image.url)">
           <!-- Loader mientras carga -->
           <template #placeholder>
             <v-row class="fill-height ma-0" justify="center" align="center">
@@ -142,17 +142,22 @@ async function onFileChange(event) {
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', props.compression || 0.1)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', props.compression || 0.6)
 
         // Subimos el archivo primero y esperamos la respuesta
         const dataArchivo = await uploadFileFromBase64(compressedDataUrl, file.name, file.type)
         console.log('Archivo subido:', dataArchivo)
+        const fileObj = dataArchivo?.data || dataArchivo?.archivo
+        const idDoc = fileObj?.id_doc || null
+        const interno = fileObj?.name_doc_interno || ''
+
         const nuevoObjeto = {
-          base64: '',
-          url: dataArchivo?.archivo?.name_doc_interno
-            ? `${API_BASE}/archivo/transmac/${dataArchivo.archivo.name_doc_interno}`
-            : '',
-          nombre: dataArchivo?.archivo?.name_doc_interno || file.name,
+          base64: compressedDataUrl,
+          id_doc: idDoc,
+          url: idDoc
+            ? `${API_BASE}/v1/storage/view/${idDoc}`
+            : (interno ? `${API_BASE}/archivo/gsp/${interno}` : compressedDataUrl),
+          nombre: interno || file.name,
         }
 
         if (props.galeria.length < props.maxFotos) {
@@ -204,14 +209,13 @@ async function uploadFileFromBase64(base64Data, originalName, mimeType) {
 
   const formData = new FormData()
   formData.append('archivo', file)
-  formData.append('tipo_doc', 'DOCUMENTO')
+  formData.append('tipo_doc', 'FOTOGRAFIA')
   formData.append('mimetype', file.type)
   formData.append('name_doc_orig', file.name)
-  formData.append('name_doc_interno', '')
-  formData.append('tenant_code', 'transmac')
+  formData.append('tenant_code', 'gsp')
   formData.append('modulo', 'inspecciones')
   formData.append('id_user', 1)
-  formData.append('estado', '1')
+  formData.append('estado', 'A')
 
   try {
     const response = await apiAxios.post('/v1/storage/upload', formData, {

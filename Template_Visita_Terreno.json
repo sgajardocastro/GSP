@@ -1,28 +1,7 @@
 {
   "segmentos": [
     {
-      "label": "1. DATOS DE LA EMPRESA",
-      "attributes": [
-        {
-          "type": "textField",
-          "label": "RUT",
-          "nullable": false,
-          "roles": [
-            "SYSTEM"
-          ]
-        },
-        {
-          "type": "textField",
-          "label": "RAZON SOCIAL",
-          "nullable": false,
-          "roles": [
-            "SYSTEM"
-          ]
-        }
-      ]
-    },
-    {
-      "label": "2. DATOS GENERALES DEL SERVICIO",
+      "label": "1. DATOS GENERALES DEL SERVICIO",
       "attributes": [
         {
           "type": "textField",
@@ -58,22 +37,6 @@
         },
         {
           "type": "textField",
-          "label": "VISITADO POR (NOMBRE VENDEDOR)",
-          "nullable": false,
-          "roles": [
-            "SYSTEM"
-          ]
-        },
-        {
-          "type": "textField",
-          "label": "VISITADO POR (NOMBRE OPERADOR)",
-          "nullable": false,
-          "roles": [
-            "SYSTEM"
-          ]
-        },
-        {
-          "type": "textField",
           "label": "CONTACTO EN TERRENO",
           "nullable": false,
           "roles": [
@@ -99,7 +62,7 @@
       ]
     },
     {
-      "label": "3. DATOS ESPECIFICOS DEL SERVICIO",
+      "label": "2. DATOS ESPECIFICOS DEL SERVICIO",
       "attributes": [
         {
           "type": "textField",
@@ -127,7 +90,7 @@
       ]
     },
     {
-      "label": "4. DATOS TECNICOS DE LA RUTA",
+      "label": "3. DATOS TECNICOS DE LA RUTA",
       "attributes": [
         {
           "type": "textField",
@@ -388,20 +351,11 @@
           "nullable": false,
           "galeria": [],
           "obs": ""
-        },
-        {
-          "type": "photoCapture",
-          "label": "FOTOGRAFIAS CLARAS DE LOS ACCESOS, PUENTES DE MADERA (VIGAS), SI APLICA",
-          "compression": 50,
-          "maxFotos": 3,
-          "obs": "",
-          "galeria": [],
-          "nullable": true
         }
       ]
     },
     {
-      "label": "5. DATOS TECNICOS DEL ESPACIO DE TRABAJO",
+      "label": "4. DATOS TECNICOS DEL ESPACIO DE TRABAJO",
       "attributes": [
         {
           "type": "photoCheck",
@@ -599,20 +553,11 @@
           "nullable": false,
           "galeria": [],
           "obs": ""
-        },
-        {
-          "type": "photoCapture",
-          "label": "REGISTRO FOTOGRAFICO ESPACIO DE TRABAJO",
-          "compression": 50,
-          "maxFotos": 3,
-          "obs": "",
-          "galeria": [],
-          "nullable": true
         }
       ]
     },
     {
-      "label": "6. DATOS TECNICOS DE IZAJE",
+      "label": "5. DATOS TECNICOS DE IZAJE",
       "attributes": [
         {
           "type": "textField",
@@ -745,7 +690,7 @@
       ]
     },
     {
-      "label": "7. CROQUIS ADICIONAL",
+      "label": "6. CROQUIS ADICIONAL",
       "attributes": [
         {
           "type": "labelLine",
@@ -797,7 +742,7 @@
       ]
     },
     {
-      "label": "8. DATOS DE IMPLEMENTOS PARA EL SERVICIO",
+      "label": "7. DATOS DE IMPLEMENTOS PARA EL SERVICIO",
       "attributes": [
         {
           "type": "photoCheck",
@@ -926,7 +871,7 @@
       ]
     },
     {
-      "label": "9. RECOMENDACIÓN Y PACTOS CON EL CLIENTE",
+      "label": "8. RECOMENDACIÓN Y PACTOS CON EL CLIENTE",
       "attributes": [
         {
           "type": "textArea",
@@ -941,16 +886,6 @@
           "obs": "",
           "galeria": [],
           "nullable": true
-        },
-        {
-          "type": "textField",
-          "label": "RUT DEL CLIENTE",
-          "nullable": false
-        },
-        {
-          "type": "textField",
-          "label": "NOMBRE DEL CLIENTE",
-          "nullable": false
         },
         {
           "type": "signature",

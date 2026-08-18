@@ -160,6 +160,13 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Reglas Edición Manual Horarios:** Consultar con Omar sobre las reglas de negocio para la modificación manual de horarios de inicio y término por parte de operadores.
 *   [ ] **[Jorge Ponce] Lógica Comercial Categorías de Cobro:** Evaluar categorías de cobro vigentes (Hora, Día, Mes, Fijo) y coordinar definición final con Contabilidad, Comercial y Omar.
 
+**Reunión 17-Ago-2026 (Seguimiento App Móvil, Condiciones Comerciales & Validación Operativa):**
+*   [ ] **[Sergio Gajardo] Finalizar Inspecciones PWA:** Finalizar ajustes en la aplicación móvil de inspecciones de terreno (saneamiento de cabecera, datos de obra/contacto, barra de progreso y comentarios dinámicos) y formato de checklist de salida de patio.
+*   [ ] **[Sergio Gajardo] Desglose Viáticos y Pensiones:** Incorporar campos independientes de Alojamiento y Alimentación (Desayuno, Almuerzo, Cena) en Condiciones Comerciales especificando responsabilidad de pago (Cliente vs GSP).
+*   [ ] **[Jorge Ponce] Coordinar y Confirmar Reunión Presencial:** Coordinar con Omar la fecha definitiva de la reunión presencial (semana del 24-Ago) y confirmar a Sergio para itinerario de viaje.
+*   [ ] **[Jorge Ponce] Pruebas Piloto de Plataforma:** Realizar pruebas de campo con equipo comercial (Richard) y operaciones/analista para recopilar feedback previo a la sesión presencial.
+
+
 ---
 
 ### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Herencia Global Manager - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c`)
@@ -230,5 +237,5 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 #### Grupo D (Lógica de Negocio: Flags Flete y Rigger - 12-Ago-2026)
 * [x] **Punto 1 (Flete):** Inyección automática de Flete por $500.000 en el Estructurador al encender el flag, y visibilidad explícita en el PDF. `VERIFICADO POR EL USUARIO`.
 * [x] **Punto 2 (Rigger - Bidireccionalidad):** Sincronización bidireccional entre flag y línea del Estructurador. (Incluye limpieza automática al apagar el flag).
-* [ ] **Punto 3 (Rigger - PDF):** Indicador SÍ/NO explícito en el PDF generado.
-* [ ] **Punto 4 (Rigger - Operaciones):** Bloqueo mandatorio en el tab de Asignación si falta seleccionar Rigger.
+* [x] **Punto 3 (Rigger - PDF):** Indicador SÍ/NO explícito en el PDF generado. (Desplegado en prod).
+* [x] **Punto 4 (Rigger - Operaciones):** Bloqueo mandatorio en el tab de Asignación si falta seleccionar Rigger. (Desplegado en prod).

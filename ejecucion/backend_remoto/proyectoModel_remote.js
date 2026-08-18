@@ -479,22 +479,9 @@ class ProyectoModel {
 
       // Generar secciones extra dinámicas para los tabs del CRM (ej. Datos Servicio & Visita)
       let extraSectionsHtml = '';
-
-      const requiresRigger = jsonField.preventa_v1?.requiere_rigger ? 'SÍ' : 'NO';
-      const requerimientosHtml = `
-        <table class="info-table" style="width: 100%; margin-top: 10px;">
-          <tr>
-            <td style="width: 25%; font-weight: bold;">REQUIERE RIGGER:</td>
-            <td style="width: 75%; font-weight: bold; color: ${jsonField.preventa_v1?.requiere_rigger ? '#000' : '#666'};">${requiresRigger}</td>
-          </tr>
-        </table>
-      `;
-      extraSectionsHtml += requerimientosHtml;
-
       const standardKeys = ['lineas_servicio', 'cotizaciones_historicas', 'condiciones_pdf', 'prioridad', 'contacto_nombre', 'contacto_telefono', 'tipo_pago', 'requiere_oc_hes', 'obra_nombre', 'obra_direccion', 'obra_ciudad', 'coordenadas_mapa', 'detalle_servicio', 'tipo_carga', 'peso_carga', 'volumen_carga', 'radios_trabajo', 'alturas_trabajo', 'visita_terreno', 'validez_dias', 'moneda', 'condicion_servicio'];
       let sectionCounter = 4; // Empezamos en 4 porque 1, 2 y 3 ya están definidos arriba (la sección de Condiciones Comerciales será la última)
       
-      /*
       for (const key in crm) {
         if (!standardKeys.includes(key) && crm[key] !== null && crm[key] !== undefined && crm[key] !== '') {
            let valHtml = '';
@@ -523,7 +510,6 @@ class ProyectoModel {
            sectionCounter++;
         }
       }
-      */
 
       // 5. Generar plantilla HTML
       const htmlContent = `
@@ -637,18 +623,13 @@ class ProyectoModel {
             <tr>
               <td class="info-label">Nombre Obra/Proyecto:</td>
               <td class="info-value">${crm.obra_nombre || p.nombre_proyecto || '—'}</td>
+              <td class="info-label">Revisión/Visita:</td>
+              <td class="info-value">${crm.visita_terreno || 'No'}</td>
               <td class="info-label">Ubicación Obra:</td>
               <td class="info-value">
-                • <strong>Dirección:</strong> ${crm.obra_direccion || '—'}<br>
-                • <strong>Comuna/Ciudad:</strong> ${crm.obra_ciudad || '—'}
-                ${crm.coordenadas_mapa?.lat ? `<br>• <strong>Coordenadas GPS:</strong> <span style="font-family: monospace; font-size: 8.5px;">${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
+                ${crm.obra_direccion || '—'}${crm.obra_ciudad ? ', ' + crm.obra_ciudad : ''}
+                ${crm.coordenadas_mapa?.lat ? `<br><span style="font-size: 8px; color: #718096; font-family: monospace;">Coord: ${crm.coordenadas_mapa.lat}, ${crm.coordenadas_mapa.lng}</span>` : ''}
               </td>
-            </tr>
-            <tr>
-              <td class="info-label">Horario Inicio Servicio:</td>
-              <td class="info-value">${crm.fecha_hora_inicio ? new Date(crm.fecha_hora_inicio).toLocaleString('es-CL') : 'A coordinar con Operaciones'}</td>
-              <td class="info-label">Término Estimado:</td>
-              <td class="info-value">${crm.fecha_hora_termino ? new Date(crm.fecha_hora_termino).toLocaleString('es-CL') : 'Según avance de faena'}</td>
             </tr>
             <tr>
               <td class="info-label">Detalle del Servicio:</td>
@@ -665,15 +646,6 @@ class ProyectoModel {
               <td class="info-value">${crm.volumen_carga || '—'}</td>
               <td class="info-label">Radios / Alturas Trab:</td>
               <td class="info-value">Radio: ${crm.radios_trabajo || '—'} | Altura: ${crm.alturas_trabajo || '—'}</td>
-            </tr>
-            <tr>
-              <td class="info-label">Condiciones Operativas:</td>
-              <td class="info-value" colspan="3">
-                • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Prevencionista Certificado:</strong> ${crm.requiere_prevencionista ? 'SÍ' : 'NO'}
-              </td>
             </tr>
             <tr>
               <td class="info-label">Visita Técnica Terreno:</td>
@@ -792,7 +764,7 @@ class ProyectoModel {
           'A'
       );
 
-      nuevaCotizacion.url = `/api/archivo/ver/${doc.id_doc}`;
+      nuevaCotizacion.url = `/api/v1/storage/view/${doc.id_doc}`;
       jsonField.crm_v1.cotizaciones_historicas.push(nuevaCotizacion);
       
       const updateResult = await client.query(

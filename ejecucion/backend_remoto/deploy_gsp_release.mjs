@@ -97,21 +97,31 @@ async function deploy() {
     console.log('\n📝 2. Actualizando RELEASE_LOG.md con la traza oficial...');
     const customChanges = {
       web: [
-        "- **[FEAT]** **Ordenamiento de Columnas:** Implementada lógica interactiva para ordenar de forma ascendente/descendente las columnas (ID, Email, Nombre, Rut, Empresa, Estado, Cargo, Nacimiento, FES) al clickear sus encabezados en la grilla de usuarios."
+        "- **[FEAT]** **Flags de Operación en Preventa:** Implementados los 4 flags de preventa (`Requiere Acreditación`, `Servicio incluye Traslado`, `Requiere Rigger`, `Prevencionista Certificado`) con sincronización bidireccional en el estructurador y presencia explícita en la cotización PDF.",
+        "- **[FEAT]** **Proyección de Costos de Pensiones:** Apertura modular de alimentación en 3 conceptos individuales (Desayuno, Almuerzo, Cena) totalizando 5 items con selección de pagador y valorización monetaria.",
+        "- **[FEAT]** **Acuerdos Comerciales Dinámicos:** Eliminación del encabezado general estático y preservación determinista de modificaciones manuales guardadas en preventa."
       ],
       backend: [
-        "- **[FIX]** **Integridad de Datos en BD:** Saneado el mapeo de los 4 administradores enrolados principales en PostgreSQL asignándoles `id_empresa = 9` para consistencia con el filtro de multi-tenant de GSP."
+        "- **[FEAT]** **Plantilla PDF de Cotización:** Impresión explícita de los 4 flags de condiciones operativas y soporte para esquemas enriquecidos de preventa y pensiones."
       ]
     };
     updateReleaseLog(webVer, pwaVer, customChanges);
 
     // 3. Compilar Web App (Vite)
-    console.log('\n🏗️ 3. Compilando Web App (Vite) en ejecucion/frontend...');
+    console.log('\n🏗️ 3.1. Compilando Web App (Vite) en ejecucion/frontend...');
     const localWebDist = path.join(frontendRoot, 'dist');
     if (fs.existsSync(localWebDist)) {
       fs.rmSync(localWebDist, { recursive: true, force: true });
     }
     execSync('npm run build', { cwd: frontendRoot, stdio: 'inherit' });
+
+    // 3.2. Compilar PWA (Vue CLI)
+    console.log('\n🏗️ 3.2. Compilando PWA (Vue CLI) en ejecucion/pwa...');
+    const localPwaDist = path.join(pwaRoot, 'dist');
+    if (fs.existsSync(localPwaDist)) {
+      fs.rmSync(localPwaDist, { recursive: true, force: true });
+    }
+    execSync('npm run build', { cwd: pwaRoot, stdio: 'inherit' });
 
     // 4. Conectar por SSH
     console.log('\n🔌 4. Conectando a servidor.leanglobal.cl:1295 via SSH...');
@@ -125,24 +135,42 @@ async function deploy() {
 
     // 5. Crear respaldo remoto de la versión anterior en /var/www/html/backups
     const webRemote = '/var/www/html/lg-gsp-dev';
-    console.log(`\n📦 5. Respaldando directorio remoto existente ${webRemote}...`);
+    const pwaRemote = '/var/www/html/pwa-gsp-dev';
+    console.log(`\n📦 5. Respaldando directorios remotos existentes...`);
     await ssh.execCommand('mkdir -p /var/www/html/backups');
-    const backupName = `lg-gsp-dev-backup-\$(date +%Y%m%d_%H%M%S).tar.gz`;
-    const checkDir = await ssh.execCommand(`ls -d ${webRemote}`);
-    if (checkDir.code === 0) {
-      console.log(`🗜️ Creando archivo de respaldo /var/www/html/backups/${backupName}...`);
-      await ssh.execCommand(`tar -czf /var/www/html/backups/${backupName} -C /var/www/html lg-gsp-dev`);
-      console.log(`✅ Respaldo creado exitosamente.`);
+    const backupNameWeb = `lg-gsp-dev-backup-\$(date +%Y%m%d_%H%M%S).tar.gz`;
+    const backupNamePwa = `pwa-gsp-dev-backup-\$(date +%Y%m%d_%H%M%S).tar.gz`;
+    
+    const checkWebDir = await ssh.execCommand(`ls -d ${webRemote}`);
+    if (checkWebDir.code === 0) {
+      console.log(`🗜️ Creando archivo de respaldo Web /var/www/html/backups/${backupNameWeb}...`);
+      await ssh.execCommand(`tar -czf /var/www/html/backups/${backupNameWeb} -C /var/www/html lg-gsp-dev`);
     }
 
+    const checkPwaDir = await ssh.execCommand(`ls -d ${pwaRemote}`);
+    if (checkPwaDir.code === 0) {
+      console.log(`🗜️ Creando archivo de respaldo PWA /var/www/html/backups/${backupNamePwa}...`);
+      await ssh.execCommand(`tar -czf /var/www/html/backups/${backupNamePwa} -C /var/www/html pwa-gsp-dev`);
+    }
+    console.log(`✅ Respaldos creados exitosamente.`);
+
     // 6. Subir Frontend Web a /var/www/html/lg-gsp-dev
-    console.log(`\n⬆️  6. Subiendo nuevo build de Frontend Web (${localWebDist} -> ${webRemote})...`);
+    console.log(`\n⬆️  6.1. Subiendo nuevo build de Frontend Web (${localWebDist} -> ${webRemote})...`);
     await ssh.putDirectory(localWebDist, webRemote, {
       recursive: true,
       concurrency: 15
     });
     await ssh.execCommand(`chown -R nginx:nginx ${webRemote}`);
     console.log('✅ Frontend Web subido y permisos nginx aplicados.');
+
+    // 6.2 Subir PWA a /var/www/html/pwa-gsp-dev
+    console.log(`\n⬆️  6.2. Subiendo nuevo build de PWA (${localPwaDist} -> ${pwaRemote})...`);
+    await ssh.putDirectory(localPwaDist, pwaRemote, {
+      recursive: true,
+      concurrency: 15
+    });
+    await ssh.execCommand(`chown -R nginx:nginx ${pwaRemote}`);
+    console.log('✅ PWA subida y permisos nginx aplicados.');
 
     // 7. Subir Backend a /home/nodeadmin/proyectos/lean-services-gsp/src
     const localBackendSrc = path.join(backendRoot, 'src');
@@ -160,7 +188,7 @@ async function deploy() {
     const pm2Res = await ssh.execCommand('sudo -u nodeadmin pm2 restart lean-services-gsp');
     console.log("PM2 Output:\n", pm2Res.stdout || pm2Res.stderr);
 
-    console.log(`\n🎉 DESPLIEGUE OFICIAL COMPLETADO CON ÉXITO PARA GSP VERSIÓN ${webVer}!`);
+    console.log(`\n🎉 DESPLIEGUE OFICIAL COMPLETADO CON ÉXITO PARA GSP WEB v${webVer} y PWA v${pwaVer}!`);
   } catch (err) {
     console.error('\n❌ ERROR DURANTE EL DESPLIEGUE:', err.message || err);
     process.exit(1);

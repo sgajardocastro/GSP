@@ -109,14 +109,35 @@
         <v-expansion-panels multiple v-if="!isPPDTemplate(survey)">
           <v-expansion-panel v-for="(segmento, index) in getSegmentosVisibles(survey)" :key="segmento.posicion ?? index"
             class="mb-5">
-            <v-expansion-panel-title class="font-weight-bold segment-header" style="font-size: 16px;">
-              <template v-if="segmento.touch">
-                <v-icon style="color: #107B13;" icon="mdi-check-circle" class="mr-2" />
-              </template>
-              <template v-if="segmento.touch == false">
-                <v-icon style="color: #E4430D;" icon="mdi-check-circle" class="mr-2" />
-              </template>
-              {{ segmento.label || `Segmento ${index + 1}` }}
+            <v-expansion-panel-title class="font-weight-bold segment-header flex-column align-stretch pa-0" style="font-size: 15px;">
+              <div class="d-flex align-center justify-space-between w-100 py-3 px-3">
+                <div class="d-flex align-center gap-2" style="max-width: calc(100% - 65px);">
+                  <v-icon 
+                    :icon="getSegmentProgress(segmento, survey).isComplete ? 'mdi-check-circle' : 'mdi-checkbox-blank-circle-outline'" 
+                    :color="getSegmentProgress(segmento, survey).isComplete ? '#10b981' : '#64748b'" 
+                    class="mr-1"
+                    size="20" 
+                  />
+                  <span class="text-truncate">{{ segmento.label || `Segmento ${index + 1}` }}</span>
+                </div>
+                <span 
+                  class="font-mono text-caption font-weight-bold px-2 py-0.5 rounded-pill mr-2"
+                  :style="getSegmentProgress(segmento, survey).isComplete 
+                    ? 'background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);' 
+                    : 'background: rgba(30, 41, 59, 0.8); color: #94a3b8; border: 1px solid rgba(71, 85, 105, 0.4);'"
+                >
+                  {{ getSegmentProgress(segmento, survey).filled }}/{{ getSegmentProgress(segmento, survey).total }}
+                </span>
+              </div>
+              <div class="w-100" style="height: 3px; background: rgba(30, 41, 59, 0.8);">
+                <div 
+                  style="height: 100%; transition: width 0.3s ease;"
+                  :style="{ 
+                    width: `${getSegmentProgress(segmento, survey).percentage}%`,
+                    background: getSegmentProgress(segmento, survey).isComplete ? '#10b981' : '#38bdf8'
+                  }"
+                ></div>
+              </div>
             </v-expansion-panel-title>
 
             <v-expansion-panel-text
@@ -128,7 +149,12 @@
                   <!-- (deja aquí *idéntico* tu block largo de v-else-if por type) -->
                   <!-- ... TODO TU CÓDIGO ACTUAL DE ATRIBUTOS AQUÍ ... -->
                   <div v-if="attr.type === 'textField'">
-                    <v-text-field variant="outlined" v-model="attr.default" :label="attr.label" dense hide-details
+                    <!-- Si es un atributo de solo lectura del sistema (sin borde verde interactivo) -->
+                    <div v-if="attr.roles && attr.roles.includes('SYSTEM')" class="system-readonly-card mb-2 p-2.5 rounded-lg bg-[#0b1329]/60 border border-slate-700/40">
+                      <span class="d-block text-caption font-weight-bold text-slate-400 uppercase tracking-wider mb-1">{{ attr.label }}</span>
+                      <span class="d-block text-body-2 font-weight-bold text-slate-100 font-mono">{{ getSystemFieldValue(attr, survey) || 'No especificado' }}</span>
+                    </div>
+                    <v-text-field v-else variant="outlined" v-model="attr.default" :label="attr.label" dense hide-details
                       density="compact" :disabled="!puedeEditar(attr)"
                       :class="attr.nullable === false && !attr.default ? 'text-custom-red' : ''" @update:model-value="(val) => {
                         attr.default = val;
@@ -232,7 +258,7 @@
                       <v-col v-if="attr.values" :key="attr.values.id" cols="12">
                         <div style="display: flex; gap: 1rem;">
                           <div style="flex: 1;" class="font-weight-medium mb-1">
-                            {{ attr.values.quest || 'Seleccione una opción' }}
+                            {{ attr.values.quest || attr.label || 'Seleccione una opción' }}
                           </div>
                           <div style="flex: 2;">
                             <v-select density="compact" variant="outlined" v-model="attr.values.selected"
@@ -278,8 +304,22 @@
                     <v-row>
                       <v-col class="pb-12">
                         <div>
-                          <GeoLocation :label="attr.label" :modelValue="attr.default"
-                            @update:modelValue="(value) => attr.default = value" />
+                          <GeoLocation 
+                            :label="attr.label" 
+                            :modelValue="attr.default"
+                            :geoVisita="attr.geoVisita || attr.default?.geoVisita || attr.value?.geoVisita || attr.value"
+                            @update:modelValue="(val) => { attr.default = val; segmentosCompletos(); }"
+                            @update:geoVisita="(val) => { 
+                              attr.geoVisita = val; 
+                              if (typeof attr.default === 'object' && attr.default) { 
+                                attr.default.geoVisita = val; 
+                              } else { 
+                                attr.default = { geoVisita: val }; 
+                              } 
+                              attr.value = val; 
+                              segmentosCompletos(); 
+                            }" 
+                          />
                         </div>
                       </v-col>
                     </v-row>
@@ -341,15 +381,24 @@
 
                   <div v-else-if="attr.type === 'photoCheck'" style="padding-top: 5px;">
                     <FotoCeck v-if="attr.type === 'photoCheck'" :label="attr.label" :model-value="attr.default"
+                      :cantidad="attr.cantidad"
+                      :unit="attr.unit"
+                      :has-cantidad="attr.hasCantidad"
+                      :fecha-vencimiento="attr.fechaVencimiento"
+                      :has-vencimiento="attr.hasVencimiento"
                       @update:model-value="(val) => {
                         attr.default = val;
                         // Regla para Template 110 (Charla/ATS): Si no es 'si', limpia galería
                         if (isTemplate110 && (attr.label === 'Charla' || attr.label === 'ATS') && val !== 'si') {
                           attr.galeria = [];
                         }
-                      }" :galeria="attr.galeria" :observacion="attr.obs" :options="attr.options"
-                      :compression="attr.compression || 10" @update:galeria="val => attr.galeria = val"
-                      @update:observacion="val => attr.obs = val" :bloquear-foto="isBlockedFotoCheck(attr)" />
+                        segmentosCompletos();
+                      }" 
+                      @update:cantidad="(val) => { attr.cantidad = val; segmentosCompletos(); }"
+                      @update:fecha-vencimiento="(val) => { attr.fechaVencimiento = val; segmentosCompletos(); }"
+                      :galeria="attr.galeria" :observacion="attr.obs" :options="attr.options"
+                      :compression="attr.compression || 10" @update:galeria="val => { attr.galeria = val; segmentosCompletos(); }"
+                      @update:observacion="val => { attr.obs = val; segmentosCompletos(); }" :bloquear-foto="isBlockedFotoCheck(attr)" />
                   </div>
 
                   <div v-else-if="attr.type === 'qr'" style="padding-top: 5px;">
@@ -1829,11 +1878,19 @@ function isConexionEstadoSelect(attr, survey) {
 
 function getSelectItems(options, attr = null, survey = null) {
   const base = Array.isArray(options)
-    ? options.map(opt => ({
-      id: opt.id ?? opt.value,
-      label: opt.label ?? opt.value,
-      value: opt.value ?? opt.id
-    }))
+    ? options.map(opt => {
+      if (typeof opt === 'string' || typeof opt === 'number') {
+        return { id: opt, label: String(opt), value: opt };
+      }
+      const val = opt?.value ?? opt?.id ?? opt?.label ?? opt?.text ?? '';
+      const lbl = opt?.label ?? opt?.title ?? opt?.text ?? opt?.name ?? opt?.value ?? opt?.id ?? '';
+      const idVal = opt?.id ?? opt?.value ?? lbl;
+      return {
+        id: idVal,
+        label: String(lbl),
+        value: val
+      };
+    })
     : [];
 
   if (!isConexionEstadoSelect(attr, survey)) return base;
@@ -2045,11 +2102,51 @@ async function cargarDetalleRelacionadoConexion() {
   }
 }
 
+function getSystemFieldValue(attr, survey) {
+  if (attr && attr.default && String(attr.default).trim() !== '') return attr.default;
+  const label = normalizeSegmentLabel(attr?.label || attr?.text || '');
+  if (label.includes('direccion')) {
+    return survey?.direccion_obra || survey?.observacion_proyecto || survey?.direccion || surveyDetailStore?.surveyDetail?.[0]?.direccion_obra || surveyDetailStore?.surveyDetail?.[0]?.observacion_proyecto || '';
+  }
+  if (label.includes('nombre') && label.includes('obra')) {
+    return survey?.nombre_proyecto || survey?.name_proyecto || surveyDetailStore?.surveyDetail?.[0]?.nombre_proyecto || '';
+  }
+  return attr?.default || '';
+}
+
 function normalizeSurveyBodyExecFromDb(survey) {
   if (!survey || typeof survey !== 'object') return
 
   const bodyExec = normalizeBodyExecContainer(survey.body_exec)
   dedupeComunicacionRadialSegmentos(bodyExec.segmentos)
+
+  // 1. Limpieza y sincronización de Segmentos para Template 80
+  if (Array.isArray(bodyExec.segmentos)) {
+    bodyExec.segmentos.forEach(seg => {
+      if (Array.isArray(seg.attributes)) {
+        // Eliminar REFERENCIA DE LA DIRECCION
+        seg.attributes = seg.attributes.filter(attr => {
+          const label = normalizeSegmentLabel(attr.label || attr.text || '')
+          return !(label.includes('referencia') && label.includes('direccion'))
+        })
+
+        // Sincronizar DIRECCION DE LA OBRA si viene vacía
+        seg.attributes.forEach(attr => {
+          const label = normalizeSegmentLabel(attr.label || attr.text || '')
+          if (label.includes('direccion') && (!attr.default || attr.default === '')) {
+            const dirFallback = survey.direccion_obra || survey.observacion_proyecto || survey.direccion || survey.nombre_proyecto || ''
+            if (dirFallback) attr.default = dirFallback
+          }
+          if (attr.type === 'geoLocation') {
+            if (attr.default?.geoVisita && !attr.geoVisita) {
+              attr.geoVisita = attr.default.geoVisita
+            }
+          }
+        })
+      }
+    })
+  }
+
   survey.body_exec = bodyExec
 }
 
@@ -7254,13 +7351,15 @@ function abrirDoc(attr) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function isValorServicio(attr) {
-  const label = (attr?.label ?? '').toString().trim().toLowerCase();
-  return label === 'valor servicio';
+function isExcludedAttribute(attr) {
+  const label = normalizeSegmentLabel(attr?.label ?? attr?.text ?? '');
+  if (label === 'valor servicio') return true;
+  if (label.includes('referencia') && label.includes('direccion')) return true;
+  return false;
 }
 
 function getVisibleAttributes(attrs) {
-  return (attrs || []).filter(attr => !isValorServicio(attr));
+  return (attrs || []).filter(attr => !isExcludedAttribute(attr));
 }
 
 function normalizeTypeKey(v) {
@@ -7338,6 +7437,115 @@ function normalizeSegmentLabel(value) {
 function isReclamosConSurveySegment(segmento) {
   const label = normalizeSegmentLabel(segmento?.label);
   return label === 'reclamos (con survey)' || label === 'reclamos con survey';
+}
+
+function isAttributeAnswered(attr, survey) {
+  if (!attr) return false;
+  const type = attr.type || '';
+  
+  if (['newLine', 'labelLine', 'labelLineH1', 'labelLineH2', 'labelLineH3', 'labelLineH4', 'labelLineH5'].includes(type)) {
+    return null; // Separador / cabecera, no es pregunta
+  }
+  
+  if (isExcludedAttribute(attr)) {
+    return null; // Excluido del conteo
+  }
+
+  // Atributos de sistema con fallback (ej. Nombre obra, Dirección obra)
+  if (attr.roles && attr.roles.includes('SYSTEM')) {
+    const val = getSystemFieldValue(attr, survey);
+    return val !== undefined && val !== null && String(val).trim() !== '';
+  }
+
+  if (['textField', 'number', 'decimal', 'datePicker', 'dateHourPicker', 'textArea'].includes(type)) {
+    return attr.default !== undefined && attr.default !== null && String(attr.default).trim() !== '';
+  }
+
+  if (type === 'radioButton') {
+    return attr.default !== undefined && attr.default !== null && String(attr.default).trim() !== '';
+  }
+
+  if (type === 'comboBox') {
+    const selected = attr.values?.selected;
+    const def = attr.default;
+    return (selected !== undefined && selected !== null && String(selected).trim() !== '') ||
+           (def !== undefined && def !== null && String(def).trim() !== '');
+  }
+
+  if (['photoCheck', 'fotoCheck', 'photo_check', 'foto_check'].includes(type)) {
+    const hasDef = attr.default !== undefined && attr.default !== null && String(attr.default).trim() !== '';
+    const hasVal = attr.value !== undefined && attr.value !== null && String(attr.value).trim() !== '';
+    const hasCant = attr.cantidad !== undefined && attr.cantidad !== null && String(attr.cantidad).trim() !== '';
+    const hasFec = attr.fechaVencimiento !== undefined && attr.fechaVencimiento !== null && String(attr.fechaVencimiento).trim() !== '';
+    return hasDef || hasVal || hasCant || hasFec;
+  }
+
+  if (type === 'geoLocation') {
+    return Boolean(
+      (attr.geoVisita && attr.geoVisita.lat) ||
+      (attr.default && typeof attr.default === 'object' && (attr.default.lat || attr.default.geoVisita?.lat)) ||
+      (attr.value && typeof attr.value === 'object' && attr.value.lat)
+    );
+  }
+
+  if (type === 'signature') {
+    return attr.default !== undefined && attr.default !== null && String(attr.default).trim().length > 0;
+  }
+
+  if (['fotoCapture', 'photoCapture', 'photo', 'foto'].includes(type)) {
+    const galeria = attr.galeria || attr.default?.galeria || attr.default;
+    return Array.isArray(galeria) ? galeria.length > 0 : Boolean(attr.src || attr.default);
+  }
+
+  if (['croquisCapture', 'croquis'].includes(type)) {
+    return attr.default !== undefined && attr.default !== null && String(attr.default).trim().length > 0;
+  }
+
+  if (type === 'checkList') {
+    const items = Array.isArray(attr.checkBoby) ? attr.checkBoby : [];
+    if (items.length === 0) return true;
+    return items.every(item => item.nullable === true || (item.default !== undefined && item.default !== null && String(item.default).trim() !== ''));
+  }
+
+  if (['checkListTecles', 'checkListTecle', 'CHECK LIST TECLES'].includes(type)) {
+    const items = Array.isArray(attr.checkBoby) ? attr.checkBoby : [];
+    if (items.length === 0) return true;
+    return items.every(check => (check?.default ?? '').toString().trim() !== '');
+  }
+
+  if (type === 'matrizCheck') {
+    return isMatrizCheckComplete(attr);
+  }
+
+  if (attr.default !== undefined && attr.default !== null && String(attr.default).trim() !== '') {
+    return true;
+  }
+  return false;
+}
+
+function getSegmentProgress(segmento, survey) {
+  if (!segmento) return { total: 0, filled: 0, percentage: 0, isComplete: false };
+
+  const rawAttrs = getVisibleAttributesBySegment(segmento);
+  let total = 0;
+  let filled = 0;
+
+  rawAttrs.forEach(attr => {
+    const status = isAttributeAnswered(attr, survey);
+    if (status !== null) {
+      total++;
+      if (status === true) filled++;
+    }
+  });
+
+  if (total === 0) {
+    return { total: 0, filled: 0, percentage: 100, isComplete: true };
+  }
+
+  const percentage = Math.min(100, Math.round((filled / total) * 100));
+  const isComplete = filled >= total;
+
+  return { total, filled, percentage, isComplete };
 }
 
 

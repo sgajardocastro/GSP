@@ -29,6 +29,7 @@ module.exports = defineConfig({
    * DEV SERVER (FIX ResizeObserver)
    * ========================== */
   devServer: {
+    port: 5173,
     client: {
       overlay: {
         warnings: false, // 👈 silencia ResizeObserver loop

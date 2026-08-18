@@ -4,6 +4,23 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.26
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 12:25:55 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Flags de Operación en Preventa:** Implementados los 4 flags de preventa (`Requiere Acreditación`, `Servicio incluye Traslado`, `Requiere Rigger`, `Prevencionista Certificado`) con sincronización bidireccional en el estructurador y presencia explícita en la cotización PDF.
+  - **[FEAT]** **Proyección de Costos de Pensiones:** Apertura modular de alimentación en 3 conceptos individuales (Desayuno, Almuerzo, Cena) totalizando 5 items con selección de pagador y valorización monetaria.
+  - **[FEAT]** **Acuerdos Comerciales Dinámicos:** Eliminación del encabezado general estático y preservación determinista de modificaciones manuales guardadas en preventa.
+
+## [Backend GSP] - Versión 1.0.26
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 12:25:55 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT]** **Plantilla PDF de Cotización:** Impresión explícita de los 4 flags de condiciones operativas y soporte para esquemas enriquecidos de preventa y pensiones.
+
 ## [Portal Web & Backend GSP] - Versión 1.0.24
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-08-07 01:13:25 (-04:00)

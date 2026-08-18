@@ -6,7 +6,7 @@ const messageModel = new MessageModel();
 const solicitarVisita = async (req, res) => {
     try {
         const { id_proyecto } = req.params;
-        const { email_coordinador, id_coordinador } = req.body;
+        const { email_coordinador, id_coordinador, contacto_nombre, contacto_telefono, contacto_email } = req.body;
 
         if (!id_proyecto) {
             return res.status(400).json({ error: "Falta id_proyecto" });
@@ -30,6 +30,9 @@ const solicitarVisita = async (req, res) => {
 
         if (!jsonField.crm_v1) jsonField.crm_v1 = {};
         if (id_coordinador) jsonField.crm_v1.coordinador_visita = id_coordinador;
+        if (contacto_nombre) jsonField.crm_v1.contacto_nombre = contacto_nombre;
+        if (contacto_telefono) jsonField.crm_v1.contacto_telefono = contacto_telefono;
+        if (contacto_email) jsonField.crm_v1.contacto_email = contacto_email;
 
         await pool.query(`
             UPDATE tpry_proyecto
@@ -53,16 +56,21 @@ const solicitarVisita = async (req, res) => {
             const subtitulo = "Se ha solicitado asignar una visita a terreno para la siguiente cotización:";
             const botonUrl = `https://servidor.leanglobal.cl/lg-gsp-dev/asignar-visita/${token}`;
             const descripcionServicio = crm.detalle_servicio || crm.descripcion || 'Sin descripción';
+            const contactoNombreVal = crm.contacto_nombre || 'No especificado';
+            const contactoTelefonoVal = crm.contacto_telefono || 'No especificado';
+            const contactoEmailVal = crm.contacto_email || 'No especificado';
 
             const contenido = `
               <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.cliente_nombre || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.nombre_proyecto || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto Terreno:</span> <span style="color: #ffffff; font-weight: bold;">${contactoNombreVal} (${contactoTelefonoVal})</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Correo Contacto:</span> <span style="color: #ffffff;">${contactoEmailVal}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Descripción:</span> <span style="color: #ffffff;">${descripcionServicio}</span></div>
                 <div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Ubicación:</span> ${ubicacionHtml}</div>
               </div>
-              <p style="color: #94a3b8; font-size: 13px; text-align: center; margin-top: 15px;">Haga clic en el botón inferior para asignar al coordinador y definir la fecha.</p>
+              <p style="color: #94a3b8; font-size: 13px; text-align: center; margin-top: 15px;">Haga clic en el botón inferior para asignar al especialista y definir la fecha.</p>
             `;
 
             const cuerpoHTML = messageModel.obtenerPlantillaHTML({
@@ -135,6 +143,9 @@ const getDatosVisita = async (req, res) => {
                 obra_nombre: crm.obra_nombre,
                 obra_direccion: crm.obra_direccion,
                 coordenadas_mapa: crm.coordenadas_mapa,
+                contacto_nombre: crm.contacto_nombre || null,
+                contacto_telefono: crm.contacto_telefono || null,
+                contacto_email: crm.contacto_email || null,
                 coordinador: coordinadorData
             }
         });
@@ -177,7 +188,71 @@ const asignarVisita = async (req, res) => {
             return res.status(404).json({ error: "Token inválido o expirado" });
         }
 
-        return res.status(200).json({ message: "Visita asignada y firmada con éxito", id_proyecto: result.rows[0].id_proyecto });
+        const id_proyecto = result.rows[0].id_proyecto;
+
+        // 3. Obtener datos del proyecto y template 80 para instanciar/actualizar la encuesta con datos comerciales
+        try {
+            const pryRowRes = await pool.query('SELECT id_proyecto, nombre_proyecto, id_empresa_cliente, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+            if (pryRowRes.rowCount > 0) {
+                const pryRow = pryRowRes.rows[0];
+                const jField = typeof pryRow.json_field === 'string' ? JSON.parse(pryRow.json_field) : (pryRow.json_field || {});
+                const crm = jField.crm_v1 || {};
+
+                // Obtener body_seed de template 80
+                const tmplRes = await pool.query('SELECT body_seed FROM tsrv_templates WHERE id_template = 80');
+                if (tmplRes.rowCount > 0) {
+                    let seed = tmplRes.rows[0].body_seed;
+                    if (typeof seed === 'string') seed = JSON.parse(seed);
+
+                    // Mapear datos comerciales al body_exec
+                    (seed.segmentos || []).forEach(seg => {
+                        if (seg.label && seg.label.includes('DATOS GENERALES')) {
+                            (seg.attributes || []).forEach(attr => {
+                                if (attr.label === 'NOMBRE DE LA OBRA') attr.default = crm.obra_nombre || pryRow.nombre_proyecto || '';
+                                if (attr.label === 'DIRECCION DE LA OBRA') attr.default = crm.obra_direccion || '';
+                                if (attr.label === 'REFERENCIA DE LA DIRECCION') attr.default = crm.obra_ciudad || '';
+                                if (attr.label === 'GEOLOCALIZACION OBRA') attr.default = crm.coordenadas_mapa || { lat: null, lng: null };
+                                if (attr.label === 'CONTACTO EN TERRENO') attr.default = crm.contacto_nombre || '';
+                                if (attr.label === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
+                                if (attr.label === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
+                            });
+                        }
+                    });
+
+                    // Verificar si ya existe survey para este proyecto y template 80
+                    const existSurvey = await pool.query('SELECT id_survey FROM tsrv_survey WHERE id_proyecto = $1 AND id_template = 80', [id_proyecto]);
+                    if (existSurvey.rowCount > 0) {
+                        await pool.query(`
+                            UPDATE tsrv_survey
+                            SET id_user = $1,
+                                fecha_plan_ini = $2,
+                                body_exec = $3,
+                                latitud = $4,
+                                longitud = $5
+                            WHERE id_survey = $6
+                        `, [id_ejecutor, fecha_visita, JSON.stringify(seed), crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, existSurvey.rows[0].id_survey]);
+                    } else {
+                        await pool.query(`
+                            INSERT INTO tsrv_survey (
+                                id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
+                                estado_srv, body_seed, body_exec, fecha_plan_ini, latitud, longitud, id_proyecto
+                            ) VALUES (
+                                1, 80, $1, $2, $3,
+                                'Creado', $4, $5, $6, $7, $8, $9
+                            )
+                        `, [
+                            id_ejecutor, id_coordinador, pryRow.id_empresa_cliente,
+                            JSON.stringify(tmplRes.rows[0].body_seed), JSON.stringify(seed),
+                            fecha_visita, crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, id_proyecto
+                        ]);
+                    }
+                }
+            }
+        } catch (surveySyncErr) {
+            console.error("Error al sincronizar encuesta de visita a terreno:", surveySyncErr);
+        }
+
+        return res.status(200).json({ message: "Visita asignada y firmada con éxito", id_proyecto: id_proyecto });
     } catch (err) {
         console.error("Error en asignarVisita:", err);
         return res.status(500).json({ error: err.message });

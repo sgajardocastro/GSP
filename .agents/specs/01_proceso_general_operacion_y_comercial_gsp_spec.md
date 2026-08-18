@@ -87,19 +87,17 @@ flowchart TD
 
 ---
 
-## 🗺️ 2. Mapeo Explícito del Proceso con las 7 Columnas del Kanban de Operaciones (`Torre.vue`)
+## 🗺️ 2. Mapeo Explícito del Proceso con las Columnas del Kanban de Operaciones (`Torre.vue`)
 
-El panel Kanban de Operaciones en la Torre de Control refleja directamente la evolución transaccional del servicio. A continuación se detalla la correspondencia exacta entre las etapas del proceso y las 7 columnas del Kanban:
+El panel Kanban de Operaciones en la Torre de Control refleja directamente la evolución transaccional del servicio. A continuación se detalla la correspondencia exacta entre las etapas del proceso y las columnas del Kanban:
 
 | N° | Nombre Columna Kanban (`Torre.vue`) | Estado Transaccional (`tpry_proyecto.id_proyecto_estado`) | Evento / Gatillo de Entrada | Responsable Principal | Acciones Habilitadas en la Vista |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | **Requerimiento Registrado** | `1 / 2` (`COTIZACION_GANADA` / `REQUERIMIENTO_REGISTRADO`) | Comercial marca "Generar Requerimiento" y activa exigencias de acreditación. | Ejecutivo Comercial | Visualización del Requerimiento, Lista de Exigencias de Acreditación preliminar. |
-| **2** | **En Verificación Operaciones** | `3` (`subtab_activa === 'validacion'`) | El Requerimiento ingresa a la cola de auditoría de factibilidad técnica de Operaciones. | Coordinador de Operaciones | Pestaña B (Diff): Comparación propuesta Comercial vs Factibilidad Real, Aprobación sin cambios (`APROBADO`) o Aprobación con observaciones (`APROBADO_CON_OBS`). |
-| **3** | **En Asignación Recursos** | `3` (`subtab_activa === 'asignacion'`) / `4` | Operaciones aprueba la factibilidad técnica del Requerimiento. | Coordinador de Operaciones | Pestaña C (Asignación): Selección de Grúa Principal, Operadores, Riggers, Equipos Apoyo, Aparejos Master. Botón "Confirmar Asignación OT". |
-| **4** | **En Preparación Operaciones** | `4 / 5` / `subtab_activa === 'preparacion_salida'` | Operaciones confirma la asignación formal de la OT. | Coordinador de Patio | Logística de Patio: Checklists Pre-Salida de Equipos, revisión de estiba y despacho de flota. |
-| 🟢 **5** | **En Acreditación** *(Concurrente)* | `requiere_acreditacion === true` | Activación de acreditación requerida por el cliente B2B. | Ejecutivo Comercial & Analista de Gestión | **Carril Concurrente Documental:** Transcurre en paralelo con Preparación y Faena. Micro-Gauge porcentual SVG (`0% - 100%`), auditoría 3 columnas (Empresa, Equipos, Personas) y despacho Dossier FES. |
-| **6** | **En Ejecución / Faena** | `7` (`EN_TRANSLADO` / `EN_FAENA`) | Flota sale del patio rumbo a la obra del cliente. | Operador Móvil / Tripulación | PWA Operador: Marcaciones de salida/llegada, check pre-operacional, firmas FES, orómetros. |
-| **7** | **Finalizado / Devengado** | `8` (`TERMINADO`) | Cierre del servicio en faena y devengado. | Administración / Finanzas | Cierre comercial, revisión de PPDs aprobados y paso a facturación B2B. |
+| **1** | **Requerimiento Registrado** | `COTIZACION_GANADA` / `REQUERIMIENTO_REGISTRADO` | Comercial marca "Generar Requerimiento" y activa exigencias de acreditación. | Ejecutivo Comercial | Visualización del Requerimiento, Lista de Exigencias de Acreditación preliminar. |
+| **2** | **En Verificación Operaciones** | `EN_VERIFICACION_OPERACIONES` | El Requerimiento ingresa a la cola de auditoría de factibilidad técnica de Operaciones. | Coordinador de Operaciones | Pestaña B (Diff): Comparación propuesta Comercial vs Factibilidad Real, Aprobación sin cambios (`APROBADO`) o Aprobación con observaciones (`APROBADO_CON_OBS`). |
+| **3** | **En Asignación Recursos** | `APROBADO` / `EN_ASIGNACION` | Operaciones aprueba la factibilidad técnica del Requerimiento. | Coordinador de Operaciones | Pestaña C (Asignación): Selección de Grúa Principal, Operadores, Riggers, Equipos Apoyo, Aparejos Master. Botón "Confirmar Asignación OT". |
+| **4** | **En Preparación Operaciones / Acreditaciones** | `ASIGNADO` / `EN_PREPARACION_PATIO` | Operaciones confirma la asignación formal de la OT. | Ejecutivo Comercial & Coordinador de Patio | **Comercial:** Sub-tab 4 Dossier Acreditaciones (3 Columnas, Homologación "A mano", Carga in-situ, Despacho Email B2B).<br>**Patio:** Checklist de Salida de Equipos. |
+| **5** | **En Ejecución / Faena** | `EN_TRANSLADO` / `EN_FAENA` | Flota sale del patio rumbo a la obra del cliente. | Operador Móvil / Tripulación | PWA Operador: Marcaciones de salida/llegada, check pre-operacional, firmas FES, orómetros. |
 | **6** | **Finalizado / Devengado** | `FAENA_FINALIZADA` / `DEVENGADO` | Liberación de equipos y cierre operacional de la OT. | Contabilidad / Devengado | Cierre de OT, emisión de balanza de facturación, devengado contable. |
 
 ---
@@ -117,6 +115,7 @@ El Ejecutivo Comercial ingresa los datos generales del cliente y del servicio en
 3. **Asignación de Inspector:** El Coordinador accede mediante la vista pública/protegida `/asignar-visita/:token`, asigna un Inspector Especialista de la lista de usuarios y define la `fecha_visita`.
 4. **Ejecución y Captura:** El Inspector ejecuta el levantamiento desde la PWA/Web. Captura datos de obra, accesos, suelo, aparejos requeridos y fotografías (`photoCheck`).
 5. **Importación a Cotización:** Al volver al formulario comercial, el botón *"Importar Visita"* precarga automáticamente las coordenadas, nombre de obra y aparejos al borrador de la cotización.
+6. **Check Acreditación:** El comercial a cargo debe indicar si el cliente requiere acreditación, para que al momento ganar el proceso y pasar a Verificación selecciones cuales son los elementos de acreditación que se requieren
 
 #### 🗃️ Atributos Contenidos (100%)
 * **Entidad `tpry_proyecto` (Borrador/Oportunidad):**
@@ -226,6 +225,8 @@ Cuando el cliente aprueba la propuesta comercial, el proyecto pasa de Cotizació
 
 #### 📌 Descripción Funcional
 El Coordinador de Operaciones revisa el Requerimiento Registrado en la **Pestaña B (Verificación y Diff Operativo)** para auditar si lo cotizado por Comercial es técnicamente factible con la flota y tiempos reales.
+** El coordinador de operaciones puede modificar la propuesta comercial si lo considera necesario, agregando equipos, ajustando tiempos o corrigiendo cualquier error que considere necesario.
+
 
 #### ⚙️ Reglas de Negocio
 1. **Comparador Visual Diff:** Muestra a dos columnas la propuesta Comercial vs la propuesta ajustada por Operaciones.
@@ -251,7 +252,7 @@ El Coordinador de Operaciones revisa el Requerimiento Registrado en la **Pestañ
 En la **Pestaña C (Asignación de Recursos OT)**, el Coordinador de Operaciones realiza la asignación efectiva de las grúas, camiones, operadores y riggers reales.
 
 #### ⚙️ Reglas de Negocio
-1. **Invariante Visual de Matriz:** La Pestaña C utiliza **EXACTAMENTE LA MISMA ESTRUCTURA DE TABLA POR CATEGORÍAS** que la cotización comercial.
+1. **Invariante Visual de Matriz:** La Pestaña C utiliza **EXACTAMENTE LA MISMA ESTRUCTURA DE TABLA POR CATEGORÍAS** que el coordinador validó y puede haber modificado en la fase de Verificación y Diff. No son necesariamente iguales a los de la etapa de cotización.
 2. **Asignación Densa por Línea:**
    - Para cada línea de Grúa/Equipo: Selecciona el `id_equipo` real de la tabla `tequ_equipo`.
    - Para la Tripulación Principal: Selecciona el `id_user` (Operador) y el `id_user` (Rigger) de la tabla `tsec_users`.

@@ -124,14 +124,24 @@ A continuación, se detalla el comportamiento exacto de los 5 *Flags* operativos
   * **Flag a Estructurador:** Si el flag se marca en `SÍ` (ON), se agrega automáticamente al estructurador la línea de Rigger (Categoría: `PERSONAL CERTIFICADO`, Subcategoría: `RIGGER`, Cantidad: `1`, Unidad: `Diario`, Valor: `$0`).
   * **Estructurador a Flag:** Si el flag está en `NO` (OFF) y el usuario agrega manualmente una línea con la subcategoría `RIGGER`, el flag de la columna izquierda se enciende automáticamente (ON) por sí solo.
   * **Limpieza:** Si el flag de Rigger se desmarca (OFF), la línea de Rigger del estructurador se elimina automáticamente.
-- **Impacto en PDF:** Debe mostrarse explícitamente si el servicio incluye Rigger o no, mostrando una línea fija con: **REQUIERE RIGGER: SÍ** (en negrita) o **REQUIERE RIGGER: NO** (en gris).
+- **Impacto en PDF:** Debe mostrarse explícitamente: **• Requiere Rigger:** `SÍ` / `NO`.
 - **Impacto Operativo (Asignación):** Al pasar a la etapa de Asignación, el despachador verá un requerimiento obligatorio en pantalla que dice "Asignar Rigger".
 
-#### 5. Combustible a Cargo del Cliente
-- **Concepto:** Aclara legal y operativamente quién asume el suministro y costo del petróleo (Diésel) que consumirá la grúa durante la operación.
-- **Caso de Uso:** Arriendo mensual "Dry" (operación en seco). Con el flag en `ON`:
-  * **Impacto Comercial (PDF):** En la cotización, sección *“2. DATOS DE OPERACIÓN E INGENIERÍA”*, se plasma de forma explícita que el combustible corre por cuenta y responsabilidad del cliente.
-  * **Impacto en Facturación:** No interviene en la matriz de asignación, pero en el EDP de facturación del cierre de mes, el sistema le recordará visualmente este acuerdo al analista para evitar cobrar un recargo erróneo o facilitar la facturación de cobros por combustible de emergencia.
+#### 5. Prevencionista Certificado (Sincronización Bidireccional)
+- **Concepto:** Especifica si la maniobra exige la presencia de un Prevencionista de Riesgos Certificado.
+- **Sincronización Bidireccional (Flag ↔ Estructurador):**
+  * **Flag a Estructurador:** Si el flag se marca en `SÍ` (ON), se agrega automáticamente al estructurador la línea (Categoría: `PERSONAL CERTIFICADO`, Subcategoría: `PREVENCIONISTA`, Cantidad: `1`, Unidad: `Diario`, Valor: `$0`).
+  * **Estructurador a Flag:** Si el flag está en `NO` (OFF) y el usuario agrega manualmente una línea con subcategoría `PREVENCIONISTA`, el flag se enciende automáticamente (ON).
+  * **Limpieza:** Si el flag se desmarca (OFF), la línea de Prevencionista se elimina automáticamente.
+- **Impacto en PDF:** Debe mostrarse explícitamente: **• Prevencionista Certificado:** `SÍ` / `NO`.
+
+#### 6. Proyección de Costos de Pensiones (Base para EDP)
+Apertura en 5 conceptos independientes (cada uno con selector de pagador: `Costeado por Cliente` / `Costeado por San Pablo` / `No Aplica (N/A)` y campo de valorización monetaria `$CLP`):
+1. **Alojamiento**
+2. **Alimentación - Desayuno**
+3. **Alimentación - Almuerzo**
+4. **Alimentación - Cena**
+5. **Traslado Personal**
 
 ---
 
@@ -203,6 +213,68 @@ Feature: Gestor de Oportunidades y Cotizaciones B2B
 > 2. **📌 PENDIENTE ESENCIAL CON EL CLIENTE:** Clarificar la lógica del calculador:
 >    - ¿Seleccionar la unidad `Fijo` otorga un precio cerrado independiente de la composición detallada de cantidad/valor unitario de las líneas en el estructurador?
 >    - ¿O aplica únicamente como etiqueta de cobro por línea sin alterar la suma del estructurador?
+
+---
+
+## 3.4. Acuerdos Comerciales Dinámicos y Condiciones para Cotización (Tab 3: Condiciones Comerciales)
+
+Las cláusulas y condiciones comerciales se estructuran de forma modular y reactiva según las categorías de servicios agregadas en el **Estructurador de Servicios** (`lines`).
+
+### A. Reglas de Detección e Inclusión por Categoría Oficial
+1. **Categoría `TRASLADOS`:**
+   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría `tipo === 'TRASLADOS'` (ya sea agregada manualmente o detonada automáticamente por el switch *"Servicio incluye Traslado"*), independiente de la subcategoría seleccionada.
+   - **Texto Canónico:**
+     ```text
+     TRASLADOS:
+     Observaciones: 
+     Traslado incluye seguro de carga Traslado con sobredimensión deben solicitarse con 10 días de anticipación Valor no considera sobreestadía Guías de Traslados son responsabilidad del cliente Todos los Valores son más Iva Carga y descarga de maquinarias y equipos externos son responsabilidad de cliente.
+     ```
+
+3. **Categoría `GRUA TELESCOPICA` (o `GRÚA TELESCÓPICA`):**
+   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría de izaje (`GRUA TELESCOPICA`, `GRÚA TELESCÓPICA` o `CAMIÓN PLUMA`).
+   - **Texto Canónico:**
+     ```text
+     GRUA TELESCOPICA:
+     Observaciones: 
+     a. La hora de la máquina comenzará a regir desde que esta sale de nuestras bodegas; Salvo que se cobre Flete por traslado. 
+     b. Las Máquinas se ocuparán en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas. 
+     c. Se entenderá por hora Máquina, el tiempo de reloj durante el cual estén disponible para el cliente; solo se considerara 1 hora de colación como máximo 
+     d. Será por cuenta del cliente el traslado de contrapesos durante y dentro del recinto de faena. 
+     e. Si la maquinaria trabajase menos de las horas mínimas el cliente igual debera cancelar el mínimo de horas pactadas en esta cotización. 
+     f. Será responsabilidad del cliente informar sobre la resistencia y condiciones del terreno y/o área de trabajo, en caso contrario ARRIENDO SAN PABLO se desliga de cualquier responsabilidad por daños que la Máquina pueda ocasionar. 
+     g. La factura deberá cancelarse a los 30 días de su fecha de emisión, siempre y cuando el cliente tenga un crédito aprobado de 30 días. 
+     h. En caso de que el CLIENTE no necesitará la máquina o suspendiera el servicio una vez que esta haya salido desde nuestras instalaciones, el cliente deberá cancelar la tarifa mínima de la máquina en cuestión. 
+     i. Si por fuerza mayor, ante algún evento inesperado (maquinarias encerradas en faenas, pannes, congestión del tránsito, etc.) la grúa se ve impedida de llegar en día y hora programada, no corresponderá ningún tipo de descuento ni cobro a ARRIENDO SAN PABLO tampoco corresponderá el endoso de multas o infracciones de cualquier tipo a ARRIENDO SAN PABLO 
+     j. La presente cotización tiene una validez de 05 días. 
+     k. Maquinaria sujeta a disponibilidad 
+     l.Todos los valores son más iva.
+     ```
+
+4. **Categoría `PLATAFORMAS`:**
+   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría `PLATAFORMAS` (alzahombres, tijeras, manlifts).
+   - **Texto Canónico:**
+     ```text
+     PLATAFORMAS:
+     Observaciones: 
+     - Equipo se Arrienda sin Operador - Las máquinas se ocuparan en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas 
+     - No utilizar el equipo como arco de soldadura, las baterías pueden explotar y de igual forma pueden generar daños en el sistema electrónico. 
+     - Todos los daños a neumáticos, ya sean por cortes laterales, escalonamientos o simplemente pinchaduras, serán con cargo al cliente. - Todos los daños estéticos producto de la aplicación de pinturas, quemaduras por soldaduras, shotcrete o recubrimientos serán con cargo al cliente 
+     - Todos los daños producto de choques o golpes por descuido o mala operación, serán con cargo al cliente. 
+     - En caso que el equipo no responda de la forma correcta se debe informar de inmediato al servicio técnico San Pablo y no seguir intentando operar este, ya que este tipo de manipulación puede generar mayores daños, los que serán de cargo al cliente. - En caso que la falla del equipo se haya generado por una mala operación, será de cargo al cliente todos los costos de reparación, incluida la visita del mecánico a obra (MO, viático, combustible, traslados, etc). 
+     - El cliente debe informar con 48 horas de anticipación el retiro del equipo mediante correo electrónico al vendedor y encargado de logística de empresas San Pablo. - El horario habíl de retiro de equipos será de lunes a sábado desde las 08:00 a 10:00 am, después de ese horario se cobrará otro día, al menos que empresas San Pablo avise retiro programado en otro horario. 
+     - Al momento de proceder con el retiro del equipo de faena se ejecutará un levantamiento rápido indicando todos los daños (en caso de existir), este documento debe ser firmado por el supervisor de faena. Si existieran otros daños no visualizados al momento de retirar el equipo, se le informará a la brevedad al cliente y los costos de reparación será de cargo de este. 
+     - Plataformas Eléctricas; se aconseja no descargar baterías en su totalidad, dado que esto daña los componentes eléctrico y electrónicos incluido el cargador, si llegara a ocurrir los costos de reparación serán cobrados al cliente. Otro punto importante es que la recarga de baterías no puede ser ejecutada con generadores, debido a que producen daños en las placas de carga. 
+     - Plataformas a Combustión; las plataformas que utilicen para su operación combustible diesel serán entregadas con su estanque lleno, por lo que la recepción del equipo en nuestra planta debe ser en la misma condición, de lo contrario se procederá a la recarga de los litros faltantes y el costo por litro será de $1000 más iva. Los motores a combustión no deben quedar sin combustible, ya que los daños por este motivo serán de costo del cliente. 
+     - La presente cotización tiene una validez de 5 días. 
+     - Maquinarias sujetas a disponibilidad. 
+     - Todos los valores son más IVA.
+     ```
+
+### B. Comportamiento en UI / UX
+1. **Generación Automática:** Al poblar o actualizar las líneas de servicio en la oportunidad, el sistema pre-arma el texto concatenado de las categorías activas en `comercial.condiciones_texto_pdf`.
+2. **Libertad Total de Edición:** El usuario tiene total libertad para modificar, agregar o suprimir cláusulas directamente en el textarea. Si la oportunidad ya contiene un texto guardado previamente, este se respeta y no se sobrescribe sin acción del usuario.
+3. **Botón de Regeneración Manual:** Se dispone de un botón de acción *"Regenerar Acuerdos según Servicios"* en el Tab 3 para que el ejecutivo pueda reconstruir en cualquier momento el texto oficial de las categorías cotizadas.
+
 
 ---
 

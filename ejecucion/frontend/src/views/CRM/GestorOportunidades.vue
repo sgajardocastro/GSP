@@ -1418,7 +1418,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 bg-white/[0.02] border border-white/5 p-3 rounded-xl">
             <div class="flex items-center gap-2">
               <input type="checkbox" v-model="opportunity.requiere_acreditacion" id="left_acred" class="accent-amber-500" />
               <label for="left_acred" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Acreditación</label>
@@ -1429,7 +1429,11 @@
             </div>
             <div class="flex items-center gap-2">
               <input type="checkbox" v-model="opportunity.requiere_rigger" id="left_rigger" class="accent-amber-500" />
-              <label for="left_rigger" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Rigger / Señalero</label>
+              <label for="left_rigger" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Rigger</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" v-model="opportunity.requiere_prevencionista" id="left_prev" class="accent-amber-500" />
+              <label for="left_prev" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Prevencionista Certificado</label>
             </div>
           </div>
 
@@ -1750,12 +1754,43 @@
                   </div>
                   <div>
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">Coordinador a Notificar</label>
-                    <select v-model="emailCoordinadorSeleccionado" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white">
+                    <select v-model="emailCoordinadorSeleccionado" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500 transition-colors">
                       <option value="" disabled class="bg-[#0a0f1e] text-white">-- Seleccionar Coordinador --</option>
                       <option v-for="u in coordinadoresVisita" :key="u.id_user" :value="u.email || u.correo || u.username" class="bg-[#0a0f1e] text-white">
                         {{ u.nombre_user || u.name_user || u.username }} ({{ u.email || u.correo || u.username }})
                       </option>
                     </select>
+                  </div>
+
+                  <!-- Datos de Contacto en Terreno -->
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+                    <div>
+                      <label class="block text-[10px] text-slate-400 font-semibold mb-1">Contacto en Terreno</label>
+                      <input 
+                        v-model="siteVisit.contacto_terreno_nombre" 
+                        type="text" 
+                        placeholder="Ej: Juan Pérez" 
+                        class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-400 font-semibold mb-1">N° Teléfono Contacto</label>
+                      <input 
+                        v-model="siteVisit.contacto_terreno_telefono" 
+                        type="text" 
+                        placeholder="Ej: +56 9 1234 5678" 
+                        class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-400 font-semibold mb-1">Correo Electrónico Contacto</label>
+                      <input 
+                        v-model="siteVisit.contacto_terreno_email" 
+                        type="email" 
+                        placeholder="Ej: contacto@cliente.cl" 
+                        class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
                   </div>
                   <div class="flex justify-start pt-2">
                     <button 
@@ -1862,7 +1897,7 @@
                 </div>
               </div>
 
-              <!-- PROYECCIÓN DE COSTOS DE PENSIONES (ALOJAMIENTO, ALIMENTACIÓN, TRASLADO) -->
+              <!-- PROYECCIÓN DE COSTOS DE PENSIONES (ALOJAMIENTO, DESAYUNO, ALMUERZO, CENA, TRASLADO) -->
               <div class="col-span-2 mt-2 bg-white/[0.02] border border-white/10 rounded-lg p-3.5 space-y-3">
                 <div class="flex justify-between items-center border-b border-white/5 pb-2">
                   <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">
@@ -1871,45 +1906,110 @@
                   <span class="text-[9px] text-slate-400">Relevante para devengado y estados de pago</span>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                   <!-- Alojamiento -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase">Alojamiento</label>
-                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento</label>
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.alojamiento_monto" placeholder="Valorización ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
+                    <input type="number" v-model.number="comercial.pensiones.alojamiento_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
-                  <!-- Alimentación -->
+                  <!-- Desayuno -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase">Alimentación (D/A/C)</label>
-                    <select v-model="comercial.pensiones.alimentacion_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Desayuno</label>
+                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.alimentacion_monto" placeholder="Valorización ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
+                    <input type="number" v-model.number="comercial.pensiones.desayuno_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
-                  <!-- Traslado -->
+                  <!-- Almuerzo -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase">Traslado Personal</label>
-                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Almuerzo</label>
+                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.traslado_monto" placeholder="Valorización ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
+                    <input type="number" v-model.number="comercial.pensiones.almuerzo_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
+                  </div>
+
+                  <!-- Cena -->
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Cena</label>
+                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                      <option value="NA">No Aplica (N/A)</option>
+                    </select>
+                    <input type="number" v-model.number="comercial.pensiones.cena_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
+                  </div>
+
+                  <!-- Traslado Personal -->
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado Personal</label>
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                      <option value="NA">No Aplica (N/A)</option>
+                    </select>
+                    <input type="number" v-model.number="comercial.pensiones.traslado_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
                 </div>
               </div>
 
-              <div class="col-span-2 mt-2">
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Cláusulas / Condiciones para el PDF:</label>
-                <textarea v-model="comercial.condiciones_texto_pdf" rows="6" placeholder="Ingrese las condiciones adicionales que aparecerán en la propuesta comercial..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2.5 text-xs text-white outline-none resize-none"></textarea>
+              <!-- CLÁUSULAS Y ACUERDOS COMERCIALES POR CATEGORÍA -->
+              <div class="col-span-2 mt-2 space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                      Cláusulas y Acuerdos Comerciales (PDF)
+                    </label>
+                    <div class="flex items-center gap-1.5">
+                      <span 
+                        class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                        :class="categoriasDetectadas.traslados ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                      >
+                        {{ categoriasDetectadas.traslados ? '✓ TRASLADOS' : 'TRASLADOS' }}
+                      </span>
+                      <span 
+                        class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                        :class="categoriasDetectadas.gruas ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                      >
+                        {{ categoriasDetectadas.gruas ? '✓ GRÚAS TELESCÓPICAS' : 'GRÚAS TELESCÓPICAS' }}
+                      </span>
+                      <span 
+                        class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                        :class="categoriasDetectadas.plataformas ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                      >
+                        {{ categoriasDetectadas.plataformas ? '✓ PLATAFORMAS' : 'PLATAFORMAS' }}
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click="regenerarCondicionesTexto" 
+                    class="text-[10px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Reconstruir texto con las cláusulas oficiales según los servicios presentes en el estructurador"
+                  >
+                    <span>🔄 Regenerar Acuerdos según Servicios</span>
+                  </button>
+                </div>
+                <textarea 
+                  v-model="comercial.condiciones_texto_pdf" 
+                  rows="10" 
+                  placeholder="Ingrese o ajuste los acuerdos comerciales y condiciones que aparecerán en la propuesta comercial..." 
+                  class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2.5 text-xs text-white outline-none resize-y font-mono leading-relaxed focus:border-amber-500/50"
+                ></textarea>
+                <span class="text-[9px] text-slate-500 block">
+                  * Las cláusulas se cargan automáticamente según los servicios cotizados. Tienes total libertad para editar o agregar acuerdos específicos.
+                </span>
               </div>
             </div>
           </div>
@@ -2585,6 +2685,9 @@ const opportunity = ref({
   tipo_pago: 'transferencia',
   requiere_oc_hes: false,
   requiere_acreditacion: false,
+  incluye_flete: false,
+  requiere_rigger: false,
+  requiere_prevencionista: false,
   acreditacion_docs: { empresa: [], equipos: [], personas: [] },
   id_proyecto_estado: null
 })
@@ -3708,9 +3811,7 @@ const alCambiarContacto = () => {
   }
 }
 
-const lines = ref([
-  { tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: 'Grúas Liebherr LTM 1220 (220T)', cantidad: 1, unidad: 'Diario', valorUnitario: 500000 }
-])
+const lines = ref([])
 
 const isHydrating = ref(true)
 
@@ -3772,7 +3873,10 @@ const siteVisit = ref({
   alturas_trabajo: '',
   visita_terreno: false,
   fecha_hora_inicio: '',
-  fecha_hora_termino: ''
+  fecha_hora_termino: '',
+  contacto_terreno_nombre: '',
+  contacto_terreno_telefono: '',
+  contacto_terreno_email: ''
 })
 
 const filteredClientes = computed(() => {
@@ -3987,12 +4091,111 @@ const comercial = ref({
   pensiones: {
     alojamiento_costeado: 'CLIENTE',
     alojamiento_monto: 0,
-    alimentacion_costeado: 'SAN_PABLO',
-    alimentacion_monto: 0,
+    desayuno_costeado: 'CLIENTE',
+    desayuno_monto: 0,
+    almuerzo_costeado: 'SAN_PABLO',
+    almuerzo_monto: 0,
+    cena_costeado: 'CLIENTE',
+    cena_monto: 0,
     traslado_costeado: 'CLIENTE',
     traslado_monto: 0
   }
 })
+
+// ACUERDOS COMERCIALES BASE CANÓNICOS POR CATEGORÍA
+const ACUERDOS_COMERCIALES_BASE = {
+  TRASLADOS: `TRASLADOS:
+Observaciones: 
+Traslado incluye seguro de carga Traslado con sobredimensión deben solicitarse con 10 días de anticipación Valor no considera sobreestadía Guías de Traslados son responsabilidad del cliente Todos los Valores son más Iva Carga y descarga de maquinarias y equipos externos son responsabilidad de cliente.`,
+
+  GRUA_TELESCOPICA: `GRUA TELESCOPICA:
+Observaciones: 
+a. La hora de la máquina comenzará a regir desde que esta sale de nuestras bodegas; Salvo que se cobre Flete por traslado. 
+b. Las Máquinas se ocuparán en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas. 
+c. Se entenderá por hora Máquina, el tiempo de reloj durante el cual estén disponible para el cliente; solo se considerara 1 hora de colación como máximo 
+d. Será por cuenta del cliente el traslado de contrapesos durante y dentro del recinto de faena. 
+e. Si la maquinaria trabajase menos de las horas mínimas el cliente igual debera cancelar el mínimo de horas pactadas en esta cotización. 
+f. Será responsabilidad del cliente informar sobre la resistencia y condiciones del terreno y/o área de trabajo, en caso contrario ARRIENDO SAN PABLO se desliga de cualquier responsabilidad por daños que la Máquina pueda ocasionar. 
+g. La factura deberá cancelarse a los 30 días de su fecha de emisión, siempre y cuando el cliente tenga un crédito aprobado de 30 días. 
+h. En caso de que el CLIENTE no necesitará la máquina o suspendiera el servicio una vez que esta haya salido desde nuestras instalaciones, el cliente deberá cancelar la tarifa mínima de la máquina en cuestión. 
+i. Si por fuerza mayor, ante algún evento inesperado (maquinarias encerradas en faenas, pannes, congestión del tránsito, etc.) la grúa se ve impedida de llegar en día y hora programada, no corresponderá ningún tipo de descuento ni cobro a ARRIENDO SAN PABLO tampoco corresponderá el endoso de multas o infracciones de cualquier tipo a ARRIENDO SAN PABLO 
+j. La presente cotización tiene una validez de 05 días. 
+k. Maquinaria sujeta a disponibilidad 
+l.Todos los valores son más iva.`,
+
+  PLATAFORMAS: `PLATAFORMAS:
+Observaciones: 
+- Equipo se Arrienda sin Operador - Las máquinas se ocuparan en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas 
+- No utilizar el equipo como arco de soldadura, las baterías pueden explotar y de igual forma pueden generar daños en el sistema electrónico. 
+- Todos los daños a neumáticos, ya sean por cortes laterales, escalonamientos o simplemente pinchaduras, serán con cargo al cliente. - Todos los daños estéticos producto de la aplicación de pinturas, quemaduras por soldaduras, shotcrete o recubrimientos serán con cargo al cliente 
+- Todos los daños producto de choques o golpes por descuido o mala operación, serán con cargo al cliente. 
+- En caso que el equipo no responda de la forma correcta se debe informar de inmediato al servicio técnico San Pablo y no seguir intentando operar este, ya que este tipo de manipulación puede generar mayores daños, los que serán de cargo al cliente. - En caso que la falla del equipo se haya generado por una mala operación, será de cargo al cliente todos los costos de reparación, incluida la visita del mecánico a obra (MO, viático, combustible, traslados, etc). 
+- El cliente debe informar con 48 horas de anticipación el retiro del equipo mediante correo electrónico al vendedor y encargado de logística de empresas San Pablo. - El horario habíl de retiro de equipos será de lunes a sábado desde las 08:00 a 10:00 am, después de ese horario se cobrará otro día, al menos que empresas San Pablo avise retiro programado en otro horario. 
+- Al momento de proceder con el retiro del equipo de faena se ejecutará un levantamiento rápido indicando todos los daños (en caso de existir), este documento debe ser firmado por el supervisor de faena. Si existieran otros daños no visualizados al momento de retirar el equipo, se le informará a la brevedad al cliente y los costos de reparación será de cargo de este. 
+- Plataformas Eléctricas; se aconseja no descargar baterías en su totalidad, dado que esto daña los componentes eléctrico y electrónicos incluido el cargador, si llegara a ocurrir los costos de reparación serán cobrados al cliente. Otro punto importante es que la recarga de baterías no puede ser ejecutada con generadores, debido a que producen daños en las placas de carga. 
+- Plataformas a Combustión; las plataformas que utilicen para su operación combustible diesel serán entregadas con su estanque lleno, por lo que la recepción del equipo en nuestra planta debe ser en la misma condición, de lo contrario se procederá a la recarga de los litros faltantes y el costo por litro será de $1000 más iva. Los motores a combustión no deben quedar sin combustible, ya que los daños por este motivo serán de costo del cliente. 
+- La presente cotización tiene una validez de 5 días. 
+- Maquinarias sujetas a disponibilidad. 
+- Todos los valores son más IVA.`
+}
+
+const categoriasDetectadas = computed(() => {
+  const cats = new Set()
+  ;(lines.value || []).forEach(l => {
+    const tipoNorm = String(l.tipo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+
+    // 1. TRASLADOS (Categoría oficial TRASLADOS / FLETES)
+    if (tipoNorm.includes('TRASLADO') || tipoNorm.includes('FLETE')) {
+      cats.add('TRASLADOS')
+    }
+
+    // 2. GRÚAS TELESCÓPICAS / CAMIONES PLUMA (Categorías de Izaje)
+    if (tipoNorm.includes('GRUA') || tipoNorm.includes('PLUMA')) {
+      cats.add('GRUA_TELESCOPICA')
+    }
+
+    // 3. PLATAFORMAS ELEVADORAS
+    if (tipoNorm.includes('PLATAFORMA') || tipoNorm.includes('MANLIFT') || tipoNorm.includes('TIJERA') || tipoNorm.includes('ALZAHOMBRE')) {
+      cats.add('PLATAFORMAS')
+    }
+  })
+  return {
+    traslados: cats.has('TRASLADOS'),
+    gruas: cats.has('GRUA_TELESCOPICA'),
+    plataformas: cats.has('PLATAFORMAS')
+  }
+})
+
+const construirAcuerdosComercialesTexto = () => {
+  const bloques = []
+  if (categoriasDetectadas.value.traslados) {
+    bloques.push(ACUERDOS_COMERCIALES_BASE.TRASLADOS)
+  }
+  if (categoriasDetectadas.value.gruas) {
+    bloques.push(ACUERDOS_COMERCIALES_BASE.GRUA_TELESCOPICA)
+  }
+  if (categoriasDetectadas.value.plataformas) {
+    bloques.push(ACUERDOS_COMERCIALES_BASE.PLATAFORMAS)
+  }
+  return bloques.join('\n\n')
+}
+
+const regenerarCondicionesTexto = () => {
+  if (comercial.value) {
+    comercial.value.condiciones_texto_pdf = construirAcuerdosComercialesTexto()
+  }
+}
+
+// Watcher reactivo: cada vez que cambien las categorías presentes en el estructurador, se actualiza el texto
+watch(
+  () => [categoriasDetectadas.value.traslados, categoriasDetectadas.value.gruas, categoriasDetectadas.value.plataformas],
+  ([newT, newG, newP], [oldT, oldG, oldP] = []) => {
+    if (!isHydrating.value && (newT !== oldT || newG !== oldG || newP !== oldP)) {
+      regenerarCondicionesTexto()
+    }
+  }
+)
+
 
 const nuevaInteraccion = ref({
   tipo: 'Llamada',
@@ -4040,7 +4243,7 @@ const enviarCotizacionPorCorreo = async () => {
 }
 
 const agregarLinea = () => {
-  lines.value.push({ tipo: 'Equipo (Grúa)', subcategoria: '', descripcion: '', cantidad: 1, unidad: 'Diario', valorUnitario: 0 })
+  lines.value.push({ tipo: '', subcategoria: '', descripcion: '', cantidad: 1, unidad: 'Diario', valorUnitario: 0 })
 }
 
 const eliminarLinea = (idx) => {
@@ -4132,10 +4335,28 @@ watch(() => opportunity.value.requiere_rigger, (newVal) => {
   }
 })
 
+watch(() => opportunity.value.requiere_prevencionista, (newVal) => {
+  if (newVal) {
+    const hasPrev = lines.value.some(l => l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista')))
+    if (!hasPrev) {
+      lines.value.push({ 
+        tipo: 'PERSONAL CERTIFICADO', subcategoria: 'PREVENCIONISTA', descripcion: 'Servicio de Prevencionista Certificado', 
+        cantidad: 1, unidad: 'Diario', valorUnitario: 0 
+      })
+    }
+  } else {
+    lines.value = lines.value.filter(l => !(l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista'))))
+  }
+})
+
 watch(lines, (newLines) => {
   const hasRigger = newLines.some(l => l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger')))
   if (hasRigger && !opportunity.value.requiere_rigger) {
     opportunity.value.requiere_rigger = true
+  }
+  const hasPrev = newLines.some(l => l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista')))
+  if (hasPrev && !opportunity.value.requiere_prevencionista) {
+    opportunity.value.requiere_prevencionista = true
   }
 }, { deep: true })
 
@@ -4224,6 +4445,9 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
           opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes || false
           opportunity.value.requiere_acreditacion = crm.requiere_acreditacion || false
+          opportunity.value.incluye_flete         = crm.incluye_flete || false
+          opportunity.value.requiere_rigger       = crm.requiere_rigger || false
+          opportunity.value.requiere_prevencionista = crm.requiere_prevencionista || false
           let adocs = crm.acreditacion_docs;
           if (Array.isArray(adocs)) {
             opportunity.value.acreditacion_docs = { empresa: adocs, equipos: [], personas: [] };
@@ -4245,8 +4469,33 @@ const cargarDatosCotizacion = async () => {
               let mappedUnidad = l.unidad
               if (mappedUnidad === 'Global') mappedUnidad = 'Fijo'
               if (mappedUnidad === 'Viaje') mappedUnidad = 'Flete'
-              return { ...l, unidad: mappedUnidad }
+
+              let mappedTipo = l.tipo || ''
+              const norm = String(mappedTipo).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+              if (norm === 'EQUIPO (GRUA)' || norm === 'GRUA' || norm === 'GRUAS TELESCOPICAS' || norm === 'GRUA TELESCOPICA') {
+                mappedTipo = 'GRÚA TELESCÓPICA'
+              } else if (norm === 'CAMION PLUMA' || norm === 'CAMIONES PLUMA' || norm === 'CAMION') {
+                mappedTipo = 'CAMIÓN PLUMA'
+              } else if (norm === 'PLATAFORMA' || norm === 'PLATAFORMAS') {
+                mappedTipo = 'PLATAFORMAS'
+              } else if (norm === 'TRASLADO' || norm === 'TRASLADOS' || norm === 'FLETE' || norm === 'FLETES') {
+                mappedTipo = 'TRASLADOS'
+              } else if (norm === 'ACCESORIO' || norm === 'ACCESORIOS') {
+                mappedTipo = 'ACCESORIOS'
+              } else if (norm.includes('PERSONAL') || norm.includes('RIGGER')) {
+                mappedTipo = 'PERSONAL CERTIFICADO'
+              } else if (norm === 'OTROS' || norm === 'OTRO') {
+                mappedTipo = 'OTROS'
+              }
+
+              return { 
+                ...l, 
+                tipo: mappedTipo,
+                unidad: mappedUnidad 
+              }
             })
+          } else {
+            lines.value = []
           }
           
           if (crm.cotizaciones_historicas) cotizaciones_historicas.value = [...crm.cotizaciones_historicas].sort((a, b) => b.version - a.version)
@@ -4269,14 +4518,26 @@ const cargarDatosCotizacion = async () => {
             siteVisit.value.lng = crm.coordenadas_mapa.lng
           }
           
-          comercial.value.validez_dias = crm.validez_dias || 15
-          comercial.value.moneda = crm.moneda || 'CLP'
-          comercial.value.condicion_servicio = crm.condicion_servicio || 'programado'
-          if (crm.condiciones_pdf) {
+          if (crm.condiciones_pdf && crm.condiciones_pdf.trim() !== '') {
             comercial.value.condiciones_texto_pdf = crm.condiciones_pdf
+          } else {
+            comercial.value.condiciones_texto_pdf = construirAcuerdosComercialesTexto()
           }
 
-          // Carga / Inicialización Garantizada de snapshotComercial para el motor de Diff
+          if (crm.pensiones) {
+            comercial.value.pensiones = {
+              alojamiento_costeado: crm.pensiones.alojamiento_costeado || 'CLIENTE',
+              alojamiento_monto: crm.pensiones.alojamiento_monto || 0,
+              desayuno_costeado: crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
+              desayuno_monto: crm.pensiones.desayuno_monto || 0,
+              almuerzo_costeado: crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO',
+              almuerzo_monto: crm.pensiones.almuerzo_monto || crm.pensiones.alimentacion_monto || 0,
+              cena_costeado: crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
+              cena_monto: crm.pensiones.cena_monto || 0,
+              traslado_costeado: crm.pensiones.traslado_costeado || 'CLIENTE',
+              traslado_monto: crm.pensiones.traslado_monto || 0
+            }
+          }
           if (crm.snapshot_comercial && Object.keys(crm.snapshot_comercial).length > 0) {
             snapshotComercial.value = JSON.parse(JSON.stringify(crm.snapshot_comercial))
           } else {
@@ -4516,12 +4777,16 @@ const buildPayload = () => {
       crm_v1: {
         prioridad:             opportunity.value.prioridad,
         familia_servicio:      opportunity.value.familia_servicio,
-        contacto_nombre:       opportunity.value.contacto_nombre,
-        contacto_telefono:     opportunity.value.contacto_telefono,
+        contacto_nombre:       siteVisit.value.contacto_terreno_nombre || opportunity.value.contacto_nombre || '',
+        contacto_telefono:     siteVisit.value.contacto_terreno_telefono || opportunity.value.contacto_telefono || '',
+        contacto_email:        siteVisit.value.contacto_terreno_email || opportunity.value.contacto_obj?.email || '',
         contacto_obj:          opportunity.value.contacto_obj,
         tipo_pago:             opportunity.value.tipo_pago,
         requiere_oc_hes:       opportunity.value.requiere_oc_hes,
         requiere_acreditacion: opportunity.value.requiere_acreditacion,
+        incluye_flete:         opportunity.value.incluye_flete,
+        requiere_rigger:       opportunity.value.requiere_rigger,
+        requiere_prevencionista: opportunity.value.requiere_prevencionista,
         acreditacion_docs:     opportunity.value.acreditacion_docs,
         tipo_proceso:          antecedentes.value.tipo_proceso,
         n_licitacion:          antecedentes.value.identificador || '',
@@ -5496,7 +5761,16 @@ const solicitarAsignacionVisita = async () => {
     
     await apiAxios.post(`/visitas/solicitar/${currentProyectoId.value}`, {
       email_coordinador: emailCoordinadorSeleccionado.value,
-      id_coordinador: coordinador ? coordinador.id_user : null
+      id_coordinador: coordinador ? coordinador.id_user : null,
+      contacto_nombre: siteVisit.value.contacto_terreno_nombre || opportunity.value.contacto_nombre || '',
+      contacto_telefono: siteVisit.value.contacto_terreno_telefono || opportunity.value.contacto_telefono || '',
+      contacto_email: siteVisit.value.contacto_terreno_email || opportunity.value.contacto_obj?.email || '',
+      obra_nombre: siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || '',
+      obra_direccion: siteVisit.value.obra_direccion || '',
+      coordenadas_mapa: {
+        lat: siteVisit.value.lat != null ? Number(siteVisit.value.lat) : null,
+        lng: siteVisit.value.lng != null ? Number(siteVisit.value.lng) : null
+      }
     }, {
       headers: { Authorization: `Bearer ${token}` }
     })

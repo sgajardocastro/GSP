@@ -174,7 +174,7 @@ const esLoginBypass = computed(() => {
   return BYPASS_LOGIN_EMAILS.some((allowedEmail) => allowedEmail.toLowerCase() === email)
 })
 
-const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '961053663096-s2a3uhics25fg1h0b20ocmqlqi3tvvdu.apps.googleusercontent.com'
 
 const currentTheme = ref('dark')
 
