@@ -97,12 +97,11 @@ async function deploy() {
     console.log('\n📝 2. Actualizando RELEASE_LOG.md con la traza oficial...');
     const customChanges = {
       web: [
-        "- **[FEAT]** **Flags de Operación en Preventa:** Implementados los 4 flags de preventa (`Requiere Acreditación`, `Servicio incluye Traslado`, `Requiere Rigger`, `Prevencionista Certificado`) con sincronización bidireccional en el estructurador y presencia explícita en la cotización PDF.",
-        "- **[FEAT]** **Proyección de Costos de Pensiones:** Apertura modular de alimentación en 3 conceptos individuales (Desayuno, Almuerzo, Cena) totalizando 5 items con selección de pagador y valorización monetaria.",
-        "- **[FEAT]** **Acuerdos Comerciales Dinámicos:** Eliminación del encabezado general estático y preservación determinista de modificaciones manuales guardadas en preventa."
+        "- **[FIX]** **Flujo de Visita a Terreno & Firma FES:** Resuelta la captura y envío de detalle de servicio, contacto y resolución determinista de coordinador al solicitar y firmar visitas a terreno con PIN FES.",
+        "- **[FEAT]** **Limpieza de Preventa:** Eliminado el ticket legacy 'Se ejecutó Visita a Terreno (Registrar datos aquí)' consolidando el flujo directo de visitas del proyecto."
       ],
       backend: [
-        "- **[FEAT]** **Plantilla PDF de Cotización:** Impresión explícita de los 4 flags de condiciones operativas y soporte para esquemas enriquecidos de preventa y pensiones."
+        "- **[FIX]** **Visitas a Terreno & Coordinación:** Persistencia integral de campos comerciales (`obra_nombre`, `obra_direccion`, `obra_ciudad`, `detalle_servicio`, `contacto_nombre`, `contacto_telefono`, `contacto_email`) en `json_field.crm_v1`, formato limpio en correo HTML y fallback automático de coordinador en `asignarVisita`."
       ]
     };
     updateReleaseLog(webVer, pwaVer, customChanges);

@@ -1823,38 +1823,11 @@
                         <a :href="getArchivoUrl(v.id_doc || v.id_survey)" target="_blank" class="inline-flex items-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold px-2 py-1 text-[10px] rounded transition-colors no-underline" title="Visualizar reporte PDF firmado">
                           Ver Reporte / PDF
                         </a>
-                        <button @click="() => { selectedSurveyId = v.id_survey; siteVisit.visita_terreno = true; cargarVisitaDesdeBD(); }" type="button" class="bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 font-bold px-2 py-1 text-[10px] rounded transition-colors" title="Cargar datos de esta visita al formulario">
+                        <button @click="() => { selectedSurveyId = v.id_survey; cargarVisitaDesdeBD(); }" type="button" class="bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 font-bold px-2 py-1 text-[10px] rounded transition-colors cursor-pointer" title="Cargar datos de esta visita al formulario">
                           Cargar
                         </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" v-model="siteVisit.visita_terreno" id="visita_check" class="accent-amber-500" />
-                  <label for="visita_check" class="text-xs text-slate-300 cursor-pointer">Se ejecutó Visita a Terreno (Registrar datos aquí)</label>
-                </div>
-                <div v-if="siteVisit.visita_terreno" class="bg-[#0a0f1e] border border-dashed border-white/15 rounded-lg p-3 space-y-2">
-                  <div class="flex justify-between items-center">
-                    <label class="text-[10px] text-amber-500 font-bold uppercase">🔌 Importar Visita</label>
-                  </div>
-                  <div class="flex gap-2">
-                    <select v-model="selectedSurveyId" class="flex-1 bg-[#050810] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none">
-                      <option value="">-- Seleccionar Visita --</option>
-                      <option v-for="s in visitasTerreno" :key="s.id_survey" :value="s.id_survey">
-                        Obra: {{ s.body_exec?.nombre_obra || s.body_exec?.obra_nombre || 'Visita #' + s.id_survey }} - {{ s.fecha_plan_ini ? new Date(s.fecha_plan_ini).toLocaleDateString() : 'S/F' }}
-                      </option>
-                    </select>
-                    <a v-if="selectedSurveyId" :href="getSurveyReportUrl(selectedSurveyId)" target="_blank" class="bg-[#0a0f1e] hover:bg-white/5 border border-white/10 text-white font-bold px-3 py-1.5 text-xs rounded transition-colors no-underline flex items-center justify-center" title="Visualizar detalles de la visita en Web">
-                      Ver Web
-                    </a>
-                    <a v-if="selectedSurveyId" :href="getArchivoUrl(selectedSurveyDocId || selectedSurveyId)" target="_blank" class="inline-flex items-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold px-3 py-1.5 text-xs rounded transition-colors no-underline" title="Visualizar reporte PDF firmado">
-                      Ver Reporte / PDF
-                    </a>
-                    <button @click="cargarVisitaDesdeBD" type="button" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 text-xs rounded transition-colors" :disabled="!selectedSurveyId">
-                      Importar
-                    </button>
                   </div>
                 </div>
               </div>
@@ -5757,7 +5730,8 @@ const solicitarAsignacionVisita = async () => {
   estadoAsignacion.value = null
   try {
     const token = localStorage.getItem('token') || ''
-    const coordinador = usuarios.value.find(u => (u.email || u.correo || u.username) === emailCoordinadorSeleccionado.value);
+    const coordinador = usuarios.value.find(u => (u.email || u.correo || u.username) === emailCoordinadorSeleccionado.value) ||
+                        coordinadoresVisita.value.find(u => (u.email || u.correo || u.username) === emailCoordinadorSeleccionado.value);
     
     await apiAxios.post(`/visitas/solicitar/${currentProyectoId.value}`, {
       email_coordinador: emailCoordinadorSeleccionado.value,
@@ -5767,6 +5741,8 @@ const solicitarAsignacionVisita = async () => {
       contacto_email: siteVisit.value.contacto_terreno_email || opportunity.value.contacto_obj?.email || '',
       obra_nombre: siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || '',
       obra_direccion: siteVisit.value.obra_direccion || '',
+      obra_ciudad: siteVisit.value.obra_ciudad || '',
+      detalle_servicio: siteVisit.value.detalle_servicio || '',
       coordenadas_mapa: {
         lat: siteVisit.value.lat != null ? Number(siteVisit.value.lat) : null,
         lng: siteVisit.value.lng != null ? Number(siteVisit.value.lng) : null

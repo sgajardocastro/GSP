@@ -294,13 +294,17 @@ const confirmarConPin = async () => {
       id_flow_tmpl: idFlowTmpl
     }
 
-    await apiAxios.post('/survey', payloadSurvey)
+    try {
+      await apiAxios.post('/survey', payloadSurvey)
+    } catch (surveyErr) {
+      console.warn("Survey base pre-creado o delegado al backend:", surveyErr)
+    }
 
     // 2. Firmar con FES y actualizar estado de la solicitud
     await apiAxios.post(`/visitas/token/${token}/asignar`, {
       id_ejecutor: form.value.id_ejecutor,
       fecha_visita: form.value.fecha_visita,
-      id_coordinador: proyectoData.value.coordinador?.id_user,
+      id_coordinador: proyectoData.value.coordinador?.id_user || null,
       fes_pin_hash: pinHash
     })
     

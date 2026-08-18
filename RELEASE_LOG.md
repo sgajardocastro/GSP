@@ -4,6 +4,22 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.27
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 15:18:14 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Flujo de Visita a Terreno & Firma FES:** Resuelta la captura y envío de detalle de servicio, contacto y resolución determinista de coordinador al solicitar y firmar visitas a terreno con PIN FES.
+  - **[FEAT]** **Limpieza de Preventa:** Eliminado el ticket legacy 'Se ejecutó Visita a Terreno (Registrar datos aquí)' consolidando el flujo directo de visitas del proyecto.
+
+## [Backend GSP] - Versión 1.0.27
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 15:18:14 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Visitas a Terreno & Coordinación:** Persistencia integral de campos comerciales (`obra_nombre`, `obra_direccion`, `obra_ciudad`, `detalle_servicio`, `contacto_nombre`, `contacto_telefono`, `contacto_email`) en `json_field.crm_v1`, formato limpio en correo HTML y fallback automático de coordinador en `asignarVisita`.
+
 ## [Portal Web GSP] - Versión 1.0.26
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-08-18 12:25:55 (-04:00)

@@ -243,6 +243,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 ---
 
 ### 📌 Sprint Activo (18-Ago-2026)
-* [ ] **[Eliminar Ticket Visita a Terreno en Preventa]:** Eliminar checkbox/ticket "Se ejecutó Visita a Terreno (Registrar datos aquí)" y su bloque legacy en el Tab 1 (Site Visit) de Preventa, manteniendo la gestión oficial vinculada al proyecto.
+* [x] **[Eliminar Ticket Visita a Terreno en Preventa]:** Eliminar checkbox/ticket "Se ejecutó Visita a Terreno (Registrar datos aquí)" y su bloque legacy en el Tab 1 (Site Visit) de Preventa, manteniendo la gestión oficial vinculada al proyecto.
+* [x] **[Fix Estructural Asignación Visita & FES]:** Resolver de raíz la persistencia de datos comerciales en la solicitud de visita a terreno, formato limpio de contacto y resolución automática de coordinador en la firma con PIN FES (Caso `GSP-2608-4851-033`).
 * [ ] **[Mejora UX Asignación de Recursos]:** Optimizar la experiencia de usuario (UX/UI) en la asignación de equipos y tripulación en la Torre de Control / Gestor de Oportunidades.
 

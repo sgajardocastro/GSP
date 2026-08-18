@@ -6,7 +6,18 @@ const messageModel = new MessageModel();
 const solicitarVisita = async (req, res) => {
     try {
         const { id_proyecto } = req.params;
-        const { email_coordinador, id_coordinador, contacto_nombre, contacto_telefono, contacto_email } = req.body;
+        const { 
+            email_coordinador, 
+            id_coordinador, 
+            contacto_nombre, 
+            contacto_telefono, 
+            contacto_email,
+            obra_nombre,
+            obra_direccion,
+            obra_ciudad,
+            coordenadas_mapa,
+            detalle_servicio
+        } = req.body;
 
         if (!id_proyecto) {
             return res.status(400).json({ error: "Falta id_proyecto" });
@@ -29,10 +40,30 @@ const solicitarVisita = async (req, res) => {
         let jsonField = typeof proyecto.json_field === 'string' ? JSON.parse(proyecto.json_field) : (proyecto.json_field || {});
 
         if (!jsonField.crm_v1) jsonField.crm_v1 = {};
-        if (id_coordinador) jsonField.crm_v1.coordinador_visita = id_coordinador;
-        if (contacto_nombre) jsonField.crm_v1.contacto_nombre = contacto_nombre;
-        if (contacto_telefono) jsonField.crm_v1.contacto_telefono = contacto_telefono;
-        if (contacto_email) jsonField.crm_v1.contacto_email = contacto_email;
+
+        // Resolver id_coordinador si no viene directamente
+        let resolvedCoordinadorId = id_coordinador ? Number(id_coordinador) : null;
+        if (!resolvedCoordinadorId && email_coordinador) {
+            const uRes = await pool.query(
+                `SELECT id_user FROM tsec_users 
+                 WHERE LOWER(email) = LOWER($1) OR LOWER(correo) = LOWER($1) OR LOWER(username) = LOWER($1) 
+                 LIMIT 1`,
+                [email_coordinador.trim()]
+            );
+            if (uRes.rowCount > 0) {
+                resolvedCoordinadorId = uRes.rows[0].id_user;
+            }
+        }
+
+        if (resolvedCoordinadorId) jsonField.crm_v1.coordinador_visita = resolvedCoordinadorId;
+        if (contacto_nombre !== undefined) jsonField.crm_v1.contacto_nombre = contacto_nombre;
+        if (contacto_telefono !== undefined) jsonField.crm_v1.contacto_telefono = contacto_telefono;
+        if (contacto_email !== undefined) jsonField.crm_v1.contacto_email = contacto_email;
+        if (obra_nombre) jsonField.crm_v1.obra_nombre = obra_nombre;
+        if (obra_direccion) jsonField.crm_v1.obra_direccion = obra_direccion;
+        if (obra_ciudad) jsonField.crm_v1.obra_ciudad = obra_ciudad;
+        if (coordenadas_mapa) jsonField.crm_v1.coordenadas_mapa = coordenadas_mapa;
+        if (detalle_servicio) jsonField.crm_v1.detalle_servicio = detalle_servicio;
 
         await pool.query(`
             UPDATE tpry_proyecto
@@ -42,30 +73,34 @@ const solicitarVisita = async (req, res) => {
             WHERE id_proyecto = $3
         `, [token, JSON.stringify(jsonField), id_proyecto]);
 
-        // Enviar correo B2B HTML al coordinador (Restaurado 100% a la maqueta de la Imagen 1)
+        // Enviar correo B2B HTML al coordinador
         if (email_coordinador) {
             const crm = jsonField.crm_v1 || {};
-            const lat = crm.coordenadas_mapa?.lat;
-            const lng = crm.coordenadas_mapa?.lng;
+            const lat = coordenadas_mapa?.lat || crm.coordenadas_mapa?.lat;
+            const lng = coordenadas_mapa?.lng || crm.coordenadas_mapa?.lng;
             const mapUrl = (lat && lng) ? `https://www.google.com/maps?q=${lat},${lng}` : null;
             const ubicacionHtml = mapUrl 
                 ? `<a href="${mapUrl}" style="color: #38bdf8; font-weight: bold; text-decoration: underline;" target="_blank">Ver en Google Maps</a>`
-                : `<span style="color: #ffffff;">${crm.obra_direccion || 'No especificada'}</span>`;
+                : `<span style="color: #ffffff;">${obra_direccion || crm.obra_direccion || 'No especificada'}</span>`;
 
             const titulo = "Solicitud de Visita a Terreno";
             const subtitulo = "Se ha solicitado asignar una visita a terreno para la siguiente cotización:";
             const botonUrl = `https://servidor.leanglobal.cl/lg-gsp-dev/asignar-visita/${token}`;
-            const descripcionServicio = crm.detalle_servicio || crm.descripcion || 'Sin descripción';
-            const contactoNombreVal = crm.contacto_nombre || 'No especificado';
-            const contactoTelefonoVal = crm.contacto_telefono || 'No especificado';
-            const contactoEmailVal = crm.contacto_email || 'No especificado';
+            const descripcionServicio = detalle_servicio || crm.detalle_servicio || crm.descripcion || proyecto.nombre_proyecto || 'Sin descripción';
+            const contactoNombreVal = contacto_nombre || crm.contacto_nombre || 'No especificado';
+            const contactoTelefonoVal = (contacto_telefono || crm.contacto_telefono || '').trim();
+            const contactoEmailVal = contacto_email || crm.contacto_email || 'No especificado';
+
+            const contactoDisplay = (contactoTelefonoVal && contactoTelefonoVal !== 'No especificado')
+                ? `${contactoNombreVal} (${contactoTelefonoVal})`
+                : contactoNombreVal;
 
             const contenido = `
               <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.cliente_nombre || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.nombre_proyecto || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.codi_proyecto || 'N/A'}</span></div>
-                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto Terreno:</span> <span style="color: #ffffff; font-weight: bold;">${contactoNombreVal} (${contactoTelefonoVal})</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto Terreno:</span> <span style="color: #ffffff; font-weight: bold;">${contactoDisplay}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Correo Contacto:</span> <span style="color: #ffffff;">${contactoEmailVal}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Descripción:</span> <span style="color: #ffffff;">${descripcionServicio}</span></div>
                 <div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Ubicación:</span> ${ubicacionHtml}</div>
@@ -136,13 +171,13 @@ const getDatosVisita = async (req, res) => {
                 id_proyecto: pry.id_proyecto,
                 nombre_proyecto: pry.nombre_proyecto,
                 codi_proyecto: pry.codi_proyecto,
-                descripcion: pry.descripcion,
+                descripcion: crm.detalle_servicio || pry.descripcion || crm.descripcion || '',
                 id_empresa_cliente: pry.id_empresa_cliente,
                 cliente_nombre: pry.cliente_nombre || crm.cliente_nombre,
                 cliente_rut: pry.cliente_rut,
-                obra_nombre: crm.obra_nombre,
-                obra_direccion: crm.obra_direccion,
-                coordenadas_mapa: crm.coordenadas_mapa,
+                obra_nombre: crm.obra_nombre || pry.nombre_proyecto,
+                obra_direccion: crm.obra_direccion || '',
+                coordenadas_mapa: crm.coordenadas_mapa || null,
                 contacto_nombre: crm.contacto_nombre || null,
                 contacto_telefono: crm.contacto_telefono || null,
                 contacto_email: crm.contacto_email || null,
@@ -160,12 +195,29 @@ const asignarVisita = async (req, res) => {
         const { token } = req.params;
         const { id_ejecutor, fecha_visita, id_coordinador, fes_pin_hash } = req.body;
 
-        if (!id_ejecutor || !fecha_visita || !id_coordinador || !fes_pin_hash) {
+        // 1. Obtener proyecto y resolver coordinador si no viene en el body
+        const tokenPryRes = await pool.query(`
+            SELECT id_proyecto, nombre_proyecto, id_empresa_cliente, json_field 
+            FROM tpry_proyecto 
+            WHERE token_visita = $1
+        `, [token]);
+
+        if (tokenPryRes.rowCount === 0) {
+            return res.status(404).json({ error: "Token inválido o expirado" });
+        }
+
+        const pryRow = tokenPryRes.rows[0];
+        const jField = typeof pryRow.json_field === 'string' ? JSON.parse(pryRow.json_field) : (pryRow.json_field || {});
+        const crm = jField.crm_v1 || {};
+
+        let resolvedCoordId = id_coordinador ? Number(id_coordinador) : (crm.coordinador_visita ? Number(crm.coordinador_visita) : null);
+
+        if (!id_ejecutor || !fecha_visita || !resolvedCoordId || !fes_pin_hash) {
             return res.status(400).json({ error: "Faltan datos requeridos (incluyendo Firma FES)" });
         }
 
-        // 1. Validar FES PIN
-        const userRes = await pool.query(`SELECT pass_hash_fes FROM tsec_users WHERE id_user = $1`, [id_coordinador]);
+        // 2. Validar FES PIN del coordinador
+        const userRes = await pool.query(`SELECT pass_hash_fes FROM tsec_users WHERE id_user = $1`, [resolvedCoordId]);
         if (userRes.rowCount === 0) {
             return res.status(404).json({ error: "Usuario coordinador no encontrado." });
         }
@@ -175,77 +227,64 @@ const asignarVisita = async (req, res) => {
             return res.status(401).json({ error: "Firma Electrónica Simple inválida. PIN incorrecto." });
         }
 
-        // 2. Marcar token asignado y actualizar tpry_proyecto
-        const result = await pool.query(`
+        // 3. Marcar token asignado y actualizar tpry_proyecto
+        await pool.query(`
             UPDATE tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
                 token_visita = NULL
-            WHERE token_visita = $1
-            RETURNING id_proyecto
-        `, [token]);
+            WHERE id_proyecto = $1
+        `, [pryRow.id_proyecto]);
 
-        if (result.rowCount === 0) {
-            return res.status(404).json({ error: "Token inválido o expirado" });
-        }
+        const id_proyecto = pryRow.id_proyecto;
 
-        const id_proyecto = result.rows[0].id_proyecto;
-
-        // 3. Obtener datos del proyecto y template 80 para instanciar/actualizar la encuesta con datos comerciales
+        // 4. Obtener template 80 para instanciar/actualizar la encuesta con datos comerciales
         try {
-            const pryRowRes = await pool.query('SELECT id_proyecto, nombre_proyecto, id_empresa_cliente, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
-            if (pryRowRes.rowCount > 0) {
-                const pryRow = pryRowRes.rows[0];
-                const jField = typeof pryRow.json_field === 'string' ? JSON.parse(pryRow.json_field) : (pryRow.json_field || {});
-                const crm = jField.crm_v1 || {};
+            const tmplRes = await pool.query('SELECT body_seed FROM tsrv_templates WHERE id_template = 80');
+            if (tmplRes.rowCount > 0) {
+                let seed = tmplRes.rows[0].body_seed;
+                if (typeof seed === 'string') seed = JSON.parse(seed);
 
-                // Obtener body_seed de template 80
-                const tmplRes = await pool.query('SELECT body_seed FROM tsrv_templates WHERE id_template = 80');
-                if (tmplRes.rowCount > 0) {
-                    let seed = tmplRes.rows[0].body_seed;
-                    if (typeof seed === 'string') seed = JSON.parse(seed);
-
-                    // Mapear datos comerciales al body_exec
-                    (seed.segmentos || []).forEach(seg => {
-                        if (seg.label && seg.label.includes('DATOS GENERALES')) {
-                            (seg.attributes || []).forEach(attr => {
-                                if (attr.label === 'NOMBRE DE LA OBRA') attr.default = crm.obra_nombre || pryRow.nombre_proyecto || '';
-                                if (attr.label === 'DIRECCION DE LA OBRA') attr.default = crm.obra_direccion || '';
-                                if (attr.label === 'REFERENCIA DE LA DIRECCION') attr.default = crm.obra_ciudad || '';
-                                if (attr.label === 'GEOLOCALIZACION OBRA') attr.default = crm.coordenadas_mapa || { lat: null, lng: null };
-                                if (attr.label === 'CONTACTO EN TERRENO') attr.default = crm.contacto_nombre || '';
-                                if (attr.label === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
-                                if (attr.label === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
-                            });
-                        }
-                    });
-
-                    // Verificar si ya existe survey para este proyecto y template 80
-                    const existSurvey = await pool.query('SELECT id_survey FROM tsrv_survey WHERE id_proyecto = $1 AND id_template = 80', [id_proyecto]);
-                    if (existSurvey.rowCount > 0) {
-                        await pool.query(`
-                            UPDATE tsrv_survey
-                            SET id_user = $1,
-                                fecha_plan_ini = $2,
-                                body_exec = $3,
-                                latitud = $4,
-                                longitud = $5
-                            WHERE id_survey = $6
-                        `, [id_ejecutor, fecha_visita, JSON.stringify(seed), crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, existSurvey.rows[0].id_survey]);
-                    } else {
-                        await pool.query(`
-                            INSERT INTO tsrv_survey (
-                                id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
-                                estado_srv, body_seed, body_exec, fecha_plan_ini, latitud, longitud, id_proyecto
-                            ) VALUES (
-                                1, 80, $1, $2, $3,
-                                'Creado', $4, $5, $6, $7, $8, $9
-                            )
-                        `, [
-                            id_ejecutor, id_coordinador, pryRow.id_empresa_cliente,
-                            JSON.stringify(tmplRes.rows[0].body_seed), JSON.stringify(seed),
-                            fecha_visita, crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, id_proyecto
-                        ]);
+                // Mapear datos comerciales al body_exec
+                (seed.segmentos || []).forEach(seg => {
+                    if (seg.label && seg.label.includes('DATOS GENERALES')) {
+                        (seg.attributes || []).forEach(attr => {
+                            if (attr.label === 'NOMBRE DE LA OBRA') attr.default = crm.obra_nombre || pryRow.nombre_proyecto || '';
+                            if (attr.label === 'DIRECCION DE LA OBRA') attr.default = crm.obra_direccion || '';
+                            if (attr.label === 'REFERENCIA DE LA DIRECCION') attr.default = crm.obra_ciudad || '';
+                            if (attr.label === 'GEOLOCALIZACION OBRA') attr.default = crm.coordenadas_mapa || { lat: null, lng: null };
+                            if (attr.label === 'CONTACTO EN TERRENO') attr.default = crm.contacto_nombre || '';
+                            if (attr.label === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
+                            if (attr.label === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
+                        });
                     }
+                });
+
+                // Verificar si ya existe survey para este proyecto y template 80
+                const existSurvey = await pool.query('SELECT id_survey FROM tsrv_survey WHERE id_proyecto = $1 AND id_template = 80', [id_proyecto]);
+                if (existSurvey.rowCount > 0) {
+                    await pool.query(`
+                        UPDATE tsrv_survey
+                        SET id_user = $1,
+                            fecha_plan_ini = $2,
+                            body_exec = $3,
+                            latitud = $4,
+                            longitud = $5
+                        WHERE id_survey = $6
+                    `, [id_ejecutor, fecha_visita, JSON.stringify(seed), crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, existSurvey.rows[0].id_survey]);
+                } else {
+                    await pool.query(`
+                        INSERT INTO tsrv_survey (
+                            id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
+                            estado_srv, body_seed, body_exec, fecha_plan_ini, latitud, longitud, id_proyecto
+                        ) VALUES (
+                            1, 80, $1, $2, $3,
+                            'Creado', $4, $5, $6, $7, $8, $9
+                        )
+                    `, [
+                        id_ejecutor, resolvedCoordId, pryRow.id_empresa_cliente,
+                        JSON.stringify(tmplRes.rows[0].body_seed), JSON.stringify(seed),
+                        fecha_visita, crm.coordenadas_mapa?.lat || null, crm.coordenadas_mapa?.lng || null, id_proyecto
+                    ]);
                 }
             }
         } catch (surveySyncErr) {
