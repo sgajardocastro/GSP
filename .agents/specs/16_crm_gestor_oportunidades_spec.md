@@ -169,29 +169,39 @@ Feature: Gestor de Oportunidades y Cotizaciones B2B
     Then la línea con Categoría "TRASLADOS" debe eliminarse automáticamente del estructurador
 
   Scenario: Sincronización Bidireccional de Rigger
-    When el usuario activa el switch "Requiere Rigger / Señalero"
+    When el usuario activa el switch "Requiere Rigger"
     Then se debe agregar automáticamente una línea en el estructurador con Categoría "PERSONAL CERTIFICADO" y Subcategoría "RIGGER"
-    When el usuario desmarca el switch "Requiere Rigger / Señalero"
+    When el usuario desmarca el switch "Requiere Rigger"
     Then la línea con Subcategoría "RIGGER" debe eliminarse automáticamente
     When el usuario agrega manualmente una línea con Categoría "PERSONAL CERTIFICADO" y Subcategoría "RIGGER"
-    Then el switch "Requiere Rigger / Señalero" del panel izquierdo debe activarse (ON) automáticamente
+    Then el switch "Requiere Rigger" del panel izquierdo debe activarse (ON) automáticamente
+
+  Scenario: Sincronización Bidireccional de Prevencionista Certificado
+    When el usuario activa el switch "Prevencionista Certificado"
+    Then se debe agregar automáticamente una línea en el estructurador con Categoría "PERSONAL CERTIFICADO" y Subcategoría "PREVENCIONISTA"
+    When el usuario desmarca el switch "Prevencionista Certificado"
+    Then la línea con Subcategoría "PREVENCIONISTA" debe eliminarse automáticamente
+    When el usuario agrega manualmente una línea con Categoría "PERSONAL CERTIFICADO" y Subcategoría "PREVENCIONISTA"
+    Then el switch "Prevencionista Certificado" del panel izquierdo debe activarse (ON) automáticamente
 
   Scenario: Visibilidad Condicional en el PDF de Cotización
     When el usuario activa el switch "Servicio incluye Traslado" con valor 500000
-    And activa el switch "Requiere Rigger / Señalero"
-    And activa el switch "Combustible a Cargo del Cliente"
+    And activa el switch "Requiere Rigger"
+    And activa el switch "Prevencionista Certificado"
     And hace clic en "Generar Cotización"
     Then el PDF generado debe contener la línea "Servicio de Traslado/Flete: $500.000"
-    And debe contener el texto "REQUIERE RIGGER: SÍ"
-    And debe contener el texto "Combustible a Cargo del Cliente: SÍ" (o equivalente)
+    And debe contener el texto "• Requiere Rigger: SÍ"
+    And debe contener el texto "• Prevencionista Certificado: SÍ"
+    And debe contener el texto "• Incluye Traslado / Flete: SÍ"
+    And debe contener el texto "• Requiere Acreditación: SÍ" (o NO según corresponda)
     When el usuario desmarca el switch "Servicio incluye Traslado"
-    And desmarca el switch "Requiere Rigger / Señalero"
+    And desmarca el switch "Requiere Rigger"
     And hace clic en "Generar Cotización"
     Then la línea "Servicio de Traslado/Flete" debe estar oculta en el PDF
-    And el PDF debe mostrar "REQUIERE RIGGER: NO"
+    And el PDF debe mostrar "• Requiere Rigger: NO"
 
   Scenario: Bloqueo de Confirmación OT en Operaciones por falta de Rigger (Hard-Stop)
-    Given que la oportunidad tiene activo el switch "Requiere Rigger / Señalero"
+    Given que la oportunidad tiene activo el switch "Requiere Rigger"
     And el usuario hace clic en "Generar Requerimiento" para pasar el proyecto a operaciones
     When el usuario ingresa a la pestaña de "Asignación de Recursos" (Torre de Control)
     And deja vacío el campo de asignación de Rigger en la Tripulación
