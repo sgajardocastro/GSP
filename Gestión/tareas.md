@@ -239,3 +239,10 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **Punto 2 (Rigger - Bidireccionalidad):** Sincronización bidireccional entre flag y línea del Estructurador. (Incluye limpieza automática al apagar el flag).
 * [x] **Punto 3 (Rigger - PDF):** Indicador SÍ/NO explícito en el PDF generado. (Desplegado en prod).
 * [x] **Punto 4 (Rigger - Operaciones):** Bloqueo mandatorio en el tab de Asignación si falta seleccionar Rigger. (Desplegado en prod).
+
+---
+
+### 📌 Sprint Activo (18-Ago-2026)
+* [ ] **[Eliminar Ticket Visita a Terreno en Preventa]:** Eliminar checkbox/ticket "Se ejecutó Visita a Terreno (Registrar datos aquí)" y su bloque legacy en el Tab 1 (Site Visit) de Preventa, manteniendo la gestión oficial vinculada al proyecto.
+* [ ] **[Mejora UX Asignación de Recursos]:** Optimizar la experiencia de usuario (UX/UI) en la asignación de equipos y tripulación en la Torre de Control / Gestor de Oportunidades.
+
