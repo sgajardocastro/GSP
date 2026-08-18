@@ -451,6 +451,18 @@ html:not(.dark) option {
   color: hsl(var(--foreground)) !important;
 }
 
+select option,
+.dark select option,
+option {
+  background-color: #0a0f1e !important;
+  color: #f8fafc !important;
+}
+
+html:not(.dark) select:not(.text-white) option {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
 html:not(.dark) .form-field {
   background-color: hsl(var(--card)) !important;
   color: hsl(var(--foreground)) !important;

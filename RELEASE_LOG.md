@@ -4,6 +4,22 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.28
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 15:45:51 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Estructurador de Servicios & Grúas Telescópicas:** Homologación del mapeo de categorías canónicas (`GRUAS TELESCOPICAS`, `CAMIONES`, `PLATAFORMAS`, etc.) para renderizado determinista en Preventa y Operaciones / Validación Diff.
+  - **[FIX]** **Estilos de Listas Desplegables (<select>):** Aplicado fondo oscuro `#0a0f1e` y texto blanco `#f8fafc` en todas las opciones de los menús desplegables para eliminar la invisibilidad de texto blanco sobre fondo blanco.
+
+## [Backend GSP] - Versión 1.0.28
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 15:45:51 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FIX]** **Consistencia de Categorías:** Sincronización completa con el catálogo maestro de equipos de la base de datos.
+
 ## [Portal Web GSP] - Versión 1.0.27
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-08-18 15:18:14 (-04:00)

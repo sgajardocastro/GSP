@@ -97,11 +97,11 @@ async function deploy() {
     console.log('\n📝 2. Actualizando RELEASE_LOG.md con la traza oficial...');
     const customChanges = {
       web: [
-        "- **[FIX]** **Flujo de Visita a Terreno & Firma FES:** Resuelta la captura y envío de detalle de servicio, contacto y resolución determinista de coordinador al solicitar y firmar visitas a terreno con PIN FES.",
-        "- **[FEAT]** **Limpieza de Preventa:** Eliminado el ticket legacy 'Se ejecutó Visita a Terreno (Registrar datos aquí)' consolidando el flujo directo de visitas del proyecto."
+        "- **[FIX]** **Estructurador de Servicios & Grúas Telescópicas:** Homologación del mapeo de categorías canónicas (`GRUAS TELESCOPICAS`, `CAMIONES`, `PLATAFORMAS`, etc.) para renderizado determinista en Preventa y Operaciones / Validación Diff.",
+        "- **[FIX]** **Estilos de Listas Desplegables (<select>):** Aplicado fondo oscuro `#0a0f1e` y texto blanco `#f8fafc` en todas las opciones de los menús desplegables para eliminar la invisibilidad de texto blanco sobre fondo blanco."
       ],
       backend: [
-        "- **[FIX]** **Visitas a Terreno & Coordinación:** Persistencia integral de campos comerciales (`obra_nombre`, `obra_direccion`, `obra_ciudad`, `detalle_servicio`, `contacto_nombre`, `contacto_telefono`, `contacto_email`) en `json_field.crm_v1`, formato limpio en correo HTML y fallback automático de coordinador en `asignarVisita`."
+        "- **[FIX]** **Consistencia de Categorías:** Sincronización completa con el catálogo maestro de equipos de la base de datos."
       ]
     };
     updateReleaseLog(webVer, pwaVer, customChanges);

@@ -263,8 +263,8 @@
                         Orig: {{ getOriginalValue('equipo_tipo', idx) }}
                       </div>
                       <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28" :class="hasDiff('equipo_tipo', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
-                        <option value="">-- Tipo --</option>
-                        <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria">
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
+                        <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                           {{ cat.nombre_categoria }}
                         </option>
                       </select>
@@ -274,8 +274,8 @@
                         Orig: {{ getOriginalValue('equipo_subcategoria', idx) }}
                       </div>
                       <select v-model="line.subcategoria" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full" :class="hasDiff('equipo_subcategoria', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
-                        <option value="">-- Seleccionar --</option>
-                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria">
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
+                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                           {{ sub.nombre_subcategoria }}
                         </option>
                       </select>
@@ -297,11 +297,12 @@
                         Orig: {{ getOriginalValue('equipo_unidad', idx) }}
                       </div>
                       <select v-model="line.unidad" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full" :class="hasDiff('equipo_unidad', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
-                        <option value="Horas">Horas</option>
-                        <option value="Diario">Diario</option>
-                        <option value="Semanal">Semanal</option>
-                        <option value="Mensual">Mensual</option>
-                        <option value="Fijo">Fijo</option>
+                        <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
+                        <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
+                        <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
+                        <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
+                        <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
+                        <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
                       </select>
                     </td>
                     <td class="p-2">
@@ -1631,16 +1632,16 @@
                   <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02]">
                     <td class="p-2">
                       <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
-                        <option value="">-- Tipo --</option>
-                        <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria">
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
+                        <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                           {{ cat.nombre_categoria }}
                         </option>
                       </select>
                     </td>
                     <td class="p-2">
                       <select v-model="line.subcategoria" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
-                        <option value="">-- Seleccionar --</option>
-                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria">
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
+                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                           {{ sub.nombre_subcategoria }}
                         </option>
                       </select>
@@ -1653,11 +1654,12 @@
                     </td>
                     <td class="p-2">
                       <select v-model="line.unidad" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-full">
-                        <option value="Horas">Horas</option>
-                        <option value="Diario">Diario</option>
-                        <option value="Semanal">Semanal</option>
-                        <option value="Mensual">Mensual</option>
-                        <option value="Fijo">Fijo</option>
+                        <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
+                        <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
+                        <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
+                        <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
+                        <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
+                        <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
                       </select>
                     </td>
                     <td class="p-2">
@@ -3511,12 +3513,16 @@ const hasDiff = (field, index = 0) => {
   if (field === 'equipo_tipo') {
     const orig = snapshotComercial.value.lines?.[index]?.tipo
     if (!orig) return false
-    return (lines.value[index]?.tipo || '') !== orig
+    const normOrig = String(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    const normCurr = String(lines.value[index]?.tipo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    return normCurr !== normOrig
   }
   if (field === 'equipo_subcategoria') {
     const orig = snapshotComercial.value.lines?.[index]?.subcategoria
     if (!orig) return false
-    return (lines.value[index]?.subcategoria || '') !== orig
+    const normOrig = String(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    const normCurr = String(lines.value[index]?.subcategoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    return normCurr !== normOrig
   }
   if (field === 'equipo_unidad') {
     const orig = snapshotComercial.value.lines?.[index]?.unidad
@@ -3667,18 +3673,27 @@ const fetchCategories = async () => {
   } catch (error) {
     console.error('Error fetching dynamic categories:', error)
     dbCategories.value = [
-      { id_categoria: 1, nombre_categoria: 'GRÚA TELESCÓPICA', subcategories: [] },
-      { id_categoria: 2, nombre_categoria: 'CAMIÓN PLUMA', subcategories: [] },
-      { id_categoria: 3, nombre_categoria: 'TRASLADOS', subcategories: [{ id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' }] },
-      { id_categoria: 4, nombre_categoria: 'ACCESORIOS', subcategories: [{ id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' }, { id_subcategoria: 1002, nombre_subcategoria: 'ESLINGAS' }, { id_subcategoria: 1003, nombre_subcategoria: 'ESTROBOS' }] },
-      { id_categoria: 5, nombre_categoria: 'PERSONAL CERTIFICADO', subcategories: [{ id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' }, { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' }, { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' }, { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }] },
-      { id_categoria: 6, nombre_categoria: 'OTROS', subcategories: [{ id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }] }
+      { id_categoria: 40, nombre_categoria: 'GRUAS TELESCOPICAS', subcategories: [] },
+      { id_categoria: 62, nombre_categoria: 'CAMIONES', subcategories: [{ id_subcategoria: 71, nombre_subcategoria: 'CAMION PLUMA' }] },
+      { id_categoria: 65, nombre_categoria: 'GRUA HORQUILLA', subcategories: [] },
+      { id_categoria: 70, nombre_categoria: 'MANIPULADOR TELESCOPICO', subcategories: [] },
+      { id_categoria: 72, nombre_categoria: 'VEHICULOS LIVIANOS', subcategories: [{ id_subcategoria: 100, nombre_subcategoria: 'CAMIONETA' }] },
+      { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', subcategories: [] },
+      { id_categoria: 99, nombre_categoria: 'TRASLADOS', subcategories: [{ id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' }] },
+      { id_categoria: 100, nombre_categoria: 'ACCESORIOS', subcategories: [{ id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' }] },
+      { id_categoria: 101, nombre_categoria: 'PERSONAL CERTIFICADO', subcategories: [{ id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' }, { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' }, { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' }] },
+      { id_categoria: 103, nombre_categoria: 'OTROS', subcategories: [{ id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }] }
     ]
   }
 }
 
 const getSubcategoriesForType = (type) => {
-  const category = dbCategories.value.find(c => c.nombre_categoria === type)
+  if (!type) return []
+  const normType = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+  const category = dbCategories.value.find(c => {
+    const normCat = String(c.nombre_categoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    return normCat === normType || c.nombre_categoria === type
+  })
   return category ? category.subcategories : []
 }
 
@@ -4445,10 +4460,16 @@ const cargarDatosCotizacion = async () => {
 
               let mappedTipo = l.tipo || ''
               const norm = String(mappedTipo).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-              if (norm === 'EQUIPO (GRUA)' || norm === 'GRUA' || norm === 'GRUAS TELESCOPICAS' || norm === 'GRUA TELESCOPICA') {
-                mappedTipo = 'GRÚA TELESCÓPICA'
-              } else if (norm === 'CAMION PLUMA' || norm === 'CAMIONES PLUMA' || norm === 'CAMION') {
-                mappedTipo = 'CAMIÓN PLUMA'
+              if (norm === 'EQUIPO (GRUA)' || norm === 'GRUA' || norm === 'GRUAS TELESCOPICAS' || norm === 'GRUA TELESCOPICA' || norm === 'GRÚAS TELESCÓPICAS' || norm === 'GRÚA TELESCÓPICA') {
+                mappedTipo = 'GRUAS TELESCOPICAS'
+              } else if (norm === 'CAMION PLUMA' || norm === 'CAMIONES PLUMA' || norm === 'CAMION' || norm === 'CAMIONES') {
+                mappedTipo = 'CAMIONES'
+              } else if (norm === 'GRUA HORQUILLA' || norm === 'GRUAS HORQUILLA') {
+                mappedTipo = 'GRUA HORQUILLA'
+              } else if (norm === 'MANIPULADOR TELESCOPICO' || norm === 'MANIPULADORES TELESCOPICOS') {
+                mappedTipo = 'MANIPULADOR TELESCOPICO'
+              } else if (norm === 'VEHICULO LIVIANO' || norm === 'VEHICULOS LIVIANOS' || norm === 'CAMIONETA') {
+                mappedTipo = 'VEHICULOS LIVIANOS'
               } else if (norm === 'PLATAFORMA' || norm === 'PLATAFORMAS') {
                 mappedTipo = 'PLATAFORMAS'
               } else if (norm === 'TRASLADO' || norm === 'TRASLADOS' || norm === 'FLETE' || norm === 'FLETES') {
