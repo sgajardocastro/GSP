@@ -4,6 +4,21 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.29
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 16:12:02 (-04:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/UX]** **DataGrid Operacional B2B en Asignación de Recursos (Pestaña C):** Reestructuración de alta densidad estilo Excel/Airtable con módulos separados para Flota (Equipos Principales y Apoyo) y Tripulación/Personal, micro-badges de semáforo inline, barra de tiempos compacta con propagación rápida y matriz de aparejos en cuadrícula compacta de 4 columnas.
+
+## [Backend GSP] - Versión 1.0.29
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-08-18 16:12:02 (-04:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[PERF]** **Optimización de Servicios:** Soporte determinista para persistencia y sincronización de recursos asignados a la OT.
+
 ## [Portal Web GSP] - Versión 1.0.28
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-08-18 15:45:51 (-04:00)

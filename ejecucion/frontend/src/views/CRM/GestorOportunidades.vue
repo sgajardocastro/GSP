@@ -500,245 +500,217 @@
             </div>
           </div>
 
-          <!-- Programación de Tiempos Planificados (Salida & Término) - UBICADO AL INICIO DE LA ASIGNACIÓN CON PROPAGACIÓN AUTOMÁTICA -->
-          <div class="bg-[#0a0f1e] p-4 rounded-xl border border-white/10 space-y-3">
-            <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider block flex items-center gap-2">
-              ⏱️ Programación de Tiempos Planificados (Inicio Plan & Fin Plan General)
-            </span>
-            <p class="text-[10px] text-slate-400">
-              Al modificar la Fecha de Salida Base o Fin de Servicio, se propaga automáticamente a todos los equipos y personas asignadas.
-            </p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Fecha Salida Base (Inicio Plan) *</label>
-                <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono [color-scheme:dark] focus:border-amber-500/50" />
+          <!-- Programación de Tiempos Planificados (Barra Compacta 1 Fila) -->
+          <div class="bg-[#0a0f1e] p-3 rounded-lg border border-white/10 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">⏱️ Tiempos Operacionales:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2 py-1">
+                <span class="text-[10px] text-slate-400 font-semibold">Salida Base:</span>
+                <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark]" />
+                <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Hora Salida Base *</label>
-                <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono [color-scheme:dark] focus:border-amber-500/50" />
+              <span class="text-slate-500 font-bold">➔</span>
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2 py-1">
+                <span class="text-[10px] text-slate-400 font-semibold">Término Faena:</span>
+                <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark]" />
+                <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Fecha Término Servicio (Fin Plan) *</label>
-                <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono [color-scheme:dark] focus:border-amber-500/50" />
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Hora Término Servicio *</label>
-                <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono [color-scheme:dark] focus:border-amber-500/50" />
-              </div>
+              <button @click="propagarFechasPlanificadas" type="button" class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Propagar estas fechas a todos los equipos y personal">
+                <span>⚡ Propagar a Recursos</span>
+              </button>
             </div>
           </div>
 
-          <!-- ASIGNACIÓN DE RECURSOS EN TABLA UNIFICADA DE ANCHO COMPLETO (3 COLUMNAS SIMÉTRICAS) -->
-          <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
-            <div class="flex justify-between items-center border-b border-white/5 pb-3 flex-wrap gap-2">
-              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                1. Estructurador de Asignación de Recursos
+          <!-- DATAGRID 1: FLOTA & EQUIPOS OPERACIONALES -->
+          <div class="bg-[#050810] border border-white/10 rounded-lg overflow-hidden">
+            <div class="bg-[#080d1a] px-3 py-2 border-b border-white/10 flex justify-between items-center">
+              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                🚜 1. Flota & Equipos Operacionales (Principales y Apoyo)
               </span>
-              <div class="flex gap-2 items-center">
-                <button @click="agregarEquipoAdicional" type="button" class="text-[11px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors">
-                  + Añadir Equipo Apoyo
-                </button>
-                <button @click="agregarTripulante" type="button" class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors">
-                  + Añadir Tripulante
-                </button>
-              </div>
+              <button @click="agregarEquipoAdicional" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                + Añadir Equipo Apoyo
+              </button>
             </div>
 
-            <!-- GRILLA DE ANCHO COMPLETO 3 COLUMNAS PROPORCIONALES (LIMPIA & SIN RUIDO VISUAL) -->
-            <div class="border border-white/10 rounded-xl overflow-hidden bg-black/40">
-              <table class="w-full text-left text-xs table-fixed border-collapse">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wider border-b border-white/10">
-                    <th class="p-3 w-[30%]">Requerimiento Comercial</th>
-                    <th class="p-3 w-[35%]">Recurso / Equipo Asignado Real</th>
-                    <th class="p-3 w-[35%]">Ventana Operacional (Fechas Planificadas)</th>
+                    <th class="p-2 w-[28%]">Requerimiento Comercial</th>
+                    <th class="p-2 w-[40%]">Equipo Asignado Real</th>
+                    <th class="p-2 w-[14%]">Inicio Plan</th>
+                    <th class="p-2 w-[14%]">Fin Plan</th>
+                    <th class="p-2 w-[4%] text-center"></th>
                   </tr>
                 </thead>
-                <tbody>
-                  <!-- SECCIÓN DE EQUIPOS -->
-                  <tr class="bg-[#080d1a] border-y border-white/10">
-                    <td colspan="3" class="px-3 py-2 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-                      EQUIPOS (PRINCIPALES Y APOYO)
+                <tbody class="divide-y divide-white/5 font-mono">
+                  <!-- Equipos de la cotización -->
+                  <tr v-for="(line, idx) in linesValidas" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-1.5 font-sans">
+                      <div class="font-bold text-white text-xs leading-tight truncate max-w-xs">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
+                      <div class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span class="text-amber-400/90 font-mono font-bold">{{ line.tipo }}</span>
+                        <span>•</span>
+                        <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                      </div>
                     </td>
-                  </tr>
-
-                  <template v-for="(line, idx) in linesValidas" :key="idx">
-                    <tr class="hover:bg-white/[0.03] transition-colors">
-                      <!-- Columna 1: Requerimiento Comercial -->
-                      <td class="p-3 align-middle">
-                        <div class="font-bold text-white text-xs">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                        <div class="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
-                          <span>{{ line.tipo }}</span>
-                          <span>•</span>
-                          <span>{{ line.cantidad }} {{ line.unidad }}</span>
-                          <span class="text-amber-400 font-mono font-bold pl-1">{{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}</span>
-                        </div>
-                      </td>
-
-                      <!-- Columna 2: Selector de Equipo -->
-                      <td class="p-3 align-middle">
-                        <div class="flex items-center gap-2">
-                          <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
-                            <option value="">-- Seleccionar Equipo Principal --</option>
-                            <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
-                            </option>
-                          </select>
-
-                          <div class="flex-shrink-0">
-                            <span v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded text-[9px] font-bold">🟢 VIG</span>
-                            <span v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-1 rounded text-[9px] font-bold">🟡 VENC</span>
-                            <span v-else-if="line.equipo_asignado_id" class="bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-1 rounded text-[9px] font-bold">🔴 VENC</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <!-- Columna 3: Fechas Planificadas -->
-                      <td class="p-3 align-middle">
-                        <div class="grid grid-cols-2 gap-2 text-[10px]">
-                          <div>
-                            <span class="text-slate-400 block font-semibold mb-0.5">Inicio Plan:</span>
-                            <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-white font-mono [color-scheme:dark]" />
-                          </div>
-                          <div>
-                            <span class="text-slate-400 block font-semibold mb-0.5">Fin Plan:</span>
-                            <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-white font-mono [color-scheme:dark]" />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  </template>
-
-                  <!-- Equipos Extra de Apoyo -->
-                  <template v-if="operacionesAssignment.equipos_extra && operacionesAssignment.equipos_extra.length > 0">
-                    <tr class="bg-[#080d1a] border-y border-white/10">
-                      <td colspan="3" class="px-3 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wider">
-                        🚜 Equipos Extra de Apoyo Operacional
-                      </td>
-                    </tr>
-                    <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.03] transition-colors">
-                      <td class="p-3 align-middle">
-                        <span class="text-xs font-bold text-blue-300">Transporte / Escolta / Apoyo</span>
-                      </td>
-                      <td class="p-3 align-middle">
-                        <select v-model="operacionesAssignment.equipos_extra[idx]" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50">
-                          <option value="">-- Seleccionar Equipo de Apoyo / Camión / Escolta --</option>
-                          <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente">
+                    <td class="p-1.5">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo --</option>
+                          <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                             {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
                           </option>
                         </select>
-                      </td>
-                      <td class="p-3 align-middle">
-                        <div class="flex items-center justify-between gap-2">
-                          <div class="text-[10px] text-slate-400">Equipo de Apoyo Operacional</div>
-                          <button @click="operacionesAssignment.equipos_extra.splice(idx, 1); marcarDirtyAsignacion()" class="text-slate-500 hover:text-red-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </template>
-
-                  <!-- SECCIÓN DE TRIPULACIÓN / PERSONAL -->
-                  <tr class="bg-[#080d1a] border-y border-white/10">
-                    <td colspan="3" class="px-3 py-2 text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
-                      👷 TRIPULACIÓN / PERSONAL
+                        <span v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟢 VIG</span>
+                        <span v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟡 VNC</span>
+                        <span v-else-if="line.equipo_asignado_id" class="bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🔴 VNC</span>
+                      </div>
+                    </td>
+                    <td class="p-1.5">
+                      <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
+                    </td>
+                    <td class="p-1.5">
+                      <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
+                    </td>
+                    <td class="p-1.5 text-center text-slate-600 text-xs" title="Línea base requerida comercialmente">
+                      🔒
                     </td>
                   </tr>
 
-                  <template v-if="tripulacionAsignada && tripulacionAsignada.length > 0">
-                    <tr v-for="(t, idx) in tripulacionAsignada" :key="'trip-'+idx" class="hover:bg-white/[0.03] transition-colors">
-                      <td class="p-3 align-middle">
-                        <select v-model="t.cargo" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white">
-                          <option value="Operador Grúa">Operador Grúa</option>
-                          <option value="Operador Camión Pluma">Operador Camión Pluma</option>
-                          <option value="Rigger / Señalero">Rigger / Señalero</option>
-                          <option value="Chofer Cama Baja">Chofer Cama Baja</option>
-                          <option value="Escolta / Guía">Escolta / Guía</option>
-                          <option value="Supervisor Faena">Supervisor Faena</option>
-                        </select>
-                      </td>
-                      <td class="p-3 align-middle">
-                        <div class="flex items-center gap-2">
-                          <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t); marcarDirtyAsignacion()" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
-                            <option value="">-- Seleccionar Persona --</option>
-                            <option v-for="u in getUsuariosPorCargo(t.cargo)" :key="u.id_user" :value="u.id_user">
-                              {{ u.nombre_user || u.name_user }}
-                            </option>
-                          </select>
-                          <div class="flex-shrink-0">
-                            <span v-if="t.semaforo === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded text-[9px] font-bold">🟢 VIG</span>
-                            <span v-else-if="t.semaforo === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-1 rounded text-[9px] font-bold">🟡 VENC</span>
-                            <span v-else class="bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-1 rounded text-[9px] font-bold">🔴 VENC</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="p-3 align-middle">
-                        <div class="flex items-center justify-between gap-2">
-                          <div class="grid grid-cols-2 gap-2 text-[10px] flex-1">
-                            <div>
-                              <span class="text-slate-400 block font-semibold mb-0.5">Inicio Plan:</span>
-                              <input type="date" v-model="t.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-white font-mono [color-scheme:dark]" />
-                            </div>
-                            <div>
-                              <span class="text-slate-400 block font-semibold mb-0.5">Fin Plan:</span>
-                              <input type="date" v-model="t.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-white font-mono [color-scheme:dark]" />
-                            </div>
-                          </div>
-                          <button @click="eliminarTripulante(idx); marcarDirtyAsignacion()" class="text-slate-500 hover:text-red-400 pl-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </template>
+                  <!-- Equipos Extra de Apoyo -->
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] bg-blue-500/[0.02] transition-colors">
+                    <td class="p-1.5 font-sans">
+                      <span class="text-xs font-bold text-blue-300">Equipo de Apoyo / Escolta</span>
+                      <span class="text-[9px] text-blue-400/70 block">Adicional Operacional</span>
+                    </td>
+                    <td class="p-1.5">
+                      <select v-model="operacionesAssignment.equipos_extra[idx]" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400">
+                        <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo de Apoyo / Camión / Escolta --</option>
+                        <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                          {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
+                        </option>
+                      </select>
+                    </td>
+                    <td class="p-1.5 text-[10px] text-slate-400 font-sans" colspan="2">
+                      <span>Sincronizado con tiempo global</span>
+                    </td>
+                    <td class="p-1.5 text-center">
+                      <button @click="operacionesAssignment.equipos_extra.splice(idx, 1); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar equipo de apoyo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- Aparejos & Implementos JSONB (Precargados por defecto desde Visita a Terreno en Grilla 3 Columnas) -->
-          <div class="bg-[#0a0f1e] p-4 rounded-xl border border-white/10 space-y-3 shadow-inner">
-            <div class="flex justify-between items-center border-b border-white/5 pb-2">
-              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                ⛓️ Confirmación de Aparejos de Izaje (Desde Visita a Terreno)
+          <!-- DATAGRID 2: TRIPULACIÓN & PERSONAL OPERATIVO -->
+          <div class="bg-[#050810] border border-white/10 rounded-lg overflow-hidden">
+            <div class="bg-[#080d1a] px-3 py-2 border-b border-white/10 flex justify-between items-center">
+              <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                👷 2. Tripulación & Personal Asignado
               </span>
-              <span class="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono">Levantamiento Base: aparejos_solicitados_json</span>
+              <button @click="agregarTripulante" type="button" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                + Añadir Tripulante
+              </button>
             </div>
 
-            <!-- Grilla Limpia 3 Columnas -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wider border-b border-white/10">
+                    <th class="p-2 w-[28%]">Cargo Operacional</th>
+                    <th class="p-2 w-[40%]">Personal Asignado</th>
+                    <th class="p-2 w-[14%]">Inicio Plan</th>
+                    <th class="p-2 w-[14%]">Fin Plan</th>
+                    <th class="p-2 w-[4%] text-center"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 font-mono">
+                  <tr v-for="(t, idx) in tripulacionAsignada" :key="'trip-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-1.5">
+                      <select v-model="t.cargo" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50">
+                        <option value="Operador Grúa" class="bg-[#0a0f1e] text-white">Operador Grúa</option>
+                        <option value="Operador Camión Pluma" class="bg-[#0a0f1e] text-white">Operador Camión Pluma</option>
+                        <option value="Rigger / Señalero" class="bg-[#0a0f1e] text-white">Rigger / Señalero</option>
+                        <option value="Chofer Cama Baja" class="bg-[#0a0f1e] text-white">Chofer Cama Baja</option>
+                        <option value="Escolta / Guía" class="bg-[#0a0f1e] text-white">Escolta / Guía</option>
+                        <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
+                      </select>
+                    </td>
+                    <td class="p-1.5">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t); marcarDirtyAsignacion()" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Persona --</option>
+                          <option v-for="u in getUsuariosPorCargo(t.cargo)" :key="u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                            {{ u.nombre_user || u.name_user }}
+                          </option>
+                        </select>
+                        <span v-if="t.semaforo === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟢 VIG</span>
+                        <span v-else-if="t.semaforo === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟡 VNC</span>
+                        <span v-else class="bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🔴 VNC</span>
+                      </div>
+                    </td>
+                    <td class="p-1.5">
+                      <input type="date" v-model="t.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
+                    </td>
+                    <td class="p-1.5">
+                      <input type="date" v-model="t.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
+                    </td>
+                    <td class="p-1.5 text-center">
+                      <button @click="eliminarTripulante(idx); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar tripulante">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CHECKLIST 3: APAREJOS E IMPLEMENTOS DE IZAJE (GRID 4 COLUMNAS COMPACTO) -->
+          <div class="bg-[#050810] border border-white/10 rounded-lg p-3 space-y-2">
+            <div class="flex justify-between items-center border-b border-white/5 pb-2">
+              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                ⛓️ 3. Matriz de Aparejos & Implementos de Izaje (Checklist Faena)
+              </span>
+              <span class="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono">aparejos_solicitados_json</span>
+            </div>
+
             <template v-if="operacionesAssignment.implementos_survey && operacionesAssignment.implementos_survey.length > 0">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2.5 bg-[#050810] rounded-lg border transition-all duration-200" :class="item.requerido ? 'border-amber-500/40 bg-amber-500/[0.03]' : 'border-white/5 opacity-70 hover:opacity-100'">
-                  <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <label class="flex items-center gap-2 text-xs font-bold cursor-pointer select-none" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
-                      <input type="checkbox" v-model="item.requerido" class="accent-amber-500 w-4 h-4 rounded" />
-                      <span>{{ item.label }}</span>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2 bg-[#0a0f1e] rounded border transition-colors flex flex-col justify-between" :class="item.requerido ? 'border-amber-500/40 bg-amber-500/[0.03]' : 'border-white/5 opacity-70 hover:opacity-100'">
+                  <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold cursor-pointer select-none truncate" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
+                      <input type="checkbox" v-model="item.requerido" class="accent-amber-500 w-3.5 h-3.5 rounded" />
+                      <span class="truncate">{{ item.label }}</span>
                     </label>
-                    <span v-if="item.requerido" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">REQUERIDO</span>
+                    <span v-if="item.requerido" class="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-bold">REQ</span>
                   </div>
-                  <div>
-                    <input type="text" v-model="item.detalle" placeholder="Capacidad / Cantidad / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-amber-500/50" />
-                  </div>
+                  <input type="text" v-model="item.detalle" placeholder="Capacidad / Cant / Largo..." class="w-full bg-black/40 border border-white/10 rounded px-1.5 py-0.5 text-[10px] text-white outline-none focus:border-amber-500/50 font-mono" />
                 </div>
               </div>
             </template>
             <div v-else class="text-xs text-slate-400 italic">
-              No se encontraron datos de implementos en la visita a terreno. (Asegúrate de cargar los datos del survey).
+              Sin implementos registrados en la visita a terreno.
             </div>
           </div>
 
           <!-- Bloque Observaciones libres de Operaciones -->
-          <div class="bg-[#0a0f1e] border border-white/10 p-4 rounded-xl space-y-2 mt-4">
-            <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">
-              💬 Observaciones / Comentarios Adicionales de Operaciones
+          <div class="bg-[#050810] border border-white/10 p-3 rounded-lg space-y-1.5">
+            <label class="block text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+              💬 Observaciones / Instrucciones Operativas de Faena
             </label>
             <textarea 
               v-model="operacionesAssignment.observaciones_operaciones" 
               @input="marcarDirtyAsignacion"
-              rows="3" 
-              placeholder="Ingrese comentarios u observaciones operativas del coordinador para la preparación de faena..."
-              class="w-full bg-[#020617] border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
+              rows="2" 
+              placeholder="Ingrese instrucciones o comentarios operativos del coordinador para la preparación de faena..."
+              class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
             ></textarea>
           </div>
         </div>

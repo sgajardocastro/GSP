@@ -97,11 +97,10 @@ async function deploy() {
     console.log('\n📝 2. Actualizando RELEASE_LOG.md con la traza oficial...');
     const customChanges = {
       web: [
-        "- **[FIX]** **Estructurador de Servicios & Grúas Telescópicas:** Homologación del mapeo de categorías canónicas (`GRUAS TELESCOPICAS`, `CAMIONES`, `PLATAFORMAS`, etc.) para renderizado determinista en Preventa y Operaciones / Validación Diff.",
-        "- **[FIX]** **Estilos de Listas Desplegables (<select>):** Aplicado fondo oscuro `#0a0f1e` y texto blanco `#f8fafc` en todas las opciones de los menús desplegables para eliminar la invisibilidad de texto blanco sobre fondo blanco."
+        "- **[FEAT/UX]** **DataGrid Operacional B2B en Asignación de Recursos (Pestaña C):** Reestructuración de alta densidad estilo Excel/Airtable con módulos separados para Flota (Equipos Principales y Apoyo) y Tripulación/Personal, micro-badges de semáforo inline, barra de tiempos compacta con propagación rápida y matriz de aparejos en cuadrícula compacta de 4 columnas."
       ],
       backend: [
-        "- **[FIX]** **Consistencia de Categorías:** Sincronización completa con el catálogo maestro de equipos de la base de datos."
+        "- **[PERF]** **Optimización de Servicios:** Soporte determinista para persistencia y sincronización de recursos asignados a la OT."
       ]
     };
     updateReleaseLog(webVer, pwaVer, customChanges);
