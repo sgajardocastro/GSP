@@ -745,127 +745,48 @@
       "label": "7. DATOS DE IMPLEMENTOS PARA EL SERVICIO",
       "attributes": [
         {
-          "type": "photoCheck",
-          "label": "ESTROBOS",
-          "default": "",
-          "options": [
-            {
-              "id": "SI",
-              "label": "SI"
-            },
-            {
-              "id": "NO",
-              "label": "NO"
-            }
-          ],
-          "nullable": false,
-          "galeria": [],
-          "obs": ""
-        },
-        {
           "type": "textField",
-          "label": "CAPACIDAD/LARGO/CANTIDAD (ESTROBOS)",
+          "label": "ESTROBOS DE ACERO (Capacidad / Cantidad / Largo)",
           "nullable": true
         },
         {
-          "type": "photoCheck",
-          "label": "PULPO CADENA",
-          "default": "",
-          "options": [
-            {
-              "id": "SI",
-              "label": "SI"
-            },
-            {
-              "id": "NO",
-              "label": "NO"
-            }
-          ],
-          "nullable": false,
-          "galeria": [],
-          "obs": ""
-        },
-        {
           "type": "textField",
-          "label": "CAPACIDAD/CANT. RAMALES/LARGO (PULPO CADENA)",
+          "label": "ESLINGAS SINTETICAS (Capacidad / Cantidad / Largo)",
           "nullable": true
         },
         {
-          "type": "photoCheck",
-          "label": "ESLINGAS",
-          "default": "",
-          "options": [
-            {
-              "id": "SI",
-              "label": "SI"
-            },
-            {
-              "id": "NO",
-              "label": "NO"
-            }
-          ],
-          "nullable": false,
-          "galeria": [],
-          "obs": ""
-        },
-        {
           "type": "textField",
-          "label": "CAPACIDAD/LARGO/CANTIDAD (ESLINGAS)",
+          "label": "GRILLETES LIRA / RECTOS (Capacidad / Cantidad)",
           "nullable": true
         },
         {
-          "type": "photoCheck",
-          "label": "GRILLETES",
-          "default": "",
-          "options": [
-            {
-              "id": "SI",
-              "label": "SI"
-            },
-            {
-              "id": "NO",
-              "label": "NO"
-            }
-          ],
-          "nullable": false,
-          "galeria": [],
-          "obs": ""
-        },
-        {
           "type": "textField",
-          "label": "CAPACIDAD/CANTIDAD (GRILLETES)",
+          "label": "PULPOS DE CADENA (Capacidad / Ramales / Largo)",
           "nullable": true
         },
         {
-          "type": "photoCheck",
-          "label": "ACCESORIOS",
-          "default": "",
-          "options": [
-            {
-              "id": "SI",
-              "label": "SI"
-            },
-            {
-              "id": "NO",
-              "label": "NO"
-            }
-          ],
-          "nullable": false,
-          "galeria": [],
-          "obs": ""
-        },
-        {
           "type": "textField",
-          "label": "TIPO DE ACCESORIO",
+          "label": "CADENAS DE IZAJE (Capacidad / Cantidad / Largo)",
           "nullable": true
         },
         {
-          "type": "photoCapture",
-          "label": "REGISTRO FOTOGRAFICO IMPLEMENTOS",
-          "compression": 50,
-          "maxFotos": 3,
-          "obs": "",
-          "galeria": [],
+          "type": "textField",
+          "label": "BALANCINES / VIGAS DE IZAJE (Capacidad / Toneladas)",
+          "nullable": true
+        },
+        {
+          "type": "textField",
+          "label": "CANASTILLO ALZA HOMBRES (Capacidad / Personas)",
+          "nullable": true
+        },
+        {
+          "type": "textField",
+          "label": "OTROS ACCESORIOS O APAREJOS ESPECIALES",
+          "nullable": true
+        },
+        {
+          "type": "textArea",
+          "label": "OBSERVACIONES GENERALES DE APAREJOS & IZAJE",
           "nullable": true
         }
       ]

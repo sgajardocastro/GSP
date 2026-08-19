@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Propuesta de Proceso Operacional - LeanGlobal para Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #fef3c7;
+      --secondary: #0f172a;
+      --navy: #1e293b;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #ffffff;
+      --card-bg: #f8fafc;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --accent: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background-color: #f1f5f9;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .page-container {
+      max-width: 900px;
+      margin: 20px auto;
+      background: var(--bg);
+      padding: 40px 50px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+
+    /* HEADER & BRANDING */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--secondary);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title span {
+      color: var(--primary);
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .doc-badge {
+      background: var(--secondary);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: right;
+    }
+
+    .doc-badge small {
+      display: block;
+      color: #38bdf8;
+      font-weight: 600;
+      font-size: 9.5px;
+    }
+
+    /* HEADINGS */
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--secondary);
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 20px 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    h2 .num {
+      background: var(--primary);
+      color: #ffffff;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 11px;
+    }
+
+    h3 {
+      font-size: 13px;
+      font-weight: 700;
+      margin: 12px 0 6px 0;
+      color: var(--primary-dark);
+    }
+
+    p {
+      font-size: 12px;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    /* EXECUTIVE CALLOUTS */
+    .callout-alert {
+      background: #fffbeb;
+      border-left: 4px solid var(--warning);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 14px 0;
+      font-size: 11.5px;
+    }
+
+    .callout-alert h4 {
+      color: #92400e;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    /* CONVOY DIAGRAM */
+    .convoy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .convoy-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      border-top: 3px solid var(--primary);
+    }
+
+    .convoy-card.main-crane { border-top-color: #d97706; }
+    .convoy-card.transport { border-top-color: #3b82f6; }
+    .convoy-card.escort { border-top-color: #10b981; }
+
+    .convoy-card h4 {
+      font-size: 12px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .convoy-card ul {
+      list-style: none;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .convoy-card li {
+      margin-bottom: 3px;
+      padding-left: 8px;
+      position: relative;
+    }
+
+    .convoy-card li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    /* FLOW STEPS (3 PILARES) */
+    .flow-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 10px 0 16px 0;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+
+    .flow-step-header {
+      background: var(--secondary);
+      color: #ffffff;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .flow-step-header .badge {
+      font-size: 8.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    .flow-step-header .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .flow-step-body {
+      padding: 8px 12px;
+      background: #fafafa;
+    }
+
+    .flow-step-body ul {
+      margin-left: 14px;
+      font-size: 11px;
+      color: #334155;
+    }
+
+    .flow-step-body li {
+      margin-bottom: 2px;
+    }
+
+    /* MOCKUP CONSOLE UI (MANIFIESTO) */
+    .mockup-container {
+      background: #0b0f19;
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .mockup-header {
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mockup-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .mockup-badge {
+      background: #1e293b;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .mockup-section {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 5px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 10.5px;
+    }
+
+    .mockup-section-title {
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .mockup-flota-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.05);
+      color: #e2e8f0;
+      font-size: 10px;
+    }
+
+    .mockup-flota-row:last-child {
+      border-bottom: none;
+    }
+
+    .mockup-grid-aparejos {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .mockup-item-aparejo {
+      background: #1e293b;
+      padding: 4px 6px;
+      border-radius: 3px;
+      border-left: 2px solid #10b981;
+      font-size: 9.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mockup-item-aparejo span.cant {
+      font-weight: 800;
+      color: #f59e0b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .mockup-trincaje {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 9.5px;
+      font-weight: 600;
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 11px;
+    }
+
+    th, td {
+      padding: 7px 10px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--secondary);
+      color: #ffffff;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+    }
+
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    /* BENEFIT CARDS */
+    .benefit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .benefit-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .benefit-card h4 {
+      color: #166534;
+      font-size: 12px;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .benefit-card p {
+      font-size: 10.5px;
+      color: #14532d;
+      margin: 0;
+    }
+
+    /* SIGNATURE & FOOTER */
+    .footer {
+      margin-top: 25px;
+      border-top: 2px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .page-container {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+      .mockup-container {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-container">
+
+    <!-- PÁGINA 1: CABECERA, INTRODUCCIÓN, CONVOY Y DIAGNÓSTICO -->
+    <div class="header">
+      <div class="brand-group">
+        <div>
+          <div class="brand-title">Lean<span>Global</span> Platform</div>
+          <div class="brand-subtitle">Informe de Consultoría & Arquitectura de Procesos Operacionales</div>
+        </div>
+      </div>
+      <div class="doc-badge">
+        Preparado Para:
+        <small>Grúas San Pablo S.A. (GSP)</small>
+      </div>
+    </div>
+
+    <h1>Modelo Operacional: Despacho de Convoy Multiequipo, Manifiesto de Carga y Control de Retorno de Faena</h1>
+    <p style="font-size: 12px; color: #475569; margin-bottom: 16px;">
+      Propuesta metodológica elaborada por <strong>LeanGlobal</strong> para <strong>Grúas San Pablo</strong> con el fin de garantizar <strong>cero detenciones de faena por falta de aparejos</strong>, <strong>máxima seguridad vial de trincaje en carretera</strong> y <strong>control determinístico de inventario en el retorno a bodega</strong>.
+    </p>
+
+    <h2><span class="num">1</span> La Realidad de Faena: Operación en Convoy Multiequipo</h2>
+    <p>
+      En las operaciones de izaje de alto tonelaje para minería, energía y construcción industrial, un servicio de grúa <strong>nunca es un viaje simple de un solo camión</strong>. Cada maniobra exige la movilización coordinada de un <strong>Convoy Operativo Multivehículo</strong>:
+    </p>
+
+    <div class="convoy-grid">
+      <div class="convoy-card main-crane">
+        <h4>🚜 1. Grúa Telescópica Móvil</h4>
+        <ul>
+          <li>Equipo principal de izaje (Liebherr / Grove).</li>
+          <li>Operador de grúa certificado.</li>
+          <li>Cable de izaje, gancho y plumín (JIB).</li>
+          <li>Almohadillas de estabilización.</li>
+        </ul>
+      </div>
+
+      <div class="convoy-card transport">
+        <h4>🚚 2. Transporte / Cama Baja</h4>
+        <ul>
+          <li>Tracto + Rampla pesada.</li>
+          <li>Contrapesos masivos (hasta 40+ Ton).</li>
+          <li>Balancines de viga de gran tonelaje.</li>
+          <li>Cadenas pesadas de izaje y trincaje.</li>
+        </ul>
+      </div>
+
+      <div class="convoy-card escort">
+        <h4>🚗 3. Camioneta Escolta / Rigger</h4>
+        <ul>
+          <li>Vehículo de apoyo técnico (Toyota Hilux).</li>
+          <li>Rigger calificado + Prevencionista.</li>
+          <li>Aparejos menores (grilletes, eslingas).</li>
+          <li>Letrero sobre-dimensión y balizas.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout-alert">
+      <h4>🚨 El Diagnóstico: Las 3 Causas de Pérdida en Faenas de Izaje</h4>
+      <p style="margin: 0; color: #78350f;">
+        <strong>1. Tiempos Muertos por Olvido:</strong> La grúa llega a faena tras 3 horas de ruta y falta un balancín específico o cadenas ➔ Faena paralizada y multas contractuales.<br>
+        <strong>2. Riesgo Vial en Carretera:</strong> Falta de control formal en el trincaje y aseguramiento de contrapesos y vigas en la cama baja.<br>
+        <strong>3. Mermas y Descontrol en el Retorno:</strong> Aparejos costosos (grilletes de 25T, eslingas especiales) olvidados o dañados en obra sin registro oportuno.
+      </p>
+    </div>
+
+    <!-- SALTO A PÁGINA 2: CIRCUITO Y MAQUETA -->
+    <div class="page-break"></div>
+
+    <h2><span class="num">2</span> El Circuito Logístico Cerrado (End-to-End)</h2>
+    <p>
+      LeanGlobal propone un circuito determinístico de 3 etapas que vincula la oficina de operaciones, el patio de despacho y el muelle de retorno:
+    </p>
+
+    <div class="flow-container">
+      
+      <!-- ETAPA 1 -->
+      <div class="flow-step">
+        <div class="flow-step-header">
+          <span class="badge">Etapa 1</span>
+          <span class="title">Aguas Arriba</span>
+        </div>
+        <div class="flow-step-body">
+          <strong style="color: var(--secondary); font-size: 11.5px;">Planificación & Plan de Estiba (Stowage Plan):</strong>
+          <ul>
+            <li>El Coordinador define la <strong>Flota del Convoy</strong> (Grúa, Cama Baja, Escolta) y su tripulación en la Orden de Trabajo (OT).</li>
+            <li><strong>Distribución de Carga:</strong> Se especifica formalmente qué aparejo viaja en qué vehículo (Balancines en Cama Baja, Grilletes en Escolta).</li>
+            <li>Emisión automática del <strong>Manifiesto de Embarque Digital</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ETAPA 2 -->
+      <div class="flow-step">
+        <div class="flow-step-header" style="background: var(--primary);">
+          <span class="badge" style="color: #ffffff;">Etapa 2</span>
+          <span class="title">Despacho</span>
+        </div>
+        <div class="flow-step-body">
+          <strong style="color: var(--secondary); font-size: 11.5px;">Preparación de Salida & Control en Patio:</strong>
+          <ul>
+            <li><strong>Inspección Pre-Uso Mecánica (PWA):</strong> Chequeo ágil de 90 segundos por cada conductor (luces, frenos, neumáticos, fluidos, extintor).</li>
+            <li><strong>Auditoría de Carga:</strong> El despachador contrasta físicamente que el 100% de los aparejos de la OT están a bordo del camión asignado.</li>
+            <li><strong>Validación de Trincaje:</strong> Verificación de cadenas de trinquete y fajas tensadas conforme a norma vial.</li>
+            <li>Registro de odómetros/horómetros y <strong>Apertura de Portón a Ruta</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ETAPA 3 -->
+      <div class="flow-step">
+        <div class="flow-step-header">
+          <span class="badge">Etapa 3</span>
+          <span class="title">Aguas Abajo</span>
+        </div>
+        <div class="flow-step-body">
+          <strong style="color: var(--secondary); font-size: 11.5px;">Retorno a Base & Manifiesto Inverso:</strong>
+          <ul>
+            <li><strong>Inspección de Llegada:</strong> Registro de horómetro final y reporte inmediato de averías para Taller/Mantenimiento.</li>
+            <li><strong>Manifiesto Inverso de Conteo Ciego:</strong> Cotejo directo: <em>[Lo que Salió] vs [Lo que Regresó a Bodega]</em>.</li>
+            <li><strong>Control de Fatiga y Descarte:</strong> Eslingas con cortes o vigas golpeadas se derivan a <em>Recertificación o Baja</em>.</li>
+            <li><strong>Gestión de Extravíos:</strong> Alerta inmediata de pérdidas en obra para cobro y reintegro al stock disponible.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <h2><span class="num">3</span> Maqueta Operativa: Manifiesto Digital de Embarque & Despacho</h2>
+    <p>
+      Esta es la interfaz de control que el Despachador de Patio y el Rigger utilizan en la plataforma para auditar el convoy antes de la salida a faena:
+    </p>
+
+    <!-- MOCKUP UI -->
+    <div class="mockup-container">
+      <div class="mockup-header">
+        <div class="mockup-title">
+          🚚 MANIFIESTO DE DESPACHO & PREPARACIÓN DE SALIDA (OT #66)
+        </div>
+        <div class="mockup-badge">CLIENTE: MINERA LOS BRONCES</div>
+      </div>
+
+      <!-- 1. FLOTA -->
+      <div class="mockup-section">
+        <div class="mockup-section-title">
+          <span>1. Flota Convoy & Estado de Checklists Mecánicos (Pre-Uso PWA)</span>
+          <span style="color: #10b981;">3 / 3 APROBADOS</span>
+        </div>
+        <div class="mockup-flota-row">
+          <span>🚜 <strong>Grúa Telescópica:</strong> Liebherr LTM 1220 [GR-1234]</span>
+          <span style="color: #34d399;">🟢 Checklist Patio OK (Horóm: 12.450 hrs) &bull; Op: Juan Pérez</span>
+        </div>
+        <div class="mockup-flota-row">
+          <span>🚚 <strong>Cama Baja / Rampla:</strong> Volvo FH 500 [TR-8899]</span>
+          <span style="color: #34d399;">🟢 Checklist Patio OK (Odóm: 185.420 km) &bull; Ch: Mario Silva</span>
+        </div>
+        <div class="mockup-flota-row">
+          <span>🚗 <strong>Camioneta Escolta:</strong> Toyota Hilux [BB-CL-99]</span>
+          <span style="color: #34d399;">🟢 Checklist Patio OK (Odóm: 85.320 km) &bull; Rig: Pedro Soto</span>
+        </div>
+      </div>
+
+      <!-- 2. APAREJOS -->
+      <div class="mockup-section">
+        <div class="mockup-section-title">
+          <span>2. Manifiesto de Embarque de Aparejos (Contraste 1 a 1 vs OT)</span>
+          <span style="color: #10b981;">100% CARGADO A BORDO</span>
+        </div>
+        <div class="mockup-grid-aparejos">
+          <div class="mockup-item-aparejo">
+            <span>[x] Estrobos Acero (Grúa)</span>
+            <span class="cant">1 u.</span>
+          </div>
+          <div class="mockup-item-aparejo">
+            <span>[x] Grilletes Lira (Escolta)</span>
+            <span class="cant">3 u.</span>
+          </div>
+          <div class="mockup-item-aparejo">
+            <span>[x] Cadenas Izaje (Cama Baja)</span>
+            <span class="cant">5 u.</span>
+          </div>
+          <div class="mockup-item-aparejo">
+            <span>[x] Balancines Viga (Cama Baja)</span>
+            <span class="cant">6 u.</span>
+          </div>
+          <div class="mockup-item-aparejo">
+            <span>[x] Canastillo Alza H. (Cama Baja)</span>
+            <span class="cant">7 u.</span>
+          </div>
+          <div class="mockup-item-aparejo">
+            <span>[x] Accesorios Esp. (Cama Baja)</span>
+            <span class="cant">otrow</span>
+          </div>
+        </div>
+
+        <div class="mockup-trincaje">
+          🔒 <strong>Trincaje y Amarre de Carga en Cama Baja:</strong> Verificado conforme a norma de sujeción (Cadenas grado 80/100 y fajas tensadas).
+        </div>
+      </div>
+
+      <!-- 3. AUTORIZACION -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px; font-size: 10px; color: #94a3b8;">
+        <div>Salida Portón: <strong style="color: #ffffff;">07:45 hrs</strong> &bull; Despachador: <strong style="color: #38bdf8;">Lean Cloud (Lguser)</strong></div>
+        <div style="background: #10b981; color: #000000; font-weight: 800; padding: 4px 12px; border-radius: 5px; font-size: 9.5px; text-transform: uppercase;">
+          🚀 CONVOY AUTORIZADO A RUTA
+        </div>
+      </div>
+    </div>
+
+    <!-- SALTO A PÁGINA 3: TABLA COMPARATIVA, ROI Y CIERRE -->
+    <div class="page-break"></div>
+
+    <h2><span class="num">4</span> Matriz Comparativa: Operación Tradicional vs. Nuevo Estándar GSP</h2>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Dimensión Operativa</th>
+          <th>Operación Tradicional</th>
+          <th>Nuevo Estándar Grúas San Pablo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Alcance del Servicio</strong></td>
+          <td>Monovehículo aislado (solo se inspecciona la grúa).</td>
+          <td><strong>Convoy Multiequipo Integrado</strong> (Grúa + Cama Baja + Escolta).</td>
+        </tr>
+        <tr>
+          <td><strong>Inspección Pre-Operacional</strong></td>
+          <td>Checklist genérico largo que mezclaba luces con balancines.</td>
+          <td><strong>Checklist Mecánico Universal (90 seg)</strong> enfocado en seguridad vial.</td>
+        </tr>
+        <tr>
+          <td><strong>Embarque de Aparejos</strong></td>
+          <td>A ciegas / "A criterio del chofer" (alto riesgo de olvido).</td>
+          <td><strong>Manifiesto de Carga 1 a 1</strong> contrastado contra la OT y visita técnica.</td>
+        </tr>
+        <tr>
+          <td><strong>Seguridad Carretera</strong></td>
+          <td>Sin auditoría formal de amarre de contrapesos.</td>
+          <td><strong>Verificación Obligatoria de Trincaje</strong> previo a salida de patio.</td>
+        </tr>
+        <tr>
+          <td><strong>Recepción de Retorno</strong></td>
+          <td>Informal (no se detectaban pérdidas hasta la siguiente faena).</td>
+          <td><strong>Manifiesto Inverso</strong>: Detección de fatiga, bajas y cobro de pérdidas.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2><span class="num">5</span> Propuesta de Valor y Retorno para el Negocio</h2>
+
+    <div class="benefit-grid">
+      <div class="benefit-card">
+        <h4>⚡ Cero Detenciones</h4>
+        <p>Eliminación total de viajes de emergencia y horas perdidas por falta de aparejos en la obra del cliente.</p>
+      </div>
+
+      <div class="benefit-card">
+        <h4>🛡️ Máxima Seguridad Vial</h4>
+        <p>Trincaje auditado de contrapesos pesados y retiro preventivo de aparejos fatigados antes de fallar.</p>
+      </div>
+
+      <div class="benefit-card">
+        <h4>💰 Control Financiero</h4>
+        <p>Cero mermas inexplicables de grilletes y balancines; cobro oportuno de daños/extravíos al mandante.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>
+        <strong>LeanGlobal Platform</strong> &bull; Consultoría de Procesos & Soluciones Cloud<br>
+        Documento preparado exclusivamente para <strong>Grúas San Pablo S.A. (GSP)</strong>
+      </div>
+      <div style="text-align: right;">
+        Santiago de Chile, 18 de Agosto de 2026<br>
+        <strong>Confidencial &bull; Propuesta Técnico-Operacional</strong>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

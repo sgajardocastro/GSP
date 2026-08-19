@@ -288,15 +288,145 @@ Las cláusulas y condiciones comerciales se estructuran de forma modular y react
 
 ---
 
-## 4. Flujo Operativo, Asignación de Recursos y Validaciones
+## 4. Flujo Operativo, Asignación de Recursos y Validaciones (Torre de Control & Pestaña C)
 
-### 4.1. Ciclo de Vida de la Oportunidad
-- **Inicio:** Se crea la oportunidad desde el Kanban de Preventa o desde la Ficha 360 del Cliente, usando el botón "Nueva Oportunidad".
-- **Desarrollo:** El equipo comercial busca al cliente (RUT o Nombre), se auto-completan los campos del mandante y se ingresan las condiciones de pago.
-- **Carga Técnica:** El usuario puede digitalizar a mano la viabilidad del servicio o importar un reporte de *Site Visit* previo (trayendo los datos generales e izaje directo desde las respuestas de la base de datos).
-- **Cierre (Win):** Al marcar el estado como **"Ganado / Aprobado"** (o presionar "Generar Requerimiento"), el sistema cierra el expediente de preventa en `tpry_proyecto` e inyecta la orden en la Torre de Control (`sch_leangsp`).
+### 4.1. Ciclo de Vida del Expediente Integral (Core Pipeline)
+- **Fase 1 (Preventa Comercial):** Búsqueda de cliente, estructurador multi-línea, viabilidad técnica/site visit, condiciones comerciales y despacho de cotización PDF.
+- **Fase 2 (Estudio & Validación Técnica):** Análisis de diferencias (*Diff Check*) entre el requerimiento comercial y el levantamiento real de terreno, aprobación técnica por el coordinador.
+- **Fase 3 (Asignación de Recursos OT):** DataGrid de Flota & Equipos vs Tripulación & Personal, aparejos e insumos de izaje, ventanas de tiempo planificadas.
+- **Fase 4 (Acreditaciones & Dossier B2B):** Validación de matrices de cumplimiento documental y despacho formal del dossier al cliente mandante.
+- **Fase 5 (Preparación de Salida / Patio):** Generación inmutable de la OT, checklist de despacho y ejecución de faena.
 
-### 4.2. Validación Operativa en Asignación (Torre de Control)
-El sistema impone una regla dura en caliente (hard-stop) al momento de asignar los recursos físicos para las Órdenes de Trabajo (OT) originadas de oportunidades con requerimientos específicos:
+---
 
-- **Validación de Rigger:** Si el registro del proyecto tiene el flag `requiere_rigger === true`, el controlador backend y el validador frontend en la función `confirmarAsignacionOT` exigen obligatoriamente la presencia de al menos un recurso con perfil de **Rigger** asignado en la grilla de tripulación. En caso de ausencia, se cancela la confirmación de la OT para mitigar riesgos normativos y de seguridad en terreno.
+### 4.2. Reglas Canónicas de Negocio y Dominio
+
+#### A. Regla Canónica 1: Terminología Oficial de Rigger
+* Queda establecido como regla canónica inviolable en todo el producto que la denominación oficial es **`Rigger`**.
+* Queda estrictamente prohibido el uso de los términos `Señalero` o `Rigger / Señalero`.
+
+#### B. Regla Canónica 2: Catálogo de Cargos Operacionales de Tripulación
+Los cargos estandarizados para la tripulación son:
+1. `Operador Grúa`
+2. `Operador Camión Pluma`
+3. `Rigger`
+4. `Prevencionista de Riesgos`
+5. `Chofer Cama Baja`
+6. `Escolta / Guía`
+7. `Supervisor Faena`
+
+#### C. Regla Canónica 3: Separación Semántica Flota vs. Tripulación
+Al procesar las líneas comerciales de la cotización (`lines`):
+* **Tabla 1 (`🚜 1. Flota & Equipos`):** Se filtran y muestran exclusivamente líneas que representen maquinaria y equipos físicos (`GRUAS TELESCOPICAS`, `CAMIONES PLUMA`, `VEHICULOS LIVIANOS`, `MAQUINARIA`, `EQUIPOS DE APOYO`, `TRASLADOS`). Ninguna persona o servicio humano puede aparecer en esta tabla.
+* **Tabla 2 (`👷 2. Tripulación & Personal Asignado`):** Se sincronizan automáticamente todas las líneas comerciales de personal certificado (`PERSONAL CERTIFICADO`, `Servicio de Rigger Certificado`, `Servicio de Prevencionista Certificado`). Además, el coordinador puede añadir tripulantes adicionales bajo demanda (`+ Añadir Tripulante`).
+
+#### D. Regla Canónica 4: Inmutabilidad de Recursos Contractuales (Línea Base 🔒 vs. Recursos Adicionales 🗑️)
+* **Obligación Contractual Inmutable (`🔒`):** Todo equipo o puesto de personal originado de una línea comercial cotizada y aprobada (ej: Grúa Principal, Rigger cotizado, Prevencionista cotizado):
+  - Queda protegido con indicador de candado `🔒` y no puede ser eliminado por el coordinador operativo.
+  - El cargo operacional permanece fijado al compromiso comercial, permitiendo exclusivamente seleccionar la persona idónea para cumplir el servicio.
+* **Recursos Adicionales Operativos (`🗑️`):** Únicamente los recursos extra incorporados ad-hoc en la fase de Operaciones (`+ Añadir Apoyo`, `+ Añadir Tripulante`) disponen del botón de eliminación `🗑️`.
+
+---
+
+### 4.3. Arquitectura de Interfaz DataGrid B2B (Layout 2 Columnas Lado a Lado)
+
+La interfaz de la Pestaña C se estructura en una cuadrícula simétrica de alta densidad para evitar scroll vertical innecesario y aprovechar el 100% del ancho de pantalla en monitores operacionales:
+
+```
++---------------------------------------------------------------------------------------------------+
+| TOOLBAR SUPERIOR: [🚜 Asignación de Recursos OT] [APROBADO] | [Salida Base] ➔ [Término Faena] [⚡ Propagar] |
++-----------------------------------------------------------------+---------------------------------+
+| COLUMNA IZQUIERDA (50%)                                         | COLUMNA DERECHA (50%)           |
+| 🚜 1. Flota & Equipos (Principales y Apoyo)     [+ Añadir Apoyo] | 👷 2. Tripulación & Personal   [+ Añadir]       |
+| • Requerimiento | Equipo Asignado (Semáforo) | Ventana Fechas   | • Cargo | Persona (Semáforo) | Ventana Fechas   |
+| • Grúa Telescópica ➔ [LTM 1220 - GR-1234 🟢] | [Ini] - [Fin]    | • Operador ➔ [Juan Pérez 🟢] | [Ini] - [Fin]    |
+| • Camión Escolta   ➔ [Hilux - BB-CL-99 🟢]   | [Ini] - [Fin]    | • Rigger   ➔ [Pedro Soto 🟢] | [Ini] - [Fin]    |
+|                                                                 | • Prevencionista ➔ [C. Varas 🟢] | [Ini] - [Fin]|
++-----------------------------------------------------------------+---------------------------------+
+| 📋 Referencia: Levantamiento Visita a Terreno                   | ⛓️ 3. Matriz de Aparejos & Implementos          |
+| • Visita #ID [APROBADO] [👁️ Ver Web] [📄 PDF]                   | • [x] Grilletes Lira [ Detalle capacidad ]     |
+| 💬 Instrucciones / Observaciones Operativas de Faena            | • [x] Eslingas Sintéticas [ Detalle largo ]     |
+| [ Textarea compacto ]                                           | • [x] Balancines [ Detalle toneladas ]          |
++-----------------------------------------------------------------+---------------------------------+
+```
+
+---
+
+### 4.4. Tipografía y Estándares de Accesibilidad B2B
+
+* **Inputs de Fecha y Hora (`<input type="date">` / `<input type="time">`):** Tamaño estándar `text-xs` (12px), `font-mono font-bold`, color blanco `#ffffff`, padding `px-2 py-1`.
+* **Encabezados de Tabla:** `text-[10px]` a `text-[11px]` font-bold en color `slate-300` con `tracking-wider`.
+* **Badges de Semáforo (`🟢 VIG`, `🟡 VNC`, `🔴 VNC`):** `text-[10px]` font-bold con padding `px-1.5 py-0.5`.
+* **Controles Select y Textareas:** Fondo `#0a0f1e`, borde `white/10`, focus `amber-500/50`.
+
+---
+
+### 4.5. Protocolo de Persistencia y Máquina de Estados
+
+1. **Estado en Base de Datos:** `tpry_proyecto.id_proyecto_estado = 3` (*Operaciones*).
+2. **Subpestaña Activa:** `json_field.ejecucion_v1.subtab_activa = 'asignacion'`.
+3. **Persistencia Dual:**
+   * **JSON Inmutable:** `json_field.ejecucion_v1` contiene la instantánea de `tripulacion_asignada`, `equipos_extra`, `observaciones` y `aparejos_asignados_json`.
+   * **Tablas Relacionales SQL (Spec 22):** Inserción en `tpry_rel_persona` y `tpry_rel_equipo` con claves foráneas e intervalos temporales `fecha_plan_ini` y `fecha_plan_fin`.
+4. **Hard-Stop de Validación:** Si `requiere_rigger === true`, la confirmación de la OT exige obligatoriamente la asignación de al menos un `Rigger` con `id_user` válido. De lo contrario, se bloquea la confirmación.
+
+---
+
+### 4.6. Micro-Diálogo / Popover de Acreditaciones de Recursos (Inspect-on-Click)
+
+Para optimizar la agilidad del coordinador sin abandonar la pantalla de Asignación:
+* **Trigger:** Al hacer clic sobre cualquier badge semafórico (`🟢 VIG`, `🟡 VNC`, `🔴 VNC`) en la tabla de Flota o Tripulación, se despliega un diálogo modal flotante.
+* **Contenido del Diálogo:**
+  1. **Encabezado:** Nombre del Recurso, Patente/RUT y Rol Operacional.
+  2. **Matriz de Documentos:**
+     * **Personal:** Examen Ocupacional, Licencia de Conducir, Certificación Rigger/Operador, Contrato de Trabajo, Inducción Faena.
+     * **Equipos:** Revisión Técnica, SOAP, Permiso de Circulación, Certificado de Izaje/Carga, Póliza de Seguro.
+  3. **Indicadores de Vencimiento:** Fecha exacta de expiración y badge visual (`🟢 Vigente`, `🟡 Por Vencer (≤30 días)`, `🔴 Vencido`).
+  4. **Acceso Rápido:** Enlace directo para visualizar o descargar el archivo PDF del repositorio si existe.
+
+---
+
+### 4.7. Matriz Canónica de Aparejos & Implementos de Izaje (Catálogo Maestro 8 Ítems)
+
+Para garantizar consistencia integral entre la Inspección en Terreno (Survey), el Reporte PDF y la Asignación Operacional de la OT:
+
+1. **Catálogo Maestro Homologado:**
+   1. `estrobos`: Estrobos de Acero (Keywords: `ESTROBO`, `ESTROBOS`)
+   2. `eslingas`: Eslingas Sintéticas (Keywords: `ESLINGA`, `ESLINGAS`)
+   3. `grilletes`: Grilletes Lira / Rectos (Keywords: `GRILLETE`, `GRILLETES`, `GRILLETON`)
+   4. `pulpos_cadena`: Pulpos de Cadena (Keywords: `PULPO`, `PULPOS`, `PULPO CADENA`)
+   5. `cadenas`: Cadenas de Izaje (Keywords: `CADENA`, `CADENAS`)
+   6. `balancines`: Balancines / Vigas de Izaje (Keywords: `BALANCIN`, `BALANCINES`, `VIGA`)
+   7. `canastillos`: Canastillo Alza Hombres (Keywords: `CANASTILLO`, `CANASTILLOS`, `CANASTA`)
+   8. `otros_accesorios`: Otros / Accesorios Especiales (Keywords: `ACCESORIO`, `ACCESORIOS`, `OTRO`, `OTROS`)
+
+2. **Comportamiento en Asignación (Pestaña C):**
+   * Se presentan **siempre las 8 tarjetas maestras**.
+   * Los aparejos registrados con cantidad en la visita a terreno se marcan automáticamente como `[x] REQ` con su detalle de capacidad/largo precargado.
+   * Los elementos que vinieron en 0 o desmarcados desde terreno aparecen desmarcados `[ ]`, pero **el Coordinador de Operaciones puede activarlos en cualquier momento e ingresar cantidades/especificaciones adicionales** según el plan de maniobra.
+   * Persistencia estructurada en `json_field.ejecucion_v1.aparejos_asignados_json`.
+
+---
+
+## 5. Modelo Asíncrono de Acreditación y Visualización en Tablero Kanban
+
+### 5.1. Naturaleza Asíncrona y Paralela de la Acreditación
+1. **Desacoplamiento Operativo:** La Acreditación documental (Dossier B2B / FES / Certificados de Equipos y Personas) es un subproceso asíncrono que no detiene el ciclo de vida del servicio en las fases de Operaciones (Preparación de Patio / Despacho / En Faena).
+2. **Eliminación de la Columna Artificial "En Acreditación":** Queda formalmente eliminada la columna "En Acreditación" del tablero Kanban y de la Torre de Control. Las oportunidades y OTs se clasifican exclusivamente en las etapas canónicas relacionales (`tpry_proyecto.id_proyecto_estado`):
+   - **Cotización / Preventa** (`id_proyecto_estado = 1`)
+   - **Validación Comercial-Técnica** (`id_proyecto_estado = 2`)
+   - **Preparación de Operaciones / Patio** (`id_proyecto_estado = 3` o `5`)
+   - **En Ejecución / Faena** (`id_proyecto_estado = 6` o `7`)
+   - **Finalizado / Completado** (`id_proyecto_estado = 8`)
+
+### 5.2. Gauge de Cumplimiento Documental en Tarjetas de Kanban
+Cada tarjeta de servicio en el tablero Kanban (independientemente de su columna o estado operativo) incorpora un componente visual de progreso (Gauge / Barra de Porcentaje de Acreditación):
+
+1. **Fórmula Determinista de Cumplimiento:**
+   $$\% \text{ Acreditación} = \left( \frac{\sum \text{Documentos Vigentes (Empresa + Equipos Asignados + Personal Asignado)}}{\sum \text{Total Documentos Exigidos por el Cliente}} \right) \times 100\%$$
+
+2. **Regla de Semáforo Binario Estricto:**
+   - **`🟢 VERDE (100%)`:** Única y exclusivamente cuando la totalidad de los documentos exigidos estén vigentes y validados (`% Acreditación === 100%`).
+   - **`🔴 ROJO (0% - 99%)`:** Si existe al menos un documento pendiente, vencido o no vinculado (`% Acreditación < 100%`), el gauge se renderiza en **color rojo**, advirtiendo que el servicio no cuenta con pase libre de faena.
+
+3. **Interactividad:** Al hacer clic sobre el gauge o badge en la tarjeta del Kanban, se abre directamente el drawer/modal de la oportunidad en la pestaña de **Acreditaciones**, permitiendo la carga, vinculación o despacho inmediato del Dossier.

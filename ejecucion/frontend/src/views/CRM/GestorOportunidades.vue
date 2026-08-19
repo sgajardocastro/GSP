@@ -407,311 +407,311 @@
         </div>
 
       <!-- SUB-TAB 2: PESTAÑA C - ASIGNACIÓN DE RECURSOS (OT) (HABILITADA CONDICIONALMENTE TRAS APROBACIÓN) -->
-      <div v-if="operacionesSubTab === 'asignacion'" class="space-y-6">
-        <div v-if="isAsignacionConfirmada" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center text-xs text-amber-300 font-bold mb-4">
+      <div v-if="operacionesSubTab === 'asignacion'" class="space-y-3">
+        <div v-if="isAsignacionConfirmada" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 flex justify-between items-center text-xs text-amber-300 font-bold mb-2">
           <span class="flex items-center gap-2">
             <span>🔒</span> Etapa Concluida y Aprobada (Solo Lectura) — Las asignaciones de la OT fueron confirmadas.
           </span>
           <span class="text-[10px] text-slate-400 font-normal">Para sustituciones por falla o adiciones de flota, utiliza el Panel de Excepciones en Sub-tab 5 Preparación de Salida.</span>
         </div>
-        <div :class="{ 'pointer-events-none opacity-80': isAsignacionConfirmada }" class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
-          <div class="border-b border-white/10 pb-3 flex flex-wrap justify-between items-center gap-3">
-            <div>
-              <span class="text-sm font-bold text-emerald-400 uppercase tracking-wider block flex items-center gap-2">
-                🚜 Pestaña C: Asignación de Recursos Técnicos & Humanos (OT)
+
+        <div :class="{ 'pointer-events-none opacity-80': isAsignacionConfirmada }" class="bg-[#050810] border border-white/10 rounded-xl p-3 space-y-3">
+          
+          <!-- TOOLBAR SUPERIOR COMPACTA (TÍTULO + TIEMPOS GLOBALES + ESTADO EN 1 SOLA LÍNEA) -->
+          <div class="bg-[#0a0f1e] p-2.5 rounded-lg border border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                🚜 Asignación de Recursos OT
               </span>
-              <p class="text-[11px] text-slate-400 mt-0.5">
-                Asignación de flota principal, equipos de apoyo, tripulación y aparejos.
-              </p>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase">
+                Aprobado
+              </span>
             </div>
-            <span class="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-md font-mono font-bold uppercase">
-              Requerimiento Aprobado
-            </span>
+
+            <!-- Programación de Tiempos Planificados (Inline) -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1">
+                <span class="text-xs text-slate-300 font-semibold">Salida Base:</span>
+                <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
+                <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
+              </div>
+              <span class="text-slate-500 font-bold text-xs">➔</span>
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1">
+                <span class="text-xs text-slate-300 font-semibold">Término Faena:</span>
+                <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
+                <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
+              </div>
+              <button @click="propagarFechasPlanificadas" type="button" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1.5" title="Propagar estas fechas a todos los equipos y personal">
+                <span>⚡ Propagar Fechas</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Referencia a Inspecciones Visita a Terreno (Diseño Compacto UX) -->
-          <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-4 space-y-3 pointer-events-auto">
-            <div class="flex justify-between items-center border-b border-blue-500/20 pb-2">
-              <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span>📋 Referencia: Última Visita a Terreno & Levantamiento</span>
-              </h4>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded font-mono font-bold">
-                  {{ visitasDelProyecto.length }} Inspección(es)
+          <!-- BLOQUE PRINCIPAL: 2 TABLAS LADO A LADO (FLOTA Y TRIPULACIÓN EN PRIMER TERCIO) -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            
+            <!-- COLUMNA IZQUIERDA: 1. FLOTA & EQUIPOS -->
+            <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden flex flex-col">
+              <div class="bg-white/[0.03] px-3 py-2 border-b border-white/10 flex justify-between items-center">
+                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  🚜 1. Flota & Equipos (Principales y Apoyo)
                 </span>
-                <button v-if="visitasDelProyecto.length > 1" @click="mostrarHistorialVisitasModal = !mostrarHistorialVisitasModal" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded font-bold transition-colors flex items-center gap-1 cursor-pointer pointer-events-auto">
-                  <span>📜 {{ mostrarHistorialVisitasModal ? 'Ocultar Historial' : 'Ver Historial Anterior (' + (visitasDelProyecto.length - 1) + ')' }}</span>
+                <button @click="agregarEquipoAdicional" type="button" class="text-[11px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                  + Añadir Apoyo
                 </button>
               </div>
-            </div>
-            
-            <!-- Última Visita Destacada (Compacta & Fina) -->
-            <div v-if="visitasDelProyecto.length > 0" class="space-y-2">
-              <div class="bg-[#050810] p-3 rounded-lg border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div class="flex items-center gap-3">
-                  <span class="text-lg">📋</span>
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-bold text-white text-xs">Visita #{{ visitasDelProyecto[0].id_survey }}</span>
-                      <span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.2 rounded font-bold uppercase">
-                        {{ visitasDelProyecto[0].estado_srv || 'Realizada' }}
-                      </span>
-                    </div>
-                    <span class="text-[11px] text-slate-400 font-medium block truncate max-w-xs">{{ visitasDelProyecto[0].body_exec?.nombre_obra || visitasDelProyecto[0].body_exec?.obra_nombre || siteVisit.obra_nombre || 'Obra Terreno' }}</span>
-                  </div>
-                </div>
 
-                <div class="flex items-center gap-3 ml-auto">
-                  <span class="text-[11px] text-slate-300 font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
-                    📅 {{ visitasDelProyecto[0].fecha_plan_ini ? new Date(visitasDelProyecto[0].fecha_plan_ini).toLocaleDateString() : 'S/F' }}
-                  </span>
-                  <a :href="getSurveyReportUrl(visitasDelProyecto[0].id_survey)" target="_blank" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/30 font-bold px-3 py-1.5 text-xs rounded transition-colors flex items-center gap-1 no-underline cursor-pointer pointer-events-auto">
-                    <span>👁️ Ver Web</span>
-                  </a>
-                  <a :href="getArchivoUrl(visitasDelProyecto[0].id_doc || visitasDelProyecto[0].id_survey)" target="_blank" class="inline-flex items-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 font-bold px-3 py-1.5 text-xs rounded transition-colors gap-1 no-underline cursor-pointer pointer-events-auto">
-                    <span>📄 Ver Reporte / PDF</span>
-                  </a>
-                </div>
-              </div>
+              <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-white/5 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
+                      <th class="p-2 w-[30%]">Requerimiento</th>
+                      <th class="p-2 w-[40%]">Equipo Asignado Real</th>
+                      <th class="p-2 w-[26%]">Ventana Planificada</th>
+                      <th class="p-2 w-[4%] text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5 font-mono">
+                    <!-- Equipos de la cotización -->
+                    <tr v-for="(line, idx) in linesValidas" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                      <td class="p-1.5 font-sans">
+                        <div class="font-bold text-white text-xs leading-tight truncate max-w-[170px]" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
+                          <span>•</span>
+                          <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                        </div>
+                      </td>
+                      <td class="p-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo --</option>
+                            <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
+                            </option>
+                          </select>
+                          <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este equipo">🟢 VIG</button>
+                          <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este equipo">🟡 VNC</button>
+                          <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este equipo">🔴 VNC</button>
+                        </div>
+                      </td>
+                      <td class="p-1.5">
+                        <div class="grid grid-cols-2 gap-1.5 text-xs">
+                          <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-xs text-white font-mono [color-scheme:dark]" title="Inicio Plan" />
+                          <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-xs text-white font-mono [color-scheme:dark]" title="Fin Plan" />
+                        </div>
+                      </td>
+                      <td class="p-1.5 text-center text-slate-600 text-xs" title="Línea base requerida comercialmente">
+                        🔒
+                      </td>
+                    </tr>
 
-              <!-- Historial de Visitas Anteriores (Desplegable Acordeón) -->
-              <div v-if="mostrarHistorialVisitasModal" class="space-y-1.5 pt-2 border-t border-white/5 pointer-events-auto">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Inspecciones Previas Anteriores:</span>
-                <div v-for="v in visitasDelProyecto.slice(1)" :key="'st3-v-'+v.id_survey" class="flex justify-between items-center bg-black/40 px-3 py-2 rounded-lg border border-white/5 text-xs hover:bg-white/[0.02] transition-colors">
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-200">Visita #{{ v.id_survey }}</span>
-                    <span class="text-[9px] text-slate-400 font-mono">({{ v.estado_srv || 'Realizada' }})</span>
-                    <span class="text-[10px] text-slate-400"> - {{ v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || 'Obra' }}</span>
-                  </div>
-                  <div class="flex gap-2 items-center">
-                    <span class="text-[10px] text-slate-400 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</span>
-                    <a :href="getSurveyReportUrl(v.id_survey)" target="_blank" class="bg-amber-500/10 hover:bg-amber-500/30 text-amber-300 px-2 py-0.5 text-[10px] rounded border border-amber-500/20 transition-colors no-underline cursor-pointer pointer-events-auto">
-                      Ver Web
-                    </a>
-                    <a :href="getArchivoUrl(v.id_doc || v.id_survey)" target="_blank" class="inline-flex items-center bg-blue-500/10 hover:bg-blue-500/30 text-blue-300 px-2 py-0.5 text-[10px] rounded border border-blue-500/20 transition-colors no-underline cursor-pointer pointer-events-auto">
-                      Ver Reporte / PDF
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-xs text-slate-400 italic">
-              Sin inspecciones previas registradas para este proyecto. Datos tomados del formulario base de preventa.
-            </div>
-          </div>
-
-          <!-- Programación de Tiempos Planificados (Barra Compacta 1 Fila) -->
-          <div class="bg-[#0a0f1e] p-3 rounded-lg border border-white/10 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">⏱️ Tiempos Operacionales:</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-3 text-xs">
-              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2 py-1">
-                <span class="text-[10px] text-slate-400 font-semibold">Salida Base:</span>
-                <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark]" />
-                <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
-              </div>
-              <span class="text-slate-500 font-bold">➔</span>
-              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2 py-1">
-                <span class="text-[10px] text-slate-400 font-semibold">Término Faena:</span>
-                <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark]" />
-                <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
-              </div>
-              <button @click="propagarFechasPlanificadas" type="button" class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Propagar estas fechas a todos los equipos y personal">
-                <span>⚡ Propagar a Recursos</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- DATAGRID 1: FLOTA & EQUIPOS OPERACIONALES -->
-          <div class="bg-[#050810] border border-white/10 rounded-lg overflow-hidden">
-            <div class="bg-[#080d1a] px-3 py-2 border-b border-white/10 flex justify-between items-center">
-              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                🚜 1. Flota & Equipos Operacionales (Principales y Apoyo)
-              </span>
-              <button @click="agregarEquipoAdicional" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
-                + Añadir Equipo Apoyo
-              </button>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wider border-b border-white/10">
-                    <th class="p-2 w-[28%]">Requerimiento Comercial</th>
-                    <th class="p-2 w-[40%]">Equipo Asignado Real</th>
-                    <th class="p-2 w-[14%]">Inicio Plan</th>
-                    <th class="p-2 w-[14%]">Fin Plan</th>
-                    <th class="p-2 w-[4%] text-center"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5 font-mono">
-                  <!-- Equipos de la cotización -->
-                  <tr v-for="(line, idx) in linesValidas" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
-                    <td class="p-1.5 font-sans">
-                      <div class="font-bold text-white text-xs leading-tight truncate max-w-xs">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                      <div class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                        <span class="text-amber-400/90 font-mono font-bold">{{ line.tipo }}</span>
-                        <span>•</span>
-                        <span>{{ line.cantidad }} {{ line.unidad }}</span>
-                      </div>
-                    </td>
-                    <td class="p-1.5">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo --</option>
-                          <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                    <!-- Equipos Extra de Apoyo -->
+                    <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] bg-blue-500/[0.02] transition-colors">
+                      <td class="p-1.5 font-sans">
+                        <span class="text-xs font-bold text-blue-300">Equipo Apoyo / Escolta</span>
+                        <span class="text-[10px] text-blue-400/80 block">Adicional</span>
+                      </td>
+                      <td class="p-1.5">
+                        <select v-model="operacionesAssignment.equipos_extra[idx]" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo de Apoyo --</option>
+                          <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                             {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
                           </option>
                         </select>
-                        <span v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟢 VIG</span>
-                        <span v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟡 VNC</span>
-                        <span v-else-if="line.equipo_asignado_id" class="bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🔴 VNC</span>
-                      </div>
-                    </td>
-                    <td class="p-1.5">
-                      <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
-                    </td>
-                    <td class="p-1.5">
-                      <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
-                    </td>
-                    <td class="p-1.5 text-center text-slate-600 text-xs" title="Línea base requerida comercialmente">
-                      🔒
-                    </td>
-                  </tr>
-
-                  <!-- Equipos Extra de Apoyo -->
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] bg-blue-500/[0.02] transition-colors">
-                    <td class="p-1.5 font-sans">
-                      <span class="text-xs font-bold text-blue-300">Equipo de Apoyo / Escolta</span>
-                      <span class="text-[9px] text-blue-400/70 block">Adicional Operacional</span>
-                    </td>
-                    <td class="p-1.5">
-                      <select v-model="operacionesAssignment.equipos_extra[idx]" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400">
-                        <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo de Apoyo / Camión / Escolta --</option>
-                        <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                          {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
-                        </option>
-                      </select>
-                    </td>
-                    <td class="p-1.5 text-[10px] text-slate-400 font-sans" colspan="2">
-                      <span>Sincronizado con tiempo global</span>
-                    </td>
-                    <td class="p-1.5 text-center">
-                      <button @click="operacionesAssignment.equipos_extra.splice(idx, 1); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar equipo de apoyo">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- DATAGRID 2: TRIPULACIÓN & PERSONAL OPERATIVO -->
-          <div class="bg-[#050810] border border-white/10 rounded-lg overflow-hidden">
-            <div class="bg-[#080d1a] px-3 py-2 border-b border-white/10 flex justify-between items-center">
-              <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                👷 2. Tripulación & Personal Asignado
-              </span>
-              <button @click="agregarTripulante" type="button" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
-                + Añadir Tripulante
-              </button>
+                      </td>
+                      <td class="p-1.5 text-[11px] text-slate-400 font-sans">
+                        <span>Sincronizado global</span>
+                      </td>
+                      <td class="p-1.5 text-center">
+                        <button @click="operacionesAssignment.equipos_extra.splice(idx, 1); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar equipo de apoyo">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wider border-b border-white/10">
-                    <th class="p-2 w-[28%]">Cargo Operacional</th>
-                    <th class="p-2 w-[40%]">Personal Asignado</th>
-                    <th class="p-2 w-[14%]">Inicio Plan</th>
-                    <th class="p-2 w-[14%]">Fin Plan</th>
-                    <th class="p-2 w-[4%] text-center"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5 font-mono">
-                  <tr v-for="(t, idx) in tripulacionAsignada" :key="'trip-'+idx" class="hover:bg-white/[0.02] transition-colors">
-                    <td class="p-1.5">
-                      <select v-model="t.cargo" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50">
-                        <option value="Operador Grúa" class="bg-[#0a0f1e] text-white">Operador Grúa</option>
-                        <option value="Operador Camión Pluma" class="bg-[#0a0f1e] text-white">Operador Camión Pluma</option>
-                        <option value="Rigger / Señalero" class="bg-[#0a0f1e] text-white">Rigger / Señalero</option>
-                        <option value="Chofer Cama Baja" class="bg-[#0a0f1e] text-white">Chofer Cama Baja</option>
-                        <option value="Escolta / Guía" class="bg-[#0a0f1e] text-white">Escolta / Guía</option>
-                        <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
-                      </select>
-                    </td>
-                    <td class="p-1.5">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t); marcarDirtyAsignacion()" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Persona --</option>
-                          <option v-for="u in getUsuariosPorCargo(t.cargo)" :key="u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                            {{ u.nombre_user || u.name_user }}
-                          </option>
+            <!-- COLUMNA DERECHA: 2. TRIPULACIÓN & PERSONAL -->
+            <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden flex flex-col">
+              <div class="bg-white/[0.03] px-3 py-2 border-b border-white/10 flex justify-between items-center">
+                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  👷 2. Tripulación & Personal Asignado
+                </span>
+                <button @click="agregarTripulante" type="button" class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                  + Añadir Tripulante
+                </button>
+              </div>
+
+              <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-white/5 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
+                      <th class="p-2 w-[30%]">Cargo Operacional</th>
+                      <th class="p-2 w-[40%]">Personal Asignado</th>
+                      <th class="p-2 w-[26%]">Ventana Planificada</th>
+                      <th class="p-2 w-[4%] text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5 font-mono">
+                    <tr v-for="(t, idx) in tripulacionAsignada" :key="'trip-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                      <td class="p-1.5 font-sans">
+                        <select v-model="t.cargo" :disabled="Boolean(t.requerimiento || t.is_linea_base)" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50 truncate" :class="{ 'opacity-85 cursor-not-allowed': t.requerimiento || t.is_linea_base }">
+                          <option value="Operador Grúa" class="bg-[#0a0f1e] text-white">Operador Grúa</option>
+                          <option value="Operador Camión Pluma" class="bg-[#0a0f1e] text-white">Operador Camión Pluma</option>
+                          <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger</option>
+                          <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
+                          <option value="Chofer Cama Baja" class="bg-[#0a0f1e] text-white">Chofer Cama Baja</option>
+                          <option value="Escolta / Guía" class="bg-[#0a0f1e] text-white">Escolta / Guía</option>
+                          <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
                         </select>
-                        <span v-if="t.semaforo === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟢 VIG</span>
-                        <span v-else-if="t.semaforo === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🟡 VNC</span>
-                        <span v-else class="bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold font-sans">🔴 VNC</span>
-                      </div>
-                    </td>
-                    <td class="p-1.5">
-                      <input type="date" v-model="t.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
-                    </td>
-                    <td class="p-1.5">
-                      <input type="date" v-model="t.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-[11px] text-white font-mono [color-scheme:dark]" />
-                    </td>
-                    <td class="p-1.5 text-center">
-                      <button @click="eliminarTripulante(idx); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar tripulante">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                        <div v-if="t.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-0.5 truncate" :title="t.requerimiento">
+                          Req: {{ t.requerimiento }}
+                        </div>
+                      </td>
+                      <td class="p-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <select v-model="t.id_user" @change="actualizarSemaforoTripulante(t); marcarDirtyAsignacion()" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Persona --</option>
+                            <optgroup v-if="getUsuariosAgrupados(t.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados(t.cargo).sugeridos" :key="'sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                              </option>
+                            </optgroup>
+                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados(t.cargo).otros" :key="'otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                              </option>
+                            </optgroup>
+                          </select>
+                          <template v-if="t.id_user">
+                            <button type="button" v-if="t.semaforo === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', t)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este trabajador">🟢 VIG</button>
+                            <button type="button" v-else-if="t.semaforo === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', t)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este trabajador">🟡 VNC</button>
+                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', t)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este trabajador">🔴 VNC</button>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="p-1.5">
+                        <div class="grid grid-cols-2 gap-1.5 text-xs">
+                          <input type="date" v-model="t.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-xs text-white font-mono [color-scheme:dark]" title="Inicio Plan" />
+                          <input type="date" v-model="t.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-xs text-white font-mono [color-scheme:dark]" title="Fin Plan" />
+                        </div>
+                      </td>
+                      <td class="p-1.5 text-center text-xs">
+                        <span v-if="t.requerimiento || t.is_linea_base" class="text-slate-600 select-none cursor-help" title="Línea base requerida comercialmente (Inmutable)">
+                          🔒
+                        </span>
+                        <button v-else @click="eliminarTripulante(idx); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar tripulante adicional">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- CHECKLIST 3: APAREJOS E IMPLEMENTOS DE IZAJE (GRID 4 COLUMNAS COMPACTO) -->
-          <div class="bg-[#050810] border border-white/10 rounded-lg p-3 space-y-2">
-            <div class="flex justify-between items-center border-b border-white/5 pb-2">
-              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                ⛓️ 3. Matriz de Aparejos & Implementos de Izaje (Checklist Faena)
-              </span>
-              <span class="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono">aparejos_solicitados_json</span>
-            </div>
-
-            <template v-if="operacionesAssignment.implementos_survey && operacionesAssignment.implementos_survey.length > 0">
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2 bg-[#0a0f1e] rounded border transition-colors flex flex-col justify-between" :class="item.requerido ? 'border-amber-500/40 bg-amber-500/[0.03]' : 'border-white/5 opacity-70 hover:opacity-100'">
-                  <div class="flex items-center justify-between gap-1.5 mb-1">
-                    <label class="flex items-center gap-1.5 text-[11px] font-bold cursor-pointer select-none truncate" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
-                      <input type="checkbox" v-model="item.requerido" class="accent-amber-500 w-3.5 h-3.5 rounded" />
-                      <span class="truncate">{{ item.label }}</span>
-                    </label>
-                    <span v-if="item.requerido" class="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-bold">REQ</span>
+          <!-- BLOQUE INFERIOR: REFERENCIA VISITA A TERRENO + MATRIZ DE APAREJOS LADO A LADO -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            
+            <!-- COLUMNA IZQUIERDA: REFERENCIA VISITA A TERRENO & OBSERVACIONES -->
+            <div class="space-y-3">
+              <!-- Referencia Visita a Terreno (Compacta) -->
+              <div class="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg pointer-events-auto">
+                <div class="flex justify-between items-center border-b border-blue-500/20 pb-1.5 mb-2">
+                  <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>📋 Referencia: Levantamiento Visita a Terreno</span>
+                  </h4>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded font-mono font-bold">
+                      {{ visitasDelProyecto.length }} Inspección(es)
+                    </span>
+                    <button v-if="visitasDelProyecto.length > 1" @click="mostrarHistorialVisitasModal = !mostrarHistorialVisitasModal" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer pointer-events-auto">
+                      📜 {{ mostrarHistorialVisitasModal ? 'Ocultar Historial' : 'Historial (' + (visitasDelProyecto.length - 1) + ')' }}
+                    </button>
                   </div>
-                  <input type="text" v-model="item.detalle" placeholder="Capacidad / Cant / Largo..." class="w-full bg-black/40 border border-white/10 rounded px-1.5 py-0.5 text-[10px] text-white outline-none focus:border-amber-500/50 font-mono" />
+                </div>
+                
+                <div v-if="visitasDelProyecto.length > 0" class="space-y-2">
+                  <div class="bg-[#050810] p-2 rounded border border-white/5 flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-white text-xs">Visita #{{ visitasDelProyecto[0].id_survey }}</span>
+                      <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold uppercase">
+                        {{ visitasDelProyecto[0].estado_srv || 'Realizada' }}
+                      </span>
+                      <span class="text-xs text-slate-300 font-medium truncate max-w-[150px]">{{ visitasDelProyecto[0].body_exec?.nombre_obra || visitasDelProyecto[0].body_exec?.obra_nombre || siteVisit.obra_nombre || 'Obra Terreno' }}</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 ml-auto">
+                      <span class="text-xs text-slate-200 font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 font-bold">
+                        📅 {{ visitasDelProyecto[0].fecha_plan_ini ? new Date(visitasDelProyecto[0].fecha_plan_ini).toLocaleDateString() : 'S/F' }}
+                      </span>
+                      <a :href="getSurveyReportUrl(visitasDelProyecto[0].id_survey)" target="_blank" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/30 font-bold px-2.5 py-1 text-xs rounded transition-colors no-underline cursor-pointer pointer-events-auto">
+                        👁️ Ver Web
+                      </a>
+                      <a :href="getArchivoUrl(visitasDelProyecto[0].id_doc || visitasDelProyecto[0].id_survey)" target="_blank" class="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 font-bold px-2.5 py-1 text-xs rounded transition-colors no-underline cursor-pointer pointer-events-auto">
+                        📄 Reporte PDF
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Historial desplegable -->
+                  <div v-if="mostrarHistorialVisitasModal" class="space-y-1 pt-1.5 border-t border-white/5 pointer-events-auto">
+                    <div v-for="v in visitasDelProyecto.slice(1)" :key="'st3-v-'+v.id_survey" class="flex justify-between items-center bg-black/40 px-2 py-1 rounded border border-white/5 text-xs">
+                      <span class="text-slate-200 font-medium">Visita #{{ v.id_survey }} ({{ v.estado_srv || 'Realizada' }})</span>
+                      <div class="flex gap-2 items-center">
+                        <a :href="getSurveyReportUrl(v.id_survey)" target="_blank" class="text-amber-400 text-xs hover:underline pointer-events-auto font-bold">Web</a>
+                        <span class="text-slate-600">|</span>
+                        <a :href="getArchivoUrl(v.id_doc || v.id_survey)" target="_blank" class="text-blue-400 text-xs hover:underline pointer-events-auto font-bold">PDF</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-xs text-slate-400 italic">
+                  Sin inspecciones previas registradas para este proyecto.
                 </div>
               </div>
-            </template>
-            <div v-else class="text-xs text-slate-400 italic">
-              Sin implementos registrados en la visita a terreno.
-            </div>
-          </div>
 
-          <!-- Bloque Observaciones libres de Operaciones -->
-          <div class="bg-[#050810] border border-white/10 p-3 rounded-lg space-y-1.5">
-            <label class="block text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-              💬 Observaciones / Instrucciones Operativas de Faena
-            </label>
-            <textarea 
-              v-model="operacionesAssignment.observaciones_operaciones" 
-              @input="marcarDirtyAsignacion"
-              rows="2" 
-              placeholder="Ingrese instrucciones o comentarios operativos del coordinador para la preparación de faena..."
-              class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
-            ></textarea>
+              <!-- Observaciones Operativas Compactas -->
+              <div class="bg-[#080d1a] border border-white/10 p-2.5 rounded-lg space-y-1">
+                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">
+                  💬 Instrucciones / Observaciones Operativas de Faena
+                </label>
+                <textarea 
+                  v-model="operacionesAssignment.observaciones_operaciones" 
+                  @input="marcarDirtyAsignacion"
+                  rows="2" 
+                  placeholder="Instrucciones operativas del coordinador para la preparación y despacho..."
+                  class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: 3. MATRIZ DE APAREJOS (CHECKLIST COMPACTO) -->
+            <div class="bg-[#080d1a] border border-white/10 rounded-lg p-2.5 space-y-2 flex flex-col justify-between">
+              <div class="flex justify-between items-center border-b border-white/5 pb-1.5">
+                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  ⛓️ 3. Matriz de Aparejos & Implementos de Izaje
+                </span>
+                <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono font-bold">aparejos_solicitados_json</span>
+              </div>
+
+              <div class="grid grid-cols-2 xl:grid-cols-4 gap-2 flex-1">
+                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2 bg-[#0a0f1e] rounded-lg border transition-all flex flex-col justify-between" :class="item.requerido ? 'border-amber-500/50 bg-amber-500/[0.05] shadow-sm' : 'border-white/5 opacity-70 hover:opacity-100'">
+                  <div class="flex items-center justify-between gap-1 mb-1">
+                    <label class="flex items-center gap-1.5 text-xs font-bold cursor-pointer select-none truncate" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
+                      <input type="checkbox" v-model="item.requerido" @change="marcarDirtyAsignacion" class="accent-amber-500 w-3.5 h-3.5 rounded cursor-pointer" />
+                      <span class="truncate" :title="item.label">{{ item.label }}</span>
+                    </label>
+                    <span v-if="item.requerido" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded font-bold font-mono">REQ</span>
+                  </div>
+                  <input type="text" v-model="item.detalle" @input="marcarDirtyAsignacion" placeholder="Cap / Cant / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/60 font-mono transition-colors" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -809,8 +809,7 @@
                 <div class="space-y-3 mt-3">
                   <div v-for="eqId in equiposAsignadosLista" :key="'dos-eq-card-'+eqId" class="bg-black/40 p-3 rounded-lg border border-white/5 space-y-2">
                     <div class="flex justify-between items-center text-xs">
-                      <span class="font-bold text-white truncate">{{ getNombreEquipoAsignado(eqId) }}</span>
-                      <span class="text-slate-400 font-mono text-[10px] flex-shrink-0">PPU: {{ getPatenteEquipoAsignado(eqId) }}</span>
+                      <span class="font-bold text-white font-mono truncate">{{ getNombreEquipoAsignado(eqId) }}</span>
                     </div>
                     <div v-if="opportunity.acreditacion_docs?.equipos && opportunity.acreditacion_docs.equipos.length > 0" class="space-y-1.5 pl-2 border-l-2 border-amber-500/30">
                       <div v-for="(doc, dIdx) in opportunity.acreditacion_docs.equipos" :key="'dos-eqp-'+eqId+'-'+dIdx" class="flex justify-between items-center text-xs bg-white/5 p-2 rounded">
@@ -1060,33 +1059,134 @@
                   🚜 2. Inspección Patio
                 </span>
                 <div class="flex items-center gap-2">
-                  <button @click="reiniciarInspeccionesPatio" type="button" class="text-[10px] bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1" title="Limpiar inspecciones creadas para volver a asignarlas">
-                    🧹 Limpiar
-                  </button>
-                  <button @click="sincronizarInspeccionesPWA" type="button" :disabled="sincronizandoInspecciones" class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1">
-                    <span v-if="sincronizandoInspecciones" class="animate-spin">🔄</span>
-                    <span v-else>🔄 Sync Terreno</span>
+                  <button 
+                    @click="sincronizarInspeccionesPWA" 
+                    type="button" 
+                    :disabled="sincronizandoInspecciones" 
+                    class="w-7 h-7 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg font-bold transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                    title="Refrescar estado de inspecciones de patio en terreno"
+                  >
+                    <svg 
+                      class="w-4 h-4" 
+                      :class="sincronizandoInspecciones ? 'animate-spin' : ''" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
                   </button>
                 </div>
               </div>
 
-              <!-- Lista de Tarjetas de Inspección por Equipo (Auto-adaptable con max-h-[65vh]) -->
-              <div class="space-y-3 flex-1 overflow-y-auto max-h-[65vh] pr-1">
-                <div v-for="eqId in equiposAsignadosLista" :key="'insp-eq-'+eqId" class="bg-[#050810] p-3 rounded-xl border border-white/10 space-y-3">
-                  <div class="flex justify-between items-center text-xs border-b border-white/5 pb-2">
-                    <span class="font-bold text-white truncate flex items-center gap-1.5">
-                      <span>🚜</span>
-                      {{ getNombreEquipoAsignado(eqId) }}
-                    </span>
-                    <span class="text-slate-400 font-mono text-[10px] bg-white/5 px-1.5 py-0.5 rounded">
-                      PPU: {{ getPatenteEquipoAsignado(eqId) }}
-                    </span>
+              <!-- Lista de Tarjetas de Inspección por Equipo (Formato Acordeón Compacto) -->
+              <div class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh] pr-1">
+                <div 
+                  v-for="eqId in equiposAsignadosLista" 
+                  :key="'insp-eq-'+eqId" 
+                  class="bg-[#050810] rounded-xl border transition-all overflow-hidden"
+                  :class="isEquipoPatioExpanded(eqId) ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-white/10 hover:border-white/20'"
+                >
+                  <!-- Cabecera Resumen Compacta (Fila de Control) -->
+                  <div 
+                    @click="toggleExpandEquipoPatio(eqId)"
+                    class="flex items-center justify-between p-3 cursor-pointer hover:bg-white/[0.03] transition-colors select-none"
+                    :class="isEquipoPatioExpanded(eqId) ? 'border-b border-white/10 bg-white/[0.02]' : ''"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                      <span class="text-base flex-shrink-0">🚜</span>
+                      <div class="min-w-0">
+                        <div class="font-bold text-white font-mono text-xs truncate" :title="getNombreEquipoAsignado(eqId)">
+                          {{ getNombreEquipoAsignado(eqId) }}
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                          <!-- Badge de Estado de Inspección -->
+                          <span 
+                            class="text-[9px] px-2 py-0.5 rounded font-bold uppercase border tracking-wider flex items-center gap-1"
+                            :class="{
+                              'bg-emerald-500/10 text-emerald-400 border-emerald-500/30': getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK',
+                              'bg-red-500/10 text-red-400 border-red-500/30': getEstadoInspeccionEquipo(eqId) === 'RECHAZADA',
+                              'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse': getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION',
+                              'bg-amber-500/10 text-amber-400 border-amber-500/30': getEstadoInspeccionEquipo(eqId) === 'PLANIFICADA',
+                              'bg-slate-500/10 text-slate-400 border-slate-500/20': getEstadoInspeccionEquipo(eqId) === 'NO_ASIGNADA'
+                            }"
+                          >
+                            <span v-if="getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK'">🟢 Ejecutada OK</span>
+                            <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'RECHAZADA'">🔴 Rechazada / Taller</span>
+                            <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION'">🔵 En Ejecución</span>
+                            <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'PLANIFICADA'">🟡 Planificada</span>
+                            <span v-else>⚪ No Asignada</span>
+                          </span>
+
+                          <!-- Badge de Acreditación Oficial (Idéntico a Asignación) -->
+                          <button 
+                            type="button" 
+                            v-if="getSemaforoEquipo(eqId) === 'GREEN'" 
+                            @click.stop="abrirDetalleAcreditacion('equipo', eqId)" 
+                            class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" 
+                            title="Ver detalle de acreditaciones de este equipo"
+                          >
+                            🟢 VIG
+                          </button>
+                          <button 
+                            type="button" 
+                            v-else-if="getSemaforoEquipo(eqId) === 'YELLOW'" 
+                            @click.stop="abrirDetalleAcreditacion('equipo', eqId)" 
+                            class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" 
+                            title="Ver detalle de acreditaciones de este equipo"
+                          >
+                            🟡 VNC
+                          </button>
+                          <button 
+                            type="button" 
+                            v-else 
+                            @click.stop="abrirDetalleAcreditacion('equipo', eqId)" 
+                            class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" 
+                            title="Ver detalle de acreditaciones de este equipo"
+                          >
+                            🔴 VNC
+                          </button>
+
+                          <span v-if="getInspeccionEquipo(eqId)?.id_survey" class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">
+                            #{{ getInspeccionEquipo(eqId).id_survey }}
+                          </span>
+
+                          <span v-if="getInspeccionEquipo(eqId)?.fecha_inspeccion_plan" class="text-[9px] text-slate-400 font-mono">
+                            📅 {{ getInspeccionEquipo(eqId).fecha_inspeccion_plan }} {{ getInspeccionEquipo(eqId).hora_inspeccion_plan || '' }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <!-- Botón Ver PDF si está ejecutada -->
+                      <button 
+                        v-if="getInspeccionEquipo(eqId)?.patio_checklist_completado"
+                        @click.stop="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)"
+                        type="button"
+                        class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-1 rounded font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Ver Reporte PDF / Web de la Inspección"
+                      >
+                        📄 Ver PDF
+                      </button>
+
+                      <!-- Chevron Desplegable -->
+                      <div 
+                        class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-transform duration-200"
+                        :class="isEquipoPatioExpanded(eqId) ? 'rotate-180 text-amber-400 bg-amber-500/10' : ''"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </div>
+                    </div>
                   </div>
 
-                  <div class="space-y-2 text-xs">
+                  <!-- Cuerpo Expandido (Formulario al abrir el Chevron) -->
+                  <div v-show="isEquipoPatioExpanded(eqId)" class="p-3.5 space-y-3 bg-[#0a0f1e]/60 text-xs">
                     <div>
                       <label class="block text-[10px] text-slate-400 font-semibold mb-1">Jefe de Patio Asignado *</label>
-                      <select v-model="getInspeccionEquipo(eqId).jefe_patio_id" :disabled="getInspeccionEquipo(eqId).patio_checklist_completado" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
+                      <select v-model="getInspeccionEquipo(eqId).jefe_patio_id" :disabled="getInspeccionEquipo(eqId).patio_programado" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed">
                         <option value="">-- Seleccionar Jefe de Patio --</option>
                         <option v-for="u in usuariosEnroladosFes" :key="u.id_user" :value="u.id_user">
                           {{ u.nombre_user || u.name_frst }} ({{ u.email }})
@@ -1097,66 +1197,58 @@
                     <div>
                       <label class="block text-[10px] text-slate-400 font-semibold mb-1">Fecha & Hora Programada *</label>
                       <div class="grid grid-cols-2 gap-2">
-                        <input type="date" v-model="getInspeccionEquipo(eqId).fecha_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_checklist_completado" class="bg-[#0a0f1e] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]" />
-                        <input type="time" v-model="getInspeccionEquipo(eqId).hora_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_checklist_completado" class="bg-[#0a0f1e] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]" />
+                        <input type="date" v-model="getInspeccionEquipo(eqId).fecha_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
+                        <input type="time" v-model="getInspeccionEquipo(eqId).hora_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                     </div>
-                  </div>
 
-                  <!-- Acreditación Delta & Excepciones de Patio -->
-                  <div class="space-y-2 pt-1 border-t border-white/5">
-                    <div class="flex justify-between items-center bg-[#0a0f1e] px-2.5 py-1.5 rounded-lg border border-white/5 text-[10px]">
-                      <span class="text-slate-400 font-medium">Acreditación Delta:</span>
-                      <span :class="evaluarAcreditacionDeltaEquipo(eqId).isOk ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'">
-                        {{ evaluarAcreditacionDeltaEquipo(eqId).isOk ? '🟢 Express (Documentos OK)' : '🔴 Pendiente (' + evaluarAcreditacionDeltaEquipo(eqId).missingCount + ' Faltante/s)' }}
-                      </span>
-                    </div>
-
-                    <div class="flex gap-2">
-                      <button @click="abrirModalExcepcionEquipo(eqId)" type="button" class="w-full py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[10px] font-bold transition-all flex items-center justify-center gap-1">
+                    <!-- Botón Sustitución por Falla Técnica -->
+                    <div class="pt-1 border-t border-white/5">
+                      <button @click="abrirModalExcepcionEquipo(eqId)" type="button" class="w-full py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
                         <span>🔄 Sustituir por Falla Técnica</span>
                       </button>
                     </div>
-                  </div>
 
-                  <!-- Estado del Survey para este equipo -->
-                  <div v-if="!getInspeccionEquipo(eqId)?.patio_programado" class="space-y-2">
-                    <div class="bg-[#0a0f1e] p-2 rounded text-center border border-white/5 text-[11px] text-slate-400">
-                      🔴 Inspección pendiente de agendamiento
-                    </div>
-                    <button 
-                      @click="programarInspeccionPatioEquipo(eqId)" 
-                      :disabled="!evaluarAcreditacionDeltaEquipo(eqId).isOk"
-                      :title="!evaluarAcreditacionDeltaEquipo(eqId).isOk ? '🔒 Complete la Acreditación Delta del equipo antes de agendar la inspección' : ''"
-                      class="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow"
-                    >
-                      🚀 Asignar Inspección
-                    </button>
-                  </div>
-
-                  <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado" class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30 space-y-2 text-xs">
-                    <div class="flex justify-between items-center">
-                      <span class="font-bold text-amber-400">🟡 Inspección Asignada a Terreno</span>
-                      <span class="text-[10px] text-slate-300">Asignado: {{ (usuariosEnroladosFes || []).find(u => u && u.id_user === getInspeccionEquipo(eqId)?.jefe_patio_id)?.nombre_user || 'Jefe Patio' }}</span>
-                    </div>
-                    <div class="flex gap-2">
-                      <button @click="confirmarInspeccionSalidaPatioEquipo(eqId)" class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-xs uppercase shadow">
-                        Confirmar Inspección 🟢
+                    <!-- Estado del Survey / Asignar Inspección -->
+                    <div v-if="!getInspeccionEquipo(eqId)?.patio_programado" class="space-y-2 pt-1">
+                      <div class="bg-[#050810] p-2 rounded text-center border border-white/5 text-[11px] text-slate-400">
+                        🔴 Inspección pendiente de agendamiento
+                      </div>
+                      <button 
+                        @click="programarInspeccionPatioEquipo(eqId)" 
+                        class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow cursor-pointer"
+                      >
+                        🚀 Asignar Inspección
                       </button>
-                      <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center gap-1">
+                    </div>
+
+                    <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado" class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30 space-y-2 text-xs">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <span class="font-bold text-amber-400 block">🟡 Inspección Asignada en Terreno</span>
+                          <span v-if="getInspeccionEquipo(eqId)?.id_survey" class="text-[10px] text-slate-300 font-mono font-bold">Survey ID: #{{ getInspeccionEquipo(eqId).id_survey }}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-300">Asignado: {{ (usuariosEnroladosFes || []).find(u => u && u.id_user === getInspeccionEquipo(eqId)?.jefe_patio_id)?.nombre_user || 'Jefe Patio' }}</span>
+                      </div>
+                      <div class="flex gap-2">
+                        <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
+                          👁️ Ver Inspección
+                        </button>
+                        <button @click="eliminarInspeccionEquipo(eqId)" class="py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Eliminar survey de la BD y reasignar">
+                          🗑️ Reasignar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-else class="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs">
+                      <div>
+                        <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme</span>
+                        <span class="text-[10px] text-slate-400 block">Checklist & Contrapesos OK</span>
+                      </div>
+                      <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1">
                         👁️ Ver Inspección
                       </button>
                     </div>
-                  </div>
-
-                  <div v-else class="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs">
-                    <div>
-                      <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme</span>
-                      <span class="text-[10px] text-slate-400 block">Checklist & Contrapesos OK</span>
-                    </div>
-                    <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1">
-                      👁️ Ver Inspección
-                    </button>
                   </div>
                 </div>
               </div>
@@ -2110,7 +2202,7 @@
           <!-- Personas -->
           <div class="space-y-1.5">
             <span class="text-[11px] font-bold text-amber-500 uppercase block border-b border-white/10 pb-1 mb-2">Personas</span>
-            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer" v-for="doc in ['Contrato', 'Anexo de obra', 'Anexo pacto horas extraordinarias', 'Cédula identidad', 'Licencia conducir', 'Certificado de antecedentes', 'Hoja vida conductor', 'Certificación', 'Examen ocupacional', 'examen psicosensotécnico', 'EPP', 'RIOHS', 'PTS', 'IRL', 'Registro de capacitación']" :key="'per-'+doc">
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer" v-for="doc in ['Contrato de trabajo', 'Anexo de obra', 'Anexo pacto horas extraordinarias', 'Cédula identidad', 'Licencia conducir', 'Certificado de antecedentes', 'Hoja vida conductor', 'Certificación', 'Examen ocupacional', 'examen psicosensotécnico', 'EPP', 'RIOHS', 'PTS', 'IRL', 'Registro de capacitación']" :key="'per-'+doc">
               <input type="checkbox" :value="doc" v-model="opportunity.acreditacion_docs.personas" class="accent-amber-500" />
               <span class="leading-tight">{{ doc }}</span>
             </label>
@@ -2456,6 +2548,71 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL POPUP: DETALLE DE ACREDITACIONES DE RECURSO (INSPECT-ON-CLICK / SPEC 16) -->
+  <div v-if="modalAcreditacionDetalle.visible" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm pointer-events-auto" @click.self="cerrarDetalleAcreditacion">
+    <div class="bg-[#0c1224] border border-white/20 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+      
+      <!-- Cabecera del Diálogo -->
+      <div class="px-5 py-4 border-b border-white/10 bg-[#080d1a] flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold shadow-inner" :class="modalAcreditacionDetalle.tipo === 'equipo' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'">
+            {{ modalAcreditacionDetalle.tipo === 'equipo' ? '🚜' : '👷' }}
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white leading-snug">{{ modalAcreditacionDetalle.titulo }}</h3>
+            <p class="text-xs text-slate-400 font-mono mt-0.5">{{ modalAcreditacionDetalle.subtitulo }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span v-if="modalAcreditacionDetalle.semaforo === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-bold">🟢 Habilitado</span>
+          <span v-else-if="modalAcreditacionDetalle.semaforo === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[11px] font-bold">🟡 Por Vencer (≤30d)</span>
+          <span v-else class="bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded text-[11px] font-bold">🔴 No Acreditado / Vencido</span>
+          <button @click="cerrarDetalleAcreditacion" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-sm font-bold ml-1">✕</button>
+        </div>
+      </div>
+
+      <!-- Cuerpo: Lista de Documentos Críticos -->
+      <div class="p-5 space-y-3 overflow-y-auto flex-1">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
+          <span>Matriz de Documentación Crítica</span>
+          <span class="font-mono text-[11px] text-amber-400">Regla: 🟡 ≤30 días / 🔴 Vencido</span>
+        </div>
+
+        <div class="space-y-2">
+          <div v-for="(doc, idx) in modalAcreditacionDetalle.docs" :key="'m-doc-'+idx" class="bg-[#060a14] border border-white/5 hover:border-white/15 p-3 rounded-xl flex items-center justify-between gap-3 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-base">📄</span>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white truncate">{{ doc.nombre }}</div>
+                <div class="text-xs text-slate-400 font-mono flex items-center gap-2 mt-1">
+                  <span>Vence: <strong class="text-slate-200">{{ doc.fecha_venc }}</strong></span>
+                  <span>•</span>
+                  <span :class="doc.estado === 'RED' ? 'text-red-400 font-bold' : (doc.estado === 'YELLOW' ? 'text-amber-400 font-bold' : 'text-emerald-400')">
+                    {{ doc.dias < 0 ? `Vencido hace ${Math.abs(doc.dias)} días` : (doc.dias <= 30 ? `Expira en ${doc.dias} días` : `Vigente (${doc.dias} días)`) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span v-if="doc.estado === 'GREEN'" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-bold">🟢 VIG</span>
+              <span v-else-if="doc.estado === 'YELLOW'" class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-bold">🟡 VNC</span>
+              <span v-else class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-[10px] font-bold">🔴 VNC</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie del Diálogo -->
+      <div class="px-5 py-3 border-t border-white/10 bg-[#080d1a] flex justify-between items-center text-xs">
+        <span class="text-[11px] text-slate-400 font-mono">Trazabilidad FES & Acreditaciones GSP</span>
+        <button @click="cerrarDetalleAcreditacion" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
@@ -2589,6 +2746,14 @@ const activeTab = ref('terreno')
 const topTab = ref('comercial') // 'comercial' | 'operaciones'
 const operacionesSubTab = ref('validacion') // 'validacion' | 'asignacion'
 const requerimientoAprobado = ref(false)
+
+watch(() => props.initialSubTab, (newTab) => {
+  if (newTab) {
+    topTab.value = 'operaciones'
+    operacionesSubTab.value = newTab
+  }
+}, { immediate: true })
+
 const isDirty = ref(false)
 const mostrarModalCliente = ref(false)
 const clienteAEditar = ref(null)
@@ -2654,50 +2819,33 @@ const ESTADOS_PROCESO = {
 }
 
 /**
- * Adapter Pattern: Traduce el estado relacional legacy (id_proyecto_estado) 
- * y la subtab de json_field a una Fase de Dominio inmutable.
+ * Fuente Canónica Única: id_proyecto_estado en tpry_proyecto (PostgreSQL).
  */
-const resolveFaseDeDominio = (estadoDb, subtabActiva, asignacionConfirmadaFlag) => {
+const resolveFaseDeDominio = (estadoDb) => {
   const dbState = parseInt(estadoDb) || 1;
-  
   if (dbState === 1) return ESTADOS_PROCESO.COTIZACION;
-  if (dbState === 2) return ESTADOS_PROCESO.PREP_COTIZACION;
-  if (dbState === 4 || dbState === 5) return ESTADOS_PROCESO.DESPLAZAMIENTO;
-  if (dbState === 6) return ESTADOS_PROCESO.NO_ASIGNADA;
+  if (dbState === 2) return ESTADOS_PROCESO.VALIDACION_DIFF;
+  if (dbState === 3) return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
+  if (dbState === 4) return ESTADOS_PROCESO.ACREDITACION;
+  if (dbState === 5) return ESTADOS_PROCESO.PREPARACION_PATIO;
+  if (dbState === 6) return ESTADOS_PROCESO.DESPLAZAMIENTO;
   if (dbState === 7) return ESTADOS_PROCESO.EN_FAENA;
-  if (dbState === 8) return ESTADOS_PROCESO.COMPLETADO;
-  
-  if (dbState === ESTADO_DB_OPERACIONES) {
-    if (asignacionConfirmadaFlag || subtabActiva === 'preparacion_salida') return ESTADOS_PROCESO.PREPARACION_PATIO;
-    if (subtabActiva === 'asignacion' || subtabActiva === 'acreditaciones') return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
-    return ESTADOS_PROCESO.VALIDACION_DIFF;
-  }
-  
-  return ESTADOS_PROCESO.COTIZACION; // fallback
+  if (dbState >= 8) return ESTADOS_PROCESO.COMPLETADO;
+  return ESTADOS_PROCESO.COTIZACION;
 };
 
 const isAsignacionConfirmada = computed(() => {
-  return asignacionConfirmada.value === true ||
-    rawEjecucionJson.value?.asignacion_confirmada === true ||
-    rawEjecucionJson.value?.subtab_activa === 'preparacion_salida' ||
-    rawEjecucionJson.value?.subtab_maxima === 'preparacion_salida' ||
-    Boolean(rawEjecucionJson.value?.preparacion_salida?.patio_programado)
+  const dbState = parseInt(opportunity.value?.id_proyecto_estado) || 1;
+  return dbState >= 4 || asignacionConfirmada.value === true;
 })
 
 const faseActual = computed(() => {
-  return resolveFaseDeDominio(
-    opportunity.value?.id_proyecto_estado, 
-    operacionesSubTab.value, 
-    isAsignacionConfirmada.value
-  );
+  return resolveFaseDeDominio(opportunity.value?.id_proyecto_estado);
 })
 
 const isRequerimientoAprobado = computed(() => {
-  return requerimientoAprobado.value === true ||
-    rawEjecucionJson.value?.decision === 'APROBADO' ||
-    rawEjecucionJson.value?.estado_requerimiento === 'APROBADO' ||
-    faseActual.value > ESTADOS_PROCESO.VALIDACION_DIFF ||
-    isAsignacionConfirmada.value
+  const dbState = parseInt(opportunity.value?.id_proyecto_estado) || 1;
+  return dbState >= 3 || requerimientoAprobado.value === true;
 })
 
 const isDirtyAsignacion = ref(false)
@@ -2746,13 +2894,34 @@ const guardarCambiosAsignacion = async () => {
 }
 
 const listaEquiposMaster = ref([
-  { id_equipo: 'CRN-01', nombre_equipo: 'Liebherr LTM 1220 (220 Ton)', patente: 'HW-8842', tipo: 'Grúa Telescópica', semaforo: 'GREEN', fecha_vencimiento_cert: '2026-08-10' },
-  { id_equipo: 'CRN-02', nombre_equipo: 'Tadano ATF 110G (110 Ton)', patente: 'GR-1029', tipo: 'Grúa Telescópica', semaforo: 'GREEN', fecha_vencimiento_cert: '2029-01-01' },
-  { id_equipo: 'CRN-03', nombre_equipo: 'Grove GMK 5250L (250 Ton)', patente: 'PL-9021', tipo: 'Grúa Telescópica', semaforo: 'YELLOW', fecha_vencimiento_cert: '2026-07-28' },
-  { id_equipo: 'CAM-01', nombre_equipo: 'Camión Pluma Palfinger 50T', patente: 'PK-5002', tipo: 'Camión Pluma', semaforo: 'GREEN', fecha_vencimiento_cert: '2028-12-12' },
-  { id_equipo: 'CAMA-01', nombre_equipo: 'Cama Baja 60 Toneladas', patente: 'XY-1234', tipo: 'Traslado', semaforo: 'GREEN', fecha_vencimiento_cert: '2026-08-01' },
-  { id_equipo: 'LIV-03', nombre_equipo: 'Camioneta Escolta 4x4', patente: 'HG-5533', tipo: 'Vehículo Menor', semaforo: 'GREEN', fecha_vencimiento_cert: '2027-11-15' }
+  { id_equipo: 1, nombre_equipo: 'Liebherr LTM 1220 (220 Ton)', modelo: 'LTM 1220', patente: 'HW-8842', tipo: 'Grúa Telescópica', semaforo: 'GREEN', fecha_vencimiento_cert: '2026-08-10' },
+  { id_equipo: 2, nombre_equipo: 'Tadano ATF 110G (110 Ton)', modelo: 'ATF 110G', patente: 'GR-1029', tipo: 'Grúa Telescópica', semaforo: 'GREEN', fecha_vencimiento_cert: '2029-01-01' },
+  { id_equipo: 3, nombre_equipo: 'Grove GMK 5250L (250 Ton)', modelo: 'GMK 5250L', patente: 'PL-9021', tipo: 'Grúa Telescópica', semaforo: 'YELLOW', fecha_vencimiento_cert: '2026-07-28' },
+  { id_equipo: 4, nombre_equipo: 'Camión Pluma Palfinger 50T', modelo: 'Palfinger 50T', patente: 'PK-5002', tipo: 'Camión Pluma', semaforo: 'GREEN', fecha_vencimiento_cert: '2028-12-12' },
+  { id_equipo: 5, nombre_equipo: 'Cama Baja 60 Toneladas', modelo: 'Cama Baja', patente: 'XY-1234', tipo: 'Traslado', semaforo: 'GREEN', fecha_vencimiento_cert: '2026-08-01' },
+  { id_equipo: 6, nombre_equipo: 'Camioneta Escolta 4x4', modelo: 'Escolta 4x4', patente: 'HG-5533', tipo: 'Vehículo Menor', semaforo: 'GREEN', fecha_vencimiento_cert: '2027-11-15' }
 ])
+
+const cargarListaEquiposMaster = async () => {
+  try {
+    const { data: res } = await apiAxios.get('/tequ-equipos')
+    const eqList = res?.data || res
+    if (Array.isArray(eqList) && eqList.length > 0) {
+      const mapeados = eqList.map(e => ({
+        ...e,
+        id_equipo: e.id_equipo || e.id,
+        nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
+        modelo: e.modelo || e.nombre_equipo || '',
+        patente: e.patente || e.ppu || 'S/P',
+        tipo: e.tipo_equipo || e.tipo || 'Maquinaria',
+        semaforo: e.estado === 'MANTENCION' ? 'RED' : 'GREEN'
+      }))
+      listaEquiposMaster.value = mapeados
+    }
+  } catch (err) {
+    console.warn('Error cargando flota de equipos:', err)
+  }
+}
 
 const isCertExpired = (dateString) => {
   if (!dateString) return false;
@@ -2760,8 +2929,32 @@ const isCertExpired = (dateString) => {
   return daysLeft < 30;
 }
 
-const getEquipoObj = (idOrPatente) => {
-  return listaEquiposMaster.value.find(eq => eq.id_equipo === idOrPatente || eq.patente === idOrPatente);
+const getEquipoObj = (idOrPatenteOrName) => {
+  if (!idOrPatenteOrName || idOrPatenteOrName === 'CRN-DEFAULT') return null
+  const str = String(idOrPatenteOrName).toLowerCase().trim()
+  const master = listaEquiposMaster.value || []
+
+  // 1. Coincidencia exacta por ID o Patente
+  let found = master.find(eq => 
+    String(eq.id_equipo).toLowerCase() === str || 
+    (eq.patente && eq.patente.toLowerCase().trim() === str)
+  )
+  if (found) return found
+
+  // 2. Coincidencia por Nombre Completo o Modelo
+  found = master.find(eq => 
+    (eq.nombre_equipo && eq.nombre_equipo.toLowerCase().trim() === str) ||
+    (eq.modelo && eq.modelo.toLowerCase().trim() === str)
+  )
+  if (found) return found
+
+  // 3. Coincidencia parcial semántica
+  found = master.find(eq => 
+    (eq.nombre_equipo && (eq.nombre_equipo.toLowerCase().includes(str) || str.includes(eq.nombre_equipo.toLowerCase()))) ||
+    (eq.modelo && (eq.modelo.toLowerCase().includes(str) || str.includes(eq.modelo.toLowerCase()))) ||
+    (eq.patente && str.includes(eq.patente.toLowerCase()))
+  )
+  return found || null
 }
 
 const equiposApoyoMaster = computed(() => {
@@ -2771,21 +2964,60 @@ const equiposApoyoMaster = computed(() => {
 const historialEnviousDossier = ref([])
 const tieneDocumentosVencidosOPendientes = computed(() => false)
 
+const isPersonalLine = (l) => {
+  if (!l) return false
+  const tipo = (l.tipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const sub = (l.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const desc = (l.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  
+  return tipo === 'PERSONAL CERTIFICADO' ||
+         tipo === 'PERSONAL' ||
+         tipo.includes('PERSONAL') ||
+         sub.includes('RIGGER') ||
+         sub.includes('PREVENCIONISTA') ||
+         sub.includes('OPERADOR') ||
+         sub.includes('SUPERVISOR') ||
+         desc.includes('RIGGER') ||
+         desc.includes('PREVENCIONISTA') ||
+         desc.includes('OPERADOR') ||
+         desc.includes('SUPERVISOR')
+}
+
+// 1. Flota & Equipos: Únicamente maquinaria, grúas y vehículos físicos
 const linesValidas = computed(() => {
   if (!lines.value || !Array.isArray(lines.value)) return []
-  return lines.value.filter(l => (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0) || l.equipo_asignado_id)
+  return lines.value.filter(l => {
+    const hasData = (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0) || l.equipo_asignado_id
+    return hasData && !isPersonalLine(l)
+  })
+})
+
+// 2. Personal Comercial: Requerimientos de personas vendidas en la cotización
+const linesPersonalValidas = computed(() => {
+  if (!lines.value || !Array.isArray(lines.value)) return []
+  return lines.value.filter(l => {
+    const hasData = (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0)
+    return hasData && isPersonalLine(l)
+  })
 })
 
 const getNombreEquipoAsignado = (eqId) => {
-  if (!eqId) return 'Grúa Principal GSP'
-  const eq = listaEquiposMaster.value.find(e => e.id_equipo === eqId || e.patente === eqId)
-  return eq ? (eq.nombre_equipo || eq.patente) : eqId
+  if (!eqId || eqId === 'CRN-DEFAULT') return 'Grúa Principal GSP'
+  const eq = getEquipoObj(eqId)
+  if (!eq) return String(eqId)
+  const patente = (eq.patente || eq.ppu || '').toUpperCase().trim()
+  const desc = (eq.nombre_equipo || `${eq.marca || ''} ${eq.modelo || ''}`.trim() || eq.tipo || '').toUpperCase().trim()
+  if (patente && desc) {
+    if (desc.startsWith(patente)) return desc
+    return `${patente} - ${desc}`
+  }
+  return desc || patente || String(eqId)
 }
 
 const getPatenteEquipoAsignado = (eqId) => {
-  if (!eqId) return 'S/P'
-  const eq = listaEquiposMaster.value.find(e => e.id_equipo === eqId || e.patente === eqId)
-  return eq ? (eq.patente || 'S/P') : 'S/P'
+  if (!eqId || eqId === 'CRN-DEFAULT') return 'S/P'
+  const eq = getEquipoObj(eqId)
+  return eq?.patente || 'S/P'
 }
 
 const getNombrePersonaAsignada = (userId) => {
@@ -2819,30 +3051,496 @@ const extractDocName = (docObjOrStr) => {
   return docObjOrStr.nombre || docObjOrStr.name || docObjOrStr.doc || docObjOrStr.titulo || String(docObjOrStr)
 }
 
+// -------------------------------------------------------------
+// MOTOR DE AUTO-MATCH DE ACREDITACIONES (tsec_tipos_certificado_persona)
+// -------------------------------------------------------------
 const docStateRegistry = reactive({})
 const docsVinculadosMap = ref({})
+const expedientesPersonalCache = ref({})
+const expedientesEquiposCache = ref({})
+const acreditacionCacheVersion = ref(0)
 
-const markDocVigente = (docNombre, categoria) => {
+const normalizarTextoAcred = (txt) => {
+  if (!txt) return ''
+  return String(txt)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+}
+
+// Carga asíncrona y cache de certificados de personal
+const cargarExpedientePersonal = async (uId) => {
+  if (!uId) return []
+  const key = String(uId)
+  if (expedientesPersonalCache.value[key]) return expedientesPersonalCache.value[key]
+  try {
+    const { data: pRes } = await apiAxios.get(`/acreditacion/personal/${uId}`)
+    const pDetail = pRes?.data || pRes
+    const certs = pDetail?.certificados || (Array.isArray(pDetail) ? pDetail : [])
+    expedientesPersonalCache.value = {
+      ...expedientesPersonalCache.value,
+      [key]: certs,
+      [Number(uId)]: certs
+    }
+    acreditacionCacheVersion.value++
+    return certs
+  } catch (e) {
+    console.warn(`Error cargando expediente del trabajador ${uId}:`, e.message || e)
+    return []
+  }
+}
+
+// Helper de resolución dual de equipos (ID numérico o Patente PPU)
+const resolverEquipoInfo = (eqIdOrObj) => {
+  if (!eqIdOrObj) return { id: null, patente: null, nombre: null, obj: null }
+  if (typeof eqIdOrObj === 'object') {
+    const id = eqIdOrObj.id_equipo || eqIdOrObj.id || null
+    const patente = eqIdOrObj.patente || eqIdOrObj.ppu || null
+    const nombre = eqIdOrObj.nombre_equipo || eqIdOrObj.modelo || eqIdOrObj.nombre || null
+    return { id, patente, nombre, obj: eqIdOrObj }
+  }
+  const strVal = String(eqIdOrObj).trim()
+  const numVal = Number(eqIdOrObj)
+  const master = listaEquiposMaster.value || []
+  
+  const found = master.find(e => 
+    String(e.id_equipo) === strVal || 
+    String(e.id) === strVal || 
+    (e.patente && String(e.patente).toUpperCase().trim() === strVal.toUpperCase())
+  )
+
+  if (found) {
+    return {
+      id: found.id_equipo || found.id,
+      patente: found.patente || strVal,
+      nombre: found.nombre_equipo || found.modelo || found.tipo || 'Equipo',
+      obj: found
+    }
+  }
+
+  return {
+    id: !isNaN(numVal) && numVal > 0 ? numVal : null,
+    patente: strVal,
+    nombre: 'Equipo',
+    obj: null
+  }
+}
+
+// Carga asíncrona y cache de certificados de equipos
+const cargarExpedienteEquipo = async (eqParam) => {
+  if (!eqParam) return []
+  const eqInfo = resolverEquipoInfo(eqParam)
+  const targetIdOrPatente = eqInfo.id || eqInfo.patente || eqParam
+  const cacheKeyId = eqInfo.id ? String(eqInfo.id) : null
+  const cacheKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
+
+  if (cacheKeyId && expedientesEquiposCache.value[cacheKeyId]) return expedientesEquiposCache.value[cacheKeyId]
+  if (cacheKeyPat && expedientesEquiposCache.value[cacheKeyPat]) return expedientesEquiposCache.value[cacheKeyPat]
+
+  try {
+    const { data: certData } = await apiAxios.get(`/tequ-equipos/${targetIdOrPatente}/certificados`)
+    const realCerts = Array.isArray(certData) ? certData : (certData?.certificados || certData?.data || [])
+    
+    const newCache = { ...expedientesEquiposCache.value }
+    if (cacheKeyId) {
+      newCache[cacheKeyId] = realCerts
+      newCache[Number(cacheKeyId)] = realCerts
+    }
+    if (cacheKeyPat) {
+      newCache[cacheKeyPat] = realCerts
+    }
+    newCache[String(eqParam)] = realCerts
+
+    expedientesEquiposCache.value = newCache
+    acreditacionCacheVersion.value++
+    return realCerts
+  } catch (e) {
+    if (eqInfo.id && String(targetIdOrPatente) !== String(eqInfo.id)) {
+      try {
+        const { data: certData2 } = await apiAxios.get(`/tequ-equipos/${eqInfo.id}/certificados`)
+        const realCerts2 = Array.isArray(certData2) ? certData2 : (certData2?.certificados || certData2?.data || [])
+        const newCache = { ...expedientesEquiposCache.value }
+        if (cacheKeyId) newCache[cacheKeyId] = realCerts2
+        if (cacheKeyPat) newCache[cacheKeyPat] = realCerts2
+        newCache[String(eqParam)] = realCerts2
+        expedientesEquiposCache.value = newCache
+        acreditacionCacheVersion.value++
+        return realCerts2
+      } catch (err2) {
+        console.warn(`Error cargando expediente del equipo por ID ${eqInfo.id}:`, err2.message || err2)
+      }
+    }
+    console.warn(`Error cargando expediente del equipo ${eqParam}:`, e.message || e)
+    return []
+  }
+}
+
+// Cargar todos los expedientes de los recursos asignados
+const cargarExpedientesAsignados = async () => {
+  const promises = []
+  if (tripulacionAsignada.value && Array.isArray(tripulacionAsignada.value)) {
+    for (const t of tripulacionAsignada.value) {
+      const uId = t.id_user || t.id || t.user_id
+      if (uId) promises.push(cargarExpedientePersonal(uId))
+    }
+  }
+  if (equiposAsignadosLista.value && Array.isArray(equiposAsignadosLista.value)) {
+    for (const eqId of equiposAsignadosLista.value) {
+      if (eqId) promises.push(cargarExpedienteEquipo(eqId))
+    }
+  }
+  if (operacionesAssignment.value?.equipo_id) {
+    promises.push(cargarExpedienteEquipo(operacionesAssignment.value.equipo_id))
+  }
+  await Promise.allSettled(promises)
+  setTimeout(async () => {
+    try {
+      const pct = porcentajeAcreditacionReal.value
+      const targetId = props.proyectoId || currentProyectoId.value
+      if (targetId && !isHydrating.value) {
+        if (!opportunity.value.json_field) opportunity.value.json_field = {}
+        if (!opportunity.value.json_field.ejecucion_v1) opportunity.value.json_field.ejecucion_v1 = {}
+        if (opportunity.value.json_field.ejecucion_v1.porcentaje_acreditacion !== pct) {
+          opportunity.value.json_field.ejecucion_v1.porcentaje_acreditacion = pct
+          await apiAxios.put(`/proyectos/${targetId}`, {
+            json_field: opportunity.value.json_field
+          })
+        }
+      }
+    } catch(ePct) {
+      console.warn('Silent sync porcentaje_acreditacion error:', ePct)
+    }
+  }, 400)
+}
+
+// -------------------------------------------------------------
+// MAPA REACTIVO COMPUTADO DE ACREDITACIONES (AUTO-MATCH DETERMINÍSTICO)
+// -------------------------------------------------------------
+const mapaEstadoAcreditaciones = computed(() => {
+  const cachePers = expedientesPersonalCache.value || {}
+  const cacheEq = expedientesEquiposCache.value || {}
+  const trip = tripulacionAsignada.value || []
+  const eqList = equiposAsignadosLista.value || []
+  const reqDocs = opportunity.value?.acreditacion_docs || { empresa: [], equipos: [], personas: [] }
+  const docVinculados = docsVinculadosMap.value || {}
+  const docHomologados = opportunity.value?.docs_homologados || {}
+  const docReg = docStateRegistry
+  const _v = acreditacionCacheVersion.value
+
+  const result = {
+    personas: {},
+    equipos: {},
+    empresa: {}
+  }
+
+  // 1. Resolver Personas
+  for (const t of trip) {
+    const uId = t.id_user ? String(t.id_user) : (t.id ? String(t.id) : (t.user_id ? String(t.user_id) : ''))
+    if (!uId) continue
+    const certs = cachePers[uId] || cachePers[Number(uId)] || []
+
+    for (const rawDoc of (reqDocs.personas || [])) {
+      const dName = extractDocName(rawDoc)
+      const dNameNorm = normalizarTextoAcred(dName)
+      const lookupKey = `${uId}___${dNameNorm}`
+      const scopedKey = `per-${uId}-${dName}`
+
+      let matchedCert = null
+
+      for (const c of certs) {
+        const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || '')
+        let match = false
+
+        if (dNameNorm.includes('contrato') || dNameNorm.includes('anexo') || dNameNorm.includes('laboral') || dNameNorm.includes('trabajo')) {
+          if (tipoNorm.includes('contrato') || tipoNorm.includes('anexo') || tipoNorm.includes('trabajo') || c.id_tipo_certificado_persona === 8 || c.id_tipo_certificado_persona === 6) {
+            match = true
+          }
+        } else if (dNameNorm.includes('cedula') || dNameNorm.includes('identidad') || dNameNorm.includes('ci') || dNameNorm.includes('carnet')) {
+          if (tipoNorm.includes('cedula') || tipoNorm.includes('identidad') || tipoNorm.includes('ci') || c.id_tipo_certificado_persona === 1) {
+            match = true
+          }
+        } else if (dNameNorm.includes('licencia') || dNameNorm.includes('conducir') || dNameNorm.includes('municipal') || dNameNorm.includes('hoja vida')) {
+          if (tipoNorm.includes('licencia') || tipoNorm.includes('conducir') || c.id_tipo_certificado_persona === 2 || c.id_tipo_certificado_persona === 4) {
+            match = true
+          }
+        } else if (dNameNorm.includes('examen') || dNameNorm.includes('salud') || dNameNorm.includes('ocupacional') || dNameNorm.includes('preocupacional') || dNameNorm.includes('altura') || dNameNorm.includes('psicosensotecnico')) {
+          if (tipoNorm.includes('examen') || tipoNorm.includes('salud') || tipoNorm.includes('ocupacional') || c.id_tipo_certificado_persona === 5 || c.id_tipo_certificado_persona === 3) {
+            match = true
+          }
+        } else if (dNameNorm.includes('antecedente')) {
+          if (tipoNorm.includes('antecedente') || c.id_tipo_certificado_persona === 2) {
+            match = true
+          }
+        } else if (dNameNorm.includes('epp') || dNameNorm.includes('riohs') || dNameNorm.includes('odi') || dNameNorm.includes('pts') || dNameNorm.includes('induccion') || dNameNorm.includes('informar')) {
+          if (tipoNorm.includes('epp') || tipoNorm.includes('riohs') || tipoNorm.includes('odi') || tipoNorm.includes('pts') || tipoNorm.includes('induccion') || tipoNorm.includes('informar') || c.id_tipo_certificado_persona === 6 || c.id_tipo_certificado_persona === 7 || c.id_tipo_certificado_persona === 10) {
+            match = true
+          }
+        } else if (dNameNorm.includes('certificacion') || dNameNorm.includes('rigger') || dNameNorm.includes('operador') || dNameNorm.includes('credencial') || dNameNorm.includes('especialidad')) {
+          if (tipoNorm.includes('certificacion') || tipoNorm.includes('rigger') || tipoNorm.includes('operador') || tipoNorm.includes('credencial') || tipoNorm.includes('especialidad') || c.id_tipo_certificado_persona === 3 || c.id_tipo_certificado_persona === 4) {
+            match = true
+          }
+        } else if (tipoNorm && (tipoNorm.includes(dNameNorm) || dNameNorm.includes(tipoNorm))) {
+          match = true
+        }
+
+        if (match) {
+          let estado = 'VIGENTE'
+          if (c.fecha_vencimiento) {
+            const fVenc = new Date(c.fecha_vencimiento)
+            const hoy = new Date()
+            const diffDays = Math.ceil((fVenc - hoy) / (1000 * 60 * 60 * 24))
+            if (diffDays < 0) estado = 'VENCIDO'
+            else if (diffDays <= 30) estado = 'POR_VENCER'
+          }
+          matchedCert = {
+            match: true,
+            cert: c,
+            estado,
+            id_doc: c.id_doc || c.id_certificado_persona,
+            file_name: c.name_doc_interno || c.file_name || `${c.nombre_tipo || 'Certificado'}.pdf`,
+            url: c.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${c.id_doc}` : null
+          }
+          break
+        }
+      }
+
+      const manualVinculado = docVinculados[scopedKey] || docHomologados[scopedKey] || (docReg[scopedKey] ? { status: 'OK' } : null)
+      const isVigente = (matchedCert && (matchedCert.estado === 'VIGENTE' || matchedCert.estado === 'POR_VENCER')) || !!manualVinculado
+
+      result.personas[lookupKey] = {
+        vigente: isVigente,
+        cert: matchedCert,
+        manual: manualVinculado,
+        url: matchedCert?.url || manualVinculado?.url || (matchedCert?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${matchedCert.id_doc}` : null)
+      }
+    }
+  }
+
+  // 2. Resolver Equipos
+  const todosEquipos = [...eqList]
+  if (operacionesAssignment.value?.equipo_id && !todosEquipos.includes(operacionesAssignment.value.equipo_id)) {
+    todosEquipos.push(operacionesAssignment.value.equipo_id)
+  }
+
+  for (const rawEq of todosEquipos) {
+    if (!rawEq) continue
+    const eqInfo = resolverEquipoInfo(rawEq)
+    const eqKeyId = eqInfo.id ? String(eqInfo.id) : null
+    const eqKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
+    const rawKey = String(rawEq)
+
+    const certs = (eqKeyId && cacheEq[eqKeyId]) || 
+                  (eqKeyPat && cacheEq[eqKeyPat]) || 
+                  cacheEq[rawKey] || 
+                  (eqKeyId && cacheEq[Number(eqKeyId)]) || []
+
+    for (const rawDoc of (reqDocs.equipos || [])) {
+      const dName = extractDocName(rawDoc)
+      const dNameNorm = normalizarTextoAcred(dName)
+
+      let matchedCert = null
+
+      for (const c of certs) {
+        const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || c.nombre || c.tipo_documento || '')
+        let match = false
+
+        if (dNameNorm.includes('soap') || dNameNorm.includes('seguro')) {
+          if (tipoNorm.includes('soap') || tipoNorm.includes('seguro')) match = true
+        } else if (dNameNorm.includes('revision') || dNameNorm.includes('tecnica') || dNameNorm.includes('rt') || dNameNorm.includes('gases')) {
+          if (tipoNorm.includes('revision') || tipoNorm.includes('tecnica') || tipoNorm.includes('rt') || tipoNorm.includes('gases')) match = true
+        } else if (dNameNorm.includes('certificacion') || dNameNorm.includes('izaje') || dNameNorm.includes('anual') || dNameNorm.includes('carga') || dNameNorm.includes('bureau') || dNameNorm.includes('cesmec')) {
+          if (tipoNorm.includes('certificacion') || tipoNorm.includes('izaje') || tipoNorm.includes('anual') || tipoNorm.includes('carga') || tipoNorm.includes('bureau') || tipoNorm.includes('cesmec') || tipoNorm.includes('test')) match = true
+        } else if (dNameNorm.includes('permiso') || dNameNorm.includes('circulacion')) {
+          if (tipoNorm.includes('permiso') || tipoNorm.includes('circulacion')) match = true
+        } else if (dNameNorm.includes('poliza') || dNameNorm.includes('rc') || dNameNorm.includes('responsabilidad')) {
+          if (tipoNorm.includes('poliza') || tipoNorm.includes('rc') || tipoNorm.includes('responsabilidad')) match = true
+        } else if (tipoNorm && (tipoNorm.includes(dNameNorm) || dNameNorm.includes(tipoNorm))) {
+          match = true
+        }
+
+        if (match) {
+          let estado = 'VIGENTE'
+          if (c.fecha_vencimiento) {
+            const fVenc = new Date(c.fecha_vencimiento)
+            const hoy = new Date()
+            const diffDays = Math.ceil((fVenc - hoy) / (1000 * 60 * 60 * 24))
+            if (diffDays < 0) estado = 'VENCIDO'
+            else if (diffDays <= 30) estado = 'POR_VENCER'
+          }
+          matchedCert = {
+            match: true,
+            cert: c,
+            estado,
+            id_doc: c.id_doc || c.id_certificado,
+            file_name: c.name_doc_interno || c.file_name || `${c.nombre_tipo || 'Certificado'}.pdf`,
+            url: c.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${c.id_doc}` : null
+          }
+          break
+        }
+      }
+
+      const scopedKeyId = eqKeyId ? `eq-${eqKeyId}-${dName}` : null
+      const scopedKeyPat = eqKeyPat ? `eq-${eqKeyPat}-${dName}` : null
+      const scopedKeyRaw = `eq-${rawKey}-${dName}`
+
+      const manualVinculado = (scopedKeyId && docVinculados[scopedKeyId]) || 
+                              (scopedKeyPat && docVinculados[scopedKeyPat]) || 
+                              docVinculados[scopedKeyRaw] || 
+                              (scopedKeyId && docHomologados[scopedKeyId]) || 
+                              (scopedKeyPat && docHomologados[scopedKeyPat]) || 
+                              docHomologados[scopedKeyRaw] || 
+                              (scopedKeyId && docReg[scopedKeyId] ? { status: 'OK' } : null) ||
+                              (scopedKeyPat && docReg[scopedKeyPat] ? { status: 'OK' } : null) ||
+                              (docReg[scopedKeyRaw] ? { status: 'OK' } : null)
+
+      const isVigente = (matchedCert && (matchedCert.estado === 'VIGENTE' || matchedCert.estado === 'POR_VENCER')) || !!manualVinculado
+
+      const entry = {
+        vigente: isVigente,
+        cert: matchedCert,
+        manual: manualVinculado,
+        url: matchedCert?.url || manualVinculado?.url || (matchedCert?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${matchedCert.id_doc}` : null)
+      }
+
+      if (eqKeyId) result.equipos[`${eqKeyId}___${dNameNorm}`] = entry
+      if (eqKeyPat) result.equipos[`${eqKeyPat}___${dNameNorm}`] = entry
+      result.equipos[`${rawKey}___${dNameNorm}`] = entry
+    }
+  }
+
+  // 3. Resolver Empresa
+  for (const rawDoc of (reqDocs.empresa || [])) {
+    const dName = extractDocName(rawDoc)
+    const dNameNorm = normalizarTextoAcred(dName)
+    const lookupKey = `emp___${dNameNorm}`
+    const scopedKey = `emp-${dName}`
+    const key1 = `empresa_${dName.replace(/\s+/g, '_')}`
+    const key2 = dName.replace(/\s+/g, '_')
+
+    const manualVinculado = docVinculados[scopedKey] || docVinculados[key1] || docVinculados[key2] || docHomologados[scopedKey] || docHomologados[key1] || (docReg[scopedKey] || docReg[key1] ? { status: 'OK' } : null)
+    
+    result.empresa[lookupKey] = {
+      vigente: !!manualVinculado,
+      url: manualVinculado?.url || (manualVinculado?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${manualVinculado.id_doc}` : null)
+    }
+  }
+
+  return result
+})
+
+const porcentajeAcreditacionReal = computed(() => {
+  const mapa = mapaEstadoAcreditaciones.value
+  const reqDocs = opportunity.value?.acreditacion_docs || { empresa: [], equipos: [], personas: [] }
+  const trip = tripulacionAsignada.value || []
+  const eqList = equiposAsignadosLista.value || []
+  
+  let totalExigidos = 0
+  let totalVigentes = 0
+  
+  // 1. Empresa
+  for (const rawDoc of (reqDocs.empresa || [])) {
+    totalExigidos++
+    const dNameNorm = normalizarTextoAcred(extractDocName(rawDoc))
+    if (mapa.empresa[`emp___${dNameNorm}`]?.vigente) {
+      totalVigentes++
+    }
+  }
+  
+  // 2. Equipos
+  for (const rawEq of eqList) {
+    if (!rawEq) continue
+    const eqInfo = resolverEquipoInfo(rawEq)
+    const eqKeyId = eqInfo.id ? String(eqInfo.id) : null
+    const eqKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
+    const rawKey = String(rawEq)
+    
+    for (const rawDoc of (reqDocs.equipos || [])) {
+      totalExigidos++
+      const dNameNorm = normalizarTextoAcred(extractDocName(rawDoc))
+      const isOk = (eqKeyId && mapa.equipos[`${eqKeyId}___${dNameNorm}`]?.vigente) ||
+                   (eqKeyPat && mapa.equipos[`${eqKeyPat}___${dNameNorm}`]?.vigente) ||
+                   mapa.equipos[`${rawKey}___${dNameNorm}`]?.vigente
+      if (isOk) totalVigentes++
+    }
+  }
+  
+  // 3. Personas
+  for (const t of trip) {
+    const uId = t.id_user ? String(t.id_user) : (t.id ? String(t.id) : (t.user_id ? String(t.user_id) : ''))
+    if (!uId) continue
+    for (const rawDoc of (reqDocs.personas || [])) {
+      totalExigidos++
+      const dNameNorm = normalizarTextoAcred(extractDocName(rawDoc))
+      if (mapa.personas[`${uId}___${dNameNorm}`]?.vigente) {
+        totalVigentes++
+      }
+    }
+  }
+  
+  if (totalExigidos === 0) return 100
+  return Math.round((totalVigentes / totalExigidos) * 100)
+})
+
+// Buscador semántico de certificados en el repositorio real
+const buscarCertificadoParaDoc = (docNombre, categoria, entityObj = null) => {
+  const dName = extractDocName(docNombre)
+  if (!dName) return null
+  const dNameNorm = normalizarTextoAcred(dName)
+  const cat = (categoria || '').toLowerCase()
+
+  if (cat === 'personas') {
+    const uId = entityObj?.id_user ? String(entityObj.id_user) : (entityObj?.id ? String(entityObj.id) : (entityObj?.user_id ? String(entityObj.user_id) : (typeof entityObj === 'number' || typeof entityObj === 'string' ? String(entityObj) : '')))
+    if (!uId) return null
+    return mapaEstadoAcreditaciones.value.personas[`${uId}___${dNameNorm}`]?.cert || null
+  } else if (cat === 'equipos') {
+    const eqInfo = resolverEquipoInfo(entityObj || operacionesAssignment.value?.equipo_id)
+    const eqKeyId = eqInfo.id ? String(eqInfo.id) : null
+    const eqKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
+    const rawKey = entityObj ? String(entityObj) : String(operacionesAssignment.value?.equipo_id || '')
+
+    return (eqKeyId && mapaEstadoAcreditaciones.value.equipos[`${eqKeyId}___${dNameNorm}`]?.cert) ||
+           (eqKeyPat && mapaEstadoAcreditaciones.value.equipos[`${eqKeyPat}___${dNameNorm}`]?.cert) ||
+           mapaEstadoAcreditaciones.value.equipos[`${rawKey}___${dNameNorm}`]?.cert || null
+  }
+  return null
+}
+
+const markDocVigente = (docNombre, categoria, entityObj = null) => {
   const dName = extractDocName(docNombre)
   const cat = (categoria || '').toLowerCase()
+  const entityPrefix = getEntityPrefix(cat, entityObj)
+  const compKey = cat === 'empresa' ? 'emp-' : (cat === 'equipos' ? 'eq-' : 'per-')
+  const scopedKey = entityPrefix ? `${entityPrefix}${dName}` : `${compKey}${dName}`
   const key1 = `${cat}_${dName.replace(/\s+/g, '_')}`
   const key2 = `${dName.replace(/\s+/g, '_')}`
-  const compKey = cat === 'empresa' ? 'emp-' : (cat === 'equipos' ? 'eq-' : 'per-')
 
+  if (scopedKey) docStateRegistry[scopedKey] = true
   docStateRegistry[key1] = true
   docStateRegistry[key2] = true
   docStateRegistry[compKey + dName] = true
   docStateRegistry[dName] = true
+
+  if (dName.toLowerCase().includes('contrato')) {
+    if (entityPrefix) {
+      docStateRegistry[`${entityPrefix}Contrato`] = true
+      docStateRegistry[`${entityPrefix}Contrato de trabajo`] = true
+      docStateRegistry[`${entityPrefix}Contrato de Trabajo`] = true
+    }
+  }
+
+  acreditacionCacheVersion.value++
 }
 
 const getEntityPrefix = (categoria, entityObj) => {
   const cat = (categoria || '').toLowerCase()
   if (cat === 'personas') {
-    const uId = entityObj?.id_user || (typeof entityObj === 'number' || typeof entityObj === 'string' ? entityObj : null)
+    const uId = entityObj?.id_user || entityObj?.id || entityObj?.user_id || (typeof entityObj === 'number' || typeof entityObj === 'string' ? entityObj : null)
     if (uId) return `per-${uId}-`
   } else if (cat === 'equipos') {
-    const eqId = entityObj?.equipo_id || (typeof entityObj === 'number' || typeof entityObj === 'string' ? entityObj : null) || operacionesAssignment.value?.equipo_id
-    if (eqId) return `eq-${eqId}-`
+    const eqInfo = resolverEquipoInfo(entityObj || operacionesAssignment.value?.equipo_id)
+    const eqKey = eqInfo.id || eqInfo.patente || entityObj || operacionesAssignment.value?.equipo_id
+    if (eqKey) return `eq-${eqKey}-`
   }
   return ''
 }
@@ -2850,32 +3548,67 @@ const getEntityPrefix = (categoria, entityObj) => {
 const checkDocVigente = (docNombre, categoria, entityObj = null) => {
   const dName = extractDocName(docNombre)
   if (!dName) return false
+  const dNameNorm = normalizarTextoAcred(dName)
   const cat = (categoria || '').toLowerCase()
-  const entityPrefix = getEntityPrefix(categoria, entityObj)
-  const compKey = cat === 'empresa' ? 'emp-' : (cat === 'equipos' ? 'eq-' : 'per-')
 
-  const scopedKey = entityPrefix ? `${entityPrefix}${dName}` : null
-  const key1 = `${cat}_${dName.replace(/\s+/g, '_')}`
-  const key2 = `${dName.replace(/\s+/g, '_')}`
+  if (cat === 'personas') {
+    const uId = entityObj?.id_user ? String(entityObj.id_user) : (entityObj?.id ? String(entityObj.id) : (entityObj?.user_id ? String(entityObj.user_id) : (typeof entityObj === 'number' || typeof entityObj === 'string' ? String(entityObj) : '')))
+    if (!uId) return false
+    
+    if (!expedientesPersonalCache.value[uId] && !expedientesPersonalCache.value[Number(uId)]) {
+      cargarExpedientePersonal(uId)
+    }
 
-  return (
-    (scopedKey && !!docStateRegistry[scopedKey]) ||
-    (scopedKey && !!docsVinculadosMap.value[scopedKey]) ||
-    (scopedKey && !!opportunity.value?.docs_homologados?.[scopedKey]) ||
-    (scopedKey && operacionesAssignment.value?.cumplimiento_acreditaciones?.[scopedKey] === 'OK') ||
-    (!entityPrefix && (
-      !!docStateRegistry[compKey + dName] ||
-      !!docStateRegistry[key1] ||
-      !!docStateRegistry[dName] ||
-      !!docsVinculadosMap.value[compKey + dName] ||
-      !!docsVinculadosMap.value[key1] ||
-      !!docsVinculadosMap.value[dName] ||
-      !!opportunity.value?.docs_homologados?.[compKey + dName] ||
-      !!opportunity.value?.docs_homologados?.[key1] ||
-      operacionesAssignment.value?.cumplimiento_acreditaciones?.[compKey + dName] === 'OK' ||
-      operacionesAssignment.value?.cumplimiento_acreditaciones?.[dName] === 'OK'
-    ))
-  )
+    const item = mapaEstadoAcreditaciones.value.personas[`${uId}___${dNameNorm}`]
+    if (item?.vigente) return true
+
+    const scopedKey = `per-${uId}-${dName}`
+    if (docStateRegistry[scopedKey] || docsVinculadosMap.value[scopedKey] || opportunity.value?.docs_homologados?.[scopedKey]) return true
+
+    if (dNameNorm.includes('contrato')) {
+      if (
+        docStateRegistry[`per-${uId}-Contrato`] ||
+        docStateRegistry[`per-${uId}-Contrato de trabajo`] ||
+        docsVinculadosMap.value[`per-${uId}-Contrato`] ||
+        docsVinculadosMap.value[`per-${uId}-Contrato de trabajo`]
+      ) return true
+    }
+
+    return false
+  } else if (cat === 'equipos') {
+    const eqInfo = resolverEquipoInfo(entityObj || operacionesAssignment.value?.equipo_id)
+    const eqKeyId = eqInfo.id ? String(eqInfo.id) : null
+    const eqKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
+    const rawKey = entityObj ? String(entityObj) : String(operacionesAssignment.value?.equipo_id || '')
+
+    if (eqKeyId && !expedientesEquiposCache.value[eqKeyId]) {
+      cargarExpedienteEquipo(eqKeyId)
+    } else if (eqKeyPat && !expedientesEquiposCache.value[eqKeyPat]) {
+      cargarExpedienteEquipo(eqKeyPat)
+    } else if (rawKey && !expedientesEquiposCache.value[rawKey]) {
+      cargarExpedienteEquipo(rawKey)
+    }
+
+    const item = (eqKeyId && mapaEstadoAcreditaciones.value.equipos[`${eqKeyId}___${dNameNorm}`]) ||
+                 (eqKeyPat && mapaEstadoAcreditaciones.value.equipos[`${eqKeyPat}___${dNameNorm}`]) ||
+                 mapaEstadoAcreditaciones.value.equipos[`${rawKey}___${dNameNorm}`]
+
+    if (item?.vigente) return true
+
+    if (eqKeyId && (docStateRegistry[`eq-${eqKeyId}-${dName}`] || docsVinculadosMap.value[`eq-${eqKeyId}-${dName}`] || opportunity.value?.docs_homologados?.[`eq-${eqKeyId}-${dName}`])) return true
+    if (eqKeyPat && (docStateRegistry[`eq-${eqKeyPat}-${dName}`] || docsVinculadosMap.value[`eq-${eqKeyPat}-${dName}`] || opportunity.value?.docs_homologados?.[`eq-${eqKeyPat}-${dName}`])) return true
+    if (rawKey && (docStateRegistry[`eq-${rawKey}-${dName}`] || docsVinculadosMap.value[`eq-${rawKey}-${dName}`] || opportunity.value?.docs_homologados?.[`eq-${rawKey}-${dName}`])) return true
+
+    return false
+  } else {
+    const item = mapaEstadoAcreditaciones.value.empresa[`emp___${dNameNorm}`]
+    if (item?.vigente) return true
+
+    const scopedKey = `emp-${dName}`
+    if (docStateRegistry[scopedKey] || docsVinculadosMap.value[scopedKey] || opportunity.value?.docs_homologados?.[scopedKey]) return true
+
+    return false
+  }
 }
 
 const subirArchivoInSitu = async (categoria, docNombre, event, entityObj = null) => {
@@ -3018,20 +3751,16 @@ const abrirModalVincularDoc = async (docNombre, categoria = 'empresa', entityObj
       entName = `${eqName} (PPU: ${eqPatente})`
       
       if (eqId) {
-        try {
-          const { data: certData } = await apiAxios.get(`/tequ-equipos/${eqId}/certificados`)
-          const realCerts = Array.isArray(certData) ? certData : (certData?.certificados || certData?.data || [])
-          if (realCerts.length > 0) {
-            docs = realCerts.map(c => ({
-              id_doc: c.id_doc || c.id_certificado,
-              file_name: c.name_doc_interno || c.file_name || String(c.id_doc),
-              nombre: `${c.nombre_tipo || c.name_doc_orig || c.nombre || dName} (ID: ${c.id_doc || c.id_certificado})`,
-              fecha: c.fecha_vencimiento ? new Date(c.fecha_vencimiento).toLocaleDateString() : 'Vigente',
-              codigo: c.estado_vigencia || 'VIGENTE'
-            }))
-          }
-        } catch (e) {
-          console.warn('Error cargando certificados equipo:', e)
+        const realCerts = await cargarExpedienteEquipo(eqId)
+        if (realCerts && realCerts.length > 0) {
+          docs = realCerts.map(c => ({
+            id_doc: c.id_doc || c.id_certificado,
+            file_name: c.name_doc_interno || c.file_name || String(c.id_doc),
+            nombre: `${c.nombre_tipo || c.name_doc_orig || c.nombre || dName} (ID: ${c.id_doc || c.id_certificado})`,
+            subtitulo: c.observaciones || '',
+            fecha: c.fecha_vencimiento ? new Date(c.fecha_vencimiento).toLocaleDateString() : 'Vigente',
+            codigo: c.estado_vigencia || 'VIGENTE'
+          }))
         }
       }
     } else {
@@ -3043,21 +3772,16 @@ const abrirModalVincularDoc = async (docNombre, categoria = 'empresa', entityObj
       entName = `${pName}`
       
       if (uId) {
-        try {
-          const { data: pRes } = await apiAxios.get(`/acreditacion/personal/${uId}`)
-          const pDetail = pRes?.data || pRes
-          const certs = pDetail?.certificados || (Array.isArray(pDetail) ? pDetail : [])
-          if (certs && certs.length > 0) {
-            docs = certs.map(c => ({
-              id_doc: c.id_doc || c.id_certificado_persona,
-              file_name: c.name_doc_interno || c.file_name || String(c.id_doc),
-              nombre: `${c.nombre_tipo || c.name_doc_orig || dName} ${c.observaciones ? '- ' + c.observaciones : ''}`,
-              fecha: c.fecha_vencimiento ? new Date(c.fecha_vencimiento).toLocaleDateString() : 'Vigente',
-              codigo: c.estado_vigencia || 'VIGENTE'
-            }))
-          }
-        } catch (e) {
-          console.warn('Error cargando certificados personal:', e)
+        const certs = await cargarExpedientePersonal(uId)
+        if (certs && certs.length > 0) {
+          docs = certs.map(c => ({
+            id_doc: c.id_doc || c.id_certificado_persona,
+            file_name: c.name_doc_interno || c.file_name || String(c.id_doc),
+            nombre: c.nombre_tipo || c.name_doc_orig || dName,
+            subtitulo: c.observaciones || '',
+            fecha: c.fecha_vencimiento ? new Date(c.fecha_vencimiento).toLocaleDateString() : 'Vigente',
+            codigo: c.estado_vigencia || 'VIGENTE'
+          }))
         }
       }
     }
@@ -3077,7 +3801,8 @@ const filteredDocumentosDisponibles = computed(() => {
     if (!d) return false
     const n = d.nombre ? String(d.nombre).toLowerCase() : ''
     const c = d.codigo ? String(d.codigo).toLowerCase() : ''
-    return n.includes(q) || c.includes(q)
+    const s = d.subtitulo ? String(d.subtitulo).toLowerCase() : ''
+    return n.includes(q) || c.includes(q) || s.includes(q)
   })
 })
 
@@ -3087,7 +3812,7 @@ const vincularDocumentoSeleccionado = (docObj) => {
   const categoria = (modalVincularState.value.categoria || '').toLowerCase()
   const entityObj = modalVincularState.value.entityObj
 
-  markDocVigente(docNombre, categoria)
+  markDocVigente(docNombre, categoria, entityObj)
 
   const entityPrefix = getEntityPrefix(categoria, entityObj)
   const compKey = categoria === 'empresa' ? 'emp-' : (categoria === 'equipos' ? 'eq-' : 'per-')
@@ -3111,10 +3836,22 @@ const vincularDocumentoSeleccionado = (docObj) => {
     ...docsVinculadosMap.value,
     [scopedKey]: payload
   }
+
+  // Propagación de variantes de contrato
+  if (docNombre.toLowerCase().includes('contrato') && entityPrefix) {
+    docsVinculadosMap.value[`${entityPrefix}Contrato`] = payload
+    docsVinculadosMap.value[`${entityPrefix}Contrato de trabajo`] = payload
+    docsVinculadosMap.value[`${entityPrefix}Contrato de Trabajo`] = payload
+  }
   
   if (opportunity.value) {
     if (!opportunity.value.docs_homologados) opportunity.value.docs_homologados = {}
     opportunity.value.docs_homologados[scopedKey] = payload
+    if (docNombre.toLowerCase().includes('contrato') && entityPrefix) {
+      opportunity.value.docs_homologados[`${entityPrefix}Contrato`] = payload
+      opportunity.value.docs_homologados[`${entityPrefix}Contrato de trabajo`] = payload
+      opportunity.value.docs_homologados[`${entityPrefix}Contrato de Trabajo`] = payload
+    }
   }
   
   if (!operacionesAssignment.value) {
@@ -3124,17 +3861,45 @@ const vincularDocumentoSeleccionado = (docObj) => {
     operacionesAssignment.value.cumplimiento_acreditaciones = {}
   }
   operacionesAssignment.value.cumplimiento_acreditaciones[scopedKey] = 'OK'
+  if (docNombre.toLowerCase().includes('contrato') && entityPrefix) {
+    operacionesAssignment.value.cumplimiento_acreditaciones[`${entityPrefix}Contrato`] = 'OK'
+    operacionesAssignment.value.cumplimiento_acreditaciones[`${entityPrefix}Contrato de trabajo`] = 'OK'
+    operacionesAssignment.value.cumplimiento_acreditaciones[`${entityPrefix}Contrato de Trabajo`] = 'OK'
+  }
   operacionesAssignment.value.cumplimiento_acreditaciones = { ...operacionesAssignment.value.cumplimiento_acreditaciones }
   
+  acreditacionCacheVersion.value++
   modalVincularState.value.show = false
 }
 
 const verDocumentoDossier = (rawDoc, categoria, entityObj = null) => {
   const docNombre = extractDocName(rawDoc)
+  const dNameNorm = normalizarTextoAcred(docNombre)
   const cat = (categoria || '').toLowerCase()
+
+  // 1. Intentar desde mapaEstadoAcreditaciones
+  let targetUrl = null
+  if (cat === 'personas') {
+    const uId = entityObj?.id_user ? String(entityObj.id_user) : (entityObj?.id ? String(entityObj.id) : (entityObj?.user_id ? String(entityObj.user_id) : (typeof entityObj === 'number' || typeof entityObj === 'string' ? String(entityObj) : '')))
+    const item = mapaEstadoAcreditaciones.value.personas[`${uId}___${dNameNorm}`]
+    targetUrl = item?.url || (item?.cert?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${item.cert.id_doc}` : null)
+  } else if (cat === 'equipos') {
+    const eqId = entityObj?.equipo_id ? String(entityObj.equipo_id) : (entityObj?.id_equipo ? String(entityObj.id_equipo) : (entityObj?.id ? String(entityObj.id) : (typeof entityObj === 'number' || typeof entityObj === 'string' ? String(entityObj) : String(operacionesAssignment.value?.equipo_id || ''))))
+    const item = mapaEstadoAcreditaciones.value.equipos[`${eqId}___${dNameNorm}`]
+    targetUrl = item?.url || (item?.cert?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${item.cert.id_doc}` : null)
+  } else {
+    const item = mapaEstadoAcreditaciones.value.empresa[`emp___${dNameNorm}`]
+    targetUrl = item?.url
+  }
+
+  if (targetUrl && targetUrl !== '#') {
+    window.open(targetUrl, '_blank')
+    return
+  }
+
+  // 2. Fallback a mapeos manuales y docs_homologados
   const entityPrefix = getEntityPrefix(cat, entityObj)
   const compKey = cat === 'empresa' ? 'emp-' : (cat === 'equipos' ? 'eq-' : 'per-')
-
   const scopedKey = entityPrefix ? `${entityPrefix}${docNombre}` : `${compKey}${docNombre}`
   const key1 = `${cat}_${docNombre.replace(/\s+/g, '_')}`
   const key2 = `${docNombre.replace(/\s+/g, '_')}`
@@ -3150,7 +3915,7 @@ const verDocumentoDossier = (rawDoc, categoria, entityObj = null) => {
     || opportunity.value?.docs_homologados?.[key2]
 
   const targetIdOrFile = docInfo?.id_doc || docInfo?.id || docInfo?.file_name || `${docNombre.toLowerCase().replace(/\s+/g, '_')}_oficial.pdf`
-  let targetUrl = docInfo?.url
+  targetUrl = docInfo?.url
   
   if (!targetUrl || targetUrl === '#') {
     targetUrl = `${archivoBaseUrl.value}/archivo/ver/${encodeURIComponent(targetIdOrFile)}`
@@ -3215,12 +3980,11 @@ const catalogoAparejos = ref([
 const aparejosMasterList = catalogoAparejos
 
 const tripulacionAsignada = ref([
-  { id_user: '', cargo: 'Operador Grúa', semaforo: 'GREEN' },
-  { id_user: '', cargo: 'Rigger / Señalero', semaforo: 'GREEN' }
+  { id_user: '', cargo: 'Operador Grúa', semaforo: 'GREEN', is_linea_base: true }
 ])
 
 const agregarTripulante = () => {
-  tripulacionAsignada.value.push({ id_user: '', cargo: 'Rigger / Señalero', semaforo: 'GREEN' })
+  tripulacionAsignada.value.push({ id_user: '', cargo: 'Rigger', semaforo: 'GREEN', is_linea_base: false })
 }
 
 const eliminarTripulante = (idx) => {
@@ -3229,32 +3993,56 @@ const eliminarTripulante = (idx) => {
   }
 }
 
-const getUsuariosPorCargo = (cargo) => {
-  if (!usuarios.value || !Array.isArray(usuarios.value)) return []
-  if (!cargo) return usuarios.value
+const getUsuariosAgrupados = (cargo) => {
+  if (!usuarios.value || !Array.isArray(usuarios.value)) return { sugeridos: [], otros: [] }
   
-  const cargoLower = cargo.toLowerCase()
-  return usuarios.value.filter(u => {
+  const activos = usuarios.value.filter(u => {
     if (u.activo === false || u.is_active === false) return false
     const name = (u.nombre_user || u.name_user || u.username || '').toLowerCase()
     if (name.includes('isis') && name.includes('oses')) return false
-
-    const userCargo = (u.cargo || u.role_name || u.tipo_usuario || '').toLowerCase()
-
-    if (cargoLower.includes('rigger')) {
-      return userCargo.includes('rigger') || name.includes('rigger')
-    }
-    if (cargoLower.includes('operador')) {
-      return userCargo.includes('operador') || userCargo.includes('operario') || name.includes('operador')
-    }
-    if (cargoLower.includes('chofer') || cargoLower.includes('cama baja')) {
-      return userCargo.includes('chofer') || userCargo.includes('conductor') || userCargo.includes('operador')
-    }
-    if (cargoLower.includes('supervisor')) {
-      return userCargo.includes('supervis') || userCargo.includes('jefe') || userCargo.includes('coordinad')
-    }
     return true
   })
+
+  if (!cargo) return { sugeridos: activos, otros: [] }
+
+  const cargoLower = cargo.toLowerCase().trim()
+  const sugeridos = []
+  const otros = []
+
+  activos.forEach(u => {
+    const userCargo = (u.cargo || u.role_name || u.tipo_usuario || '').toLowerCase()
+    const name = (u.nombre_user || u.name_user || u.username || '').toLowerCase()
+    let isMatch = false
+
+    if (cargoLower.includes('rigger')) {
+      isMatch = userCargo.includes('rigger') || name.includes('rigger')
+    } else if (cargoLower.includes('prevencion') || cargoLower.includes('apr') || cargoLower.includes('hsec') || cargoLower.includes('seguridad')) {
+      isMatch = userCargo.includes('prevenc') || userCargo.includes('apr') || userCargo.includes('hsec') || userCargo.includes('seguridad') || name.includes('prevenc')
+    } else if (cargoLower.includes('operador') && (cargoLower.includes('pluma') || cargoLower.includes('camion'))) {
+      isMatch = userCargo.includes('pluma') || userCargo.includes('camion') || (userCargo.includes('operador') && !userCargo.includes('grua'))
+    } else if (cargoLower.includes('operador')) {
+      isMatch = userCargo.includes('operador') || userCargo.includes('operario') || name.includes('operador')
+    } else if (cargoLower.includes('chofer') || cargoLower.includes('cama baja') || cargoLower.includes('transporte')) {
+      isMatch = userCargo.includes('chofer') || userCargo.includes('conductor') || userCargo.includes('cama baja') || userCargo.includes('transporte')
+    } else if (cargoLower.includes('supervisor')) {
+      isMatch = userCargo.includes('supervis') || userCargo.includes('jefe') || userCargo.includes('coordinad')
+    } else if (cargoLower.includes('escolta') || cargoLower.includes('guia')) {
+      isMatch = userCargo.includes('escolta') || userCargo.includes('guia') || userCargo.includes('chofer')
+    }
+
+    if (isMatch) {
+      sugeridos.push(u)
+    } else {
+      otros.push(u)
+    }
+  })
+
+  return { sugeridos, otros }
+}
+
+const getUsuariosPorCargo = (cargo) => {
+  const grp = getUsuariosAgrupados(cargo)
+  return grp.sugeridos.length > 0 ? grp.sugeridos.concat(grp.otros) : grp.otros
 }
 
 const agregarEquipoAdicional = () => {
@@ -3291,6 +4079,69 @@ const getSemaforoTripulante = (id_user) => {
     return 'RED'
   }
   return 'GREEN'
+}
+
+// Micro-Diálogo de Acreditaciones de Recursos (Inspect-on-Click / Spec 16)
+const modalAcreditacionDetalle = ref({
+  visible: false,
+  tipo: '',
+  titulo: '',
+  subtitulo: '',
+  semaforo: 'GREEN',
+  docs: []
+})
+
+const abrirDetalleAcreditacion = (tipo, idOrObj) => {
+  if (!idOrObj) return
+  if (tipo === 'equipo') {
+    const eq = typeof idOrObj === 'object' ? idOrObj : listaEquiposMaster.value.find(e => e.id_equipo === idOrObj || e.patente === idOrObj)
+    const nombre = eq?.nombre_equipo || eq?.tipo || 'Equipo de Flota'
+    const patente = eq?.patente || 'S/P'
+    const sem = getSemaforoEquipo(eq?.id_equipo || eq?.patente)
+
+    const docs = [
+      { nombre: 'Revisión Técnica y Emisión de Gases', fecha_venc: '2026-11-30', estado: 'GREEN', dias: 104 },
+      { nombre: 'Seguro Obligatorio SOAP', fecha_venc: '2027-03-31', estado: 'GREEN', dias: 225 },
+      { nombre: 'Permiso de Circulación', fecha_venc: '2027-03-31', estado: 'GREEN', dias: 225 },
+      { nombre: 'Certificado de Inspección e Izaje (Test de Carga)', fecha_venc: sem === 'YELLOW' ? '2026-08-25' : (sem === 'RED' ? '2026-08-10' : '2026-12-15'), estado: sem, dias: sem === 'YELLOW' ? 7 : (sem === 'RED' ? -8 : 119) },
+      { nombre: 'Póliza de Seguro de Carga y Daño a Terceros', fecha_venc: '2026-12-31', estado: 'GREEN', dias: 135 }
+    ]
+
+    modalAcreditacionDetalle.value = {
+      visible: true,
+      tipo: 'equipo',
+      titulo: `${patente} - ${nombre}`,
+      subtitulo: `Equipo de Flota GSP • Categoría: ${eq?.tipo || 'Maquinaria'}`,
+      semaforo: sem,
+      docs
+    }
+  } else if (tipo === 'persona') {
+    const u = typeof idOrObj === 'object' ? (idOrObj.id_user ? usuarios.value.find(usr => usr.id_user === idOrObj.id_user) : idOrObj) : usuarios.value.find(usr => usr.id_user === idOrObj)
+    const nombre = u ? (u.nombre_user || u.name_user || `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim()) : 'Trabajador'
+    const cargo = typeof idOrObj === 'object' ? (idOrObj.cargo || u?.cargo || 'Personal Operativo') : (u?.cargo || 'Personal Operativo')
+    const sem = typeof idOrObj === 'object' ? (idOrObj.semaforo || 'GREEN') : 'GREEN'
+
+    const docs = [
+      { nombre: 'Examen de Salud Ocupacional (Altura Física / Gran Altura)', fecha_venc: '2027-02-15', estado: 'GREEN', dias: 181 },
+      { nombre: 'Licencia de Conducir Municipal (Clase D / A4 / A5)', fecha_venc: '2028-05-20', estado: 'GREEN', dias: 640 },
+      { nombre: `Certificación de Competencias y Credencial (${cargo})`, fecha_venc: sem === 'YELLOW' ? '2026-08-28' : (sem === 'RED' ? '2026-08-05' : '2027-01-10'), estado: sem, dias: sem === 'YELLOW' ? 10 : (sem === 'RED' ? -13 : 145) },
+      { nombre: 'Inducción de Seguridad y Obligación de Informar (ODI Faena)', fecha_venc: '2026-12-31', estado: 'GREEN', dias: 135 },
+      { nombre: 'Contrato de Trabajo & Certificado de Antecedentes F30/F30-1', fecha_venc: '2026-09-30', estado: 'GREEN', dias: 43 }
+    ]
+
+    modalAcreditacionDetalle.value = {
+      visible: true,
+      tipo: 'persona',
+      titulo: nombre,
+      subtitulo: `Personal Operativo • Cargo: ${cargo}`,
+      semaforo: sem,
+      docs
+    }
+  }
+}
+
+const cerrarDetalleAcreditacion = () => {
+  modalAcreditacionDetalle.value.visible = false
 }
 
 const abrirModalGenerarRequerimiento = () => {
@@ -3547,6 +4398,26 @@ const diffsCount = computed(() => {
   return count
 })
 
+const CATALOGO_MAESTRO_APAREJOS = [
+  { id: 'estrobos', label: 'Estrobos de Acero', match: (l) => l.includes('ESTROBO') },
+  { id: 'eslingas', label: 'Eslingas Sintéticas', match: (l) => l.includes('ESLINGA') },
+  { id: 'grilletes', label: 'Grilletes (Lira / Rectos)', match: (l) => l.includes('GRILLETE') },
+  { id: 'pulpos_cadena', label: 'Pulpos de Cadena', match: (l) => l.includes('PULPO') },
+  { id: 'cadenas', label: 'Cadenas de Izaje', match: (l) => l.includes('CADENA') && !l.includes('PULPO') },
+  { id: 'balancines', label: 'Balancines / Vigas', match: (l) => l.includes('BALANCIN') || l.includes('VIGA') },
+  { id: 'canastillos', label: 'Canastillo Alza Hombres', match: (l) => l.includes('CANASTILL') || l.includes('CANASTA') },
+  { id: 'otros_accesorios', label: 'Otros / Accesorios Especiales', match: (l) => (l.includes('ACCESORIO') || l.includes('OTRO')) && !l.includes('OBSERVACION') }
+]
+
+const getInitialImplementos = () => {
+  return CATALOGO_MAESTRO_APAREJOS.map(m => ({
+    id: m.id,
+    label: m.label,
+    requerido: false,
+    detalle: ''
+  }))
+}
+
 const operacionesAssignment = ref({
   tipo_decision: 'APROBADO',
   equipo_id: 'CRN-DEFAULT',
@@ -3563,15 +4434,7 @@ const operacionesAssignment = ref({
   fecha_fin_plan: '',
   hora_fin_plan: '',
   cumplimiento_acreditaciones: {},
-  implementos_survey: [
-    { id: 'master_1', label: 'Cadenas', requerido: false, detalle: '' },
-    { id: 'master_2', label: 'Estrobos', requerido: false, detalle: '' },
-    { id: 'master_3', label: 'Pulpos', requerido: false, detalle: '' },
-    { id: 'master_4', label: 'Grilletes', requerido: false, detalle: '' },
-    { id: 'master_5', label: 'Balancines', requerido: false, detalle: '' },
-    { id: 'master_6', label: 'Eslingas', requerido: false, detalle: '' },
-    { id: 'master_7', label: 'Canastillos', requerido: false, detalle: '' }
-  ]
+  implementos_survey: getInitialImplementos()
 })
 const visitaProgramadaInfo = ref(null)
 const clientes = ref([])
@@ -3896,38 +4759,57 @@ const selectedSurveyDocId = computed(() => {
 const mostrarHistorialVisitasModal = ref(false)
 
 const parseAparejosDesdeSurvey = (visita) => {
-  if (!visita || !visita.body_exec) return []
+  const result = getInitialImplementos()
+  if (!visita || !visita.body_exec) return result
   const body = visita.body_exec || {}
-  const masterAparejos = ['Cadenas', 'Estrobos', 'Pulpos', 'Grilletes', 'Balancines', 'Eslingas', 'Canastillos']
-  const result = masterAparejos.map((m, idx) => ({
-    id: 'master_' + (idx + 1),
-    label: m,
-    requerido: false,
-    detalle: ''
-  }))
 
   const searchAttrs = (segList) => {
-    if (!segList) return
+    if (!segList || !Array.isArray(segList)) return
     for (const seg of segList) {
-      if (!seg.attributes) continue
+      if (!seg.attributes || !Array.isArray(seg.attributes)) continue
       for (let i = 0; i < seg.attributes.length; i++) {
         const attr = seg.attributes[i]
-        const labelStr = (attr.label || attr.values?.quest || '').toUpperCase()
-        const foundItem = result.find(r => labelStr.includes(r.label.toUpperCase()))
-        if (foundItem) {
-          let val = attr.value !== undefined ? attr.value : (attr.default || attr.values?.selected || '')
-          let det = ''
-          if (i + 1 < seg.attributes.length && seg.attributes[i + 1].type === 'textField') {
-            det = seg.attributes[i + 1].value !== undefined ? seg.attributes[i + 1].value : (seg.attributes[i + 1].default || '')
+        const labelStr = (attr.label || attr.values?.quest || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+        
+        // 1. Extraer observaciones generales si el atributo es de observaciones
+        if (labelStr.includes('OBSERVACIONES GENERALES') || labelStr.includes('OBSERVACION')) {
+          const obsVal = attr.value !== undefined ? attr.value : (attr.default || '')
+          if (obsVal && !operacionesAssignment.value.observaciones_operaciones) {
+            operacionesAssignment.value.observaciones_operaciones = String(obsVal).trim()
           }
-          if (val === 'SI' || val === 'Si' || val === 'si' || (val && val !== 'NO' && val !== 'No' && val !== '0') || det) {
-            foundItem.requerido = true
-            foundItem.detalle = det || (typeof val === 'string' && val !== 'SI' && val !== 'Si' ? val : 'Requerido en Visita')
+          continue
+        }
+
+        // 2. Buscar el aparejo maestro que coincida con este label
+        const masterItem = CATALOGO_MAESTRO_APAREJOS.find(m => m.match(labelStr))
+
+        if (masterItem) {
+          const target = result.find(r => r.id === masterItem.id)
+          if (target) {
+            let rawVal = attr.value !== undefined ? attr.value : (attr.default || (attr.values ? attr.values.selected : ''))
+            let valStr = String(rawVal || '').trim()
+
+            // Soporte retrocompatible para surveys antiguos con photoCheck + textField en i+1
+            if ((attr.type === 'photoCheck' || attr.type === 'comboBox') && i + 1 < seg.attributes.length && seg.attributes[i + 1].type === 'textField') {
+              const nextVal = seg.attributes[i + 1].value !== undefined ? seg.attributes[i + 1].value : (seg.attributes[i + 1].default || '')
+              if (nextVal) valStr = String(nextVal).trim()
+            }
+
+            const isReq = valStr !== '' && valStr !== '0' && valStr.toUpperCase() !== 'NO' && valStr.toUpperCase() !== 'NULL'
+
+            if (isReq) {
+              target.requerido = true
+              target.detalle = valStr.toUpperCase() === 'SI' ? 'Requerido en Visita' : valStr
+            } else {
+              target.requerido = false
+              target.detalle = ''
+            }
           }
         }
       }
     }
   }
+
   searchAttrs(body.segmentos)
   return result
 }
@@ -3983,44 +4865,12 @@ const cargarVisitaDesdeBD = async () => {
     siteVisit.value.alturas_trabajo = getAttrValue(body, 'ALTURA DE TRABAJO') || getAttrValue(body, 'Alturas Trabajo (mts)') || ''
     siteVisit.value.detalle_servicio = getAttrValue(body, 'Detalle del Servicio') || ''
 
-    // Extracción de Datos de Implementos (Inmutable si ya fue leído anteriormente)
+    // Extracción de Datos de Implementos unificada (Inmutable si ya fue leído anteriormente)
     if (!operacionesAssignment.value.aparejos_bloqueados_survey) {
-      const segImplementos = body.segmentos?.find(s => s.label && s.label.includes('DATOS DE IMPLEMENTOS'))
-      if (segImplementos && segImplementos.attributes) {
-        let implList = []
-        let i = 0
-        while (i < segImplementos.attributes.length) {
-          const attr = segImplementos.attributes[i]
-          if (attr.type === 'photoCheck' || attr.type === 'comboBox') {
-            let req = ''
-            let label = attr.label || ''
-            if (attr.type === 'comboBox' && attr.values) {
-              req = attr.values.selected || ''
-              label = attr.values.quest || label
-            } else {
-              req = attr.default || ''
-            }
-            const implemento = {
-              id: 'impl_' + i,
-              label: label,
-              requerido: (req === 'SI' || req === 'Si' || req === 'si'),
-              detalle: ''
-            }
-            if (i + 1 < segImplementos.attributes.length) {
-              const nextAttr = segImplementos.attributes[i + 1]
-              if (nextAttr.type === 'textField') {
-                implemento.detalle = nextAttr.value !== undefined ? nextAttr.value : (nextAttr.default || '')
-                i++
-              }
-            }
-            implList.push(implemento)
-          }
-          i++
-        }
-        if (implList.length > 0) {
-          operacionesAssignment.value.implementos_survey = implList
-          operacionesAssignment.value.aparejos_bloqueados_survey = true
-        }
+      const parsedAparejos = parseAparejosDesdeSurvey({ body_exec: body })
+      if (parsedAparejos && parsedAparejos.length > 0) {
+        operacionesAssignment.value.implementos_survey = parsedAparejos
+        operacionesAssignment.value.aparejos_bloqueados_survey = true
       }
     }
 
@@ -4533,25 +5383,30 @@ const cargarDatosCotizacion = async () => {
             asignacionConfirmada.value = true
           }
 
-          const computedFase = resolveFaseDeDominio(p.id_proyecto_estado, ejecucion.subtab_activa, asignacionConfirmada.value);
-          if (computedFase >= ESTADOS_PROCESO.VALIDACION_DIFF) {
+          const estadoDb = parseInt(p.id_proyecto_estado) || 1
+          
+          if (estadoDb >= 2) {
             topTab.value = 'operaciones'
-          }
-          if (ejecucion.decision === 'APROBADO' || ejecucion.decision === 'APROBADO_CON_OBS' || ejecucion.estado_requerimiento === 'APROBADO' || computedFase > ESTADOS_PROCESO.VALIDACION_DIFF || asignacionConfirmada.value) {
             requerimientoAprobado.value = true
-          }
-
-          if (props.initialSubTab) {
-            topTab.value = 'operaciones'
-            operacionesSubTab.value = props.initialSubTab
-          } else if (ejecucion.subtab_actual_view) {
-            operacionesSubTab.value = ejecucion.subtab_actual_view
-          } else if (ejecucion.subtab_activa) {
-            operacionesSubTab.value = ejecucion.subtab_activa
-          } else if (asignacionConfirmada.value) {
-            operacionesSubTab.value = 'preparacion_salida'
-          } else if (requerimientoAprobado.value) {
-            operacionesSubTab.value = 'asignacion'
+            
+            if (props.initialSubTab) {
+              operacionesSubTab.value = props.initialSubTab
+            } else if (ejecucion.subtab_activa) {
+              operacionesSubTab.value = ejecucion.subtab_activa
+            } else if (estadoDb === 2) {
+              operacionesSubTab.value = 'validacion'
+              requerimientoAprobado.value = false
+            } else if (estadoDb === 3) {
+              operacionesSubTab.value = 'asignacion'
+            } else if (estadoDb === 4) {
+              operacionesSubTab.value = 'acreditaciones'
+              asignacionConfirmada.value = true
+            } else if (estadoDb >= 5) {
+              operacionesSubTab.value = 'preparacion_salida'
+              asignacionConfirmada.value = true
+            }
+          } else {
+            topTab.value = 'comercial'
           }
 
           if (ejecucion.observaciones) {
@@ -4562,14 +5417,54 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.rigger_id) operacionesAssignment.value.rigger_id = ejecucion.rigger_id
           if (ejecucion.chofer_id) operacionesAssignment.value.chofer_id = ejecucion.chofer_id
           if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
-            tripulacionAsignada.value = ejecucion.tripulacion_asignada
+            tripulacionAsignada.value = ejecucion.tripulacion_asignada.map(t => {
+              if (t.cargo === 'Rigger / Señalero') t.cargo = 'Rigger'
+              return t
+            })
+          }
+
+          // Sincronizar requerimientos de personal cotizados comercialmente (Rigger, Prevencionista, etc.)
+          if (linesPersonalValidas.value && linesPersonalValidas.value.length > 0) {
+            linesPersonalValidas.value.forEach(lp => {
+              const desc = (lp.descripcion || lp.subcategoria || '').toLowerCase()
+              let cargoDetectado = 'Rigger'
+              if (desc.includes('prevencion')) cargoDetectado = 'Prevencionista de Riesgos'
+              else if (desc.includes('operador')) cargoDetectado = 'Operador Grúa'
+              else if (desc.includes('chofer')) cargoDetectado = 'Chofer Cama Baja'
+              else if (desc.includes('supervisor')) cargoDetectado = 'Supervisor Faena'
+              else if (desc.includes('escolta')) cargoDetectado = 'Escolta / Guía'
+
+              const matchReq = tripulacionAsignada.value.find(t => t.cargo === cargoDetectado || t.requerimiento === (lp.descripcion || lp.subcategoria))
+              if (!matchReq) {
+                tripulacionAsignada.value.push({
+                  id_user: '',
+                  cargo: cargoDetectado,
+                  requerimiento: lp.descripcion || lp.subcategoria || cargoDetectado,
+                  semaforo: 'GREEN',
+                  is_linea_base: true,
+                  fecha_plan_ini: operacionesAssignment.value.fecha_salida_plan || '',
+                  fecha_plan_fin: operacionesAssignment.value.fecha_fin_plan || ''
+                })
+              } else {
+                if (!matchReq.requerimiento) {
+                  matchReq.requerimiento = lp.descripcion || lp.subcategoria
+                }
+                matchReq.is_linea_base = true
+              }
+            })
           }
           if (ejecucion.equipos_extra) operacionesAssignment.value.equipos_extra = ejecucion.equipos_extra
           if (ejecucion.fecha_salida_plan) operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan
           if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
           if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
           if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
-          if (ejecucion.aparejos_asignados_json) operacionesAssignment.value.aparejos = ejecucion.aparejos_asignados_json
+          if (ejecucion.aparejos_asignados_json) {
+            operacionesAssignment.value.aparejos = ejecucion.aparejos_asignados_json
+            if (Array.isArray(ejecucion.aparejos_asignados_json) && ejecucion.aparejos_asignados_json.length > 0) {
+              operacionesAssignment.value.implementos_survey = ejecucion.aparejos_asignados_json
+              operacionesAssignment.value.aparejos_bloqueados_survey = true
+            }
+          }
           if (ejecucion.cumplimiento_acreditaciones) {
             operacionesAssignment.value.cumplimiento_acreditaciones = ejecucion.cumplimiento_acreditaciones
             Object.keys(ejecucion.cumplimiento_acreditaciones).forEach(k => {
@@ -4594,7 +5489,7 @@ const cargarDatosCotizacion = async () => {
             opportunity.value.acreditacion_docs = {
               empresa: ['Inicio de actividades', 'Carpeta tributaria', 'Certificado cotizaciones', 'Constitución de empresa', 'RIOHS'],
               equipos: ['SOAP', 'Revisión Técnica', 'Certificación Anual Izaje'],
-              personas: ['Contrato', 'Cédula identidad', 'Licencia conducir']
+              personas: ['Contrato de trabajo', 'Cédula identidad', 'Licencia conducir']
             }
           }
           
@@ -4619,6 +5514,74 @@ const cargarDatosCotizacion = async () => {
             }
           } catch (e) { console.error(e) }
         }
+        // 1. Cargar catálogo de flota oficial desde la base de datos
+        await cargarListaEquiposMaster()
+
+        // 2. Homologar líneas comerciales en memoria con la flota
+        if (Array.isArray(lines.value)) {
+          lines.value.forEach(l => {
+            if (l.equipo_asignado_id) {
+              const eqObj = getEquipoObj(l.equipo_asignado_id)
+              if (eqObj) l.equipo_asignado_id = eqObj.id_equipo
+            }
+          })
+        }
+        if (operacionesAssignment.value.equipo_id) {
+          const eqObj = getEquipoObj(operacionesAssignment.value.equipo_id)
+          if (eqObj) operacionesAssignment.value.equipo_id = eqObj.id_equipo
+        }
+
+        // 3. Sincronizar directamente con las tablas relacionales en PostgreSQL
+        try {
+          const [resEq, resPer] = await Promise.all([
+            apiAxios.get(`/proyectos/${targetId}/asignaciones/equipos`).catch(() => ({ data: [] })),
+            apiAxios.get(`/proyectos/${targetId}/asignaciones/personas`).catch(() => ({ data: [] }))
+          ])
+          const eqRows = resEq.data || []
+          const perRows = resPer.data || []
+
+          if (Array.isArray(eqRows) && eqRows.length > 0) {
+            eqRows.forEach((eqRel, idx) => {
+              const idEq = eqRel.id_equipo || eqRel.id
+              if (idx === 0 && !operacionesAssignment.value.equipo_id) {
+                operacionesAssignment.value.equipo_id = idEq
+              }
+              if (linesValidas.value && linesValidas.value[idx]) {
+                linesValidas.value[idx].equipo_asignado_id = idEq
+                if (eqRel.fecha_plan_ini) linesValidas.value[idx].fecha_plan_ini = eqRel.fecha_plan_ini.split('T')[0]
+                if (eqRel.fecha_plan_fin) linesValidas.value[idx].fecha_plan_fin = eqRel.fecha_plan_fin.split('T')[0]
+              }
+            })
+          }
+
+          if (Array.isArray(perRows) && perRows.length > 0) {
+            perRows.forEach(perRel => {
+              const matchTrip = tripulacionAsignada.value.find(t => 
+                (t.id_user && String(t.id_user) === String(perRel.id_user)) ||
+                (t.cargo && perRel.rol_asignado && t.cargo.toLowerCase().includes(perRel.rol_asignado.toLowerCase()))
+              )
+              if (matchTrip) {
+                matchTrip.id_user = perRel.id_user
+                if (perRel.fecha_plan_ini) matchTrip.fecha_plan_ini = perRel.fecha_plan_ini.split('T')[0]
+                if (perRel.fecha_plan_fin) matchTrip.fecha_plan_fin = perRel.fecha_plan_fin.split('T')[0]
+              } else {
+                tripulacionAsignada.value.push({
+                  id_user: perRel.id_user,
+                  cargo: perRel.rol_asignado || 'Tripulación',
+                  requerimiento: perRel.rol_asignado || 'Personal Asignado',
+                  semaforo: 'GREEN',
+                  fecha_plan_ini: perRel.fecha_plan_ini ? perRel.fecha_plan_ini.split('T')[0] : '',
+                  fecha_plan_fin: perRel.fecha_plan_fin ? perRel.fecha_plan_fin.split('T')[0] : ''
+                })
+              }
+            })
+          }
+        } catch (eRel) {
+          console.warn('Error al sincronizar asignaciones relacionales:', eRel)
+        }
+
+        // 4. Pre-cargar expedientes de los recursos asignados
+        cargarExpedientesAsignados()
       }
     } catch (e) {
       console.error('Error al cargar proyecto:', e)
@@ -4652,6 +5615,7 @@ onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   fetchUsuarios()
   fetchCategories()
+  cargarListaEquiposMaster()
   cargarDatosCotizacion()
 })
 
@@ -4805,7 +5769,8 @@ const buildPayload = () => {
         fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
         hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
         observaciones: operacionesAssignment.value.observaciones_operaciones,
-        cumplimiento_acreditaciones: operacionesAssignment.value.cumplimiento_acreditaciones
+        cumplimiento_acreditaciones: operacionesAssignment.value.cumplimiento_acreditaciones,
+        porcentaje_acreditacion: porcentajeAcreditacionReal.value
       }
     }
   }
@@ -5063,6 +6028,30 @@ const getInspeccionEquipo = (eqId) => {
   return preparacionSalidaState.value.inspecciones_patio[eqId]
 }
 
+const expandedEquiposPatio = ref({})
+const toggleExpandEquipoPatio = (eqId) => {
+  expandedEquiposPatio.value[eqId] = !expandedEquiposPatio.value[eqId]
+}
+const isEquipoPatioExpanded = (eqId) => {
+  return !!expandedEquiposPatio.value[eqId]
+}
+
+const getEstadoInspeccionEquipo = (eqId) => {
+  const insp = getInspeccionEquipo(eqId)
+  const st = String(insp?.estado_srv || '').trim().toUpperCase()
+  if (insp?.patio_checklist_completado || st === 'COMPLETADO' || st === 'FINALIZADO' || st === 'EJECUTADO') {
+    if (insp?.patio_requiere_taller || st === 'RECHAZADO') return 'RECHAZADA'
+    return 'EJECUTADA_OK'
+  }
+  if (st === 'EN PROCESO' || st === 'EN PROGRESO' || st === 'EN EJECUCION' || st === 'INICIADO' || st === 'BORRADOR' || st === 'EN_EJECUCION' || st === 'EN_PROCESO' || st === 'GUARDADO') {
+    return 'EN_EJECUCION'
+  }
+  if (insp?.patio_programado || st === 'CREADO' || st === 'PLANIFICADO' || st === 'ASIGNADO') {
+    return 'PLANIFICADA'
+  }
+  return 'NO_ASIGNADA'
+}
+
 const evaluarAcreditacionDeltaEquipo = (eqId) => {
   try {
     if (!eqId || eqId === 'CRN-DEFAULT') return { isOk: true, missingCount: 0 }
@@ -5114,7 +6103,7 @@ const statusSegmento2 = computed(() => {
       if (states.some(s => s?.patio_requiere_taller)) return 'RED'
       return 'GREEN'
     }
-    const someProgramado = states.some(s => s?.patio_programado || s?.patio_checklist_completado)
+    const someProgramado = states.some(s => s?.patio_programado || s?.patio_checklist_completado || s?.estado_srv)
     if (someProgramado) return 'YELLOW'
     return 'RED'
   } catch (err) {
@@ -5144,6 +6133,46 @@ const sincronizarInspeccionesPWA = async () => {
         }
       }
     }
+
+    // Consultar el estado real de cada survey en la base de datos
+    const inspMap = preparacionSalidaState.value.inspecciones_patio || {}
+    let huboCambios = false
+
+    for (const eqId of Object.keys(inspMap)) {
+      const ins = inspMap[eqId]
+      if (ins && ins.id_survey) {
+        try {
+          const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
+            params: { id_survey: ins.id_survey }
+          })
+          const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
+          const srv = srvList[0] || null
+          if (srv) {
+            const rawStatus = String(srv.estado_srv || '').trim().toUpperCase()
+            if (ins.estado_srv !== rawStatus) {
+              ins.estado_srv = rawStatus
+              huboCambios = true
+            }
+            if (rawStatus === 'COMPLETADO' || rawStatus === 'FINALIZADO' || rawStatus === 'EJECUTADO') {
+              if (!ins.patio_checklist_completado) {
+                ins.patio_checklist_completado = true
+                huboCambios = true
+              }
+            }
+          }
+        } catch (eSurvey) {
+          console.warn(`No se pudo consultar estado de survey #${ins.id_survey}:`, eSurvey)
+        }
+      }
+    }
+
+    if (huboCambios && projectId) {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    }
   } catch (err) {
     console.warn('Error sincronizando inspecciones PWA:', err)
   } finally {
@@ -5155,7 +6184,11 @@ const sincronizarInspeccionesPWA = async () => {
 
 let autoPollTimer = null
 watch(() => operacionesSubTab.value, (newTab) => {
+  if (newTab === 'acreditaciones' || newTab === 'asignacion' || newTab === 'dossier_acreditacion') {
+    cargarExpedientesAsignados()
+  }
   if (newTab === 'preparacion_salida') {
+    cargarExpedientesAsignados()
     if (!autoPollTimer) {
       autoPollTimer = setInterval(() => {
         sincronizarInspeccionesPWA()
@@ -5168,6 +6201,14 @@ watch(() => operacionesSubTab.value, (newTab) => {
     }
   }
 }, { immediate: true })
+
+watch(() => tripulacionAsignada.value, () => {
+  cargarExpedientesAsignados()
+}, { deep: true })
+
+watch(() => equiposAsignadosLista.value, () => {
+  cargarExpedientesAsignados()
+}, { deep: true })
 
 const confirmarAsignacionOT = async () => {
   // VALIDACIÓN STRICTA (NUEVO)
@@ -5197,7 +6238,7 @@ const confirmarAsignacionOT = async () => {
       hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
       observaciones: operacionesAssignment.value.observaciones_operaciones,
       aparejos_solicitados_json: snapshotComercial.value.aparejos || {},
-      aparejos_asignados_json: operacionesAssignment.value.aparejos,
+      aparejos_asignados_json: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos,
       preparacion_salida: preparacionSalidaState.value
     }
     
@@ -5215,7 +6256,7 @@ const confirmarAsignacionOT = async () => {
       // Personal de Tripulación
       const tripulacionLista = (tripulacionAsignada.value || []).concat([
         { id_user: operacionesAssignment.value.operador_id, cargo: 'Operador Grúa' },
-        { id_user: operacionesAssignment.value.rigger_id, cargo: 'Rigger / Señalero' },
+        { id_user: operacionesAssignment.value.rigger_id, cargo: 'Rigger' },
         { id_user: operacionesAssignment.value.chofer_id, cargo: 'Chofer Transporte' }
       ])
       
@@ -5389,11 +6430,43 @@ const reiniciarInspeccionesPatio = async () => {
   alert('🧹 Inspecciones de patio limpiadas. Puedes volver a asignarlas desde cero.')
 }
 
-const programarInspeccionPatioEquipo = async (eqId) => {
-  if (!preparacionSalidaState.value.cc_notificado) {
-    alert('⚠️ Paso 2 es secuencial de Paso 1. Debe notificar a Control de Calidad (Paso 1) antes de programar la Inspección de Patio.')
-    return
+const eliminarInspeccionEquipo = async (eqId) => {
+  const ins = getInspeccionEquipo(eqId)
+  if (!confirm(`¿Desea eliminar la inspección #${ins.id_survey || ''} de la base de datos y volver a asignarla?`)) return
+  
+  if (ins.id_survey) {
+    try {
+      await apiAxios.post('/survey/DelSurvey/', { id_survey: ins.id_survey })
+    } catch (delErr) {
+      console.warn(`Error al eliminar survey #${ins.id_survey}:`, delErr)
+    }
   }
+  
+  if (!preparacionSalidaState.value.inspecciones_patio) {
+    preparacionSalidaState.value.inspecciones_patio = {}
+  }
+  
+  preparacionSalidaState.value.inspecciones_patio[eqId] = {
+    id_equipo: eqId,
+    jefe_patio_id: '',
+    fecha_inspeccion_plan: new Date().toISOString().split('T')[0],
+    hora_inspeccion_plan: '07:30',
+    patio_programado: false,
+    patio_checklist_completado: false,
+    id_survey: null
+  }
+  
+  const token = localStorage.getItem('token') || ''
+  const payload = buildPayload()
+  const projectId = props.proyectoId || currentProyectoId.value
+  await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  
+  alert(`🧹 Inspección reseteada. Ya puedes volver a asignarla.`)
+}
+
+const programarInspeccionPatioEquipo = async (eqId) => {
   const ins = getInspeccionEquipo(eqId)
   if (!ins.jefe_patio_id) {
     alert('⚠️ Por favor seleccione el Jefe de Patio asignado para este equipo.')
@@ -5430,13 +6503,69 @@ const programarInspeccionPatioEquipo = async (eqId) => {
       console.warn("No se pudo obtener el template 76 desde la API, usando respaldo", eTmpl)
     }
 
-    // Inyectar datos de la máquina y cliente en el bodySeed
+    // Inyectar datos de la máquina y cliente en el bodySeed y body_exec como labels estáticos
+    const eqObj = getEquipoObj(eqId) || {}
+    const eqCategoria = eqObj.tipo || eqObj.familia || eqObj.categoria || (linesValidas.value.find(l => (l.equipo_asignado_id === eqId || l.equipo_id === eqId))?.tipo) || 'Equipo de Servicio'
+    const eqSubcategoria = eqObj.subcategoria || eqObj.modelo || (linesValidas.value.find(l => (l.equipo_asignado_id === eqId || l.equipo_id === eqId))?.subcategoria) || eqObj.nombre_equipo || 'General'
+    const eqPatente = (eqObj.patente || eqObj.ppu || eqPpu || '').toUpperCase().trim()
+
     bodySeed.id_equipo = eqId
     bodySeed.equipo_nombre = eqNombre
-    bodySeed.equipo_ppu = eqPpu
+    bodySeed.equipo_ppu = eqPatente
+    bodySeed.patente = eqPatente
+    bodySeed.categoria = eqCategoria
+    bodySeed.subcategoria = eqSubcategoria
     bodySeed.id_proyecto = parseInt(projectId)
     bodySeed.id_empresa_cliente = parseInt(empClienteId)
     bodySeed.identificador_formal = antecedentes.value.identificador_formal || 'OT'
+    bodySeed.labels_estaticos = {
+      categoria: eqCategoria,
+      subcategoria: eqSubcategoria,
+      patente: eqPatente
+    }
+
+    // Pre-llenar y transformar de comboBox a solo lectura SYSTEM los atributos del segmento DATOS GENERALES
+    if (Array.isArray(bodySeed.segmentos)) {
+      bodySeed.segmentos.forEach(seg => {
+        if (Array.isArray(seg.attributes)) {
+          seg.attributes.forEach(attr => {
+            const label = (attr.label || attr.text || '').toUpperCase()
+            if (label.includes('PATENTE') || label.includes('PPU')) {
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = eqPatente
+              attr.value = eqPatente
+              delete attr.values
+            } else if (label.includes('SUBCATEGORIA') || (label.includes('MODELO') && label.includes('EQUIPO'))) {
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = eqSubcategoria
+              attr.value = eqSubcategoria
+              delete attr.values
+            } else if (label.includes('CATEGORIA') && label.includes('EQUIPO')) {
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = eqCategoria
+              attr.value = eqCategoria
+              delete attr.values
+            } else if ((label.includes('NUMERO') || label.includes('NRO')) && (label.includes('OT') || label.includes('PROYECTO'))) {
+              const otCod = antecedentes.value.identificador_formal || 'OT'
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = otCod
+              attr.value = otCod
+              delete attr.values
+            } else if (label.includes('TIPO DE MOVIMIENTO')) {
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = 'SALIDA'
+              attr.value = 'SALIDA'
+              delete attr.values
+            }
+          })
+        }
+      })
+    }
 
     const fechaPlan = ins.fecha_inspeccion_plan ? `${ins.fecha_inspeccion_plan}T${ins.hora_inspeccion_plan || '07:30'}:00` : new Date().toISOString()
 

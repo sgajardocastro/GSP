@@ -96,6 +96,31 @@
         </div>
       </div>
 
+      <!-- INFORMACIÓN DEL EQUIPO AUDITADO (LABELS ESTÁTICOS DE PATIO) -->
+      <div 
+        v-if="getEquipoPatioInfo()"
+        class="equipo-auditado-box"
+        style="margin-top: 16px; margin-bottom: 20px; border: 2px solid #0284c7; border-radius: 8px; padding: 12px 16px; background-color: #f0f9ff; page-break-inside: avoid;"
+      >
+        <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 13px; color: #0369a1; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+          🚜 Identificación del Equipo Asignado (Inmutable)
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 12px;">
+          <div>
+            <strong style="color: #475569;">Patente (PPU):</strong>
+            <span style="font-family: monospace; font-weight: 800; font-size: 13px; color: #0f172a; display: block;">{{ getEquipoPatioInfo().patente }}</span>
+          </div>
+          <div>
+            <strong style="color: #475569;">Categoría:</strong>
+            <span style="font-weight: 700; color: #0f172a; display: block;">{{ getEquipoPatioInfo().categoria }}</span>
+          </div>
+          <div>
+            <strong style="color: #475569;">Subcategoría / Modelo:</strong>
+            <span style="font-weight: 700; color: #0f172a; display: block;">{{ getEquipoPatioInfo().subcategoria }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- MAPA GENERAL DE UBICACION DE LA ENCUESTA (SOLO COORDENADAS GPS SINO TIENE MAPA DESHABILITADO) -->
       <div 
         v-if="hasCabeceraGPS"
@@ -6313,6 +6338,21 @@ async function getSurvey() {
   } catch (error) {
     console.error("Error al obtener survey:", error);
     throw error;
+  }
+}
+
+function getEquipoPatioInfo() {
+  const s = surveyDetailStore.surveyDetail[0]
+  if (!s) return null
+  const body = typeof s.body_exec === 'string'
+    ? (() => { try { return JSON.parse(s.body_exec); } catch { return {}; } })()
+    : (s.body_exec || {})
+  const pat = body.patente || body.equipo_ppu || body.labels_estaticos?.patente
+  if (!pat) return null
+  return {
+    patente: pat,
+    categoria: body.categoria || body.labels_estaticos?.categoria || 'Equipo de Servicio',
+    subcategoria: body.subcategoria || body.labels_estaticos?.subcategoria || body.equipo_nombre || 'General'
   }
 }
 

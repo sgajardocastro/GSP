@@ -97,10 +97,10 @@ async function deploy() {
     console.log('\n📝 2. Actualizando RELEASE_LOG.md con la traza oficial...');
     const customChanges = {
       web: [
-        "- **[FEAT/UX]** **DataGrid Operacional B2B en Asignación de Recursos (Pestaña C):** Reestructuración de alta densidad estilo Excel/Airtable con módulos separados para Flota (Equipos Principales y Apoyo) y Tripulación/Personal, micro-badges de semáforo inline, barra de tiempos compacta con propagación rápida y matriz de aparejos en cuadrícula compacta de 4 columnas."
+        "- **[FEAT/UX]** **Asignación de Recursos en 2 Columnas Lado a Lado (Pestaña C):** Eliminado el scroll vertical y aire horizontal; Flota y Tripulación ubicadas en paralelo en el primer tercio de pantalla, toolbar de tiempos superior en 1 sola línea, y bloque inferior compacto con Visita a Terreno y Matriz de Aparejos lado a lado."
       ],
       backend: [
-        "- **[PERF]** **Optimización de Servicios:** Soporte determinista para persistencia y sincronización de recursos asignados a la OT."
+        "- **[PERF]** **Sincronización:** Soporte determinista para persistencia y sincronización de recursos asignados a la OT."
       ]
     };
     updateReleaseLog(webVer, pwaVer, customChanges);

@@ -6,8 +6,8 @@
       <p class="text-xs text-slate-400 mt-1">Planificación y seguimiento de maniobras de izaje, logística de contrapesos y telemetría de ruta.</p>
     </div>
 
-    <!-- Kanban Columns -->
-    <div class="grid grid-cols-1 lg:grid-cols-7 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
+    <!-- Kanban Columns (6 Columnas Operativas) -->
+    <div class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
       <!-- Columna 1: Requerimiento Registrado -->
       <div class="bg-[#0f1629] border-t-4 border-[#6366f1] border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
@@ -68,15 +68,40 @@
           <div 
             v-for="p in verificacion" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'validacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-amber-500/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-amber-500/40'"
           >
             <div class="flex justify-between items-start">
               <span class="text-[9px] font-mono text-amber-500 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                🔥 Alta
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+                  🔥 Alta
+                </span>
+                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <div 
+                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+                >
+                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path 
+                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+                      class="transition-all duration-700" 
+                      stroke-width="3.5" 
+                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+                      stroke-linecap="round" 
+                      stroke="currentColor" 
+                      fill="none" 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+                    {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                </div>
+              </div>
             </div>
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
@@ -107,15 +132,40 @@
           <div 
             v-for="p in asignados" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'asignacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-blue-500/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-blue-500/40'"
           >
             <div class="flex justify-between items-start">
               <span class="text-[9px] font-mono text-blue-400 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                🔥 Alta
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+                  🔥 Alta
+                </span>
+                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <div 
+                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+                >
+                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path 
+                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+                      class="transition-all duration-700" 
+                      stroke-width="3.5" 
+                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+                      stroke-linecap="round" 
+                      stroke="currentColor" 
+                      fill="none" 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+                    {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                </div>
+              </div>
             </div>
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
@@ -144,7 +194,7 @@
           <div 
             v-for="p in desplazamiento" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'preparacion_salida')"
             @mouseenter="hoveredProyectoId = p.id_proyecto"
             @mouseleave="hoveredProyectoId = null"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-cyan-500/5 transition-all cursor-pointer text-left select-none space-y-2"
@@ -155,13 +205,33 @@
           >
             <div class="flex justify-between items-start">
               <span class="text-[9px] font-mono text-cyan-400 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1">
-                <span v-if="p.json_field?.crm_v1?.requiere_acreditacion" class="text-[8px] font-bold uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 flex items-center gap-0.5">
-                  🔗 Hilo Concurrente
-                </span>
+              <div class="flex items-center gap-1.5">
                 <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
                   🔥 Alta
                 </span>
+                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <div 
+                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+                >
+                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path 
+                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+                      class="transition-all duration-700" 
+                      stroke-width="3.5" 
+                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+                      stroke-linecap="round" 
+                      stroke="currentColor" 
+                      fill="none" 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+                    {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -182,65 +252,6 @@
         </div>
       </div>
 
-      <!-- Columna 5: En Acreditación (Carril Concurrente Documental) -->
-      <div class="bg-[#0f1629] border-t-4 border-emerald-500 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span class="text-xs font-black uppercase text-white">En Acreditación</span>
-          </div>
-          <span class="bg-emerald-500/10 text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">
-            {{ acreditaciones.length }}
-          </span>
-        </div>
-
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in acreditaciones" 
-            :key="p.id_proyecto"
-            @click="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-            @mouseenter="hoveredProyectoId = p.id_proyecto"
-            @mouseleave="hoveredProyectoId = null"
-            class="bg-[#151d35] border border-white/5 hover:border-emerald-500/40 rounded-lg p-3 hover:bg-emerald-500/5 transition-all cursor-pointer text-left select-none space-y-2 relative"
-            :class="hoveredProyectoId === p.id_proyecto ? 'ring-2 ring-emerald-400 shadow-xl shadow-emerald-500/20 scale-[1.01]' : ''"
-          >
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="text-[9px] font-mono text-emerald-400 font-bold block">{{ p.codi_proyecto || '—' }}</span>
-                <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border bg-emerald-500/10 border-emerald-500/30 text-emerald-400 inline-flex items-center gap-0.5 mt-1">
-                  🔗 Hilo Concurrente
-                </span>
-              </div>
-
-              <!-- Micro-Gauge Avance -->
-              <div class="relative w-8 h-8 flex items-center justify-center shrink-0" :title="`Avance Acreditación: ${calcularPorcentajeAcreditacion(p)}%`">
-                <svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
-                  <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                  <path class="text-emerald-400 transition-all duration-700" stroke-width="3.5" :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                </svg>
-                <span class="absolute text-[7px] font-extrabold font-mono text-emerald-400">{{ calcularPorcentajeAcreditacion(p) }}%</span>
-              </div>
-            </div>
-
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 truncate">{{ p.nombre_proyecto }}</p>
-
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
-              <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-            </div>
-
-            <div class="text-[9px] text-slate-400 pt-1.5 flex justify-between items-center border-t border-white/5">
-              <span class="text-emerald-400 font-bold flex items-center gap-1">
-                <span>📑 Dossier FES</span>
-              </span>
-              <span class="text-slate-300 text-[8px] bg-white/5 px-1.5 py-0.5 rounded border border-white/10">🔎 Auditar</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Columna 5: En Ejecución / Faena -->
       <div class="bg-[#0f1629] border-t-4 border-purple-400 border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
@@ -253,15 +264,40 @@
           <div 
             v-for="p in maniobra" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'preparacion_salida')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-purple-400/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-purple-400/40'"
           >
             <div class="flex justify-between items-start">
               <span class="text-[9px] font-mono text-purple-400 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                🔥 Alta
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+                  🔥 Alta
+                </span>
+                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <div 
+                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+                >
+                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path 
+                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+                      class="transition-all duration-700" 
+                      stroke-width="3.5" 
+                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+                      stroke-linecap="round" 
+                      stroke="currentColor" 
+                      fill="none" 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+                    {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                </div>
+              </div>
             </div>
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
@@ -290,15 +326,40 @@
           <div 
             v-for="p in completados" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'dossier_acreditacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-emerald-500/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-emerald-500/40'"
           >
             <div class="flex justify-between items-start">
               <span class="text-[9px] font-mono text-emerald-400 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                🔥 Alta
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+                  🔥 Alta
+                </span>
+                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <div 
+                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+                >
+                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path 
+                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+                      class="transition-all duration-700" 
+                      stroke-width="3.5" 
+                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+                      stroke-linecap="round" 
+                      stroke="currentColor" 
+                      fill="none" 
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+                    {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                </div>
+              </div>
             </div>
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
@@ -401,6 +462,7 @@
         <div class="flex-1 overflow-y-auto">
           <GestorOportunidades 
             :proyecto-id="proyectoSeleccionadoId"
+            :initial-sub-tab="proyectoSubTabInicial"
             @close="onModalClose" 
             @creada="onCotizacionCreada" 
           />
@@ -426,6 +488,7 @@ import { navStore } from '../stores/navStore'
 
 const mostrarModalCotizacion = ref(false)
 const proyectoSeleccionadoId  = ref(null)
+const proyectoSubTabInicial    = ref(null)
 
 const acreditacionesList = ref([])
 const acreditacionIdSeleccionada = ref(null)
@@ -449,7 +512,6 @@ const preventa       = ref([])
 const verificacion   = ref([])
 const asignados      = ref([])
 const desplazamiento = ref([])
-const acreditaciones = ref([])
 const maniobra       = ref([])
 const completados    = ref([])
 
@@ -466,7 +528,7 @@ const cargarProyectos = async () => {
     // Columna 3: En Asignación Recursos (Sub-tab asignacion)
     asignados.value      = proyectos.filter(p => p.id_proyecto_estado === 3 && p.json_field?.ejecucion_v1?.subtab_activa === 'asignacion')
 
-    // Columna 4: En Preparación Operaciones (Sub-tab preparacion_salida, acreditaciones, patio_programado, asignacionConfirmada o estado 4/5)
+    // Columna 4: En Preparación Operaciones (Sub-tab preparacion_salida, patio_programado, asignacionConfirmada o estado 4/5)
     desplazamiento.value = proyectos.filter(p => 
       p.id_proyecto_estado === 4 || 
       p.id_proyecto_estado === 5 || 
@@ -475,13 +537,6 @@ const cargarProyectos = async () => {
         p.json_field?.ejecucion_v1?.preparacion_salida?.patio_programado ||
         p.json_field?.ejecucion_v1?.asignacionConfirmada
       ))
-    )
-
-    // Columna 5: En Acreditación (Carril Concurrente Documental - Todo proyecto que requiera acreditación)
-    acreditaciones.value = proyectos.filter(p => 
-      p.json_field?.crm_v1?.requiere_acreditacion || 
-      p.json_field?.ejecucion_v1?.subtab_activa === 'acreditaciones' ||
-      p.json_field?.ejecucion_v1?.requiere_acreditacion
     )
 
     maniobra.value       = proyectos.filter(p => p.id_proyecto_estado === 7 || p.json_field?.ejecucion_v1?.fase === 'maniobra')
@@ -501,30 +556,41 @@ const cargarProyectos = async () => {
 
 const abrirCotizacion = () => {
   proyectoSeleccionadoId.value = null
+  proyectoSubTabInicial.value = null
   mostrarModalCotizacion.value = true
 }
 
-const abrirProyecto = (id) => {
+const abrirProyecto = (id, subtab = null) => {
   proyectoSeleccionadoId.value = id
+  proyectoSubTabInicial.value = subtab
   mostrarModalCotizacion.value = true
 }
 
 const calcularPorcentajeAcreditacion = (p) => {
   if (p.json_field?.ejecucion_v1?.porcentaje_acreditacion !== undefined) {
-    return p.json_field.ejecucion_v1.porcentaje_acreditacion
+    return Number(p.json_field.ejecucion_v1.porcentaje_acreditacion)
   }
-  const docs = p.json_field?.crm_v1?.acreditacion_docs
-  if (!docs) return 60
-  const total = (docs.empresa?.length || 0) + (docs.equipos?.length || 0) + (docs.personas?.length || 0)
+  const reqDocs = p.json_field?.crm_v1?.acreditacion_docs || p.acreditacion_docs || { 
+    empresa: ['Inicio de actividades', 'Carpeta tributaria', 'Certificado cotizaciones', 'Constitución de empresa', 'RIOHS'], 
+    equipos: ['SOAP', 'Revisión Técnica', 'Certificación Anual Izaje'], 
+    personas: ['Contrato de trabajo', 'Cédula identidad', 'Licencia conducir'] 
+  }
+  const total = (reqDocs.empresa?.length || 0) + (reqDocs.equipos?.length || 0) + (reqDocs.personas?.length || 0)
   if (total === 0) return 100
-  const cumps = Object.keys(p.json_field?.ejecucion_v1?.cumplimiento_acreditaciones || {}).length
-  const pct = Math.round((cumps / total) * 100)
-  return Math.min(100, Math.max(0, pct > 0 ? pct : 60))
+  
+  const cumpsObj = p.json_field?.ejecucion_v1?.cumplimiento_acreditaciones || {}
+  const cumps = Object.keys(cumpsObj).filter(k => cumpsObj[k] === 'OK').length
+  const docsHomologados = Object.keys(p.json_field?.ejecucion_v1?.docs_homologados || p.json_field?.crm_v1?.docs_homologados || {}).length
+  const totalValidos = Math.max(cumps, docsHomologados)
+  
+  const pct = Math.round((totalValidos / total) * 100)
+  return Math.min(100, Math.max(0, pct))
 }
 
 const onModalClose = () => {
   mostrarModalCotizacion.value = false
   proyectoSeleccionadoId.value = null
+  proyectoSubTabInicial.value = null
   cargarProyectos() // recargar al cerrar por si se cambio a No Asignada
 }
 

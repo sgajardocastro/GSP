@@ -33,5 +33,15 @@
 ## 4. Servicios de Mensajería y Correo Enriquecido B2B
 - **Estándar Único de Correo:** Todos los documentos comerciales (cotizaciones, acuerdos, enrolamiento) deben ser despachados mediante plantillas HTML Enriquecidas corporativas con diseño responsivo, marcas de agua, resumen y botones CTA.
 - **Regla Técnica de la API (`POST /message`):** En el backend de LeanGlobal (`messageModel.js`), el servidor asigna el valor recibido en el parámetro `cuerpo` directamente al campo `html` de Nodemailer (`html: req.body.cuerpo`).
-- **Formato Obligatorio del Payload:** Todo cliente frontend o llamador de API DEBE enviar el string completo del marcado HTML enriquecido en el campo `cuerpo` (`{ para, asunto, cuerpo: htmlContent }`). Queda prohibido enviar texto plano plano o enviar la maqueta HTML en un atributo secundario `html:`, ya que causará que Nodemailer interprete el mensaje como texto sin formato.
+- **Formato Obligatorio del Payload:** Todo cliente frontend o llamador de API DEBE enviar el string completo del marcado HTML enriquecido en el campo `cuerpo` (`{ para, asunto, cuerpo: htmlContent }`). Queda prohibido enviar texto plano o enviar la maqueta HTML en un atributo secundario `html:`, ya que causará que Nodemailer interprete el mensaje como texto sin formato.
+
+## 5. Terminología de Dominio & Separación de Recursos
+- **Terminología Oficial de Rigger:** Queda establecido como regla canónica del dominio que SIEMPRE se habla de **`Rigger`** (nunca de `Señalero` ni `Rigger / Señalero`).
+- **Separación Semántica Estricta de Recursos:**
+  - **Tabla 1 (Flota & Equipos):** Reservada ÚNICA Y EXCLUSIVAMENTE para maquinaria, grúas telescópicas, camiones pluma, vehículos livianos y equipos físicos de izaje/transporte.
+  - **Tabla 2 (Tripulación & Personal Asignado):** Matriz donde se gestionan y asignan todos los recursos humanos (Operador de Grúa, Rigger, Prevencionista de Riesgos, Chofer, Supervisor de Faena). Las líneas comerciales de personal cotizado se sincronizan directamente a esta matriz.
+- **Umbrales Semafóricos de Acreditación (Regla 30 Días):**
+  - `🟢 VIG (Vigente):` El documento tiene más de 30 días de vigencia antes de su expiración.
+  - `🟡 VNC (Por Vencer):` El documento expira en 30 días o menos (ventana de alerta preventiva).
+  - `🔴 VNC (Vencido / Bloqueado):` La fecha de expiración ya fue superada (días < 0) o el documento no existe. Impide el despacho de la OT.
 
