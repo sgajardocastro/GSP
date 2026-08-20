@@ -208,6 +208,32 @@ El documento formal de cotización comercial PDF incorpora de manera visible y e
 
 ---
 
+### 4.5. Filtrado de Flota por Categoría y Subcategoría en Asignación Operativa (Patio) y Vista 360
+
+1. **Estructura de Clasificación de Flota:**
+   - Toda maquinaria física (`tequ_equipo`) está asociada a una **Categoría** (`tequ_categoria`: ej. *GRÚA TELESCÓPICA, CAMIÓN PLUMA, TRASLADOS, VEHÍCULO MENOR*) y a una **Subcategoría** (`tequ_subcategoria`: ej. *220 TON, 100 TON, 50 TON, CAMA BAJA, 4X4*).
+2. **Filtrado Inteligente en Asignación Operativa (`GestorOportunidades.vue` - Pestaña C):**
+   - Cada línea de servicio del DataGrid de asignación ejecuta la función `getEquiposFiltradosPorLinea(line)`.
+   - El desplegable lista prioritariamente los activos que coinciden de manera exacta con la **Categoría y Subcategoría requerida en la línea comercial**.
+   - En caso de no existir activos de esa subcategoría exacta, relaja el filtro a la Categoría general para permitir contingencias operativas.
+   - El equipo actualmente asignado siempre permanece visible en las opciones para evitar pérdida de selección.
+   - El texto del `<option>` expone: `[PATENTE] - [NOMBRE / MODELO] [SUBCATEGORÍA / CATEGORÍA]`.
+3. **Consola de Inventario de Activos (`Vista360.vue`):**
+   - La tabla maestra expone las columnas obligatorias **`Categoría`** (badge ámbar) y **`Subcategoría`**.
+   - Se incorporan selectores de filtro reactivo por Categoría y Subcategoría en la barra superior.
+   - La exportación a Excel (`exportToExcel`) incluye ambas columnas en el reporte `.xlsx`.
+
+---
+
+### 4.6. Persistencia Relacional y Bidireccional de Asignaciones (`tpry_rel_persona` & `tpry_rel_equipo`)
+
+1. **Contrato de Endpoints Relacionales Backend (`asignacionRecursosController.js`):**
+   - `GET /api/proyectos/:id/asignaciones/personas`: Debe proyectar explícitamente **`rp.id_user`**, `rp.id_rel_persona`, `p.nombre_proyecto`, `u.nombre_completo`, `rp.rol_asignado`, `rp.fecha_plan_ini`, `rp.fecha_plan_fin` y `rp.estado_real`.
+   - `GET /api/proyectos/:id/asignaciones/equipos`: Debe proyectar explícitamente **`re.id_equipo`**, `re.id_rel_equipo`, `p.nombre_proyecto`, `e.codigo_equipo`, `e.patente`, `re.rol_equipo`, `re.fecha_plan_ini`, `re.fecha_plan_fin` y `re.estado_real`.
+2. **Sincronización Dual (JSON + Tablas Relacionales PostgreSQL):**
+   - Al ejecutar `guardarCambiosAsignacion`, el sistema guarda el snapshot completo en `tpry_proyecto.json_field.ejecucion_v1.tripulacion_asignada` y simultáneamente sincroniza los registros individuales en `tpry_rel_persona` y `tpry_rel_equipo`.
+   - Al cargar el proyecto, el frontend recupera el listado desde `json_field.ejecucion_v1` y complementa las fechas y roles con los datos relacionales, validando siempre `if (perRel.id_user)` para evitar sobrescrituras de IDs con `undefined`.
+
 ---
 
 ## 5. Compuertas Determinísticas de Calidad Comercial (Quality Gates)

@@ -7,6 +7,7 @@ const getAsignacionesPersona = async (req, res) => {
         const result = await pool.query(
             `SELECT 
                 rp.id_rel_persona,
+                rp.id_user,
                 p.nombre_proyecto,
                 u.name_frst || ' ' || u.apellido_pat AS nombre_completo,
                 rp.rol_asignado,
@@ -78,6 +79,7 @@ const getAsignacionesEquipo = async (req, res) => {
         const result = await pool.query(
             `SELECT 
                 re.id_rel_equipo,
+                re.id_equipo,
                 p.nombre_proyecto,
                 e.codigo_equipo,
                 e.patente,

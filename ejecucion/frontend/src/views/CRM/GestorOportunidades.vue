@@ -5975,6 +5975,7 @@ const cargarDatosCotizacion = async () => {
 
           if (Array.isArray(perRows) && perRows.length > 0) {
             perRows.forEach(perRel => {
+              if (!perRel.id_user) return
               const matchTrip = tripulacionAsignada.value.find(t => 
                 (t.id_user && String(t.id_user) === String(perRel.id_user)) ||
                 (t.cargo && perRel.rol_asignado && t.cargo.toLowerCase().includes(perRel.rol_asignado.toLowerCase()))
