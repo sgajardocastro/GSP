@@ -3086,7 +3086,7 @@ const resolveFaseDeDominio = (estadoDb) => {
 };
 
 const isAsignacionConfirmada = computed(() => {
-  return estadoDbActual.value >= 5 || asignacionConfirmada.value === true;
+  return Number(estadoDbActual.value) >= 5;
 })
 
 const faseActual = computed(() => {
@@ -5802,10 +5802,6 @@ const cargarDatosCotizacion = async () => {
         if (ejecucion) {
           rawEjecucionJson.value = { ...ejecucion }
           
-          if (ejecucion.asignacion_confirmada || ejecucion.subtab_activa === 'preparacion_salida' || ejecucion.preparacion_salida?.patio_programado) {
-            asignacionConfirmada.value = true
-          }
-
           const estadoDb = parseInt(p.id_proyecto_estado) || 1
           
           if (estadoDb >= 3) {
@@ -5814,8 +5810,10 @@ const cargarDatosCotizacion = async () => {
             if (estadoDb === ESTADOS_DB.VALIDACION_DIFF) {
               operacionesSubTab.value = 'validacion'
               requerimientoAprobado.value = false
+              asignacionConfirmada.value = false
             } else if (estadoDb === ESTADOS_DB.ASIGNACION_RECURSOS) {
               requerimientoAprobado.value = true
+              asignacionConfirmada.value = false
               operacionesSubTab.value = (props.initialSubTab === 'acreditaciones') ? 'acreditaciones' : 'asignacion'
             } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
               requerimientoAprobado.value = true
