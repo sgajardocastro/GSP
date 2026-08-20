@@ -144,6 +144,28 @@ El documento formal de cotización comercial PDF incorpora de manera visible y e
 
 ---
 
+### 🚜 3.7. Asignación de Recursos OT: Estándar de Alta Densidad Lineal Unificada (Pestaña 3)
+
+Para evitar la saturación visual, dispersión en múltiples tablas y duplicación de cabeceras, la **Pestaña 3 (Asignación Recursos OT)** implementa una **Tabla Única de Alta Densidad** estructurada en 3 segmentos operacionales mediante separadores de fila compactos (Row Dividers):
+
+1. **Cabecera Global Única (`<thead>`):**
+   * `RECURSO / REQUERIMIENTO` (22%): Línea comercial base o concepto de apoyo.
+   * `EQUIPO / VEHÍCULO ASIGNADO` (30%): Selector de máquina/patente con insignia de acreditación (🟢/🟡/🔴).
+   * `OPERADOR / PERSONAL ASIGNADO` (26%): Selector de operador/chofer/especialista con sugerencias inteligentes por rol + insignia (🟢/🟡/🔴).
+   * `VENTANA PLANIFICADA` (18%): Rango de fechas inline `[ YYYY-MM-DD ➔ YYYY-MM-DD ]` sin micro-labels repetitivos.
+   * `ACC` (4%): Candado 🔒 (si es línea base comercial) o botón 🗑️ (si es recurso adicional).
+
+2. **Segmentos Operacionales (Separadores de Fila `<tr>` de 1 sola línea):**
+   * **🚜 Segmento 1: Flota Principal & Equipos de Servicio:** Une en 1 fila la grúa o camión pluma con su operador asignado. Botón `+ Agregar Equipo de Servicio`.
+   * **🚚 Segmento 2: Segmento Equipos Traslado & Choferes (Logística):** Une en 1 fila el camión cama baja, rampla o escolta con su chofer. Botón `+ Equipo Traslado`.
+   * **👷 Segmento 3: Especialistas & Personal Técnico en Terreno (Sin Vehículo):** Asigna riggers certificados, prevencionistas y supervisores que operan en tierra. La columna de equipo muestra `— (Personal en Tierra) —`. Botón `+ Añadir Especialista`.
+
+3. **Invariantes de Sincronización y Fechas:**
+   * La barra superior contiene la **Ventana Global de Servicio** (`Salida Base` ➔ `Término Faena`) con el botón **`⚡ Propagar Fechas`**, el cual actualiza en cascada las ventanas planificadas de todos los recursos.
+   * La tripulación completa (`tripulacionAsignada`) se computa reactivamente de forma lineal uniendo operadores, choferes y especialistas en tierra, alimentando sin fisuras el motor FES, los PDF de Puppeteer y la compuerta de acreditaciones.
+
+---
+
 ## 4. Flujo Operativo, Asignación de Recursos y FSM Relacional Canónica
 
 ### 4.1. Matriz Canónica de Estados en PostgreSQL (`tpry_proyecto.id_proyecto_estado`)
@@ -348,6 +370,19 @@ Feature: Gestor de Oportunidades y Cotizaciones B2B - Core Pipeline & FSM
     When el usuario despacha la cotización al correo del cliente mediante el modal de envío
     And presiona "Generar Requerimiento"
     Then el sistema habilita la transición y promueve el proyecto al Estado 3 (Validación & Diff)
+
+  Scenario: Asignación Lineal Unificada de Flota, Traslados y Especialistas
+    Given que el proyecto se encuentra en Estado 4 (Asignación de Recursos OT)
+    When el usuario abre la pestaña "3. Asignación Recursos OT"
+    Then el sistema debe renderizar una sola tabla global con 5 columnas sin cabeceras repetidas
+    And las grúas deben mostrar a su operador asignado en la misma fila
+    And los vehículos de traslado deben mostrar a su chofer en la misma fila
+    And los especialistas en tierra (Prevencionista, Rigger) deben ubicarse en el Segmento 3 con la columna de vehículo deshabilitada
+
+  Scenario: Propagación de Fechas Planificadas a toda la Planilla
+    When el usuario ajusta la fecha global de Salida Base a "2026-08-20" y Término Faena a "2026-08-26"
+    And presiona "⚡ Propagar Fechas"
+    Then todas las filas de Flota Principal, Traslados y Especialistas en Terreno deben actualizar su ventana a "2026-08-20 ➔ 2026-08-26"
 
   Scenario: Validación de Selectores Combobox Obligatorios en Preventa (Marcación Roja)
     Given que los 6 flags comerciales inician con valor null ("Seleccionar...")

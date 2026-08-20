@@ -506,277 +506,248 @@
             </div>
           </div>
 
-          <!-- BLOQUE PRINCIPAL: 2 TABLAS LADO A LADO (FLOTA Y TRIPULACIÓN EN PRIMER TERCIO) -->
-          <!-- ESTRUCTURA LINEAL EN 3 BLOQUES (EQUIPO > CONDUCTOR > FECHAS) -->
-          <div class="space-y-4">
-            
-            <!-- BLOQUE 1: FLOTA PRINCIPAL & OPERADORES DE SERVICIO -->
-            <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden flex flex-col shadow-lg shadow-black/40">
-              <div class="bg-white/[0.03] px-3.5 py-2.5 border-b border-white/10 flex justify-between items-center">
-                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  🚜 1. Flota Principal & Operadores de Servicio
-                </span>
-                <button @click="agregarEquipoPrincipal" type="button" class="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Añadir equipo de servicio adicional">
-                  + Agregar Equipo de Servicio
-                </button>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr class="bg-white/5 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
-                      <th class="p-2.5 w-[22%]">Requerimiento / Tipo</th>
-                      <th class="p-2.5 w-[30%]">Equipo Físico Asignado</th>
-                      <th class="p-2.5 w-[26%]">Operador Asignado</th>
-                      <th class="p-2.5 w-[18%]">Ventana Planificada</th>
-                      <th class="p-2.5 w-[4%] text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5 font-mono">
-                    <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
-                      <td class="p-2 font-sans">
-                        <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                        <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                          <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
-                          <span>•</span>
-                          <span>{{ line.cantidad }} {{ line.unidad }}</span>
-                        </div>
-                      </td>
-                      <td class="p-2">
-                        <div class="flex items-center gap-1.5">
-                          <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.tipo }}) --</option>
-                            <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </select>
-                          <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Acreditación Vigente">🟢 VIG</button>
-                          <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Por Vencer">🟡 VNC</button>
-                          <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Vencido">🔴 VNC</button>
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1.5">
-                          <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
-                            <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                              </option>
-                            </optgroup>
-                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                              </option>
-                            </optgroup>
-                          </select>
-                          <template v-if="line.operador_asignado_id">
-                            <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Acreditación Vigente">🟢 VIG</button>
-                            <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Por Vencer">🟡 VNC</button>
-                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Vencido">🔴 VNC</button>
-                          </template>
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1">
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Desde</span>
-                            <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                          <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Hasta</span>
-                            <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                        </div>
-                      </td>
-                      <td class="p-2 text-center">
-                        <span v-if="line.is_linea_base !== false" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
-                        <button v-else @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <!-- TABLA ÚNICA DE ALTA DENSIDAD LINEAL (UNA SOLA CABECERA GLOBAL) -->
+          <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden shadow-xl shadow-black/50">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
+                    <th class="py-2.5 px-3 w-[22%]">Recurso / Requerimiento</th>
+                    <th class="py-2.5 px-3 w-[30%]">Equipo / Vehículo Asignado</th>
+                    <th class="py-2.5 px-3 w-[26%]">Operador / Personal Asignado</th>
+                    <th class="py-2.5 px-3 w-[18%]">Ventana Planificada</th>
+                    <th class="py-2.5 px-2 w-[4%] text-center">Acc</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 font-mono">
+                  
+                  <!-- SECCIÓN 1: FLOTA PRINCIPAL & OPERADORES -->
+                  <tr class="bg-amber-500/10 border-t border-b border-amber-500/20">
+                    <td colspan="5" class="py-1.5 px-3">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                          🚜 1. Flota Principal & Operadores de Servicio
+                          <span class="text-[10px] font-mono text-amber-400/80 font-normal">({{ linesEquiposPrincipales.length }} {{ linesEquiposPrincipales.length === 1 ? 'equipo' : 'equipos' }})</span>
+                        </span>
+                        <button @click="agregarEquipoPrincipal" type="button" class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                          + Agregar Equipo
                         </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                      </div>
+                    </td>
+                  </tr>
 
-            <!-- BLOQUE 2: SEGMENTO EQUIPOS TRASLADO & CHOFERES (LOGÍSTICA) -->
-            <div class="bg-[#080d1a] border border-blue-500/30 rounded-lg overflow-hidden flex flex-col shadow-lg shadow-black/40">
-              <div class="bg-blue-950/40 px-3.5 py-2.5 border-b border-blue-500/30 flex justify-between items-center">
-                <span class="text-xs font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
-                  🚚 2. Segmento Equipos Traslado & Choferes (Logística)
-                </span>
-                <button @click="agregarEquipoTraslado" type="button" class="text-[11px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Añadir vehículo de traslado (Cama Baja / Escolta)">
-                  + Equipo Traslado
-                </button>
-              </div>
-
-              <div v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="p-3.5 text-center text-xs text-slate-400 italic bg-white/[0.01]">
-                Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
-              </div>
-
-              <div v-else class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr class="bg-blue-900/10 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-blue-500/20">
-                      <th class="p-2.5 w-[22%]">Rol / Apoyo Logístico</th>
-                      <th class="p-2.5 w-[30%]">Vehículo / Patente Asignada</th>
-                      <th class="p-2.5 w-[26%]">Chofer / Conductor Asignado</th>
-                      <th class="p-2.5 w-[18%]">Ventana Planificada</th>
-                      <th class="p-2.5 w-[4%] text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5 font-mono">
-                    <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] bg-blue-500/[0.02] transition-colors">
-                      <td class="p-2 font-sans">
-                        <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Ej. Cama Baja #1" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1.5 text-xs text-blue-200 font-bold outline-none focus:border-blue-400 truncate" />
-                      </td>
-                      <td class="p-2">
-                        <div class="flex items-center gap-1.5">
-                          <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-400 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo Traslado --</option>
-                            <option v-for="eq in listaEquiposMaster" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </select>
-                          <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
-                          <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
-                          <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1.5">
-                          <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-400 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
-                            <optgroup v-if="getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                              </option>
-                            </optgroup>
-                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                              </option>
-                            </optgroup>
-                          </select>
-                          <template v-if="eqEx.chofer_id">
-                            <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
-                            <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
-                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
-                          </template>
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1 bg-[#050810] border border-blue-500/20 rounded px-1.5 py-1">
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Desde</span>
-                            <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                          <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Hasta</span>
-                            <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                        </div>
-                      </td>
-                      <td class="p-2 text-center">
-                        <button @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- BLOQUE 3: ESPECIALISTAS & PERSONAL TÉCNICO EN TERRENO (RIGGERS, PREVENCIONISTAS, ETC.) -->
-            <div class="bg-[#080d1a] border border-emerald-500/30 rounded-lg overflow-hidden flex flex-col shadow-lg shadow-black/40">
-              <div class="bg-emerald-950/40 px-3.5 py-2.5 border-b border-emerald-500/30 flex justify-between items-center">
-                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  👷 3. Especialistas & Personal Técnico en Terreno (Sin Vehículo)
-                </span>
-                <button @click="agregarEspecialista" type="button" class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Añadir rigger, prevencionista o supervisor">
-                  + Añadir Especialista
-                </button>
-              </div>
-
-              <div v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="p-3.5 text-center text-xs text-slate-400 italic bg-white/[0.01]">
-                Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
-              </div>
-
-              <div v-else class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr class="bg-emerald-900/10 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-emerald-500/20">
-                      <th class="p-2.5 w-[30%]">Rol / Especialidad Requerida</th>
-                      <th class="p-2.5 w-[48%]">Especialista Asignado</th>
-                      <th class="p-2.5 w-[18%]">Ventana Planificada</th>
-                      <th class="p-2.5 w-[4%] text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5 font-mono">
-                    <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] bg-emerald-500/[0.02] transition-colors">
-                      <td class="p-2 font-sans">
-                        <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1.5 text-xs text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }">
-                          <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
-                          <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
-                          <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
-                          <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
+                  <!-- FILAS FLOTA PRINCIPAL -->
+                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                    <td class="py-2 px-3 font-sans">
+                      <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
+                      <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                        <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
+                        <span>•</span>
+                        <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.tipo }}) --</option>
+                          <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                            {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                          </option>
                         </select>
-                        <div v-if="esp.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-1 truncate" :title="esp.requerimiento">
-                          Req: {{ esp.requerimiento }}
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1.5">
-                          <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-emerald-400 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
-                            <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                              </option>
-                            </optgroup>
-                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(esp.cargo).otros" :key="'esp-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                              </option>
-                            </optgroup>
-                          </select>
-                          <template v-if="esp.id_user">
-                            <button type="button" v-if="getSemaforoTripulante(esp.id_user) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Acreditación Vigente">🟢 VIG</button>
-                            <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Por Vencer">🟡 VNC</button>
-                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Vencido">🔴 VNC</button>
-                          </template>
-                        </div>
-                      </td>
-                      <td class="p-2 font-sans">
-                        <div class="flex items-center gap-1 bg-[#050810] border border-emerald-500/20 rounded px-1.5 py-1">
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Desde</span>
-                            <input type="date" v-model="esp.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                          <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                          <div class="flex-1 min-w-0">
-                            <span class="text-[8px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Hasta</span>
-                            <input type="date" v-model="esp.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          </div>
-                        </div>
-                      </td>
-                      <td class="p-2 text-center">
-                        <span v-if="esp.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base requerida comercialmente">🔒</span>
-                        <button v-else @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                        <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                        <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
+                          <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                            </option>
+                          </optgroup>
+                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                            </option>
+                          </optgroup>
+                        </select>
+                        <template v-if="line.operador_asignado_id">
+                          <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                          <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                        </template>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-2 py-1">
+                        <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
+                        <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                      </div>
+                    </td>
+                    <td class="py-2 px-2 text-center">
+                      <span v-if="line.is_linea_base !== false" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
+                      <button v-else @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
 
+                  <!-- SECCIÓN 2: TRASLADOS Y LOGÍSTICA -->
+                  <tr class="bg-blue-950/40 border-t border-b border-blue-500/20">
+                    <td colspan="5" class="py-1.5 px-3">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                          🚚 2. Segmento Equipos Traslado & Choferes (Logística)
+                          <span class="text-[10px] font-mono text-blue-400/80 font-normal">({{ operacionesAssignment.equipos_extra?.length || 0 }} {{ (operacionesAssignment.equipos_extra?.length || 0) === 1 ? 'vehículo' : 'vehículos' }})</span>
+                        </span>
+                        <button @click="agregarEquipoTraslado" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                          + Equipo Traslado
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- FILAS TRASLADOS -->
+                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="border-b border-white/5 font-sans">
+                    <td colspan="5" class="py-2.5 px-3 text-center text-xs text-slate-500 italic">
+                      Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
+                    </td>
+                  </tr>
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
+                    <td class="py-2 px-3 font-sans">
+                      <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Ej. Cama Baja #1" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-blue-200 font-bold outline-none focus:border-blue-400 truncate" />
+                    </td>
+                    <td class="py-2 px-3">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo Traslado --</option>
+                          <option v-for="eq in listaEquiposMaster" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                            {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                          </option>
+                        </select>
+                        <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
+                        <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
+                        <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
+                          <optgroup v-if="getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                            </option>
+                          </optgroup>
+                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                            </option>
+                          </optgroup>
+                        </select>
+                        <template v-if="eqEx.chofer_id">
+                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
+                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
+                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                        </template>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-blue-500/20 rounded px-2 py-1">
+                        <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
+                        <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                      </div>
+                    </td>
+                    <td class="py-2 px-2 text-center">
+                      <button @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
+
+                  <!-- SECCIÓN 3: ESPECIALISTAS EN TERRENO -->
+                  <tr class="bg-emerald-950/40 border-t border-b border-emerald-500/20">
+                    <td colspan="5" class="py-1.5 px-3">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                          👷 3. Especialistas & Personal Técnico en Terreno (Sin Vehículo)
+                          <span class="text-[10px] font-mono text-emerald-400/80 font-normal">({{ especialistasTerreno?.length || 0 }} {{ (especialistasTerreno?.length || 0) === 1 ? 'persona' : 'personas' }})</span>
+                        </span>
+                        <button @click="agregarEspecialista" type="button" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                          + Añadir Especialista
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- FILAS ESPECIALISTAS -->
+                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="border-b border-white/5 font-sans">
+                    <td colspan="5" class="py-2.5 px-3 text-center text-xs text-slate-500 italic">
+                      Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
+                    </td>
+                  </tr>
+                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
+                    <td class="py-2 px-3 font-sans">
+                      <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }">
+                        <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
+                        <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
+                        <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
+                        <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
+                      </select>
+                      <div v-if="esp.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-1 truncate" :title="esp.requerimiento">
+                        Req: {{ esp.requerimiento }}
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans text-slate-500 text-xs italic">
+                      <div class="px-2 py-1 border border-dashed border-white/10 rounded text-slate-400/70 text-[11px] select-none text-center">
+                        — Personal en Tierra —
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1.5">
+                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-emerald-400 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
+                          <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                            </option>
+                          </optgroup>
+                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(esp.cargo).otros" :key="'esp-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                            </option>
+                          </optgroup>
+                        </select>
+                        <template v-if="esp.id_user">
+                          <button type="button" v-if="getSemaforoTripulante(esp.id_user) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                          <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                        </template>
+                      </div>
+                    </td>
+                    <td class="py-2 px-3 font-sans">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-emerald-500/20 rounded px-2 py-1">
+                        <input type="date" v-model="esp.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
+                        <input type="date" v-model="esp.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                      </div>
+                    </td>
+                    <td class="py-2 px-2 text-center">
+                      <span v-if="esp.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base requerida comercialmente">🔒</span>
+                      <button v-else @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
+
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- BLOQUE INFERIOR: REFERENCIA VISITA A TERRENO + MATRIZ DE APAREJOS LADO A LADO -->
