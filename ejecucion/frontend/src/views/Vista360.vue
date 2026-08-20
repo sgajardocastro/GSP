@@ -75,9 +75,19 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <select v-model="selectedCategoryFilter" @change="selectedSubcategoryFilter = ''" class="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg px-2.5 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white outline-none focus:border-blue-500/50">
+              <option value="" class="bg-[#0a0f1e] text-slate-400">Todas las Categorías</option>
+              <option v-for="cat in uniqueCategories" :key="cat" :value="cat" class="bg-[#0a0f1e] text-white">{{ cat }}</option>
+            </select>
+            <select v-model="selectedSubcategoryFilter" class="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg px-2.5 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white outline-none focus:border-blue-500/50">
+              <option value="" class="bg-[#0a0f1e] text-slate-400">Todas las Subcategorías</option>
+              <option v-for="sub in uniqueSubcategories" :key="sub" :value="sub" class="bg-[#0a0f1e] text-white">{{ sub }}</option>
+            </select>
+          </div>
           <div class="relative">
              <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 dark:text-muted-foreground" />
-             <input type="text" v-model="searchQuery" placeholder="BUSCAR POR PATENTE O MODELO..." class="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-blue-500/50 w-64 transition-all text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500" />
+             <input type="text" v-model="searchQuery" placeholder="BUSCAR POR PATENTE O MODELO..." class="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:border-blue-500/50 w-56 transition-all text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500" />
           </div>
           <button @click="exportToExcel" class="flex items-center gap-2 px-4 py-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-600 border border-emerald-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-500 dark:border-emerald-500/30 rounded-lg transition-all group">
             <FileSpreadsheet class="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -94,12 +104,14 @@
         <table class="w-full text-left">
           <thead class="sticky top-0 bg-zinc-100 dark:bg-zinc-950 z-10 border-b border-zinc-200 dark:border-white/10">
             <tr class="bg-zinc-200/50 dark:bg-white/[0.03]">
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Activo (Patente)</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Marca / Modelo</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Última Inspección</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Doc. Legal</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Doc. General</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-right">Acciones</th>
+              <th class="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Activo (Patente)</th>
+              <th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400">Marca / Modelo</th>
+              <th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-500">Categoría</th>
+              <th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Subcategoría</th>
+              <th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Última Inspección</th>
+              <th class="px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Doc. Legal</th>
+              <th class="px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">Doc. General</th>
+              <th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-200 dark:divide-white/5">
@@ -109,7 +121,7 @@
               @click="openDetail(asset)"
               class="hover:bg-blue-500/[0.05] cursor-pointer transition-all group h-12"
             >
-              <td class="px-6 py-2 whitespace-nowrap">
+              <td class="px-5 py-2 whitespace-nowrap">
                 <div class="flex items-center gap-3">
                   <div class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg border border-zinc-200 dark:border-white/10 group-hover:border-blue-500/50 transition-colors">
                     <component :is="getIcon(asset.type)" class="w-3.5 h-3.5 text-zinc-600 dark:text-white/70" />
@@ -118,8 +130,14 @@
                   <span class="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 opacity-60 tracking-[0.1em]">({{ asset.internalId }})</span>
                 </div>
               </td>
-              <td class="px-6 py-2 whitespace-nowrap">
+              <td class="px-4 py-2 whitespace-nowrap">
                 <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-tighter">{{ asset.brand }} &bull; {{ asset.model }}</span>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase tracking-tight">{{ asset.category }}</span>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">
+                <span class="text-xs font-semibold text-slate-300 tracking-tight">{{ asset.subcategory }}</span>
               </td>
               <td class="px-6 py-2 text-center whitespace-nowrap">
                 <span class="px-3 py-1 rounded-full border text-[9px] font-bold uppercase tracking-wider"
@@ -506,6 +524,23 @@ function onEquipmentSaved() {
   }
 }
 
+const selectedCategoryFilter = ref('')
+const selectedSubcategoryFilter = ref('')
+
+const uniqueCategories = computed(() => {
+  const cats = fleet.value.map(a => a.category).filter(Boolean)
+  return [...new Set(cats)].sort()
+})
+
+const uniqueSubcategories = computed(() => {
+  let list = fleet.value
+  if (selectedCategoryFilter.value) {
+    list = list.filter(a => a.category === selectedCategoryFilter.value)
+  }
+  const subs = list.map(a => a.subcategory).filter(Boolean)
+  return [...new Set(subs)].sort()
+})
+
 const fleetKPIs = computed(() => {
   const f = fleet.value
   return {
@@ -527,12 +562,21 @@ const filteredFleet = computed(() => {
   else if (currentFilter.value === 'doc-warning') result = result.filter(a => (a.docStatus === 'warning' || a.docGralStatus === 'warning') && a.docStatus !== 'error' && a.docGralStatus !== 'error')
   else if (currentFilter.value === 'critical') result = result.filter(a => a.lastInspStatus === 'error' || a.docStatus === 'error' || a.docGralStatus === 'error')
   
+  if (selectedCategoryFilter.value) {
+    result = result.filter(f => f.category === selectedCategoryFilter.value)
+  }
+  if (selectedSubcategoryFilter.value) {
+    result = result.filter(f => f.subcategory === selectedSubcategoryFilter.value)
+  }
+
   if (q) {
     result = result.filter(f => 
       f.plate.toLowerCase().includes(q) || 
       f.internalId.toLowerCase().includes(q) ||
       f.brand.toLowerCase().includes(q) ||
-      f.model.toLowerCase().includes(q)
+      f.model.toLowerCase().includes(q) ||
+      (f.category && f.category.toLowerCase().includes(q)) ||
+      (f.subcategory && f.subcategory.toLowerCase().includes(q))
     )
   }
   return result
@@ -717,6 +761,7 @@ async function fetchFleet() {
       }
       
       const categoryName = item.nombre_categoria || item.tipo_equipo || 'GRUA'
+      const subcategoryName = item.nombre_subcategoria || item.subcategoria || 'General'
       
       return {
         id: item.id_equipo,
@@ -724,6 +769,8 @@ async function fetchFleet() {
         plate: item.patente?.trim() || 'S/P',
         internalId: item.codigo_interno ? `CÓDIGO: ${item.codigo_interno}` : `ID: ${item.id_equipo}`,
         type: normalizeType(categoryName),
+        category: categoryName,
+        subcategory: subcategoryName,
         brand: item.nombre_marca || item.marca || 'N/A',
         model: item.nombre_modelo || item.modelo || 'N/A',
         inspStatus: lastInspStatus,
@@ -741,7 +788,7 @@ async function fetchFleet() {
         specs: [
           { label: 'Año', value: item.ano_fabricacion || 'S/I' },
           { label: 'Categoría', value: categoryName },
-          { label: 'Subcategoría', value: item.nombre_subcategoria || 'General' },
+          { label: 'Subcategoría', value: subcategoryName },
           { label: 'Capacidad', value: item.capacidad_maxima ? `${item.capacidad_maxima} ${item.unidad_capacidad || 'TON'}` : 'S/I' },
           { label: 'Número Serie', value: item.numero_serie || 'S/I' },
           { label: 'Empresa', value: item.name_empresa || item.razon_social || 'SAN PABLO' },
@@ -863,6 +910,8 @@ function exportToExcel() {
   const data = filteredFleet.value.map(asset => ({
     'Patente': asset.plate,
     'ID Interno': asset.internalId,
+    'Categoría': asset.category || 'N/A',
+    'Subcategoría': asset.subcategory || 'N/A',
     'Marca': asset.brand,
     'Modelo': asset.model,
     'Última Inspección': asset.lastInspText,
@@ -874,7 +923,7 @@ function exportToExcel() {
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, "Flota")
 
-  XLSX.writeFile(workbook, `Flota_Transmac_${new Date().toISOString().split('T')[0]}.xlsx`)
+  XLSX.writeFile(workbook, `Flota_San_Pablo_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 </script>
 

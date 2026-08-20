@@ -544,9 +544,9 @@
                       <td class="p-1.5">
                         <div class="flex items-center gap-1.5">
                           <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo --</option>
-                            <option v-for="eq in listaEquiposMaster" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.tipo }}{{ line.subcategoria ? ' / ' + line.subcategoria : '' }}) --</option>
+                            <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                             </option>
                           </select>
                           <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer transition-transform hover:scale-105" title="Ver detalle de acreditaciones de este equipo">🟢 VIG</button>
@@ -3162,7 +3162,9 @@ const cargarListaEquiposMaster = async () => {
         nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
         modelo: e.modelo || e.nombre_equipo || '',
         patente: e.patente || e.ppu || 'S/P',
-        tipo: e.tipo_equipo || e.tipo || 'Maquinaria',
+        tipo: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
+        nombre_categoria: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
+        nombre_subcategoria: e.nombre_subcategoria || e.subcategoria || '',
         semaforo: e.estado === 'MANTENCION' ? 'RED' : 'GREEN'
       }))
       listaEquiposMaster.value = mapeados
@@ -3170,6 +3172,52 @@ const cargarListaEquiposMaster = async () => {
   } catch (err) {
     console.warn('Error cargando flota de equipos:', err)
   }
+}
+
+const getEquiposFiltradosPorLinea = (line) => {
+  const master = listaEquiposMaster.value || []
+  if (!line) return master
+
+  const catTarget = (line.tipo || line.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const subTarget = (line.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+  if (!catTarget && !subTarget) return master
+
+  // 1. Filtrar por coincidencia de categoría y subcategoría
+  const filtrados = master.filter(eq => {
+    const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const eqSub = (eq.nombre_subcategoria || eq.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const eqModelo = (eq.modelo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+    const matchCat = !catTarget || eqCat.includes(catTarget) || catTarget.includes(eqCat) || eqNombre.includes(catTarget)
+    const matchSub = !subTarget || eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget)
+
+    return matchCat && matchSub
+  })
+
+  // 2. Si no hay coincidencia estricta en subcategoría, filtrar por categoría
+  let resultado = filtrados
+  if (resultado.length === 0 && catTarget) {
+    resultado = master.filter(eq => {
+      const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      return eqCat.includes(catTarget) || catTarget.includes(eqCat) || eqNombre.includes(catTarget)
+    })
+  }
+
+  // 3. Fallback a toda la flota si aún así está vacío
+  if (resultado.length === 0) resultado = master
+
+  // 4. Asegurar que el equipo actualmente asignado siempre esté visible en la lista
+  if (line.equipo_asignado_id) {
+    const currentAssigned = master.find(eq => eq.id_equipo === line.equipo_asignado_id || eq.patente === line.equipo_asignado_id)
+    if (currentAssigned && !resultado.some(eq => eq.id_equipo === currentAssigned.id_equipo)) {
+      resultado = [currentAssigned, ...resultado]
+    }
+  }
+
+  return resultado
 }
 
 const isCertExpired = (dateString) => {
