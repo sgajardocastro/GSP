@@ -3472,8 +3472,9 @@ const resolverEquipoInfo = (eqIdOrObj) => {
 
 // Carga asíncrona y cache de certificados de equipos
 const cargarExpedienteEquipo = async (eqParam) => {
-  if (!eqParam) return []
+  if (!eqParam || eqParam === 'CRN-DEFAULT') return []
   const eqInfo = resolverEquipoInfo(eqParam)
+  if (!eqInfo || (!eqInfo.id && !eqInfo.patente)) return []
   const targetIdOrPatente = eqInfo.id || eqInfo.patente || eqParam
   const cacheKeyId = eqInfo.id ? String(eqInfo.id) : null
   const cacheKeyPat = eqInfo.patente ? String(eqInfo.patente).toUpperCase().trim() : null
@@ -4395,49 +4396,50 @@ const isCargoConductor = (cargo) => {
 }
 
 const equiposAsignadosTotales = computed(() => {
-  const result = []
-  const seen = new Set()
+  const result = [];
+  const seen = new Set();
 
   // 1. Equipos principales de las líneas comerciales
-  (linesValidas.value || []).forEach(l => {
-    if (l.equipo_asignado_id) {
-      const eqObj = getEquipoObj(l.equipo_asignado_id)
-      const idKey = eqObj ? eqObj.id_equipo : l.equipo_asignado_id
+  const lValidas = linesValidas.value || [];
+  lValidas.forEach(l => {
+    if (l && l.equipo_asignado_id) {
+      const eqObj = getEquipoObj(l.equipo_asignado_id);
+      const idKey = eqObj ? eqObj.id_equipo : l.equipo_asignado_id;
       if (idKey && !seen.has(idKey)) {
-        seen.add(idKey)
+        seen.add(idKey);
         result.push({
           id_equipo: idKey,
           patente: eqObj?.patente || String(l.equipo_asignado_id),
           nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || 'Equipo de Servicio',
           tipo: eqObj?.nombre_categoria || eqObj?.tipo || l.tipo || 'Equipo',
           subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || l.subcategoria || ''
-        })
+        });
       }
     }
-  })
+  });
 
   // 2. Equipos de apoyo / traslado en operacionesAssignment.equipos_extra
   if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
     operacionesAssignment.value.equipos_extra.forEach((eqId, idx) => {
       if (eqId) {
-        const eqObj = getEquipoObj(eqId)
-        const idKey = eqObj ? eqObj.id_equipo : eqId
+        const eqObj = getEquipoObj(eqId);
+        const idKey = eqObj ? eqObj.id_equipo : eqId;
         if (idKey && !seen.has(idKey)) {
-          seen.add(idKey)
+          seen.add(idKey);
           result.push({
             id_equipo: idKey,
             patente: eqObj?.patente || String(eqId),
             nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || `Equipo Apoyo #${idx + 1}`,
             tipo: eqObj?.nombre_categoria || eqObj?.tipo || 'Apoyo / Traslado',
             subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || ''
-          })
+          });
         }
       }
-    })
+    });
   }
 
-  return result
-})
+  return result;
+});
 
 const agregarEquipoTraslado = () => {
   if (!operacionesAssignment.value.equipos_extra) {
