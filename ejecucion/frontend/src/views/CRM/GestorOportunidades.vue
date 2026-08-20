@@ -515,8 +515,8 @@
                 <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                   🚜 1. Flota & Equipos (Principales y Apoyo)
                 </span>
-                <button @click="agregarEquipoAdicional" type="button" class="text-[11px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
-                  + Añadir Apoyo
+                <button @click="agregarEquipoTraslado" type="button" class="text-[11px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Añadir equipo de apoyo o cama baja">
+                  + Añadir Apoyo / Traslado
                 </button>
               </div>
 
@@ -531,8 +531,8 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5 font-mono">
-                    <!-- Equipos de la cotización -->
-                    <tr v-for="(line, idx) in linesValidas" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                    <!-- Equipos de la cotización principales -->
+                    <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
                       <td class="p-1.5 font-sans">
                         <div class="font-bold text-white text-xs leading-tight truncate max-w-[170px]" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
                         <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
@@ -543,7 +543,7 @@
                       </td>
                       <td class="p-1.5">
                         <div class="flex items-center gap-1.5">
-                          <select v-model="line.equipo_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                          <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                             <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.tipo }}{{ line.subcategoria ? ' / ' + line.subcategoria : '' }}) --</option>
                             <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                               {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
@@ -565,25 +565,43 @@
                       </td>
                     </tr>
 
-                    <!-- Equipos Extra de Apoyo -->
+                    <!-- Sección de Traslados y Equipos de Apoyo Logístico -->
+                    <tr v-if="tieneLineaTrasladoOExtra" class="bg-blue-950/30 border-t border-b border-blue-500/30">
+                      <td colspan="4" class="p-1.5 font-sans">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[11px] font-bold text-blue-300 flex items-center gap-1.5">
+                            🚚 Logística de Traslados & Equipos de Apoyo (Camas Bajas, Escoltas)
+                          </span>
+                          <button @click="agregarEquipoTraslado" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                            + Añadir Equipo
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Equipos Extra de Traslado / Apoyo -->
                     <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] bg-blue-500/[0.02] transition-colors">
                       <td class="p-1.5 font-sans">
-                        <span class="text-xs font-bold text-blue-300">Equipo Apoyo / Escolta</span>
-                        <span class="text-[10px] text-blue-400/80 block">Adicional</span>
+                        <span class="text-xs font-bold text-blue-300">Equipo Apoyo / Traslado #{{ idx + 1 }}</span>
+                        <span class="text-[10px] text-blue-400/80 block">Cama Baja / Escolta / Apoyo</span>
                       </td>
                       <td class="p-1.5">
-                        <select v-model="operacionesAssignment.equipos_extra[idx]" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo de Apoyo --</option>
-                          <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                            {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }}
-                          </option>
-                        </select>
+                        <div class="flex items-center gap-1.5">
+                          <select v-model="operacionesAssignment.equipos_extra[idx]" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo de Traslado / Apoyo --</option>
+                            <option v-for="eq in listaEquiposMaster" :key="'add-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                            </option>
+                          </select>
+                          <button type="button" v-if="operacionesAssignment.equipos_extra[idx] && getSemaforoEquipo(operacionesAssignment.equipos_extra[idx]) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', operacionesAssignment.equipos_extra[idx])" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
+                          <button type="button" v-else-if="operacionesAssignment.equipos_extra[idx]" @click.stop="abrirDetalleAcreditacion('equipo', operacionesAssignment.equipos_extra[idx])" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                        </div>
                       </td>
                       <td class="p-1.5 text-[11px] text-slate-400 font-sans">
                         <span>Sincronizado global</span>
                       </td>
                       <td class="p-1.5 text-center">
-                        <button @click="operacionesAssignment.equipos_extra.splice(idx, 1); marcarDirtyAsignacion()" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar equipo de apoyo">
+                        <button @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 transition-colors p-1 cursor-pointer" title="Eliminar equipo de traslado">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                       </td>
@@ -597,7 +615,7 @@
             <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden flex flex-col">
               <div class="bg-white/[0.03] px-3 py-2 border-b border-white/10 flex justify-between items-center">
                 <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  👷 2. Tripulación & Personal Asignado
+                  👷 2. Tripulación & Conductores Asignados
                 </span>
                 <button @click="agregarTripulante" type="button" class="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
                   + Añadir Tripulante
@@ -608,9 +626,9 @@
                 <table class="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr class="bg-white/5 text-slate-300 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
-                      <th class="p-2 w-[30%]">Cargo Operacional</th>
-                      <th class="p-2 w-[40%]">Personal Asignado</th>
-                      <th class="p-2 w-[26%]">Ventana Planificada</th>
+                      <th class="p-2 w-[34%]">Cargo / Vehículo Conducido</th>
+                      <th class="p-2 w-[38%]">Personal Asignado</th>
+                      <th class="p-2 w-[24%]">Ventana Plan</th>
                       <th class="p-2 w-[4%] text-center"></th>
                     </tr>
                   </thead>
@@ -620,13 +638,30 @@
                         <select v-model="t.cargo" :disabled="Boolean(t.requerimiento || t.is_linea_base)" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-500/50 truncate" :class="{ 'opacity-85 cursor-not-allowed': t.requerimiento || t.is_linea_base }">
                           <option value="Operador Grúa" class="bg-[#0a0f1e] text-white">Operador Grúa</option>
                           <option value="Operador Camión Pluma" class="bg-[#0a0f1e] text-white">Operador Camión Pluma</option>
-                          <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger</option>
-                          <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
                           <option value="Chofer Cama Baja" class="bg-[#0a0f1e] text-white">Chofer Cama Baja</option>
                           <option value="Escolta / Guía" class="bg-[#0a0f1e] text-white">Escolta / Guía</option>
+                          <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger</option>
+                          <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
                           <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
                         </select>
-                        <div v-if="t.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-0.5 truncate" :title="t.requerimiento">
+                        
+                        <!-- Selector de Patente Asignada al Conductor -->
+                        <div class="mt-1">
+                          <select 
+                            v-model="t.equipo_asignado_id" 
+                            @change="marcarDirtyAsignacion" 
+                            class="w-full bg-[#050810] border rounded px-1.5 py-0.5 text-[10px] font-mono outline-none truncate transition-colors"
+                            :class="isCargoConductor(t.cargo) && !t.equipo_asignado_id ? 'border-amber-500/60 text-amber-300 bg-amber-500/5 font-bold' : 'border-white/10 text-slate-300 focus:border-emerald-500/50'"
+                          >
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">
+                              {{ isCargoConductor(t.cargo) ? '⚠️ Conduce: Seleccionar Patente' : '-- Sin Vehículo / Maniobra General --' }}
+                            </option>
+                            <option v-for="eq in equiposAsignadosTotales" :key="'drveq-'+eq.id_equipo" :value="eq.id_equipo" class="bg-[#0a0f1e] text-white">
+                              🚚 {{ eq.patente }} - {{ eq.nombre_equipo }}
+                            </option>
+                          </select>
+                        </div>
+                        <div v-if="t.requerimiento" class="text-[9px] text-emerald-400 font-mono mt-0.5 truncate" :title="t.requerimiento">
                           Req: {{ t.requerimiento }}
                         </div>
                       </td>
@@ -1259,13 +1294,6 @@
                         <input type="date" v-model="getInspeccionEquipo(eqId).fecha_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
                         <input type="time" v-model="getInspeccionEquipo(eqId).hora_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
-                    </div>
-
-                    <!-- Botón Sustitución por Falla Técnica -->
-                    <div class="pt-1 border-t border-white/5">
-                      <button @click="abrirModalExcepcionEquipo(eqId)" type="button" class="w-full py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
-                        <span>🔄 Sustituir por Falla Técnica</span>
-                      </button>
                     </div>
 
                     <!-- Estado del Survey / Asignar Inspección -->
@@ -3289,6 +3317,24 @@ const linesValidas = computed(() => {
   })
 })
 
+const isTrasladoLine = (l) => {
+  if (!l) return false
+  const tipo = (l.tipo || l.categoria || '').toUpperCase()
+  const desc = (l.descripcion || l.subcategoria || '').toUpperCase()
+  return tipo.includes('TRASLADO') || tipo.includes('FLETE') || desc.includes('TRASLADO') || desc.includes('FLETE')
+}
+
+// Líneas de equipo principal (excluyendo traslados que se manejan en el grupo logístico)
+const linesEquiposPrincipales = computed(() => {
+  return (linesValidas.value || []).filter(l => !isTrasladoLine(l))
+})
+
+const tieneLineaTrasladoOExtra = computed(() => {
+  const tieneComercial = (linesValidas.value || []).some(l => isTrasladoLine(l)) || opportunity.value?.incluye_flete === true
+  const tieneExtras = Array.isArray(operacionesAssignment.value.equipos_extra) && operacionesAssignment.value.equipos_extra.length > 0
+  return tieneComercial || tieneExtras
+})
+
 // 2. Personal Comercial: Requerimientos de personas vendidas en la cotización
 const linesPersonalValidas = computed(() => {
   if (!lines.value || !Array.isArray(lines.value)) return []
@@ -4342,13 +4388,121 @@ const getUsuariosPorCargo = (cargo) => {
   return grp.sugeridos.length > 0 ? grp.sugeridos.concat(grp.otros) : grp.otros
 }
 
-const agregarEquipoAdicional = () => {
+const isCargoConductor = (cargo) => {
+  if (!cargo) return false
+  const c = cargo.toLowerCase()
+  return c.includes('operador') || c.includes('chofer') || c.includes('conductor') || c.includes('escolta')
+}
+
+const equiposAsignadosTotales = computed(() => {
+  const result = []
+  const seen = new Set()
+
+  // 1. Equipos principales de las líneas comerciales
+  (linesValidas.value || []).forEach(l => {
+    if (l.equipo_asignado_id) {
+      const eqObj = getEquipoObj(l.equipo_asignado_id)
+      const idKey = eqObj ? eqObj.id_equipo : l.equipo_asignado_id
+      if (idKey && !seen.has(idKey)) {
+        seen.add(idKey)
+        result.push({
+          id_equipo: idKey,
+          patente: eqObj?.patente || String(l.equipo_asignado_id),
+          nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || 'Equipo de Servicio',
+          tipo: eqObj?.nombre_categoria || eqObj?.tipo || l.tipo || 'Equipo',
+          subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || l.subcategoria || ''
+        })
+      }
+    }
+  })
+
+  // 2. Equipos de apoyo / traslado en operacionesAssignment.equipos_extra
+  if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
+    operacionesAssignment.value.equipos_extra.forEach((eqId, idx) => {
+      if (eqId) {
+        const eqObj = getEquipoObj(eqId)
+        const idKey = eqObj ? eqObj.id_equipo : eqId
+        if (idKey && !seen.has(idKey)) {
+          seen.add(idKey)
+          result.push({
+            id_equipo: idKey,
+            patente: eqObj?.patente || String(eqId),
+            nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || `Equipo Apoyo #${idx + 1}`,
+            tipo: eqObj?.nombre_categoria || eqObj?.tipo || 'Apoyo / Traslado',
+            subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || ''
+          })
+        }
+      }
+    })
+  }
+
+  return result
+})
+
+const agregarEquipoTraslado = () => {
   if (!operacionesAssignment.value.equipos_extra) {
     operacionesAssignment.value.equipos_extra = []
   }
   operacionesAssignment.value.equipos_extra.push('')
+  
+  // Agregar automáticamente fila de Chofer en tripulacionAsignada
+  tripulacionAsignada.value.push({
+    id_user: '',
+    cargo: 'Chofer Cama Baja',
+    equipo_asignado_id: '',
+    semaforo: 'GREEN',
+    is_linea_base: false,
+    fecha_plan_ini: operacionesAssignment.value.fecha_salida_plan || '',
+    fecha_plan_fin: operacionesAssignment.value.fecha_fin_plan || ''
+  })
   marcarDirtyAsignacion()
 }
+
+const eliminarEquipoTraslado = (idx) => {
+  const removedEqId = operacionesAssignment.value.equipos_extra[idx]
+  operacionesAssignment.value.equipos_extra.splice(idx, 1)
+  if (removedEqId) {
+    tripulacionAsignada.value.forEach(t => {
+      if (t.equipo_asignado_id === removedEqId) {
+        t.equipo_asignado_id = ''
+      }
+    })
+  }
+  marcarDirtyAsignacion()
+}
+
+const onEquipoPrincipalCambiado = (line) => {
+  marcarDirtyAsignacion()
+  if (!line || !line.equipo_asignado_id) return
+  
+  // Auto-asignar al primer operador de grúa sin patente asignada
+  const operadorSinAsignar = tripulacionAsignada.value.find(t => 
+    (t.cargo === 'Operador Grúa' || t.cargo === 'Operador Camión Pluma') && !t.equipo_asignado_id
+  )
+  if (operadorSinAsignar) {
+    operadorSinAsignar.equipo_asignado_id = line.equipo_asignado_id
+  }
+}
+
+const onEquipoExtraCambiado = (idx) => {
+  marcarDirtyAsignacion()
+  const newEqId = operacionesAssignment.value.equipos_extra[idx]
+  if (!newEqId) return
+  
+  const eqObj = getEquipoObj(newEqId)
+  const isEscolta = eqObj && (eqObj.tipo?.toLowerCase().includes('menor') || eqObj.nombre_equipo?.toLowerCase().includes('escolta'))
+  
+  // Auto-vincular al primer chofer sin patente asignada
+  const driverSinAsignar = tripulacionAsignada.value.find(t => isCargoConductor(t.cargo) && !t.equipo_asignado_id)
+  if (driverSinAsignar) {
+    driverSinAsignar.equipo_asignado_id = newEqId
+    if (isEscolta && driverSinAsignar.cargo === 'Chofer Cama Baja') {
+      driverSinAsignar.cargo = 'Escolta / Guía'
+    }
+  }
+}
+
+const agregarEquipoAdicional = agregarEquipoTraslado
 
 const getSemaforoEquipo = (equipoId) => {
   if (!equipoId || equipoId === 'CRN-DEFAULT') return 'GREEN'
@@ -6632,10 +6786,29 @@ watch(() => equiposAsignadosLista.value, () => {
 }, { deep: true })
 
 const confirmarAsignacionOT = async () => {
-  // VALIDACIÓN STRICTA (NUEVO)
-  if (opportunity.value.requiere_rigger && !operacionesAssignment.value.rigger_id) {
-    alert('⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar Rigger.')
-    return
+  // VALIDACIÓN STRICTA DE RIGGER
+  if (opportunity.value.requiere_rigger) {
+    const tieneRigger = tripulacionAsignada.value.some(t => t.id_user && t.cargo === 'Rigger') || operacionesAssignment.value.rigger_id
+    if (!tieneRigger) {
+      alert('⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar un Rigger en la Tripulación.')
+      return
+    }
+  }
+
+  // Validación: Conductores para vehículos asignados
+  const equiposSinConductor = []
+  equiposAsignadosTotales.value.forEach(eq => {
+    const tieneChofer = tripulacionAsignada.value.some(t => 
+      t.id_user && (t.equipo_asignado_id === eq.id_equipo || t.equipo_asignado_id === eq.patente)
+    )
+    if (!tieneChofer) {
+      equiposSinConductor.push(`${eq.patente} (${eq.nombre_equipo || eq.tipo})`)
+    }
+  })
+
+  if (equiposSinConductor.length > 0) {
+    const continuar = confirm(`⚠️ Verificación Operativa:\nLos siguientes equipos asignados no tienen un Conductor / Operador asociado en la Tripulación:\n• ${equiposSinConductor.join('\n• ')}\n\n¿Deseas confirmar la OT de todas formas?`)
+    if (!continuar) return
   }
   try {
     const token = localStorage.getItem('token') || ''

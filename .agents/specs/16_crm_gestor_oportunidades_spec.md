@@ -236,6 +236,22 @@ El documento formal de cotización comercial PDF incorpora de manera visible y e
 
 ---
 
+### 4.7. Vinculación Directa Conductor $\leftrightarrow$ Patente y Gestión Multi-Equipo de Traslados
+
+1. **Tratamiento del Ítem Logístico "Traslados":**
+   - El ítem de Traslado en el estructurador comercial representa un concepto logístico global que agrupa múltiples vehículos de apoyo (Camas Bajas, Ramplas, Camionetas Escolta).
+   - En la Pestaña C (Asignación OT), este ítem se presenta como un grupo dinámico con el botón **`+ Añadir Apoyo / Traslado`**, permitiendo incorporar $N$ vehículos adicionales a la flota del servicio.
+   - Al incorporar un vehículo de traslado, el sistema inyecta automáticamente en la tabla de Tripulación la fila de su **Chofer / Conductor**, preconfigurado con las fechas planificadas.
+2. **Asociación Directa de Patente en la Fila del Conductor:**
+   - Para todo cargo de conducción (*Operador Grúa, Operador Camión Pluma, Chofer Cama Baja, Escolta / Guía*), la tabla de Tripulación expone un selector dedicado: **`Patente / Equipo Asignado`**.
+   - Dicho selector lista dinámicamente el 100% de los equipos físicos asignados en la columna izquierda (`[PATENTE] - [NOMBRE / MODELO]`).
+   - Si un conductor no tiene patente asignada, el selector resalta en advertencia ámbar (`⚠️ Conduce: Seleccionar Patente`).
+3. **Compuerta de Validación Operativa para Confirmación OT:**
+   - Antes de realizar la transición al Estado 5 (`PREPARACION_PATIO`), el sistema ejecuta un barrido determinístico sobre `equiposAsignadosTotales`.
+   - Si se detecta algún equipo físico sin conductor asociado en la tripulación, se solicita confirmación explícita al usuario listando las patentes sin chofer asignado.
+
+---
+
 ## 5. Compuertas Determinísticas de Calidad Comercial (Quality Gates)
 
 ### 5.1. Compuerta A: Validación Mandatoria para Generar Cotización (PDF / Versión Formal)
