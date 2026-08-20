@@ -94,6 +94,16 @@
           />
         </div>
 
+        <div>
+          <label class="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Comentarios / Instrucciones del Coordinador</label>
+          <textarea 
+            v-model="form.comentarios_coordinador" 
+            rows="3" 
+            placeholder="Instrucciones especiales, accesos o precauciones para el técnico en terreno..." 
+            class="w-full bg-[#050810] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500 transition-colors resize-none"
+          ></textarea>
+        </div>
+
         <button 
           type="submit" 
           :disabled="!form.id_ejecutor || !form.fecha_visita"
@@ -166,7 +176,8 @@ const especialistas = ref([])
 
 const form = ref({
   id_ejecutor: '',
-  fecha_visita: ''
+  fecha_visita: '',
+  comentarios_coordinador: ''
 })
 
 const showPinModal = ref(false)
@@ -264,12 +275,32 @@ const confirmarConPin = async () => {
             if (label.includes('RUT')) attr.default = proyectoData.value.cliente_rut || ''
             if (label.includes('NOMBRE DE LA OBRA')) attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
             if (label.includes('DIRECCION')) attr.default = dirObra
+            if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
+              attr.default = form.value.comentarios_coordinador || ''
+              attr.value = form.value.comentarios_coordinador || ''
+            }
             if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
               attr.default = proyectoData.value.coordenadas_mapa
             }
           })
         }
       })
+
+      // Asegurar que el Segmento 1 contenga el atributo de comentarios del coordinador
+      const seg1 = bodySeed.segmentos.find(s => (s.label || '').toUpperCase().includes('DATOS GENERALES')) || bodySeed.segmentos[0]
+      if (seg1 && Array.isArray(seg1.attributes)) {
+        const hasComentarioAttr = seg1.attributes.some(a => (a.label || '').toUpperCase().includes('COMENTARIO'))
+        if (!hasComentarioAttr) {
+          seg1.attributes.push({
+            label: 'COMENTARIOS DEL COORDINADOR',
+            type: 'textArea',
+            default: form.value.comentarios_coordinador || '',
+            value: form.value.comentarios_coordinador || '',
+            required: false,
+            grid: 12
+          })
+        }
+      }
     }
 
     // 2. Crear e instanciar survey de Visita a Terreno vía API oficial POST /api/survey con body_exec poblado
@@ -300,11 +331,12 @@ const confirmarConPin = async () => {
       console.warn("Survey base pre-creado o delegado al backend:", surveyErr)
     }
 
-    // 2. Firmar con FES y actualizar estado de la solicitud
+    // 3. Firmar con FES y actualizar estado de la solicitud
     await apiAxios.post(`/visitas/token/${token}/asignar`, {
       id_ejecutor: form.value.id_ejecutor,
       fecha_visita: form.value.fecha_visita,
       id_coordinador: proyectoData.value.coordinador?.id_user || null,
+      comentarios_coordinador: form.value.comentarios_coordinador || '',
       fes_pin_hash: pinHash
     })
     

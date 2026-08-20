@@ -78,8 +78,9 @@
                 <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
                   🔥 Alta
                 </span>
-                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
                 <div 
+                  v-if="Number(p.id_proyecto_estado) >= 5"
                   @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
                   class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
                   :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
@@ -142,8 +143,9 @@
                 <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
                   🔥 Alta
                 </span>
-                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
+                <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
                 <div 
+                  v-if="Number(p.id_proyecto_estado) >= 5"
                   @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
                   class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
                   :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
@@ -520,28 +522,26 @@ const cargarProyectos = async () => {
     const { data } = await apiAxios.get('/proyectos')
     const proyectos = data.proyectos || []
 
-    preventa.value       = proyectos.filter(p => p.id_proyecto_estado === 1 || p.id_proyecto_estado === 2)
+    // Columna 1: Requerimiento Registrado / Preventa Comercial
+    preventa.value       = proyectos.filter(p => [1, 2].includes(Number(p.id_proyecto_estado)))
     
-    // Columna 2: En Verificación Operaciones (Sub-tab validación o sin subtab)
-    verificacion.value   = proyectos.filter(p => p.id_proyecto_estado === 3 && (!p.json_field?.ejecucion_v1?.subtab_activa || p.json_field?.ejecucion_v1?.subtab_activa === 'validacion'))
+    // Columna 2: En Verificación Operaciones (Validación Diff)
+    verificacion.value   = proyectos.filter(p => Number(p.id_proyecto_estado) === 3)
 
-    // Columna 3: En Asignación Recursos (Sub-tab asignacion)
-    asignados.value      = proyectos.filter(p => p.id_proyecto_estado === 3 && p.json_field?.ejecucion_v1?.subtab_activa === 'asignacion')
+    // Columna 3: En Asignación Recursos OT (Flota y Tripulación)
+    asignados.value      = proyectos.filter(p => Number(p.id_proyecto_estado) === 4)
 
-    // Columna 4: En Preparación Operaciones (Sub-tab preparacion_salida, patio_programado, asignacionConfirmada o estado 4/5)
-    desplazamiento.value = proyectos.filter(p => 
-      p.id_proyecto_estado === 4 || 
-      p.id_proyecto_estado === 5 || 
-      (p.id_proyecto_estado === 3 && (
-        ['preparacion_salida', 'acreditaciones'].includes(p.json_field?.ejecucion_v1?.subtab_activa) ||
-        p.json_field?.ejecucion_v1?.preparacion_salida?.patio_programado ||
-        p.json_field?.ejecucion_v1?.asignacionConfirmada
-      ))
-    )
+    // Columna 4: En Preparación Operaciones (Patio, Checklists y Acreditaciones)
+    desplazamiento.value = proyectos.filter(p => Number(p.id_proyecto_estado) === 5)
 
-    maniobra.value       = proyectos.filter(p => p.id_proyecto_estado === 7 || p.json_field?.ejecucion_v1?.fase === 'maniobra')
-    completados.value    = proyectos.filter(p => p.id_proyecto_estado === 8)
-    noAsignadas.value    = proyectos.filter(p => p.id_proyecto_estado === 6)
+    // Columna 5: En Ejecución / Faena (Ruta y Maniobra)
+    maniobra.value       = proyectos.filter(p => [6, 7].includes(Number(p.id_proyecto_estado)))
+
+    // Columna 6: Completados / Cerrados
+    completados.value    = proyectos.filter(p => Number(p.id_proyecto_estado) === 8)
+
+    // No Asignadas / Desestimadas
+    noAsignadas.value    = proyectos.filter(p => Number(p.id_proyecto_estado) === 99 || (Number(p.id_proyecto_estado) === 6 && p.motivo_desestimacion))
 
     try {
       const resAcr = await apiAxios.get('/acreditaciones')
@@ -567,6 +567,12 @@ const abrirProyecto = (id, subtab = null) => {
 }
 
 const calcularPorcentajeAcreditacion = (p) => {
+  const estadoId = Number(p.id_proyecto_estado || 1)
+  // Invariante de negocio: La acreditación sólo se activa cuando los recursos están asignados (Preparación de Salida / Estado 5 o superior).
+  if (estadoId < 5) {
+    return 0
+  }
+
   if (p.json_field?.ejecucion_v1?.porcentaje_acreditacion !== undefined) {
     return Number(p.json_field.ejecucion_v1.porcentaje_acreditacion)
   }
@@ -576,7 +582,7 @@ const calcularPorcentajeAcreditacion = (p) => {
     personas: ['Contrato de trabajo', 'Cédula identidad', 'Licencia conducir'] 
   }
   const total = (reqDocs.empresa?.length || 0) + (reqDocs.equipos?.length || 0) + (reqDocs.personas?.length || 0)
-  if (total === 0) return 100
+  if (total === 0) return 0
   
   const cumpsObj = p.json_field?.ejecucion_v1?.cumplimiento_acreditaciones || {}
   const cumps = Object.keys(cumpsObj).filter(k => cumpsObj[k] === 'OK').length

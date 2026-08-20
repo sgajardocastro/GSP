@@ -166,6 +166,23 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Coordinar y Confirmar Reunión Presencial:** Coordinar con Omar la fecha definitiva de la reunión presencial (semana del 24-Ago) y confirmar a Sergio para itinerario de viaje.
 *   [ ] **[Jorge Ponce] Pruebas Piloto de Plataforma:** Realizar pruebas de campo con equipo comercial (Richard) y operaciones/analista para recopilar feedback previo a la sesión presencial.
 
+**Reunión 19-Ago-2026 (Revisión de Detalles Operativos y Comerciales):**
+*   [ ] **[Sergio Gajardo] Restringir fechas (Alta):** Obligar al vendedor a ingresar fecha de inicio y término para poder generar la cotización.
+*   [ ] **[Sergio Gajardo] Implementar selectores (Alta):** Reemplazar los campos de selección actuales por listas desplegables (SÍ/NO) con valores nulos por defecto y marcación en rojo.
+*   [ ] **[Sergio Gajardo] Obligar campos (Alta):** Configurar los campos clave en la interfaz como obligatorios para evitar datos incompletos.
+*   [ ] **[Sergio Gajardo] Reubicar costos (Alta):** Eliminar el campo de valor de la cotización comercial y trasladarlo a la fase de verificación.
+*   [ ] **[Sergio Gajardo] Incluir combustible (Alta):** Agregar el indicador de combustible a cargo del cliente en la columna de preventa.
+*   [ ] **[Sergio Gajardo] Crear buscador (Media-Alta):** Implementar una función de filtrado en el buscador de equipos para localizar elementos específicos por su nombre o patente.
+*   [ ] **[Sergio Gajardo] Agregar botón traslado (Media-Alta):** Implementar un botón funcional para añadir traslados en la cotización.
+*   [ ] **[Sergio Gajardo] Regla de negocio conductores (Media-Alta):** Programar la regla de negocio para asignar obligatoriamente un conductor a cada patente de equipo.
+*   [ ] **[Sergio Gajardo] Asociar flota (Media-Alta):** Asociar la flota de patentes a sus respectivas categorías y subcategorías.
+*   [ ] **[Sergio Gajardo] Configurar registro combustible (Media):** Habilitar la función de registro de carga de combustible en el módulo de viajes, incluyendo orómetro, odómetro y fotografías.
+*   [ ] **[Sergio Gajardo] Corregir estados (Media):** Revisar y corregir el error en el sistema relacionado con el estado de la tarjeta de preparación de operaciones.
+*   [ ] **[Sergio Gajardo] Añadir comentarios (Media):** Incluir un campo de texto libre para que el coordinador pueda añadir observaciones al asignar el servicio.
+*   [ ] **[Sergio Gajardo] Añadir comentario técnico (Media):** Agregar un campo de texto expandible para observaciones en la sección de implementos de izaje.
+*   [ ] **[Sergio Gajardo] Despachar dossier (Baja):** Finalizar el envío del dossier al cliente con los enlaces correspondientes.
+*   [ ] **[Sergio Gajardo] Reprogramar reunión (Baja):** Reasignar la reunión de gestión para mañana a las 16 horas.
+*   [ ] **[Sergio Gajardo] Revisar modificaciones (Baja):** Analizar los cambios realizados y notificar a Jorge Ponce para ejecutar la prueba del desarrollo.
 
 ---
 
@@ -247,6 +264,11 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Fix Estructural Asignación Visita & FES]:** Resolver de raíz la persistencia de datos comerciales en la solicitud de visita a terreno, formato limpio de contacto y resolución automática de coordinador en la firma con PIN FES (Caso `GSP-2608-4851-033`).
 * [x] **[Mejora UX Asignación de Recursos]:** Optimizar la experiencia de usuario (UX/UI) en la asignación de equipos y tripulación en la Torre de Control / Gestor de Oportunidades: DataGrid de alta densidad operacional (Equipos, Tripulación, Aparejos y Tiempos Globales compactos).
 * [x] **[Spec 16 Consolidada - Core Pipeline & Asignación de Recursos]:** Consolidación Spec-Driven en `.agents/specs/16_crm_gestor_oportunidades_spec.md` (Sección 4) de la arquitectura del Core Pipeline: regla canónica de Rigger (prohibición de "Señalero"), separación semántica estricta entre Flota física y Tripulación de personas, soporte para Prevencionista de Riesgos y DataGrid B2B de alta densidad.
+* [x] **[Refactor Máquina de Estados FSM & Torre Kanban]:** Alineación canónica con PostgreSQL (`id_proyecto_estado`), eliminación de heurísticas ambiguas, desbloqueo en edición comercial y despliegue exitoso en producción.
+* [x] **[Validaciones Estrictas Preventa, Selectores Combobox & PDF]:** Reemplazo de checkboxes por comboboxes con alerta roja en `null`, nuevo flag obligatorio de combustible cliente/empresa (`cliente_pone_combustible`), fechas inicio/término y categoría/subcategoría mandatorias en estructurador de servicios, e inclusión de desglose de pensiones y combustible en el PDF de cotización.
+* [x] **[Compuertas de Calidad Comercial - Cotización y Requerimiento]:** Validación determinística para Generar Cotización (Cliente, Contacto Nombre/Fono, Tipo de Pago, 6 Requerimientos Comerciales, Descripción Proyecto, Nombre/Dirección/Ciudad Obra, Fechas Inicio/Término, Estructurador) y compuerta estricta para Generar Requerimiento (exige al menos una cotización generada y efectivamente enviada al cliente).
+* [x] **[Invariante de Acreditación en FSM & Purga de Pruebas]:** Documentación en Spec 16 (Sección 6) de la regla de activación condicional de acreditación (estrictamente 0% y gauges ocultos en Estados < 5 hasta que se asignen recursos en Patio), e higienización/purga total de los 38 proyectos de prueba obsoletos en la base de datos PostgreSQL.
+* [x] **[Eliminación Montos Pensiones & Comentarios Visita a Terreno]:** Remoción definitiva de inputs numéricos de montos en Pensiones de Preventa (conservando únicamente desplegables de responsabilidad), y captura de comentarios del coordinador en la web token de asignación (`AsignacionVisita.vue`) con inyección en Segmento 1 (`body_exec`) del Survey de Terreno (Template 80).
 * [ ] **[Envío Dossier Acreditación B2B]:** Implementar el despacho por correo electrónico del expediente consolidado de acreditaciones (Empresa, Flota y Personal) al cliente mandante con trazabilidad de entrega.
 * [ ] **[Dar OK a Salida de Patio]:** Consolidación y validación formal de los 3 segmentos de preparación de salida (Control de Riesgos, Inspección 360° en PWA y Analista GPS) con transición al estado de Desplazamiento / Ruta.
 * [ ] **[Desplazamiento & Monitoreo de Viaje con Token]:** Especificación e implementación del flujo web de conductor (inicio de viaje, pings GPS cada 5 min y confirmación de llegada a faena).

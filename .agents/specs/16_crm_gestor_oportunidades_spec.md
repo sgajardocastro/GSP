@@ -50,110 +50,224 @@ Una oportunidad no es solo una "tarifa por horas", es un expediente comercial y 
 
 ## 3. UI / UX: Diseño de Interfaz y Campos de Oportunidad
 
-La interfaz se divide en dos paneles principales: una columna lateral izquierda estática para la parametrización comercial del cliente/oportunidad, y un panel de pestañas a la derecha para la configuración técnica y estructuración.
+La interfaz se divide en dos paneles principales: una columna lateral izquierda para la parametrización del cliente y flags operativos, y un panel de pestañas a la derecha para la configuración técnica, estructuración económica y condiciones comerciales.
 
-### 📋 3.1. Panel Izquierdo: Datos del Cliente
-Este bloque unifica y valida los datos de preventa, permitiendo el switch de contexto multi-tenant y la búsqueda inteligente conectada al backend:
-- **a. Empresa Emisora (Cotizar a nombre de):** Selector obligatorio para definir qué empresa del grupo emite el cobro (SAN PABLO, BESTMAQ, LOGISTICA DEL SUR, ROYAL RENTAL).
+---
+
+### 📋 3.1. Panel Izquierdo: Datos del Cliente y Flags Combobox Obligatorios
+
+Este bloque unifica y valida los datos de preventa. Todos los campos son obligatorios antes de permitir la generación de cotización o requerimiento:
+
+- **a. Empresa Emisora (Cotizar a nombre de):** Selector obligatorio (`SAN PABLO`, `BESTMAQ`, `LOGISTICA DEL SUR`, `ROYAL RENTAL`).
 - **b-e. Datos del Mandante (Buscador & Autocompletado):**
-  - Input tipo *Autocomplete* conectado a la base de datos (con debounce de 300ms y mínimo 3 caracteres de input).
-  - Permite buscar de forma dual por **Razón Social / Nombre** o por **RUT del Cliente** (sin puntos ni guiones).
-  - Al seleccionar, auto-completa en la ficha: Razón Social, RUT Cliente, Dirección Comercial y Giro Comercial.
-- **f-g. Puntos de Contacto Múltiples:** La entidad permite registrar un array de contactos asociados a la empresa (`json_field.puntos_contacto`). Cada contacto posee: Nombre, Correo, Teléfono y Observaciones. Al seleccionar un cliente, se despliega un selector para escoger el Contacto Específico para esta oportunidad, almacenando su referencia en `opportunity.value.json_field.crm_v1.contacto_id`.
-- **h. Tipo de Pago:** Selector con opciones: Efectivo, Transferencia, Crédito, Débito, Cheque, Otros.
-- **i. Requiere OC / HES:** Toggle/Checkbox para indicar si la facturación exige Orden de Compra u HES obligatoria.
-- **j. Requiere Acreditación (Checklist Avanzado):** 
-  - Toggle que habilita el panel de requerimientos documentales.
-  - Se presenta una grilla visual de 3 columnas (Empresa, Equipos, Personas).
-  - Cada columna lista las exigencias estáticas del mandante (ej. Empresa: F30, F30-1, Matriz de Riesgo; Equipos: SOAP, Revisión Técnica; Personas: Examen Ocupacional, Contrato).
-  - El estado de cumplimiento se serializa y guarda en `opportunity.acreditacion_docs` (o `json_field.operaciones_v1.cumplimiento_acreditaciones`) permitiendo a Operaciones validar los documentos físicos con botones Toggle (OK / NO OK) en la vista de Validación (Diff).
+  - Input tipo *Autocomplete* conectado a `tpar_empresas` (búsqueda por Razón Social o RUT).
+  - Al seleccionar, autocompleta: Razón Social, RUT Cliente, Dirección Comercial y Giro Comercial.
+- **f-g. Contacto Mandante:** Selector desplegable para escoger el Contacto Específico (`contacto_id`), autocompletando Nombre, Teléfono y Correo.
+- **h. Tipo de Pago:** Selector obligatorio (Efectivo, Transferencia, Crédito, Débito, Cheque, Otros).
+- **i-n. Matriz de 6 Selectores / Flags Obligatorios (Comboboxes SÍ / NO):**
+  Todos los flags se implementan como **componentes `<select>` con estado inicial `null`** (*"Seleccionar..."*), exigiendo una decisión consciente del usuario. Mientras un selector permanezca en `null`, se resalta con **borde rojo de advertencia** (`border-red-500 bg-red-500/5`) y bloquea la continuidad del flujo:
 
-### 🏗️ 3.2. Panel Derecho (Tab: Site Visit & Viabilidad): Datos Generales del Servicio
+  1. **`requiere_oc_hes` (¿Requiere OC / HES?):** `SÍ` / `NO`.
+     * Con `SÍ`, bloquea la facturación en EDP hasta la carga del documento formal emitido por el cliente.
+  2. **`requiere_acreditacion` (¿Requiere Acreditación?):** `SÍ` / `NO`.
+     * Con `SÍ`, habilita el subproceso de carga y validación de matrices documentales (Empresa, Flota, Personas).
+  3. **`incluye_flete` (¿Servicio incluye Traslado / Flete?):** `SÍ` / `NO`.
+     * Con `SÍ`, inyecta automáticamente una línea de Flete por `$500.000` (Categoría: `TRASLADOS`, Cantidad: `1`, Unidad: `Fijo`) en el estructurador. Con `NO`, elimina dicha línea.
+  4. **`requiere_rigger` (¿Requiere Rigger Certificado?):** `SÍ` / `NO`.
+     * Sincronización bidireccional con la línea `PERSONAL CERTIFICADO ➔ RIGGER` del estructurador.
+  5. **`requiere_prevencionista` (¿Requiere Prevencionista Certificado?):** `SÍ` / `NO`.
+     * Sincronización bidireccional con la línea `PERSONAL CERTIFICADO ➔ PREVENCIONISTA` del estructurador.
+  6. **`cliente_pone_combustible` (¿Cliente pone el combustible?):** `SÍ` / `NO`.
+     * Define contractualmente quién asume el suministro de combustible. Se imprime obligatoriamente en el PDF.
+
+---
+
+### 🏗️ 3.2. Panel Derecho (Tab 1: Site Visit & Viabilidad): Ventana Operativa Obligatoria y Datos del Servicio
+
 Formulario técnico descriptivo para la planificación e ingeniería de izajes:
-- **a. Nombre de la Obra:** Nombre descriptivo del proyecto o parada de planta.
-- **b. Dirección de la Obra:** Dirección física de destino y campo URL para enlace a Google Maps / GPS de ubicación.
-- **c. Ciudad de la Obra:** Comuna/Ciudad del servicio.
-- **d. Detalle del Servicio a realizar:** Área de texto extendido para describir la maniobra física.
-- **e. Tipo de Carga:** Estructura, caldera, contrapesos, etc.
-- **f. Peso de Carga:** Valor numérico en toneladas o kilogramos.
-- **g. Volumen de Carga (Largo/Alto/Ancho):** Dimensiones físicas.
-- **h. Radios de Trabajo:** Rango mínimo y máximo proyectados para la pluma.
-- **i. Alturas de Trabajo:** Altura física proyectada para el gancho.
-- **j. Visita a Terreno & Importación de Datos (Site Visit):**
-  - Checkbox para indicar si se ejecutó visita a terreno técnica.
-  - **Mecanismo de Conexión de Datos:** Al activarse, habilita un selector desplegable de inspecciones/visitas ya completadas y aprobadas en terreno (`tsrv_survey`).
-  - Al seleccionar una visita, el sistema realiza una consulta asíncrona a la base de datos y **rellena automáticamente** todos los datos generales de la obra y maniobra (campos a a i anteriores) reduciendo el reingreso de información.
-
-## 3.3. Estructurador de Servicios, Catálogo de Unidades y Reglas Comerciales de Flete / Fijo
-
-### A. Catálogo Estandarizado de Unidades de Cobro (`line.unidad`)
-En la grilla del estructurador de cotización (`lines`), la columna **Unidad de Cobro** expone los valores limpios y estandarizados:
-
-* `Horas`: Cobro por hora de servicio efectivo.
-* `Diario`: Cobro por jornada / mínima diaria.
-* `Semanal`: Cobro por semana de servicio.
-* `Mensual`: Cobro por mes / mínima mensual.
-* `Fijo`: Monto global cerrado (Suma Alzada).
+- **a. Ventana Operativa Exacta (CAMPOS OBLIGATORIOS):**
+  - **Fecha y Hora de Inicio:** Input `datetime-local` o par `fecha_inicio_plan` (`YYYY-MM-DD`) + `hora_inicio_plan` (`HH:MM`).
+  - **Fecha y Hora de Término:** Input `datetime-local` o par `fecha_fin_plan` (`YYYY-MM-DD`) + `hora_fin_plan` (`HH:MM`).
+  - *Regla:* No se permite guardar en preventa ni generar cotización si falta cualquiera de estos 4 valores.
+- **b. Datos de Ubicación de la Obra:** Nombre de la Obra, Dirección y Ciudad/Comuna.
+- **c. Datos de Maniobra:** Detalle del Servicio, Tipo de Carga, Peso de Carga (Ton/Kg), Volumen de Carga, Radios de Trabajo y Alturas de Trabajo.
+- **d. Importación de Inspección en Terreno (Site Visit):**
+  - Selector de visitas técnicas concluidas (`tsrv_survey`). Al seleccionar una visita, auto-rellena las especificaciones de maniobra y ubicación.
 
 ---
 
-### B. Reglas de Negocio de los Flags y Comportamientos Detallados
+### 💰 3.3. Estructurador de Servicios (`lines`): Obligatoriedad de Categoría y Subcategoría
 
-A continuación, se detalla el comportamiento exacto de los 5 *Flags* operativos y comerciales de la Oportunidad, acompañados de sus casos de uso, impacto en el PDF y el flujo de operaciones:
-
-#### 1. Requiere OC / HES (Orden de Compra / Hoja de Entrada de Servicios)
-- **Concepto:** Indica si el mandante exige estrictamente la emisión de una OC o HES formal para poder aceptar facturas por los servicios prestados.
-- **Caso de Uso:** Arriendo de Grúa para CMPC. Con el flag en `ON`, al finalizar la faena y pasar el expediente a **Facturación (EDP)**, el sistema bloquea al analista de cobranzas impidiéndole emitir y enviar la factura hasta que suba a la plataforma el documento oficial (OC o HES) enviado por CMPC.
-- **Impacto en PDF:** No altera la visualización del PDF de la cotización comercial.
-
-#### 2. Requiere Acreditación
-- **Concepto:** Determina si el cliente o la faena específica exige que tanto la maquinaria como el personal pasen por un proceso formal de acreditación (subida de documentos, certificaciones, pases, etc.) antes de ingresar a faena.
-- **Caso de Uso:** Al marcar la oportunidad como "Ganada" con el flag en `ON`, el sistema detona en paralelo (de manera asincrónica) una fase exclusiva de **Acreditación**. Operaciones puede ir armando la tripulación, pero el sistema generará advertencias de seguridad y bloqueos si se intenta despachar a terreno a un operador o grúa que aún no tenga la acreditación aprobada (luz verde).
-
-#### 3. Servicio Incluye Traslado (Flete)
-- **Concepto:** Define cómo se presenta y gestiona comercialmente el costo de movilización de los equipos.
-- **Caso de Uso:** Al encender el flag (ON), el sistema agrega automáticamente al Estructurador Económico una línea de Flete por un monto unitario predefinido de `$500.000` (Categoría: `TRASLADOS`, Cantidad: `1`, Unidad: `Fijo`).
-- **Comportamiento en UI:** Si el flag se desmarca (OFF), la línea de Flete asociada se elimina de forma automática de la tabla de servicios.
-- **Impacto en PDF:** 
-  * Si el valor de la línea de flete en el estructurador es mayor a `$0`, aparece una línea explícita detallando "Servicio de Traslado/Flete: $500.000" (o el monto modificado).
-  * Si la línea es eliminada (o su valor unitario se modifica a `$0`), la fila se oculta del PDF de la Cotización.
-
-#### 4. Requiere Rigger (Sincronización Bidireccional)
-- **Concepto:** Especifica si la maniobra exige normativamente la presencia de un Rigger certificado.
-- **Sincronización Bidireccional (Flag ↔ Estructurador):**
-  * **Flag a Estructurador:** Si el flag se marca en `SÍ` (ON), se agrega automáticamente al estructurador la línea de Rigger (Categoría: `PERSONAL CERTIFICADO`, Subcategoría: `RIGGER`, Cantidad: `1`, Unidad: `Diario`, Valor: `$0`).
-  * **Estructurador a Flag:** Si el flag está en `NO` (OFF) y el usuario agrega manualmente una línea con la subcategoría `RIGGER`, el flag de la columna izquierda se enciende automáticamente (ON) por sí solo.
-  * **Limpieza:** Si el flag de Rigger se desmarca (OFF), la línea de Rigger del estructurador se elimina automáticamente.
-- **Impacto en PDF:** Debe mostrarse explícitamente: **• Requiere Rigger:** `SÍ` / `NO`.
-- **Impacto Operativo (Asignación):** Al pasar a la etapa de Asignación, el despachador verá un requerimiento obligatorio en pantalla que dice "Asignar Rigger".
-
-#### 5. Prevencionista Certificado (Sincronización Bidireccional)
-- **Concepto:** Especifica si la maniobra exige la presencia de un Prevencionista de Riesgos Certificado.
-- **Sincronización Bidireccional (Flag ↔ Estructurador):**
-  * **Flag a Estructurador:** Si el flag se marca en `SÍ` (ON), se agrega automáticamente al estructurador la línea (Categoría: `PERSONAL CERTIFICADO`, Subcategoría: `PREVENCIONISTA`, Cantidad: `1`, Unidad: `Diario`, Valor: `$0`).
-  * **Estructurador a Flag:** Si el flag está en `NO` (OFF) y el usuario agrega manualmente una línea con subcategoría `PREVENCIONISTA`, el flag se enciende automáticamente (ON).
-  * **Limpieza:** Si el flag se desmarca (OFF), la línea de Prevencionista se elimina automáticamente.
-- **Impacto en PDF:** Debe mostrarse explícitamente: **• Prevencionista Certificado:** `SÍ` / `NO`.
-
-#### 6. Proyección de Costos de Pensiones (Base para EDP)
-Apertura en 5 conceptos independientes (cada uno con selector de pagador: `Costeado por Cliente` / `Costeado por San Pablo` / `No Aplica (N/A)` y campo de valorización monetaria `$CLP`):
-1. **Alojamiento**
-2. **Alimentación - Desayuno**
-3. **Alimentación - Almuerzo**
-4. **Alimentación - Cena**
-5. **Traslado Personal**
+En la tabla reactiva de líneas de cotización:
+1. **Regla de Obligatoriedad:** Al presionar `+ Agregar Servicio / Equipo`, la nueva fila exige de manera mandatoria seleccionar una **Categoría** (`tipo`) y una **Subcategoría** (`subcategoria`) válidas del maestro.
+2. **Validación Visual:** Si una fila tiene categoría o subcategoría vacía (`""` o `null`), se resalta con borde rojo y se bloquea el guardado.
+3. **Catálogo de Unidades:** `Horas`, `Diario`, `Semanal`, `Mensual`, `Fijo`.
 
 ---
 
-### C. Escenarios de Pruebas Integradas E2E (Gherkin/BDD para QA)
+### 🏨 3.4. Matriz de Responsabilidad de Gastos de Pensión en Preventa (Tab 2)
 
-Para asegurar la correcta operación del Gestor de Oportunidades y el ciclo de vida de los flags, la suite de pruebas del QA (Juan Manuel) debe validar los siguientes escenarios:
+En Preventa Comercial se define exclusivamente la responsabilidad de cobertura para los 5 conceptos de faena, **eliminando cualquier campo de monto monetario**:
+1. **Alojamiento:** `CLIENTE` / `SAN_PABLO` / `NO_APLICA`
+2. **Desayuno:** `CLIENTE` / `SAN_PABLO` / `NO_APLICA`
+3. **Almuerzo:** `CLIENTE` / `SAN_PABLO` / `NO_APLICA`
+4. **Cena:** `CLIENTE` / `SAN_PABLO` / `NO_APLICA`
+5. **Traslado de Personal:** `CLIENTE` / `SAN_PABLO` / `NO_APLICA`
+
+---
+
+### 📄 3.5. Generación y Renderizado del Reporte de Cotización PDF
+
+El documento formal de cotización comercial PDF incorpora de manera visible y estructurada:
+1. **Resumen de Flags Contractuales:**
+   - `• Requiere OC / HES:` **SÍ** / **NO**
+   - `• Requiere Acreditación:` **SÍ** / **NO**
+   - `• Incluye Flete / Traslado:` **SÍ** / **NO**
+   - `• Requiere Rigger Certificado:` **SÍ** / **NO**
+   - `• Requiere Prevencionista Certificado:` **SÍ** / **NO**
+   - `• Cliente pone combustible:` **SÍ** / **NO** (Explícito)
+2. **Resumen de Responsabilidad de Pensiones:**
+   - Tabla compacta o bloque detallando quién asume Alojamiento, Desayuno, Almuerzo, Cena y Traslados (sin desglose de montos).
+3. **Ventana de Servicio Planificada:** Fecha y hora exacta de inicio y término.
+4. **Condiciones Comerciales y Cláusulas Específicas:** Concatenadas dinámicamente según las categorías de servicio cotizadas (`TRASLADOS`, `GRUA TELESCOPICA`, `PLATAFORMAS`).
+
+---
+
+### 🗺️ 3.6. Flujo de Asignación de Visita a Terreno (Token Web) y Comentarios del Coordinador
+
+1. **Captura en Web de Un Solo Uso (`AsignacionVisita.vue`):**
+   - La pantalla pública de asignación por token (`/asignar-visita/:token`) incorpora un campo `<textarea>` obligatorio/opcional: **`Comentarios / Instrucciones del Coordinador`** (`comentarios_coordinador`).
+   - Permite al coordinador especificar accesos, precauciones de seguridad o instrucciones puntuales antes de firmar con su PIN FES de 4 dígitos.
+2. **Inyección en Encuesta de Terreno (`tsrv_survey` - Template 80):**
+   - Al validar la firma FES y asignar el especialista, el controlador backend inyecta automáticamente el texto de `comentarios_coordinador` en el **Segmento 1 (`DATOS GENERALES DEL SERVICIO`)** del `body_exec` de la encuesta.
+   - El especialista asignado visualiza estas instrucciones directamente en la PWA en terreno y en el visor/PDF de la visita técnica.
+
+---
+
+## 4. Flujo Operativo, Asignación de Recursos y FSM Relacional Canónica
+
+### 4.1. Matriz Canónica de Estados en PostgreSQL (`tpry_proyecto.id_proyecto_estado`)
+
+```
+[ Estado 1: OPORTUNIDAD ] ──▶ [ Estado 2: COTIZANDO ] ──▶ [ Estado 3: VALIDACION_DIFF ]
+                                                                     │
+[ Estado 5: PREPARACION_PATIO ] ◀── [ Estado 4: ASIGNACION_RECURSOS ] ◀┘
+             │
+             ├──▶ [ Estado 6: DESPLAZAMIENTO ] ──▶ [ Estado 7: EN_FAENA ] ──▶ [ Estado 8: COMPLETADO ]
+             │
+             └──▶ [ Estado 99: NO_GANADA ] (Desestimación Comercial)
+```
+
+| `id_proyecto_estado` | Nombre Oficial | Pestaña en Gestor | Modo de Edición | Columna Kanban |
+| :---: | :--- | :--- | :---: | :--- |
+| **1** | `OPORTUNIDAD` | `1. Preventa Comercial` | 🟢 Editable | Columna 1: Preventa Comercial |
+| **2** | `COTIZANDO` | `1. Preventa Comercial` | 🟢 Editable | Columna 1: Preventa Comercial |
+| **3** | `VALIDACION_DIFF` | `2. Validación & Diff` | 🟢 Editable | Columna 2: En Verificación Operaciones |
+| **4** | `ASIGNACION_RECURSOS` | `3. Asignación Recursos OT` | 🟢 Editable | Columna 3: En Asignación Recursos |
+| **5** | `PREPARACION_PATIO` | `5. Preparación Salida` | 🟢 Editable | Columna 4: En Preparación Operaciones |
+| **6** | `DESPLAZAMIENTO` | `Operaciones (Ruta)` | 🟢 Editable | Columna 5: En Faena / Ruta |
+| **7** | `EN_FAENA` | `Operaciones (PWA)` | 🟢 Editable | Columna 5: En Faena / Ruta |
+| **8** | `COMPLETADO` | `Cierre Operacional` | 🔒 Solo Lectura | Columna 6: Completados |
+| **99** | `NO_GANADA` | Histórico / Archivo | 🔒 Solo Lectura | Biblioteca: No Ganadas |
+
+---
+
+### 4.2. Reglas de Divulgación Progresiva y Candados FSM ($N, N+1, < N, > N$)
+
+1. **Hacia Adelante ($> N$) 🔒 BLOQUEADO:**
+   - Los botones de etapas futuras en el Stepper muestran candado 🔒 y están inhabilitados (`:disabled="true"`, `opacity-40 cursor-not-allowed`). No se puede saltar etapas sin ejecutar el hito de avance.
+2. **Estado Activo ($= N$) 🟢 ÚNICA ETAPA EDITABLE:**
+   - Es la única etapa donde los formularios e inputs están activos. La cabecera expone los botones contextuales para promover el proyecto al estado $N+1$.
+3. **Hacia Atrás ($< N$) 👁️ SOLO LECTURA INMUTABLE:**
+   - Se permite la consulta histórica para auditoría, pero todos los `<fieldset>` están bloqueados (`disabled`) y se despliega un banner de etapa concluida.
+   - **Acción de Retorno por Excepción:** Para modificar datos comerciales desde Operaciones se debe presionar **`Devolver a Preventa Comercial`**, lo que transiciona el proyecto al Estado 2 con registro de trazabilidad.
+
+---
+
+### 4.3. Catálogo de Acciones de Transición Formal
+
+1. **`confirmarGenerarRequerimiento` (Estado 2 $\rightarrow$ 3):** Valida que los 6 flags, fechas y líneas estén completos, transiciona a `VALIDACION_DIFF` y activa la subpestaña de Validación.
+2. **`aprobarYGenerarOT` (Estado 3 $\rightarrow$ 4):** Convalida el diff técnico, transiciona a `ASIGNACION_RECURSOS` y habilita la asignación de flota y tripulación.
+3. **`confirmarAsignacionOT` (Estado 4 $\rightarrow$ 5):** Valida que los recursos mandatorios (ej. Rigger si `requiere_rigger === true`) estén asignados, transiciona a `PREPARACION_PATIO` y sella la OT.
+4. **`volverACotizar` (Estado $N \rightarrow$ 2):** Retroceso controlado por excepción. Devuelve el proyecto a Preventa Comercial y reactiva la edición.
+5. **`confirmarNoAsignada` (Estado $N \rightarrow$ 99):** Desestimación comercial con captura de motivo y observación.
+
+---
+
+### 4.4. Reglas Canónicas de Dominio Operacional
+
+1. **Rigger (Prohibición de "Señalero"):** La única denominación canónica permitida es **`Rigger`**.
+2. **Separación Semántica Flota vs. Tripulación:**
+   - **Tabla 1 (`🚜 Flota & Equipos`):** Exclusiva para maquinaria física (`GRUAS TELESCOPICAS`, `CAMIONES PLUMA`, `VEHICULOS LIVIANOS`, `MAQUINARIA`, `TRASLADOS`).
+   - **Tabla 2 (`👷 Tripulación & Personal`):** Exclusiva para personas certificadas (`Operador Grúa`, `Operador Camión Pluma`, `Rigger`, `Prevencionista de Riesgos`, `Chofer Cama Baja`, `Escolta`, `Supervisor Faena`).
+3. **Inmutabilidad de Compromisos Contractuales (`🔒` vs `🗑️`):**
+   - Recursos originados de la cotización comercial quedan protegidos con candado `🔒` y no pueden ser eliminados en Operaciones.
+   - Solo los apoyos y tripulantes adicionales agregados ad-hoc en Operaciones cuentan con botón de eliminación `🗑️`.
+4. **Matriz de Aparejos Maestro (8 Ítems):**
+   - Siempre se presentan las 8 tarjetas maestras (`estrobos`, `eslingas`, `grilletes`, `pulpos_cadena`, `cadenas`, `balancines`, `canastillos`, `otros_accesorios`) precargando requerimientos de terreno y permitiendo ajustes operativos.
+
+---
+
+---
+
+## 5. Compuertas Determinísticas de Calidad Comercial (Quality Gates)
+
+### 5.1. Compuerta A: Validación Mandatoria para Generar Cotización (PDF / Versión Formal)
+Para ejecutar la acción **"Generar Cotización"** y emitir una versión formal de PDF en el servidor, el sistema exige de forma determinística:
+1. **Cliente Mandante:** Selección válida de empresa cliente (`rut_cliente` / `id_empresa_cliente`).
+2. **Punto de Contacto:**
+   - Nombre de contacto obligatorio (`contacto_nombre` no vacío).
+   - Teléfono de contacto obligatorio (`contacto_telefono` no vacío).
+3. **Tipo de Pago:** Selección válida de forma de pago (`tipo_pago`).
+4. **Requerimientos Comerciales:** Los 6 selectores combobox deben tener un valor definido (`true` o `false`, no `null`):
+   - `requiere_oc_hes`
+   - `requiere_acreditacion`
+   - `incluye_flete`
+   - `requiere_rigger`
+   - `requiere_prevencionista`
+   - `cliente_pone_combustible`
+5. **Descripción del Proyecto / Faena:** Texto explicativo obligatorio (`descripcion` no vacía).
+6. **Datos de Operación e Ingeniería (Obra y Tiempos):**
+   - Nombre de la obra obligatorio (`obra_nombre` no vacío).
+   - Dirección de la obra obligatoria (`obra_direccion` no vacía).
+   - Ciudad de la obra obligatoria (`obra_ciudad` no vacía).
+   - Fecha y Hora de Inicio obligatorias (`fecha_hora_inicio` no vacía).
+   - Fecha y Hora de Término obligatorias (`fecha_hora_termino` no vacía).
+7. **Estructurador de Servicios:** Al menos 1 línea de servicio registrada, con Categoría (`tipo`) y Subcategoría (`subcategoria`) válidas.
+
+### 5.2. Compuerta B: Validación Mandatoria para Generar Requerimiento (Traspaso a Operaciones)
+Para transferir la oportunidad al área de Operaciones (transición de Estado 2 a Estado 3 `VALIDACION_DIFF`):
+1. **Cumplimiento Total de la Compuerta A:** Todos los datos comerciales base deben ser válidos.
+2. **Generación Previa de Cotización:** Debe existir al menos 1 versión de cotización generada en `cotizaciones_historicas`.
+3. **Envío Efectivo al Cliente:** Al menos una de las cotizaciones generadas debe tener registro de envío formal al cliente (`evento_envio`, `eventos_envio` no vacío, `fecha_envio` o `enviada === true`). Si no se ha enviado, el sistema bloquea el traspaso y notifica:
+   > *"⚠️ No es posible transferir el requerimiento a Operaciones: Debe generar y enviar previamente la cotización formal al cliente mandante."*
+
+---
+
+## 6. Modelo Asíncrono de Acreditación y Tablero Kanban (`Torre.vue`)
+
+1. **Invariante de Activación Condicional por Estado:**
+   - **Regla Canónica de Dominio:** La acreditación de un proyecto **SOLO se activa cuando los recursos específicos (maquinaria y personas de la tripulación) ya han sido asignados** a la Orden de Trabajo.
+   - En etapas tempranas (`id_proyecto_estado < 5`: *1 y 2 Preventa Comercial*, *3 En Verificación Operaciones* y *4 En Asignación Recursos*), el porcentaje de acreditación es **estrictamente 0%** y los micro-gauges circulares permanecen ocultos (`v-if="Number(p.id_proyecto_estado) >= 5"`) en las columnas 1, 2 y 3 del Kanban, impidiendo lecturas anómalas o falsos avances documentales sin recursos reales.
+   - La auditoría documental y el cálculo de vigencias se inicia formalmente a partir del Estado 5 (**`PREPARACION_PATIO`**).
+
+2. **Desacoplamiento Operativo en Faena:**
+   - La gestión de acreditaciones documentales corre en paralelo y no detiene el avance de estados operativos.
+
+3. **Gauge de Cumplimiento Documental (Estado $\ge 5$):**
+   $$\% \text{ Acreditación} = \left( \frac{\sum \text{Documentos Vigentes (Empresa + Equipos Asignados + Personal Asignado)}}{\sum \text{Total Documentos Exigidos}} \right) \times 100\%$$
+   - `🟢 VERDE (100%)`: Cumplimiento total de carpetas y vigencias.
+   - `🔴 ROJO (0% - 99%)`: Advertencia de documentos pendientes o vencidos.
+
+---
+
+## 🧪 7. Suite Completa de Pruebas Integradas E2E (Gherkin/BDD para QA)
 
 ```gherkin
-Feature: Gestor de Oportunidades y Cotizaciones B2B
+Feature: Gestor de Oportunidades y Cotizaciones B2B - Core Pipeline & FSM
   Como Analista Comercial y de Operaciones
-  Quiero estructurar oportunidades de izaje con flags comerciales integrados
-  Para asegurar cotizaciones transparentes y bloqueos operativos deterministas
+  Quiero estructurar oportunidades de izaje con validaciones estrictas y FSM canónica
+  Para asegurar cotizaciones transparentes, inmutabilidad y bloqueos deterministas
 
   Background:
     Given que el usuario está autenticado en la plataforma web DEV
@@ -162,271 +276,107 @@ Feature: Gestor de Oportunidades y Cotizaciones B2B
     And busca y selecciona al Cliente Mandante "CONSTRUCTORA POCURO SPA"
     And selecciona el contacto y el Tipo de Pago "Transferencia"
 
+  Scenario: Validación de Datos Obligatorios para Generar Cotización (Compuerta A)
+    Given que el usuario no ha ingresado el contacto, descripción de faena o datos de obra
+    When hace clic en "Generar Cotización"
+    Then el sistema bloquea la emisión y resalta en rojo los campos faltantes
+    When el usuario completa todos los datos requeridos:
+      | Campo                     | Valor                                  |
+      | Nombre Contacto           | Juan Pérez                             |
+      | Teléfono Contacto         | +56 9 8765 4321                        |
+      | Tipo de Pago              | Transferencia                          |
+      | Descripción Faena         | Montaje estructura pesada              |
+      | Nombre Obra               | Planta Celulosa Laja                   |
+      | Dirección Obra            | Av. Los Boldos 1234                    |
+      | Ciudad Obra               | Laja                                   |
+      | Fecha/Hora Inicio         | 2026-09-01T08:00                       |
+      | Fecha/Hora Término        | 2026-09-02T18:00                       |
+    And selecciona SÍ o NO en los 6 selectores de requerimientos
+    And agrega una línea de servicio con Categoría y Subcategoría
+    When presiona nuevamente "Generar Cotización"
+    Then el sistema genera exitosamente la versión v1 del PDF
+
+  Scenario: Bloqueo de Generar Requerimiento sin Cotización Generada y Enviada (Compuerta B)
+    Given que el usuario completó los datos comerciales pero no ha generado cotización
+    When intenta presionar "Generar Requerimiento"
+    Then el sistema bloquea el traspaso y alerta: "Debe generar previamente la cotización PDF formal"
+    When el usuario genera la cotización pero no la ha enviado por correo
+    And intenta presionar "Generar Requerimiento"
+    Then el sistema bloquea el traspaso y alerta: "Debe enviar por correo la cotización generada al cliente mandante antes de realizar el traspaso a Operaciones"
+    When el usuario despacha la cotización al correo del cliente mediante el modal de envío
+    And presiona "Generar Requerimiento"
+    Then el sistema habilita la transición y promueve el proyecto al Estado 3 (Validación & Diff)
+
+  Scenario: Validación de Selectores Combobox Obligatorios en Preventa (Marcación Roja)
+    Given que los 6 flags comerciales inician con valor null ("Seleccionar...")
+    Then los 6 selectores deben renderizarse con borde rojo de advertencia
+    When el usuario intenta hacer clic en "Generar Cotización" o "Generar Requerimiento"
+    Then el sistema debe bloquear la acción y alertar de los campos faltantes
+    When el usuario selecciona explícitamente "SÍ" o "NO" en cada uno de los 6 selectores
+    Then la marcación roja debe desaparecer de todos los selectores
+
   Scenario: Inyección y Limpieza del Flete
-    When el usuario activa el switch "Servicio incluye Traslado"
+    When el usuario selecciona "SÍ" en el selector "Servicio incluye Traslado"
     Then se debe agregar automáticamente una línea en el estructurador con Categoría "TRASLADOS" y Valor Unitario 500000
-    When el usuario desmarca el switch "Servicio incluye Traslado"
+    When el usuario cambia el selector a "NO"
     Then la línea con Categoría "TRASLADOS" debe eliminarse automáticamente del estructurador
 
-  Scenario: Sincronización Bidireccional de Rigger
-    When el usuario activa el switch "Requiere Rigger"
-    Then se debe agregar automáticamente una línea en el estructurador con Categoría "PERSONAL CERTIFICADO" y Subcategoría "RIGGER"
-    When el usuario desmarca el switch "Requiere Rigger"
-    Then la línea con Subcategoría "RIGGER" debe eliminarse automáticamente
+  Scenario: Sincronización Bidireccional de Rigger y Prevencionista
+    When el usuario selecciona "SÍ" en "Requiere Rigger"
+    Then se debe agregar automáticamente una línea con Categoría "PERSONAL CERTIFICADO" y Subcategoría "RIGGER"
+    When el usuario cambia "Requiere Rigger" a "NO"
+    Then la línea de Rigger debe eliminarse automáticamente
     When el usuario agrega manualmente una línea con Categoría "PERSONAL CERTIFICADO" y Subcategoría "RIGGER"
-    Then el switch "Requiere Rigger" del panel izquierdo debe activarse (ON) automáticamente
+    Then el selector "Requiere Rigger" debe cambiar automáticamente a "SÍ"
 
-  Scenario: Sincronización Bidireccional de Prevencionista Certificado
-    When el usuario activa el switch "Prevencionista Certificado"
-    Then se debe agregar automáticamente una línea en el estructurador con Categoría "PERSONAL CERTIFICADO" y Subcategoría "PREVENCIONISTA"
-    When el usuario desmarca el switch "Prevencionista Certificado"
-    Then la línea con Subcategoría "PREVENCIONISTA" debe eliminarse automáticamente
-    When el usuario agrega manualmente una línea con Categoría "PERSONAL CERTIFICADO" y Subcategoría "PREVENCIONISTA"
-    Then el switch "Prevencionista Certificado" del panel izquierdo debe activarse (ON) automáticamente
+  Scenario: Validación Obligatoria de Categoría y Subcategoría en Líneas
+    When el usuario presiona "+ Agregar Servicio / Equipo"
+    And deja vacía la Categoría o la Subcategoría
+    Then los selectores vacíos deben mostrar borde rojo
+    And el sistema debe bloquear el guardado de la cotización
 
-  Scenario: Visibilidad Condicional en el PDF de Cotización
-    When el usuario activa el switch "Servicio incluye Traslado" con valor 500000
-    And activa el switch "Requiere Rigger"
-    And activa el switch "Prevencionista Certificado"
-    And hace clic en "Generar Cotización"
-    Then el PDF generado debe contener la línea "Servicio de Traslado/Flete: $500.000"
-    And debe contener el texto "• Requiere Rigger: SÍ"
-    And debe contener el texto "• Prevencionista Certificado: SÍ"
-    And debe contener el texto "• Incluye Traslado / Flete: SÍ"
-    And debe contener el texto "• Requiere Acreditación: SÍ" (o NO según corresponda)
-    When el usuario desmarca el switch "Servicio incluye Traslado"
-    And desmarca el switch "Requiere Rigger"
-    And hace clic en "Generar Cotización"
-    Then la línea "Servicio de Traslado/Flete" debe estar oculta en el PDF
-    And el PDF debe mostrar "• Requiere Rigger: NO"
+  Scenario: Visibilidad Completa de Flags y Pensiones en el PDF de Cotización
+    Given que el usuario seleccionó los 6 flags con valores:
+      | Flag                         | Valor |
+      | Requiere OC / HES            | SÍ    |
+      | Requiere Acreditación        | NO    |
+      | Incluye Traslado / Flete     | SÍ    |
+      | Requiere Rigger              | SÍ    |
+      | Prevencionista Certificado   | NO    |
+      | Cliente pone Combustible     | SÍ    |
+    And configuró la matriz de pensiones: Alojamiento (CLIENTE), Almuerzo (SAN_PABLO), Cena (CLIENTE)
+    When hace clic en "Generar Cotización"
+    Then el PDF generado debe mostrar explícitamente los 6 flags y la sección de Pensiones
 
-  Scenario: Bloqueo de Confirmación OT en Operaciones por falta de Rigger (Hard-Stop)
-    Given que la oportunidad tiene activo el switch "Requiere Rigger"
-    And el usuario hace clic en "Generar Requerimiento" para pasar el proyecto a operaciones
-    When el usuario ingresa a la pestaña de "Asignación de Recursos" (Torre de Control)
-    And deja vacío el campo de asignación de Rigger en la Tripulación
-    And hace clic en el botón de confirmación "Confirmar OT"
-    Then el sistema debe bloquear el guardado de la asignación
-    And debe desplegar una alerta nativa: "⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar Rigger"
-    When el usuario selecciona un Rigger certificado válido
-    And hace clic en "Confirmar OT"
-    Then el sistema debe guardar la asignación exitosamente y cambiar el estado del proyecto
+  Scenario: Bloqueo de Navegación hacia Adelante (> N) y Candados Progresivos
+    Given que el proyecto se encuentra en Estado 1 o 2 (Preventa Comercial)
+    Then los botones "2. Validación & Diff", "3. Asignación Recursos OT", "4. Acreditaciones" y "5. Preparación Salida" deben mostrar candado 🔒
+    And deben estar deshabilitados impidiendo el clic
+    When el usuario presiona "Generar Requerimiento" habiendo cumplido las compuertas
+    Then el proyecto avanza a Estado 3 (Validación & Diff)
+    And únicamente la pestaña "2. Validación & Diff" se desbloquea; las etapas 3, 4 y 5 continúan con candado 🔒
+
+  Scenario: Edición Exclusiva en Estado Activo (= N) e Inmutabilidad hacia Atrás (< N)
+    Given que el proyecto avanza a Estado 4 (Asignación de Recursos OT)
+    When el usuario visualiza la pestaña "3. Asignación Recursos OT"
+    Then los selectores de Grúa y Tripulación son 100% editables
+    When el usuario hace clic en "1. Preventa Comercial" (Etapa < 4)
+    Then se muestra el banner "🔒 Etapa Comercial Concluida (Modo Solo Lectura)"
+    And todos los inputs y tablas de Preventa están bloqueados en modo solo lectura
+
+  Scenario: Retorno por Excepción ("Devolver a Preventa Comercial")
+    Given que el proyecto está en Estado 3 o 4
+    When el usuario presiona el botón "Devolver a Preventa"
+    Then el proyecto transiciona a Estado 2 (COTIZANDO)
+    And la vista se posiciona automáticamente en "1. Preventa Comercial"
+    And todos los formularios comerciales se desbloquean quedando 100% editables
+    And la tarjeta en la Torre Kanban regresa inmediatamente a la Columna 1
+
+  Scenario: Invariante de Acreditación y Micro-Gauges en Kanban
+    Given que el proyecto se encuentra en Estado 1, 2, 3 o 4
+    Then la función calcularPorcentajeAcreditacion debe retornar exactamente 0%
+    And el micro-gauge circular de acreditación no debe renderizarse en las Columnas 1, 2 ni 3 del Kanban
+    When el proyecto es promovido al Estado 5 (PREPARACION_PATIO) tras haber asignado flota y tripulación
+    Then el micro-gauge circular se hace visible en la Columna 4
+    And el porcentaje de acreditación evalúa la vigencia real de los documentos exigidos
 ```
-
----
-
-### D. ⚠️ Puntos Críticos Aún Pendientes a Clarificar con el Cliente
-
-> [!IMPORTANT]
-> **PUNTO DE AUDITORÍA COMERCIAL: IMPACTO DE LA UNIDAD "FIJO" (SUMA ALZADA)**
-> 1. **Naturaleza de "Fijo":** La unidad `Fijo` debe incluirse en el catálogo para representar montos cerrados por maniobra o servicio puntual.
-> 2. **📌 PENDIENTE ESENCIAL CON EL CLIENTE:** Clarificar la lógica del calculador:
->    - ¿Seleccionar la unidad `Fijo` otorga un precio cerrado independiente de la composición detallada de cantidad/valor unitario de las líneas en el estructurador?
->    - ¿O aplica únicamente como etiqueta de cobro por línea sin alterar la suma del estructurador?
-
----
-
-## 3.4. Acuerdos Comerciales Dinámicos y Condiciones para Cotización (Tab 3: Condiciones Comerciales)
-
-Las cláusulas y condiciones comerciales se estructuran de forma modular y reactiva según las categorías de servicios agregadas en el **Estructurador de Servicios** (`lines`).
-
-### A. Reglas de Detección e Inclusión por Categoría Oficial
-1. **Categoría `TRASLADOS`:**
-   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría `tipo === 'TRASLADOS'` (ya sea agregada manualmente o detonada automáticamente por el switch *"Servicio incluye Traslado"*), independiente de la subcategoría seleccionada.
-   - **Texto Canónico:**
-     ```text
-     TRASLADOS:
-     Observaciones: 
-     Traslado incluye seguro de carga Traslado con sobredimensión deben solicitarse con 10 días de anticipación Valor no considera sobreestadía Guías de Traslados son responsabilidad del cliente Todos los Valores son más Iva Carga y descarga de maquinarias y equipos externos son responsabilidad de cliente.
-     ```
-
-3. **Categoría `GRUA TELESCOPICA` (o `GRÚA TELESCÓPICA`):**
-   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría de izaje (`GRUA TELESCOPICA`, `GRÚA TELESCÓPICA` o `CAMIÓN PLUMA`).
-   - **Texto Canónico:**
-     ```text
-     GRUA TELESCOPICA:
-     Observaciones: 
-     a. La hora de la máquina comenzará a regir desde que esta sale de nuestras bodegas; Salvo que se cobre Flete por traslado. 
-     b. Las Máquinas se ocuparán en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas. 
-     c. Se entenderá por hora Máquina, el tiempo de reloj durante el cual estén disponible para el cliente; solo se considerara 1 hora de colación como máximo 
-     d. Será por cuenta del cliente el traslado de contrapesos durante y dentro del recinto de faena. 
-     e. Si la maquinaria trabajase menos de las horas mínimas el cliente igual debera cancelar el mínimo de horas pactadas en esta cotización. 
-     f. Será responsabilidad del cliente informar sobre la resistencia y condiciones del terreno y/o área de trabajo, en caso contrario ARRIENDO SAN PABLO se desliga de cualquier responsabilidad por daños que la Máquina pueda ocasionar. 
-     g. La factura deberá cancelarse a los 30 días de su fecha de emisión, siempre y cuando el cliente tenga un crédito aprobado de 30 días. 
-     h. En caso de que el CLIENTE no necesitará la máquina o suspendiera el servicio una vez que esta haya salido desde nuestras instalaciones, el cliente deberá cancelar la tarifa mínima de la máquina en cuestión. 
-     i. Si por fuerza mayor, ante algún evento inesperado (maquinarias encerradas en faenas, pannes, congestión del tránsito, etc.) la grúa se ve impedida de llegar en día y hora programada, no corresponderá ningún tipo de descuento ni cobro a ARRIENDO SAN PABLO tampoco corresponderá el endoso de multas o infracciones de cualquier tipo a ARRIENDO SAN PABLO 
-     j. La presente cotización tiene una validez de 05 días. 
-     k. Maquinaria sujeta a disponibilidad 
-     l.Todos los valores son más iva.
-     ```
-
-4. **Categoría `PLATAFORMAS`:**
-   - **Regla de Activación:** Se activa cuando en el estructurador existe al menos una línea con categoría `PLATAFORMAS` (alzahombres, tijeras, manlifts).
-   - **Texto Canónico:**
-     ```text
-     PLATAFORMAS:
-     Observaciones: 
-     - Equipo se Arrienda sin Operador - Las máquinas se ocuparan en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas 
-     - No utilizar el equipo como arco de soldadura, las baterías pueden explotar y de igual forma pueden generar daños en el sistema electrónico. 
-     - Todos los daños a neumáticos, ya sean por cortes laterales, escalonamientos o simplemente pinchaduras, serán con cargo al cliente. - Todos los daños estéticos producto de la aplicación de pinturas, quemaduras por soldaduras, shotcrete o recubrimientos serán con cargo al cliente 
-     - Todos los daños producto de choques o golpes por descuido o mala operación, serán con cargo al cliente. 
-     - En caso que el equipo no responda de la forma correcta se debe informar de inmediato al servicio técnico San Pablo y no seguir intentando operar este, ya que este tipo de manipulación puede generar mayores daños, los que serán de cargo al cliente. - En caso que la falla del equipo se haya generado por una mala operación, será de cargo al cliente todos los costos de reparación, incluida la visita del mecánico a obra (MO, viático, combustible, traslados, etc). 
-     - El cliente debe informar con 48 horas de anticipación el retiro del equipo mediante correo electrónico al vendedor y encargado de logística de empresas San Pablo. - El horario habíl de retiro de equipos será de lunes a sábado desde las 08:00 a 10:00 am, después de ese horario se cobrará otro día, al menos que empresas San Pablo avise retiro programado en otro horario. 
-     - Al momento de proceder con el retiro del equipo de faena se ejecutará un levantamiento rápido indicando todos los daños (en caso de existir), este documento debe ser firmado por el supervisor de faena. Si existieran otros daños no visualizados al momento de retirar el equipo, se le informará a la brevedad al cliente y los costos de reparación será de cargo de este. 
-     - Plataformas Eléctricas; se aconseja no descargar baterías en su totalidad, dado que esto daña los componentes eléctrico y electrónicos incluido el cargador, si llegara a ocurrir los costos de reparación serán cobrados al cliente. Otro punto importante es que la recarga de baterías no puede ser ejecutada con generadores, debido a que producen daños en las placas de carga. 
-     - Plataformas a Combustión; las plataformas que utilicen para su operación combustible diesel serán entregadas con su estanque lleno, por lo que la recepción del equipo en nuestra planta debe ser en la misma condición, de lo contrario se procederá a la recarga de los litros faltantes y el costo por litro será de $1000 más iva. Los motores a combustión no deben quedar sin combustible, ya que los daños por este motivo serán de costo del cliente. 
-     - La presente cotización tiene una validez de 5 días. 
-     - Maquinarias sujetas a disponibilidad. 
-     - Todos los valores son más IVA.
-     ```
-
-### B. Comportamiento en UI / UX
-1. **Generación Automática:** Al poblar o actualizar las líneas de servicio en la oportunidad, el sistema pre-arma el texto concatenado de las categorías activas en `comercial.condiciones_texto_pdf`.
-2. **Libertad Total de Edición:** El usuario tiene total libertad para modificar, agregar o suprimir cláusulas directamente en el textarea. Si la oportunidad ya contiene un texto guardado previamente, este se respeta y no se sobrescribe sin acción del usuario.
-3. **Botón de Regeneración Manual:** Se dispone de un botón de acción *"Regenerar Acuerdos según Servicios"* en el Tab 3 para que el ejecutivo pueda reconstruir en cualquier momento el texto oficial de las categorías cotizadas.
-
-
----
-
-## 4. Flujo Operativo, Asignación de Recursos y Validaciones (Torre de Control & Pestaña C)
-
-### 4.1. Ciclo de Vida del Expediente Integral (Core Pipeline)
-- **Fase 1 (Preventa Comercial):** Búsqueda de cliente, estructurador multi-línea, viabilidad técnica/site visit, condiciones comerciales y despacho de cotización PDF.
-- **Fase 2 (Estudio & Validación Técnica):** Análisis de diferencias (*Diff Check*) entre el requerimiento comercial y el levantamiento real de terreno, aprobación técnica por el coordinador.
-- **Fase 3 (Asignación de Recursos OT):** DataGrid de Flota & Equipos vs Tripulación & Personal, aparejos e insumos de izaje, ventanas de tiempo planificadas.
-- **Fase 4 (Acreditaciones & Dossier B2B):** Validación de matrices de cumplimiento documental y despacho formal del dossier al cliente mandante.
-- **Fase 5 (Preparación de Salida / Patio):** Generación inmutable de la OT, checklist de despacho y ejecución de faena.
-
----
-
-### 4.2. Reglas Canónicas de Negocio y Dominio
-
-#### A. Regla Canónica 1: Terminología Oficial de Rigger
-* Queda establecido como regla canónica inviolable en todo el producto que la denominación oficial es **`Rigger`**.
-* Queda estrictamente prohibido el uso de los términos `Señalero` o `Rigger / Señalero`.
-
-#### B. Regla Canónica 2: Catálogo de Cargos Operacionales de Tripulación
-Los cargos estandarizados para la tripulación son:
-1. `Operador Grúa`
-2. `Operador Camión Pluma`
-3. `Rigger`
-4. `Prevencionista de Riesgos`
-5. `Chofer Cama Baja`
-6. `Escolta / Guía`
-7. `Supervisor Faena`
-
-#### C. Regla Canónica 3: Separación Semántica Flota vs. Tripulación
-Al procesar las líneas comerciales de la cotización (`lines`):
-* **Tabla 1 (`🚜 1. Flota & Equipos`):** Se filtran y muestran exclusivamente líneas que representen maquinaria y equipos físicos (`GRUAS TELESCOPICAS`, `CAMIONES PLUMA`, `VEHICULOS LIVIANOS`, `MAQUINARIA`, `EQUIPOS DE APOYO`, `TRASLADOS`). Ninguna persona o servicio humano puede aparecer en esta tabla.
-* **Tabla 2 (`👷 2. Tripulación & Personal Asignado`):** Se sincronizan automáticamente todas las líneas comerciales de personal certificado (`PERSONAL CERTIFICADO`, `Servicio de Rigger Certificado`, `Servicio de Prevencionista Certificado`). Además, el coordinador puede añadir tripulantes adicionales bajo demanda (`+ Añadir Tripulante`).
-
-#### D. Regla Canónica 4: Inmutabilidad de Recursos Contractuales (Línea Base 🔒 vs. Recursos Adicionales 🗑️)
-* **Obligación Contractual Inmutable (`🔒`):** Todo equipo o puesto de personal originado de una línea comercial cotizada y aprobada (ej: Grúa Principal, Rigger cotizado, Prevencionista cotizado):
-  - Queda protegido con indicador de candado `🔒` y no puede ser eliminado por el coordinador operativo.
-  - El cargo operacional permanece fijado al compromiso comercial, permitiendo exclusivamente seleccionar la persona idónea para cumplir el servicio.
-* **Recursos Adicionales Operativos (`🗑️`):** Únicamente los recursos extra incorporados ad-hoc en la fase de Operaciones (`+ Añadir Apoyo`, `+ Añadir Tripulante`) disponen del botón de eliminación `🗑️`.
-
----
-
-### 4.3. Arquitectura de Interfaz DataGrid B2B (Layout 2 Columnas Lado a Lado)
-
-La interfaz de la Pestaña C se estructura en una cuadrícula simétrica de alta densidad para evitar scroll vertical innecesario y aprovechar el 100% del ancho de pantalla en monitores operacionales:
-
-```
-+---------------------------------------------------------------------------------------------------+
-| TOOLBAR SUPERIOR: [🚜 Asignación de Recursos OT] [APROBADO] | [Salida Base] ➔ [Término Faena] [⚡ Propagar] |
-+-----------------------------------------------------------------+---------------------------------+
-| COLUMNA IZQUIERDA (50%)                                         | COLUMNA DERECHA (50%)           |
-| 🚜 1. Flota & Equipos (Principales y Apoyo)     [+ Añadir Apoyo] | 👷 2. Tripulación & Personal   [+ Añadir]       |
-| • Requerimiento | Equipo Asignado (Semáforo) | Ventana Fechas   | • Cargo | Persona (Semáforo) | Ventana Fechas   |
-| • Grúa Telescópica ➔ [LTM 1220 - GR-1234 🟢] | [Ini] - [Fin]    | • Operador ➔ [Juan Pérez 🟢] | [Ini] - [Fin]    |
-| • Camión Escolta   ➔ [Hilux - BB-CL-99 🟢]   | [Ini] - [Fin]    | • Rigger   ➔ [Pedro Soto 🟢] | [Ini] - [Fin]    |
-|                                                                 | • Prevencionista ➔ [C. Varas 🟢] | [Ini] - [Fin]|
-+-----------------------------------------------------------------+---------------------------------+
-| 📋 Referencia: Levantamiento Visita a Terreno                   | ⛓️ 3. Matriz de Aparejos & Implementos          |
-| • Visita #ID [APROBADO] [👁️ Ver Web] [📄 PDF]                   | • [x] Grilletes Lira [ Detalle capacidad ]     |
-| 💬 Instrucciones / Observaciones Operativas de Faena            | • [x] Eslingas Sintéticas [ Detalle largo ]     |
-| [ Textarea compacto ]                                           | • [x] Balancines [ Detalle toneladas ]          |
-+-----------------------------------------------------------------+---------------------------------+
-```
-
----
-
-### 4.4. Tipografía y Estándares de Accesibilidad B2B
-
-* **Inputs de Fecha y Hora (`<input type="date">` / `<input type="time">`):** Tamaño estándar `text-xs` (12px), `font-mono font-bold`, color blanco `#ffffff`, padding `px-2 py-1`.
-* **Encabezados de Tabla:** `text-[10px]` a `text-[11px]` font-bold en color `slate-300` con `tracking-wider`.
-* **Badges de Semáforo (`🟢 VIG`, `🟡 VNC`, `🔴 VNC`):** `text-[10px]` font-bold con padding `px-1.5 py-0.5`.
-* **Controles Select y Textareas:** Fondo `#0a0f1e`, borde `white/10`, focus `amber-500/50`.
-
----
-
-### 4.5. Protocolo de Persistencia y Máquina de Estados
-
-1. **Estado en Base de Datos:** `tpry_proyecto.id_proyecto_estado = 3` (*Operaciones*).
-2. **Subpestaña Activa:** `json_field.ejecucion_v1.subtab_activa = 'asignacion'`.
-3. **Persistencia Dual:**
-   * **JSON Inmutable:** `json_field.ejecucion_v1` contiene la instantánea de `tripulacion_asignada`, `equipos_extra`, `observaciones` y `aparejos_asignados_json`.
-   * **Tablas Relacionales SQL (Spec 22):** Inserción en `tpry_rel_persona` y `tpry_rel_equipo` con claves foráneas e intervalos temporales `fecha_plan_ini` y `fecha_plan_fin`.
-4. **Hard-Stop de Validación:** Si `requiere_rigger === true`, la confirmación de la OT exige obligatoriamente la asignación de al menos un `Rigger` con `id_user` válido. De lo contrario, se bloquea la confirmación.
-
----
-
-### 4.6. Micro-Diálogo / Popover de Acreditaciones de Recursos (Inspect-on-Click)
-
-Para optimizar la agilidad del coordinador sin abandonar la pantalla de Asignación:
-* **Trigger:** Al hacer clic sobre cualquier badge semafórico (`🟢 VIG`, `🟡 VNC`, `🔴 VNC`) en la tabla de Flota o Tripulación, se despliega un diálogo modal flotante.
-* **Contenido del Diálogo:**
-  1. **Encabezado:** Nombre del Recurso, Patente/RUT y Rol Operacional.
-  2. **Matriz de Documentos:**
-     * **Personal:** Examen Ocupacional, Licencia de Conducir, Certificación Rigger/Operador, Contrato de Trabajo, Inducción Faena.
-     * **Equipos:** Revisión Técnica, SOAP, Permiso de Circulación, Certificado de Izaje/Carga, Póliza de Seguro.
-  3. **Indicadores de Vencimiento:** Fecha exacta de expiración y badge visual (`🟢 Vigente`, `🟡 Por Vencer (≤30 días)`, `🔴 Vencido`).
-  4. **Acceso Rápido:** Enlace directo para visualizar o descargar el archivo PDF del repositorio si existe.
-
----
-
-### 4.7. Matriz Canónica de Aparejos & Implementos de Izaje (Catálogo Maestro 8 Ítems)
-
-Para garantizar consistencia integral entre la Inspección en Terreno (Survey), el Reporte PDF y la Asignación Operacional de la OT:
-
-1. **Catálogo Maestro Homologado:**
-   1. `estrobos`: Estrobos de Acero (Keywords: `ESTROBO`, `ESTROBOS`)
-   2. `eslingas`: Eslingas Sintéticas (Keywords: `ESLINGA`, `ESLINGAS`)
-   3. `grilletes`: Grilletes Lira / Rectos (Keywords: `GRILLETE`, `GRILLETES`, `GRILLETON`)
-   4. `pulpos_cadena`: Pulpos de Cadena (Keywords: `PULPO`, `PULPOS`, `PULPO CADENA`)
-   5. `cadenas`: Cadenas de Izaje (Keywords: `CADENA`, `CADENAS`)
-   6. `balancines`: Balancines / Vigas de Izaje (Keywords: `BALANCIN`, `BALANCINES`, `VIGA`)
-   7. `canastillos`: Canastillo Alza Hombres (Keywords: `CANASTILLO`, `CANASTILLOS`, `CANASTA`)
-   8. `otros_accesorios`: Otros / Accesorios Especiales (Keywords: `ACCESORIO`, `ACCESORIOS`, `OTRO`, `OTROS`)
-
-2. **Comportamiento en Asignación (Pestaña C):**
-   * Se presentan **siempre las 8 tarjetas maestras**.
-   * Los aparejos registrados con cantidad en la visita a terreno se marcan automáticamente como `[x] REQ` con su detalle de capacidad/largo precargado.
-   * Los elementos que vinieron en 0 o desmarcados desde terreno aparecen desmarcados `[ ]`, pero **el Coordinador de Operaciones puede activarlos en cualquier momento e ingresar cantidades/especificaciones adicionales** según el plan de maniobra.
-   * Persistencia estructurada en `json_field.ejecucion_v1.aparejos_asignados_json`.
-
----
-
-## 5. Modelo Asíncrono de Acreditación y Visualización en Tablero Kanban
-
-### 5.1. Naturaleza Asíncrona y Paralela de la Acreditación
-1. **Desacoplamiento Operativo:** La Acreditación documental (Dossier B2B / FES / Certificados de Equipos y Personas) es un subproceso asíncrono que no detiene el ciclo de vida del servicio en las fases de Operaciones (Preparación de Patio / Despacho / En Faena).
-2. **Eliminación de la Columna Artificial "En Acreditación":** Queda formalmente eliminada la columna "En Acreditación" del tablero Kanban y de la Torre de Control. Las oportunidades y OTs se clasifican exclusivamente en las etapas canónicas relacionales (`tpry_proyecto.id_proyecto_estado`):
-   - **Cotización / Preventa** (`id_proyecto_estado = 1`)
-   - **Validación Comercial-Técnica** (`id_proyecto_estado = 2`)
-   - **Preparación de Operaciones / Patio** (`id_proyecto_estado = 3` o `5`)
-   - **En Ejecución / Faena** (`id_proyecto_estado = 6` o `7`)
-   - **Finalizado / Completado** (`id_proyecto_estado = 8`)
-
-### 5.2. Gauge de Cumplimiento Documental en Tarjetas de Kanban
-Cada tarjeta de servicio en el tablero Kanban (independientemente de su columna o estado operativo) incorpora un componente visual de progreso (Gauge / Barra de Porcentaje de Acreditación):
-
-1. **Fórmula Determinista de Cumplimiento:**
-   $$\% \text{ Acreditación} = \left( \frac{\sum \text{Documentos Vigentes (Empresa + Equipos Asignados + Personal Asignado)}}{\sum \text{Total Documentos Exigidos por el Cliente}} \right) \times 100\%$$
-
-2. **Regla de Semáforo Binario Estricto:**
-   - **`🟢 VERDE (100%)`:** Única y exclusivamente cuando la totalidad de los documentos exigidos estén vigentes y validados (`% Acreditación === 100%`).
-   - **`🔴 ROJO (0% - 99%)`:** Si existe al menos un documento pendiente, vencido o no vinculado (`% Acreditación < 100%`), el gauge se renderiza en **color rojo**, advirtiendo que el servicio no cuenta con pase libre de faena.
-
-3. **Interactividad:** Al hacer clic sobre el gauge o badge en la tarjeta del Kanban, se abre directamente el drawer/modal de la oportunidad en la pestaña de **Acreditaciones**, permitiendo la carga, vinculación o despacho inmediato del Dossier.

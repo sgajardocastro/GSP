@@ -672,7 +672,8 @@ class ProyectoModel {
                 • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Prevencionista Certificado:</strong> ${crm.requiere_prevencionista ? 'SÍ' : 'NO'}
+                • <strong>Prevencionista Certificado:</strong> ${crm.requiere_prevencionista ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Cliente pone Combustible:</strong> ${crm.cliente_pone_combustible ? 'SÍ' : 'NO'}
               </td>
             </tr>
             <tr>
@@ -737,6 +738,18 @@ class ProyectoModel {
                   : '— Sujeto a disponibilidad de flota al momento del requerimiento.'}
               </td>
             </tr>
+            ${crm.pensiones ? `
+            <tr>
+              <td class="info-label">Responsabilidad de Pensiones:</td>
+              <td class="info-value" colspan="3" style="font-size: 9.5px; line-height: 1.5;">
+                • <strong>Alojamiento:</strong> ${crm.pensiones.alojamiento_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.alojamiento_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Desayuno:</strong> ${crm.pensiones.desayuno_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.desayuno_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Almuerzo:</strong> ${crm.pensiones.almuerzo_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.almuerzo_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}<br>
+                • <strong>Cena:</strong> ${crm.pensiones.cena_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.cena_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Traslado Personal:</strong> ${crm.pensiones.traslado_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.traslado_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}
+              </td>
+            </tr>
+            ` : ''}
           </table>
           
           ${condicionesHtml ? `

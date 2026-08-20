@@ -4,104 +4,163 @@
     <div class="flex justify-between items-end flex-shrink-0">
       <div>
         <h2 class="text-xl font-extrabold text-white">
-          {{ faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}
+          {{ isModoOperaciones ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}
           <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-base ml-2">[{{ antecedentes.identificador_formal }}]</span>
         </h2>
         <p class="text-xs text-slate-400 mt-1">
-          {{ faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF ? 'Revisión técnica de antecedentes, auditoría de modificaciones y asignación de flota.' : 'Estructuración B2B de requerimientos de izaje y logística.' }}
+          {{ isModoOperaciones ? 'Revisión técnica de antecedentes, auditoría de modificaciones y asignación de flota.' : 'Estructuración B2B de requerimientos de izaje y logística.' }}
         </p>
       </div>
       <div class="flex gap-2">
         <button @click="handleCancelar" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
           Cancelar
         </button>
-        <button v-if="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF && faseActual < ESTADOS_PROCESO.EN_FAENA" @click="volverACotizar" class="px-4 py-2 bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"></path></svg>
-          <span>Devolver a Comercial</span>
+        <!-- BOTONES DE RETROCESO / EXCEPCIÓN -->
+        <button v-if="isModoOperaciones" @click="volverACotizar" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5" title="Devuelve el requerimiento a Preventa Comercial para permitir ediciones">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+          <span>Devolver a Preventa</span>
         </button>
-        <button v-if="faseActual === ESTADOS_PROCESO.NO_ASIGNADA" @click="restaurarACotizar" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+
+        <button v-if="estadoDbActual === ESTADOS_DB.NO_GANADA" @click="restaurarACotizar" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.75 8.25v.75M21 9h-6"></path></svg>
           <span>Restaurar a Cotizar</span>
         </button>
-        <button v-if="faseActual < ESTADOS_PROCESO.VALIDACION_DIFF && (props.proyectoId || currentProyectoId) && faseActual !== ESTADOS_PROCESO.NO_ASIGNADA" @click="abrirModalNoAsignada" class="px-4 py-2 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-          <span>No Ganada</span>
-        </button>
-        <button v-if="faseActual === ESTADOS_PROCESO.VALIDACION_DIFF && topTab === 'operaciones'" @click="abrirModalAprobarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
-        </button>
-        <span v-if="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF && isDirtyAsignacion" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse flex items-center gap-1.5">
-          🟡 Cambios Modificados (Sin Guardar)
-        </span>
 
-        <button v-if="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF" @click="guardarCambiosAsignacion" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
-          💾 Guardar Cambios
-        </button>
+        <!-- ACCIONES ETAPA 1-2: PREVENTA COMERCIAL -->
+        <template v-if="estadoDbActual <= 2">
+          <button v-if="(props.proyectoId || currentProyectoId) && estadoDbActual !== ESTADOS_DB.NO_GANADA" @click="abrirModalNoAsignada" class="px-4 py-2 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            <span>No Ganada</span>
+          </button>
+          <button @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Generar Cotización</span>
+          </button>
+          <button @click="guardarEnPreventa" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+            <span>Guardar en Preventa</span>
+          </button>
+          <button @click="abrirModalGenerarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Generar Requerimiento</span>
+          </button>
+        </template>
 
-        <button v-if="faseActual === ESTADOS_PROCESO.ASIGNACION_RECURSOS && topTab === 'operaciones'" @click="confirmarAsignacionOT" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          <span>Confirmar Asignación OT ➔ Preparación Salida</span>
-        </button>
-        <button v-if="faseActual < ESTADOS_PROCESO.VALIDACION_DIFF" @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          <span>Generar Cotización</span>
-        </button>
-        <button v-if="faseActual < ESTADOS_PROCESO.VALIDACION_DIFF" @click="guardarEnPreventa" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
-          <span>Guardar en Preventa</span>
-        </button>
-        <button v-if="faseActual < ESTADOS_PROCESO.VALIDACION_DIFF" @click="abrirModalGenerarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          <span>Generar Requerimiento</span>
-        </button>
+        <!-- ACCIONES ETAPA 3: VALIDACIÓN & DIFF -->
+        <template v-else-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF">
+          <button @click="abrirModalAprobarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
+          </button>
+        </template>
+
+        <!-- ACCIONES ETAPA 4: ASIGNACIÓN DE RECURSOS OT -->
+        <template v-else-if="estadoDbActual === ESTADOS_DB.ASIGNACION_RECURSOS">
+          <span v-if="isDirtyAsignacion" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse flex items-center gap-1.5">
+            🟡 Cambios Modificados (Sin Guardar)
+          </span>
+          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+            💾 Guardar Cambios
+          </button>
+          <button @click="confirmarAsignacionOT" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Confirmar Asignación OT ➔ Preparación Salida</span>
+          </button>
+        </template>
+
+        <!-- ACCIONES ETAPA 5+: PREPARACIÓN SALIDA / PATIO -->
+        <template v-else-if="estadoDbActual >= ESTADOS_DB.PREPARACION_PATIO">
+          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+            💾 Guardar Cambios
+          </button>
+        </template>
       </div>
     </div>
 
-    <!-- Barra de Tabs Vuetify Style Unificada -->
-    <div v-if="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF || isAsignacionConfirmada" class="flex border-b border-white/10 bg-[#080d1a] px-2 pt-2 flex-shrink-0 transition-all duration-200 gap-4">
+    <!-- Barra de Pipeline / Stepper FSM Unificada con Candados Progresivos -->
+    <div class="flex border-b border-white/10 bg-[#080d1a] px-3 pt-2 flex-shrink-0 transition-all duration-200 gap-2 overflow-x-auto scrollbar-hide">
+      <!-- 1. PREVENTA COMERCIAL -->
       <button 
         @click="topTab = 'comercial'" 
-        :class="topTab === 'comercial' ? 'text-amber-400 border-b-2 border-amber-500 font-bold' : 'text-slate-400 hover:text-white'" 
-        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer"
+        :class="[
+          topTab === 'comercial' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white',
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer rounded-t'
+        ]"
       >
+        <span v-if="estadoDbActual <= 2" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span v-else class="text-[10px] text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         <span>1. Preventa Comercial</span>
+        <span v-if="estadoDbActual >= 3" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
+      <!-- 2. VALIDACIÓN & DIFF -->
       <button 
         @click="cambiarYPersistirSubTab('validacion')" 
-        :class="topTab === 'operaciones' && operacionesSubTab === 'validacion' ? 'text-amber-400 border-b-2 border-amber-500 font-bold' : 'text-slate-400 hover:text-white'" 
-        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer"
+        :disabled="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF"
+        :class="[
+          estadoDbActual < ESTADOS_DB.VALIDACION_DIFF ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'validacion' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF ? 'Requiere Generar Requerimiento Comercial' : ''"
       >
+        <span v-if="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF" class="text-xs">🔒</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span v-else class="text-[10px] text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         <span>2. Validación & Diff</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.VALIDACION_DIFF" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
+      <!-- 3. ASIGNACIÓN DE RECURSOS OT -->
       <button 
         @click="cambiarYPersistirSubTab('asignacion')" 
-        :class="topTab === 'operaciones' && operacionesSubTab === 'asignacion' ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold' : 'text-slate-400 hover:text-white'" 
-        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer"
+        :disabled="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS"
+        :class="[
+          estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'asignacion' ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'Requiere Aprobar Requerimiento en Validación' : ''"
       >
+        <span v-if="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS" class="text-xs">🔒</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.ASIGNACION_RECURSOS" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span v-else class="text-[10px] text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-        <span>3. Asignación de Recursos OT (Pestaña C)</span>
+        <span>3. Asignación Recursos OT</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.ASIGNACION_RECURSOS" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
+      <!-- 4. ACREDITACIONES & DOSSIER -->
       <button 
         @click="cambiarYPersistirSubTab('acreditaciones')" 
-        :class="topTab === 'operaciones' && operacionesSubTab === 'acreditaciones' ? 'text-amber-400 border-b-2 border-amber-500 font-bold' : 'text-slate-400 hover:text-white'" 
-        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer"
+        :disabled="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS"
+        :class="[
+          estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'acreditaciones' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'Requiere Asignación de Recursos' : ''"
       >
+        <span v-if="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS" class="text-xs">🔒</span>
+        <span v-else class="text-[10px] text-slate-500">📄</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        <span>4. Acreditaciones & Dossier (Post-Asignación)</span>
+        <span>4. Acreditaciones & Dossier</span>
       </button>
 
+      <!-- 5. PREPARACIÓN DE SALIDA -->
       <button 
         @click="cambiarYPersistirSubTab('preparacion_salida')" 
-        :class="topTab === 'operaciones' && operacionesSubTab === 'preparacion_salida' ? 'text-indigo-400 border-b-2 border-indigo-500 font-bold' : 'text-slate-400 hover:text-white'" 
-        class="py-2.5 px-4 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer"
+        :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
+        :class="[
+          estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'preparacion_salida' ? 'text-indigo-400 border-b-2 border-indigo-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
       >
+        <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.PREPARACION_PATIO" class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+        <span v-else class="text-[10px] text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         <span>5. Preparación de Salida</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.PREPARACION_PATIO" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
     </div>
 
@@ -326,11 +385,11 @@
 
             <div>
               <label class="block text-[10px] text-slate-400 font-semibold mb-1">Observaciones de Operaciones / Motivos de Ajuste:</label>
-              <textarea v-model="operacionesAssignment.observaciones_operaciones" :disabled="faseActual >= ESTADOS_PROCESO.ASIGNACION_RECURSOS" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-75 disabled:bg-slate-900/60"></textarea>
+              <textarea v-model="operacionesAssignment.observaciones_operaciones" :disabled="estadoDbActual >= ESTADOS_DB.ASIGNACION_RECURSOS" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-75 disabled:bg-slate-900/60"></textarea>
             </div>
           </fieldset>
 
-            <div v-if="faseActual >= ESTADOS_PROCESO.ASIGNACION_RECURSOS" class="pt-2">
+            <div v-if="estadoDbActual >= ESTADOS_DB.ASIGNACION_RECURSOS" class="pt-2">
               <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 text-center flex items-center justify-center gap-2 text-xs text-emerald-300 font-bold">
                 <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 <span>🔒 Requerimiento Aprobado por Operaciones — Formulario en Modo Lectura</span>
@@ -1367,12 +1426,27 @@
       </div>
     </div>
 
+    <!-- Banner Modo Solo Lectura en Comercial (Inmutabilidad Etapa Concluida) -->
+    <div v-if="topTab === 'comercial' && isModoOperaciones" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">🔒</span>
+        <div>
+          <span class="font-bold text-amber-300">Etapa Comercial Concluida (Modo Solo Lectura):</span>
+          <span class="text-slate-300 text-[11px] ml-1.5">El requerimiento fue transferido formalmente a Operaciones. Todos los campos comerciales están sellados.</span>
+        </div>
+      </div>
+      <button @click="volverACotizar" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
+        <span>Devolver a Preventa Comercial</span>
+      </button>
+    </div>
+
     <!-- Main Grid (Comercial / Preventa) -->
     <div v-if="topTab === 'comercial'" class="grid grid-cols-1 lg:grid-cols-[1.5fr_3.5fr] gap-6 flex-1 min-h-0 w-full overflow-hidden">
       
       <!-- LEFT: CLIENTE & VERSION -->
       <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
-        <fieldset :disabled="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
+        <fieldset :disabled="isModoOperaciones" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
         <div class="space-y-4">
           <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
             1. Datos de la Oportunidad
@@ -1444,67 +1518,182 @@
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Nombre Contacto:</label>
-                <input type="text" v-model="opportunity.contacto_nombre" placeholder="Nombre solicitante..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white" :readonly="!!opportunity.contacto_obj" />
+                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+                  Nombre Contacto <span class="text-red-400">*</span>:
+                </label>
+                <input 
+                  type="text" 
+                  v-model="opportunity.contacto_nombre" 
+                  placeholder="Nombre solicitante..." 
+                  class="w-full bg-[#0a0f1e] border rounded-lg px-3 py-2 text-xs text-white outline-none transition-colors" 
+                  :class="!opportunity.contacto_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                  :readonly="!!opportunity.contacto_obj" 
+                />
               </div>
               <div>
-                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Teléfono Contacto:</label>
-                <input type="text" v-model="opportunity.contacto_telefono" placeholder="Ej: +569..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white" :readonly="!!opportunity.contacto_obj" />
+                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+                  Teléfono Contacto <span class="text-red-400">*</span>:
+                </label>
+                <input 
+                  type="text" 
+                  v-model="opportunity.contacto_telefono" 
+                  placeholder="Ej: +569..." 
+                  class="w-full bg-[#0a0f1e] border rounded-lg px-3 py-2 text-xs text-white outline-none transition-colors" 
+                  :class="!opportunity.contacto_telefono ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                  :readonly="!!opportunity.contacto_obj" 
+                />
               </div>
             </div>
           </div>
           
           <div v-else class="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Nombre Contacto:</label>
-              <input type="text" v-model="opportunity.contacto_nombre" placeholder="Seleccione un cliente primero..." class="w-full bg-[#0a0f1e]/50 border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white" disabled />
+              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Nombre Contacto <span class="text-red-400">*</span>:</label>
+              <input type="text" v-model="opportunity.contacto_nombre" placeholder="Seleccione un cliente primero..." class="w-full bg-[#0a0f1e]/50 border border-red-500/80 bg-red-500/10 text-red-300 rounded-lg px-3 py-2 text-xs outline-none" disabled />
             </div>
             <div>
-              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Teléfono Contacto:</label>
-              <input type="text" v-model="opportunity.contacto_telefono" placeholder="Seleccione un cliente primero..." class="w-full bg-[#0a0f1e]/50 border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white" disabled />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Tipo de Pago:</label>
-              <select v-model="opportunity.tipo_pago" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white">
-                <option value="transferencia">Transferencia</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="credito">Crédito</option>
-                <option value="debito">Débito</option>
-                <option value="cheque">Cheque</option>
-                <option value="otros">Otros</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2 mt-5">
-              <input type="checkbox" v-model="opportunity.requiere_oc_hes" id="left_oc" class="accent-amber-500" />
-              <label for="left_oc" class="text-xs text-slate-300 cursor-pointer select-none">Requiere OC / HES</label>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 bg-white/[0.02] border border-white/5 p-3 rounded-xl">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="opportunity.requiere_acreditacion" id="left_acred" class="accent-amber-500" />
-              <label for="left_acred" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Acreditación</label>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="opportunity.incluye_flete" id="left_flete" class="accent-amber-500" />
-              <label for="left_flete" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Servicio incluye Traslado</label>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="opportunity.requiere_rigger" id="left_rigger" class="accent-amber-500" />
-              <label for="left_rigger" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Requiere Rigger</label>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" v-model="opportunity.requiere_prevencionista" id="left_prev" class="accent-amber-500" />
-              <label for="left_prev" class="text-xs text-slate-300 cursor-pointer font-semibold select-none">Prevencionista Certificado</label>
+              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Teléfono Contacto <span class="text-red-400">*</span>:</label>
+              <input type="text" v-model="opportunity.contacto_telefono" placeholder="Seleccione un cliente primero..." class="w-full bg-[#0a0f1e]/50 border border-red-500/80 bg-red-500/10 text-red-300 rounded-lg px-3 py-2 text-xs outline-none" disabled />
             </div>
           </div>
 
           <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Descripción del Proyecto / Faena:</label>
-            <textarea v-model="opportunity.descripcion" rows="3" placeholder="Ej. Montaje Reactores Planta, detalles operativos..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-3 text-xs focus:border-amber-500 outline-none text-white resize-none"></textarea>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+              Tipo de Pago <span class="text-red-400">*</span>:
+            </label>
+            <select 
+              v-model="opportunity.tipo_pago" 
+              class="w-full bg-[#0a0f1e] border rounded-lg px-3 py-2 text-xs text-white outline-none transition-colors"
+              :class="!opportunity.tipo_pago ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+            >
+              <option value="transferencia">Transferencia</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="credito">Crédito</option>
+              <option value="debito">Débito</option>
+              <option value="cheque">Cheque</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+
+          <!-- MATRIZ DE 6 SELECTORES / FLAGS OBLIGATORIOS (COMBOBOXES CON ALERTA ROJA EN NULL) -->
+          <div class="space-y-3 bg-[#0a0f1e] border border-white/10 rounded-xl p-3.5">
+            <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                ⚙️ Requerimientos Comerciales
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">* Selección SÍ / NO obligatoria</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- 1. Requiere OC / HES -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Requiere OC / HES <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.requiere_oc_hes" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.requiere_oc_hes === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Requiere OC/HES)</option>
+                  <option :value="false">NO (Sin OC/HES previa)</option>
+                </select>
+              </div>
+
+              <!-- 2. Requiere Acreditación -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Requiere Acreditación <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.requiere_acreditacion" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.requiere_acreditacion === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Exige Acreditación)</option>
+                  <option :value="false">NO (Sin Acreditación)</option>
+                </select>
+              </div>
+
+              <!-- 3. Servicio incluye Traslado / Flete -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Incluye Flete / Traslado <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.incluye_flete" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.incluye_flete === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Cobro Flete $500.000)</option>
+                  <option :value="false">NO (Sin Cobro Flete)</option>
+                </select>
+              </div>
+
+              <!-- 4. Requiere Rigger Certificado -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Requiere Rigger <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.requiere_rigger" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.requiere_rigger === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Requiere Rigger)</option>
+                  <option :value="false">NO (Sin Rigger)</option>
+                </select>
+              </div>
+
+              <!-- 5. Requiere Prevencionista Certificado -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Prevencionista Certificado <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.requiere_prevencionista" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.requiere_prevencionista === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Requiere Prevencionista)</option>
+                  <option :value="false">NO (Sin Prevencionista)</option>
+                </select>
+              </div>
+
+              <!-- 6. Cliente pone el combustible -->
+              <div>
+                <label class="text-[10px] text-slate-300 font-bold block mb-1">
+                  Cliente pone Combustible <span class="text-red-400">*</span>:
+                </label>
+                <select 
+                  v-model="opportunity.cliente_pone_combustible" 
+                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
+                  :class="opportunity.cliente_pone_combustible === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                >
+                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
+                  <option :value="true">SÍ (Combustible por Cliente)</option>
+                  <option :value="false">NO (Combustible por San Pablo)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+              Descripción del Proyecto / Faena <span class="text-red-400">*</span>:
+            </label>
+            <textarea 
+              v-model="opportunity.descripcion" 
+              rows="3" 
+              placeholder="Ej. Montaje Reactores Planta, detalles operativos..." 
+              class="w-full bg-[#0a0f1e] border rounded-lg p-3 text-xs outline-none text-white resize-none transition-colors"
+              :class="!opportunity.descripcion ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+            ></textarea>
           </div>
 
           <!-- VERSION CONTROL & ENVÍO DE EMAIL -->
@@ -1618,7 +1807,7 @@
         <!-- Tab Body -->
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="flex-1 min-h-0 overflow-y-auto p-5 scrollbar-hide space-y-6">
-            <fieldset :disabled="faseActual >= ESTADOS_PROCESO.VALIDACION_DIFF" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
+            <fieldset :disabled="isModoOperaciones" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
           
           <!-- TAB 0: ANTECEDENTES -->
           <div v-if="activeTab === 'antecedentes'" class="space-y-6">
@@ -1695,16 +1884,25 @@
                 <tbody class="divide-y divide-white/5">
                   <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02]">
                     <td class="p-2">
-                      <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
-                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
+                      <select 
+                        v-model="line.tipo" 
+                        @change="line.subcategoria = ''" 
+                        class="bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none w-full transition-colors"
+                        :class="!line.tipo ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                      >
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar Categoría * --</option>
                         <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                           {{ cat.nombre_categoria }}
                         </option>
                       </select>
                     </td>
                     <td class="p-2">
-                      <select v-model="line.subcategoria" class="bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none w-full">
-                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
+                      <select 
+                        v-model="line.subcategoria" 
+                        class="bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none w-full transition-colors"
+                        :class="!line.subcategoria ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                      >
+                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar Subcategoría * --</option>
                         <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                           {{ sub.nombre_subcategoria }}
                         </option>
@@ -1752,25 +1950,63 @@
               <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                   <div class="col-span-2">
-                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Nombre de la Obra</label>
-                    <input type="text" v-model="siteVisit.obra_nombre" placeholder="Ej: Celulosa Laja Reactor" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" />
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Nombre de la Obra <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="text" 
+                      v-model="siteVisit.obra_nombre" 
+                      placeholder="Ej: Celulosa Laja Reactor" 
+                      class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                      :class="!siteVisit.obra_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                    />
                   </div>
                   <div class="col-span-2">
-                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Dirección de la Obra</label>
-                    <input type="text" v-model="siteVisit.obra_direccion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" />
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Dirección de la Obra <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="text" 
+                      v-model="siteVisit.obra_direccion" 
+                      placeholder="Ej: Av. Industrial 450"
+                      class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                      :class="!siteVisit.obra_direccion ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                    />
                   </div>
                   <div class="col-span-2">
-                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Ciudad de la Obra</label>
-                    <input type="text" v-model="siteVisit.obra_ciudad" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" />
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Ciudad de la Obra <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="text" 
+                      v-model="siteVisit.obra_ciudad" 
+                      placeholder="Ej: Concepción"
+                      class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                      :class="!siteVisit.obra_ciudad ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                    />
                   </div>
-                  <!-- Horarios de Inicio y Término Tentativo del Servicio -->
+                  <!-- Horarios de Inicio y Término Obligatorios del Servicio -->
                   <div>
-                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Fecha/Hora Inicio Servicio <span class="text-red-400">*</span></label>
-                    <input type="datetime-local" v-model="siteVisit.fecha_hora_inicio" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white focus:border-amber-400 outline-none" />
+                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">
+                      Fecha/Hora Inicio Servicio <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      v-model="siteVisit.fecha_hora_inicio" 
+                      class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                      :class="!siteVisit.fecha_hora_inicio ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-amber-500/40 focus:border-amber-400'"
+                    />
                   </div>
                   <div>
-                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Fecha/Hora Término (Tentativo)</label>
-                    <input type="datetime-local" v-model="siteVisit.fecha_hora_termino" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white focus:border-amber-400 outline-none" />
+                    <label class="block text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">
+                      Fecha/Hora Término Servicio <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      v-model="siteVisit.fecha_hora_termino" 
+                      class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                      :class="!siteVisit.fecha_hora_termino ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-amber-500/40 focus:border-amber-400'"
+                    />
                   </div>
                   <div>
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">
@@ -1949,56 +2185,51 @@
                   <!-- Alojamiento -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento</label>
-                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.alojamiento_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
                   <!-- Desayuno -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Desayuno</label>
-                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.desayuno_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
                   <!-- Almuerzo -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Almuerzo</label>
-                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.almuerzo_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
                   <!-- Cena -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Cena</label>
-                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.cena_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
 
                   <!-- Traslado Personal -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado Personal</label>
-                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white outline-none">
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
                       <option value="NA">No Aplica (N/A)</option>
                     </select>
-                    <input type="number" v-model.number="comercial.pensiones.traslado_monto" placeholder="Valor ($)" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white text-right font-mono" />
                   </div>
                 </div>
               </div>
@@ -2795,48 +3026,67 @@ const opportunity = ref({
   contacto_telefono: '',
   contacto_obj: null,
   tipo_pago: 'transferencia',
-  requiere_oc_hes: false,
-  requiere_acreditacion: false,
-  incluye_flete: false,
-  requiere_rigger: false,
-  requiere_prevencionista: false,
+  requiere_oc_hes: null,
+  requiere_acreditacion: null,
+  incluye_flete: null,
+  requiere_rigger: null,
+  requiere_prevencionista: null,
+  cliente_pone_combustible: null,
   acreditacion_docs: { empresa: [], equipos: [], personas: [] },
   id_proyecto_estado: null
 })
 
-const ESTADO_DB_OPERACIONES = 3
+const ESTADOS_DB = {
+  OPORTUNIDAD: 1,           // Preventa Comercial (Borrador)
+  COTIZANDO: 2,             // Preventa Comercial (Cotización en curso)
+  VALIDACION_DIFF: 3,       // Operaciones (Auditoría Técnica Diff)
+  ASIGNACION_RECURSOS: 4,   // Operaciones (Asignación OT, Patentes y Tripulación)
+  PREPARACION_PATIO: 5,     // Operaciones (Checklist Patio, Acreditaciones y Salida)
+  DESPLAZAMIENTO: 6,        // Operaciones (Convoy en Ruta)
+  EN_FAENA: 7,              // Operaciones (Maniobra en Faena PWA)
+  COMPLETADO: 8,            // Cierre Operacional y Facturación
+  NO_GANADA: 99             // Oportunidad Desestimada / Perdida
+}
 
 const ESTADOS_PROCESO = {
-  COTIZACION: 10,
-  PREP_COTIZACION: 20,
-  VALIDACION_DIFF: 31,
-  ASIGNACION_RECURSOS: 32,
-  PREPARACION_PATIO: 33,
-  DESPLAZAMIENTO: 40,
-  NO_ASIGNADA: 60,
-  EN_FAENA: 70,
-  COMPLETADO: 80
+  COTIZACION: 1,
+  PREP_COTIZACION: 2,
+  VALIDACION_DIFF: 3,
+  ASIGNACION_RECURSOS: 4,
+  PREPARACION_PATIO: 5,
+  DESPLAZAMIENTO: 6,
+  EN_FAENA: 7,
+  COMPLETADO: 8,
+  NO_ASIGNADA: 99
 }
+
+const ESTADO_DB_OPERACIONES = 3
 
 /**
  * Fuente Canónica Única: id_proyecto_estado en tpry_proyecto (PostgreSQL).
  */
+const estadoDbActual = computed(() => {
+  return parseInt(opportunity.value?.id_proyecto_estado) || 1
+})
+
+const isModoOperaciones = computed(() => {
+  return estadoDbActual.value >= 3 && estadoDbActual.value < 90
+})
+
 const resolveFaseDeDominio = (estadoDb) => {
   const dbState = parseInt(estadoDb) || 1;
-  if (dbState === 1) return ESTADOS_PROCESO.COTIZACION;
-  if (dbState === 2) return ESTADOS_PROCESO.VALIDACION_DIFF;
-  if (dbState === 3) return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
-  if (dbState === 4) return ESTADOS_PROCESO.ACREDITACION;
+  if (dbState <= 2) return ESTADOS_PROCESO.COTIZACION;
+  if (dbState === 3) return ESTADOS_PROCESO.VALIDACION_DIFF;
+  if (dbState === 4) return ESTADOS_PROCESO.ASIGNACION_RECURSOS;
   if (dbState === 5) return ESTADOS_PROCESO.PREPARACION_PATIO;
   if (dbState === 6) return ESTADOS_PROCESO.DESPLAZAMIENTO;
   if (dbState === 7) return ESTADOS_PROCESO.EN_FAENA;
-  if (dbState >= 8) return ESTADOS_PROCESO.COMPLETADO;
-  return ESTADOS_PROCESO.COTIZACION;
+  if (dbState >= 8 && dbState < 90) return ESTADOS_PROCESO.COMPLETADO;
+  return ESTADOS_PROCESO.NO_ASIGNADA;
 };
 
 const isAsignacionConfirmada = computed(() => {
-  const dbState = parseInt(opportunity.value?.id_proyecto_estado) || 1;
-  return dbState >= 4 || asignacionConfirmada.value === true;
+  return estadoDbActual.value >= 5 || asignacionConfirmada.value === true;
 })
 
 const faseActual = computed(() => {
@@ -2844,8 +3094,7 @@ const faseActual = computed(() => {
 })
 
 const isRequerimientoAprobado = computed(() => {
-  const dbState = parseInt(opportunity.value?.id_proyecto_estado) || 1;
-  return dbState >= 3 || requerimientoAprobado.value === true;
+  return estadoDbActual.value >= 4 || requerimientoAprobado.value === true;
 })
 
 const isDirtyAsignacion = ref(false)
@@ -4144,9 +4393,132 @@ const cerrarDetalleAcreditacion = () => {
   modalAcreditacionDetalle.value.visible = false
 }
 
-const abrirModalGenerarRequerimiento = () => {
+const validarDatosPreventaParaCotizar = () => {
+  // 1. Cliente Mandante
   if (!opportunity.value.rut_cliente) {
-    alert('⚠️ Debe seleccionar un Cliente Mandante antes de Generar el Requerimiento.')
+    alert('⚠️ Requerimiento Obligatorio: Debe seleccionar un Cliente Mandante.')
+    return false
+  }
+
+  // 2. Punto de Contacto
+  if (!opportunity.value.contacto_nombre || String(opportunity.value.contacto_nombre).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar el Nombre de Contacto del Cliente.')
+    return false
+  }
+  if (!opportunity.value.contacto_telefono || String(opportunity.value.contacto_telefono).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar el Teléfono de Contacto del Cliente.')
+    return false
+  }
+
+  // 3. Tipo de Pago
+  if (!opportunity.value.tipo_pago) {
+    alert('⚠️ Requerimiento Obligatorio: Debe seleccionar el Tipo de Pago.')
+    return false
+  }
+
+  // 4. Requerimientos Comerciales (6 selectores obligatorios)
+  const flagsFaltantes = []
+  if (opportunity.value.requiere_oc_hes === null) flagsFaltantes.push('Requiere OC / HES')
+  if (opportunity.value.requiere_acreditacion === null) flagsFaltantes.push('Requiere Acreditación')
+  if (opportunity.value.incluye_flete === null) flagsFaltantes.push('Incluye Flete / Traslado')
+  if (opportunity.value.requiere_rigger === null) flagsFaltantes.push('Requiere Rigger')
+  if (opportunity.value.requiere_prevencionista === null) flagsFaltantes.push('Prevencionista Certificado')
+  if (opportunity.value.cliente_pone_combustible === null) flagsFaltantes.push('Cliente pone Combustible')
+
+  if (flagsFaltantes.length > 0) {
+    alert(`⚠️ Requerimientos Comerciales Obligatorios: Debe seleccionar SÍ o NO en todos los campos marcados en rojo:\n\n• ${flagsFaltantes.join('\n• ')}`)
+    return false
+  }
+
+  // 5. Descripción del Proyecto / Faena
+  if (!opportunity.value.descripcion || String(opportunity.value.descripcion).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Descripción del Proyecto / Faena.')
+    return false
+  }
+
+  // 6. Datos de Operación e Ingeniería (Obra y Horarios)
+  if (!siteVisit.value.obra_nombre || String(siteVisit.value.obra_nombre).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar el Nombre de la Obra en la pestaña "Datos Servicio & Visita".')
+    activeTab.value = 'terreno'
+    return false
+  }
+  if (!siteVisit.value.obra_direccion || String(siteVisit.value.obra_direccion).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Dirección de la Obra en la pestaña "Datos Servicio & Visita".')
+    activeTab.value = 'terreno'
+    return false
+  }
+  if (!siteVisit.value.obra_ciudad || String(siteVisit.value.obra_ciudad).trim() === '') {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Ciudad de la Obra en la pestaña "Datos Servicio & Visita".')
+    activeTab.value = 'terreno'
+    return false
+  }
+  if (!siteVisit.value.fecha_hora_inicio) {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Fecha y Hora de Inicio del Servicio en la pestaña "Datos Servicio & Visita".')
+    activeTab.value = 'terreno'
+    return false
+  }
+  if (!siteVisit.value.fecha_hora_termino) {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Fecha y Hora de Término del Servicio en la pestaña "Datos Servicio & Visita".')
+    activeTab.value = 'terreno'
+    return false
+  }
+
+  // 7. Estructurador de líneas
+  if (!lines.value || lines.value.length === 0) {
+    alert('⚠️ Requerimiento Obligatorio: Debe agregar al menos una Línea de Servicio en el Estructurador.')
+    activeTab.value = 'servicios'
+    return false
+  }
+
+  for (let i = 0; i < lines.value.length; i++) {
+    const l = lines.value[i]
+    if (!l.tipo || String(l.tipo).trim() === '') {
+      alert(`⚠️ Fila #${i + 1} del Estructurador: Debe seleccionar la Categoría del Servicio.`)
+      activeTab.value = 'servicios'
+      return false
+    }
+    if (!l.subcategoria || String(l.subcategoria).trim() === '') {
+      alert(`⚠️ Fila #${i + 1} del Estructurador: Debe seleccionar la Subcategoría del Servicio.`)
+      activeTab.value = 'servicios'
+      return false
+    }
+  }
+
+  return true
+}
+
+const validarDatosParaGenerarRequerimiento = () => {
+  // 1. Debe cumplir con la totalidad de los datos requeridos para cotizar
+  if (!validarDatosPreventaParaCotizar()) {
+    return false
+  }
+
+  // 2. Debe tener al menos una versión de cotización generada
+  const cotizaciones = cotizaciones_historicas.value || []
+  if (cotizaciones.length === 0) {
+    alert('⚠️ No es posible transferir el requerimiento a Operaciones:\n\nDebe generar previamente la cotización formal haciendo clic en "Generar Cotización".')
+    return false
+  }
+
+  // 3. Debe tener al menos una cotización enviada por correo al cliente
+  const tieneEnvioAlCliente = cotizaciones.some(c => 
+    c.evento_envio || 
+    (Array.isArray(c.eventos_envio) && c.eventos_envio.length > 0) || 
+    c.fecha_envio || 
+    c.destinatario ||
+    c.enviada
+  )
+
+  if (!tieneEnvioAlCliente) {
+    alert('⚠️ No es posible transferir el requerimiento a Operaciones:\n\nDebe enviar por correo la cotización generada al cliente mandante antes de realizar el traspaso a Operaciones.\n\nHaz clic en el botón ✉️ "Enviar" en la sección de Control de Versiones.')
+    return false
+  }
+
+  return true
+}
+
+const abrirModalGenerarRequerimiento = () => {
+  if (!validarDatosParaGenerarRequerimiento()) {
     return
   }
 
@@ -4303,7 +4675,7 @@ const hasDiff = (field, index = 0) => {
   if (topTab.value !== 'operaciones' || operacionesSubTab.value !== 'validacion') {
     return false
   }
-  if (faseActual.value < ESTADOS_PROCESO.VALIDACION_DIFF) {
+  if (!isModoOperaciones.value) {
     return false
   }
   if (!snapshotComercial.value || Object.keys(snapshotComercial.value).length === 0) return false
@@ -5228,8 +5600,10 @@ const cargarDatosCotizacion = async () => {
         opportunity.value.fecha_tentativa       = p.fecha_plan_ini ? p.fecha_plan_ini.split('T')[0] : ''
         opportunity.value.id_empresa_emisora    = String(p.id_empresa || '9')
         opportunity.value.id_proyecto_estado    = p.id_proyecto_estado
-        if (p.id_proyecto_estado === ESTADO_DB_OPERACIONES) {
+        if (parseInt(p.id_proyecto_estado) >= 3) {
           topTab.value = 'operaciones'
+        } else {
+          topTab.value = 'comercial'
         }
 
         if (p.codi_proyecto) {
@@ -5253,11 +5627,12 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.contacto_telefono     = crm.contacto_telefono || ''
           opportunity.value.contacto_obj          = crm.contacto_obj || null
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
-          opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes || false
-          opportunity.value.requiere_acreditacion = crm.requiere_acreditacion || false
-          opportunity.value.incluye_flete         = crm.incluye_flete || false
-          opportunity.value.requiere_rigger       = crm.requiere_rigger || false
-          opportunity.value.requiere_prevencionista = crm.requiere_prevencionista || false
+          opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes !== undefined ? crm.requiere_oc_hes : null
+          opportunity.value.requiere_acreditacion = crm.requiere_acreditacion !== undefined ? crm.requiere_acreditacion : null
+          opportunity.value.incluye_flete         = crm.incluye_flete !== undefined ? crm.incluye_flete : null
+          opportunity.value.requiere_rigger       = crm.requiere_rigger !== undefined ? crm.requiere_rigger : null
+          opportunity.value.requiere_prevencionista = crm.requiere_prevencionista !== undefined ? crm.requiere_prevencionista : null
+          opportunity.value.cliente_pone_combustible = crm.cliente_pone_combustible !== undefined ? crm.cliente_pone_combustible : null
           let adocs = crm.acreditacion_docs;
           if (Array.isArray(adocs)) {
             opportunity.value.acreditacion_docs = { empresa: adocs, equipos: [], personas: [] };
@@ -5385,28 +5760,24 @@ const cargarDatosCotizacion = async () => {
 
           const estadoDb = parseInt(p.id_proyecto_estado) || 1
           
-          if (estadoDb >= 2) {
+          if (estadoDb >= 3) {
             topTab.value = 'operaciones'
-            requerimientoAprobado.value = true
             
-            if (props.initialSubTab) {
-              operacionesSubTab.value = props.initialSubTab
-            } else if (ejecucion.subtab_activa) {
-              operacionesSubTab.value = ejecucion.subtab_activa
-            } else if (estadoDb === 2) {
+            if (estadoDb === ESTADOS_DB.VALIDACION_DIFF) {
               operacionesSubTab.value = 'validacion'
               requerimientoAprobado.value = false
-            } else if (estadoDb === 3) {
-              operacionesSubTab.value = 'asignacion'
-            } else if (estadoDb === 4) {
-              operacionesSubTab.value = 'acreditaciones'
+            } else if (estadoDb === ESTADOS_DB.ASIGNACION_RECURSOS) {
+              requerimientoAprobado.value = true
+              operacionesSubTab.value = (props.initialSubTab === 'acreditaciones') ? 'acreditaciones' : 'asignacion'
+            } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
+              requerimientoAprobado.value = true
               asignacionConfirmada.value = true
-            } else if (estadoDb >= 5) {
               operacionesSubTab.value = 'preparacion_salida'
-              asignacionConfirmada.value = true
             }
           } else {
             topTab.value = 'comercial'
+            requerimientoAprobado.value = false
+            asignacionConfirmada.value = false
           }
 
           if (ejecucion.observaciones) {
@@ -5636,31 +6007,36 @@ const trazaCalidad = computed(() => trazaCorreosList.value.find(t => t.tipo === 
 const trazaPatio = computed(() => trazaCorreosList.value.find(t => t.tipo === 'JEFE_PATIO_PWA'))
 const trazaAnalista = computed(() => trazaCorreosList.value.find(t => t.tipo === 'ANALISTA_OP'))
 
-const SUBTAB_RANK = { 'validacion': 1, 'asignacion': 2, 'acreditaciones': 3, 'preparacion_salida': 4 }
+const MIN_ESTADO_FOR_SUBTAB = {
+  'comercial': 1,
+  'validacion': 3,
+  'asignacion': 4,
+  'acreditaciones': 4,
+  'preparacion_salida': 5
+}
 
 const cambiarYPersistirSubTab = async (subtabName) => {
+  const minReq = MIN_ESTADO_FOR_SUBTAB[subtabName] || 1
+  if (estadoDbActual.value < minReq) {
+    alert('🔒 Esta etapa está bloqueada. Para acceder debe completar y aprobar formalmente las etapas anteriores.')
+    return
+  }
+
+  if (subtabName === 'comercial') {
+    topTab.value = 'comercial'
+    return
+  }
+
   topTab.value = 'operaciones'
   operacionesSubTab.value = subtabName
-  console.log('🔄 Cambiando a SubTab Operaciones:', subtabName, '| topTab:', topTab.value)
-  if (!rawEjecucionJson.value) rawEjecucionJson.value = {}
+  console.log('🔄 Visualizando SubTab Operaciones:', subtabName, '| topTab:', topTab.value)
   
+  if (!rawEjecucionJson.value) rawEjecucionJson.value = {}
   rawEjecucionJson.value.subtab_actual_view = subtabName
-
-  const currentRank = SUBTAB_RANK[rawEjecucionJson.value.subtab_activa] || 1
-  const newRank = SUBTAB_RANK[subtabName] || 1
-
-  // Solo avanzar la etapa macro si el nuevo tab es de una fase superior
-  if (newRank > currentRank) {
-    rawEjecucionJson.value.subtab_activa = subtabName
-  }
 
   if (!opportunity.value.json_field) opportunity.value.json_field = {}
   if (!opportunity.value.json_field.ejecucion_v1) opportunity.value.json_field.ejecucion_v1 = {}
-  
   opportunity.value.json_field.ejecucion_v1.subtab_actual_view = subtabName
-  if (newRank > currentRank) {
-    opportunity.value.json_field.ejecucion_v1.subtab_activa = subtabName
-  }
   
   const projectId = props.proyectoId || currentProyectoId.value
   if (projectId) {
@@ -5670,9 +6046,8 @@ const cambiarYPersistirSubTab = async (subtabName) => {
       await apiAxios.put(`/proyectos/${projectId}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log(`✅ Subtab visualizada: ${subtabName}, Etapa macro retenida en: ${rawEjecucionJson.value.subtab_activa}`)
     } catch (e) {
-      console.warn('Error al guardar subtab en PostgreSQL:', e)
+      console.warn('Error al guardar vista subtab en PostgreSQL:', e)
     }
   }
 }
@@ -5717,6 +6092,7 @@ const buildPayload = () => {
         incluye_flete:         opportunity.value.incluye_flete,
         requiere_rigger:       opportunity.value.requiere_rigger,
         requiere_prevencionista: opportunity.value.requiere_prevencionista,
+        cliente_pone_combustible: opportunity.value.cliente_pone_combustible,
         acreditacion_docs:     opportunity.value.acreditacion_docs,
         tipo_proceso:          antecedentes.value.tipo_proceso,
         n_licitacion:          antecedentes.value.identificador || '',
@@ -5778,7 +6154,7 @@ const buildPayload = () => {
 
 const guardarEnPreventa = async () => {
   if (!opportunity.value.rut_cliente) {
-    alert('Debe seleccionar un cliente mandante.')
+    alert('⚠️ Requerimiento Obligatorio: Debe seleccionar un Cliente Mandante antes de guardar.')
     return
   }
   
@@ -5828,12 +6204,7 @@ const guardarEnPreventa = async () => {
 }
 
 const generarRequerimiento = async () => {
-  if (!opportunity.value.rut_cliente) {
-    alert('⚠️ Debe seleccionar un Cliente Mandante antes de Generar el Requerimiento.')
-    return
-  }
-  if (!siteVisit.value.obra_nombre && !siteVisit.value.obra_direccion) {
-    alert('⚠️ Debe ingresar al menos el Nombre o Dirección de la Obra en la pestaña "Datos Servicio & Visita".')
+  if (!validarDatosParaGenerarRequerimiento()) {
     return
   }
 
@@ -5893,8 +6264,11 @@ const aprobarYGenerarOT = async () => {
     
     // Guardar avance en borrador
     const payload = buildPayload()
+    payload.id_proyecto_estado = ESTADOS_DB.ASIGNACION_RECURSOS
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.ASIGNACION_RECURSOS
     payload.json_field.ejecucion_v1 = {
       ...(payload.json_field?.ejecucion_v1 || {}),
+      subtab_activa: 'asignacion',
       decision: decisionFinal,
       penaliza_kpi_comercial: tieneDiff,
       diff_registrado: {
@@ -6243,7 +6617,8 @@ const confirmarAsignacionOT = async () => {
     }
     
     const projectId = props.proyectoId || currentProyectoId.value
-    payload.id_proyecto_estado = ESTADO_DB_OPERACIONES
+    payload.id_proyecto_estado = ESTADOS_DB.PREPARACION_PATIO
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.PREPARACION_PATIO
     await apiAxios.put(`/proyectos/${projectId}`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -6752,8 +7127,7 @@ const finalizarPreparacionSalida = async () => {
 }
 
 const generarPDF = async () => {
-  if (!opportunity.value.rut_cliente) {
-    alert('Debe seleccionar un cliente mandante antes de generar la cotización.')
+  if (!validarDatosPreventaParaCotizar()) {
     return
   }
   
@@ -6922,8 +7296,9 @@ const confirmarNoAsignada = async () => {
     // Generar el payload base
     const payload = buildPayload()
     
-    // Forzar estado 6 ("Cotización No Asignada") y meter los datos correspondientes en json_field
-    payload.id_proyecto_estado = 6
+    // Forzar estado 99 ("Cotización No Asignada / Perdida") y meter los datos correspondientes en json_field
+    payload.id_proyecto_estado = ESTADOS_DB.NO_GANADA
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.NO_GANADA
     payload.json_field.crm_v1.razon_no_asignada = noAsignacionMotivo.value
     payload.json_field.crm_v1.observacion_no_asignada = noAsignacionObservacion.value
     payload.id_user_modificacion = currentUser.id_user || null
@@ -6954,8 +7329,8 @@ const restaurarACotizar = async () => {
     const payload = buildPayload()
     
     // Cambiar a estado 2 ("Preparación de Cotización") y limpiar campos de desestimación
-    payload.id_proyecto_estado = 2
-    opportunity.value.id_proyecto_estado = 2
+    payload.id_proyecto_estado = ESTADOS_DB.COTIZANDO
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.COTIZANDO
     if (payload.json_field?.crm_v1) {
       payload.json_field.crm_v1.razon_no_asignada = null
       payload.json_field.crm_v1.observacion_no_asignada = null
@@ -6967,6 +7342,7 @@ const restaurarACotizar = async () => {
     })
     
     isDirty.value = false
+    topTab.value = 'comercial'
     alert('Cotización restaurada a "Preparación de Cotización" exitosamente.')
     emit('creada', { id: projectId }) // Emitir evento para refrescar la Torre
     emit('close')
@@ -6986,9 +7362,9 @@ const volverACotizar = async () => {
     
     const payload = buildPayload()
     
-    // Cambiar a estado 2 ("Preparación de Cotización")
-    payload.id_proyecto_estado = 2
-    opportunity.value.id_proyecto_estado = 2
+    // Cambiar a estado 2 ("Preparación de Cotización / Preventa Comercial")
+    payload.id_proyecto_estado = ESTADOS_DB.COTIZANDO
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.COTIZANDO
     payload.id_user_modificacion = currentUser.id_user || null
 
     await apiAxios.put(`/proyectos/${projectId}`, payload, {
@@ -6996,12 +7372,13 @@ const volverACotizar = async () => {
     })
     
     isDirty.value = false
-    alert('Cotización devuelta a "Preparación de Cotización" exitosamente.')
-    emit('creada', { id: projectId }) // Emitir evento para refrescar la Torre
+    topTab.value = 'comercial'
+    alert('Cotización devuelta a Preventa Comercial exitosamente (100% editable).')
+    emit('creada', { id: projectId })
     emit('close')
   } catch (error) {
     console.error('Error al devolver a cotizar:', error)
-    alert('Error al devolver la cotización a cotizar.')
+    alert('Error al devolver la cotización.')
   }
 }
 </script>

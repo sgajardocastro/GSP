@@ -193,7 +193,7 @@ const getDatosVisita = async (req, res) => {
 const asignarVisita = async (req, res) => {
     try {
         const { token } = req.params;
-        const { id_ejecutor, fecha_visita, id_coordinador, fes_pin_hash } = req.body;
+        const { id_ejecutor, fecha_visita, id_coordinador, fes_pin_hash, comentarios_coordinador } = req.body;
 
         // 1. Obtener proyecto y resolver coordinador si no viene en el body
         const tokenPryRes = await pool.query(`
@@ -228,12 +228,16 @@ const asignarVisita = async (req, res) => {
         }
 
         // 3. Marcar token asignado y actualizar tpry_proyecto
+        if (comentarios_coordinador) {
+            crm.comentarios_visita_coordinador = comentarios_coordinador;
+        }
         await pool.query(`
             UPDATE tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
-                token_visita = NULL
-            WHERE id_proyecto = $1
-        `, [pryRow.id_proyecto]);
+                token_visita = NULL,
+                json_field = $1
+            WHERE id_proyecto = $2
+        `, [JSON.stringify(jField), pryRow.id_proyecto]);
 
         const id_proyecto = pryRow.id_proyecto;
 
@@ -246,16 +250,34 @@ const asignarVisita = async (req, res) => {
 
                 // Mapear datos comerciales al body_exec
                 (seed.segmentos || []).forEach(seg => {
-                    if (seg.label && seg.label.includes('DATOS GENERALES')) {
+                    if (seg.label && seg.label.toUpperCase().includes('DATOS GENERALES')) {
+                        let hasComentario = false;
                         (seg.attributes || []).forEach(attr => {
-                            if (attr.label === 'NOMBRE DE LA OBRA') attr.default = crm.obra_nombre || pryRow.nombre_proyecto || '';
-                            if (attr.label === 'DIRECCION DE LA OBRA') attr.default = crm.obra_direccion || '';
-                            if (attr.label === 'REFERENCIA DE LA DIRECCION') attr.default = crm.obra_ciudad || '';
-                            if (attr.label === 'GEOLOCALIZACION OBRA') attr.default = crm.coordenadas_mapa || { lat: null, lng: null };
-                            if (attr.label === 'CONTACTO EN TERRENO') attr.default = crm.contacto_nombre || '';
-                            if (attr.label === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
-                            if (attr.label === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
+                            const attrLabel = (attr.label || '').toUpperCase();
+                            if (attrLabel === 'NOMBRE DE LA OBRA') attr.default = crm.obra_nombre || pryRow.nombre_proyecto || '';
+                            if (attrLabel === 'DIRECCION DE LA OBRA') attr.default = crm.obra_direccion || '';
+                            if (attrLabel === 'REFERENCIA DE LA DIRECCION') attr.default = crm.obra_ciudad || '';
+                            if (attrLabel === 'GEOLOCALIZACION OBRA') attr.default = crm.coordenadas_mapa || { lat: null, lng: null };
+                            if (attrLabel === 'CONTACTO EN TERRENO') attr.default = crm.contacto_nombre || '';
+                            if (attrLabel === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
+                            if (attrLabel === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
+                            if (attrLabel.includes('COMENTARIO') || attrLabel.includes('INSTRUCCIONES')) {
+                                attr.default = comentarios_coordinador || '';
+                                attr.value = comentarios_coordinador || '';
+                                hasComentario = true;
+                            }
                         });
+
+                        if (!hasComentario && comentarios_coordinador) {
+                            seg.attributes.push({
+                                label: 'COMENTARIOS DEL COORDINADOR',
+                                type: 'textArea',
+                                default: comentarios_coordinador,
+                                value: comentarios_coordinador,
+                                required: false,
+                                grid: 12
+                            });
+                        }
                     }
                 });
 
