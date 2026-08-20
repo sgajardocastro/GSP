@@ -276,8 +276,10 @@ const confirmarConPin = async () => {
             if (label.includes('NOMBRE DE LA OBRA')) attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
             if (label.includes('DIRECCION')) attr.default = dirObra
             if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
-              attr.default = form.value.comentarios_coordinador || ''
-              attr.value = form.value.comentarios_coordinador || ''
+              attr.type = 'textField'
+              attr.roles = ['SYSTEM']
+              attr.default = form.value.comentarios_coordinador || 'No especificado'
+              attr.value = form.value.comentarios_coordinador || 'No especificado'
             }
             if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
               attr.default = proyectoData.value.coordenadas_mapa
@@ -293,10 +295,11 @@ const confirmarConPin = async () => {
         if (!hasComentarioAttr) {
           seg1.attributes.push({
             label: 'COMENTARIOS DEL COORDINADOR',
-            type: 'textArea',
-            default: form.value.comentarios_coordinador || '',
-            value: form.value.comentarios_coordinador || '',
-            required: false,
+            type: 'textField',
+            default: form.value.comentarios_coordinador || 'No especificado',
+            value: form.value.comentarios_coordinador || 'No especificado',
+            nullable: true,
+            roles: ['SYSTEM'],
             grid: 12
           })
         }

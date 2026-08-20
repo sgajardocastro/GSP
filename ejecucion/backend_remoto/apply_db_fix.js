@@ -68,6 +68,77 @@ async function runFix() {
     }
 
     console.log('✅ Categorías y Subcategorías aseguradas con éxito.');
+
+    // 3. Actualizar Template 80 en tsrv_templates y encuestas tsrv_survey
+    console.log('📦 Actualizando Template 80...');
+    const tmplRes = await client.query('SELECT body_seed FROM tsrv_templates WHERE id_template = 80');
+    if (tmplRes.rowCount > 0) {
+      let seed = tmplRes.rows[0].body_seed;
+      if (typeof seed === 'string') seed = JSON.parse(seed);
+
+      (seed.segmentos || []).forEach(seg => {
+        if (seg.label && seg.label.toUpperCase().includes('DATOS GENERALES')) {
+          let hasComentario = false;
+          (seg.attributes || []).forEach(attr => {
+            const attrLabel = (attr.label || '').toUpperCase();
+            if (attrLabel.includes('COMENTARIO') || attrLabel.includes('INSTRUCCIONES')) {
+              attr.label = 'COMENTARIOS DEL COORDINADOR';
+              attr.type = 'textField';
+              attr.roles = ['SYSTEM'];
+              attr.nullable = true;
+              hasComentario = true;
+            }
+          });
+
+          if (!hasComentario) {
+            seg.attributes.push({
+              label: 'COMENTARIOS DEL COORDINADOR',
+              type: 'textField',
+              nullable: true,
+              roles: ['SYSTEM']
+            });
+          }
+        }
+      });
+
+      await client.query('UPDATE tsrv_templates SET body_seed = $1 WHERE id_template = 80', [JSON.stringify(seed)]);
+      console.log('✅ Template 80 actualizado en tsrv_templates con COMENTARIOS DEL COORDINADOR (SYSTEM textField).');
+    }
+
+    const srvRes = await client.query('SELECT id_survey, body_exec FROM tsrv_survey WHERE id_template = 80');
+    for (const srv of srvRes.rows) {
+      let bodyExec = srv.body_exec;
+      if (typeof bodyExec === 'string') bodyExec = JSON.parse(bodyExec);
+
+      (bodyExec.segmentos || []).forEach(seg => {
+        if (seg.label && seg.label.toUpperCase().includes('DATOS GENERALES')) {
+          let hasComentario = false;
+          (seg.attributes || []).forEach(attr => {
+            const attrLabel = (attr.label || '').toUpperCase();
+            if (attrLabel.includes('COMENTARIO') || attrLabel.includes('INSTRUCCIONES')) {
+              attr.label = 'COMENTARIOS DEL COORDINADOR';
+              attr.type = 'textField';
+              attr.roles = ['SYSTEM'];
+              hasComentario = true;
+            }
+          });
+
+          if (!hasComentario) {
+            seg.attributes.push({
+              label: 'COMENTARIOS DEL COORDINADOR',
+              type: 'textField',
+              nullable: true,
+              roles: ['SYSTEM'],
+              default: 'No especificado'
+            });
+          }
+        }
+      });
+
+      await client.query('UPDATE tsrv_survey SET body_exec = $1 WHERE id_survey = $2', [JSON.stringify(bodyExec), srv.id_survey]);
+      console.log(`✅ Survey #${srv.id_survey} actualizado a solo lectura SYSTEM.`);
+    }
+
     await client.query('COMMIT');
     console.log('🎉 Parche completado correctamente.');
   } catch (err) {

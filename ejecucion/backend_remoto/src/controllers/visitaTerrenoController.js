@@ -262,19 +262,22 @@ const asignarVisita = async (req, res) => {
                             if (attrLabel === 'N° TELEFONO (CONTACTO EN TERRENO)') attr.default = crm.contacto_telefono || '';
                             if (attrLabel === 'CORREO ELECTRONICO CONTACTO EN TERRENO') attr.default = crm.contacto_email || '';
                             if (attrLabel.includes('COMENTARIO') || attrLabel.includes('INSTRUCCIONES')) {
-                                attr.default = comentarios_coordinador || '';
-                                attr.value = comentarios_coordinador || '';
+                                attr.type = 'textField';
+                                attr.roles = ['SYSTEM'];
+                                attr.default = comentarios_coordinador || 'No especificado';
+                                attr.value = comentarios_coordinador || 'No especificado';
                                 hasComentario = true;
                             }
                         });
 
-                        if (!hasComentario && comentarios_coordinador) {
+                        if (!hasComentario) {
                             seg.attributes.push({
                                 label: 'COMENTARIOS DEL COORDINADOR',
-                                type: 'textArea',
-                                default: comentarios_coordinador,
-                                value: comentarios_coordinador,
-                                required: false,
+                                type: 'textField',
+                                default: comentarios_coordinador || 'No especificado',
+                                value: comentarios_coordinador || 'No especificado',
+                                nullable: true,
+                                roles: ['SYSTEM'],
                                 grid: 12
                             });
                         }

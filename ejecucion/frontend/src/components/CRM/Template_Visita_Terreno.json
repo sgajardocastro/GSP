@@ -58,6 +58,14 @@
           "roles": [
             "SYSTEM"
           ]
+        },
+        {
+          "type": "textField",
+          "label": "COMENTARIOS DEL COORDINADOR",
+          "nullable": true,
+          "roles": [
+            "SYSTEM"
+          ]
         }
       ]
     },
