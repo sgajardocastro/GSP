@@ -132,14 +132,14 @@
       <!-- 4. ACREDITACIONES & DOSSIER -->
       <button 
         @click="cambiarYPersistirSubTab('acreditaciones')" 
-        :disabled="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS"
+        :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
         :class="[
-          estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'acreditaciones' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'acreditaciones' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
           'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
-        :title="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'Requiere Asignación de Recursos' : ''"
+        :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
       >
-        <span v-if="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS" class="text-xs">🔒</span>
+        <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
         <span v-else class="text-[10px] text-slate-500">📄</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         <span>4. Acreditaciones & Dossier</span>
@@ -5970,11 +5970,11 @@ const cargarDatosCotizacion = async () => {
             } else if (estadoDb === ESTADOS_DB.ASIGNACION_RECURSOS) {
               requerimientoAprobado.value = true
               asignacionConfirmada.value = false
-              operacionesSubTab.value = (props.initialSubTab === 'acreditaciones') ? 'acreditaciones' : 'asignacion'
+              operacionesSubTab.value = 'asignacion'
             } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
               requerimientoAprobado.value = true
               asignacionConfirmada.value = true
-              operacionesSubTab.value = 'preparacion_salida'
+              operacionesSubTab.value = (props.initialSubTab === 'acreditaciones') ? 'acreditaciones' : 'preparacion_salida'
             }
           } else {
             topTab.value = 'comercial'
@@ -6214,7 +6214,7 @@ const MIN_ESTADO_FOR_SUBTAB = {
   'comercial': 1,
   'validacion': 3,
   'asignacion': 4,
-  'acreditaciones': 4,
+  'acreditaciones': 5,
   'preparacion_salida': 5
 }
 
