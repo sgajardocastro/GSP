@@ -276,10 +276,7 @@ const confirmarConPin = async () => {
             if (label.includes('NOMBRE DE LA OBRA')) attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
             if (label.includes('DIRECCION')) attr.default = dirObra
             if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
-              attr.type = 'textField'
-              attr.roles = ['SYSTEM']
               attr.default = form.value.comentarios_coordinador || 'No especificado'
-              attr.value = form.value.comentarios_coordinador || 'No especificado'
             }
             if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
               attr.default = proyectoData.value.coordenadas_mapa
@@ -287,23 +284,6 @@ const confirmarConPin = async () => {
           })
         }
       })
-
-      // Asegurar que el Segmento 1 contenga el atributo de comentarios del coordinador
-      const seg1 = bodySeed.segmentos.find(s => (s.label || '').toUpperCase().includes('DATOS GENERALES')) || bodySeed.segmentos[0]
-      if (seg1 && Array.isArray(seg1.attributes)) {
-        const hasComentarioAttr = seg1.attributes.some(a => (a.label || '').toUpperCase().includes('COMENTARIO'))
-        if (!hasComentarioAttr) {
-          seg1.attributes.push({
-            label: 'COMENTARIOS DEL COORDINADOR',
-            type: 'textField',
-            default: form.value.comentarios_coordinador || 'No especificado',
-            value: form.value.comentarios_coordinador || 'No especificado',
-            nullable: true,
-            roles: ['SYSTEM'],
-            grid: 12
-          })
-        }
-      }
     }
 
     // 2. Crear e instanciar survey de Visita a Terreno vía API oficial POST /api/survey con body_exec poblado
