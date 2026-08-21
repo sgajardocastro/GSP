@@ -167,22 +167,23 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Pruebas Piloto de Plataforma:** Realizar pruebas de campo con equipo comercial (Richard) y operaciones/analista para recopilar feedback previo a la sesión presencial.
 
 **Reunión 19-Ago-2026 (Revisión de Detalles Operativos y Comerciales):**
-*   [ ] **[Sergio Gajardo] Restringir fechas (Alta):** Obligar al vendedor a ingresar fecha de inicio y término para poder generar la cotización.
-*   [ ] **[Sergio Gajardo] Implementar selectores (Alta):** Reemplazar los campos de selección actuales por listas desplegables (SÍ/NO) con valores nulos por defecto y marcación en rojo.
-*   [ ] **[Sergio Gajardo] Obligar campos (Alta):** Configurar los campos clave en la interfaz como obligatorios para evitar datos incompletos.
-*   [ ] **[Sergio Gajardo] Reubicar costos (Alta):** Eliminar el campo de valor de la cotización comercial y trasladarlo a la fase de verificación.
-*   [ ] **[Sergio Gajardo] Incluir combustible (Alta):** Agregar el indicador de combustible a cargo del cliente en la columna de preventa.
-*   [ ] **[Sergio Gajardo] Crear buscador (Media-Alta):** Implementar una función de filtrado en el buscador de equipos para localizar elementos específicos por su nombre o patente.
-*   [ ] **[Sergio Gajardo] Agregar botón traslado (Media-Alta):** Implementar un botón funcional para añadir traslados en la cotización.
-*   [ ] **[Sergio Gajardo] Regla de negocio conductores (Media-Alta):** Programar la regla de negocio para asignar obligatoriamente un conductor a cada patente de equipo.
-*   [ ] **[Sergio Gajardo] Asociar flota (Media-Alta):** Asociar la flota de patentes a sus respectivas categorías y subcategorías.
+*   [x] **[Sergio Gajardo] Restringir fechas (Alta):** Obligar al vendedor a ingresar fecha de inicio y término para poder generar la cotización.
+*   [x] **[Sergio Gajardo] Implementar selectores (Alta):** Reemplazar los campos de selección actuales por listas desplegables (SÍ/NO) con valores nulos por defecto y marcación en rojo.
+*   [x] **[Sergio Gajardo] Obligar campos (Alta):** Configurar los campos clave en la interfaz como obligatorios para evitar datos incompletos.
+*   [x] **[Sergio Gajardo] Reubicar costos (Alta):** Eliminar el campo de valor de la cotización comercial y trasladarlo a la fase de verificación.
+*   [x] **[Sergio Gajardo] Incluir combustible (Alta):** Agregar el indicador de combustible a cargo del cliente en la columna de preventa.
+*   [x] **[Sergio Gajardo] Crear buscador (Media-Alta):** Implementar una función de filtrado en el buscador de equipos para localizar elementos específicos por su nombre o patente.
+*   [x] **[Sergio Gajardo] Agregar botón traslado (Media-Alta):** Implementar un botón funcional para añadir traslados en la cotización.
+*   [x] **[Sergio Gajardo] Regla de negocio conductores (Media-Alta):** Programar la regla de negocio para asignar obligatoriamente un conductor a cada patente de equipo.
+*   [x] **[Sergio Gajardo] Asociar flota (Media-Alta):** Asociar la flota de patentes a sus respectivas categorías y subcategorías.
 *   [ ] **[Sergio Gajardo] Configurar registro combustible (Media):** Habilitar la función de registro de carga de combustible en el módulo de viajes, incluyendo orómetro, odómetro y fotografías.
-*   [ ] **[Sergio Gajardo] Corregir estados (Media):** Revisar y corregir el error en el sistema relacionado con el estado de la tarjeta de preparación de operaciones.
-*   [ ] **[Sergio Gajardo] Añadir comentarios (Media):** Incluir un campo de texto libre para que el coordinador pueda añadir observaciones al asignar el servicio.
-*   [ ] **[Sergio Gajardo] Añadir comentario técnico (Media):** Agregar un campo de texto expandible para observaciones en la sección de implementos de izaje.
+*   [x] **[Sergio Gajardo] Corregir estados (Media):** Revisar y corregir el error en el sistema relacionado con el estado de la tarjeta de preparación de operaciones.
+*   [x] **[Sergio Gajardo] Añadir comentarios (Media):** Incluir un campo de texto libre para que el coordinador pueda añadir observaciones al asignar el servicio.
+*   [x] **[Sergio Gajardo] Añadir comentario técnico (Media):** Agregar un campo de texto expandible para observaciones en la sección de implementos de izaje.
 *   [ ] **[Sergio Gajardo] Despachar dossier (Baja):** Finalizar el envío del dossier al cliente con los enlaces correspondientes.
 *   [ ] **[Sergio Gajardo] Reprogramar reunión (Baja):** Reasignar la reunión de gestión para mañana a las 16 horas.
 *   [ ] **[Sergio Gajardo] Revisar modificaciones (Baja):** Analizar los cambios realizados y notificar a Jorge Ponce para ejecutar la prueba del desarrollo.
+*   [ ] **[Sergio Gajardo] Tratamiento de Alimentos, Hospedaje y Traslados de Personal en Tierra (Media-Alta):** Diseñar e implementar el registro y control operativo de alimentación, hospedaje y traslados para el personal de faena (Riggers, Prevencionistas, Supervisores) que no se desplaza en las cabinas de los equipos de izaje/maquinaria.
 
 ---
 
@@ -270,6 +271,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Invariante de Acreditación en FSM & Purga de Pruebas]:** Documentación en Spec 16 (Sección 6) de la regla de activación condicional de acreditación (estrictamente 0% y gauges ocultos en Estados < 5 hasta que se asignen recursos en Patio), e higienización/purga total de los 38 proyectos de prueba obsoletos en la base de datos PostgreSQL.
 * [x] **[Eliminación Montos Pensiones & Comentarios Visita a Terreno]:** Remoción definitiva de inputs numéricos de montos en Pensiones de Preventa (conservando únicamente desplegables de responsabilidad), y captura de comentarios del coordinador en la web token de asignación (`AsignacionVisita.vue`) con inyección en Segmento 1 (`body_exec`) del Survey de Terreno (Template 80).
 * [x] **[Categoría y Subcategoría en Vista Equipos 360 & Asignación Operativa]:** Inclusión de columnas `Categoría` y `Subcategoría`, filtros reactivos y exportación Excel en `Vista360.vue`, y filtrado inteligente de flota disponible por categoría/subcategoría en el DataGrid de asignación de recursos en `GestorOportunidades.vue`.
+* [ ] **[Tratamiento Operativo Pensiones y Traslados Personal en Tierra]:** Modelamiento y registro operativo de alimentación, hospedaje y traslados para el personal de faena (Riggers, Prevencionistas, Supervisores) que no se desplaza en las cabinas de los equipos de izaje/maquinaria.
 * [ ] **[Envío Dossier Acreditación B2B]:** Implementar el despacho por correo electrónico del expediente consolidado de acreditaciones (Empresa, Flota y Personal) al cliente mandante con trazabilidad de entrega.
 * [ ] **[Dar OK a Salida de Patio]:** Consolidación y validación formal de los 3 segmentos de preparación de salida (Control de Riesgos, Inspección 360° en PWA y Analista GPS) con transición al estado de Desplazamiento / Ruta.
 * [ ] **[Desplazamiento & Monitoreo de Viaje con Token]:** Especificación e implementación del flujo web de conductor (inicio de viaje, pings GPS cada 5 min y confirmación de llegada a faena).
