@@ -5498,10 +5498,21 @@ const fetchCategories = async () => {
     let list = data?.data || data || []
     if (!Array.isArray(list)) list = []
 
-    // Inyectar categorías operacionales que no vengan de la BD
+    // Filtrar explícitamente cualquier categoría obsoleta (IDs 1-5 o nombres legacy)
+    const blacklistedNames = ['EQUIPO (GRÚA)', 'EQUIPO (GRUA)', 'EQUIPO (APOYO)', 'PERSONAL', 'ESCOLTA']
+    list = list.filter(c => {
+      const name = (c.nombre_categoria || '').toUpperCase().trim()
+      const isBlacklisted = blacklistedNames.includes(name) || [1, 2, 3, 4, 5].includes(Number(c.id_categoria))
+      return !isBlacklisted
+    })
+
+    // Inyectar categorías operacionales que no vengan de la BD o completar subcategorías
     const upsertCat = (id, nombre, subs) => {
-      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === nombre)) {
+      const existing = list.find(c => (c.nombre_categoria || '').toUpperCase() === nombre)
+      if (!existing) {
         list.push({ id_categoria: id, nombre_categoria: nombre, subcategories: subs })
+      } else if (!existing.subcategories || existing.subcategories.length === 0) {
+        existing.subcategories = subs
       }
     }
     upsertCat(99, 'TRASLADOS', [
@@ -5510,13 +5521,13 @@ const fetchCategories = async () => {
       { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
       { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }
     ])
-    upsertCat(101, 'PERSONAL CERTIFICADO', [
+    upsertCat(151, 'PERSONAL CERTIFICADO', [
       { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
       { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' },
       { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' },
       { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }
     ])
-    upsertCat(103, 'OTROS', [
+    upsertCat(150, 'OTROS', [
       { id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }
     ])
 
