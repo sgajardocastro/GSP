@@ -4649,7 +4649,7 @@ const equiposAsignadosTotales = computed(() => {
 
 // Tripulación completa unificada y computada linealmente
 const tripulacionAsignada = computed(() => {
-  const list = []
+  const list = [];
   
   // 1. Operadores de líneas de equipos principales
   (linesEquiposPrincipales.value || []).forEach(line => {
