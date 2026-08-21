@@ -257,6 +257,12 @@ Cuando una línea pertenece a `PERSONAL CERTIFICADO` (detectada por `isPersonalL
 
 ---
 
+### 4.6. Estándar de Inspección de Salida de Patio (Template 76: `TMPL-GSP-CHK-EQUIPOS`)
+1. **Responsable de la Inspección:** Se elimina el campo redundante de texto `NOMBRE OPERADOR` en el Segmento 1 (`DATOS GENERALES`). La trazabilidad y responsabilidad técnica recae directamente en el usuario autenticado en la plataforma que ejecuta el formulario de inspección.
+2. **Conformidad y Firma Electrónica:** Se elimina el lienzo de firma manual `FIRMA DEL OPERADOR` en el Segmento 8 (`CIERRE Y FIRMAS`), manteniendo únicamente `OBSERVACIONES GENERALES`. La conformidad técnica y legal se formaliza exclusivamente a través del flujo **FES con PIN (Firma Electrónica Simple)**.
+
+---
+
 ## 5. FSM Relacional Canónica y Candados de Etapas (`id_proyecto_estado`)
 
 ```
