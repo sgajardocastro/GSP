@@ -538,12 +538,17 @@
 
                   <!-- FILAS FLOTA PRINCIPAL -->
                   <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
-                    <td class="py-2 px-3 font-sans">
-                      <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                      <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                        <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
-                        <span>•</span>
-                        <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                    <td class="py-2 pr-3 pl-7 font-sans">
+                      <div class="flex items-start gap-2">
+                        <span class="text-amber-500/70 text-xs font-mono select-none mt-0.5">↳</span>
+                        <div class="min-w-0 flex-1">
+                          <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
+                          <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                            <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
+                            <span>•</span>
+                            <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td class="py-2 px-3">
@@ -613,13 +618,16 @@
 
                   <!-- FILAS TRASLADOS -->
                   <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="border-b border-white/5 font-sans">
-                    <td colspan="5" class="py-2.5 px-3 text-center text-xs text-slate-500 italic">
+                    <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
                     </td>
                   </tr>
                   <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
-                    <td class="py-2 px-3 font-sans">
-                      <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Ej. Cama Baja #1" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-blue-200 font-bold outline-none focus:border-blue-400 truncate" />
+                    <td class="py-2 pr-3 pl-7 font-sans">
+                      <div class="flex items-center gap-2">
+                        <span class="text-blue-400/70 text-xs font-mono select-none">↳</span>
+                        <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Ej. Cama Baja #1" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-blue-200 font-bold outline-none focus:border-blue-400 truncate" />
+                      </div>
                     </td>
                     <td class="py-2 px-3">
                       <div class="flex items-center gap-1.5">
@@ -687,26 +695,29 @@
 
                   <!-- FILAS ESPECIALISTAS -->
                   <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="border-b border-white/5 font-sans">
-                    <td colspan="5" class="py-2.5 px-3 text-center text-xs text-slate-500 italic">
+                    <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
                     </td>
                   </tr>
                   <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
-                    <td class="py-2 px-3 font-sans">
-                      <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }">
-                        <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
-                        <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
-                        <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
-                        <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
-                      </select>
-                      <div v-if="esp.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-1 truncate" :title="esp.requerimiento">
-                        Req: {{ esp.requerimiento }}
+                    <td class="py-2 pr-3 pl-7 font-sans">
+                      <div class="flex items-start gap-2">
+                        <span class="text-emerald-400/70 text-xs font-mono select-none mt-1">↳</span>
+                        <div class="min-w-0 flex-1">
+                          <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }">
+                            <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
+                            <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
+                            <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
+                            <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
+                          </select>
+                          <div v-if="esp.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-1 truncate" :title="esp.requerimiento">
+                            Req: {{ esp.requerimiento }}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans text-slate-500 text-xs italic">
-                      <div class="px-2 py-1 border border-dashed border-white/10 rounded text-slate-400/70 text-[11px] select-none text-center">
-                        — Personal en Tierra —
-                      </div>
+                    <td class="py-2 px-3 font-sans text-center text-slate-600 text-xs select-none">
+                      —
                     </td>
                     <td class="py-2 px-3 font-sans">
                       <div class="flex items-center gap-1.5">
