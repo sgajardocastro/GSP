@@ -278,8 +278,11 @@
               </div>
 
               <div>
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Detalle del Servicio a realizar</label>
-                <textarea v-model="siteVisit.detalle_servicio" rows="2" class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none"></textarea>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                  Detalle del Servicio a realizar
+                  <span v-if="hasDiff('detalle_servicio')" class="line-through text-red-400 font-mono text-[10px] bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 ml-1">Orig: {{ getOriginalValue('detalle_servicio') || '(Vacío)' }}</span>
+                </label>
+                <textarea v-model="siteVisit.detalle_servicio" rows="2" class="w-full bg-[#0a0f1e] border rounded p-2 text-xs text-white outline-none resize-none" :class="hasDiff('detalle_servicio') ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'"></textarea>
               </div>
 
               <!-- Componente Mapa Selector Interactivo -->
@@ -5165,6 +5168,7 @@ const confirmarGenerarRequerimiento = async () => {
     radios_trabajo: siteVisit.value.radios_trabajo || '',
     alturas_trabajo: siteVisit.value.alturas_trabajo || '',
     tipo_carga: siteVisit.value.tipo_carga || '',
+    detalle_servicio: siteVisit.value.detalle_servicio || '',
     obra_nombre: siteVisit.value.obra_nombre || '',
     obra_direccion: siteVisit.value.obra_direccion || '',
     obra_ciudad: siteVisit.value.obra_ciudad || '',
@@ -5291,6 +5295,8 @@ const modoAprobacionRequerimiento = computed(() => {
 
 const snapshotComercial = ref({})
 
+const cleanVal = (v) => (v === null || v === undefined) ? '' : String(v).trim()
+
 const hasDiff = (field, index = 0) => {
   // El control de cambios (diff) SOLO aplica en la Pestaña de Operaciones / Sub-Pestaña Validación & Diff
   if (topTab.value !== 'operaciones' || operacionesSubTab.value !== 'validacion') {
@@ -5301,49 +5307,44 @@ const hasDiff = (field, index = 0) => {
   }
   if (!snapshotComercial.value || Object.keys(snapshotComercial.value).length === 0) return false
   
-  if (field === 'peso_carga') return !!snapshotComercial.value.peso_carga && (siteVisit.value.peso_carga || '') !== (snapshotComercial.value.peso_carga || '')
-  if (field === 'radios_trabajo') return !!snapshotComercial.value.radios_trabajo && (siteVisit.value.radios_trabajo || '') !== (snapshotComercial.value.radios_trabajo || '')
-  if (field === 'alturas_trabajo') return !!snapshotComercial.value.alturas_trabajo && (siteVisit.value.alturas_trabajo || '') !== (snapshotComercial.value.alturas_trabajo || '')
-  if (field === 'tipo_carga') return !!snapshotComercial.value.tipo_carga && (siteVisit.value.tipo_carga || '') !== (snapshotComercial.value.tipo_carga || '')
-  if (field === 'obra_nombre') return !!snapshotComercial.value.obra_nombre && (siteVisit.value.obra_nombre || '') !== (snapshotComercial.value.obra_nombre || '')
-  if (field === 'obra_direccion') return !!snapshotComercial.value.obra_direccion && (siteVisit.value.obra_direccion || '') !== (snapshotComercial.value.obra_direccion || '')
-  if (field === 'obra_ciudad') return !!snapshotComercial.value.obra_ciudad && (siteVisit.value.obra_ciudad || '') !== (snapshotComercial.value.obra_ciudad || '')
-  if (field === 'volumen_carga') return !!snapshotComercial.value.volumen_carga && (siteVisit.value.volumen_carga || '') !== (snapshotComercial.value.volumen_carga || '')
+  if (field === 'tipo_carga') return cleanVal(siteVisit.value.tipo_carga) !== cleanVal(snapshotComercial.value.tipo_carga)
+  if (field === 'peso_carga') return cleanVal(siteVisit.value.peso_carga) !== cleanVal(snapshotComercial.value.peso_carga)
+  if (field === 'radios_trabajo') return cleanVal(siteVisit.value.radios_trabajo) !== cleanVal(snapshotComercial.value.radios_trabajo)
+  if (field === 'alturas_trabajo') return cleanVal(siteVisit.value.alturas_trabajo) !== cleanVal(snapshotComercial.value.alturas_trabajo)
+  if (field === 'volumen_carga') return cleanVal(siteVisit.value.volumen_carga) !== cleanVal(snapshotComercial.value.volumen_carga)
+  if (field === 'detalle_servicio') return cleanVal(siteVisit.value.detalle_servicio) !== cleanVal(snapshotComercial.value.detalle_servicio)
+  if (field === 'obra_nombre') return cleanVal(siteVisit.value.obra_nombre) !== cleanVal(snapshotComercial.value.obra_nombre)
+  if (field === 'obra_direccion') return cleanVal(siteVisit.value.obra_direccion) !== cleanVal(snapshotComercial.value.obra_direccion)
+  if (field === 'obra_ciudad') return cleanVal(siteVisit.value.obra_ciudad) !== cleanVal(snapshotComercial.value.obra_ciudad)
   
   // Diff en Líneas del Estructurador (Tabla B)
   if (field === 'equipo_descripcion') {
-    const orig = snapshotComercial.value.lines?.[index]?.descripcion || snapshotComercial.value.equipo_descripcion
-    if (!orig) return false
-    return (lines.value[index]?.descripcion || '') !== orig
+    const orig = snapshotComercial.value.lines?.[index]?.descripcion ?? snapshotComercial.value.equipo_descripcion ?? ''
+    return cleanVal(lines.value[index]?.descripcion) !== cleanVal(orig)
   }
   if (field === 'equipo_cantidad') {
-    const orig = snapshotComercial.value.lines?.[index]?.cantidad || snapshotComercial.value.equipo_cantidad
-    if (orig === undefined) return false
-    return (lines.value[index]?.cantidad || 1) !== orig
+    const orig = snapshotComercial.value.lines?.[index]?.cantidad ?? snapshotComercial.value.equipo_cantidad ?? 1
+    return Number(lines.value[index]?.cantidad || 1) !== Number(orig)
   }
   if (field === 'equipo_valor') {
-    const orig = snapshotComercial.value.lines?.[index]?.valorUnitario !== undefined ? snapshotComercial.value.lines[index].valorUnitario : snapshotComercial.value.equipo_valor
-    if (orig === undefined) return false
-    return (lines.value[index]?.valorUnitario || 0) !== orig
+    const orig = snapshotComercial.value.lines?.[index]?.valorUnitario !== undefined ? snapshotComercial.value.lines[index].valorUnitario : (snapshotComercial.value.equipo_valor ?? 0)
+    return Number(lines.value[index]?.valorUnitario || 0) !== Number(orig)
   }
   if (field === 'equipo_tipo') {
-    const orig = snapshotComercial.value.lines?.[index]?.tipo
-    if (!orig) return false
-    const normOrig = String(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-    const normCurr = String(lines.value[index]?.tipo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    const orig = snapshotComercial.value.lines?.[index]?.tipo ?? ''
+    const normOrig = cleanVal(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    const normCurr = cleanVal(lines.value[index]?.tipo).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
     return normCurr !== normOrig
   }
   if (field === 'equipo_subcategoria') {
-    const orig = snapshotComercial.value.lines?.[index]?.subcategoria
-    if (!orig) return false
-    const normOrig = String(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-    const normCurr = String(lines.value[index]?.subcategoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    const orig = snapshotComercial.value.lines?.[index]?.subcategoria ?? ''
+    const normOrig = cleanVal(orig).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    const normCurr = cleanVal(lines.value[index]?.subcategoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
     return normCurr !== normOrig
   }
   if (field === 'equipo_unidad') {
-    const orig = snapshotComercial.value.lines?.[index]?.unidad
-    if (!orig) return false
-    return (lines.value[index]?.unidad || '') !== orig
+    const orig = snapshotComercial.value.lines?.[index]?.unidad ?? ''
+    return cleanVal(lines.value[index]?.unidad) !== cleanVal(orig)
   }
   
   return false
@@ -5351,14 +5352,15 @@ const hasDiff = (field, index = 0) => {
 
 const getOriginalValue = (field, index = 0) => {
   if (!snapshotComercial.value) return ''
+  if (field === 'tipo_carga') return snapshotComercial.value.tipo_carga || ''
   if (field === 'peso_carga') return snapshotComercial.value.peso_carga || ''
   if (field === 'radios_trabajo') return snapshotComercial.value.radios_trabajo || ''
   if (field === 'alturas_trabajo') return snapshotComercial.value.alturas_trabajo || ''
-  if (field === 'tipo_carga') return snapshotComercial.value.tipo_carga || ''
+  if (field === 'volumen_carga') return snapshotComercial.value.volumen_carga || ''
+  if (field === 'detalle_servicio') return snapshotComercial.value.detalle_servicio || ''
   if (field === 'obra_nombre') return snapshotComercial.value.obra_nombre || ''
   if (field === 'obra_direccion') return snapshotComercial.value.obra_direccion || ''
   if (field === 'obra_ciudad') return snapshotComercial.value.obra_ciudad || ''
-  if (field === 'volumen_carga') return snapshotComercial.value.volumen_carga || ''
   if (field === 'equipo_descripcion') return snapshotComercial.value.lines?.[index]?.descripcion || snapshotComercial.value.equipo_descripcion || ''
   if (field === 'equipo_cantidad') return snapshotComercial.value.lines?.[index]?.cantidad || snapshotComercial.value.equipo_cantidad || 1
   if (field === 'equipo_valor') return snapshotComercial.value.lines?.[index]?.valorUnitario || snapshotComercial.value.equipo_valor || 0
@@ -5370,14 +5372,15 @@ const getOriginalValue = (field, index = 0) => {
 
 const diffsCount = computed(() => {
   let count = 0
+  if (hasDiff('tipo_carga')) count++
   if (hasDiff('peso_carga')) count++
   if (hasDiff('radios_trabajo')) count++
   if (hasDiff('alturas_trabajo')) count++
-  if (hasDiff('tipo_carga')) count++
+  if (hasDiff('volumen_carga')) count++
+  if (hasDiff('detalle_servicio')) count++
   if (hasDiff('obra_nombre')) count++
   if (hasDiff('obra_direccion')) count++
   if (hasDiff('obra_ciudad')) count++
-  if (hasDiff('volumen_carga')) count++
   
   lines.value.forEach((l, idx) => {
     if (hasDiff('equipo_descripcion', idx)) count++
@@ -6297,6 +6300,7 @@ const cargarDatosCotizacion = async () => {
               radios_trabajo: siteVisit.value.radios_trabajo || '',
               alturas_trabajo: siteVisit.value.alturas_trabajo || '',
               tipo_carga: siteVisit.value.tipo_carga || '',
+              detalle_servicio: siteVisit.value.detalle_servicio || '',
               obra_nombre: siteVisit.value.obra_nombre || '',
               obra_direccion: siteVisit.value.obra_direccion || '',
               obra_ciudad: siteVisit.value.obra_ciudad || '',

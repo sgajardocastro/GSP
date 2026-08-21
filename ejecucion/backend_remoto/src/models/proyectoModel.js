@@ -669,11 +669,11 @@ class ProyectoModel {
             <tr>
               <td class="info-label">Condiciones Operativas:</td>
               <td class="info-value" colspan="3">
-                • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Prevencionista Certificado:</strong> ${crm.requiere_prevencionista ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Cliente pone Combustible:</strong> ${crm.cliente_pone_combustible ? 'SÍ' : 'NO'}
+                • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Prevencionista:</strong> ${crm.requiere_prevencionista === true ? 'SÍ' : 'NO'}<br>
+                • <strong>Cliente pone Combustible:</strong> <strong>${crm.cliente_pone_combustible === true ? 'SÍ (Suministrado por Mandante)' : 'NO (Suministrado por San Pablo)'}</strong>
               </td>
             </tr>
             <tr>
@@ -736,6 +736,14 @@ class ProyectoModel {
                 ${(crm.condicion_servicio || 'programado') === 'programado' 
                   ? '— Reserva garantizada de equipo. Se factura a todo evento según programación.' 
                   : '— Sujeto a disponibilidad de flota al momento del requerimiento.'}
+              </td>
+            </tr>
+            <tr>
+              <td class="info-label">Suministro Combustible:</td>
+              <td class="info-value" colspan="3">
+                ${crm.cliente_pone_combustible === true 
+                  ? '<strong>SÍ</strong> — Suministrado por Cliente Mandante en faena.' 
+                  : '<strong>NO</strong> — Suministrado por Grúas San Pablo (Incluido en tarifa del servicio).'}
               </td>
             </tr>
             ${crm.pensiones ? `
