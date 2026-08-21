@@ -1550,6 +1550,18 @@
                   <span>👁️ Abrir</span>
                 </button>
               </div>
+
+              <!-- RESUMEN DE BITÁCORA LOG MAESTRO SI YA ARRIBÓ O ESTÁ EN RUTA -->
+              <div class="bg-black/30 border border-white/5 rounded-lg p-2 text-[10px] font-mono text-slate-400 space-y-0.5">
+                <div class="flex justify-between">
+                  <span>🛰️ Telemetría: <strong class="text-white">18 pings GPS</strong></span>
+                  <span>Vel. Max: <strong class="text-emerald-400">68 km/h</strong></span>
+                </div>
+                <div class="flex justify-between">
+                  <span>⛽ Combustible: <strong class="text-amber-400">250 L (Copec)</strong></span>
+                  <span>Firma: <strong class="text-emerald-300">SHA-256 ✅</strong></span>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -140,3 +140,36 @@ Se implementa una base de datos local en el navegador del dispositivo móvil (`D
 | `POST` | `/api/viaje/combustible/autorizar` | JWT Operaciones | Coordinador aprueba solicitud ingresando ID Copec |
 | `POST` | `/api/viaje/finalizar` | Token URL | Registra llegada a faena, odómetro final y PIN de cierre |
 | `POST` | `/api/viaje/sincronizar-outbox` | Token URL | Procesa lote de mutaciones acumuladas en modo offline |
+
+---
+
+## 6. 📋 Log Maestro de Cierre de Desplazamiento y Bitácora de Auditoría
+
+Al concluir el viaje en faena (`estado_viaje = 'ARRIBADO_FAENA'`), el sistema compila y sella una **Bitácora Maestra Inmutable** con 7 dimensiones operacionales:
+
+### 6.1. Dimensiones del Log de Auditoría:
+1. **Telemetría & Geocerca:**
+   - `total_pings_gps`: Conteo total de coordenadas registradas durante el viaje.
+   - `gps_origen` & `gps_destino`: Coordenadas `[Lat, Lng]` de salida de base y llegada a obra.
+   - `cumplimiento_geocerca`: Flag booleano (`true` si el arribo ocurrió dentro del radio configurado de la obra).
+2. **Cronometría y Tasa de Marcha:**
+   - `fecha_hora_salida` vs `fecha_hora_llegada`.
+   - `duracion_total_viaje`: Formato `HH:MM:SS`.
+   - `tiempo_movimiento_min` vs `tiempo_detenido_min`.
+3. **Odometría & Horometría:**
+   - `odometro_salida_km`, `odometro_llegada_km`, `distancia_recorrida_km`.
+   - `delta_vs_ruta_teorica_km`: Desviación frente a la distancia óptima planificada en mapa.
+   - `horometro_salida_hrs`, `horometro_llegada_hrs`, `horas_motor_transito`.
+4. **Seguridad Vial & Velocidades:**
+   - `velocidad_maxima_kmh` y `velocidad_promedio_kmh`.
+   - `alerta_exceso_velocidad`: Flag de advertencia si superó el umbral reglamentario de grúas pesadas.
+5. **Balance de Combustible en Ruta:**
+   - `total_litros_cargados_copec`, `monto_total_combustible_pesos`.
+   - `desglose_estanques`: Litros cargados por estanque (`Chasis`, `Superestructura Grúa`, `Auxiliar`).
+   - `id_autorizaciones_copec`: Lista de códigos autorizados por el coordinador.
+6. **Expediente de Evidencias Digitales:**
+   - URLs de fotos de tableros (Salida y Llegada) y vouchers Copec.
+7. **Firmas y Trazabilidad FES:**
+   - `pin_hash_salida`, `pin_hash_llegada`, `id_user_conductor`.
+   - `observaciones_cierre_conductor`: Observaciones finales registradas por el chofer al arribar.
+
