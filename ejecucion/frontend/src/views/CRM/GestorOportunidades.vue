@@ -4804,10 +4804,11 @@ const equiposAsignadosTotales = computed(() => {
 // Tripulación completa unificada y computada linealmente
 const tripulacionAsignada = computed(() => {
   const list = [];
+  const lPrincipal = linesEquiposPrincipales.value || [];
   
   // 1. Operadores de líneas de equipos principales (Segmento 1)
-  (linesEquiposPrincipales.value || []).forEach(line => {
-    const cargo = (line.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'
+  lPrincipal.forEach(line => {
+    const cargo = (line.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa';
     list.push({
       id_user: line.operador_asignado_id || null,
       cargo,
@@ -4817,8 +4818,8 @@ const tripulacionAsignada = computed(() => {
       is_linea_base: line.is_linea_base !== false,
       fecha_plan_ini: line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
       fecha_plan_fin: line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
-    })
-  })
+    });
+  });
   
   // 2. Choferes de equipos de traslado (Segmento 2)
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
@@ -7397,17 +7398,18 @@ const confirmarAsignacionOT = async () => {
   }
 
   // Validación: Conductores para vehículos asignados
-  const equiposSinConductor = []
+  const equiposSinConductor = [];
+  const lPrincipalVal = linesEquiposPrincipales.value || [];
   
   // 1. Validar Flota Principal (Segmento 1)
-  (linesEquiposPrincipales.value || []).forEach(l => {
+  lPrincipalVal.forEach(l => {
     if (l && l.equipo_asignado_id && !l.operador_asignado_id) {
-      const eqObj = getEquipoObj(l.equipo_asignado_id)
-      const pat = eqObj?.patente || l.equipo_asignado_id
-      const nom = eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || l.subcategoria || l.tipo || 'Equipo Principal'
-      equiposSinConductor.push(`${pat} (${nom})`)
+      const eqObj = getEquipoObj(l.equipo_asignado_id);
+      const pat = eqObj?.patente || l.equipo_asignado_id;
+      const nom = eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || l.subcategoria || l.tipo || 'Equipo Principal';
+      equiposSinConductor.push(`${pat} (${nom})`);
     }
-  })
+  });
 
   // 2. Validar Equipos de Traslado (Segmento 2)
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
