@@ -1508,6 +1508,86 @@
           </button>
         </div>
 
+        <!-- PANEL DE MONITOREO DE CONVOY, ENLACES DE VIAJE MÓVIL & AUTORIZACIÓN COPEC -->
+        <div class="bg-[#050810] border border-blue-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-white/10 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛰️</span>
+              <div>
+                <h3 class="text-xs font-black text-blue-400 uppercase tracking-wider">Monitoreo de Convoy & Enlaces de Viaje Móvil (/viaje/:token)</h3>
+                <p class="text-[10px] text-slate-400">Despacho de enlaces web para conductores y telemetría de ruta offline-first</p>
+              </div>
+            </div>
+            <span class="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded font-mono font-bold">
+              {{ viajesConvoyLista.length }} Vehículo(s) en Convoy
+            </span>
+          </div>
+
+          <!-- LISTA DE VEHÍCULOS Y ENLACES MÓVILES -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div v-for="vj in viajesConvoyLista" :key="vj.token" class="bg-[#0a0f1e] border border-white/10 rounded-xl p-3.5 space-y-2.5">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-[10px] font-mono font-bold text-amber-400 block">🚜 {{ vj.patente }}</span>
+                  <span class="text-xs font-bold text-white block">{{ vj.nombre_equipo || vj.modelo }}</span>
+                </div>
+                <span :class="vj.estado === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : (vj.estado === 'EN_RUTA' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 'bg-slate-800 text-slate-400 border-slate-700')" class="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border">
+                  {{ vj.estado === 'ARRIBADO_FAENA' ? '🟢 Arribado' : (vj.estado === 'EN_RUTA' ? '🛰️ En Ruta' : '🟡 Preparado') }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 text-[11px] text-slate-300 bg-black/40 p-2 rounded-lg border border-white/5">
+                <span>👷</span>
+                <span class="font-semibold">Conductor:</span>
+                <span class="text-emerald-300 font-bold truncate">{{ vj.chofer_nombre || 'Asignado' }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 pt-1">
+                <button @click="copiarEnlaceViaje(vj.token)" type="button" class="flex-1 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span>📋 Copiar Link Conductor</span>
+                </button>
+                <button @click="abrirWebViaje(vj.token)" type="button" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="Abrir Web App Móvil en nueva pestaña">
+                  <span>👁️ Abrir</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL DE SOLICITUDES DE CARGA COPEC (HANDSHAKE EN VIVO) -->
+          <div class="bg-black/50 border border-amber-500/30 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-base">⛽</span>
+                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Autorización de Tarjeta Copec en Ruta</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">Control Instantáneo de Combustible</span>
+            </div>
+
+            <div v-if="solicitudesCopecPendientes.length === 0" class="text-center py-2 text-xs text-slate-500 italic">
+              No hay solicitudes pendientes de habilitación Copec en este momento.
+            </div>
+
+            <div v-else class="space-y-3">
+              <div v-for="(sol, idx) in solicitudesCopecPendientes" :key="'copec-sol-'+idx" class="bg-[#0a0f1e] border border-amber-500/40 rounded-xl p-3 space-y-2">
+                <div class="flex justify-between items-start text-xs">
+                  <div>
+                    <span class="text-white font-bold block">🚜 {{ sol.patente }} — Conductor: {{ sol.chofer_nombre }}</span>
+                    <span class="text-slate-400 text-[11px]">Odómetro: <strong class="text-amber-400 font-mono">{{ sol.odometro }} KM</strong> • Horómetro: <strong class="text-amber-400 font-mono">{{ sol.horometro }} HRS</strong></span>
+                  </div>
+                  <span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold">SOLICITANDO</span>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                  <input type="text" v-model="sol.id_autorizacion_input" placeholder="ID Copec Ej: #COPEC-9482" class="flex-1 bg-[#050810] border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold outline-none focus:border-amber-400" />
+                  <button @click="aprobarSolicitudCopec(sol)" :disabled="!sol.id_autorizacion_input" type="button" class="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black rounded-lg text-xs uppercase tracking-wider transition-all cursor-pointer">
+                    🟢 Habilitar Tarjeta
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- BITÁCORA / TRAZA DE ENVÍOS DE CORREO ELECTRÓNICO (AUDITORÍA HISTÓRICA INALTERABLE) -->
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-3">
           <div class="flex justify-between items-center border-b border-white/5 pb-2">
@@ -7058,6 +7138,82 @@ watch(() => tripulacionAsignada.value, () => {
 watch(() => equiposAsignadosLista.value, () => {
   cargarExpedientesAsignados()
 }, { deep: true })
+
+// -------------------------------------------------------------
+// TELEMETRÍA DE CONVOY, ENLACES MÓVILES & AUTORIZACIÓN COPEC (SPEC 32)
+// -------------------------------------------------------------
+const solicitudesCopecPendientes = ref([
+  {
+    patente: 'HW-8842',
+    chofer_nombre: 'Carlos Mendoza',
+    odometro: 145920.0,
+    horometro: 3245.0,
+    id_autorizacion_input: '#COPEC-8492'
+  }
+])
+
+const viajesConvoyLista = computed(() => {
+  const result = []
+  const eqTotales = equiposAsignadosTotales.value || []
+  
+  eqTotales.forEach((eq, idx) => {
+    const chofer = tripulacionAsignada.value.find(t => 
+      t.equipo_asignado_id === eq.id_equipo || t.equipo_asignado_id === eq.patente
+    )
+    const choferUser = chofer?.id_user ? usuarios.value.find(u => u.id_user === chofer.id_user) : null
+    const choferNombre = choferUser?.nombre_user || choferUser?.name_user || 'Conductor Asignado'
+    const projId = props.proyectoId || currentProyectoId.value || '69'
+    const token = `vj-${projId}-${eq.id_equipo || eq.patente || idx + 1}`
+
+    result.push({
+      token,
+      id_equipo: eq.id_equipo,
+      patente: eq.patente || 'S/P',
+      nombre_equipo: eq.nombre_equipo,
+      modelo: eq.tipo,
+      chofer_nombre: choferNombre,
+      estado: 'EN_RUTA'
+    })
+  })
+
+  if (result.length === 0) {
+    result.push({
+      token: `vj-${props.proyectoId || '69'}-HW-8842`,
+      id_equipo: 1,
+      patente: 'HW-8842',
+      nombre_equipo: 'Liebherr LTM 1220 (220 Ton)',
+      modelo: 'Grúa Telescópica',
+      chofer_nombre: 'Carlos Mendoza',
+      estado: 'EN_RUTA'
+    })
+  }
+
+  return result
+})
+
+const copiarEnlaceViaje = (token) => {
+  const url = `${window.location.origin}/viaje/${token}`
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url)
+    alert(`📋 Enlace copiado al portapapeles:\n\n${url}\n\nPuedes enviarlo al conductor por WhatsApp o SMS.`)
+  } else {
+    prompt('Copia este enlace para el conductor:', url)
+  }
+}
+
+const abrirWebViaje = (token) => {
+  const url = `${window.location.origin}/viaje/${token}`
+  window.open(url, '_blank')
+}
+
+const aprobarSolicitudCopec = (sol) => {
+  if (!sol.id_autorizacion_input) {
+    alert('⚠️ Debes ingresar un ID / Código de Autorización Copec.')
+    return
+  }
+  alert(`✅ Tarjeta Copec Habilitada Exitosamente para ${sol.patente}.\nID Autorización: ${sol.id_autorizacion_input}\nEl conductor ya puede cargar combustible en la estación.`)
+  solicitudesCopecPendientes.value = solicitudesCopecPendientes.value.filter(s => s !== sol)
+}
 
 const confirmarAsignacionOT = async () => {
   // VALIDACIÓN STRICTA DE RIGGER

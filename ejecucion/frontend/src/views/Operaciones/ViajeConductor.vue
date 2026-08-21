@@ -1,0 +1,654 @@
+<template>
+  <div class="min-h-screen bg-[#050810] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black">
+    <!-- BARRA SUPERIOR DE ALTO CONTRASTE CON ESTADO DE RED -->
+    <header class="bg-[#0a0f1e] border-b border-white/10 px-4 py-3 sticky top-0 z-50 flex items-center justify-between shadow-lg shadow-black/50">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full" :class="isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></div>
+        <div>
+          <span class="text-xs font-black tracking-wider uppercase text-amber-400">GSP OPERACIONES</span>
+          <span class="text-[10px] text-slate-400 block font-mono">Hoja de Ruta & Convoy</span>
+        </div>
+      </div>
+
+      <!-- Badge de Estado de Sincronización Offline-First -->
+      <div class="flex items-center gap-1.5">
+        <span v-if="mutacionesPendientesCount > 0" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+          <span>⏳</span> {{ mutacionesPendientesCount }} pendiente(s)
+        </span>
+        <span v-else class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+          <span>🟢</span> Sincronizado
+        </span>
+      </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL DEL MÓVIL -->
+    <main class="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
+      
+      <!-- TARJETA DEL EQUIPO & DESTINO -->
+      <div class="bg-[#0a0f1e] border border-white/10 rounded-2xl p-4 shadow-xl space-y-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-[10px] font-mono uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold">
+              {{ viaje.tipo_equipo || 'EQUIPO DE FLOTA' }}
+            </span>
+            <h1 class="text-lg font-black text-white mt-1 font-mono tracking-tight">
+              🚜 {{ viaje.patente || 'S/P' }}
+            </h1>
+            <p class="text-xs text-slate-300">{{ viaje.modelo || 'Maquinaria de Izaje GSP' }}</p>
+          </div>
+          <div class="text-right font-mono">
+            <span class="text-[10px] text-slate-400 block">OT / Proyecto</span>
+            <span class="text-xs font-bold text-amber-400">{{ viaje.codigo_proyecto || 'GSP-OT' }}</span>
+          </div>
+        </div>
+
+        <div class="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5 text-xs">
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="text-amber-400">📍</span>
+            <span class="font-semibold text-white">Destino:</span>
+            <span class="truncate">{{ viaje.obra_nombre || 'Obra Mandante' }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-400 text-[11px] pl-5">
+            <span class="truncate">{{ viaje.obra_direccion || 'Dirección de Faena' }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300 border-t border-white/5 pt-1.5 mt-1.5">
+            <span class="text-emerald-400">👷</span>
+            <span class="font-semibold text-white">Conductor:</span>
+            <span class="text-emerald-300 font-bold">{{ viaje.chofer_nombre || 'Conductor Asignado' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- ESTADO 1: SALIDA DE PATIO (ASIGNADO / PREPARADO)                           -->
+      <!-- ========================================================================= -->
+      <div v-if="viaje.estado_viaje === 'ASIGNADO'" class="bg-[#0a0f1e] border border-amber-500/30 rounded-2xl p-4 shadow-xl space-y-4">
+        <div class="flex items-center gap-2 border-b border-white/10 pb-2">
+          <span class="text-base">🚀</span>
+          <div>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Paso 1: Salida de Base / Patio</h2>
+            <p class="text-[11px] text-slate-400">Registra odómetro, horómetro y firma para iniciar el convoy.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Odómetro de Salida (KM) *</label>
+            <input type="number" step="0.1" v-model="formSalida.odometro" placeholder="Ej: 145820.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro de Salida (HRS) *</label>
+            <input type="number" step="0.1" v-model="formSalida.horometro" placeholder="Ej: 3240.2" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
+          </div>
+
+          <!-- Captura de Fotografía Tablero -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Tablero / Odómetro *</label>
+            <div v-if="formSalida.foto" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-2">
+              <img :src="formSalida.foto" alt="Tablero Salida" class="w-full h-40 object-cover" />
+              <button @click="formSalida.foto = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full text-xs font-bold">✕ Quitar</button>
+            </div>
+            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-4 cursor-pointer bg-black/30 transition-colors">
+              <span class="text-2xl mb-1">📸</span>
+              <span class="text-xs font-bold text-amber-400">Tomar Foto del Tablero</span>
+              <span class="text-[10px] text-slate-400">Captura clara de kilometraje y horómetro</span>
+              <input type="file" accept="image/*" capture="environment" @change="onFotoSalidaCapturada" class="hidden" />
+            </label>
+          </div>
+
+          <!-- PIN de Firma del Conductor -->
+          <div class="bg-black/50 border border-white/10 rounded-xl p-3">
+            <label class="block text-xs font-bold text-amber-400 mb-1">PIN del Conductor (4 Dígitos) *</label>
+            <input type="password" maxlength="4" v-model="formSalida.pin" placeholder="••••" class="w-full bg-[#050810] border border-amber-500/40 rounded-xl px-3 py-3 text-center text-xl tracking-[0.5em] text-white font-mono font-black outline-none focus:border-amber-400" />
+            <p class="text-[10px] text-slate-400 mt-1 text-center">Firma digital FES de conformidad de salida.</p>
+          </div>
+        </div>
+
+        <button @click="ejecutarInicioViaje" :disabled="!isFormSalidaValido || guardando" type="button" class="w-full min-h-[58px] bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer">
+          <span v-if="guardando">⏳ Registrando...</span>
+          <span v-else>🟢 INICIAR VIAJE (SALIDA DE BASE)</span>
+        </button>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- ESTADO 2: EN RUTA (TELEMETRÍA & CONVOY ACTIVO)                            -->
+      <!-- ========================================================================= -->
+      <div v-if="viaje.estado_viaje === 'EN_RUTA'" class="space-y-4">
+        <!-- Indicador Pulsante en Vivo -->
+        <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 text-center space-y-2 shadow-xl shadow-emerald-950/50">
+          <div class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            🛰️ CONVOY EN TRAYECTO ACTIVO
+          </div>
+          <p class="text-xs text-slate-300 font-mono">
+            Tiempo en ruta: <span class="font-bold text-white">{{ tiempoEnRuta }}</span>
+          </p>
+          <p class="text-[11px] text-slate-400">
+            Última telemetría GPS registrada localmente hace momentos.
+          </p>
+        </div>
+
+        <!-- BOTÓN GIGANTE: PASAR A CARGAR COMBUSTIBLE -->
+        <div class="bg-[#0a0f1e] border border-white/10 rounded-2xl p-4 space-y-2 shadow-xl">
+          <div class="flex items-center gap-2 text-xs text-slate-300 mb-1">
+            <span class="text-base">⛽</span>
+            <span class="font-bold text-white">Gestión de Combustible en Ruta</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            ¿Necesitas cargar combustible en servicentro Copec? Solicita la habilitación de la tarjeta con tu odómetro actual.
+          </p>
+          <button @click="abrirModalCombustible" type="button" class="w-full min-h-[58px] bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer">
+            <span>⛽ SOLICITAR CARGA DE COMBUSTIBLE (COPEC)</span>
+          </button>
+        </div>
+
+        <!-- BOTÓN PRINCIPAL: CONFIRMAR LLEGADA A FAENA -->
+        <div class="bg-[#0a0f1e] border border-amber-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
+          <div class="flex items-center gap-2 text-xs text-slate-300 mb-1">
+            <span class="text-base">🏁</span>
+            <span class="font-bold text-white">Arribo a Faena / Obra</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Al llegar al portón de la obra del cliente, confirma tu llegada con el odómetro final y firma PIN.
+          </p>
+          <button @click="abrirModalLlegada" type="button" class="w-full min-h-[58px] bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer">
+            <span>🏁 CONFIRMAR LLEGADA A FAENA</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- ESTADO 3: VIAJE COMPLETADO / ARRIBADO                                     -->
+      <!-- ========================================================================= -->
+      <div v-if="viaje.estado_viaje === 'ARRIBADO_FAENA'" class="bg-[#0a0f1e] border border-emerald-500/50 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+        <div class="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-3xl">
+          ✅
+        </div>
+        <div>
+          <h2 class="text-lg font-black text-white uppercase tracking-wider">¡Llegada a Faena Confirmada!</h2>
+          <p class="text-xs text-slate-300 mt-1">El equipo y su conductor se encuentran en posición en la obra.</p>
+        </div>
+
+        <div class="bg-black/40 border border-white/5 rounded-xl p-3 text-xs font-mono space-y-1.5 text-left">
+          <div class="flex justify-between text-slate-400">
+            <span>Salida Base:</span>
+            <span class="text-white font-bold">{{ viaje.odometro_salida }} KM</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Llegada Faena:</span>
+            <span class="text-white font-bold">{{ viaje.odometro_llegada }} KM</span>
+          </div>
+          <div class="flex justify-between text-slate-400 border-t border-white/10 pt-1.5">
+            <span>Distancia Recorrida:</span>
+            <span class="text-amber-400 font-bold">{{ (Number(viaje.odometro_llegada || 0) - Number(viaje.odometro_salida || 0)).toFixed(1) }} KM</span>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400">
+          La Orden de Trabajo fue notificada para dar inicio a la etapa de Maniobra & AST.
+        </p>
+      </div>
+
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL / SUBFLUJO: CARGA DE COMBUSTIBLE COPEC                              -->
+    <!-- ========================================================================= -->
+    <div v-if="modalCombustible.visible" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-[#0a0f1e] border border-blue-500/40 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⛽</span>
+            <div>
+              <h3 class="text-sm font-bold text-white uppercase">Carga de Combustible (Copec)</h3>
+              <p class="text-[10px] text-slate-400">Protocolo de habilitación de tarjeta en ruta</p>
+            </div>
+          </div>
+          <button @click="modalCombustible.visible = false" type="button" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
+        </div>
+
+        <!-- PASO 1: SOLICITUD DE HABILITACIÓN -->
+        <div v-if="modalCombustible.paso === 1" class="space-y-3">
+          <div class="bg-blue-950/30 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-200">
+            Ingresa tu odómetro actual y fotografía del tablero para que el coordinador habilite temporalmente la tarjeta Copec.
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Odómetro Actual (KM) *</label>
+            <input type="number" step="0.1" v-model="formCombustible.odometro" placeholder="Ej: 145920.0" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-blue-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro Actual (HRS) *</label>
+            <input type="number" step="0.1" v-model="formCombustible.horometro" placeholder="Ej: 3245.0" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-blue-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Tablero en Servicentro *</label>
+            <div v-if="formCombustible.foto_tablero" class="relative rounded-xl overflow-hidden border border-blue-500/50 mb-2">
+              <img :src="formCombustible.foto_tablero" alt="Tablero Copec" class="w-full h-36 object-cover" />
+              <button @click="formCombustible.foto_tablero = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
+            </div>
+            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-blue-400 rounded-xl p-4 cursor-pointer bg-black/30">
+              <span class="text-2xl mb-1">📸</span>
+              <span class="text-xs font-bold text-blue-400">Tomar Foto del Tablero</span>
+              <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleTablero" class="hidden" />
+            </label>
+          </div>
+
+          <button @click="enviarSolicitudCopec" :disabled="!isFormSolicitudCombustibleValido" type="button" class="w-full min-h-[50px] bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
+            Solicitar Habilitación de Tarjeta
+          </button>
+        </div>
+
+        <!-- PASO 2: ESPERANDO AUTORIZACIÓN O MOSTRANDO CÓDIGO -->
+        <div v-if="modalCombustible.paso === 2" class="space-y-4 text-center py-2">
+          <div v-if="!modalCombustible.id_autorizacion" class="space-y-3">
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <h4 class="text-sm font-bold text-white">Esperando Aprobación del Coordinador...</h4>
+            <p class="text-xs text-slate-400">La solicitud fue enviada a la Torre de Control con tus odómetros y foto.</p>
+            <button @click="simularAprobacionCopec" type="button" class="text-[11px] text-blue-400 underline cursor-pointer">
+              (Modo Test: Simular Autorización Coordinador #COPEC-8492)
+            </button>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 space-y-1">
+              <span class="text-[10px] text-emerald-400 uppercase font-mono font-bold">Tarjeta Habilitada para Carga</span>
+              <div class="text-xl font-black text-white font-mono tracking-wider">
+                ID: {{ modalCombustible.id_autorizacion }}
+              </div>
+              <p class="text-[11px] text-slate-300">Pasa la tarjeta al bombero e indícale este código si es requerido.</p>
+            </div>
+
+            <button @click="modalCombustible.paso = 3" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
+              Proceder a Rendir Carga (Litros & Voucher)
+            </button>
+          </div>
+        </div>
+
+        <!-- PASO 3: RENDICIÓN DE CARGA (ESTANQUE, LITROS, VOUCHER) -->
+        <div v-if="modalCombustible.paso === 3" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Estanque Abastecido *</label>
+            <select v-model="formCombustible.tipo_estanque" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-xs text-white font-bold outline-none focus:border-blue-400">
+              <option value="PRINCIPAL_CHASIS">⛽ Estanque Principal (Chasis / Tracción)</option>
+              <option value="SUPERESTRUCTURA_GRUA">🏗️ Estanque Superestructura (Grúa / Hidráulico)</option>
+              <option value="AUXILIAR_RESERVA">🛢️ Estanque Auxiliar / Reserva</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Litros Cargados *</label>
+            <input type="number" step="0.01" v-model="formCombustible.litros" placeholder="Ej: 250.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-blue-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Monto Total ($ CLP) *</label>
+            <input type="number" v-model="formCombustible.monto" placeholder="Ej: 285000" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-blue-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Voucher / Boleta Copec *</label>
+            <div v-if="formCombustible.foto_voucher" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-2">
+              <img :src="formCombustible.foto_voucher" alt="Voucher Copec" class="w-full h-36 object-cover" />
+              <button @click="formCombustible.foto_voucher = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
+            </div>
+            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-4 cursor-pointer bg-black/30">
+              <span class="text-2xl mb-1">🧾</span>
+              <span class="text-xs font-bold text-emerald-400">Tomar Foto del Voucher Copec</span>
+              <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleVoucher" class="hidden" />
+            </label>
+          </div>
+
+          <button @click="confirmarRendicionCombustible" :disabled="!isFormRendicionCombustibleValido" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
+            Confirmar Carga y Reanudar Viaje
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL: CONFIRMAR LLEGADA A FAENA                                          -->
+    <!-- ========================================================================= -->
+    <div v-if="modalLlegada.visible" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-[#0a0f1e] border border-emerald-500/40 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🏁</span>
+            <div>
+              <h3 class="text-sm font-bold text-white uppercase">Confirmación de Llegada a Faena</h3>
+              <p class="text-[10px] text-slate-400">Cierre de viaje y paso a etapa de maniobra</p>
+            </div>
+          </div>
+          <button @click="modalLlegada.visible = false" type="button" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Odómetro de Llegada (KM) *</label>
+            <input type="number" step="0.1" v-model="formLlegada.odometro" placeholder="Ej: 146120.0" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro de Llegada (HRS) *</label>
+            <input type="number" step="0.1" v-model="formLlegada.horometro" placeholder="Ej: 3248.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Tablero en Faena *</label>
+            <div v-if="formLlegada.foto" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-2">
+              <img :src="formLlegada.foto" alt="Tablero Llegada" class="w-full h-36 object-cover" />
+              <button @click="formLlegada.foto = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
+            </div>
+            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-4 cursor-pointer bg-black/30">
+              <span class="text-2xl mb-1">📸</span>
+              <span class="text-xs font-bold text-emerald-400">Tomar Foto del Tablero en Obra</span>
+              <input type="file" accept="image/*" capture="environment" @change="onFotoLlegadaCapturada" class="hidden" />
+            </label>
+          </div>
+
+          <div class="bg-black/50 border border-white/10 rounded-xl p-3">
+            <label class="block text-xs font-bold text-emerald-400 mb-1">PIN del Conductor (4 Dígitos) *</label>
+            <input type="password" maxlength="4" v-model="formLlegada.pin" placeholder="••••" class="w-full bg-[#050810] border border-emerald-500/40 rounded-xl px-3 py-3 text-center text-xl tracking-[0.5em] text-white font-mono font-black outline-none focus:border-emerald-400" />
+          </div>
+        </div>
+
+        <button @click="ejecutarLlegadaFaena" :disabled="!isFormLlegadaValido" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
+          Confirmar Llegada y Cerrar Desplazamiento
+        </button>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  guardarSesionLocal,
+  obtenerSesionLocal,
+  encolarMutacion,
+  obtenerMutacionesPendientes,
+  marcarMutacionSincronizada,
+  comprimirFoto,
+  hashPin
+} from '@/utils/viajeOfflineSync'
+
+const route = useRoute()
+const tokenViaje = ref(route.params.token || 'vj-demo-1234')
+
+// Estado de Conectividad
+const isOnline = ref(navigator.onLine)
+const mutacionesPendientesCount = ref(0)
+const guardando = ref(false)
+
+// Datos del Viaje
+const viaje = ref({
+  token_viaje: tokenViaje.value,
+  id_proyecto: 69,
+  codigo_proyecto: 'GSP-2608-4851-035',
+  patente: 'HW-8842',
+  modelo: 'Liebherr LTM 1220 (220 Ton)',
+  tipo_equipo: 'GRUAS TELESCOPICAS',
+  obra_nombre: 'Montaje Parada de Planta Laja',
+  obra_direccion: 'Ruta 5 Sur Km 450, Laja',
+  chofer_nombre: 'Carlos Mendoza',
+  estado_viaje: 'ASIGNADO', // ASIGNADO | EN_RUTA | ARRIBADO_FAENA
+  timestamp_inicio: null,
+  timestamp_llegada: null,
+  odometro_salida: null,
+  horometro_salida: null,
+  odometro_llegada: null,
+  horometro_llegada: null
+})
+
+// Formularios
+const formSalida = ref({
+  odometro: '',
+  horometro: '',
+  foto: '',
+  pin: ''
+})
+
+const formLlegada = ref({
+  odometro: '',
+  horometro: '',
+  foto: '',
+  pin: ''
+})
+
+const modalCombustible = ref({
+  visible: false,
+  paso: 1, // 1: Solicitud, 2: Esperando Aprobación, 3: Rendición
+  id_autorizacion: ''
+})
+
+const formCombustible = ref({
+  odometro: '',
+  horometro: '',
+  foto_tablero: '',
+  tipo_estanque: 'PRINCIPAL_CHASIS',
+  litros: '',
+  monto: '',
+  foto_voucher: ''
+})
+
+const modalLlegada = ref({
+  visible: false
+})
+
+// Timer de Duración
+const tiempoEnRuta = ref('00h 00m')
+let timerInterval = null
+
+// Validaciones Computadas
+const isFormSalidaValido = computed(() => {
+  return formSalida.value.odometro &&
+         formSalida.value.horometro &&
+         formSalida.value.foto &&
+         formSalida.value.pin &&
+         formSalida.value.pin.length === 4
+})
+
+const isFormSolicitudCombustibleValido = computed(() => {
+  return formCombustible.value.odometro &&
+         formCombustible.value.horometro &&
+         formCombustible.value.foto_tablero
+})
+
+const isFormRendicionCombustibleValido = computed(() => {
+  return formCombustible.value.litros &&
+         formCombustible.value.monto &&
+         formCombustible.value.foto_voucher
+})
+
+const isFormLlegadaValido = computed(() => {
+  return formLlegada.value.odometro &&
+         formLlegada.value.horometro &&
+         formLlegada.value.foto &&
+         formLlegada.value.pin &&
+         formLlegada.value.pin.length === 4
+})
+
+// Handlers de Fotos
+const onFotoSalidaCapturada = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formSalida.value.foto = await comprimirFoto(file)
+  }
+}
+
+const onFotoCombustibleTablero = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formCombustible.value.foto_tablero = await comprimirFoto(file)
+  }
+}
+
+const onFotoCombustibleVoucher = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formCombustible.value.foto_voucher = await comprimirFoto(file)
+  }
+}
+
+const onFotoLlegadaCapturada = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formLlegada.value.foto = await comprimirFoto(file)
+  }
+}
+
+// -------------------------------------------------------------
+// ACCIÓN: INICIAR VIAJE (SALIDA DE PATIO)
+// -------------------------------------------------------------
+const ejecutarInicioViaje = async () => {
+  guardando.value = true
+  try {
+    const pinHashed = await hashPin(formSalida.value.pin)
+    const payload = {
+      odometro_salida: formSalida.value.odometro,
+      horometro_salida: formSalida.value.horometro,
+      foto_salida: formSalida.value.foto,
+      pin_hash: pinHashed,
+      timestamp_inicio: new Date().toISOString()
+    }
+
+    // 1. Encolar en Outbox local (Offline-First)
+    await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
+
+    // 2. Actualizar estado local
+    viaje.value.estado_viaje = 'EN_RUTA'
+    viaje.value.timestamp_inicio = payload.timestamp_inicio
+    viaje.value.odometro_salida = payload.odometro_salida
+    viaje.value.horometro_salida = payload.horometro_salida
+
+    await guardarSesionLocal(tokenViaje.value, viaje.value)
+    actualizarContadorPendientes()
+    iniciarTimerRuta()
+  } catch (err) {
+    console.error('Error iniciando viaje:', err)
+  } finally {
+    guardando.value = false
+  }
+}
+
+// -------------------------------------------------------------
+// ACCIÓN: COMBUSTIBLE (SOLICITUD & RENDICIÓN)
+// -------------------------------------------------------------
+const abrirModalCombustible = () => {
+  modalCombustible.value.paso = 1
+  modalCombustible.value.visible = true
+}
+
+const enviarSolicitudCopec = async () => {
+  const payload = {
+    odometro_solicitud: formCombustible.value.odometro,
+    horometro_solicitud: formCombustible.value.horometro,
+    foto_tablero: formCombustible.value.foto_tablero,
+    timestamp: new Date().toISOString()
+  }
+
+  await encolarMutacion(tokenViaje.value, 'SOLICITUD_COPEC', payload)
+  actualizarContadorPendientes()
+  modalCombustible.value.paso = 2
+}
+
+const simularAprobacionCopec = () => {
+  modalCombustible.value.id_autorizacion = `#COPEC-${Math.floor(1000 + Math.random() * 9000)}`
+}
+
+const confirmarRendicionCombustible = async () => {
+  const payload = {
+    tipo_estanque: formCombustible.value.tipo_estanque,
+    litros: formCombustible.value.litros,
+    monto: formCombustible.value.monto,
+    foto_voucher: formCombustible.value.foto_voucher,
+    id_autorizacion: modalCombustible.value.id_autorizacion,
+    timestamp: new Date().toISOString()
+  }
+
+  await encolarMutacion(tokenViaje.value, 'CARGA_COMBUSTIBLE', payload)
+  actualizarContadorPendientes()
+  modalCombustible.value.visible = false
+  alert('⛽ Carga de combustible registrada exitosamente.')
+}
+
+// -------------------------------------------------------------
+// ACCIÓN: LLEGADA A FAENA
+// -------------------------------------------------------------
+const abrirModalLlegada = () => {
+  modalLlegada.value.visible = true
+}
+
+const ejecutarLlegadaFaena = async () => {
+  const pinHashed = await hashPin(formLlegada.value.pin)
+  const payload = {
+    odometro_llegada: formLlegada.value.odometro,
+    horometro_llegada: formLlegada.value.horometro,
+    foto_llegada: formLlegada.value.foto,
+    pin_hash: pinHashed,
+    timestamp_llegada: new Date().toISOString()
+  }
+
+  await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
+
+  viaje.value.estado_viaje = 'ARRIBADO_FAENA'
+  viaje.value.timestamp_llegada = payload.timestamp_llegada
+  viaje.value.odometro_llegada = payload.odometro_llegada
+  viaje.value.horometro_llegada = payload.horometro_llegada
+
+  await guardarSesionLocal(tokenViaje.value, viaje.value)
+  actualizarContadorPendientes()
+  modalLlegada.value.visible = false
+  if (timerInterval) clearInterval(timerInterval)
+}
+
+// -------------------------------------------------------------
+// GESTIÓN DE ESTADO LOCAL & SYNC
+// -------------------------------------------------------------
+const actualizarContadorPendientes = async () => {
+  const pendientes = await obtenerMutacionesPendientes(tokenViaje.value)
+  mutacionesPendientesCount.value = pendientes.length
+}
+
+const iniciarTimerRuta = () => {
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => {
+    if (!viaje.value.timestamp_inicio) return
+    const diff = Math.floor((new Date() - new Date(viaje.value.timestamp_inicio)) / 1000)
+    const horas = Math.floor(diff / 3600).toString().padStart(2, '0')
+    const mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0')
+    tiempoEnRuta.value = `${horas}h ${mins}m`
+  }, 1000)
+}
+
+const onOnlineStatusChange = () => {
+  isOnline.value = navigator.onLine
+}
+
+onMounted(async () => {
+  window.addEventListener('online', onOnlineStatusChange)
+  window.addEventListener('offline', onOnlineStatusChange)
+
+  // Cargar sesión guardada si existe
+  const guardada = await obtenerSesionLocal(tokenViaje.value)
+  if (guardada) {
+    viaje.value = { ...viaje.value, ...guardada }
+    if (viaje.value.estado_viaje === 'EN_RUTA') {
+      iniciarTimerRuta()
+    }
+  }
+
+  await actualizarContadorPendientes()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('online', onOnlineStatusChange)
+  window.removeEventListener('offline', onOnlineStatusChange)
+  if (timerInterval) clearInterval(timerInterval)
+})
+</script>

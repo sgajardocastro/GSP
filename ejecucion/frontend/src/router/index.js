@@ -167,6 +167,30 @@ const router = createRouter({
       meta: { layout: 'public' }
     },
     {
+      path: '/viaje/:token(.*)',
+      name: 'viaje_conductor',
+      component: () => import('../views/Operaciones/ViajeConductor.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/viaje/:token(.*)',
+      name: 'viaje_conductor_dev',
+      component: () => import('../views/Operaciones/ViajeConductor.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/viaje/:token(.*)',
+      name: 'viaje_conductor_qa',
+      component: () => import('../views/Operaciones/ViajeConductor.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/viaje/:token(.*)',
+      name: 'viaje_conductor_prod',
+      component: () => import('../views/Operaciones/ViajeConductor.vue'),
+      meta: { layout: 'public' }
+    },
+    {
       path: '/trabajador/:rut(.*)',
       name: 'ficha_trabajador',
       component: () => import('../views/FichaTrabajadorPublica.vue'),
