@@ -23,6 +23,19 @@
 
     <!-- CUERPO PRINCIPAL DEL MÓVIL -->
     <main class="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
+
+      <!-- SELECTOR RÁPIDO DE FASES (DEMO / AUDITORÍA EN VIVO) -->
+      <div class="bg-[#0a0f1e] border border-white/10 rounded-xl p-1.5 flex gap-1 text-[11px] font-mono font-bold">
+        <button @click="cambiarFaseDemo('ASIGNADO')" type="button" :class="viaje.estado_viaje === 'ASIGNADO' ? 'bg-amber-500 text-black shadow' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-lg transition-all text-center cursor-pointer">
+          🚀 1. Salida Patio
+        </button>
+        <button @click="cambiarFaseDemo('EN_RUTA')" type="button" :class="viaje.estado_viaje === 'EN_RUTA' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-lg transition-all text-center cursor-pointer">
+          🛰️ 2. En Ruta
+        </button>
+        <button @click="cambiarFaseDemo('ARRIBADO_FAENA')" type="button" :class="viaje.estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500 text-black shadow' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-lg transition-all text-center cursor-pointer">
+          📋 3. Log Maestro
+        </button>
+      </div>
       
       <!-- TARJETA DEL EQUIPO & DESTINO -->
       <div class="bg-[#0a0f1e] border border-white/10 rounded-2xl p-4 shadow-xl space-y-3">
@@ -776,6 +789,34 @@ const onOnlineStatusChange = () => {
   isOnline.value = navigator.onLine
 }
 
+// -------------------------------------------------------------
+// SELECTOR RÁPIDO DE FASES (DEMO / AUDITORÍA EN VIVO)
+// -------------------------------------------------------------
+const cambiarFaseDemo = (fase) => {
+  viaje.value.estado_viaje = fase
+  if (fase === 'ARRIBADO_FAENA') {
+    viaje.value.odometro_salida = 145820.5
+    viaje.value.horometro_salida = 3240.2
+    viaje.value.odometro_llegada = 145945.5
+    viaje.value.horometro_llegada = 3243.7
+    viaje.value.timestamp_inicio = new Date(Date.now() - 2.25 * 3600 * 1000).toISOString()
+    viaje.value.timestamp_llegada = new Date().toISOString()
+    viaje.value.total_pings_gps = 18
+    viaje.value.obs_termino = 'Viaje completado sin novedades en carretera. Equipo posicionado en portería de faena conforme.'
+    viaje.value.combustible_cargado = {
+      tipo_estanque: '⛽ Estanque Principal (Chasis / Tracción)',
+      litros: 250.0,
+      monto: 285000,
+      id_autorizacion: '#COPEC-8492'
+    }
+  } else if (fase === 'EN_RUTA') {
+    viaje.value.odometro_salida = 145820.5
+    viaje.value.horometro_salida = 3240.2
+    viaje.value.timestamp_inicio = new Date(Date.now() - 45 * 60 * 1000).toISOString()
+    iniciarTimerRuta()
+  }
+}
+
 onMounted(async () => {
   window.addEventListener('online', onOnlineStatusChange)
   window.addEventListener('offline', onOnlineStatusChange)
@@ -787,6 +828,9 @@ onMounted(async () => {
     if (viaje.value.estado_viaje === 'EN_RUTA') {
       iniciarTimerRuta()
     }
+  } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
+    // Activar por defecto el Log Maestro en modo demo
+    cambiarFaseDemo('ARRIBADO_FAENA')
   }
 
   await actualizarContadorPendientes()
