@@ -3595,7 +3595,14 @@ const isCertExpired = (dateString) => {
 
 const getEquipoObj = (idOrPatenteOrName) => {
   if (!idOrPatenteOrName || idOrPatenteOrName === 'CRN-DEFAULT') return null
-  const str = String(idOrPatenteOrName).toLowerCase().trim()
+  
+  let target = idOrPatenteOrName
+  if (typeof target === 'object' && target !== null) {
+    target = target.id_equipo || target.id || target.patente || target.nombre_equipo || target.modelo || ''
+  }
+  if (!target) return null
+
+  const str = String(target).toLowerCase().trim()
   const master = listaEquiposMaster.value || []
 
   // 1. Coincidencia exacta por ID o Patente
@@ -3687,14 +3694,19 @@ const linesPersonalValidas = computed(() => {
 const getNombreEquipoAsignado = (eqId) => {
   if (!eqId || eqId === 'CRN-DEFAULT') return 'Grúa Principal GSP'
   const eq = getEquipoObj(eqId)
-  if (!eq) return String(eqId)
-  const patente = (eq.patente || eq.ppu || '').toUpperCase().trim()
-  const desc = (eq.nombre_equipo || `${eq.marca || ''} ${eq.modelo || ''}`.trim() || eq.tipo || '').toUpperCase().trim()
-  if (patente && desc) {
-    if (desc.startsWith(patente)) return desc
-    return `${patente} - ${desc}`
+  if (eq) {
+    const patente = (eq.patente || eq.ppu || '').toUpperCase().trim()
+    const desc = (eq.nombre_equipo || `${eq.marca || ''} ${eq.modelo || ''}`.trim() || eq.tipo || '').toUpperCase().trim()
+    if (patente && desc) {
+      if (desc.startsWith(patente)) return desc
+      return `${patente} - ${desc}`
+    }
+    return desc || patente || String(eq.id_equipo)
   }
-  return desc || patente || String(eqId)
+  if (typeof eqId === 'object' && eqId !== null) {
+    return eqId.descripcion || eqId.subcategoria || eqId.rol || eqId.tipo || 'Vehículo de Traslado'
+  }
+  return String(eqId)
 }
 
 const getPatenteEquipoAsignado = (eqId) => {
@@ -7074,9 +7086,9 @@ const preparacionSalidaState = ref({
 const equiposAsignadosLista = computed(() => {
   const list = []
 
-  // 1. Equipos asignados en las líneas del estructurador comercial (Sub-tab 3)
-  if (Array.isArray(linesValidas.value)) {
-    linesValidas.value.forEach(l => {
+  // 1. Equipos asignados en Flota Principal (Segmento 1)
+  if (Array.isArray(linesEquiposPrincipales.value)) {
+    linesEquiposPrincipales.value.forEach(l => {
       const eqId = l.equipo_asignado_id || l.equipo_id
       if (eqId && eqId !== 'CRN-DEFAULT' && !list.includes(eqId)) {
         list.push(eqId)
@@ -7084,22 +7096,19 @@ const equiposAsignadosLista = computed(() => {
     })
   }
 
-  // 2. Equipo principal de operacionesAssignment
-  const primaryId = operacionesAssignment.value?.equipo_id
-  if (primaryId && primaryId !== 'CRN-DEFAULT' && !list.includes(primaryId)) {
-    list.push(primaryId)
-  }
-
-  // 3. Equipos extra de apoyo
+  // 2. Equipos del Segmento de Traslado (Segmento 2)
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
-    operacionesAssignment.value.equipos_extra.forEach(eqId => {
+    operacionesAssignment.value.equipos_extra.forEach(eqItem => {
+      const eqId = (typeof eqItem === 'object' && eqItem !== null) ? eqItem.id_equipo : eqItem
       if (eqId && eqId !== 'CRN-DEFAULT' && !list.includes(eqId)) {
         list.push(eqId)
       }
     })
   }
 
-  if (list.length === 0 && primaryId) {
+  // 3. Equipo principal de operacionesAssignment si no está ya en la lista
+  const primaryId = operacionesAssignment.value?.equipo_id
+  if (primaryId && primaryId !== 'CRN-DEFAULT' && !list.includes(primaryId)) {
     list.push(primaryId)
   }
 
