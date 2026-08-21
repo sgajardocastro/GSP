@@ -7085,13 +7085,19 @@ const preparacionSalidaState = ref({
 
 const equiposAsignadosLista = computed(() => {
   const list = []
+  const seen = new Set()
 
   // 1. Equipos asignados en Flota Principal (Segmento 1)
   if (Array.isArray(linesEquiposPrincipales.value)) {
     linesEquiposPrincipales.value.forEach(l => {
       const eqId = l.equipo_asignado_id || l.equipo_id
-      if (eqId && eqId !== 'CRN-DEFAULT' && !list.includes(eqId)) {
-        list.push(eqId)
+      if (eqId && eqId !== 'CRN-DEFAULT') {
+        const eqObj = getEquipoObj(eqId)
+        const idKey = eqObj ? eqObj.id_equipo : eqId
+        if (idKey && !seen.has(idKey)) {
+          seen.add(idKey)
+          list.push(idKey)
+        }
       }
     })
   }
@@ -7100,19 +7106,30 @@ const equiposAsignadosLista = computed(() => {
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
     operacionesAssignment.value.equipos_extra.forEach(eqItem => {
       const eqId = (typeof eqItem === 'object' && eqItem !== null) ? eqItem.id_equipo : eqItem
-      if (eqId && eqId !== 'CRN-DEFAULT' && !list.includes(eqId)) {
-        list.push(eqId)
+      if (eqId && eqId !== 'CRN-DEFAULT') {
+        const eqObj = getEquipoObj(eqId)
+        const idKey = eqObj ? eqObj.id_equipo : eqId
+        if (idKey && !seen.has(idKey)) {
+          seen.add(idKey)
+          list.push(idKey)
+        }
       }
     })
   }
 
-  // 3. Equipo principal de operacionesAssignment si no está ya en la lista
-  const primaryId = operacionesAssignment.value?.equipo_id
-  if (primaryId && primaryId !== 'CRN-DEFAULT' && !list.includes(primaryId)) {
-    list.push(primaryId)
+  // 3. Fallback solo si no hay equipos en Segmento 1 ni Segmento 2
+  if (list.length === 0) {
+    const primaryId = operacionesAssignment.value?.equipo_id
+    if (primaryId && primaryId !== 'CRN-DEFAULT') {
+      const eqObj = getEquipoObj(primaryId)
+      if (eqObj && !seen.has(eqObj.id_equipo)) {
+        seen.add(eqObj.id_equipo)
+        list.push(eqObj.id_equipo)
+      }
+    }
   }
 
-  return list.length > 0 ? list : ['CRN-DEFAULT']
+  return list
 })
 
 const getInspeccionEquipo = (eqId) => {
@@ -7449,7 +7466,7 @@ const confirmarAsignacionOT = async () => {
     payload.json_field.ejecucion_v1 = {
       ...(payload.json_field?.ejecucion_v1 || {}),
       asignacion_confirmada: true,
-      equipo_id: operacionesAssignment.value.equipo_id === 'CRN-DEFAULT' ? (lines.value[0]?.descripcion || 'Equipo Estructurador') : operacionesAssignment.value.equipo_id,
+      equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipo_id || null,
       equipos_extra: operacionesAssignment.value.equipos_extra,
       operador_id: operacionesAssignment.value.operador_id,
       rigger_id: operacionesAssignment.value.rigger_id,
