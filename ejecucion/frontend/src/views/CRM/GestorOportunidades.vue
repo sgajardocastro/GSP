@@ -1305,6 +1305,7 @@
                             :class="{
                               'bg-emerald-500/10 text-emerald-400 border-emerald-500/30': getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK',
                               'bg-red-500/10 text-red-400 border-red-500/30': getEstadoInspeccionEquipo(eqId) === 'RECHAZADA',
+                              'bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse': getEstadoInspeccionEquipo(eqId) === 'EN_VERIFICACION',
                               'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse': getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION',
                               'bg-amber-500/10 text-amber-400 border-amber-500/30': getEstadoInspeccionEquipo(eqId) === 'PLANIFICADA',
                               'bg-slate-500/10 text-slate-400 border-slate-500/20': getEstadoInspeccionEquipo(eqId) === 'NO_ASIGNADA'
@@ -1312,6 +1313,7 @@
                           >
                             <span v-if="getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK'">🟢 Ejecutada OK</span>
                             <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'RECHAZADA'">🔴 Rechazada / Taller</span>
+                            <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_VERIFICACION'">🟣 En Verificación FES</span>
                             <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION'">🔵 En Ejecución</span>
                             <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'PLANIFICADA'">🟡 Planificada</span>
                             <span v-else>⚪ No Asignada</span>
@@ -1350,7 +1352,7 @@
                             #{{ getInspeccionEquipo(eqId).id_survey }}
                           </span>
 
-                          <span v-if="getInspeccionEquipo(eqId)?.fecha_inspeccion_plan" class="text-[9px] text-slate-400 font-mono">
+                          <span v-if="getInspeccionEquipo(eqId)?.id_survey && getInspeccionEquipo(eqId)?.fecha_inspeccion_plan" class="text-[9px] text-slate-400 font-mono">
                             📅 {{ getInspeccionEquipo(eqId).fecha_inspeccion_plan }} {{ getInspeccionEquipo(eqId).hora_inspeccion_plan || '' }}
                           </span>
                         </div>
@@ -1396,13 +1398,13 @@
                     <div>
                       <label class="block text-[10px] text-slate-400 font-semibold mb-1">Fecha & Hora Programada *</label>
                       <div class="grid grid-cols-2 gap-2">
-                        <input type="date" v-model="getInspeccionEquipo(eqId).fecha_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
-                        <input type="time" v-model="getInspeccionEquipo(eqId).hora_inspeccion_plan" :disabled="getInspeccionEquipo(eqId).patio_programado" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
+                        <input type="date" v-model="getInspeccionEquipo(eqId).fecha_inspeccion_plan" :disabled="!!getInspeccionEquipo(eqId)?.id_survey" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
+                        <input type="time" v-model="getInspeccionEquipo(eqId).hora_inspeccion_plan" :disabled="!!getInspeccionEquipo(eqId)?.id_survey" class="bg-[#050810] border border-white/10 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                     </div>
 
                     <!-- Estado del Survey / Asignar Inspección -->
-                    <div v-if="!getInspeccionEquipo(eqId)?.patio_programado" class="space-y-2 pt-1">
+                    <div v-if="!getInspeccionEquipo(eqId)?.id_survey" class="space-y-2 pt-1">
                       <div class="bg-[#050810] p-2 rounded text-center border border-white/5 text-[11px] text-slate-400">
                         🔴 Inspección pendiente de agendamiento
                       </div>
@@ -1414,11 +1416,14 @@
                       </button>
                     </div>
 
-                    <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado" class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30 space-y-2 text-xs">
+                    <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado && getEstadoInspeccionEquipo(eqId) !== 'EJECUTADA_OK'" class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30 space-y-2 text-xs">
                       <div class="flex justify-between items-center">
                         <div>
-                          <span class="font-bold text-amber-400 block">🟡 Inspección Asignada en Terreno</span>
-                          <span v-if="getInspeccionEquipo(eqId)?.id_survey" class="text-[10px] text-slate-300 font-mono font-bold">Survey ID: #{{ getInspeccionEquipo(eqId).id_survey }}</span>
+                          <span v-if="getEstadoInspeccionEquipo(eqId) === 'EN_VERIFICACION'" class="font-bold text-purple-300 block">🟣 Inspección en Verificación FES</span>
+                          <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION'" class="font-bold text-blue-300 block">🔵 Inspección en Ejecución</span>
+                          <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'RECHAZADA'" class="font-bold text-red-400 block">🔴 Inspección Rechazada / Taller</span>
+                          <span v-else class="font-bold text-amber-400 block">🟡 Inspección Asignada en Terreno</span>
+                          <span class="text-[10px] text-slate-300 font-mono font-bold">Survey ID: #{{ getInspeccionEquipo(eqId).id_survey }}</span>
                         </div>
                         <span class="text-[10px] text-slate-300">Asignado: {{ (usuariosEnroladosFes || []).find(u => u && u.id_user === getInspeccionEquipo(eqId)?.jefe_patio_id)?.nombre_user || 'Jefe Patio' }}</span>
                       </div>
@@ -1434,8 +1439,8 @@
 
                     <div v-else class="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs">
                       <div>
-                        <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme</span>
-                        <span class="text-[10px] text-slate-400 block">Checklist & Contrapesos OK</span>
+                        <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme (OK)</span>
+                        <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
                       </div>
                       <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1">
                         👁️ Ver Inspección
@@ -7141,12 +7146,13 @@ const getInspeccionEquipo = (eqId) => {
   }
   if (!preparacionSalidaState.value.inspecciones_patio[eqId]) {
     preparacionSalidaState.value.inspecciones_patio[eqId] = {
-      patio_programado: preparacionSalidaState.value.patio_programado || false,
-      jefe_patio_id: preparacionSalidaState.value.jefe_patio_id || null,
-      fecha_inspeccion_plan: preparacionSalidaState.value.fecha_inspeccion_plan || new Date().toISOString().substring(0, 10),
-      hora_inspeccion_plan: preparacionSalidaState.value.hora_inspeccion_plan || '07:30',
-      patio_checklist_completado: preparacionSalidaState.value.patio_checklist_completado || false,
-      patio_requiere_taller: preparacionSalidaState.value.patio_requiere_taller || false
+      patio_programado: false,
+      id_survey: null,
+      jefe_patio_id: null,
+      fecha_inspeccion_plan: new Date().toISOString().substring(0, 10),
+      hora_inspeccion_plan: '07:30',
+      patio_checklist_completado: false,
+      patio_requiere_taller: false
     }
   }
   return preparacionSalidaState.value.inspecciones_patio[eqId]
@@ -7162,15 +7168,21 @@ const isEquipoPatioExpanded = (eqId) => {
 
 const getEstadoInspeccionEquipo = (eqId) => {
   const insp = getInspeccionEquipo(eqId)
-  const st = String(insp?.estado_srv || '').trim().toUpperCase()
-  if (insp?.patio_checklist_completado || st === 'COMPLETADO' || st === 'FINALIZADO' || st === 'EJECUTADO') {
-    if (insp?.patio_requiere_taller || st === 'RECHAZADO') return 'RECHAZADA'
+  if (!insp || !insp.id_survey) {
+    return 'NO_ASIGNADA'
+  }
+  const st = String(insp.estado_srv || '').trim().toUpperCase()
+  if (insp.patio_checklist_completado || st === 'APROBADO' || st === 'COMPLETADO' || st === 'FINALIZADO' || st === 'EJECUTADO') {
+    if (insp.patio_requiere_taller || st === 'RECHAZADO') return 'RECHAZADA'
     return 'EJECUTADA_OK'
   }
-  if (st === 'EN PROCESO' || st === 'EN PROGRESO' || st === 'EN EJECUCION' || st === 'INICIADO' || st === 'BORRADOR' || st === 'EN_EJECUCION' || st === 'EN_PROCESO' || st === 'GUARDADO') {
+  if (st === 'VERIFICACION' || st === 'EN VERIFICACION' || st === 'EN_VERIFICACION') {
+    return 'EN_VERIFICACION'
+  }
+  if (st === 'EN PROCESO' || st === 'EN PROGRESO' || st === 'EN EJECUCION' || st === 'INICIADO' || st === 'BORRADOR' || st === 'GUARDADO') {
     return 'EN_EJECUCION'
   }
-  if (insp?.patio_programado || st === 'CREADO' || st === 'PLANIFICADO' || st === 'ASIGNADO') {
+  if (st === 'CREADO' || st === 'PLANIFICADO' || st === 'ASIGNADO' || st === 'PROGRAMADO' || insp.patio_programado) {
     return 'PLANIFICADA'
   }
   return 'NO_ASIGNADA'
@@ -7222,12 +7234,12 @@ const statusSegmento2 = computed(() => {
     const eqList = equiposAsignadosLista.value || []
     if (eqList.length === 0) return 'RED'
     const states = eqList.map(eqId => getInspeccionEquipo(eqId))
-    const allCompletado = states.every(s => s?.patio_checklist_completado)
+    const allCompletado = states.every(s => s?.patio_checklist_completado || s?.estado_srv === 'APROBADO' || s?.estado_srv === 'COMPLETADO')
     if (allCompletado) {
-      if (states.some(s => s?.patio_requiere_taller)) return 'RED'
+      if (states.some(s => s?.patio_requiere_taller || s?.estado_srv === 'RECHAZADO')) return 'RED'
       return 'GREEN'
     }
-    const someProgramado = states.some(s => s?.patio_programado || s?.patio_checklist_completado || s?.estado_srv)
+    const someProgramado = states.some(s => s?.id_survey || s?.patio_programado)
     if (someProgramado) return 'YELLOW'
     return 'RED'
   } catch (err) {
@@ -7250,42 +7262,65 @@ const sincronizarInspeccionesPWA = async () => {
       const { data } = await apiAxios.get(`/proyectos/${projectId}`)
       const projData = data?.data || data
       const ejec = projData?.json_field?.ejecucion_v1
-      if (ejec?.preparacion_salida) {
+      if (ejec?.preparacion_salida?.inspecciones_patio) {
         preparacionSalidaState.value = {
           ...preparacionSalidaState.value,
-          ...ejec.preparacion_salida
+          ...ejec.preparacion_salida,
+          inspecciones_patio: {
+            ...(preparacionSalidaState.value.inspecciones_patio || {}),
+            ...ejec.preparacion_salida.inspecciones_patio
+          }
         }
       }
     }
 
-    // Consultar el estado real de cada survey en la base de datos
+    // Consultar el estado real de cada survey en la base de datos y depurar claves inválidas
     const inspMap = preparacionSalidaState.value.inspecciones_patio || {}
     let huboCambios = false
 
+    // Limpieza de claves espurias
+    if (inspMap['[object Object]']) {
+      delete inspMap['[object Object]']
+      huboCambios = true
+    }
+    if (inspMap['Servicio de Traslado/Flete']) {
+      delete inspMap['Servicio de Traslado/Flete']
+      huboCambios = true
+    }
+
     for (const eqId of Object.keys(inspMap)) {
       const ins = inspMap[eqId]
-      if (ins && ins.id_survey) {
-        try {
-          const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
-            params: { id_survey: ins.id_survey }
-          })
-          const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
-          const srv = srvList[0] || null
-          if (srv) {
-            const rawStatus = String(srv.estado_srv || '').trim().toUpperCase()
-            if (ins.estado_srv !== rawStatus) {
-              ins.estado_srv = rawStatus
-              huboCambios = true
-            }
-            if (rawStatus === 'COMPLETADO' || rawStatus === 'FINALIZADO' || rawStatus === 'EJECUTADO') {
-              if (!ins.patio_checklist_completado) {
-                ins.patio_checklist_completado = true
+      if (ins) {
+        // Si no tiene id_survey, forzar patio_programado a false
+        if (!ins.id_survey && ins.patio_programado) {
+          ins.patio_programado = false
+          huboCambios = true
+        }
+
+        if (ins.id_survey) {
+          try {
+            const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
+              params: { id_survey: ins.id_survey }
+            })
+            const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
+            const srv = srvList[0] || null
+            if (srv) {
+              const rawStatus = String(srv.estado_srv || '').trim()
+              if (ins.estado_srv !== rawStatus) {
+                ins.estado_srv = rawStatus
                 huboCambios = true
               }
+              const upperStatus = rawStatus.toUpperCase()
+              if (upperStatus === 'COMPLETADO' || upperStatus === 'FINALIZADO' || upperStatus === 'EJECUTADO' || upperStatus === 'APROBADO') {
+                if (!ins.patio_checklist_completado) {
+                  ins.patio_checklist_completado = true
+                  huboCambios = true
+                }
+              }
             }
+          } catch (eSurvey) {
+            console.warn(`No se pudo consultar estado de survey #${ins.id_survey}:`, eSurvey)
           }
-        } catch (eSurvey) {
-          console.warn(`No se pudo consultar estado de survey #${ins.id_survey}:`, eSurvey)
         }
       }
     }
