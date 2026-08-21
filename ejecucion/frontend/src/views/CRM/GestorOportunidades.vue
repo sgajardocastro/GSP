@@ -537,7 +537,7 @@
                   </tr>
 
                   <!-- FILAS FLOTA PRINCIPAL -->
-                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+idx" class="hover:bg-white/[0.02] transition-colors">
+                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+(line._uid||line.id_item||('base-'+idx))" class="hover:bg-white/[0.02] transition-colors">
                     <td class="py-2 pr-3 pl-7 font-sans">
                       <div class="flex items-start gap-2">
                         <span class="text-amber-500/70 text-xs font-mono select-none mt-0.5">↳</span>
@@ -642,7 +642,7 @@
                       Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
                     </td>
                   </tr>
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] font-mono">
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
                       <div class="space-y-1.5">
                         <div class="flex items-center gap-1.5">
@@ -3195,18 +3195,7 @@ const operacionesAssignment = ref({
   implementos_survey: getInitialImplementos()
 })
 
-const dbCategories = ref([
-  { id_categoria: 40, nombre_categoria: 'GRUAS TELESCOPICAS', subcategories: [] },
-  { id_categoria: 62, nombre_categoria: 'CAMIONES', subcategories: [{ id_subcategoria: 71, nombre_subcategoria: 'CAMION PLUMA' }] },
-  { id_categoria: 65, nombre_categoria: 'GRUA HORQUILLA', subcategories: [] },
-  { id_categoria: 70, nombre_categoria: 'MANIPULADOR TELESCOPICO', subcategories: [] },
-  { id_categoria: 72, nombre_categoria: 'VEHICULOS LIVIANOS', subcategories: [{ id_subcategoria: 100, nombre_subcategoria: 'CAMIONETA' }] },
-  { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', subcategories: [] },
-  { id_categoria: 99, nombre_categoria: 'TRASLADOS', subcategories: [{ id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' }, { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' }, { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' }, { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }] },
-  { id_categoria: 100, nombre_categoria: 'ACCESORIOS', subcategories: [{ id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' }] },
-  { id_categoria: 101, nombre_categoria: 'PERSONAL CERTIFICADO', subcategories: [{ id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' }, { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' }, { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' }] },
-  { id_categoria: 103, nombre_categoria: 'OTROS', subcategories: [{ id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }] }
-])
+const dbCategories = ref([])
 
 const getSubcategoriesForType = (type) => {
   if (!type) return []
@@ -4725,9 +4714,10 @@ const agregarEquipoPrincipal = () => {
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || '';
   
   currentLines.push({
-    tipo: 'GRUAS TELESCOPICAS',
+    _uid: `op-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    tipo: '',
     subcategoria: '',
-    descripcion: 'Equipo de Servicio Adicional',
+    descripcion: '',
     unidad: 'Diario',
     cantidad: 1,
     valorUnitario: 0,
@@ -4765,6 +4755,7 @@ const agregarEquipoTraslado = () => {
   const num = currentExtras.length + 1;
   
   currentExtras.push({
+    _uid: `ex-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
     tipo: 'TRASLADOS',
     subcategoria: 'CAMA BAJA',
     id_equipo: '',
@@ -5284,56 +5275,35 @@ const fetchCategories = async () => {
   try {
     const { data } = await apiAxios.get('/tequ-equipos/categorias')
     let list = data?.data || data || []
-    
-    if (Array.isArray(list) && list.length > 0) {
-      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'TRASLADOS')) {
-        list.push({
-          id_categoria: 99,
-          nombre_categoria: 'TRASLADOS',
-          subcategories: [
-            { id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' },
-            { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' },
-            { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
-            { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }
-          ]
-        })
+    if (!Array.isArray(list)) list = []
+
+    // Inyectar categorías operacionales que no vengan de la BD
+    const upsertCat = (id, nombre, subs) => {
+      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === nombre)) {
+        list.push({ id_categoria: id, nombre_categoria: nombre, subcategories: subs })
       }
-      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'ACCESORIOS')) {
-        list.push({
-          id_categoria: 100,
-          nombre_categoria: 'ACCESORIOS',
-          subcategories: [
-            { id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' },
-            { id_subcategoria: 1002, nombre_subcategoria: 'ESLINGAS' },
-            { id_subcategoria: 1003, nombre_subcategoria: 'ESTROBOS' }
-          ]
-        })
-      }
-      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'PERSONAL CERTIFICADO')) {
-        list.push({
-          id_categoria: 101,
-          nombre_categoria: 'PERSONAL CERTIFICADO',
-          subcategories: [
-            { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
-            { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' },
-            { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' },
-            { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }
-          ]
-        })
-      }
-      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'OTROS')) {
-        list.push({
-          id_categoria: 102,
-          nombre_categoria: 'OTROS',
-          subcategories: [
-            { id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }
-          ]
-        })
-      }
-      dbCategories.value = list
     }
+    upsertCat(99, 'TRASLADOS', [
+      { id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' },
+      { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' },
+      { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
+      { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }
+    ])
+    upsertCat(101, 'PERSONAL CERTIFICADO', [
+      { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
+      { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' },
+      { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' },
+      { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }
+    ])
+    upsertCat(103, 'OTROS', [
+      { id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }
+    ])
+
+    // Siempre sobrescribir — nunca usar datos hardcodeados
+    dbCategories.value = list
+    console.log('[fetchCategories] Categorías cargadas desde BD:', list.map(c => c.nombre_categoria))
   } catch (error) {
-    console.error('Error fetching dynamic categories:', error)
+    console.error('[fetchCategories] Error al cargar categorías desde la BD:', error)
   }
 }
 
