@@ -542,19 +542,39 @@
                       <div class="flex items-start gap-2">
                         <span class="text-amber-500/70 text-xs font-mono select-none mt-0.5">↳</span>
                         <div class="min-w-0 flex-1">
-                          <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                          <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
-                            <span>•</span>
-                            <span>{{ line.cantidad }} {{ line.unidad }}</span>
-                          </div>
+                          <!-- Línea base cotizada comercialmente -->
+                          <template v-if="line.is_linea_base !== false">
+                            <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
+                              <span>•</span>
+                              <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                            </div>
+                          </template>
+                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría -->
+                          <template v-else>
+                            <div class="space-y-1">
+                              <select v-model="line.tipo" @change="line.subcategoria = ''; line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2 py-1 text-xs text-amber-300 font-bold outline-none focus:border-amber-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Categoría --</option>
+                                <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO', 'TRASLADOS'].includes(c.nombre_categoria))" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
+                                  {{ cat.nombre_categoria }}
+                                </option>
+                              </select>
+                              <select v-if="line.tipo" v-model="line.subcategoria" @change="line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-amber-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría --</option>
+                                <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                                  {{ sub.nombre_subcategoria }}
+                                </option>
+                              </select>
+                            </div>
+                          </template>
                         </div>
                       </div>
                     </td>
                     <td class="py-2 px-3">
                       <div class="flex items-center gap-1.5">
                         <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.tipo }}) --</option>
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.subcategoria || line.tipo || 'Todos' }}) --</option>
                           <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                             {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                           </option>
@@ -3305,31 +3325,34 @@ const getEquiposFiltradosPorLinea = (line) => {
 
   if (!catTarget && !subTarget) return master
 
-  // 1. Filtrar por coincidencia de categoría y subcategoría
-  const filtrados = master.filter(eq => {
-    const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-    const eqSub = (eq.nombre_subcategoria || eq.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-    const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-    const eqModelo = (eq.modelo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-
-    const matchCat = !catTarget || eqCat.includes(catTarget) || catTarget.includes(eqCat) || eqNombre.includes(catTarget)
-    const matchSub = !subTarget || eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget)
-
-    return matchCat && matchSub
-  })
-
-  // 2. Si no hay coincidencia estricta en subcategoría, filtrar por categoría
-  let resultado = filtrados
-  if (resultado.length === 0 && catTarget) {
-    resultado = master.filter(eq => {
+  // 1. Filtrar por categoría
+  let porCat = master
+  if (catTarget) {
+    porCat = master.filter(eq => {
       const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
       const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
       return eqCat.includes(catTarget) || catTarget.includes(eqCat) || eqNombre.includes(catTarget)
     })
   }
 
-  // 3. Fallback a toda la flota si aún así está vacío
-  if (resultado.length === 0) resultado = master
+  // 2. Si se especificó subcategoría, filtrar por subcategoría dentro del grupo de categoría
+  let resultado = porCat
+  if (subTarget) {
+    const porSub = porCat.filter(eq => {
+      const eqSub = (eq.nombre_subcategoria || eq.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqModelo = (eq.modelo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      return eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget)
+    })
+    if (porSub.length > 0) {
+      resultado = porSub
+    }
+  }
+
+  // 3. Fallback solo si no había categoría seleccionada
+  if (resultado.length === 0 && !catTarget) {
+    resultado = master
+  }
 
   // 4. Asegurar que el equipo actualmente asignado siempre esté visible en la lista
   if (line.equipo_asignado_id) {
@@ -3406,7 +3429,8 @@ const isPersonalLine = (l) => {
 const linesValidas = computed(() => {
   if (!lines.value || !Array.isArray(lines.value)) return []
   return lines.value.filter(l => {
-    const hasData = (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0) || l.equipo_asignado_id
+    if (l.is_linea_base === false) return true
+    const hasData = (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0) || l.equipo_asignado_id || l.tipo
     return hasData && !isPersonalLine(l)
   })
 })
@@ -4615,11 +4639,11 @@ const tripulacionAsignada = computed(() => {
 })
 
 const agregarEquipoPrincipal = () => {
-  if (!lines.value) lines.value = [];
+  const currentLines = Array.isArray(lines.value) ? [...lines.value] : [];
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || '';
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || '';
   
-  lines.value.push({
+  currentLines.push({
     tipo: 'GRUAS TELESCOPICAS',
     subcategoria: '',
     descripcion: 'Equipo de Servicio Adicional',
@@ -4633,6 +4657,7 @@ const agregarEquipoPrincipal = () => {
     is_linea_base: false
   });
   
+  lines.value = currentLines;
   marcarDirtyAsignacion();
 };
 
@@ -4641,9 +4666,11 @@ const eliminarEquipoPrincipal = (line) => {
     alert('🔒 Este equipo proviene de la cotización comercial base y no puede eliminarse.');
     return;
   }
-  const idx = lines.value.indexOf(line);
+  const currentLines = Array.isArray(lines.value) ? [...lines.value] : [];
+  const idx = currentLines.indexOf(line);
   if (idx !== -1) {
-    lines.value.splice(idx, 1);
+    currentLines.splice(idx, 1);
+    lines.value = currentLines;
     marcarDirtyAsignacion();
   }
 };
