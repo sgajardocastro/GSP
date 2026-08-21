@@ -4755,9 +4755,9 @@ const equiposAsignadosTotales = computed(() => {
   const result = [];
   const seen = new Set();
 
-  // 1. Equipos principales de las líneas comerciales
-  const lValidas = linesValidas.value || [];
-  lValidas.forEach(l => {
+  // 1. Equipos principales de las líneas comerciales (Segmento 1)
+  const lPrincipales = linesEquiposPrincipales.value || [];
+  lPrincipales.forEach(l => {
     if (l && l.equipo_asignado_id) {
       const eqObj = getEquipoObj(l.equipo_asignado_id);
       const idKey = eqObj ? eqObj.id_equipo : l.equipo_asignado_id;
@@ -4768,14 +4768,15 @@ const equiposAsignadosTotales = computed(() => {
           patente: eqObj?.patente || String(l.equipo_asignado_id),
           nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || 'Equipo de Servicio',
           tipo: eqObj?.nombre_categoria || eqObj?.tipo || l.tipo || 'Equipo',
-          subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || l.subcategoria || ''
+          subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || l.subcategoria || '',
+          operador_id: l.operador_asignado_id
         });
       }
     }
   });
 
-  // 2. Equipos del Segmento de Traslado en operacionesAssignment.equipos_extra
-  if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
+  // 2. Equipos del Segmento de Traslado en operacionesAssignment.equipos_extra (Segmento 2)
+  if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
     operacionesAssignment.value.equipos_extra.forEach((eqItem, idx) => {
       const eqId = (typeof eqItem === 'object' && eqItem !== null) ? eqItem.id_equipo : eqItem;
       if (eqId) {
@@ -4783,13 +4784,14 @@ const equiposAsignadosTotales = computed(() => {
         const idKey = eqObj ? eqObj.id_equipo : eqId;
         if (idKey && !seen.has(idKey)) {
           seen.add(idKey);
-          const rolLabel = (typeof eqItem === 'object' && eqItem !== null && eqItem.rol) ? eqItem.rol : `Vehículo Traslado #${idx + 1}`;
+          const rolLabel = (typeof eqItem === 'object' && eqItem !== null && (eqItem.descripcion || eqItem.subcategoria || eqItem.rol)) ? (eqItem.descripcion || eqItem.subcategoria || eqItem.rol) : `Vehículo Traslado #${idx + 1}`;
           result.push({
             id_equipo: idKey,
             patente: eqObj?.patente || String(eqId),
             nombre_equipo: eqObj?.nombre_equipo || eqObj?.modelo || rolLabel,
             tipo: eqObj?.nombre_categoria || eqObj?.tipo || 'Traslado / Apoyo',
-            subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || ''
+            subcategoria: eqObj?.nombre_subcategoria || eqObj?.subcategoria || '',
+            operador_id: (typeof eqItem === 'object' && eqItem !== null) ? eqItem.chofer_id : null
           });
         }
       }
@@ -4803,7 +4805,7 @@ const equiposAsignadosTotales = computed(() => {
 const tripulacionAsignada = computed(() => {
   const list = [];
   
-  // 1. Operadores de líneas de equipos principales
+  // 1. Operadores de líneas de equipos principales (Segmento 1)
   (linesEquiposPrincipales.value || []).forEach(line => {
     const cargo = (line.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'
     list.push({
@@ -4818,11 +4820,11 @@ const tripulacionAsignada = computed(() => {
     })
   })
   
-  // 2. Choferes de equipos de traslado
+  // 2. Choferes de equipos de traslado (Segmento 2)
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
     operacionesAssignment.value.equipos_extra.forEach((eqEx, idx) => {
-      const rol = (typeof eqEx === 'object' && eqEx !== null && eqEx.rol) ? eqEx.rol : `Cama Baja #${idx + 1}`
-      const isEscolta = rol.toLowerCase().includes('escolta') || rol.toLowerCase().includes('guia')
+      const rol = (typeof eqEx === 'object' && eqEx !== null && (eqEx.descripcion || eqEx.subcategoria || eqEx.rol)) ? (eqEx.descripcion || eqEx.subcategoria || eqEx.rol) : (eqEx.subcategoria || `Vehículo Traslado #${idx + 1}`)
+      const isEscolta = (rol + ' ' + (eqEx.subcategoria || '') + ' ' + (eqEx.tipo || '')).toLowerCase().includes('escolta') || (rol + ' ' + (eqEx.subcategoria || '')).toLowerCase().includes('guia') || (eqEx.tipo || '').toLowerCase().includes('liviano')
       const cargo = isEscolta ? 'Escolta / Guía' : 'Chofer Cama Baja'
       const eqId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.id_equipo : eqEx
       const choferId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.chofer_id : null
@@ -4834,14 +4836,14 @@ const tripulacionAsignada = computed(() => {
         requerimiento: rol,
         equipo_asignado_id: eqId || '',
         semaforo: getSemaforoTripulante(choferId),
-        is_linea_base: false,
+        is_linea_base: eqEx.is_linea_base === true,
         fecha_plan_ini: ini,
         fecha_plan_fin: fin
       })
     })
   }
   
-  // 3. Especialistas en terreno
+  // 3. Especialistas en terreno (Segmento 3)
   if (Array.isArray(especialistasTerreno.value)) {
     especialistasTerreno.value.forEach(esp => {
       list.push({
@@ -6640,10 +6642,10 @@ const cargarDatosCotizacion = async () => {
               if (idx === 0 && !operacionesAssignment.value.equipo_id) {
                 operacionesAssignment.value.equipo_id = idEq
               }
-              if (linesValidas.value && linesValidas.value[idx]) {
-                linesValidas.value[idx].equipo_asignado_id = idEq
-                if (eqRel.fecha_plan_ini) linesValidas.value[idx].fecha_plan_ini = eqRel.fecha_plan_ini.split('T')[0]
-                if (eqRel.fecha_plan_fin) linesValidas.value[idx].fecha_plan_fin = eqRel.fecha_plan_fin.split('T')[0]
+              if (linesEquiposPrincipales.value && linesEquiposPrincipales.value[idx]) {
+                linesEquiposPrincipales.value[idx].equipo_asignado_id = idEq
+                if (eqRel.fecha_plan_ini) linesEquiposPrincipales.value[idx].fecha_plan_ini = eqRel.fecha_plan_ini.split('T')[0]
+                if (eqRel.fecha_plan_fin) linesEquiposPrincipales.value[idx].fecha_plan_fin = eqRel.fecha_plan_fin.split('T')[0]
               }
             })
           }
@@ -7396,14 +7398,30 @@ const confirmarAsignacionOT = async () => {
 
   // Validación: Conductores para vehículos asignados
   const equiposSinConductor = []
-  equiposAsignadosTotales.value.forEach(eq => {
-    const tieneChofer = tripulacionAsignada.value.some(t => 
-      t.id_user && (t.equipo_asignado_id === eq.id_equipo || t.equipo_asignado_id === eq.patente)
-    )
-    if (!tieneChofer) {
-      equiposSinConductor.push(`${eq.patente} (${eq.nombre_equipo || eq.tipo})`)
+  
+  // 1. Validar Flota Principal (Segmento 1)
+  (linesEquiposPrincipales.value || []).forEach(l => {
+    if (l && l.equipo_asignado_id && !l.operador_asignado_id) {
+      const eqObj = getEquipoObj(l.equipo_asignado_id)
+      const pat = eqObj?.patente || l.equipo_asignado_id
+      const nom = eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || l.subcategoria || l.tipo || 'Equipo Principal'
+      equiposSinConductor.push(`${pat} (${nom})`)
     }
   })
+
+  // 2. Validar Equipos de Traslado (Segmento 2)
+  if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
+    operacionesAssignment.value.equipos_extra.forEach((eqEx, idx) => {
+      const eqId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.id_equipo : eqEx
+      const choferId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.chofer_id : null
+      if (eqId && !choferId) {
+        const eqObj = getEquipoObj(eqId)
+        const pat = eqObj?.patente || eqId
+        const nom = eqObj?.nombre_equipo || eqObj?.modelo || eqEx.descripcion || eqEx.subcategoria || `Vehículo Traslado #${idx + 1}`
+        equiposSinConductor.push(`${pat} (${nom})`)
+      }
+    })
+  }
 
   if (equiposSinConductor.length > 0) {
     const continuar = confirm(`⚠️ Verificación Operativa:\nLos siguientes equipos asignados no tienen un Conductor / Operador asociado en la Tripulación:\n• ${equiposSinConductor.join('\n• ')}\n\n¿Deseas confirmar la OT de todas formas?`)
@@ -7472,15 +7490,24 @@ const confirmarAsignacionOT = async () => {
       }
 
       // Equipos
-      const equiposLista = (linesValidas.value || []).map(l => ({
+      const equiposLista = (linesEquiposPrincipales.value || []).map(l => ({
         id_equipo: l.equipo_asignado_id,
-        rol: 'Equipo Principal',
+        rol: l.tipo || 'Equipo Principal',
         f_ini: l.fecha_plan_ini,
         f_fin: l.fecha_plan_fin
       }))
       
-      if (operacionesAssignment.value.equipo_id && !equiposLista.some(e => e.id_equipo === operacionesAssignment.value.equipo_id)) {
-        equiposLista.push({ id_equipo: operacionesAssignment.value.equipo_id, rol: 'Grúa Principal', f_ini: null, f_fin: null })
+      if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
+        operacionesAssignment.value.equipos_extra.forEach((ex, idx) => {
+          if (ex.id_equipo) {
+            equiposLista.push({
+              id_equipo: ex.id_equipo,
+              rol: ex.descripcion || ex.subcategoria || ex.tipo || `Vehículo Traslado #${idx + 1}`,
+              f_ini: ex.fecha_plan_ini,
+              f_fin: ex.fecha_plan_fin
+            })
+          }
+        })
       }
 
       for (const eq of equiposLista) {
