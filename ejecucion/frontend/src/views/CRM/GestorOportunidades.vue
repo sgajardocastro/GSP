@@ -644,16 +644,32 @@
                   </tr>
                   <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
-                      <div class="flex items-center gap-2">
-                        <span class="text-blue-400/70 text-xs font-mono select-none">↳</span>
-                        <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Ej. Cama Baja #1" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-blue-200 font-bold outline-none focus:border-blue-400 truncate" />
+                      <div class="space-y-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-blue-400/70 text-xs font-mono select-none">↳</span>
+                          <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="flex-1 bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría Traslado --</option>
+                            <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
+                              {{ cat.nombre_categoria }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="flex items-center gap-1.5 pl-3">
+                          <select v-if="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-1/2 bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
+                            <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                              {{ sub.nombre_subcategoria }}
+                            </option>
+                          </select>
+                          <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Rol / Nombre (Ej. Cama Baja #1)" :class="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0 ? 'w-1/2' : 'w-full'" class="bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-xs text-blue-200 outline-none focus:border-blue-400 truncate" />
+                        </div>
                       </div>
                     </td>
                     <td class="py-2 px-3">
                       <div class="flex items-center gap-1.5">
                         <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo Traslado --</option>
-                          <option v-for="eq in listaEquiposMaster" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ getEquiposFiltradosPorLinea(eqEx).length }} disp.) --</option>
+                          <option v-for="eq in getEquiposFiltradosPorLinea(eqEx)" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                             {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                           </option>
                         </select>
@@ -666,21 +682,21 @@
                       <div class="flex items-center gap-1.5">
                         <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
-                          <optgroup v-if="getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                          <optgroup v-if="getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
                               {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
                             </option>
                           </optgroup>
                           <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                            <option v-for="u in getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
                               {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
                             </option>
                           </optgroup>
                         </select>
                         <template v-if="eqEx.chofer_id">
-                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
-                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
-                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (eqEx.rol?.toLowerCase().includes('escolta') ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
+                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
+                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
                         </template>
                       </div>
                     </td>
@@ -3137,6 +3153,71 @@ const opportunity = ref({
   id_proyecto_estado: null
 })
 
+const lines = ref([])
+const usuarios = ref([])
+
+const CATALOGO_MAESTRO_APAREJOS = [
+  { id: 'estrobos', label: 'Estrobos de Acero', match: (l) => l.includes('ESTROBO') },
+  { id: 'eslingas', label: 'Eslingas Sintéticas', match: (l) => l.includes('ESLINGA') },
+  { id: 'grilletes', label: 'Grilletes (Lira / Rectos)', match: (l) => l.includes('GRILLETE') },
+  { id: 'pulpos_cadena', label: 'Pulpos de Cadena', match: (l) => l.includes('PULPO') },
+  { id: 'cadenas', label: 'Cadenas de Izaje', match: (l) => l.includes('CADENA') && !l.includes('PULPO') },
+  { id: 'balancines', label: 'Balancines / Vigas', match: (l) => l.includes('BALANCIN') || l.includes('VIGA') },
+  { id: 'canastillos', label: 'Canastillo Alza Hombres', match: (l) => l.includes('CANASTILL') || l.includes('CANASTA') },
+  { id: 'otros_accesorios', label: 'Otros / Accesorios Especiales', match: (l) => (l.includes('ACCESORIO') || l.includes('OTRO')) && !l.includes('OBSERVACION') }
+]
+
+const getInitialImplementos = () => {
+  return CATALOGO_MAESTRO_APAREJOS.map(m => ({
+    id: m.id,
+    label: m.label,
+    requerido: false,
+    detalle: ''
+  }))
+}
+
+const operacionesAssignment = ref({
+  tipo_decision: 'APROBADO',
+  equipo_id: 'CRN-DEFAULT',
+  equipo_adicional: '',
+  equipos_extra: [],
+  operador_id: 'OP-101',
+  rigger_id: 'RIG-201',
+  fecha_salida_plan: new Date().toISOString().substring(0, 10),
+  hora_salida_plan: '08:00',
+  tonelaje_operaciones: '',
+  equipo_sugerido_operaciones: '',
+  observaciones_operaciones: '',
+  aparejos: {},
+  fecha_fin_plan: '',
+  hora_fin_plan: '',
+  cumplimiento_acreditaciones: {},
+  implementos_survey: getInitialImplementos()
+})
+
+const dbCategories = ref([
+  { id_categoria: 40, nombre_categoria: 'GRUAS TELESCOPICAS', subcategories: [] },
+  { id_categoria: 62, nombre_categoria: 'CAMIONES', subcategories: [{ id_subcategoria: 71, nombre_subcategoria: 'CAMION PLUMA' }] },
+  { id_categoria: 65, nombre_categoria: 'GRUA HORQUILLA', subcategories: [] },
+  { id_categoria: 70, nombre_categoria: 'MANIPULADOR TELESCOPICO', subcategories: [] },
+  { id_categoria: 72, nombre_categoria: 'VEHICULOS LIVIANOS', subcategories: [{ id_subcategoria: 100, nombre_subcategoria: 'CAMIONETA' }] },
+  { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', subcategories: [] },
+  { id_categoria: 99, nombre_categoria: 'TRASLADOS', subcategories: [{ id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' }, { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' }, { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' }, { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }] },
+  { id_categoria: 100, nombre_categoria: 'ACCESORIOS', subcategories: [{ id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' }] },
+  { id_categoria: 101, nombre_categoria: 'PERSONAL CERTIFICADO', subcategories: [{ id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' }, { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' }, { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' }] },
+  { id_categoria: 103, nombre_categoria: 'OTROS', subcategories: [{ id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }] }
+])
+
+const getSubcategoriesForType = (type) => {
+  if (!type) return []
+  const normType = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+  const category = dbCategories.value.find(c => {
+    const normCat = String(c.nombre_categoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
+    return normCat === normType || c.nombre_categoria === type
+  })
+  return category ? category.subcategories : []
+}
+
 const ESTADOS_DB = {
   OPORTUNIDAD: 1,           // Preventa Comercial (Borrador)
   COTIZANDO: 2,             // Preventa Comercial (Cotización en curso)
@@ -4676,14 +4757,16 @@ const eliminarEquipoPrincipal = (line) => {
 };
 
 const agregarEquipoTraslado = () => {
-  if (!operacionesAssignment.value.equipos_extra) {
-    operacionesAssignment.value.equipos_extra = [];
-  }
+  const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
+    ? [...operacionesAssignment.value.equipos_extra] 
+    : [];
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || '';
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || '';
-  const num = operacionesAssignment.value.equipos_extra.length + 1;
+  const num = currentExtras.length + 1;
   
-  operacionesAssignment.value.equipos_extra.push({
+  currentExtras.push({
+    tipo: 'TRASLADOS',
+    subcategoria: 'CAMA BAJA',
     id_equipo: '',
     chofer_id: '',
     rol: `Cama Baja #${num}`,
@@ -4691,11 +4774,16 @@ const agregarEquipoTraslado = () => {
     fecha_plan_fin: defaultFin
   });
   
+  operacionesAssignment.value.equipos_extra = currentExtras;
   marcarDirtyAsignacion();
 };
 
 const eliminarEquipoTraslado = (idx) => {
-  operacionesAssignment.value.equipos_extra.splice(idx, 1);
+  const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
+    ? [...operacionesAssignment.value.equipos_extra] 
+    : [];
+  currentExtras.splice(idx, 1);
+  operacionesAssignment.value.equipos_extra = currentExtras;
   marcarDirtyAsignacion();
 };
 
@@ -5177,44 +5265,6 @@ const diffsCount = computed(() => {
   return count
 })
 
-const CATALOGO_MAESTRO_APAREJOS = [
-  { id: 'estrobos', label: 'Estrobos de Acero', match: (l) => l.includes('ESTROBO') },
-  { id: 'eslingas', label: 'Eslingas Sintéticas', match: (l) => l.includes('ESLINGA') },
-  { id: 'grilletes', label: 'Grilletes (Lira / Rectos)', match: (l) => l.includes('GRILLETE') },
-  { id: 'pulpos_cadena', label: 'Pulpos de Cadena', match: (l) => l.includes('PULPO') },
-  { id: 'cadenas', label: 'Cadenas de Izaje', match: (l) => l.includes('CADENA') && !l.includes('PULPO') },
-  { id: 'balancines', label: 'Balancines / Vigas', match: (l) => l.includes('BALANCIN') || l.includes('VIGA') },
-  { id: 'canastillos', label: 'Canastillo Alza Hombres', match: (l) => l.includes('CANASTILL') || l.includes('CANASTA') },
-  { id: 'otros_accesorios', label: 'Otros / Accesorios Especiales', match: (l) => (l.includes('ACCESORIO') || l.includes('OTRO')) && !l.includes('OBSERVACION') }
-]
-
-const getInitialImplementos = () => {
-  return CATALOGO_MAESTRO_APAREJOS.map(m => ({
-    id: m.id,
-    label: m.label,
-    requerido: false,
-    detalle: ''
-  }))
-}
-
-const operacionesAssignment = ref({
-  tipo_decision: 'APROBADO',
-  equipo_id: 'CRN-DEFAULT',
-  equipo_adicional: '',
-  equipos_extra: [],
-  operador_id: 'OP-101',
-  rigger_id: 'RIG-201',
-  fecha_salida_plan: new Date().toISOString().substring(0, 10),
-  hora_salida_plan: '08:00',
-  tonelaje_operaciones: '',
-  equipo_sugerido_operaciones: '',
-  observaciones_operaciones: '',
-  aparejos: {},
-  fecha_fin_plan: '',
-  hora_fin_plan: '',
-  cumplimiento_acreditaciones: {},
-  implementos_survey: getInitialImplementos()
-})
 const visitaProgramadaInfo = ref(null)
 const clientes = ref([])
 const searchQuery = ref('')
@@ -5225,90 +5275,66 @@ const formVisita = ref({
   id_user_responsable: '',
   fecha_visita: ''
 })
-const usuarios = ref([])
 const coordinadoresVisita = computed(() => usuarios.value.filter(u => u.json_data?.cargo === 'Coordinador'))
 const cargandoVisita = ref(false)
 const estadoAsignacion = ref(null)
 const emailCoordinadorSeleccionado = ref('')
 
-const dbCategories = ref([])
 const fetchCategories = async () => {
   try {
     const { data } = await apiAxios.get('/tequ-equipos/categorias')
-    let list = data?.data || []
+    let list = data?.data || data || []
     
-    // Filtrar para que solo queden las categorías que están escritas en MAYÚSCULAS en la BD
-    list = list.filter(c => c.nombre_categoria && c.nombre_categoria === c.nombre_categoria.toUpperCase())
-
-    if (!list.some(c => c.nombre_categoria === 'TRASLADOS')) {
-      list.push({
-        id_categoria: 99,
-        nombre_categoria: 'TRASLADOS',
-        subcategories: [
-          { id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' },
-          { id_subcategoria: 902, nombre_subcategoria: 'TRACTOR' },
-          { id_subcategoria: 903, nombre_subcategoria: 'ESCOLTA / GUÍA' }
-        ]
-      })
+    if (Array.isArray(list) && list.length > 0) {
+      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'TRASLADOS')) {
+        list.push({
+          id_categoria: 99,
+          nombre_categoria: 'TRASLADOS',
+          subcategories: [
+            { id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' },
+            { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' },
+            { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
+            { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }
+          ]
+        })
+      }
+      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'ACCESORIOS')) {
+        list.push({
+          id_categoria: 100,
+          nombre_categoria: 'ACCESORIOS',
+          subcategories: [
+            { id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' },
+            { id_subcategoria: 1002, nombre_subcategoria: 'ESLINGAS' },
+            { id_subcategoria: 1003, nombre_subcategoria: 'ESTROBOS' }
+          ]
+        })
+      }
+      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'PERSONAL CERTIFICADO')) {
+        list.push({
+          id_categoria: 101,
+          nombre_categoria: 'PERSONAL CERTIFICADO',
+          subcategories: [
+            { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
+            { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' },
+            { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' },
+            { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }
+          ]
+        })
+      }
+      if (!list.some(c => (c.nombre_categoria || '').toUpperCase() === 'OTROS')) {
+        list.push({
+          id_categoria: 102,
+          nombre_categoria: 'OTROS',
+          subcategories: [
+            { id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }
+          ]
+        })
+      }
+      dbCategories.value = list
     }
-    if (!list.some(c => c.nombre_categoria === 'ACCESORIOS')) {
-      list.push({
-        id_categoria: 100,
-        nombre_categoria: 'ACCESORIOS',
-        subcategories: [
-          { id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' },
-          { id_subcategoria: 1002, nombre_subcategoria: 'ESLINGAS' },
-          { id_subcategoria: 1003, nombre_subcategoria: 'ESTROBOS' }
-        ]
-      })
-    }
-    if (!list.some(c => c.nombre_categoria === 'PERSONAL CERTIFICADO')) {
-      list.push({
-        id_categoria: 101,
-        nombre_categoria: 'PERSONAL CERTIFICADO',
-        subcategories: [
-          { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
-          { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' },
-          { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' },
-          { id_subcategoria: 2004, nombre_subcategoria: 'OTROS' }
-        ]
-      })
-    }
-    if (!list.some(c => c.nombre_categoria === 'OTROS')) {
-      list.push({
-        id_categoria: 102,
-        nombre_categoria: 'OTROS',
-        subcategories: [
-          { id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }
-        ]
-      })
-    }
-    dbCategories.value = list
   } catch (error) {
     console.error('Error fetching dynamic categories:', error)
-    dbCategories.value = [
-      { id_categoria: 40, nombre_categoria: 'GRUAS TELESCOPICAS', subcategories: [] },
-      { id_categoria: 62, nombre_categoria: 'CAMIONES', subcategories: [{ id_subcategoria: 71, nombre_subcategoria: 'CAMION PLUMA' }] },
-      { id_categoria: 65, nombre_categoria: 'GRUA HORQUILLA', subcategories: [] },
-      { id_categoria: 70, nombre_categoria: 'MANIPULADOR TELESCOPICO', subcategories: [] },
-      { id_categoria: 72, nombre_categoria: 'VEHICULOS LIVIANOS', subcategories: [{ id_subcategoria: 100, nombre_subcategoria: 'CAMIONETA' }] },
-      { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', subcategories: [] },
-      { id_categoria: 99, nombre_categoria: 'TRASLADOS', subcategories: [{ id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' }] },
-      { id_categoria: 100, nombre_categoria: 'ACCESORIOS', subcategories: [{ id_subcategoria: 1001, nombre_subcategoria: 'CANASTILLO' }] },
-      { id_categoria: 101, nombre_categoria: 'PERSONAL CERTIFICADO', subcategories: [{ id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' }, { id_subcategoria: 2002, nombre_subcategoria: 'OPERADOR' }, { id_subcategoria: 2003, nombre_subcategoria: 'PREVENCIONISTA' }] },
-      { id_categoria: 103, nombre_categoria: 'OTROS', subcategories: [{ id_subcategoria: 3001, nombre_subcategoria: 'OTROS' }] }
-    ]
   }
-}
-
-const getSubcategoriesForType = (type) => {
-  if (!type) return []
-  const normType = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-  const category = dbCategories.value.find(c => {
-    const normCat = String(c.nombre_categoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-    return normCat === normType || c.nombre_categoria === type
-  })
-  return category ? category.subcategories : []
 }
 
 const showVisorModal = ref(false)
@@ -5412,8 +5438,6 @@ const alCambiarContacto = () => {
     opportunity.value.contacto_telefono = opportunity.value.contacto_obj.telefono || ''
   }
 }
-
-const lines = ref([])
 
 const isHydrating = ref(true)
 
