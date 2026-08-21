@@ -3191,11 +3191,11 @@ const guardarCambiosAsignacion = async () => {
       headers: { Authorization: `Bearer ${token}` }
     })
 
-    // Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22)
+    const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
+    const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
+
+    // 1. Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22)
     try {
-      const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
-      const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
-      
       for (const p of (tripulacionAsignada.value || [])) {
         if (p.id_user && !isNaN(parseInt(p.id_user))) {
           const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
@@ -3213,6 +3213,47 @@ const guardarCambiosAsignacion = async () => {
       }
     } catch (relErr) {
       console.warn('Advertencia en sincronización relacional de personas:', relErr)
+    }
+
+    // 2. Persistir equipos en tpry_rel_equipo en PostgreSQL (Spec 22)
+    try {
+      const equiposLista = (linesValidas.value || []).map(l => ({
+        id_equipo: l.equipo_asignado_id,
+        rol: l.tipo || 'Equipo Principal',
+        f_ini: l.fecha_plan_ini,
+        f_fin: l.fecha_plan_fin
+      }))
+      
+      if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
+        operacionesAssignment.value.equipos_extra.forEach(ex => {
+          if (ex.id_equipo) {
+            equiposLista.push({
+              id_equipo: ex.id_equipo,
+              rol: ex.rol || 'Equipo Traslado',
+              f_ini: ex.fecha_plan_ini,
+              f_fin: ex.fecha_plan_fin
+            })
+          }
+        })
+      }
+
+      for (const eq of equiposLista) {
+        if (eq.id_equipo && !isNaN(parseInt(eq.id_equipo))) {
+          const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
+          const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
+          await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
+            id_proyecto: parseInt(projectId),
+            id_equipo: parseInt(eq.id_equipo),
+            rol_equipo: eq.rol || 'Equipo Asignado',
+            fecha_plan_ini: fIni,
+            fecha_plan_fin: fFin,
+            estado_real: 'PROGRAMADO',
+            id_user_creacion: currentUser.id_user || 1
+          }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+        }
+      }
+    } catch (relEqErr) {
+      console.warn('Advertencia en sincronización relacional de equipos:', relEqErr)
     }
 
     isDirtyAsignacion.value = false
@@ -6147,10 +6188,9 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.operador_id) operacionesAssignment.value.operador_id = ejecucion.operador_id
           if (ejecucion.rigger_id) operacionesAssignment.value.rigger_id = ejecucion.rigger_id
           if (ejecucion.chofer_id) operacionesAssignment.value.chofer_id = ejecucion.chofer_id
+          // 1. Asignar operadores a líneas de equipos principales
           if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
-            
-            // Asignar operadores a líneas de equipos principales
             linesEquiposPrincipales.value.forEach(l => {
               const opMatch = trip.find(t => 
                 t.equipo_asignado_id && t.equipo_asignado_id === l.equipo_asignado_id &&
@@ -6160,8 +6200,21 @@ const cargarDatosCotizacion = async () => {
                 l.operador_asignado_id = opMatch.id_user || ''
               }
             })
+          }
 
-            // Asignar especialistas de terreno
+          // 2. Restaurar Especialistas de Terreno (priorizando ejecucion.especialistas_terreno)
+          if (Array.isArray(ejecucion.especialistas_terreno) && ejecucion.especialistas_terreno.length > 0) {
+            especialistasTerreno.value = ejecucion.especialistas_terreno.map(esp => ({
+              id_user: esp.id_user || '',
+              cargo: esp.cargo || 'Rigger',
+              requerimiento: esp.requerimiento || '',
+              is_linea_base: esp.is_linea_base === true,
+              semaforo: esp.semaforo || 'GREEN',
+              fecha_plan_ini: esp.fecha_plan_ini || ejecucion.fecha_salida_plan || '',
+              fecha_plan_fin: esp.fecha_plan_fin || ejecucion.fecha_fin_plan || ''
+            }))
+          } else if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
+            const trip = ejecucion.tripulacion_asignada
             const espList = trip.filter(t => 
               !t.cargo?.includes('Operador') && !t.cargo?.includes('Chofer') && !t.cargo?.includes('Escolta')
             )
@@ -6331,23 +6384,14 @@ const cargarDatosCotizacion = async () => {
           if (Array.isArray(perRows) && perRows.length > 0) {
             perRows.forEach(perRel => {
               if (!perRel.id_user) return
-              const matchTrip = tripulacionAsignada.value.find(t => 
-                (t.id_user && String(t.id_user) === String(perRel.id_user)) ||
-                (t.cargo && perRel.rol_asignado && t.cargo.toLowerCase().includes(perRel.rol_asignado.toLowerCase()))
+              const matchEsp = especialistasTerreno.value.find(e => 
+                (e.id_user && String(e.id_user) === String(perRel.id_user)) ||
+                (e.cargo && perRel.rol_asignado && e.cargo.toLowerCase().includes(perRel.rol_asignado.toLowerCase()))
               )
-              if (matchTrip) {
-                matchTrip.id_user = perRel.id_user
-                if (perRel.fecha_plan_ini) matchTrip.fecha_plan_ini = perRel.fecha_plan_ini.split('T')[0]
-                if (perRel.fecha_plan_fin) matchTrip.fecha_plan_fin = perRel.fecha_plan_fin.split('T')[0]
-              } else {
-                tripulacionAsignada.value.push({
-                  id_user: perRel.id_user,
-                  cargo: perRel.rol_asignado || 'Tripulación',
-                  requerimiento: perRel.rol_asignado || 'Personal Asignado',
-                  semaforo: 'GREEN',
-                  fecha_plan_ini: perRel.fecha_plan_ini ? perRel.fecha_plan_ini.split('T')[0] : '',
-                  fecha_plan_fin: perRel.fecha_plan_fin ? perRel.fecha_plan_fin.split('T')[0] : ''
-                })
+              if (matchEsp) {
+                matchEsp.id_user = perRel.id_user
+                if (perRel.fecha_plan_ini) matchEsp.fecha_plan_ini = perRel.fecha_plan_ini.split('T')[0]
+                if (perRel.fecha_plan_fin) matchEsp.fecha_plan_fin = perRel.fecha_plan_fin.split('T')[0]
               }
             })
           }
@@ -6539,11 +6583,12 @@ const buildPayload = () => {
         traza_correos: trazaCorreosList.value,
         preparacion_salida: preparacionSalidaState.value,
         equipo_id: operacionesAssignment.value.equipo_id,
-        equipos_extra: operacionesAssignment.value.equipos_extra,
+        equipos_extra: operacionesAssignment.value.equipos_extra || [],
+        especialistas_terreno: especialistasTerreno.value || [],
         operador_id: operacionesAssignment.value.operador_id,
         rigger_id: operacionesAssignment.value.rigger_id,
         chofer_id: operacionesAssignment.value.chofer_id,
-        tripulacion_asignada: tripulacionAsignada.value,
+        tripulacion_asignada: tripulacionAsignada.value || [],
         fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
         hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
         fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
