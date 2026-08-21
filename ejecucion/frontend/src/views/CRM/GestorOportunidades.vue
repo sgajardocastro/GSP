@@ -648,23 +648,38 @@
                   <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
                       <div class="space-y-1.5">
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-blue-400/70 text-xs font-mono select-none">↳</span>
-                          <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="flex-1 bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría Traslado --</option>
-                            <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                              {{ cat.nombre_categoria }}
-                            </option>
-                          </select>
-                        </div>
-                        <div class="flex items-center gap-1.5 pl-3">
-                          <select v-if="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-1/2 bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
-                            <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                              {{ sub.nombre_subcategoria }}
-                            </option>
-                          </select>
-                          <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Rol / Nombre (Ej. Cama Baja #1)" :class="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0 ? 'w-1/2' : 'w-full'" class="bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-xs text-blue-200 outline-none focus:border-blue-400 truncate" />
+                        <div class="flex items-start gap-1.5">
+                          <span class="text-blue-400/70 text-xs font-mono select-none mt-1">↳</span>
+                          <!-- Línea base cotizada comercialmente -->
+                          <div v-if="eqEx.is_linea_base" class="min-w-0 flex-1 space-y-1">
+                            <div class="font-bold text-white text-xs leading-tight truncate" :title="eqEx.rol || eqEx.subcategoria">{{ eqEx.rol || eqEx.subcategoria || 'Traslado / Flete' }}</div>
+                            <div class="flex items-center gap-1.5">
+                              <select v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría Traslado * --</option>
+                                <option v-for="sub in getSubcategoriesForType('TRASLADOS')" :key="'sub-base-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                                  {{ sub.nombre_subcategoria }}
+                                </option>
+                              </select>
+                            </div>
+                          </div>
+                          <!-- Línea agregada adicional en Operaciones -->
+                          <div v-else class="min-w-0 flex-1 space-y-1">
+                            <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
+                              <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría Traslado --</option>
+                              <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
+                                {{ cat.nombre_categoria }}
+                              </option>
+                            </select>
+                            <div class="flex items-center gap-1.5">
+                              <select v-if="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-1/2 bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
+                                <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                                  {{ sub.nombre_subcategoria }}
+                                </option>
+                              </select>
+                              <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Rol / Nombre (Ej. Cama Baja #1)" :class="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0 ? 'w-1/2' : 'w-full'" class="bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-xs text-blue-200 outline-none focus:border-blue-400 truncate" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -711,7 +726,8 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <button @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
+                      <span v-if="eqEx.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
+                      <button v-else @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
@@ -4884,6 +4900,73 @@ const eliminarEquipoPrincipal = (line) => {
   }
 };
 
+const sincronizarTrasladosComerciales = () => {
+  const trasladosComerciales = (lines.value || []).filter(l => isTrasladoLine(l))
+  if (trasladosComerciales.length === 0 && !opportunity.value?.incluye_flete) return
+
+  const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
+    ? [...operacionesAssignment.value.equipos_extra] 
+    : []
+
+  const defaultIni = operacionesAssignment.value?.fecha_salida_plan || opportunity.value?.fecha_tentativa || ''
+  const defaultFin = operacionesAssignment.value?.fecha_fin_plan || opportunity.value?.fecha_tentativa || ''
+
+  // 1. Si no hay líneas explícitas pero incluye_flete = true
+  if (trasladosComerciales.length === 0 && opportunity.value?.incluye_flete) {
+    const yaExiste = currentExtras.some(ex => ex.is_linea_base)
+    if (!yaExiste) {
+      currentExtras.unshift({
+        _uid: `ex-base-flete-${Date.now()}`,
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        id_equipo: '',
+        chofer_id: '',
+        rol: 'Flete / Cama Baja Mandante',
+        is_linea_base: true,
+        fecha_plan_ini: defaultIni,
+        fecha_plan_fin: defaultFin
+      })
+    }
+  }
+
+  // 2. Mapear cada línea comercial de traslado
+  trasladosComerciales.forEach((tc, idx) => {
+    const subcat = tc.subcategoria || 'CAMA BAJA'
+    const rol = tc.descripcion || tc.subcategoria || `Traslado #${idx + 1}`
+    
+    // Verificar si ya existe en equipos_extra
+    const match = currentExtras.find(ex => 
+      (tc._uid && ex._uid === tc._uid) || 
+      (tc.id_item && ex.id_item === tc.id_item) ||
+      (ex.is_linea_base && (ex.rol === rol || ex.subcategoria === subcat))
+    )
+
+    if (!match) {
+      currentExtras.unshift({
+        _uid: tc._uid || `ex-base-${Date.now()}-${idx}`,
+        id_item: tc.id_item || null,
+        tipo: 'TRASLADOS',
+        subcategoria: subcat,
+        id_equipo: tc.equipo_asignado_id || '',
+        chofer_id: tc.operador_asignado_id || '',
+        rol: rol,
+        is_linea_base: true,
+        fecha_plan_ini: defaultIni,
+        fecha_plan_fin: defaultFin
+      })
+    } else {
+      match.is_linea_base = true
+      if (!match.tipo) match.tipo = 'TRASLADOS'
+      if (!match.subcategoria) match.subcategoria = subcat
+      if (!match.rol) match.rol = rol
+      if (tc.equipo_asignado_id && !match.id_equipo) match.id_equipo = tc.equipo_asignado_id
+      if (tc.operador_asignado_id && !match.chofer_id) match.chofer_id = tc.operador_asignado_id
+    }
+  })
+
+  operacionesAssignment.value.equipos_extra = currentExtras
+}
+
 const agregarEquipoTraslado = () => {
   const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
     ? [...operacionesAssignment.value.equipos_extra] 
@@ -6430,17 +6513,26 @@ const cargarDatosCotizacion = async () => {
                 if (chMatch) choferId = chMatch.id_user || ''
               }
               const rol = (typeof item === 'object' && item !== null && item.rol) ? item.rol : (idx === 0 ? 'Cama Baja #1' : `Escolta / Apoyo #${idx + 1}`)
+              const tipo = (typeof item === 'object' && item !== null && item.tipo) ? item.tipo : 'TRASLADOS'
+              const subcat = (typeof item === 'object' && item !== null && item.subcategoria) ? item.subcategoria : 'CAMA BAJA'
+              const isBase = (typeof item === 'object' && item !== null && item.is_linea_base !== undefined) ? item.is_linea_base : false
               const ini = (typeof item === 'object' && item !== null && item.fecha_plan_ini) ? item.fecha_plan_ini : (ejecucion.fecha_salida_plan || '')
               const fin = (typeof item === 'object' && item !== null && item.fecha_plan_fin) ? item.fecha_plan_fin : (ejecucion.fecha_fin_plan || '')
               return {
+                _uid: item._uid || `ex-${Date.now()}-${idx}`,
+                id_item: item.id_item || null,
+                tipo,
+                subcategoria: subcat,
                 id_equipo: eqId,
                 chofer_id: choferId,
                 rol,
+                is_linea_base: isBase,
                 fecha_plan_ini: ini,
                 fecha_plan_fin: fin
               }
             })
           }
+          sincronizarTrasladosComerciales()
           if (ejecucion.fecha_salida_plan) operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan
           if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
           if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
@@ -6869,6 +6961,7 @@ const aprobarYGenerarOT = async () => {
     // Habilitar condicionalmente la Pestaña C
     requerimientoAprobado.value = true
     operacionesSubTab.value = 'asignacion'
+    sincronizarTrasladosComerciales()
     
     // Asignar "DESDE" por defecto desde la Pestaña B (Fecha Tentativa)
     if (!operacionesAssignment.value.fecha_salida_plan && opportunity.value?.fecha_tentativa) {
@@ -7172,7 +7265,10 @@ const sincronizarInspeccionesPWA = async () => {
 
 let autoPollTimer = null
 watch(() => operacionesSubTab.value, (newTab) => {
-  if (newTab === 'acreditaciones' || newTab === 'asignacion' || newTab === 'dossier_acreditacion') {
+  if (newTab === 'asignacion') {
+    sincronizarTrasladosComerciales()
+    cargarExpedientesAsignados()
+  } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') {
     cargarExpedientesAsignados()
   }
   if (newTab === 'preparacion_salida') {
