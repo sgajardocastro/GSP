@@ -16,6 +16,15 @@ apiAxios.interceptors.request.use((config) => {
     config.headers['Authorization'] = `Bearer ${token}`
   }
 
+  // No inyectar _id_empresa en endpoints de servicios genéricos (/servicio/*) para no romper el parser SQL
+  const isServicioGenerico = config.url && (config.url.includes('/servicio/') || config.url.includes('servicio/'))
+  if (isServicioGenerico || config.params?._bypass_empresa) {
+    if (config.params?._bypass_empresa) {
+      delete config.params._bypass_empresa
+    }
+    return config
+  }
+
   // Priorizar navStore.activeEmpresa para que las peticiones se filtren por la empresa seleccionada reactivamente
   const activeEmp = navStore.activeEmpresa !== undefined ? navStore.activeEmpresa : null
   if (activeEmp !== null) {
