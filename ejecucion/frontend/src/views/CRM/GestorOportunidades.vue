@@ -554,17 +554,17 @@
                               <span>{{ line.cantidad }} {{ line.unidad }}</span>
                             </div>
                           </template>
-                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría -->
+                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría Lado a Lado -->
                           <template v-else>
-                            <div class="space-y-1">
-                              <select v-model="line.tipo" @change="line.subcategoria = ''; line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2 py-1 text-xs text-amber-300 font-bold outline-none focus:border-amber-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Categoría --</option>
+                            <div class="grid grid-cols-2 gap-1.5">
+                              <select v-model="line.tipo" @change="line.subcategoria = ''; line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-1.5 py-1 text-[11px] text-amber-300 font-bold outline-none focus:border-amber-400 truncate" title="Seleccionar Categoría">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría --</option>
                                 <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO', 'TRASLADOS'].includes(c.nombre_categoria))" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                                   {{ cat.nombre_categoria }}
                                 </option>
                               </select>
-                              <select v-if="line.tipo" v-model="line.subcategoria" @change="line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-amber-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría --</option>
+                              <select v-model="line.subcategoria" :disabled="!line.tipo" @change="line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/20 rounded px-1.5 py-1 text-[11px] text-white outline-none focus:border-amber-400 truncate disabled:opacity-40" title="Seleccionar Subcategoría">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
                                 <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                                   {{ sub.nombre_subcategoria }}
                                 </option>
@@ -660,17 +660,17 @@
                               <span v-if="eqEx.cantidad">• {{ eqEx.cantidad }} {{ eqEx.unidad || 'Viaje' }}</span>
                             </div>
                           </template>
-                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría -->
+                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría Lado a Lado -->
                           <template v-else>
-                            <div class="space-y-1">
-                              <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Categoría --</option>
+                            <div class="grid grid-cols-2 gap-1.5">
+                              <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-1.5 py-1 text-[11px] text-blue-300 font-bold outline-none focus:border-blue-400 truncate" title="Seleccionar Categoría">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría --</option>
                                 <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                                   {{ cat.nombre_categoria }}
                                 </option>
                               </select>
-                              <select v-if="eqEx.tipo" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría --</option>
+                              <select v-model="eqEx.subcategoria" :disabled="!eqEx.tipo" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/20 rounded px-1.5 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate disabled:opacity-40" title="Seleccionar Subcategoría">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
                                 <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                                   {{ sub.nombre_subcategoria }}
                                 </option>
@@ -756,14 +756,16 @@
                       <div class="flex items-start gap-2">
                         <span class="text-emerald-400/70 text-xs font-mono select-none mt-1">↳</span>
                         <div class="min-w-0 flex-1">
-                          <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }">
-                            <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista de Riesgos</option>
-                            <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
-                            <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
-                            <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
-                          </select>
-                          <div v-if="esp.requerimiento" class="text-[10px] text-emerald-400 font-mono mt-1 truncate" :title="esp.requerimiento">
-                            Req: {{ esp.requerimiento }}
+                          <div class="grid grid-cols-2 gap-1.5">
+                            <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-1.5 py-1 text-[11px] text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }" title="Cargo / Especialidad">
+                              <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista</option>
+                              <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
+                              <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
+                              <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
+                            </select>
+                            <div class="bg-[#0a0f1e] border border-emerald-500/20 rounded px-1.5 py-1 text-[10px] text-emerald-400 font-mono truncate flex items-center" :title="esp.requerimiento || 'Personal en tierra'">
+                              {{ esp.requerimiento ? 'Req: ' + esp.requerimiento : 'Personal Faena' }}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -7351,10 +7353,11 @@ watch(() => operacionesSubTab.value, (newTab) => {
   }
   if (newTab === 'preparacion_salida') {
     cargarExpedientesAsignados()
+    sincronizarInspeccionesPWA()
     if (!autoPollTimer) {
       autoPollTimer = setInterval(() => {
         sincronizarInspeccionesPWA()
-      }, 15000)
+      }, 10000)
     }
   } else {
     if (autoPollTimer) {
