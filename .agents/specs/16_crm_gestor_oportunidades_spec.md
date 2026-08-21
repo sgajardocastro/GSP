@@ -156,7 +156,7 @@ Define la cobertura institucional sin campos monetarios:
 ---
 
 ### 🚜 3.5. Pestaña 3: Asignación de Recursos OT (Tabla Única de Alta Densidad)
-Implementa el estándar de **alta densidad lineal** con una sola cabecera global y 3 segmentos operacionales:
+Implementa el estándar de **alta densidad lineal** con una sola cabecera global y 3 segmentos operacionales perfectamente homologados:
 
 #### 1. Cabecera Global Única (`<thead>`):
 - `RECURSO / REQUERIMIENTO` (22%): Línea comercial base o concepto operativo.
@@ -165,9 +165,9 @@ Implementa el estándar de **alta densidad lineal** con una sola cabecera global
 - `VENTANA PLANIFICADA` (18%): Rango inline `[ YYYY-MM-DD ➔ YYYY-MM-DD ]`.
 - `ACC` (4%): Candado 🔒 (si es línea base comercial protegida) o 🗑️ (si es recurso adicional).
 
-#### 2. Segmentos Operacionales (Row Dividers):
+#### 2. Segmentos Operacionales Homólogos (Row Dividers):
 - **🚜 Segmento 1: Flota Principal & Operadores de Servicio:** Grúas telescópicas, camiones pluma, grúas horquilla y maquinaria con su operador en la misma fila. Botón `+ Agregar Equipo`.
-- **🚚 Segmento 2: Traslados y Logística:** Camas bajas, ramplas y camionetas escolta con su respectivo chofer/escolta. Botón `+ Equipo Traslado`.
+- **🚚 Segmento 2: Segmento Equipos Traslado & Choferes (Logística):** Camas bajas, ramplas, tractocamiones y camionetas escolta con su respectivo chofer/escolta. **Estructura idéntica y homóloga al Segmento 1** (línea base muestra título + subtítulo técnico; línea agregada muestra 2 dropdowns apilados de Categoría y Subcategoría sin campos de texto arbitrarios). Botón `+ Equipo Traslado`.
 - **👷 Segmento 3: Especialistas & Personal Técnico en Terreno:** Riggers certificados, prevencionistas y supervisores en tierra (columna de equipo deshabilitada como `— (Personal en Tierra) —`). Botón `+ Añadir Especialista`.
 
 #### 3. Propagación Global de Tiempos:
@@ -186,14 +186,26 @@ Al hacer clic sobre cualquier insignia semafórica (🟢 `VIG`, 🟡 `VNC`, 🔴
 
 Para garantizar fidelidad absoluta con la Base de Datos PostgreSQL y evitar inconsistencias entre conceptos comerciales y activos físicos:
 
-### 4.1. Carga Dinámica Canónica desde PostgreSQL
-El frontend consume el endpoint oficial `/api/tequ-equipos/categorias` para poblar reactivamente `dbCategories`. No existen arrays estáticos ni listas hardcodeadas en la inicialización (`dbCategories = ref([])`).
+### 4.1. Catálogo Oficial de Categorías en PostgreSQL (Post-Purga)
+Se eliminaron de la base de datos las 5 categorías legacy (`1: Equipo (Grúa)`, `2: Equipo (Apoyo)`, `3: Personal`, `4: Escolta`, `5: Otros`) y sus 14 subcategorías. El catálogo canónico activo en `sch_leangsp.tequ_categoria` queda conformado por:
+
+| ID BD | Nombre Categoría Oficial | Total Subcategorías | Activos Principales |
+| :---: | :--- | :---: | :--- |
+| **40** | `GRUAS TELESCOPICAS` | 11 | Liebherr, Tadano, Grove, XCMG (40T a 250T) |
+| **62** | `CAMIONES` | 5 | Tractocamiones, Camiones Pluma, Plataformas, Semirremolques |
+| **65** | `GRUA HORQUILLA` | 1 | Hyster y grúas de horquilla |
+| **70** | `MANIPULADOR TELESCOPICO` | 1 | Bobcat y manipuladores |
+| **72** | `VEHICULOS LIVIANOS` | 4 | Camionetas (Maxus, Silverado, Poer), Jeeps, Furgones, Cuatrimotos |
+| **102** | `PLATAFORMAS` | 6 | Plataformas articuladas y alzacargas (Snorkel, Genie) |
+| **150** | `OTROS` | 1 | Equipamiento y accesorios generales |
+| **151** | `PERSONAL CERTIFICADO` | 4 | Riggers, Operadores, Prevencionistas, Supervisores |
 
 ### 4.2. Categorías Sintéticas / Operacionales Inyectadas en Frontend
 Existen 3 conceptos operacionales indispensables para estructurar la cotización y la faena que no representan una máquina individual en `tequ_categoria`:
 1. **`TRASLADOS` (Logística de Transporte):**
    - Subcategorías: `CAMA BAJA`, `RAMPLA`, `TRACTO CAMIÓN`, `ESCOLTA / GUÍA`.
-   - Vinculado al flag de preventa `incluye_flete = SÍ/NO` ($500.000, unidad `Fijo`).
+   - Vinculado al flag de preventa `incluye_flete = SÍ/NO` ($500.000, unidad `Fijo` o `Viaje`).
+   - Sincronizado automáticamente hacia el Segmento 2 de Asignación OT como línea base protegida (`is_linea_base: true`).
 2. **`PERSONAL CERTIFICADO` (Especialistas en Tierra):**
    - Subcategorías: `RIGGER`, `OPERADOR`, `PREVENCIONISTA`, `OTROS`.
    - Vinculado bidireccionalmente a los flags `requiere_rigger` y `requiere_prevencionista`.
@@ -204,26 +216,43 @@ Existen 3 conceptos operacionales indispensables para estructurar la cotización
 
 ### 4.3. Regla de Derivación Semántica por Subcategoría (`TRASLADOS`)
 En la base de datos física (`tequ_equipo`), las máquinas de apoyo logístico residen en sus categorías mecánicas reales:
-* Camas Bajas, Ramplas y Tracto Camiones residen bajo la categoría **`CAMIONES`**.
-* Camionetas Escolta/Guía residen bajo la categoría **`VEHICULOS LIVIANOS`**.
+* Camas Bajas, Ramplas y Tracto Camiones residen bajo la categoría **`CAMIONES`** (subcategorías `SEMIREMOLQUE`, `TRACTOCAMION`, `CAMION PLATAFORMA`).
+* Camionetas Escolta/Guía residen bajo la categoría **`VEHICULOS LIVIANOS`** (subcategorías `CAMIONETA`, `JEEP`).
 
 Por ende, cuando una línea comercial o recurso de traslado posee categoría **`TRASLADOS`**, la función de filtrado de flota `getEquiposFiltradosPorLinea(line)` **omite el filtro estricto por nombre de categoría** y aplica una **resolución semántica directa por subcategoría sobre todo el parque de flota**:
 
-| Subcategoría Seleccionada | Criterio de Búsqueda en Flota (`tequ_equipo`) | Tipos de Equipos Resueltos |
+| Subcategoría Seleccionada | Criterio de Búsqueda en Flota (`tequ_equipo`) | Modelos y Patentes Resueltas |
 | :--- | :--- | :--- |
-| **`CAMA BAJA`** | Subcategoría / Modelo / Nombre contiene `CAMA BAJA`, `CAMABAJA`, `BATEA` | Camas bajas cuello de cisne y remolques pesados |
-| **`RAMPLA`** | Subcategoría / Modelo / Nombre contiene `RAMPLA`, `SEMIRREMOLQUE`, `PLANA` | Ramplas abiertas y semirremolques |
-| **`TRACTO CAMIÓN`** | Subcategoría / Modelo / Nombre contiene `TRACTO`, `TRACTOCAMION`, `CAMION` | Cabezales y tractos de tiro |
-| **`ESCOLTA / GUÍA`** | Subcategoría / Categoría contiene `VEHICULOS LIVIANOS`, `CAMIONETA`, `ESCOLTA` | Camionetas 4x4 de escolta (Maxus, Poer, etc.) |
-| *(Sin subcategoría)* | Categoría en `['CAMIONES', 'VEHICULOS LIVIANOS', 'TRANSPORTE']` | Todo el parque de transporte y apoyo logístico |
+| **`CAMA BAJA`** | Subcategoría `SEMIREMOLQUE` con modelos `SR-CB`, `SRTCB`, `NOOTEBOOM`, `TREMAC`, `SCHILGER`, `BATEA` | Camas bajas cuello de cisne y remolques de carga pesada |
+| **`RAMPLA`** | Subcategoría `SEMIREMOLQUE` con modelos `SRPL`, `SRBSCO`, `GOREN`, `RANDOM`, `TORMESOL` o `CAMION PLATAFORMA` | Ramplas abiertas y semirremolques planos (14.2m) |
+| **`TRACTO CAMIÓN`** | Subcategoría `TRACTOCAMION` | Cabezales Scania G500A, Volvo FH, Sinotruk C7H, Mercedes New Actros |
+| **`ESCOLTA / GUÍA`** | Categoría `VEHICULOS LIVIANOS` con subcategoría `CAMIONETA` o `JEEP` | Camionetas 4x4 Maxus T60, Great Wall Poer, Silverado, Jimny (excluye furgones y cuatrimotos) |
+| *(Sin subcategoría)* | Categorías logísticas `CAMIONES` (Semirremolques/Tractos) y `VEHICULOS LIVIANOS` (Camionetas) | Todo el parque de transporte y escolta logístico |
 
 ---
 
-### 4.4. Regla de Segregación para `PERSONAL CERTIFICADO`
+### 4.4. Regla de Homologación Absoluta en Segmento 2 (Traslados)
+Para mantener consistencia total con el Segmento 1 (Flota Principal):
+1. **Línea Base Cotizada (`is_linea_base = true`):**
+   - Muestra el título comercial (`Servicio de Traslado / Flete`).
+   - Muestra la ficha técnica inline: `[TIPO] • [SUBCATEGORÍA] • [CANTIDAD] [UNIDAD]`.
+   - Bloqueo de eliminación con icono `🔒`.
+2. **Línea Agregada en Operaciones (`is_linea_base = false`):**
+   - Muestra dos selectores apilados full-width:
+     1. Dropdown Categoría (`TRASLADOS`, `CAMIONES`, `VEHICULOS LIVIANOS`, etc.).
+     2. Dropdown Subcategoría (`CAMA BAJA`, `RAMPLA`, `TRACTO CAMIÓN`, `ESCOLTA / GUÍA`).
+   - Queda estrictamente prohibido incluir inputs de texto libre o comentarios arbitrarios (`rol = "Cama Baja #1"`).
+   - Botón de eliminación activo `🗑️`.
+3. **Columna de Equipo:** Dropdown reactivo filtrado por `getEquiposFiltradosPorLinea` con semáforo de acreditación (🟢/🟡/🔴).
+4. **Columna de Personal:** Dropdown reactivo con optgroup `🎯 Choferes Sugeridos` y `👷 Resto de Personal Activo` con semáforo de acreditación (🟢/🟡/🔴).
+
+---
+
+### 4.5. Regla de Segregación para `PERSONAL CERTIFICADO`
 Cuando una línea pertenece a `PERSONAL CERTIFICADO` (detectada por `isPersonalLine(line)`):
 1. Se segrega automáticamente hacia la **Sección 3 (Especialistas & Personal Técnico en Terreno)**.
 2. La columna de equipo físico se **deshabilita** con la etiqueta `— (Personal en Tierra) —`.
-3. El selector de personal muestra sugerencias agrupadas según el cargo (`Rigger`, `Prevencionista`, `Operador`).
+3. El selector de personal muestra sugerencias agrupadas según el cargo (`Rigger`, `Prevencionista`, `Supervisor Faena`, `Maniobrista`).
 4. Queda excluida de los selectores de vehículos de la Sección 1 y Sección 2.
 
 ---
