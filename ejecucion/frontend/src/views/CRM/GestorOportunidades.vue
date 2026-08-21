@@ -3500,6 +3500,7 @@ const getEquiposFiltradosPorLinea = (line) => {
 
   const catTarget = (line.tipo || line.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
   const subTarget = (line.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const assignedId = line.equipo_asignado_id || line.id_equipo
 
   if (!catTarget && !subTarget) return master
 
@@ -3508,37 +3509,37 @@ const getEquiposFiltradosPorLinea = (line) => {
     let match = []
     if (subTarget.includes('CAMA BAJA') || subTarget.includes('CAMABAJA')) {
       match = master.filter(eq => {
-        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
-        return text.includes('CAMA BAJA') || text.includes('CAMABAJA') || text.includes('BATEA')
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('SEMIREMOLQUE') || text.includes('CAMA BAJA') || text.includes('CAMABAJA') || text.includes('SR-CB') || text.includes('SRTCB') || text.includes('NOOTEBOOM') || text.includes('BATEA') || text.includes('TREMAC') || text.includes('SCHILGER')
       })
     } else if (subTarget.includes('RAMPLA')) {
       match = master.filter(eq => {
-        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
-        return text.includes('RAMPLA') || text.includes('SEMIRREMOLQUE') || text.includes('PLANA')
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('RAMPLA') || text.includes('SRPL') || text.includes('SRBSCO') || text.includes('GOREN') || text.includes('RANDOM') || text.includes('TORMESOL') || text.includes('PLATAFORMA') || text.includes('PLANA') || (eq.nombre_subcategoria === 'SEMIREMOLQUE' && !text.includes('CB') && !text.includes('CAMA BAJA'))
       })
     } else if (subTarget.includes('TRACTO')) {
       match = master.filter(eq => {
-        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
-        return text.includes('TRACTO') || text.includes('TRACTOCAMION') || text.includes('CAMION')
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('TRACTO') || text.includes('TRACTOCAMION') || eq.nombre_subcategoria === 'TRACTOCAMION'
       })
     } else if (subTarget.includes('ESCOLTA') || subTarget.includes('GUIA')) {
       match = master.filter(eq => {
-        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
-        return text.includes('LIVIANO') || text.includes('CAMIONETA') || text.includes('ESCOLTA') || text.includes('MAXUS') || text.includes('POER')
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        const isVehLiviano = (eq.nombre_categoria || '').toUpperCase().includes('LIVIANO') || (eq.tipo || '').toUpperCase().includes('LIVIANO')
+        const isCamionetaOJeep = text.includes('CAMIONETA') || text.includes('JEEP') || text.includes('MAXUS') || text.includes('POER') || text.includes('SILVERADO') || text.includes('JIMNY') || text.includes('ESCOLTA')
+        return isVehLiviano && isCamionetaOJeep
       })
-    }
-
-    if (match.length === 0) {
-      // Fallback para Traslados: todos los camiones y vehículos livianos de apoyo logístico
+    } else {
+      // Si no especificó subcategoría, mostrar todos los vehículos logísticos (Tractos, Semirremolques, Camionetas Escolta)
       match = master.filter(eq => {
-        const cat = `${eq.nombre_categoria || ''} ${eq.tipo || ''} ${eq.nombre_equipo || ''}`.toUpperCase()
-        return cat.includes('CAMION') || cat.includes('LIVIANO') || cat.includes('TRANSPORTE') || cat.includes('ESCOLTA')
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('SEMIREMOLQUE') || text.includes('TRACTO') || text.includes('CAMIONETA') || text.includes('ESCOLTA') || text.includes('PLATAFORMA')
       })
     }
 
-    let resTraslado = match.length > 0 ? match : master
-    if (line.equipo_asignado_id) {
-      const currentAssigned = master.find(eq => eq.id_equipo === line.equipo_asignado_id || eq.patente === line.equipo_asignado_id)
+    let resTraslado = match
+    if (assignedId) {
+      const currentAssigned = master.find(eq => eq.id_equipo === assignedId || eq.patente === assignedId)
       if (currentAssigned && !resTraslado.some(eq => eq.id_equipo === currentAssigned.id_equipo)) {
         resTraslado = [currentAssigned, ...resTraslado]
       }
@@ -3551,8 +3552,7 @@ const getEquiposFiltradosPorLinea = (line) => {
   if (catTarget) {
     porCat = master.filter(eq => {
       const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-      const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-      return eqCat.includes(catTarget) || catTarget.includes(eqCat) || eqNombre.includes(catTarget)
+      return eqCat === catTarget || eqCat.includes(catTarget) || catTarget.includes(eqCat)
     })
   }
 
@@ -3562,8 +3562,9 @@ const getEquiposFiltradosPorLinea = (line) => {
     const porSub = porCat.filter(eq => {
       const eqSub = (eq.nombre_subcategoria || eq.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
       const eqModelo = (eq.modelo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqMarca = (eq.marca || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
       const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-      return eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget)
+      return eqSub === subTarget || eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget) || eqMarca.includes(subTarget)
     })
     if (porSub.length > 0) {
       resultado = porSub
@@ -3576,8 +3577,8 @@ const getEquiposFiltradosPorLinea = (line) => {
   }
 
   // 5. Asegurar que el equipo actualmente asignado siempre esté visible en la lista
-  if (line.equipo_asignado_id) {
-    const currentAssigned = master.find(eq => eq.id_equipo === line.equipo_asignado_id || eq.patente === line.equipo_asignado_id)
+  if (assignedId) {
+    const currentAssigned = master.find(eq => eq.id_equipo === assignedId || eq.patente === assignedId)
     if (currentAssigned && !resultado.some(eq => eq.id_equipo === currentAssigned.id_equipo)) {
       resultado = [currentAssigned, ...resultado]
     }
