@@ -645,88 +645,85 @@
                       Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
                     </td>
                   </tr>
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] font-mono">
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] transition-colors font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
-                      <div class="space-y-1.5">
-                        <div class="flex items-start gap-1.5">
-                          <span class="text-blue-400/70 text-xs font-mono select-none mt-1">↳</span>
+                      <div class="flex items-start gap-2">
+                        <span class="text-blue-400/70 text-xs font-mono select-none mt-0.5">↳</span>
+                        <div class="min-w-0 flex-1">
                           <!-- Línea base cotizada comercialmente -->
-                          <div v-if="eqEx.is_linea_base" class="min-w-0 flex-1 space-y-1">
-                            <div class="font-bold text-white text-xs leading-tight truncate" :title="eqEx.rol || eqEx.subcategoria">{{ eqEx.rol || eqEx.subcategoria || 'Traslado / Flete' }}</div>
-                            <div class="flex items-center gap-1.5">
-                              <select v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría Traslado * --</option>
-                                <option v-for="sub in getSubcategoriesForType('TRASLADOS')" :key="'sub-base-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                                  {{ sub.nombre_subcategoria }}
+                          <template v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base">
+                            <div class="font-bold text-white text-xs leading-tight truncate" :title="eqEx.descripcion || eqEx.subcategoria">{{ eqEx.descripcion || eqEx.subcategoria || 'Servicio de Traslado / Flete' }}</div>
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <span class="text-blue-400 font-mono font-bold">{{ eqEx.tipo || 'TRASLADOS' }}</span>
+                              <span>•</span>
+                              <span v-if="eqEx.subcategoria">{{ eqEx.subcategoria }}</span>
+                              <span v-if="eqEx.cantidad">• {{ eqEx.cantidad }} {{ eqEx.unidad || 'Viaje' }}</span>
+                            </div>
+                          </template>
+                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría -->
+                          <template v-else>
+                            <div class="space-y-1">
+                              <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Categoría --</option>
+                                <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
+                                  {{ cat.nombre_categoria }}
                                 </option>
                               </select>
-                            </div>
-                          </div>
-                          <!-- Línea agregada adicional en Operaciones -->
-                          <div v-else class="min-w-0 flex-1 space-y-1">
-                            <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-2 py-1 text-xs text-blue-300 font-bold outline-none focus:border-blue-400 truncate">
-                              <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría Traslado --</option>
-                              <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                                {{ cat.nombre_categoria }}
-                              </option>
-                            </select>
-                            <div class="flex items-center gap-1.5">
-                              <select v-if="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-1/2 bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
+                              <select v-if="eqEx.tipo" v-model="eqEx.subcategoria" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Subcategoría --</option>
                                 <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                                   {{ sub.nombre_subcategoria }}
                                 </option>
                               </select>
-                              <input type="text" v-model="eqEx.rol" @input="marcarDirtyAsignacion" placeholder="Rol / Nombre (Ej. Cama Baja #1)" :class="eqEx.tipo && getSubcategoriesForType(eqEx.tipo).length > 0 ? 'w-1/2' : 'w-full'" class="bg-[#0a0f1e] border border-blue-500/20 rounded px-2 py-1 text-xs text-blue-200 outline-none focus:border-blue-400 truncate" />
                             </div>
-                          </div>
+                          </template>
                         </div>
                       </div>
                     </td>
                     <td class="py-2 px-3">
                       <div class="flex items-center gap-1.5">
-                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ getEquiposFiltradosPorLinea(eqEx).length }} disp.) --</option>
+                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
+                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ eqEx.subcategoria || eqEx.tipo || 'Todos' }}) --</option>
                           <option v-for="eq in getEquiposFiltradosPorLinea(eqEx)" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                             {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                           </option>
                         </select>
-                        <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
-                        <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
-                        <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                        <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                        <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                        <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                       </div>
                     </td>
                     <td class="py-2 px-3 font-sans">
                       <div class="flex items-center gap-1.5">
-                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-blue-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-400 truncate">
+                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
-                          <optgroup v-if="getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                          <optgroup v-if="getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
+                            <option v-for="u in getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
                               {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
                             </option>
                           </optgroup>
                           <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                            <option v-for="u in getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
                               {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
                             </option>
                           </optgroup>
                         </select>
                         <template v-if="eqEx.chofer_id">
-                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟢 VIG</button>
-                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🟡 VNC</button>
-                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.rol||'').toLowerCase().includes('escolta') || (eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer">🔴 VNC</button>
+                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                         </template>
                       </div>
                     </td>
                     <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-blue-500/20 rounded px-2 py-1">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-2 py-1">
                         <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                         <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
                         <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="eqEx.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
+                      <span v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
                       <button v-else @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -4919,9 +4916,11 @@ const sincronizarTrasladosComerciales = () => {
         _uid: `ex-base-flete-${Date.now()}`,
         tipo: 'TRASLADOS',
         subcategoria: 'CAMA BAJA',
+        descripcion: 'Servicio de Traslado / Flete',
+        cantidad: 1,
+        unidad: 'Viaje',
         id_equipo: '',
         chofer_id: '',
-        rol: 'Flete / Cama Baja Mandante',
         is_linea_base: true,
         fecha_plan_ini: defaultIni,
         fecha_plan_fin: defaultFin
@@ -4932,33 +4931,37 @@ const sincronizarTrasladosComerciales = () => {
   // 2. Mapear cada línea comercial de traslado
   trasladosComerciales.forEach((tc, idx) => {
     const subcat = tc.subcategoria || 'CAMA BAJA'
-    const rol = tc.descripcion || tc.subcategoria || `Traslado #${idx + 1}`
+    const desc = tc.descripcion || tc.subcategoria || `Servicio de Traslado #${idx + 1}`
     
     // Verificar si ya existe en equipos_extra
     const match = currentExtras.find(ex => 
       (tc._uid && ex._uid === tc._uid) || 
       (tc.id_item && ex.id_item === tc.id_item) ||
-      (ex.is_linea_base && (ex.rol === rol || ex.subcategoria === subcat))
+      (ex.is_linea_base && (ex.descripcion === desc || ex.subcategoria === subcat))
     )
 
     if (!match) {
       currentExtras.unshift({
         _uid: tc._uid || `ex-base-${Date.now()}-${idx}`,
         id_item: tc.id_item || null,
-        tipo: 'TRASLADOS',
+        tipo: tc.tipo || 'TRASLADOS',
         subcategoria: subcat,
+        descripcion: desc,
+        cantidad: tc.cantidad || 1,
+        unidad: tc.unidad || 'Viaje',
         id_equipo: tc.equipo_asignado_id || '',
         chofer_id: tc.operador_asignado_id || '',
-        rol: rol,
         is_linea_base: true,
         fecha_plan_ini: defaultIni,
         fecha_plan_fin: defaultFin
       })
     } else {
       match.is_linea_base = true
-      if (!match.tipo) match.tipo = 'TRASLADOS'
+      if (!match.tipo) match.tipo = tc.tipo || 'TRASLADOS'
       if (!match.subcategoria) match.subcategoria = subcat
-      if (!match.rol) match.rol = rol
+      if (!match.descripcion) match.descripcion = desc
+      if (!match.cantidad) match.cantidad = tc.cantidad || 1
+      if (!match.unidad) match.unidad = tc.unidad || 'Viaje'
       if (tc.equipo_asignado_id && !match.id_equipo) match.id_equipo = tc.equipo_asignado_id
       if (tc.operador_asignado_id && !match.chofer_id) match.chofer_id = tc.operador_asignado_id
     }
@@ -4973,15 +4976,14 @@ const agregarEquipoTraslado = () => {
     : [];
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || '';
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || '';
-  const num = currentExtras.length + 1;
   
   currentExtras.push({
     _uid: `ex-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
     tipo: 'TRASLADOS',
-    subcategoria: 'CAMA BAJA',
+    subcategoria: '',
     id_equipo: '',
     chofer_id: '',
-    rol: `Cama Baja #${num}`,
+    is_linea_base: false,
     fecha_plan_ini: defaultIni,
     fecha_plan_fin: defaultFin
   });
