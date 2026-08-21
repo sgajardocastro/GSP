@@ -519,7 +519,7 @@
                     <th class="py-2.5 px-2 w-[4%] text-center">Acc</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5 font-mono">
+                <tbody class="font-mono">
                   
                   <!-- SECCIÓN 1: FLOTA PRINCIPAL & OPERADORES -->
                   <tr class="bg-amber-500/10 border-t border-b border-amber-500/20">
@@ -617,12 +617,12 @@
                   </tr>
 
                   <!-- FILAS TRASLADOS -->
-                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="border-b border-white/5 font-sans">
+                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="font-sans">
                     <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
                     </td>
                   </tr>
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+idx" class="hover:bg-white/[0.02] font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
                       <div class="flex items-center gap-2">
                         <span class="text-blue-400/70 text-xs font-mono select-none">↳</span>
@@ -694,12 +694,12 @@
                   </tr>
 
                   <!-- FILAS ESPECIALISTAS -->
-                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="border-b border-white/5 font-sans">
+                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="font-sans">
                     <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
                     </td>
                   </tr>
-                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] border-b border-white/5 font-mono">
+                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] font-mono">
                     <td class="py-2 pr-3 pl-7 font-sans">
                       <div class="flex items-start gap-2">
                         <span class="text-emerald-400/70 text-xs font-mono select-none mt-1">↳</span>
@@ -5594,8 +5594,8 @@ const fetchVisitasTerreno = async () => {
     const { data } = await apiAxios.get('/survey/visitas-terreno')
     visitasTerreno.value = data
 
-    // Sincronizar automáticamente aparejos de la última visita del proyecto
-    if (visitasDelProyecto.value.length > 0) {
+    // Sincronizar automáticamente aparejos de la última visita del proyecto sólo si no han sido guardados
+    if (visitasDelProyecto.value.length > 0 && !operacionesAssignment.value.aparejos_bloqueados_survey) {
       const parsed = parseAparejosDesdeSurvey(visitasDelProyecto.value[0])
       if (parsed.some(p => p.requerido)) {
         operacionesAssignment.value.implementos_survey = parsed
@@ -6285,10 +6285,11 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
           if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
           if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
-          if (ejecucion.aparejos_asignados_json) {
-            operacionesAssignment.value.aparejos = ejecucion.aparejos_asignados_json
-            if (Array.isArray(ejecucion.aparejos_asignados_json) && ejecucion.aparejos_asignados_json.length > 0) {
-              operacionesAssignment.value.implementos_survey = ejecucion.aparejos_asignados_json
+          const apData = ejecucion.implementos_survey || ejecucion.aparejos_asignados_json || ejecucion.aparejos
+          if (apData) {
+            operacionesAssignment.value.aparejos = apData
+            if (Array.isArray(apData) && apData.length > 0) {
+              operacionesAssignment.value.implementos_survey = JSON.parse(JSON.stringify(apData))
               operacionesAssignment.value.aparejos_bloqueados_survey = true
             }
           }
@@ -6594,6 +6595,10 @@ const buildPayload = () => {
         fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
         hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
         observaciones: operacionesAssignment.value.observaciones_operaciones,
+        aparejos_asignados_json: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos || [],
+        implementos_survey: operacionesAssignment.value.implementos_survey || [],
+        aparejos: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos || [],
+        aparejos_bloqueados_survey: true,
         cumplimiento_acreditaciones: operacionesAssignment.value.cumplimiento_acreditaciones,
         porcentaje_acreditacion: porcentajeAcreditacionReal.value
       }
