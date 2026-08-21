@@ -182,16 +182,49 @@ Al hacer clic sobre cualquier insignia semafórica (🟢 `VIG`, 🟡 `VNC`, 🔴
 
 ---
 
-## 4. Origen de Datos de Categorías y Subcategorías
+## 4. Origen de Datos de Categorías, Subcategorías y Reglas de Derivación Semántica
 
-Para garantizar fidelidad absoluta con la Base de Datos PostgreSQL y evitar datos inventados:
+Para garantizar fidelidad absoluta con la Base de Datos PostgreSQL y evitar inconsistencias entre conceptos comerciales y activos físicos:
 
-1. **Carga Dinámica Canónica:** El frontend consume `/api/tequ-equipos/categorias` para poblar `dbCategories`.
-2. **Categorías Complementarias Operativas:** Solo se suplementan aquellas categorías operacionales que no residen en la tabla de categorías de equipos pero son indispensables en el flujo OT:
-   - `TRASLADOS` (Subcategorías: `CAMA BAJA`, `RAMPLA`, `TRACTO CAMIÓN`, `ESCOLTA / GUÍA`).
-   - `PERSONAL CERTIFICADO` (Subcategorías: `RIGGER`, `OPERADOR`, `PREVENCIONISTA`, `OTROS`).
-   - `OTROS` (Subcategorías: `OTROS`).
-3. **Inyección Limpia:** Se elimina cualquier array inicial hardcodeado en el frontend; `dbCategories` inicia como `ref([])` y se sincroniza estrictamente desde la API.
+### 4.1. Carga Dinámica Canónica desde PostgreSQL
+El frontend consume el endpoint oficial `/api/tequ-equipos/categorias` para poblar reactivamente `dbCategories`. No existen arrays estáticos ni listas hardcodeadas en la inicialización (`dbCategories = ref([])`).
+
+### 4.2. Categorías Sintéticas / Operacionales Inyectadas en Frontend
+Existen 3 conceptos operacionales indispensables para estructurar la cotización y la faena que no representan una máquina individual en `tequ_categoria`:
+1. **`TRASLADOS` (Logística de Transporte):**
+   - Subcategorías: `CAMA BAJA`, `RAMPLA`, `TRACTO CAMIÓN`, `ESCOLTA / GUÍA`.
+   - Vinculado al flag de preventa `incluye_flete = SÍ/NO` ($500.000, unidad `Fijo`).
+2. **`PERSONAL CERTIFICADO` (Especialistas en Tierra):**
+   - Subcategorías: `RIGGER`, `OPERADOR`, `PREVENCIONISTA`, `OTROS`.
+   - Vinculado bidireccionalmente a los flags `requiere_rigger` y `requiere_prevencionista`.
+3. **`OTROS` (Conceptos Varios):**
+   - Subcategoría: `OTROS`.
+
+---
+
+### 4.3. Regla de Derivación Semántica por Subcategoría (`TRASLADOS`)
+En la base de datos física (`tequ_equipo`), las máquinas de apoyo logístico residen en sus categorías mecánicas reales:
+* Camas Bajas, Ramplas y Tracto Camiones residen bajo la categoría **`CAMIONES`**.
+* Camionetas Escolta/Guía residen bajo la categoría **`VEHICULOS LIVIANOS`**.
+
+Por ende, cuando una línea comercial o recurso de traslado posee categoría **`TRASLADOS`**, la función de filtrado de flota `getEquiposFiltradosPorLinea(line)` **omite el filtro estricto por nombre de categoría** y aplica una **resolución semántica directa por subcategoría sobre todo el parque de flota**:
+
+| Subcategoría Seleccionada | Criterio de Búsqueda en Flota (`tequ_equipo`) | Tipos de Equipos Resueltos |
+| :--- | :--- | :--- |
+| **`CAMA BAJA`** | Subcategoría / Modelo / Nombre contiene `CAMA BAJA`, `CAMABAJA`, `BATEA` | Camas bajas cuello de cisne y remolques pesados |
+| **`RAMPLA`** | Subcategoría / Modelo / Nombre contiene `RAMPLA`, `SEMIRREMOLQUE`, `PLANA` | Ramplas abiertas y semirremolques |
+| **`TRACTO CAMIÓN`** | Subcategoría / Modelo / Nombre contiene `TRACTO`, `TRACTOCAMION`, `CAMION` | Cabezales y tractos de tiro |
+| **`ESCOLTA / GUÍA`** | Subcategoría / Categoría contiene `VEHICULOS LIVIANOS`, `CAMIONETA`, `ESCOLTA` | Camionetas 4x4 de escolta (Maxus, Poer, etc.) |
+| *(Sin subcategoría)* | Categoría en `['CAMIONES', 'VEHICULOS LIVIANOS', 'TRANSPORTE']` | Todo el parque de transporte y apoyo logístico |
+
+---
+
+### 4.4. Regla de Segregación para `PERSONAL CERTIFICADO`
+Cuando una línea pertenece a `PERSONAL CERTIFICADO` (detectada por `isPersonalLine(line)`):
+1. Se segrega automáticamente hacia la **Sección 3 (Especialistas & Personal Técnico en Terreno)**.
+2. La columna de equipo físico se **deshabilita** con la etiqueta `— (Personal en Tierra) —`.
+3. El selector de personal muestra sugerencias agrupadas según el cargo (`Rigger`, `Prevencionista`, `Operador`).
+4. Queda excluida de los selectores de vehículos de la Sección 1 y Sección 2.
 
 ---
 

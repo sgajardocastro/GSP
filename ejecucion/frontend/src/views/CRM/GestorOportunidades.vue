@@ -3487,7 +3487,50 @@ const getEquiposFiltradosPorLinea = (line) => {
 
   if (!catTarget && !subTarget) return master
 
-  // 1. Filtrar por categoría
+  // 1. Regla Semántica Especial para TRASLADOS (Spec 16 §4.3)
+  if (catTarget.includes('TRASLADO') || catTarget.includes('FLETE')) {
+    let match = []
+    if (subTarget.includes('CAMA BAJA') || subTarget.includes('CAMABAJA')) {
+      match = master.filter(eq => {
+        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('CAMA BAJA') || text.includes('CAMABAJA') || text.includes('BATEA')
+      })
+    } else if (subTarget.includes('RAMPLA')) {
+      match = master.filter(eq => {
+        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('RAMPLA') || text.includes('SEMIRREMOLQUE') || text.includes('PLANA')
+      })
+    } else if (subTarget.includes('TRACTO')) {
+      match = master.filter(eq => {
+        const text = `${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('TRACTO') || text.includes('TRACTOCAMION') || text.includes('CAMION')
+      })
+    } else if (subTarget.includes('ESCOLTA') || subTarget.includes('GUIA')) {
+      match = master.filter(eq => {
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('LIVIANO') || text.includes('CAMIONETA') || text.includes('ESCOLTA') || text.includes('MAXUS') || text.includes('POER')
+      })
+    }
+
+    if (match.length === 0) {
+      // Fallback para Traslados: todos los camiones y vehículos livianos de apoyo logístico
+      match = master.filter(eq => {
+        const cat = `${eq.nombre_categoria || ''} ${eq.tipo || ''} ${eq.nombre_equipo || ''}`.toUpperCase()
+        return cat.includes('CAMION') || cat.includes('LIVIANO') || cat.includes('TRANSPORTE') || cat.includes('ESCOLTA')
+      })
+    }
+
+    let resTraslado = match.length > 0 ? match : master
+    if (line.equipo_asignado_id) {
+      const currentAssigned = master.find(eq => eq.id_equipo === line.equipo_asignado_id || eq.patente === line.equipo_asignado_id)
+      if (currentAssigned && !resTraslado.some(eq => eq.id_equipo === currentAssigned.id_equipo)) {
+        resTraslado = [currentAssigned, ...resTraslado]
+      }
+    }
+    return resTraslado
+  }
+
+  // 2. Filtrar por categoría estándar de BD
   let porCat = master
   if (catTarget) {
     porCat = master.filter(eq => {
@@ -3497,7 +3540,7 @@ const getEquiposFiltradosPorLinea = (line) => {
     })
   }
 
-  // 2. Si se especificó subcategoría, filtrar por subcategoría dentro del grupo de categoría
+  // 3. Si se especificó subcategoría, filtrar por subcategoría dentro del grupo de categoría
   let resultado = porCat
   if (subTarget) {
     const porSub = porCat.filter(eq => {
@@ -3511,12 +3554,12 @@ const getEquiposFiltradosPorLinea = (line) => {
     }
   }
 
-  // 3. Fallback solo si no había categoría seleccionada
+  // 4. Fallback solo si no había categoría seleccionada
   if (resultado.length === 0 && !catTarget) {
     resultado = master
   }
 
-  // 4. Asegurar que el equipo actualmente asignado siempre esté visible en la lista
+  // 5. Asegurar que el equipo actualmente asignado siempre esté visible en la lista
   if (line.equipo_asignado_id) {
     const currentAssigned = master.find(eq => eq.id_equipo === line.equipo_asignado_id || eq.patente === line.equipo_asignado_id)
     if (currentAssigned && !resultado.some(eq => eq.id_equipo === currentAssigned.id_equipo)) {
