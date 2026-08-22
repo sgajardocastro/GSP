@@ -4778,6 +4778,11 @@ function resolveImgSrc(x) {
       }
       return s;
     }
+    if (/^\/?(api\/)?v1\/storage/i.test(s)) {
+      const cleanPath = s.startsWith('/') ? s : '/' + s;
+      const base = (API_BASE_URL || '').replace(/\/api$/, '');
+      return base + (cleanPath.startsWith('/api/') ? cleanPath : '/api' + cleanPath);
+    }
     return BASE_URL + s; // filename -> URL absoluta gsp
   }
 
@@ -4786,25 +4791,32 @@ function resolveImgSrc(x) {
     if (x.base64 && typeof x.base64 === 'string' && x.base64.startsWith('data:image/')) {
       return x.base64;
     }
+    if (x.url) {
+      let s = String(x.url).trim();
+      if (s) {
+        if (s.startsWith('data:image/')) return s;
+        if (s.includes('/archivo/transmac/')) {
+          s = s.replace('/archivo/transmac/', '/archivo/gsp/');
+        }
+        if (/^https?:\/\//i.test(s)) return s;
+        const base = API_BASE_URL || '';
+        return base + (s.startsWith('/') ? '' : '/') + s;
+      }
+    }
     if (x.id_doc) {
       return `${API_BASE_URL}/v1/storage/view/${x.id_doc}`;
     }
-    if (x.name_doc_interno || x.nombre) {
-      const name = String(x.name_doc_interno || x.nombre).trim();
+    if (x.name_doc_interno) {
+      const name = String(x.name_doc_interno).trim();
       if (name.includes('.')) {
         return `${API_BASE_URL}/archivo/gsp/${name}`;
       }
     }
-    if (x.url) {
-      let s = String(x.url).trim();
-      if (!s) return '';
-      if (s.startsWith('data:image/')) return s;
-      if (s.includes('/archivo/transmac/')) {
-        s = s.replace('/archivo/transmac/', '/archivo/gsp/');
+    if (x.nombre) {
+      const name = String(x.nombre).trim();
+      if (name.includes('.')) {
+        return `${API_BASE_URL}/archivo/gsp/${name}`;
       }
-      if (/^https?:\/\//i.test(s)) return s;
-      // si viene relativo tipo "/archivo/gsp/xxx.jpg"
-      return API_BASE_URL + (s.startsWith('/') ? '' : '/') + s;
     }
     if (x.base64 && typeof x.base64 === 'string') {
       return x.base64;

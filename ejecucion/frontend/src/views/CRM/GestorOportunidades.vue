@@ -1364,11 +1364,11 @@
                     <div class="flex items-center gap-2 flex-shrink-0">
                       <!-- Botón Ver PDF si está ejecutada -->
                       <button 
-                        v-if="getInspeccionEquipo(eqId)?.patio_checklist_completado"
-                        @click.stop="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)"
+                        v-if="getInspeccionEquipo(eqId)?.patio_checklist_completado || getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK'"
+                        @click.stop="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)"
                         type="button"
                         class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-1 rounded font-bold transition-all flex items-center gap-1 cursor-pointer"
-                        title="Ver Reporte PDF / Web de la Inspección"
+                        title="Ver Documento PDF Oficial de la Inspección"
                       >
                         📄 Ver PDF
                       </button>
@@ -1431,7 +1431,7 @@
                       </div>
                       <div class="flex gap-2">
                         <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
-                          👁️ Ver Inspección
+                          👁️ Ver en Pantalla
                         </button>
                         <button @click="eliminarInspeccionEquipo(eqId)" class="py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Eliminar survey de la BD y reasignar">
                           🗑️ Reasignar
@@ -1444,9 +1444,14 @@
                         <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme (OK)</span>
                         <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
                       </div>
-                      <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1">
-                        👁️ Ver Inspección
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
+                          📄 Ver PDF
+                        </button>
+                        <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Vista HTML en Pantalla">
+                          👁️ Ver en Pantalla
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5586,6 +5591,52 @@ function abrirVisorWeb(idSurvey) {
   } catch (e) {
     console.error('Error al resolver ruta versurveyprint:', e);
     window.open(`${window.location.origin}/versurveyprint?idInspeccion=${idSurvey}&modal=true`, '_blank');
+  }
+}
+
+const abriendoPDF = ref(false)
+const abrirPDFInspeccion = async (idSurvey, eqId) => {
+  if (!idSurvey) return
+  abriendoPDF.value = true
+  try {
+    const ins = eqId ? getInspeccionEquipo(eqId) : null
+    let idDoc = ins?.id_doc_pdf || ins?.id_doc
+
+    if (!idDoc) {
+      // 1. Consultar detalle del survey para obtener id_flow
+      const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
+        params: { id_survey: idSurvey }
+      })
+      const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
+      const srv = srvList[0]
+
+      if (srv?.id_flow) {
+        // 2. Consultar pasos del flujo de aprobación para obtener id_doc_out / id_doc_in
+        const { data: flowSteps } = await apiAxios.get('/servicio/leanglobal/flujosAprobacionSteps', {
+          params: { id_flow: srv.id_flow }
+        })
+        if (Array.isArray(flowSteps) && flowSteps.length > 0) {
+          const stepWithOut = [...flowSteps].reverse().find(s => s.id_doc_out)
+          const stepWithIn = [...flowSteps].reverse().find(s => s.id_doc_in)
+          idDoc = stepWithOut?.id_doc_out || stepWithIn?.id_doc_in
+        }
+      }
+    }
+
+    if (idDoc) {
+      if (ins) ins.id_doc_pdf = idDoc
+      const base = (apiAxios.defaults.baseURL || 'https://servidor.leanglobal.cl/lg-gsp/api').replace(/\/$/, '')
+      const pdfUrl = `${base}/v1/storage/view/${idDoc}`
+      window.open(pdfUrl, '_blank')
+    } else {
+      // Fallback a visor web si aún no se ha generado el PDF en storage
+      abrirVisorWeb(idSurvey)
+    }
+  } catch (err) {
+    console.warn('Error al abrir PDF de inspección:', err)
+    abrirVisorWeb(idSurvey)
+  } finally {
+    abriendoPDF.value = false
   }
 }
 
