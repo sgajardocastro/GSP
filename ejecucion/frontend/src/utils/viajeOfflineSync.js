@@ -122,6 +122,44 @@ export async function marcarMutacionSincronizada(id) {
 }
 
 /**
+ * Sync Engine: Procesa y sube las mutaciones pendientes al backend PostgreSQL
+ */
+export async function sincronizarMutacionesConBackend(token, apiInstance) {
+  if (!navigator.onLine || !token || token.includes('demo')) return 0;
+  
+  const pendientes = await obtenerMutacionesPendientes(token);
+  if (pendientes.length === 0) return 0;
+
+  let sincronizadas = 0;
+  for (const m of pendientes) {
+    try {
+      if (m.tipo === 'INICIO_VIAJE') {
+        await apiInstance.post(`/operaciones/viaje/${token}/salida`, m.payload);
+        await marcarMutacionSincronizada(m.id);
+        sincronizadas++;
+      } else if (m.tipo === 'CARGA_COMBUSTIBLE') {
+        await apiInstance.post(`/operaciones/viaje/${token}/combustible`, m.payload);
+        await marcarMutacionSincronizada(m.id);
+        sincronizadas++;
+      } else if (m.tipo === 'FIN_VIAJE') {
+        await apiInstance.post(`/operaciones/viaje/${token}/llegada`, m.payload);
+        await marcarMutacionSincronizada(m.id);
+        sincronizadas++;
+      } else if (m.tipo === 'PING_GPS') {
+        await apiInstance.post(`/operaciones/viaje/${token}/ping`, m.payload);
+        await marcarMutacionSincronizada(m.id);
+        sincronizadas++;
+      }
+    } catch (err) {
+      console.warn(`[SyncEngine] No se pudo enviar mutación ${m.id}:`, err?.message || err);
+      // Mantener en cola para siguiente reintento
+    }
+  }
+
+  return sincronizadas;
+}
+
+/**
  * Comprime una imagen en el cliente antes de guardarla localmente
  */
 export function comprimirFoto(file, maxDimension = 1280, quality = 0.75) {

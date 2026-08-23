@@ -485,12 +485,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { apiAxios } from '@/services/api'
 import {
   guardarSesionLocal,
   obtenerSesionLocal,
   encolarMutacion,
   obtenerMutacionesPendientes,
   marcarMutacionSincronizada,
+  sincronizarMutacionesConBackend,
   comprimirFoto,
   hashPin
 } from '@/utils/viajeOfflineSync'
@@ -502,25 +504,28 @@ const tokenViaje = ref(route.params.token || 'vj-demo-1234')
 const isOnline = ref(navigator.onLine)
 const mutacionesPendientesCount = ref(0)
 const guardando = ref(false)
+const cargandoViaje = ref(false)
 
 // Datos del Viaje
 const viaje = ref({
   token_viaje: tokenViaje.value,
-  id_proyecto: 69,
-  codigo_proyecto: 'GSP-2608-4851-035',
-  patente: 'HW-8842',
-  modelo: 'Liebherr LTM 1220 (220 Ton)',
+  id_log_desplazamiento: null,
+  id_proyecto: null,
+  codigo_proyecto: 'GSP-OT',
+  patente: 'S/P',
+  modelo: 'Maquinaria de Izaje GSP',
   tipo_equipo: 'GRUAS TELESCOPICAS',
-  obra_nombre: 'Montaje Parada de Planta Laja',
-  obra_direccion: 'Ruta 5 Sur Km 450, Laja',
-  chofer_nombre: 'Carlos Mendoza',
+  obra_nombre: 'Obra Mandante',
+  obra_direccion: 'Dirección de Faena',
+  chofer_nombre: 'Conductor Asignado',
   estado_viaje: 'ASIGNADO', // ASIGNADO | EN_RUTA | ARRIBADO_FAENA
   timestamp_inicio: null,
   timestamp_llegada: null,
   odometro_salida: null,
   horometro_salida: null,
   odometro_llegada: null,
-  horometro_llegada: null
+  horometro_llegada: null,
+  cargas_combustible: []
 })
 
 // Formularios
@@ -622,6 +627,7 @@ const onFotoLlegadaCapturada = async (e) => {
 }
 
 // -------------------------------------------------------------
+// -------------------------------------------------------------
 // ACCIÓN: INICIAR VIAJE (SALIDA DE PATIO)
 // -------------------------------------------------------------
 const ejecutarInicioViaje = async () => {
@@ -629,11 +635,10 @@ const ejecutarInicioViaje = async () => {
   try {
     const pinHashed = await hashPin(formSalida.value.pin)
     const payload = {
-      odometro_salida: formSalida.value.odometro,
-      horometro_salida: formSalida.value.horometro,
+      km_inicial: formSalida.value.odometro,
+      horometro_inicial: formSalida.value.horometro,
       foto_salida: formSalida.value.foto,
-      pin_hash: pinHashed,
-      timestamp_inicio: new Date().toISOString()
+      pin_hash: pinHashed
     }
 
     // 1. Encolar en Outbox local (Offline-First)
@@ -641,13 +646,19 @@ const ejecutarInicioViaje = async () => {
 
     // 2. Actualizar estado local
     viaje.value.estado_viaje = 'EN_RUTA'
-    viaje.value.timestamp_inicio = payload.timestamp_inicio
-    viaje.value.odometro_salida = payload.odometro_salida
-    viaje.value.horometro_salida = payload.horometro_salida
+    viaje.value.timestamp_inicio = new Date().toISOString()
+    viaje.value.odometro_salida = payload.km_inicial
+    viaje.value.horometro_salida = payload.horometro_inicial
 
     await guardarSesionLocal(tokenViaje.value, viaje.value)
     actualizarContadorPendientes()
     iniciarTimerRuta()
+
+    // 3. Sincronizar inmediatamente si hay conexión
+    if (isOnline.value) {
+      await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+      actualizarContadorPendientes()
+    }
   } catch (err) {
     console.error('Error iniciando viaje:', err)
   } finally {
@@ -686,15 +697,26 @@ const confirmarRendicionCombustible = async () => {
     litros: formCombustible.value.litros,
     monto: formCombustible.value.monto,
     foto_voucher: formCombustible.value.foto_voucher,
-    id_autorizacion: modalCombustible.value.id_autorizacion || '#COPEC-AUTO',
-    timestamp: new Date().toISOString()
+    foto_tablero: formCombustible.value.foto_tablero,
+    id_autorizacion_copec: modalCombustible.value.id_autorizacion || '#COPEC-AUTO',
+    odometro: formCombustible.value.odometro || viaje.value.odometro_salida,
+    horometro: formCombustible.value.horometro || viaje.value.horometro_salida
   }
 
   await encolarMutacion(tokenViaje.value, 'CARGA_COMBUSTIBLE', payload)
   viaje.value.combustible_cargado = payload
+  if (!viaje.value.cargas_combustible) viaje.value.cargas_combustible = []
+  viaje.value.cargas_combustible.push(payload)
+
   await guardarSesionLocal(tokenViaje.value, viaje.value)
   actualizarContadorPendientes()
   modalCombustible.value.visible = false
+
+  if (isOnline.value) {
+    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+    actualizarContadorPendientes()
+  }
+
   alert('⛽ Carga de combustible registrada exitosamente en el Log de Viaje.')
 }
 
@@ -708,26 +730,30 @@ const abrirModalLlegada = () => {
 const ejecutarLlegadaFaena = async () => {
   const pinHashed = await hashPin(formLlegada.value.pin)
   const payload = {
-    odometro_llegada: formLlegada.value.odometro,
-    horometro_llegada: formLlegada.value.horometro,
+    km_final: formLlegada.value.odometro,
+    horometro_final: formLlegada.value.horometro,
     foto_llegada: formLlegada.value.foto,
     pin_hash: pinHashed,
-    obs_termino: formLlegada.value.obs_termino || 'Viaje concluido conforme en faena.',
-    timestamp_llegada: new Date().toISOString()
+    obs_termino: formLlegada.value.obs_termino || 'Viaje concluido conforme en faena.'
   }
 
   await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
 
   viaje.value.estado_viaje = 'ARRIBADO_FAENA'
-  viaje.value.timestamp_llegada = payload.timestamp_llegada
-  viaje.value.odometro_llegada = payload.odometro_llegada
-  viaje.value.horometro_llegada = payload.horometro_llegada
+  viaje.value.timestamp_llegada = new Date().toISOString()
+  viaje.value.odometro_llegada = payload.km_final
+  viaje.value.horometro_llegada = payload.horometro_final
   viaje.value.obs_termino = payload.obs_termino
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
   actualizarContadorPendientes()
   modalLlegada.value.visible = false
   if (timerInterval) clearInterval(timerInterval)
+
+  if (isOnline.value) {
+    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+    actualizarContadorPendientes()
+  }
 }
 
 // -------------------------------------------------------------
@@ -785,8 +811,12 @@ const iniciarTimerRuta = () => {
   }, 1000)
 }
 
-const onOnlineStatusChange = () => {
+const onOnlineStatusChange = async () => {
   isOnline.value = navigator.onLine
+  if (isOnline.value) {
+    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+    await actualizarContadorPendientes()
+  }
 }
 
 // -------------------------------------------------------------
@@ -801,14 +831,15 @@ const cambiarFaseDemo = (fase) => {
     viaje.value.horometro_llegada = 3243.7
     viaje.value.timestamp_inicio = new Date(Date.now() - 2.25 * 3600 * 1000).toISOString()
     viaje.value.timestamp_llegada = new Date().toISOString()
-    viaje.value.total_pings_gps = 18
     viaje.value.obs_termino = 'Viaje completado sin novedades en carretera. Equipo posicionado en portería de faena conforme.'
-    viaje.value.combustible_cargado = {
-      tipo_estanque: '⛽ Estanque Principal (Chasis / Tracción)',
-      litros: 250.0,
-      monto: 285000,
-      id_autorizacion: '#COPEC-8492'
-    }
+    viaje.value.cargas_combustible = [
+      {
+        tipo_estanque: '⛽ Estanque Principal (Chasis / Tracción)',
+        litros_combustible: 250.0,
+        monto_costo: 285000,
+        id_autorizacion_copec: '#COPEC-8492'
+      }
+    ]
   } else if (fase === 'EN_RUTA') {
     viaje.value.odometro_salida = 145820.5
     viaje.value.horometro_salida = 3240.2
@@ -821,18 +852,67 @@ onMounted(async () => {
   window.addEventListener('online', onOnlineStatusChange)
   window.addEventListener('offline', onOnlineStatusChange)
 
-  // Cargar sesión guardada si existe
-  const guardada = await obtenerSesionLocal(tokenViaje.value)
-  if (guardada) {
-    viaje.value = { ...viaje.value, ...guardada }
-    if (viaje.value.estado_viaje === 'EN_RUTA') {
-      iniciarTimerRuta()
+  // 1. Intentar cargar desde el backend si hay token real y red
+  if (tokenViaje.value && !tokenViaje.value.includes('demo')) {
+    cargandoViaje.value = true
+    try {
+      const { data: dbViaje } = await apiAxios.get(`/operaciones/viaje/${tokenViaje.value}`)
+      if (dbViaje) {
+        viaje.value = {
+          token_viaje: dbViaje.token_viaje,
+          id_log_desplazamiento: dbViaje.id_log_desplazamiento,
+          id_proyecto: dbViaje.id_proyecto,
+          codigo_proyecto: dbViaje.codi_proyecto || dbViaje.nombre_proyecto || 'GSP-OT',
+          patente: dbViaje.patente || 'S/P',
+          modelo: dbViaje.modelo || 'Maquinaria de Izaje',
+          tipo_equipo: dbViaje.tipo_equipo || 'GRUAS TELESCOPICAS',
+          obra_nombre: dbViaje.obra_nombre || 'Obra Mandante',
+          obra_direccion: dbViaje.obra_direccion || 'Faena Operacional GSP',
+          chofer_nombre: dbViaje.chofer_nombre || 'Conductor Asignado',
+          estado_viaje: dbViaje.estado_trayecto === 'LLEGADO' ? 'ARRIBADO_FAENA' : (dbViaje.estado_trayecto || 'ASIGNADO'),
+          timestamp_inicio: dbViaje.fecha_salida_patio,
+          timestamp_llegada: dbViaje.fecha_llegada_faena,
+          odometro_salida: dbViaje.km_inicial,
+          horometro_salida: dbViaje.horometro_inicial,
+          odometro_llegada: dbViaje.km_final,
+          horometro_llegada: dbViaje.horometro_final,
+          obs_termino: dbViaje.obs_termino,
+          cargas_combustible: dbViaje.cargas_combustible || []
+        }
+        await guardarSesionLocal(tokenViaje.value, viaje.value)
+        if (viaje.value.estado_viaje === 'EN_RUTA') {
+          iniciarTimerRuta()
+        }
+      }
+    } catch (err) {
+      console.warn('No se pudo cargar viaje desde backend, usando caché local:', err)
+      const guardada = await obtenerSesionLocal(tokenViaje.value)
+      if (guardada) {
+        viaje.value = { ...viaje.value, ...guardada }
+        if (viaje.value.estado_viaje === 'EN_RUTA') {
+          iniciarTimerRuta()
+        }
+      }
+    } finally {
+      cargandoViaje.value = false
     }
-  } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
-    // Activar por defecto el Log Maestro en modo demo
-    cambiarFaseDemo('ARRIBADO_FAENA')
+  } else {
+    // Modo demo
+    const guardada = await obtenerSesionLocal(tokenViaje.value)
+    if (guardada) {
+      viaje.value = { ...viaje.value, ...guardada }
+      if (viaje.value.estado_viaje === 'EN_RUTA') {
+        iniciarTimerRuta()
+      }
+    } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
+      cambiarFaseDemo('ARRIBADO_FAENA')
+    }
   }
 
+  // Sincronizar mutaciones en background
+  if (isOnline.value) {
+    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+  }
   await actualizarContadorPendientes()
 })
 

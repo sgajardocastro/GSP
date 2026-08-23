@@ -46,7 +46,8 @@ function routerApi(app) {
     app.use('/api/v1/storage', require('./storageRoutes.js'));
     app.use('/api/visitas', require('./visitaTerrenoRoutes.js'));
     app.use('/api/estado-pago', require('./estadoPagoRoutes.js'));
+    app.use('/api/viajes', require('./viajeRoutes.js'));
+    app.use('/api/operaciones/viaje', require('./viajeRoutes.js'));
 }
-
 
 module.exports = routerApi;
