@@ -116,7 +116,7 @@
                 </button>
                 <a
                   v-if="item.id_doc"
-                  :href="`${archivoBaseUrl}/archivo/transmac/${item.id_doc}`"
+                  :href="`${archivoBaseUrl}/v1/storage/view/${item.id_doc}`"
                   target="_blank"
                   rel="noopener"
                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-400 hover:bg-blue-500/10"

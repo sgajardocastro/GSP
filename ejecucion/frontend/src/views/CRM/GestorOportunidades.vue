@@ -1388,13 +1388,31 @@
                   <!-- Cuerpo Expandido (Formulario al abrir el Chevron) -->
                   <div v-show="isEquipoPatioExpanded(eqId)" class="p-3.5 space-y-3 bg-[#0a0f1e]/60 text-xs">
                     <div>
-                      <label class="block text-[10px] text-slate-400 font-semibold mb-1">Jefe de Patio Asignado *</label>
-                      <select v-model="getInspeccionEquipo(eqId).jefe_patio_id" :disabled="getInspeccionEquipo(eqId).patio_programado" class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed">
-                        <option value="">-- Seleccionar Jefe de Patio --</option>
-                        <option v-for="u in usuariosEnroladosFes" :key="u.id_user" :value="u.id_user">
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5">
+                          <span>👷</span> Operador Asignado a la Máquina *
+                        </label>
+                        <span v-if="getOperadorAsignadoAEquipo(eqId)" class="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">
+                          Desde Asignación OT
+                        </span>
+                        <span v-else class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 animate-pulse">
+                          Sin Operador en OT
+                        </span>
+                      </div>
+                      <select 
+                        :value="getInspeccionEquipo(eqId).operador_id || getInspeccionEquipo(eqId).jefe_patio_id || getOperadorAsignadoAEquipo(eqId)?.id_user || ''" 
+                        @change="onOperadorInspeccionCambiado(eqId, $event.target.value)" 
+                        :disabled="getInspeccionEquipo(eqId).patio_programado" 
+                        class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <option value="">-- Seleccionar Operador Asignado --</option>
+                        <option v-for="u in (usuariosEnroladosFes || usuarios || [])" :key="u.id_user" :value="u.id_user">
                           {{ u.nombre_user || u.name_frst }} ({{ u.email }})
                         </option>
                       </select>
+                      <p class="text-[9.5px] text-slate-400 mt-1 leading-tight">
+                        ℹ️ La inspección de patio es ejecutada por el operador asignado antes de salir a ruta. Al modificar el operador, se actualiza automáticamente la asignación de OT y el dossier de acreditación.
+                      </p>
                     </div>
 
                     <div>
@@ -1414,7 +1432,7 @@
                         @click="programarInspeccionPatioEquipo(eqId)" 
                         class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow cursor-pointer"
                       >
-                        🚀 Asignar Inspección
+                        🚀 Asignar Inspección al Operador
                       </button>
                     </div>
 
@@ -1427,7 +1445,7 @@
                           <span v-else class="font-bold text-amber-400 block">🟡 Inspección Asignada en Terreno</span>
                           <span class="text-[10px] text-slate-300 font-mono font-bold">Survey ID: #{{ getInspeccionEquipo(eqId).id_survey }}</span>
                         </div>
-                        <span class="text-[10px] text-slate-300">Asignado: {{ (usuariosEnroladosFes || []).find(u => u && u.id_user === getInspeccionEquipo(eqId)?.jefe_patio_id)?.nombre_user || 'Jefe Patio' }}</span>
+                        <span class="text-[10px] text-slate-300">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
                       </div>
                       <div class="flex gap-2">
                         <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
@@ -1443,6 +1461,7 @@
                       <div>
                         <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme (OK)</span>
                         <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
+                        <span class="text-[10px] text-emerald-400/80 block">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
                       </div>
                       <div class="flex items-center gap-2">
                         <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
@@ -5603,22 +5622,63 @@ const abrirPDFInspeccion = async (idSurvey, eqId) => {
     let idDoc = ins?.id_doc_pdf || ins?.id_doc
 
     if (!idDoc) {
-      // 1. Consultar detalle del survey para obtener id_flow
-      const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
-        params: { id_survey: idSurvey }
-      })
-      const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
-      const srv = srvList[0]
-
-      if (srv?.id_flow) {
-        // 2. Consultar pasos del flujo de aprobación para obtener id_doc_out / id_doc_in
-        const { data: flowSteps } = await apiAxios.get('/servicio/leanglobal/flujosAprobacionSteps', {
-          params: { id_flow: srv.id_flow }
+      // 1. Consultar procesosSurveyV3 para obtener id_flow e id_doc
+      let flowId = null
+      try {
+        const { data: v3Res } = await apiAxios.get('/servicio/leanglobal/procesosSurveyV3', {
+          params: { id_survey: idSurvey }
         })
-        if (Array.isArray(flowSteps) && flowSteps.length > 0) {
-          const stepWithOut = [...flowSteps].reverse().find(s => s.id_doc_out)
-          const stepWithIn = [...flowSteps].reverse().find(s => s.id_doc_in)
-          idDoc = stepWithOut?.id_doc_out || stepWithIn?.id_doc_in
+        const v3List = Array.isArray(v3Res?.datos) ? v3Res.datos : (Array.isArray(v3Res) ? v3Res : [])
+        const v3Item = v3List.find(d => Number(d.id_survey) === Number(idSurvey))
+        if (v3Item) {
+          flowId = v3Item.id_flow
+          if (v3Item.id_doc && typeof v3Item.id_doc === 'number') {
+            idDoc = v3Item.id_doc
+          }
+        }
+      } catch (eV3) {
+        console.warn('Error consultando procesosSurveyV3:', eV3)
+      }
+
+      // 1.2 Fallback a procesosSurvey si no obtuvimos flowId
+      if (!flowId) {
+        try {
+          const { data: srvData } = await apiAxios.get('/servicio/leanglobal/procesosSurvey', {
+            params: { id_survey: idSurvey }
+          })
+          const srvList = Array.isArray(srvData) ? srvData : (srvData?.data || [srvData])
+          flowId = srvList[0]?.id_flow
+        } catch (eSrv) {
+          console.warn('Error consultando procesosSurvey:', eSrv)
+        }
+      }
+
+      // 1.3 Fallback a procesosSurveyDetail
+      if (!flowId) {
+        try {
+          const { data: dtData } = await apiAxios.get('/servicio/leanglobal/procesosSurveyDetail', {
+            params: { id_survey: idSurvey }
+          })
+          const dtList = Array.isArray(dtData) ? dtData : (dtData?.data || [dtData])
+          flowId = dtList[0]?.id_flow
+        } catch (eDt) {
+          console.warn('Error consultando procesosSurveyDetail:', eDt)
+        }
+      }
+
+      // 2. Si tenemos flowId, consultar flujosAprobacionSteps para obtener el PDF final firmado (id_doc_out / id_doc_in)
+      if (flowId) {
+        try {
+          const { data: flowSteps } = await apiAxios.get('/servicio/leanglobal/flujosAprobacionSteps', {
+            params: { id_flow: flowId }
+          })
+          if (Array.isArray(flowSteps) && flowSteps.length > 0) {
+            const stepWithOut = [...flowSteps].reverse().find(s => s.id_doc_out)
+            const stepWithIn = [...flowSteps].reverse().find(s => s.id_doc_in)
+            idDoc = stepWithOut?.id_doc_out || stepWithIn?.id_doc_in || idDoc
+          }
+        } catch (eSteps) {
+          console.warn('Error consultando flujosAprobacionSteps:', eSteps)
         }
       }
     }
@@ -5629,7 +5689,7 @@ const abrirPDFInspeccion = async (idSurvey, eqId) => {
       const pdfUrl = `${base}/v1/storage/view/${idDoc}`
       window.open(pdfUrl, '_blank')
     } else {
-      // Fallback a visor web si aún no se ha generado el PDF en storage
+      // Fallback a visor web SOLO si aún no se ha generado el PDF en storage
       abrirVisorWeb(idSurvey)
     }
   } catch (err) {
@@ -7190,6 +7250,55 @@ const equiposAsignadosLista = computed(() => {
   return list
 })
 
+const getOperadorAsignadoAEquipo = (eqId) => {
+  if (!eqId) return null
+  const trip = tripulacionAsignada.value || []
+  const eqObj = getEquipoObj(eqId)
+  const found = trip.find(t => 
+    t.equipo_asignado_id && (
+      String(t.equipo_asignado_id) === String(eqId) || 
+      (eqObj?.patente && String(t.equipo_asignado_id) === String(eqObj.patente))
+    ) && t.id_user
+  )
+  return found || null
+}
+
+const getNombreOperadorAsignado = (eqId) => {
+  const op = getOperadorAsignadoAEquipo(eqId)
+  if (!op || !op.id_user) {
+    const ins = preparacionSalidaState.value?.inspecciones_patio?.[eqId]
+    const uId = ins?.operador_id || ins?.jefe_patio_id
+    if (uId) {
+      const u = (usuarios.value || []).find(user => String(user.id_user) === String(uId))
+      return u?.nombre_user || u?.name_user || 'Operador Asignado'
+    }
+    return 'Sin Operador Asignado'
+  }
+  const u = (usuarios.value || []).find(user => String(user.id_user) === String(op.id_user))
+  return u?.nombre_user || u?.name_user || op.cargo || 'Operador Asignado'
+}
+
+const onOperadorInspeccionCambiado = (eqId, nuevoIdUser) => {
+  if (!eqId || !nuevoIdUser) return
+  const ins = getInspeccionEquipo(eqId)
+  ins.operador_id = nuevoIdUser
+  ins.jefe_patio_id = nuevoIdUser
+
+  // Sincronizar hacia atrás con la línea de la máquina en OT (Pestaña C)
+  const lPrincipal = linesEquiposPrincipales.value || []
+  const matchPrincipal = lPrincipal.find(l => String(l.equipo_asignado_id) === String(eqId) || String(l.equipo_id) === String(eqId))
+  if (matchPrincipal) {
+    matchPrincipal.operador_asignado_id = nuevoIdUser
+    marcarDirtyAsignacion()
+  } else if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
+    const matchExtra = operacionesAssignment.value.equipos_extra.find(e => String(e.id_equipo) === String(eqId))
+    if (matchExtra) {
+      matchExtra.chofer_id = nuevoIdUser
+      marcarDirtyAsignacion()
+    }
+  }
+}
+
 const getInspeccionEquipo = (eqId) => {
   if (!preparacionSalidaState.value) {
     preparacionSalidaState.value = {}
@@ -7198,14 +7307,27 @@ const getInspeccionEquipo = (eqId) => {
     preparacionSalidaState.value.inspecciones_patio = {}
   }
   if (!preparacionSalidaState.value.inspecciones_patio[eqId]) {
+    const op = getOperadorAsignadoAEquipo(eqId)
     preparacionSalidaState.value.inspecciones_patio[eqId] = {
       patio_programado: false,
       id_survey: null,
-      jefe_patio_id: null,
+      operador_id: op?.id_user || null,
+      jefe_patio_id: op?.id_user || null,
       fecha_inspeccion_plan: new Date().toISOString().substring(0, 10),
       hora_inspeccion_plan: '07:30',
       patio_checklist_completado: false,
-      patio_requiere_taller: false
+      patio_requiere_taller: false,
+      id_doc_pdf: null
+    }
+  } else {
+    // Si la inspección aún no está programada, mantener sincronizado el operador con la OT
+    const ins = preparacionSalidaState.value.inspecciones_patio[eqId]
+    if (!ins.patio_programado && !ins.id_survey) {
+      const op = getOperadorAsignadoAEquipo(eqId)
+      if (op?.id_user && (!ins.operador_id || ins.operador_id !== op.id_user)) {
+        ins.operador_id = op.id_user
+        ins.jefe_patio_id = op.id_user
+      }
     }
   }
   return preparacionSalidaState.value.inspecciones_patio[eqId]
@@ -7368,6 +7490,31 @@ const sincronizarInspeccionesPWA = async () => {
                 if (!ins.patio_checklist_completado) {
                   ins.patio_checklist_completado = true
                   huboCambios = true
+                }
+                if (!ins.id_doc_pdf && ins.id_survey) {
+                  try {
+                    const { data: v3Res } = await apiAxios.get('/servicio/leanglobal/procesosSurveyV3', {
+                      params: { id_survey: ins.id_survey }
+                    })
+                    const v3List = Array.isArray(v3Res?.datos) ? v3Res.datos : (Array.isArray(v3Res) ? v3Res : [])
+                    const v3Item = v3List.find(d => Number(d.id_survey) === Number(ins.id_survey))
+                    if (v3Item?.id_flow) {
+                      const { data: steps } = await apiAxios.get('/servicio/leanglobal/flujosAprobacionSteps', {
+                        params: { id_flow: v3Item.id_flow }
+                      })
+                      if (Array.isArray(steps) && steps.length > 0) {
+                        const stepWithOut = [...steps].reverse().find(s => s.id_doc_out)
+                        const stepWithIn = [...steps].reverse().find(s => s.id_doc_in)
+                        const foundDoc = stepWithOut?.id_doc_out || stepWithIn?.id_doc_in
+                        if (foundDoc) {
+                          ins.id_doc_pdf = foundDoc
+                          huboCambios = true
+                        }
+                      }
+                    }
+                  } catch (eDoc) {
+                    console.warn(`Error obteniendo id_doc_pdf para survey #${ins.id_survey}:`, eDoc)
+                  }
                 }
               }
             }
@@ -7784,14 +7931,17 @@ const eliminarInspeccionEquipo = async (eqId) => {
     preparacionSalidaState.value.inspecciones_patio = {}
   }
   
+  const op = getOperadorAsignadoAEquipo(eqId)
   preparacionSalidaState.value.inspecciones_patio[eqId] = {
     id_equipo: eqId,
-    jefe_patio_id: '',
+    operador_id: op?.id_user || null,
+    jefe_patio_id: op?.id_user || null,
     fecha_inspeccion_plan: new Date().toISOString().split('T')[0],
     hora_inspeccion_plan: '07:30',
     patio_programado: false,
     patio_checklist_completado: false,
-    id_survey: null
+    id_survey: null,
+    id_doc_pdf: null
   }
   
   const token = localStorage.getItem('token') || ''
@@ -7806,8 +7956,10 @@ const eliminarInspeccionEquipo = async (eqId) => {
 
 const programarInspeccionPatioEquipo = async (eqId) => {
   const ins = getInspeccionEquipo(eqId)
-  if (!ins.jefe_patio_id) {
-    alert('⚠️ Por favor seleccione el Jefe de Patio asignado para este equipo.')
+  const opAsignado = getOperadorAsignadoAEquipo(eqId)
+  const operadorId = ins.operador_id || ins.jefe_patio_id || opAsignado?.id_user
+  if (!operadorId) {
+    alert('⚠️ Por favor asigne primero el Operador/Conductor para este equipo en la Asignación de Recursos (Pestaña C) o selecciónelo en el desplegable.')
     return
   }
 
@@ -7911,7 +8063,7 @@ const programarInspeccionPatioEquipo = async (eqId) => {
       id_template: 76,
       id_flow_tmpl: idFlowTmpl,
       id_tipo_srv: 1,
-      id_user: parseInt(ins.jefe_patio_id),
+      id_user: parseInt(operadorId),
       id_user_creacion: currentUser.id_user || 1,
       id_proyecto: parseInt(projectId),
       id_empresa_cliente: parseInt(empClienteId),
@@ -7942,6 +8094,8 @@ const programarInspeccionPatioEquipo = async (eqId) => {
   // Mutación reactiva explícita para Vue 3
   preparacionSalidaState.value.inspecciones_patio[eqId] = {
     ...ins,
+    operador_id: parseInt(operadorId),
+    jefe_patio_id: parseInt(operadorId),
     id_survey: createdSurveyId || ins.id_survey || null,
     id_template: 76,
     codi_template_srv: 'TMPL-GSP-CHK-EQUIPOS',
@@ -7952,12 +8106,12 @@ const programarInspeccionPatioEquipo = async (eqId) => {
   preparacionSalidaState.value.inspecciones_patio = { ...preparacionSalidaState.value.inspecciones_patio }
   preparacionSalidaState.value.patio_programado = true
 
-  const jefeUser = usuariosEnroladosFes.value.find(u => u.id_user === ins.jefe_patio_id)
+  const opUser = (usuarios.value || []).find(u => u.id_user === parseInt(operadorId)) || (usuariosEnroladosFes.value || []).find(u => u.id_user === parseInt(operadorId))
   registrarTrazaCorreo(
-    'JEFE_PATIO_PWA',
-    jefeUser?.email || 'jefe_patio@leanglobal.cl',
-    `🚜 Inspección Asignada (${eqNombre}): ${antecedentes.value.identificador_formal || 'COT'}`,
-    `Template 76 (TMPL-GSP-CHK-EQUIPOS) programado para ${ins.fecha_inspeccion_plan} a las ${ins.hora_inspeccion_plan} hrs. Survey ID: #${createdSurveyId || 'Asignado'}`
+    'OPERADOR_PATIO_PWA',
+    opUser?.email || 'operador@leanglobal.cl',
+    `🚜 Inspección Pre-Uso Asignada (${eqNombre}): ${antecedentes.value.identificador_formal || 'COT'}`,
+    `Checklist de Salida de Patio (Template 76) programado para el operador ${opUser?.nombre_user || opUser?.name_frst || 'Asignado'} el ${ins.fecha_inspeccion_plan} a las ${ins.hora_inspeccion_plan} hrs. Survey ID: #${createdSurveyId || 'Asignado'}`
   )
 
   const payload = buildPayload()
@@ -7965,7 +8119,7 @@ const programarInspeccionPatioEquipo = async (eqId) => {
     headers: { Authorization: `Bearer ${token}` }
   })
   
-  alert(`🟢 Inspección de Patio #${createdSurveyId || ''} creada y asignada exitosamente para ${eqNombre}.\n\nHaz clic en "👁️ Ver Inspección" para abrir el visor.`)
+  alert(`🟢 Inspección de Patio #${createdSurveyId || ''} creada y asignada exitosamente al Operador de ${eqNombre}.\n\nHaz clic en "📄 Ver PDF" cuando esté firmada, o en "👁️ Ver en Pantalla" para consultar la encuesta.`)
 }
 
 const confirmarInspeccionSalidaPatioEquipo = async (eqId) => {
