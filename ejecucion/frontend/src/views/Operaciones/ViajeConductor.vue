@@ -592,30 +592,26 @@ let timerInterval = null
 
 // Validaciones Computadas
 const isFormSalidaValido = computed(() => {
-  return formSalida.value.odometro &&
-         formSalida.value.horometro &&
-         formSalida.value.foto &&
-         formSalida.value.pin &&
+  return Boolean(formSalida.value.odometro) &&
+         Boolean(formSalida.value.horometro) &&
+         Boolean(formSalida.value.pin) &&
          formSalida.value.pin.length === 4
 })
 
 const isFormSolicitudCombustibleValido = computed(() => {
-  return formCombustible.value.odometro &&
-         formCombustible.value.horometro &&
-         formCombustible.value.foto_tablero
+  return Boolean(formCombustible.value.odometro) &&
+         Boolean(formCombustible.value.horometro)
 })
 
 const isFormRendicionCombustibleValido = computed(() => {
-  return formCombustible.value.litros &&
-         formCombustible.value.monto &&
-         formCombustible.value.foto_voucher
+  return Boolean(formCombustible.value.litros) &&
+         Boolean(formCombustible.value.monto)
 })
 
 const isFormLlegadaValido = computed(() => {
-  return formLlegada.value.odometro &&
-         formLlegada.value.horometro &&
-         formLlegada.value.foto &&
-         formLlegada.value.pin &&
+  return Boolean(formLlegada.value.odometro) &&
+         Boolean(formLlegada.value.horometro) &&
+         Boolean(formLlegada.value.pin) &&
          formLlegada.value.pin.length === 4
 })
 
@@ -653,7 +649,7 @@ const onFotoLlegadaCapturada = async (e) => {
 // -------------------------------------------------------------
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
-  const gps = await obtenerCoordenadasGPS()
+  const gps = await obtenerCoordenadasGPS(1500)
   ultimaPosicionGPS.value = gps
 
   const pingPayload = {
@@ -664,21 +660,25 @@ const registrarPingAutomatico = async () => {
     timestamp: gps.timestamp || new Date().toISOString()
   }
 
-  // 1. Encolar mutación en Outbox local (Offline-First)
-  await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
-
-  // 2. Acumular en lista de pings del viaje
+  // 1. Acumular inmediatamente en pings_ruta reactivos
   if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
   viaje.value.pings_ruta.push(pingPayload)
   totalPingsEnRuta.value = viaje.value.pings_ruta.length
   viaje.value.total_pings_gps = totalPingsEnRuta.value
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
-  await actualizarContadorPendientes()
 
-  // 3. Sincronizar con backend si hay conexión activa
-  if (isOnline.value) {
-    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+  // 2. Enviar directamente al Backend GSP por HTTP
+  if (isOnline.value && !tokenViaje.value.includes('demo')) {
+    try {
+      await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/ping`, pingPayload)
+    } catch (httpErr) {
+      console.warn('Fallo de red en ping GPS, encolando en Outbox:', httpErr?.message || httpErr)
+      await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
+      await actualizarContadorPendientes()
+    }
+  } else {
+    await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
     await actualizarContadorPendientes()
   }
 }
@@ -707,36 +707,47 @@ const ejecutarInicioViaje = async () => {
   guardando.value = true
   try {
     const pinHashed = await hashPin(formSalida.value.pin)
-    const gps = await obtenerCoordenadasGPS()
+    const gps = await obtenerCoordenadasGPS(1500)
 
     const payload = {
-      km_inicial: formSalida.value.odometro,
-      horometro_inicial: formSalida.value.horometro,
-      foto_salida: formSalida.value.foto,
+      km_inicial: Number(formSalida.value.odometro),
+      horometro_inicial: Number(formSalida.value.horometro),
+      foto_salida: formSalida.value.foto || 'https://storage.leanglobal.cl/placeholder-tablero-salida.jpg',
       pin_hash: pinHashed,
       latitud: gps.latitud,
       longitud: gps.longitud
     }
 
-    // 1. Encolar en Outbox local (Offline-First)
-    await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
+    // 1. Enviar directamente por HTTP al Backend GSP
+    if (isOnline.value && !tokenViaje.value.includes('demo')) {
+      try {
+        const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/salida`, payload)
+        if (resp && resp.data) {
+          viaje.value.fecha_salida_patio = resp.data.fecha_salida_patio
+          viaje.value.timestamp_inicio = resp.data.fecha_salida_patio
+          viaje.value.estado_trayecto = 'EN_RUTA'
+        }
+      } catch (httpErr) {
+        console.warn('Fallo HTTP salida, encolando en Outbox local:', httpErr?.message || httpErr)
+        await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
+      }
+    } else {
+      await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
+    }
 
-    // 2. Actualizar estado local
+    // 2. Actualizar estado local reactivo
     viaje.value.estado_viaje = 'EN_RUTA'
-    viaje.value.timestamp_inicio = new Date().toISOString()
+    if (!viaje.value.timestamp_inicio) {
+      viaje.value.timestamp_inicio = new Date().toISOString()
+      viaje.value.fecha_salida_patio = viaje.value.timestamp_inicio
+    }
     viaje.value.odometro_salida = payload.km_inicial
     viaje.value.horometro_salida = payload.horometro_inicial
 
     await guardarSesionLocal(tokenViaje.value, viaje.value)
-    actualizarContadorPendientes()
+    await actualizarContadorPendientes()
     iniciarTimerRuta()
     iniciarRastreoGPS()
-
-    // 3. Sincronizar inmediatamente si hay conexión
-    if (isOnline.value) {
-      await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
-      actualizarContadorPendientes()
-    }
   } catch (err) {
     console.error('Error iniciando viaje:', err)
   } finally {
@@ -772,28 +783,33 @@ const simularAprobacionCopec = () => {
 const confirmarRendicionCombustible = async () => {
   const payload = {
     tipo_estanque: formCombustible.value.tipo_estanque,
-    litros: formCombustible.value.litros,
-    monto: formCombustible.value.monto,
-    foto_voucher: formCombustible.value.foto_voucher,
-    foto_tablero: formCombustible.value.foto_tablero,
+    litros: Number(formCombustible.value.litros),
+    monto: Number(formCombustible.value.monto),
+    foto_voucher: formCombustible.value.foto_voucher || 'https://storage.leanglobal.cl/placeholder-voucher.jpg',
+    foto_tablero: formCombustible.value.foto_tablero || 'https://storage.leanglobal.cl/placeholder-tablero.jpg',
     id_autorizacion_copec: modalCombustible.value.id_autorizacion || '#COPEC-AUTO',
     odometro: formCombustible.value.odometro || viaje.value.odometro_salida,
     horometro: formCombustible.value.horometro || viaje.value.horometro_salida
   }
 
-  await encolarMutacion(tokenViaje.value, 'CARGA_COMBUSTIBLE', payload)
+  if (isOnline.value && !tokenViaje.value.includes('demo')) {
+    try {
+      await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/combustible`, payload)
+    } catch (httpErr) {
+      console.warn('Fallo HTTP combustible, encolando:', httpErr?.message || httpErr)
+      await encolarMutacion(tokenViaje.value, 'CARGA_COMBUSTIBLE', payload)
+    }
+  } else {
+    await encolarMutacion(tokenViaje.value, 'CARGA_COMBUSTIBLE', payload)
+  }
+
   viaje.value.combustible_cargado = payload
   if (!viaje.value.cargas_combustible) viaje.value.cargas_combustible = []
   viaje.value.cargas_combustible.push(payload)
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
-  actualizarContadorPendientes()
+  await actualizarContadorPendientes()
   modalCombustible.value.visible = false
-
-  if (isOnline.value) {
-    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
-    actualizarContadorPendientes()
-  }
 
   alert('⛽ Carga de combustible registrada exitosamente en el Log de Viaje.')
 }
@@ -806,36 +822,62 @@ const abrirModalLlegada = () => {
 }
 
 const ejecutarLlegadaFaena = async () => {
+  guardando.value = true
   detenerRastreoGPS()
-  const pinHashed = await hashPin(formLlegada.value.pin)
-  const gps = await obtenerCoordenadasGPS()
+  try {
+    const pinHashed = await hashPin(formLlegada.value.pin)
+    const gps = await obtenerCoordenadasGPS(1500)
 
-  const payload = {
-    km_final: formLlegada.value.odometro,
-    horometro_final: formLlegada.value.horometro,
-    foto_llegada: formLlegada.value.foto,
-    pin_hash: pinHashed,
-    latitud: gps.latitud,
-    longitud: gps.longitud,
-    obs_termino: formLlegada.value.obs_termino || 'Viaje concluido conforme en faena.'
-  }
+    const payload = {
+      km_final: Number(formLlegada.value.odometro),
+      horometro_final: Number(formLlegada.value.horometro),
+      foto_llegada: formLlegada.value.foto || 'https://storage.leanglobal.cl/placeholder-tablero-llegada.jpg',
+      pin_hash: pinHashed,
+      latitud: gps.latitud,
+      longitud: gps.longitud,
+      obs_termino: formLlegada.value.obs_termino || 'Arribo a faena verificado con éxito'
+    }
 
-  await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
+    // 1. Enviar directamente al Backend GSP por HTTP
+    if (isOnline.value && !tokenViaje.value.includes('demo')) {
+      try {
+        const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/llegada`, payload)
+        if (resp && resp.data) {
+          viaje.value.fecha_llegada_faena = resp.data.fecha_llegada_faena
+          viaje.value.timestamp_llegada = resp.data.fecha_llegada_faena
+          viaje.value.estado_trayecto = 'LLEGADO'
+          if (resp.data.pings_ruta && resp.data.pings_ruta.length) {
+            viaje.value.pings_ruta = resp.data.pings_ruta
+            totalPingsEnRuta.value = resp.data.pings_ruta.length
+            viaje.value.total_pings_gps = totalPingsEnRuta.value
+          }
+        }
+      } catch (httpErr) {
+        console.warn('Fallo HTTP llegada, encolando en Outbox:', httpErr?.message || httpErr)
+        await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
+      }
+    } else {
+      await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
+    }
 
-  viaje.value.estado_viaje = 'ARRIBADO_FAENA'
-  viaje.value.timestamp_llegada = new Date().toISOString()
-  viaje.value.odometro_llegada = payload.km_final
-  viaje.value.horometro_llegada = payload.horometro_final
-  viaje.value.obs_termino = payload.obs_termino
+    // 2. Actualizar estado reactivo
+    viaje.value.estado_viaje = 'ARRIBADO_FAENA'
+    if (!viaje.value.timestamp_llegada) {
+      viaje.value.timestamp_llegada = new Date().toISOString()
+      viaje.value.fecha_llegada_faena = viaje.value.timestamp_llegada
+    }
+    viaje.value.odometro_llegada = payload.km_final
+    viaje.value.horometro_llegada = payload.horometro_final
+    viaje.value.obs_termino = payload.obs_termino
 
-  await guardarSesionLocal(tokenViaje.value, viaje.value)
-  actualizarContadorPendientes()
-  modalLlegada.value.visible = false
-  if (timerInterval) clearInterval(timerInterval)
-
-  if (isOnline.value) {
-    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
-    actualizarContadorPendientes()
+    await guardarSesionLocal(tokenViaje.value, viaje.value)
+    await actualizarContadorPendientes()
+    modalLlegada.value.visible = false
+    if (timerInterval) clearInterval(timerInterval)
+  } catch (err) {
+    console.error('Error cerrando viaje:', err)
+  } finally {
+    guardando.value = false
   }
 }
 
@@ -858,12 +900,14 @@ const formatFechaHora = (isoStr) => {
   if (!isoStr) return '--'
   try {
     const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return '--'
     return d.toLocaleString('es-CL', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      second: '2-digit'
     })
   } catch (e) {
     return isoStr
@@ -873,11 +917,17 @@ const formatFechaHora = (isoStr) => {
 const calcularDuracionTotal = (iniStr, finStr) => {
   if (!iniStr || !finStr) return '--'
   try {
-    const diffSec = Math.floor((new Date(finStr) - new Date(iniStr)) / 1000)
-    if (diffSec <= 0) return '00h 00m'
-    const hrs = Math.floor(diffSec / 3600).toString().padStart(2, '0')
-    const mins = Math.floor((diffSec % 3600) / 60).toString().padStart(2, '0')
-    return `${hrs}h ${mins}m`
+    const d1 = new Date(iniStr)
+    const d2 = new Date(finStr)
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return '--'
+    const diffSec = Math.max(0, Math.floor((d2 - d1) / 1000))
+    const hrs = Math.floor(diffSec / 3600)
+    const mins = Math.floor((diffSec % 3600) / 60)
+    const secs = diffSec % 60
+    if (hrs > 0) {
+      return `${hrs}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`
+    }
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`
   } catch (e) {
     return '--'
   }
