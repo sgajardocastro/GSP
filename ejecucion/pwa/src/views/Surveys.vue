@@ -1,5 +1,47 @@
 <template>
   <v-container class="surveys-page">
+    <!-- 🚛 BANNER / WIDGET NATIVO DE VIAJE ACTIVO ASIGNADO O EN RUTA -->
+    <v-card
+      v-if="viajeActivo"
+      class="mb-4 rounded-xl border border-amber-500/40 text-white pa-4"
+      style="background: linear-gradient(135deg, #0a0f1e 0%, #151e36 100%); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);"
+      elevation="4"
+    >
+      <div class="d-flex align-center justify-space-between mb-2">
+        <div class="d-flex align-center ga-2">
+          <span class="text-h6">🚛</span>
+          <div>
+            <div class="text-caption font-weight-black text-amber-400 text-uppercase tracking-wider">
+              {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ En Tránsito / En Ruta' : '🚀 Salida de Patio Programada' }}
+            </div>
+            <div class="text-subtitle-2 font-weight-black text-white font-mono">
+              {{ viajeActivo.patente }} <span class="text-grey-lighten-1 font-weight-normal">• {{ viajeActivo.modelo }}</span>
+            </div>
+          </div>
+        </div>
+        <v-chip size="small" :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'" variant="flat" class="font-weight-bold">
+          {{ viajeActivo.estado_trayecto }}
+        </v-chip>
+      </div>
+
+      <div class="text-caption text-grey-lighten-2 mb-3 bg-black pa-2 rounded-lg border border-white/10">
+        📍 <strong>Destino:</strong> {{ viajeActivo.obra_nombre }} <span class="text-amber-300">({{ viajeActivo.codi_proyecto }})</span>
+        <div v-if="viajeActivo.obra_direccion" class="text-grey text-caption text-truncate">
+          {{ viajeActivo.obra_direccion }}
+        </div>
+      </div>
+
+      <v-btn
+        block
+        :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'amber-darken-2'"
+        size="large"
+        class="font-weight-black text-uppercase rounded-lg text-black"
+        @click="abrirViajeNativo(viajeActivo.token_viaje)"
+      >
+        {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ Continuar Registro de Viaje' : '▶️ Iniciar Registro de Viaje (Odómetro/PIN)' }}
+      </v-btn>
+    </v-card>
+
     <v-row dense class="align-center">
       <v-col v-if="!esVistaReclamos" cols="12" md="6" class="py-1">
         <div class="asignacion-dia-title">
@@ -406,6 +448,34 @@ const { isOnline } = useNetworkStatus()
 
 // id_user seguro (no rompe si userDetail es null)
 const idUser = computed(() => userDetailStore.userDetail?.id_user ?? null)
+
+// --- MÓDULO DE VIAJE CONVOY / CHOFER PWA ---
+const viajeActivo = ref(null)
+const cargandoViajeActivo = ref(false)
+
+const consultarViajeActivo = async () => {
+  const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
+  if (!uid) return
+  try {
+    cargandoViajeActivo.value = true
+    const { data } = await apiAxios.get('/viajes/usuario/activo', { params: { id_user: uid } })
+    if (data?.activo && data?.data) {
+      viajeActivo.value = data.data
+    } else {
+      viajeActivo.value = null
+    }
+  } catch (err) {
+    console.warn('No se pudo consultar viaje activo:', err)
+  } finally {
+    cargandoViajeActivo.value = false
+  }
+}
+
+const abrirViajeNativo = (token) => {
+  if (!token) return
+  const baseOrigin = window.location.origin
+  window.location.href = `${baseOrigin}/viaje/${token}`
+}
 
 const filtros = ref([
   { ID: 1, NOMBRE: 'Creado' },
@@ -864,6 +934,7 @@ onMounted(async () => {
   await cargarNombresUsuarios()
   await getSurvey()
   await cargarNotificaciones()
+  await consultarViajeActivo()
 })
 
 watch(() => route.path, async () => {
@@ -872,6 +943,13 @@ watch(() => route.path, async () => {
     return
   }
   await getSurvey()
+  await consultarViajeActivo()
+})
+
+watch(() => idUser.value, async (newVal) => {
+  if (newVal) {
+    await consultarViajeActivo()
+  }
 })
 
 watch(() => formProtocolo.id_empresa_cliente, async (idEmpresa) => {

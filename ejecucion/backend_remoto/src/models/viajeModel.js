@@ -242,11 +242,36 @@ const viajeModel = {
         WHERE categoria_costo = 'COMBUSTIBLE'
         GROUP BY id_log_desplazamiento
       ) comb ON v.id_log_desplazamiento = comb.id_log_desplazamiento
-      WHERE v.id_proyecto = $1
-      ORDER BY v.id_log_desplazamiento DESC;
+  // 7. Obtener viaje activo para un usuario conductor (PWA)
+  async getViajeActivoPorUsuario(id_user) {
+    const sql = `
+      SELECT 
+        v.id_log_desplazamiento,
+        v.id_proyecto,
+        v.id_equipo,
+        v.patente,
+        v.tipo_trayecto,
+        v.estado_trayecto,
+        v.token_viaje,
+        v.fecha_salida_patio,
+        v.km_inicial,
+        v.horometro_inicial,
+        p.nombre_proyecto,
+        p.codi_proyecto,
+        COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
+        COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
+        COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
+        COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
+        COALESCE(e.marca, 'GSP') AS marca
+      FROM sch_leangsp.tequ_log_desplazamiento v
+      JOIN sch_leangsp.tpry_proyecto p ON v.id_proyecto = p.id_proyecto
+      LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
+      WHERE v.id_user_chofer = $1 AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA')
+      ORDER BY v.id_log_desplazamiento DESC
+      LIMIT 1;
     `;
-    const res = await db.query(sql, [id_proyecto]);
-    return res.rows;
+    const res = await db.query(sql, [id_user]);
+    return res.rows[0] || null;
   }
 };
 

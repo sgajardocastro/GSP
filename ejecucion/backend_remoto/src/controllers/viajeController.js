@@ -170,6 +170,22 @@ const viajeController = {
       console.error('Error al listar viajes por proyecto:', err);
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // 8. Consultar viaje activo asignado a un usuario (PWA)
+  async getViajeActivo(req, res) {
+    try {
+      const id_user = req.user?.id_user || req.query.id_user;
+      if (!id_user) {
+        return res.status(400).json({ error: 'id_user es requerido' });
+      }
+
+      const viaje = await viajeModel.getViajeActivoPorUsuario(id_user);
+      res.json({ activo: !!viaje, data: viaje });
+    } catch (err) {
+      console.error('Error al consultar viaje activo:', err);
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
