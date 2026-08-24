@@ -656,29 +656,63 @@ const onFotoLlegadaCapturada = async (e) => {
 // -------------------------------------------------------------
 // MOTOR UNIFICADO DE TELEMETRÍA Y RELOJ EN RUTA (TICK 1 SEG)
 // -------------------------------------------------------------
+const calcularDistanciaMetros = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
 
   ultimoPingHora.value = new Date().toLocaleTimeString('es-CL')
 
   try {
-    // 1. Obtener última posición en memoria de forma instantánea (0ms)
+    // 1. Obtener última posición real capturada por el hardware GPS
     const gps = getUltimaPosicionGPS()
-    // Pequeño desplazamiento continuo para reflejar avance en ruta durante prueba
-    gps.latitud = Number(gps.latitud || -36.6172) + (Math.random() - 0.48) * 0.0004
-    gps.longitud = Number(gps.longitud || -72.1148) + (Math.random() - 0.48) * 0.0004
-    gps.velocidad_kmh = Math.round(45 + Math.random() * 20)
+    if (!gps || !gps.latitud || !gps.longitud) return
+
+    // Descartar lecturas con baja precisión (ruido mayor a 45 metros de error)
+    if (gps.accuracy && Number(gps.accuracy) > 45) {
+      console.warn('[GPS] Ping descartado por baja precisión (>45m):', gps.accuracy)
+      return
+    }
+
+    // 2. Filtro Deadband: si no ha habido desplazamiento significativo (< 12m), evitar registrar jitter
+    const listaActual = viaje.value.pings_ruta || []
+    if (listaActual.length > 0) {
+      const ultimo = listaActual[listaActual.length - 1]
+      const d = calcularDistanciaMetros(
+        ultimo.latitud || ultimo.lat,
+        ultimo.longitud || ultimo.lng,
+        gps.latitud,
+        gps.longitud
+      )
+      const tiempoDeltaSec = (new Date() - new Date(ultimo.timestamp || ultimo.ts || Date.now())) / 1000
+      if (d < 12 && tiempoDeltaSec < 60) {
+        ultimaPosicionGPS.value = { ...gps }
+        return
+      }
+    }
+
     ultimaPosicionGPS.value = { ...gps }
 
     const pingPayload = {
-      latitud: gps.latitud,
-      longitud: gps.longitud,
-      velocidad_kmh: gps.velocidad_kmh,
-      accuracy: gps.accuracy || 10,
+      latitud: Number(gps.latitud),
+      longitud: Number(gps.longitud),
+      velocidad_kmh: Number(gps.velocidad_kmh || 0),
+      accuracy: Math.round(Number(gps.accuracy || 10)),
       timestamp: new Date().toISOString()
     }
 
-    // 2. Acumular inmediatamente en pings_ruta reactivos
+    // 3. Acumular inmediatamente en pings_ruta reactivos
     if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
     viaje.value.pings_ruta.push(pingPayload)
     totalPingsEnRuta.value = viaje.value.pings_ruta.length
@@ -686,7 +720,7 @@ const registrarPingAutomatico = async () => {
 
     await guardarSesionLocal(tokenViaje.value, viaje.value)
 
-    // 3. Enviar directamente al Backend GSP por HTTP
+    // 4. Enviar directamente al Backend GSP por HTTP
     if (isOnline.value && !tokenViaje.value.includes('demo')) {
       try {
         await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/ping`, pingPayload)

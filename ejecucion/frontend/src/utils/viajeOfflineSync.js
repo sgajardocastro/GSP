@@ -261,14 +261,14 @@ export function iniciarWatcherGPS(onPosicionCallback) {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const coords = pos.coords;
-        const velKmh = coords.speed != null && coords.speed >= 0
+        const velKmh = (coords.speed != null && coords.speed >= 0)
           ? Math.round(coords.speed * 3.6)
-          : Math.round(35 + Math.random() * 20); // Simulación de velocidad en movimiento si speed no está disponible
+          : 0;
         currentGpsState = {
           latitud: coords.latitude,
           longitud: coords.longitude,
           velocidad_kmh: velKmh,
-          accuracy: coords.accuracy,
+          accuracy: coords.accuracy || 10,
           timestamp: new Date(pos.timestamp || Date.now()).toISOString(),
           fuente: 'GPS_REAL'
         };

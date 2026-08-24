@@ -305,6 +305,56 @@ const formatearMoneda = (val) => {
   return '$' + num.toLocaleString('es-CL')
 }
 
+const calcularDistanciaMetros = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// Consultar motor OSRM para ajustar secuencia de waypoints a calles y avenidas reales
+const obtenerGeometriaVial = async (puntos) => {
+  if (!puntos || puntos.length < 2) return null
+  try {
+    // Muestrear puntos representativos con separación mínima de 40m para no sobrecargar OSRM
+    const sample = []
+    sample.push(puntos[0])
+    let lastP = puntos[0]
+    for (let i = 1; i < puntos.length - 1; i++) {
+      const p = puntos[i]
+      const dist = calcularDistanciaMetros(lastP[0], lastP[1], p[0], p[1])
+      if (dist >= 40) {
+        sample.push(p)
+        lastP = p
+        if (sample.length >= 40) break
+      }
+    }
+    sample.push(puntos[puntos.length - 1])
+
+    const coordStr = sample.map(p => `${p[1].toFixed(6)},${p[0].toFixed(6)}`).join(';')
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`
+    
+    const resp = await fetch(url)
+    if (!resp.ok) return null
+    const json = await resp.json()
+    if (json.code === 'Ok' && json.routes && json.routes[0]?.geometry?.coordinates) {
+      // GeoJSON viene [lng, lat] -> Convertir a Leaflet [lat, lng]
+      return json.routes[0].geometry.coordinates.map(c => [c[1], c[0]])
+    }
+  } catch (e) {
+    console.warn('[OSRM Map-Matching] No se pudo ajustar a calles (usando ruta GPS directa):', e)
+  }
+  return null
+}
+
+let routeGlow = null
+
 // Inicialización de Mapa Leaflet
 const inicializarMapa = () => {
   if (!mapContainer.value) return
@@ -315,7 +365,7 @@ const inicializarMapa = () => {
     map = null
   }
 
-  // Coordenadas por defecto (Chile central / Chillán / San Pablo)
+  // Coordenadas por defecto (Chillán / San Pablo)
   let initialLat = -36.6172
   let initialLng = -72.1148
 
@@ -329,7 +379,7 @@ const inicializarMapa = () => {
     attributionControl: false
   }).setView([initialLat, initialLng], 14)
 
-  // Capa base CartoDB Voyager / OSM
+  // Capa base CartoDB Voyager
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 19
   }).addTo(map)
@@ -337,28 +387,29 @@ const inicializarMapa = () => {
   dibujarRuta()
 }
 
-const dibujarRuta = () => {
+const dibujarRuta = async () => {
   if (!map || !props.viaje) return
 
   // Limpiar marcadores y líneas anteriores
   if (routePolyline) map.removeLayer(routePolyline)
+  if (routeGlow) map.removeLayer(routeGlow)
   if (startMarker) map.removeLayer(startMarker)
   if (endMarker) map.removeLayer(endMarker)
   pingMarkers.forEach(m => map.removeLayer(m))
   pingMarkers = []
 
-  const latLngs = []
+  const rawLatLngs = []
 
   // 1. Punto de Salida (Patio)
   if (props.viaje.latitud_salida_patio && props.viaje.longitud_salida_patio) {
     const startPt = [parseFloat(props.viaje.latitud_salida_patio), parseFloat(props.viaje.longitud_salida_patio)]
-    latLngs.push(startPt)
+    rawLatLngs.push(startPt)
 
     const startIcon = L.divIcon({
       className: 'custom-start-marker',
-      html: `<div style="background-color: #10b981; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(16,185,129,0.8);"></div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
+      html: `<div style="background-color: #10b981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 12px rgba(16,185,129,0.9); display:flex; align-items:center; justify-content:center; font-size:10px;">🚜</div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
     })
 
     startMarker = L.marker(startPt, { icon: startIcon }).addTo(map)
@@ -371,45 +422,64 @@ const dibujarRuta = () => {
     `)
   }
 
-  // 2. Waypoints de Telemetría GPS en Ruta
-  const pings = props.viaje.pings_ruta
-  if (Array.isArray(pings) && pings.length > 0) {
-    pings.forEach((p, idx) => {
-      if (p.lat && p.lng) {
-        const pt = [parseFloat(p.lat), parseFloat(p.lng)]
-        latLngs.push(pt)
+  // 2. Waypoints de Telemetría GPS en Ruta (Ordenados estrictamente por Timestamp)
+  const rawPings = Array.isArray(props.viaje.pings_ruta) ? [...props.viaje.pings_ruta] : []
+  rawPings.sort((a, b) => {
+    const tA = new Date(a.timestamp || a.ts || 0).getTime()
+    const tB = new Date(b.timestamp || b.ts || 0).getTime()
+    return tA - tB
+  })
 
-        const pingCircle = L.circleMarker(pt, {
-          radius: 4,
-          fillColor: '#3b82f6',
-          color: '#ffffff',
-          weight: 1.5,
-          opacity: 0.9,
-          fillOpacity: 0.8
-        }).addTo(map)
+  let prevPt = rawLatLngs[0] || null
+  const validPings = []
 
-        pingCircle.bindTooltip(`
-          <div style="font-family: sans-serif; font-size: 10px;">
-            🛰️ Ping #${idx + 1}<br>
-            Vel: <strong>${p.kmh || 0} km/h</strong><br>
-            Hora: ${formatearFechaHora(p.ts)}
-          </div>
-        `)
-        pingMarkers.push(pingCircle)
+  rawPings.forEach((p) => {
+    const lat = parseFloat(p.latitud || p.lat)
+    const lng = parseFloat(p.longitud || p.lng)
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const curPt = [lat, lng]
+      
+      // Filtrar pings redundantes demasiado cercanos (< 12 metros)
+      if (prevPt) {
+        const d = calcularDistanciaMetros(prevPt[0], prevPt[1], lat, lng)
+        if (d < 12) return
       }
-    })
-  }
+
+      validPings.push({ ...p, lat, lng })
+      rawLatLngs.push(curPt)
+      prevPt = curPt
+
+      const pingCircle = L.circleMarker(curPt, {
+        radius: 4.5,
+        fillColor: '#38bdf8',
+        color: '#0369a1',
+        weight: 1.5,
+        opacity: 0.9,
+        fillOpacity: 0.85
+      }).addTo(map)
+
+      pingCircle.bindTooltip(`
+        <div style="font-family: sans-serif; font-size: 10px;">
+          🛰️ <strong>Waypoint #${validPings.length}</strong><br>
+          Velocidad: <strong>${p.velocidad_kmh || p.kmh || 0} km/h</strong><br>
+          Precisión: <strong>±${p.accuracy || 10} m</strong><br>
+          Hora: ${formatearFechaHora(p.timestamp || p.ts)}
+        </div>
+      `)
+      pingMarkers.push(pingCircle)
+    }
+  })
 
   // 3. Punto de Llegada (Faena)
   if (props.viaje.latitud_llegada_faena && props.viaje.longitud_llegada_faena) {
     const endPt = [parseFloat(props.viaje.latitud_llegada_faena), parseFloat(props.viaje.longitud_llegada_faena)]
-    latLngs.push(endPt)
+    rawLatLngs.push(endPt)
 
     const endIcon = L.divIcon({
       className: 'custom-end-marker',
-      html: `<div style="background-color: #ef4444; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(239,68,68,0.8);"></div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
+      html: `<div style="background-color: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 12px rgba(239,68,68,0.9); display:flex; align-items:center; justify-content:center; font-size:10px;">🏁</div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
     })
 
     endMarker = L.marker(endPt, { icon: endIcon }).addTo(map)
@@ -422,19 +492,36 @@ const dibujarRuta = () => {
     `)
   }
 
-  // 4. Dibujar Polyline conectando todos los puntos
-  if (latLngs.length > 1) {
-    routePolyline = L.polyline(latLngs, {
-      color: '#3b82f6',
-      weight: 4,
-      opacity: 0.85,
-      dashArray: '8, 6',
-      lineCap: 'round'
+  // 4. Map-Matching a Calles Viales Reales con OSRM
+  let roadGeometry = null
+  if (rawLatLngs.length > 1) {
+    roadGeometry = await obtenerGeometriaVial(rawLatLngs)
+  }
+
+  const finalCoords = roadGeometry || rawLatLngs
+
+  if (finalCoords.length > 1) {
+    // Glow exterior de la ruta
+    routeGlow = L.polyline(finalCoords, {
+      color: '#38bdf8',
+      weight: 8,
+      opacity: 0.35,
+      lineCap: 'round',
+      lineJoin: 'round'
     }).addTo(map)
 
-    map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] })
-  } else if (latLngs.length === 1) {
-    map.setView(latLngs[0], 15)
+    // Trazo principal continuo ajustado a las calles
+    routePolyline = L.polyline(finalCoords, {
+      color: '#0284c7',
+      weight: 4.5,
+      opacity: 0.95,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map)
+
+    map.fitBounds(routePolyline.getBounds(), { padding: [45, 45] })
+  } else if (finalCoords.length === 1) {
+    map.setView(finalCoords[0], 15)
   }
 }
 
