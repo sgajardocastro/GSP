@@ -34,59 +34,80 @@ export function openViajeDB() {
  * Guarda o actualiza la sesión del viaje localmente
  */
 export async function guardarSesionLocal(token, sesionData) {
-  const db = await openViajeDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('store_sesion', 'readwrite');
-    const store = tx.objectStore('store_sesion');
-    const record = {
-      token_viaje: token,
-      ...sesionData,
-      updated_at_local: new Date().toISOString()
-    };
-    const req = store.put(record);
-    req.onsuccess = () => resolve(record);
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openViajeDB();
+    const cleanData = JSON.parse(JSON.stringify(sesionData || {}));
+    return new Promise((resolve) => {
+      const tx = db.transaction('store_sesion', 'readwrite');
+      const store = tx.objectStore('store_sesion');
+      const record = {
+        token_viaje: token,
+        ...cleanData,
+        updated_at_local: new Date().toISOString()
+      };
+      const req = store.put(record);
+      req.onsuccess = () => resolve(record);
+      req.onerror = (e) => {
+        console.warn('[OfflineDB] Error en put:', e);
+        resolve(record);
+      };
+    });
+  } catch (err) {
+    console.warn('[OfflineDB] Excepción guardando sesión local:', err);
+    return sesionData;
+  }
 }
 
 /**
  * Recupera la sesión del viaje guardada localmente
  */
 export async function obtenerSesionLocal(token) {
-  const db = await openViajeDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('store_sesion', 'readonly');
-    const store = tx.objectStore('store_sesion');
-    const req = store.get(token);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openViajeDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('store_sesion', 'readonly');
+      const store = tx.objectStore('store_sesion');
+      const req = store.get(token);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (err) {
+    console.warn('[OfflineDB] Error obteniendo sesión local:', err);
+    return null;
+  }
 }
 
 /**
  * Agrega una mutación a la cola Outbox
  */
 export async function encolarMutacion(token, tipo, payload, gps = null) {
-  const db = await openViajeDB();
-  const mutacion = {
-    id: `mut_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    token_viaje: token,
-    tipo,
-    payload,
-    gps,
-    t_device: new Date().toISOString(),
-    estado_sync: 'PENDIENTE',
-    reintentos: 0,
-    created_at: Date.now()
-  };
+  try {
+    const db = await openViajeDB();
+    const cleanPayload = JSON.parse(JSON.stringify(payload || {}));
+    const cleanGps = gps ? JSON.parse(JSON.stringify(gps)) : null;
+    const mutacion = {
+      id: `mut_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      token_viaje: token,
+      tipo,
+      payload: cleanPayload,
+      gps: cleanGps,
+      t_device: new Date().toISOString(),
+      estado_sync: 'PENDIENTE',
+      reintentos: 0,
+      created_at: Date.now()
+    };
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('store_mutaciones', 'readwrite');
-    const store = tx.objectStore('store_mutaciones');
-    const req = store.add(mutacion);
-    req.onsuccess = () => resolve(mutacion);
-    req.onerror = () => reject(req.error);
-  });
+    return new Promise((resolve) => {
+      const tx = db.transaction('store_mutaciones', 'readwrite');
+      const store = tx.objectStore('store_mutaciones');
+      const req = store.add(mutacion);
+      req.onsuccess = () => resolve(mutacion);
+      req.onerror = () => resolve(mutacion);
+    });
+  } catch (err) {
+    console.warn('[OfflineDB] Error encolando mutación:', err);
+    return null;
+  }
 }
 
 /**
