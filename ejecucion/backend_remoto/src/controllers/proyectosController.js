@@ -278,5 +278,47 @@ module.exports = {
       console.error("Error en generarCotizacion:", err);
       return res.status(500).json({ error: err.message });
     }
+  },
+
+  generarOT: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id || Number(id) <= 0) {
+        return res.status(400).json({ error: "id_proyecto es requerido y debe ser válido" });
+      }
+
+      const result = await proyecto.generarOTVersion(id);
+
+      return res.status(200).json({
+        message: "Versión de Orden de Trabajo generada exitosamente",
+        ot: result.ot,
+        proyecto: result.proyecto
+      });
+    } catch (err) {
+      console.error("Error en generarOT:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  },
+
+  enviarOT: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const payload = req.body || {};
+
+      if (!id || Number(id) <= 0) {
+        return res.status(400).json({ error: "id_proyecto es requerido y debe ser válido" });
+      }
+
+      const result = await proyecto.enviarOT(id, payload);
+
+      return res.status(200).json({
+        message: result.message,
+        despacho: result.despacho
+      });
+    } catch (err) {
+      console.error("Error en enviarOT:", err);
+      return res.status(500).json({ error: err.message });
+    }
   }
 };

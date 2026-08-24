@@ -490,7 +490,7 @@
               </span>
             </div>
 
-            <!-- Programación de Tiempos Planificados (Inline) -->
+            <!-- Programación de Tiempos Planificados (Inline) + Botón Generar OT -->
             <div class="flex flex-wrap items-center gap-2 text-xs">
               <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1">
                 <span class="text-xs text-slate-300 font-semibold">Salida Base:</span>
@@ -503,8 +503,19 @@
                 <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
                 <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
-              <button @click="propagarFechasPlanificadas" type="button" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1.5" title="Propagar estas fechas a todos los equipos y personal">
-                <span>⚡ Propagar Fechas</span>
+              <button @click="propagarFechasPlanificadas" type="button" class="text-xs bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Propagar estas fechas a todos los equipos y personal">
+                <span>⚡ Propagar</span>
+              </button>
+              <button 
+                @click="generarPDFOT" 
+                :disabled="generandoPDFOT" 
+                type="button" 
+                class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1 rounded font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50 pointer-events-auto" 
+                title="Generar y versionar documento PDF oficial de la Orden de Trabajo"
+              >
+                <span v-if="generandoPDFOT" class="animate-spin">⏳</span>
+                <span v-else>📄</span>
+                <span>{{ generandoPDFOT ? 'Generando OT...' : 'Generar PDF OT' }}</span>
               </button>
             </div>
           </div>
@@ -911,6 +922,101 @@
                   </div>
                   <input type="text" v-model="item.detalle" @input="marcarDirtyAsignacion" placeholder="Cap / Cant / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/60 font-mono transition-colors" />
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL HISTORIAL Y CONTROL DE VERSIONES DE ORDEN DE TRABAJO (OT) -->
+        <div class="bg-[#080d1a] border border-amber-500/30 rounded-xl p-3.5 space-y-3 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">📋</span>
+              <div>
+                <h4 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  Historial de Versiones — Orden de Trabajo (OT)
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {{ sortedOtVersiones.length }} {{ sortedOtVersiones.length === 1 ? 'Versión' : 'Versiones' }}
+                  </span>
+                </h4>
+                <p class="text-[10px] text-slate-400">
+                  Cada ajuste en los recursos, flota o cronograma genera una versión inmutable con trazabilidad legal y despacho B2B.
+                </p>
+              </div>
+            </div>
+            <button 
+              @click="generarPDFOT" 
+              :disabled="generandoPDFOT"
+              type="button"
+              class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-lg text-xs transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <span v-if="generandoPDFOT" class="animate-spin">⏳</span>
+              <span v-else>✨</span>
+              <span>{{ generandoPDFOT ? 'Compilando OT...' : '+ Nueva Versión OT (PDF)' }}</span>
+            </button>
+          </div>
+
+          <!-- Lista de Versiones -->
+          <div v-if="sortedOtVersiones.length === 0" class="p-4 bg-[#050810] rounded-lg border border-dashed border-white/10 text-center space-y-2">
+            <span class="text-2xl">📄</span>
+            <p class="text-xs text-slate-300 font-bold">Aún no se ha generado la versión oficial de la Orden de Trabajo.</p>
+            <p class="text-[11px] text-slate-500 max-w-md mx-auto">
+              Haz clic en <strong>"+ Nueva Versión OT (PDF)"</strong> para compilar el documento formal con la flota, tripulación, aparejos y cronograma asignados.
+            </p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div 
+              v-for="ot in sortedOtVersiones" 
+              :key="'ot-ver-'+ot.version"
+              class="bg-[#050810] border border-white/10 hover:border-amber-500/40 rounded-lg p-3 space-y-2.5 transition-all shadow-md group"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    V{{ ot.version }}
+                  </span>
+                  <div>
+                    <div class="text-xs font-bold text-white group-hover:text-amber-300 transition-colors font-mono truncate max-w-[160px]" :title="ot.nombre_archivo">
+                      {{ ot.nombre_archivo }}
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">
+                      📅 {{ new Date(ot.fecha).toLocaleString('es-CL') }}
+                    </div>
+                  </div>
+                </div>
+                <span v-if="ot.version === sortedOtVersiones[0].version" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                  VIGENTE
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-[10px] bg-black/40 p-2 rounded border border-white/5">
+                <div class="text-slate-300">
+                  🚜 <strong class="text-white">{{ ot.total_equipos || equiposAsignadosLista.length }}</strong> Vehículos
+                </div>
+                <div class="text-slate-300">
+                  👷 <strong class="text-white">{{ ot.total_tripulacion || tripulacionAsignada.length }}</strong> Tripulantes
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 pt-1 border-t border-white/5">
+                <a 
+                  :href="ot.id_doc ? `${archivoBaseUrl}/v1/storage/view/${ot.id_doc}` : getFullStaticUrl(ot.url)" 
+                  target="_blank" 
+                  rel="noopener"
+                  class="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 rounded text-center text-xs font-bold transition-colors flex items-center justify-center gap-1.5 no-underline cursor-pointer"
+                >
+                  <span>📄</span>
+                  <span>Ver PDF</span>
+                </a>
+                <button 
+                  @click="abrirModalEnviarOT(ot)"
+                  type="button"
+                  class="flex-1 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 rounded text-center text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>📧</span>
+                  <span>Despachar</span>
+                </button>
               </div>
             </div>
           </div>
@@ -3103,6 +3209,131 @@
         <span class="text-[11px] text-slate-400 font-mono">Trazabilidad FES & Acreditaciones GSP</span>
         <button @click="cerrarDetalleAcreditacion" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer">
           Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DESPACHO FORMAL DE ORDEN DE TRABAJO (OT) -->
+  <div v-if="showModalEnviarOT" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+    <div class="bg-[#0b1021] border border-amber-500/40 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-black space-y-0">
+      
+      <!-- Header -->
+      <div class="bg-[#050810] px-5 py-4 border-b border-white/10 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📧</span>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+              Despachar Orden de Trabajo
+              <span class="text-xs font-mono px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30 font-bold">
+                V{{ selectedOTVersionForEmail?.version }}
+              </span>
+            </h3>
+            <p class="text-[11px] text-slate-400">
+              Envío oficial de la OT y resumen de operaciones a la tripulación, patio y mandante.
+            </p>
+          </div>
+        </div>
+        <button @click="showModalEnviarOT = false" class="text-slate-400 hover:text-white text-xl p-1 font-bold cursor-pointer">✕</button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto text-xs">
+        
+        <!-- Destinatarios Tags -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-300 uppercase tracking-wider text-[10px]">
+            Destinatarios de Notificación *
+          </label>
+          <div class="flex flex-wrap gap-1.5 p-2 bg-[#050810] rounded-lg border border-white/10 min-h-[42px] items-center">
+            <span 
+              v-for="(dest, idx) in formDespachoOT.destinatarios" 
+              :key="'dest-'+idx"
+              class="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded text-[11px] font-mono flex items-center gap-1.5"
+            >
+              <span>{{ dest }}</span>
+              <button @click="eliminarDestinatarioOT(idx)" type="button" class="hover:text-red-400 font-bold text-xs cursor-pointer">×</button>
+            </span>
+          </div>
+          <div class="flex gap-2 mt-1.5">
+            <input 
+              type="email" 
+              v-model="formDespachoOT.nuevoEmail" 
+              @keyup.enter="agregarDestinatarioOT" 
+              placeholder="Agregar otro correo (ej: supervisor@mandante.cl) y presionar Enter..."
+              class="flex-1 bg-[#050810] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500/50"
+            />
+            <button 
+              @click="agregarDestinatarioOT" 
+              type="button" 
+              class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-xs cursor-pointer"
+            >
+              + Añadir
+            </button>
+          </div>
+        </div>
+
+        <!-- Asunto -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-300 uppercase tracking-wider text-[10px]">
+            Asunto del Mensaje *
+          </label>
+          <input 
+            type="text" 
+            v-model="formDespachoOT.asunto" 
+            class="w-full bg-[#050810] border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-medium outline-none focus:border-amber-500/50 font-sans"
+          />
+        </div>
+
+        <!-- Cuerpo -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-300 uppercase tracking-wider text-[10px]">
+            Mensaje / Instrucciones Adicionales
+          </label>
+          <textarea 
+            v-model="formDespachoOT.cuerpo_adicional" 
+            rows="4" 
+            class="w-full bg-[#050810] border border-white/10 rounded-lg p-3 text-xs text-slate-200 outline-none focus:border-amber-500/50 resize-none font-sans leading-relaxed"
+          ></textarea>
+        </div>
+
+        <!-- Adjunto Preview -->
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">📎</span>
+            <div>
+              <div class="font-bold text-white font-mono">{{ selectedOTVersionForEmail?.nombre_archivo }}</div>
+              <div class="text-[10px] text-amber-300/80">Documento PDF oficial de la OT adjunto automáticamente</div>
+            </div>
+          </div>
+          <a 
+            :href="selectedOTVersionForEmail?.id_doc ? `${archivoBaseUrl}/v1/storage/view/${selectedOTVersionForEmail.id_doc}` : getFullStaticUrl(selectedOTVersionForEmail?.url)" 
+            target="_blank" 
+            class="text-blue-400 hover:underline font-bold text-[11px]"
+          >
+            👁️ Previsualizar
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-[#050810] px-5 py-3.5 border-t border-white/10 flex justify-end items-center gap-3">
+        <button 
+          @click="showModalEnviarOT = false" 
+          type="button" 
+          class="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg font-bold text-xs cursor-pointer transition-colors"
+        >
+          Cancelar
+        </button>
+        <button 
+          @click="despacharOTPorCorreo" 
+          :disabled="enviandoOT || formDespachoOT.destinatarios.length === 0" 
+          type="button" 
+          class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <span v-if="enviandoOT" class="animate-spin">⏳</span>
+          <span v-else>🚀</span>
+          <span>{{ enviandoOT ? 'Despachando Correo...' : 'Confirmar y Despachar OT' }}</span>
         </button>
       </div>
     </div>
@@ -5730,6 +5961,27 @@ const generandoPDF = ref(false)
 const showModalEnviar = ref(false)
 const selectedVersionForEmail = ref(null)
 
+const ot_versiones = ref([])
+const generandoPDFOT = ref(false)
+const showModalEnviarOT = ref(false)
+const selectedOTVersionForEmail = ref(null)
+const enviandoOT = ref(false)
+const formDespachoOT = ref({
+  destinatarios: [],
+  nuevoEmail: '',
+  asunto: '',
+  cuerpo_adicional: ''
+})
+
+const sortedOtVersiones = computed(() => {
+  if (!Array.isArray(ot_versiones.value)) return []
+  return [...ot_versiones.value].sort((a, b) => {
+    const vA = Number(a.version || 0)
+    const vB = Number(b.version || 0)
+    return vB - vA
+  })
+})
+
 const sortedCotizacionesHistoricas = computed(() => {
   if (!Array.isArray(cotizaciones_historicas.value)) return []
   return [...cotizaciones_historicas.value].sort((a, b) => {
@@ -6730,6 +6982,9 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.preparacion_salida) {
             preparacionSalidaState.value = { ...preparacionSalidaState.value, ...ejecucion.preparacion_salida }
           }
+          if (Array.isArray(ejecucion.ot_versiones)) {
+            ot_versiones.value = [...ejecucion.ot_versiones].sort((a, b) => b.version - a.version)
+          }
           if (Array.isArray(ejecucion.traza_correos)) {
             trazaCorreosList.value = ejecucion.traza_correos
           }
@@ -7006,7 +7261,8 @@ const buildPayload = () => {
         aparejos: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos || [],
         aparejos_bloqueados_survey: true,
         cumplimiento_acreditaciones: operacionesAssignment.value.cumplimiento_acreditaciones,
-        porcentaje_acreditacion: porcentajeAcreditacionReal.value
+        porcentaje_acreditacion: porcentajeAcreditacionReal.value,
+        ot_versiones: ot_versiones.value
       }
     }
   }
@@ -8318,6 +8574,125 @@ const generarPDF = async () => {
     alert('Error al generar la cotización en el servidor.')
   } finally {
     generandoPDF.value = false
+  }
+}
+
+const generarPDFOT = async () => {
+  let projectId = props.proyectoId || currentProyectoId.value
+  if (!projectId) {
+    alert('Debe guardar la oportunidad antes de generar la Orden de Trabajo.')
+    return
+  }
+
+  generandoPDFOT.value = true
+  try {
+    const token = localStorage.getItem('token') || ''
+    const payload = buildPayload()
+    
+    // Asegurar guardado previo de los cambios de asignación
+    await apiAxios.put(`/proyectos/${projectId}`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/generar-ot`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (data?.ot) {
+      ot_versiones.value = [...(data.proyecto?.json_field?.ejecucion_v1?.ot_versiones || [data.ot])].sort((a, b) => b.version - a.version)
+      
+      const pdfUrl = data.ot.id_doc ? `${apiAxios.defaults.baseURL.replace(/\/$/, '')}/v1/storage/view/${data.ot.id_doc}` : getFullStaticUrl(data.ot.url)
+      
+      alert(`🎉 Orden de Trabajo Versión ${data.ot.version} generada exitosamente.\nArchivo: ${data.ot.nombre_archivo}`)
+      window.open(pdfUrl, '_blank')
+    }
+  } catch (error) {
+    console.error('Error al generar versión de OT:', error)
+    alert(`Error al generar la Orden de Trabajo en el servidor: ${error.response?.data?.error || error.message}`)
+  } finally {
+    generandoPDFOT.value = false
+  }
+}
+
+const abrirModalEnviarOT = (otVer) => {
+  selectedOTVersionForEmail.value = otVer
+  
+  // Sugerir destinatarios automáticos
+  const recipients = new Set()
+  recipients.add('operaciones@arriendosanpablo.cl')
+  recipients.add('coordinador_patio@leanglobal.cl')
+  
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  if (currentUser.email) recipients.add(currentUser.email)
+  
+  const clientEmail = selectedClient.value?.email_empresa || opportunity.value?.email_contacto || clienteSeleccionado.value?.email
+  if (clientEmail) recipients.add(clientEmail)
+
+  // Agregar correos de tripulantes asignados
+  (tripulacionAsignada.value || []).forEach(t => {
+    if (t.id_user) {
+      const u = (usuarios.value || []).find(user => user.id_user === t.id_user)
+      if (u?.email) recipients.add(u.email)
+    }
+  })
+
+  formDespachoOT.value = {
+    destinatarios: Array.from(recipients),
+    nuevoEmail: '',
+    asunto: `🏗️ Orden de Trabajo OT-${antecedentes.value.identificador_formal || 'GSP'}V${otVer.version} - ${siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || 'Servicio de Izaje'}`,
+    cuerpo_adicional: `Estimado equipo,\n\nAdjuntamos la Orden de Trabajo Oficial Versión ${otVer.version} para el servicio operacional en ${siteVisit.value.obra_nombre || 'faena'}.\n\nSaludos cordiales,\nCoordinación de Operaciones - Grúas San Pablo S.A.`
+  }
+  
+  showModalEnviarOT.value = true
+}
+
+const agregarDestinatarioOT = () => {
+  const em = formDespachoOT.value.nuevoEmail.trim().toLowerCase()
+  if (em && !formDespachoOT.value.destinatarios.includes(em)) {
+    formDespachoOT.value.destinatarios.push(em)
+    formDespachoOT.value.nuevoEmail = ''
+  }
+}
+
+const eliminarDestinatarioOT = (idx) => {
+  formDespachoOT.value.destinatarios.splice(idx, 1)
+}
+
+const despacharOTPorCorreo = async () => {
+  if (!formDespachoOT.value.destinatarios || formDespachoOT.value.destinatarios.length === 0) {
+    alert('Debe incluir al menos un destinatario de correo.')
+    return
+  }
+
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (!projectId) return
+
+  enviandoOT.value = true
+  try {
+    const token = localStorage.getItem('token') || ''
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/enviar-ot`, {
+      version: selectedOTVersionForEmail.value?.version || 1,
+      destinatarios: formDespachoOT.value.destinatarios,
+      asunto: formDespachoOT.value.asunto,
+      cuerpo_adicional: formDespachoOT.value.cuerpo_adicional
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    registrarTrazaCorreo(
+      'OT_DESPACHO',
+      formDespachoOT.value.destinatarios.join(', '),
+      formDespachoOT.value.asunto,
+      `Orden de Trabajo V${selectedOTVersionForEmail.value?.version} despachada por correo formal`
+    )
+
+    alert(`🟢 ${data.message || 'Orden de Trabajo despachada exitosamente.'}`)
+    showModalEnviarOT.value = false
+  } catch (error) {
+    console.error('Error al despachar OT por correo:', error)
+    alert(`Error al enviar el correo de la OT: ${error.response?.data?.error || error.message}`)
+  } finally {
+    enviandoOT.value = false
   }
 }
 

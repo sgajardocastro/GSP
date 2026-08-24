@@ -23,6 +23,8 @@ router.delete('/:id', proyectoController.deleteProyecto);
 
 router.post('/crearEquipoProyecto', proyectoController.crearEquipoProyecto);
 router.post('/:id/generar-cotizacion', proyectoController.generarCotizacion);
+router.post('/:id/generar-ot', proyectoController.generarOT);
+router.post('/:id/enviar-ot', proyectoController.enviarOT);
 
 // Sub-rutas para asignaciones (Personas y Equipos)
 router.use('/:id/asignaciones', asignacionRecursosRoutes);

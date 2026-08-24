@@ -834,6 +834,583 @@ class ProyectoModel {
       client.release();
     }
   }
+
+  // Generar nueva versión de Orden de Trabajo (OT) usando secuencia y persistiendo en json_field.ejecucion_v1
+  async generarOTVersion(id_proyecto) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const { rows } = await client.query('SELECT * FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+      if (rows.length === 0) throw new Error("Proyecto no encontrado");
+      const p = rows[0];
+      
+      let codi = p.codi_proyecto;
+      if (!codi) {
+        codi = await this.generarCodigoTransaccional(p.id_empresa, p.id_empresa_cliente, client);
+        await client.query('UPDATE tpry_proyecto SET codi_proyecto = $1 WHERE id_proyecto = $2', [codi, id_proyecto]);
+      }
+      
+      await client.query('CREATE SEQUENCE IF NOT EXISTS sch_leangsp.seq_id_ot START 1');
+      
+      const seqResult = await client.query("SELECT nextval('sch_leangsp.seq_id_ot') AS next_id");
+      const nextId = seqResult.rows[0].next_id;
+      
+      const jsonField = p.json_field || {};
+      if (!jsonField.ejecucion_v1) jsonField.ejecucion_v1 = {};
+      if (!jsonField.ejecucion_v1.ot_versiones) jsonField.ejecucion_v1.ot_versiones = [];
+      
+      const version = jsonField.ejecucion_v1.ot_versiones.length + 1;
+      const fileName = `OT-${codi}V${version}-${nextId}.pdf`;
+      
+      const fs = require('fs');
+      const path = require('path');
+      const { exec } = require('child_process');
+      const { buildStoragePath, resolveStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const archivoModel = require('./archivoModel');
+
+      const path_relativo = buildStoragePath('gsp', 'ot');
+      const targetDir = path.join(STORAGE_ROOT, path_relativo);
+      const filepath = path.join(targetDir, fileName);
+      
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      // 1. Obtener detalles del cliente mandante
+      let clienteObj = null;
+      if (p.id_empresa_cliente) {
+        const { rows: clientRows } = await client.query('SELECT * FROM tpar_empresas WHERE id_empresa = $1', [p.id_empresa_cliente]);
+        if (clientRows.length > 0) {
+          clienteObj = clientRows[0];
+        }
+      }
+
+      // 1b. Obtener detalles de la empresa emisora desde DB
+      let emisorObjDB = null;
+      if (p.id_empresa_emisora) {
+        const { rows: emisorRows } = await client.query('SELECT * FROM tpar_empresas WHERE id_empresa = $1', [p.id_empresa_emisora]);
+        if (emisorRows.length > 0) emisorObjDB = emisorRows[0];
+      }
+
+      const EMISORES = {
+        9: {
+          nombre: "LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)",
+          rut: "52.004.162-1",
+          giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS MOTORIZADOS",
+          direccion: "Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco",
+          fono: "+56 9 9443 7725",
+          color: "#f5a623",
+          colorLight: "rgba(245, 166, 35, 0.08)",
+          logoPath: "logo-sanpablo.png"
+        },
+        7: {
+          nombre: "SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)",
+          rut: "76.209.534-3",
+          giro: "ARRIENDO DE MAQUINARIAS Y VEHÍCULOS",
+          direccion: "Camino Labranza KM 9.5, Temuco",
+          fono: "+56 9 9443 7725",
+          color: "#3b82f6",
+          colorLight: "rgba(59, 130, 246, 0.08)"
+        },
+        8: {
+          nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
+          rut: "76.218.576-8",
+          giro: "ARRIENDO DE MAQUINARIAS Y LOGÍSTICA",
+          direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
+          fono: "+56 9 9443 7725",
+          color: "#10b981",
+          colorLight: "rgba(16, 185, 129, 0.08)"
+        },
+        11: {
+          nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
+          rut: "78.254.535-3",
+          giro: "ARRIENDO DE MAQUINARIAS Y EQUIPOS",
+          direccion: "Camino Labranza KM 9.5, Temuco",
+          fono: "+56 9 9443 7725",
+          color: "#8b5cf6",
+          colorLight: "rgba(139, 92, 246, 0.08)"
+        }
+      };
+
+      let emisorBase = EMISORES[p.id_empresa_emisora] || EMISORES[9];
+      const emisor = {
+        nombre: emisorObjDB?.razon_social || emisorObjDB?.name_empresa || emisorBase.nombre,
+        rut: emisorObjDB?.rut_empresa || emisorBase.rut,
+        giro: emisorObjDB?.giro || emisorBase.giro,
+        direccion: emisorObjDB?.direccion || emisorBase.direccion,
+        fono: emisorObjDB?.fono_contacto || emisorBase.fono,
+        color: emisorBase.color,
+        colorLight: emisorBase.colorLight,
+        logoPath: emisorObjDB?.logo_empresa || emisorBase.logoPath
+      };
+
+      let finalLogoPath = emisor.logoPath;
+      try {
+        const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
+        const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        if (fs.existsSync(diskPath)) {
+          const imgBuf = fs.readFileSync(diskPath);
+          finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
+        }
+      } catch (err) {
+        console.error('Error leyendo logo desde disco:', err);
+      }
+
+      // 2. Extraer datos de Operaciones & CRM
+      const crm = jsonField.crm_v1 || {};
+      const ejec = jsonField.ejecucion_v1 || {};
+
+      // Obtener usuarios asignados desde DB (para nombres y cargos completos)
+      const { rows: allUsers } = await client.query('SELECT * FROM tsec_users');
+      const getUserInfo = (uId) => {
+        if (!uId) return null;
+        const u = allUsers.find(user => Number(user.id_user) === Number(uId));
+        if (!u) return null;
+        return {
+          ...u,
+          nombre_user: u.nombre_user || u.name_user || `${u.name_frst || ''} ${u.name_last || ''}`.trim() || 'Usuario Asignado'
+        };
+      };
+
+      // Obtener equipos asignados desde DB (para patentes y especificaciones)
+      const { rows: allEquipos } = await client.query('SELECT * FROM tequ_equipo');
+      const getEquipoInfo = (eqId) => {
+        if (!eqId) return null;
+        return allEquipos.find(e => Number(e.id_equipo) === Number(eqId) || (e.patente && String(e.patente).toUpperCase() === String(eqId).toUpperCase()) || (e.ppu && String(e.ppu).toUpperCase() === String(eqId).toUpperCase())) || null;
+      };
+
+      // Tiempos Operativos
+      const fechaSalida = ejec.fecha_salida_plan || crm.fecha_inicio_plan || 'Por definir';
+      const horaSalida = ejec.hora_salida_plan || '08:00';
+      const fechaFin = ejec.fecha_fin_plan || crm.fecha_fin_plan || 'Por definir';
+      const horaFin = ejec.hora_fin_plan || '18:00';
+
+      // Mandante y Obra
+      const clienteNombre = clienteObj?.razon_social || clienteObj?.name_empresa || p.rut_cliente || 'Cliente General';
+      const clienteRut = clienteObj?.rut_empresa || p.rut_cliente || 'N/A';
+      const obraNombre = crm.obra_nombre || crm.faena_nombre || p.nombre_proyecto || 'Faena en Terreno';
+      const obraDireccion = crm.obra_direccion || crm.direccion_faena || 'Dirección por confirmar';
+      const obraCiudad = crm.obra_ciudad || crm.comuna_faena || 'Temuco';
+      const obraContacto = crm.contacto_terreno_nombre || crm.contacto_nombre || 'Supervisor de Obra';
+      const obraTelefono = crm.contacto_terreno_fono || crm.contacto_telefono || emisor.fono;
+      const coordenadasGps = (crm.lat && crm.lng) ? `${crm.lat}, ${crm.lng}` : (crm.coordenadas_gps || 'No especificadas');
+
+      // Flota & Convoy Asignado
+      const flotaItems = [];
+      const lineasServicio = crm.lineas_servicio || [];
+      
+      // Segmento 1: Flota Principal
+      lineasServicio.forEach((l, idx) => {
+        const eqId = l.equipo_asignado_id || l.equipo_id;
+        if (eqId) {
+          const eqObj = getEquipoInfo(eqId) || {};
+          const opObj = getUserInfo(l.operador_asignado_id || ejec.operador_id) || {};
+          flotaItems.push({
+            segmento: 'Izaje Principal',
+            tipo: l.tipo || eqObj.tipo || 'Grúa Móvil',
+            modelo: eqObj.nombre_equipo || eqObj.modelo || l.subcategoria || 'General',
+            patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+            chofer: opObj.nombre_user || opObj.name_frst ? `${opObj.nombre_user || opObj.name_frst} (Operador)` : 'Sin Operador Asignado'
+          });
+        }
+      });
+
+      // Segmento 2: Traslados & Logística
+      const equiposExtra = Array.isArray(ejec.equipos_extra) ? ejec.equipos_extra : [];
+      equiposExtra.forEach((ex, idx) => {
+        const eqId = typeof ex === 'object' ? ex.id_equipo : ex;
+        if (eqId) {
+          const eqObj = getEquipoInfo(eqId) || {};
+          const chObj = getUserInfo(ex.chofer_id || ejec.chofer_id) || {};
+          flotaItems.push({
+            segmento: 'Traslado & Logística',
+            tipo: ex.tipo || eqObj.tipo || 'Transporte',
+            modelo: eqObj.nombre_equipo || ex.subcategoria || ex.descripcion || 'Cama Baja',
+            patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+            chofer: chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado'
+          });
+        }
+      });
+
+      if (flotaItems.length === 0 && ejec.equipo_id) {
+        const eqObj = getEquipoInfo(ejec.equipo_id) || {};
+        const opObj = getUserInfo(ejec.operador_id) || {};
+        flotaItems.push({
+          segmento: 'Izaje Principal',
+          tipo: eqObj.tipo || 'Grúa',
+          modelo: eqObj.nombre_equipo || 'Equipo Principal',
+          patente: (eqObj.patente || ejec.equipo_id || '').toUpperCase(),
+          chofer: opObj.nombre_user ? `${opObj.nombre_user} (Operador)` : 'Asignado'
+        });
+      }
+
+      let flotaHtml = '';
+      flotaItems.forEach((f, idx) => {
+        flotaHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+            <td><strong style="color: #1e293b;">${f.tipo}</strong> — ${f.modelo}</td>
+            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #1e40af;">${f.patente}</td>
+            <td style="font-size: 10px;">${f.segmento}</td>
+            <td>${f.chofer}</td>
+          </tr>
+        `;
+      });
+
+      // Dotación Humana / Tripulación
+      const tripulacionItems = [];
+      const userIdsSeen = new Set();
+
+      lineasServicio.forEach(l => {
+        if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
+          userIdsSeen.add(l.operador_asignado_id);
+          const u = getUserInfo(l.operador_asignado_id);
+          if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
+        }
+      });
+
+      equiposExtra.forEach(ex => {
+        if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
+          userIdsSeen.add(ex.chofer_id);
+          const u = getUserInfo(ex.chofer_id);
+          if (u) tripulacionItems.push({ rol: 'Chofer Cama Baja / Transporte', ...u });
+        }
+      });
+
+      if (ejec.operador_id && !userIdsSeen.has(ejec.operador_id)) {
+        userIdsSeen.add(ejec.operador_id);
+        const u = getUserInfo(ejec.operador_id);
+        if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
+      }
+      if (ejec.rigger_id && !userIdsSeen.has(ejec.rigger_id)) {
+        userIdsSeen.add(ejec.rigger_id);
+        const u = getUserInfo(ejec.rigger_id);
+        if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });
+      }
+      if (ejec.chofer_id && !userIdsSeen.has(ejec.chofer_id)) {
+        userIdsSeen.add(ejec.chofer_id);
+        const u = getUserInfo(ejec.chofer_id);
+        if (u) tripulacionItems.push({ rol: 'Chofer Transporte', ...u });
+      }
+
+      let tripulacionHtml = '';
+      tripulacionItems.forEach((t, idx) => {
+        tripulacionHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+            <td><strong>${t.nombre_user || `${t.name_frst || ''} ${t.name_last || ''}`}</strong></td>
+            <td style="font-family: monospace; font-size: 10px;">${t.rut_user || 'N/A'}</td>
+            <td><span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9.5px;">${t.rol || t.cargo || 'Especialista'}</span></td>
+            <td style="font-size: 10px; color: #64748b;">${t.email || '-'}</td>
+          </tr>
+        `;
+      });
+
+      // Matriz de Aparejos
+      const aparejosJson = ejec.aparejos_asignados_json || ejec.aparejos_solicitados_json || crm.aparejos || {};
+      let aparejosHtml = '';
+      if (typeof aparejosJson === 'object' && Object.keys(aparejosJson).length > 0) {
+        const rowsApar = [];
+        for (const [k, v] of Object.entries(aparejosJson)) {
+          if (v && v !== '0' && v !== false) {
+            rowsApar.push(`<li><strong>${k.replace(/_/g, ' ').toUpperCase()}:</strong> ${typeof v === 'boolean' ? 'Requerido / Asignado' : v}</li>`);
+          }
+        }
+        if (rowsApar.length > 0) {
+          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.6; color: #334155;">${rowsApar.join('')}</ul>`;
+        }
+      }
+      if (!aparejosHtml) {
+        aparejosHtml = '<p style="margin: 0; font-size: 10px; color: #64748b; font-style: italic;">Aparejos estándar de faena (Eslingas certificadas, grilletes omega y fajas de alta resistencia según tabla de carga).</p>';
+      }
+
+      // Suministros & Logística
+      const combMandante = crm.cliente_pone_combustible === true;
+      const observaciones = ejec.observaciones || crm.observaciones_cotizacion || 'Servicio sujeto a protocolo de seguridad y análisis seguro de trabajo (AST) en faena.';
+
+      // Template HTML A4
+      const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Orden de Trabajo ${codi} - V${version}</title>
+        <style>
+          @page { size: A4; margin: 8mm 10mm; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #1e293b; background: #ffffff; margin: 0; padding: 0; }
+          .header { border-bottom: 3px solid ${emisor.color}; padding-bottom: 10px; margin-bottom: 12px; }
+          .header table { width: 100%; border-collapse: collapse; }
+          .logo { max-height: 55px; max-width: 190px; object-fit: contain; }
+          .title-box { text-align: right; }
+          .ot-title { font-size: 20px; font-weight: 900; color: ${emisor.color}; margin: 0; letter-spacing: 0.5px; }
+          .ot-code { font-size: 13px; font-weight: bold; color: #0f172a; margin-top: 2px; font-family: monospace; }
+          .ot-version { display: inline-block; background: ${emisor.color}; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 3px; }
+          
+          .section-title { font-size: 11.5px; font-weight: bold; background: #f1f5f9; color: #0f172a; padding: 4px 8px; border-left: 4px solid ${emisor.color}; margin-top: 10px; margin-bottom: 6px; text-transform: uppercase; }
+          
+          table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10.5px; }
+          table.data-table th { background: #f8fafc; color: #475569; font-weight: bold; font-size: 9.5px; text-transform: uppercase; padding: 5px 8px; border: 1px solid #cbd5e1; text-align: left; }
+          table.data-table td { padding: 5px 8px; border: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
+          table.data-table tr:nth-child(even) { background: #f8fafc; }
+          
+          .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
+          .info-grid td { padding: 4px 6px; border: 1px solid #e2e8f0; vertical-align: top; }
+          .info-lbl { font-weight: bold; color: #475569; width: 18%; background: #f8fafc; }
+          .info-val { color: #0f172a; width: 32%; }
+          
+          .signatures { width: 100%; margin-top: 20px; border-collapse: collapse; }
+          .signatures td { width: 50%; vertical-align: bottom; text-align: center; padding: 0 20px; }
+          .sig-line { border-top: 1.5px dashed #64748b; margin-top: 45px; padding-top: 5px; font-size: 10px; font-weight: bold; color: #1e293b; }
+          .sig-sub { font-size: 9px; color: #64748b; }
+          
+          .footer { margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; font-size: 8.5px; color: #64748b; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <table>
+            <tr>
+              <td style="width: 50%;">
+                ${finalLogoPath ? `<img src="${finalLogoPath}" class="logo" alt="Logo">` : `<h2>${emisor.nombre}</h2>`}
+                <div style="font-size: 9px; color: #475569; margin-top: 4px; line-height: 1.3;">
+                  <strong>${emisor.nombre}</strong><br>
+                  RUT: ${emisor.rut} | ${emisor.giro}<br>
+                  ${emisor.direccion} | Fono: ${emisor.fono}
+                </div>
+              </td>
+              <td class="title-box">
+                <div class="ot-title">ORDEN DE TRABAJO (OT)</div>
+                <div class="ot-code">${codi}</div>
+                <div class="ot-version">VERSIÓN ${version}</div>
+                <div style="font-size: 9px; color: #64748b; margin-top: 4px;">Emisión: ${new Date().toLocaleString('es-CL')}</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- 1. MANDANTE & FAENA -->
+        <div class="section-title">1. Información del Mandante & Faena</div>
+        <table class="info-grid">
+          <tr>
+            <td class="info-lbl">Cliente Mandante:</td>
+            <td class="info-val"><strong>${clienteNombre}</strong></td>
+            <td class="info-lbl">RUT Cliente:</td>
+            <td class="info-val">${clienteRut}</td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Nombre Faena / Obra:</td>
+            <td class="info-val"><strong>${obraNombre}</strong></td>
+            <td class="info-lbl">Comuna / Ciudad:</td>
+            <td class="info-val">${obraCiudad}</td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Dirección Faena:</td>
+            <td class="info-val">${obraDireccion}</td>
+            <td class="info-lbl">Contacto Terreno:</td>
+            <td class="info-val">${obraContacto} (${obraTelefono})</td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Georreferenciación GPS:</td>
+            <td class="info-val" colspan="3" style="font-family: monospace; color: #0369a1;">📍 ${coordenadasGps}</td>
+          </tr>
+        </table>
+
+        <!-- 2. CRONOGRAMA OPERATIVO -->
+        <div class="section-title">2. Cronograma Operativo Planificado</div>
+        <table class="info-grid">
+          <tr>
+            <td class="info-lbl">Salida de Base / Patio:</td>
+            <td class="info-val"><strong style="color: #047857;">${fechaSalida} a las ${horaSalida} hrs</strong></td>
+            <td class="info-lbl">Término y Retorno:</td>
+            <td class="info-val"><strong style="color: #b91c1c;">${fechaFin} a las ${horaFin} hrs</strong></td>
+          </tr>
+        </table>
+
+        <!-- 3. FLOTA Y CONVOY ASIGNADO -->
+        <div class="section-title">3. Flota & Convoy de Equipos Asignados (${flotaItems.length} Vehículos)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 5%; text-align: center;">N°</th>
+              <th style="width: 35%;">Equipo / Modelo</th>
+              <th style="width: 15%; text-align: center;">Patente (PPU)</th>
+              <th style="width: 18%;">Segmento</th>
+              <th style="width: 27%;">Operador / Chofer Asignado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${flotaHtml || '<tr><td colspan="5" style="text-align: center; color: #64748b;">Sin equipos asignados</td></tr>'}
+          </tbody>
+        </table>
+
+        <!-- 4. DOTACIÓN HUMANA & TRIPULACIÓN -->
+        <div class="section-title">4. Dotación Humana & Tripulación de Faena (${tripulacionItems.length} Personas)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 5%; text-align: center;">N°</th>
+              <th style="width: 32%;">Nombre Completo</th>
+              <th style="width: 18%;">RUT</th>
+              <th style="width: 25%;">Rol / Especialidad</th>
+              <th style="width: 20%;">Contacto</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tripulacionHtml || '<tr><td colspan="5" style="text-align: center; color: #64748b;">Sin tripulación asignada</td></tr>'}
+          </tbody>
+        </table>
+
+        <!-- 5. MATRIZ DE APAREJOS & SUMINISTROS -->
+        <div class="section-title">5. Elementos de Izaje, Logística & Suministros</div>
+        <table class="info-grid">
+          <tr>
+            <td class="info-lbl" style="width: 25%;">Aparejos & Estrobos Autorizados:</td>
+            <td class="info-val" style="width: 75%;" colspan="3">${aparejosHtml}</td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Suministro de Combustible:</td>
+            <td class="info-val" colspan="3">
+              ${combMandante 
+                ? '<strong>Suministrado por Cliente Mandante en faena.</strong>' 
+                : '<strong>Suministrado por Grúas San Pablo (Carga con Tarjeta Copec en ruta).</strong>'}
+            </td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Instrucciones & Observaciones:</td>
+            <td class="info-val" colspan="3" style="font-size: 9.5px; color: #334155;">${observaciones}</td>
+          </tr>
+        </table>
+
+        <!-- 6. FIRMAS DE RESPONSABILIDAD -->
+        <table class="signatures">
+          <tr>
+            <td>
+              <div class="sig-line">COORDINADOR DE OPERACIONES / DESPACHO</div>
+              <div class="sig-sub">${emisor.nombre}</div>
+            </td>
+            <td>
+              <div class="sig-line">RECEPCIÓN CONFORME EN FAENA</div>
+              <div class="sig-sub">SUPERVISOR / PREVENCIONISTA MANDANTE</div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer">
+          Documento Oficial de Operaciones — Grúas San Pablo S.A. | Generado electrónicamente bajo estándar de trazabilidad Spec 33.
+        </div>
+      </body>
+      </html>
+      `;
+
+      // 3. Escribir HTML temporal y compilar a PDF con wkhtmltopdf
+      const tempHtmlPath = path.join(targetDir, `temp_${fileName}.html`);
+      fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+      await new Promise((resolve, reject) => {
+        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
+        exec(cmd, (error, stdout, stderr) => {
+          try {
+            if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath);
+          } catch (unlinkErr) {
+            console.error("Error al borrar HTML temporal OT:", unlinkErr);
+          }
+          
+          if (error && !fs.existsSync(filepath)) {
+            console.error("Error al ejecutar wkhtmltopdf para OT:", error);
+            return reject(new Error(`Error al compilar el PDF de la OT: ${error.message}`));
+          }
+          resolve();
+        });
+      });
+
+      // Guardar en Storage Engine (tfmg_file)
+      const archivoM = new archivoModel();
+      const doc = await archivoM.insertarTfmgFile(
+        'OT',
+        'application/pdf',
+        fileName,
+        fileName,
+        path_relativo,
+        null,
+        'A'
+      );
+
+      const nuevaOT = {
+        id_ot: Number(nextId),
+        version: version,
+        nombre_archivo: fileName,
+        fecha: new Date().toISOString(),
+        url: `/api/archivo/ver/${doc.id_doc}`,
+        id_doc: doc.id_doc,
+        total_equipos: flotaItems.length,
+        total_tripulacion: tripulacionItems.length
+      };
+
+      jsonField.ejecucion_v1.ot_versiones.push(nuevaOT);
+      
+      const updateResult = await client.query(
+        'UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2 RETURNING *',
+        [jsonField, id_proyecto]
+      );
+
+      await client.query('COMMIT');
+      
+      return {
+        ot: nuevaOT,
+        proyecto: updateResult.rows[0]
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Despachar Orden de Trabajo por correo B2B
+  async enviarOT(id_proyecto, payload = {}) {
+    const client = await this.pool.connect();
+    try {
+      const { rows } = await client.query('SELECT * FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+      if (rows.length === 0) throw new Error("Proyecto no encontrado");
+      const p = rows[0];
+      
+      const jsonField = p.json_field || {};
+      const ejec = jsonField.ejecucion_v1 || {};
+      const versiones = Array.isArray(ejec.ot_versiones) ? ejec.ot_versiones : [];
+      
+      const requestedVersion = payload.version ? Number(payload.version) : (versiones.length > 0 ? versiones[versiones.length - 1].version : 1);
+      const otObj = versiones.find(v => Number(v.version) === requestedVersion) || versiones[versiones.length - 1];
+      
+      const destinatarios = Array.isArray(payload.destinatarios) && payload.destinatarios.length > 0 ? payload.destinatarios : ['sgajardoc@gmail.com'];
+      const asunto = payload.asunto || `🏗️ Orden de Trabajo OT-${p.codi_proyecto || 'GSP'}V${requestedVersion} - ${p.nombre_proyecto || 'Servicio de Izaje'}`;
+      
+      if (!ejec.ot_despachos_historicos) ejec.ot_despachos_historicos = [];
+      
+      const despachoTraza = {
+        version: requestedVersion,
+        fecha: new Date().toISOString(),
+        destinatarios: destinatarios,
+        asunto: asunto,
+        id_doc: otObj?.id_doc || null,
+        enviado_por: payload.enviado_por || 'Coordinador Operaciones'
+      };
+      
+      ejec.ot_despachos_historicos.push(despachoTraza);
+      jsonField.ejecucion_v1 = ejec;
+      
+      await client.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jsonField, id_proyecto]);
+      
+      return {
+        success: true,
+        message: `Orden de Trabajo V${requestedVersion} despachada exitosamente a ${destinatarios.join(', ')}`,
+        despacho: despachoTraza
+      };
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = ProyectoModel;
