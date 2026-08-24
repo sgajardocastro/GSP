@@ -137,9 +137,22 @@
           <p class="text-xs text-slate-300 font-mono">
             Tiempo en ruta: <span class="font-bold text-white">{{ tiempoEnRuta }}</span>
           </p>
-          <p class="text-[11px] text-slate-400">
-            Última telemetría GPS registrada localmente hace momentos.
-          </p>
+          <div class="text-[11px] text-emerald-300 bg-black/40 border border-emerald-500/30 rounded-xl p-2.5 font-mono space-y-1 text-left">
+            <div class="flex justify-between items-center">
+              <span>📡 Pings GPS Registrados:</span>
+              <span class="font-bold text-white text-xs bg-emerald-500/30 px-2 py-0.5 rounded">{{ totalPingsEnRuta }} pings</span>
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-slate-300">
+              <span>📍 Última Posición:</span>
+              <span v-if="ultimaPosicionGPS?.latitud" class="text-amber-400 font-bold">
+                {{ ultimaPosicionGPS.latitud.toFixed(4) }}, {{ ultimaPosicionGPS.longitud.toFixed(4) }} ({{ ultimaPosicionGPS.velocidad_kmh || 0 }} km/h)
+              </span>
+              <span v-else class="text-slate-400">Capturando GPS...</span>
+            </div>
+            <div class="text-[9px] text-slate-400 pt-0.5 border-t border-white/5">
+              ⏱️ Frecuencia de Rastreo: Cada 2 seg (Modo Prueba)
+            </div>
+          </div>
         </div>
 
         <!-- BOTÓN GIGANTE: PASAR A CARGAR COMBUSTIBLE -->
@@ -239,18 +252,18 @@
 
           <!-- 3. TELEMETRÍA, GPS & VELOCIDADES -->
           <div class="bg-[#050810] border border-white/5 rounded-xl p-3 space-y-2 text-xs font-mono">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-white/5 pb-1">🛰️ Telemetría & Velocidades</span>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b border-white/5 pb-1">🛰️ Telemetría & Velocidades Reales</span>
             <div class="flex justify-between text-slate-300">
               <span>Puntos GPS Registrados:</span>
-              <span class="text-white font-bold">{{ viaje.total_pings_gps || 18 }} pings</span>
+              <span class="text-white font-bold">{{ (viaje.pings_ruta && viaje.pings_ruta.length) || viaje.total_pings_gps || 0 }} pings</span>
             </div>
             <div class="flex justify-between text-slate-300">
               <span>Velocidad Promedio:</span>
-              <span class="text-white font-bold">58.4 km/h</span>
+              <span class="text-white font-bold">{{ calcularVelocidadPromedio(viaje.pings_ruta) }} km/h</span>
             </div>
             <div class="flex justify-between text-slate-300">
               <span>Velocidad Máxima:</span>
-              <span class="text-emerald-400 font-bold">68.0 km/h (🟢 En Norma)</span>
+              <span class="text-emerald-400 font-bold">{{ calcularVelocidadMaxima(viaje.pings_ruta) }} km/h</span>
             </div>
             <div class="flex justify-between text-slate-300 border-t border-white/5 pt-1">
               <span>Geocerca de Obra:</span>
@@ -494,7 +507,8 @@ import {
   marcarMutacionSincronizada,
   sincronizarMutacionesConBackend,
   comprimirFoto,
-  hashPin
+  hashPin,
+  obtenerCoordenadasGPS
 } from '@/utils/viajeOfflineSync'
 
 const route = useRoute()
@@ -505,6 +519,12 @@ const isOnline = ref(navigator.onLine)
 const mutacionesPendientesCount = ref(0)
 const guardando = ref(false)
 const cargandoViaje = ref(false)
+
+// Telemetría GPS en Ruta (2 Segundos para pruebas según Spec 30 / 32)
+const INTERVALO_PING_MS = 2000
+const gpsWatcherInterval = ref(null)
+const ultimaPosicionGPS = ref(null)
+const totalPingsEnRuta = ref(0)
 
 // Datos del Viaje
 const viaje = ref({
@@ -525,7 +545,9 @@ const viaje = ref({
   horometro_salida: null,
   odometro_llegada: null,
   horometro_llegada: null,
-  cargas_combustible: []
+  cargas_combustible: [],
+  pings_ruta: [],
+  total_pings_gps: 0
 })
 
 // Formularios
@@ -627,6 +649,57 @@ const onFotoLlegadaCapturada = async (e) => {
 }
 
 // -------------------------------------------------------------
+// RASTREO GPS AUTOMÁTICO EN RUTA (MODO PRUEBA: 2 SEGUNDOS)
+// -------------------------------------------------------------
+const registrarPingAutomatico = async () => {
+  if (viaje.value.estado_viaje !== 'EN_RUTA') return
+  const gps = await obtenerCoordenadasGPS()
+  ultimaPosicionGPS.value = gps
+
+  const pingPayload = {
+    latitud: gps.latitud,
+    longitud: gps.longitud,
+    velocidad_kmh: gps.velocidad_kmh,
+    accuracy: gps.accuracy,
+    timestamp: gps.timestamp || new Date().toISOString()
+  }
+
+  // 1. Encolar mutación en Outbox local (Offline-First)
+  await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
+
+  // 2. Acumular en lista de pings del viaje
+  if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
+  viaje.value.pings_ruta.push(pingPayload)
+  totalPingsEnRuta.value = viaje.value.pings_ruta.length
+  viaje.value.total_pings_gps = totalPingsEnRuta.value
+
+  await guardarSesionLocal(tokenViaje.value, viaje.value)
+  await actualizarContadorPendientes()
+
+  // 3. Sincronizar con backend si hay conexión activa
+  if (isOnline.value) {
+    await sincronizarMutacionesConBackend(tokenViaje.value, apiAxios)
+    await actualizarContadorPendientes()
+  }
+}
+
+const iniciarRastreoGPS = () => {
+  detenerRastreoGPS()
+  // Primer ping inmediato al entrar a ruta
+  registrarPingAutomatico()
+  // Ciclo periódico cada 2 segundos para pruebas
+  gpsWatcherInterval.value = setInterval(() => {
+    registrarPingAutomatico()
+  }, INTERVALO_PING_MS)
+}
+
+const detenerRastreoGPS = () => {
+  if (gpsWatcherInterval.value) {
+    clearInterval(gpsWatcherInterval.value)
+    gpsWatcherInterval.value = null
+  }
+}
+
 // -------------------------------------------------------------
 // ACCIÓN: INICIAR VIAJE (SALIDA DE PATIO)
 // -------------------------------------------------------------
@@ -634,11 +707,15 @@ const ejecutarInicioViaje = async () => {
   guardando.value = true
   try {
     const pinHashed = await hashPin(formSalida.value.pin)
+    const gps = await obtenerCoordenadasGPS()
+
     const payload = {
       km_inicial: formSalida.value.odometro,
       horometro_inicial: formSalida.value.horometro,
       foto_salida: formSalida.value.foto,
-      pin_hash: pinHashed
+      pin_hash: pinHashed,
+      latitud: gps.latitud,
+      longitud: gps.longitud
     }
 
     // 1. Encolar en Outbox local (Offline-First)
@@ -653,6 +730,7 @@ const ejecutarInicioViaje = async () => {
     await guardarSesionLocal(tokenViaje.value, viaje.value)
     actualizarContadorPendientes()
     iniciarTimerRuta()
+    iniciarRastreoGPS()
 
     // 3. Sincronizar inmediatamente si hay conexión
     if (isOnline.value) {
@@ -728,12 +806,17 @@ const abrirModalLlegada = () => {
 }
 
 const ejecutarLlegadaFaena = async () => {
+  detenerRastreoGPS()
   const pinHashed = await hashPin(formLlegada.value.pin)
+  const gps = await obtenerCoordenadasGPS()
+
   const payload = {
     km_final: formLlegada.value.odometro,
     horometro_final: formLlegada.value.horometro,
     foto_llegada: formLlegada.value.foto,
     pin_hash: pinHashed,
+    latitud: gps.latitud,
+    longitud: gps.longitud,
     obs_termino: formLlegada.value.obs_termino || 'Viaje concluido conforme en faena.'
   }
 
@@ -757,8 +840,20 @@ const ejecutarLlegadaFaena = async () => {
 }
 
 // -------------------------------------------------------------
-// HELPERS DE FORMATEO Y PDF
+// HELPERS DE FORMATEO, VELOCIDADES Y PDF
 // -------------------------------------------------------------
+const calcularVelocidadMaxima = (pings) => {
+  if (!pings || pings.length === 0) return '0.0'
+  const max = Math.max(...pings.map(p => Number(p.velocidad_kmh || 0)))
+  return max > 0 ? max.toFixed(1) : '0.0'
+}
+
+const calcularVelocidadPromedio = (pings) => {
+  if (!pings || pings.length === 0) return '0.0'
+  const sum = pings.reduce((acc, p) => acc + Number(p.velocidad_kmh || 0), 0)
+  return (sum / pings.length).toFixed(1)
+}
+
 const formatFechaHora = (isoStr) => {
   if (!isoStr) return '--'
   try {
@@ -825,6 +920,7 @@ const onOnlineStatusChange = async () => {
 const cambiarFaseDemo = (fase) => {
   viaje.value.estado_viaje = fase
   if (fase === 'ARRIBADO_FAENA') {
+    detenerRastreoGPS()
     viaje.value.odometro_salida = 145820.5
     viaje.value.horometro_salida = 3240.2
     viaje.value.odometro_llegada = 145945.5
@@ -832,6 +928,14 @@ const cambiarFaseDemo = (fase) => {
     viaje.value.timestamp_inicio = new Date(Date.now() - 2.25 * 3600 * 1000).toISOString()
     viaje.value.timestamp_llegada = new Date().toISOString()
     viaje.value.obs_termino = 'Viaje completado sin novedades en carretera. Equipo posicionado en portería de faena conforme.'
+    viaje.value.pings_ruta = [
+      { latitud: -36.6172, longitud: -72.1148, velocidad_kmh: 0 },
+      { latitud: -36.6250, longitud: -72.1080, velocidad_kmh: 54 },
+      { latitud: -36.6340, longitud: -72.1020, velocidad_kmh: 68 },
+      { latitud: -36.6410, longitud: -72.0950, velocidad_kmh: 62 },
+      { latitud: -36.6500, longitud: -72.0880, velocidad_kmh: 0 }
+    ]
+    viaje.value.total_pings_gps = 5
     viaje.value.cargas_combustible = [
       {
         tipo_estanque: '⛽ Estanque Principal (Chasis / Tracción)',
@@ -845,6 +949,9 @@ const cambiarFaseDemo = (fase) => {
     viaje.value.horometro_salida = 3240.2
     viaje.value.timestamp_inicio = new Date(Date.now() - 45 * 60 * 1000).toISOString()
     iniciarTimerRuta()
+    iniciarRastreoGPS()
+  } else {
+    detenerRastreoGPS()
   }
 }
 
@@ -877,11 +984,16 @@ onMounted(async () => {
           odometro_llegada: dbViaje.km_final,
           horometro_llegada: dbViaje.horometro_final,
           obs_termino: dbViaje.obs_termino,
-          cargas_combustible: dbViaje.cargas_combustible || []
+          cargas_combustible: dbViaje.cargas_combustible || [],
+          pings_ruta: dbViaje.pings_ruta || [],
+          total_pings_gps: (dbViaje.pings_ruta && dbViaje.pings_ruta.length) || 0
         }
+        totalPingsEnRuta.value = viaje.value.total_pings_gps
+
         await guardarSesionLocal(tokenViaje.value, viaje.value)
         if (viaje.value.estado_viaje === 'EN_RUTA') {
           iniciarTimerRuta()
+          iniciarRastreoGPS()
         }
       }
     } catch (err) {
@@ -889,8 +1001,10 @@ onMounted(async () => {
       const guardada = await obtenerSesionLocal(tokenViaje.value)
       if (guardada) {
         viaje.value = { ...viaje.value, ...guardada }
+        totalPingsEnRuta.value = (viaje.value.pings_ruta && viaje.value.pings_ruta.length) || 0
         if (viaje.value.estado_viaje === 'EN_RUTA') {
           iniciarTimerRuta()
+          iniciarRastreoGPS()
         }
       }
     } finally {
@@ -901,8 +1015,10 @@ onMounted(async () => {
     const guardada = await obtenerSesionLocal(tokenViaje.value)
     if (guardada) {
       viaje.value = { ...viaje.value, ...guardada }
+      totalPingsEnRuta.value = (viaje.value.pings_ruta && viaje.value.pings_ruta.length) || 0
       if (viaje.value.estado_viaje === 'EN_RUTA') {
         iniciarTimerRuta()
+        iniciarRastreoGPS()
       }
     } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
       cambiarFaseDemo('ARRIBADO_FAENA')
@@ -917,6 +1033,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  detenerRastreoGPS()
   window.removeEventListener('online', onOnlineStatusChange)
   window.removeEventListener('offline', onOnlineStatusChange)
   if (timerInterval) clearInterval(timerInterval)

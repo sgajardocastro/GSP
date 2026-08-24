@@ -214,3 +214,34 @@ export async function hashPin(pin, salt = 'GSP-SALT-2026') {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * Captura la geolocalización actual del dispositivo (GPS)
+ */
+export function obtenerCoordenadasGPS(timeoutMs = 6000) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ latitud: null, longitud: null, velocidad_kmh: 0, accuracy: null, timestamp: new Date().toISOString() });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = pos.coords;
+        const velKmh = coords.speed != null && coords.speed >= 0 ? Math.round(coords.speed * 3.6) : 0;
+        resolve({
+          latitud: coords.latitude,
+          longitud: coords.longitude,
+          velocidad_kmh: velKmh,
+          accuracy: coords.accuracy,
+          timestamp: new Date(pos.timestamp || Date.now()).toISOString()
+        });
+      },
+      (err) => {
+        console.warn('[GPS] Aviso al capturar posición:', err?.message || err);
+        resolve({ latitud: null, longitud: null, velocidad_kmh: 0, accuracy: null, timestamp: new Date().toISOString() });
+      },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 }
+    );
+  });
+}
+
