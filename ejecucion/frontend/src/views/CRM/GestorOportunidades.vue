@@ -1589,9 +1589,61 @@
                         </div>
                       </div>
 
-                      <!-- Bloque de Autorización de Salida y Notificación de Viaje -->
-                      <div class="pt-2 border-t border-emerald-500/20">
-                        <div v-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="space-y-1.5">
+                      <!-- Bloque de Autorización de Salida, Telemetría y Mapa de Viaje -->
+                      <div class="pt-2 border-t border-emerald-500/20 space-y-2">
+                        
+                        <!-- CASO 1: SI YA EXISTE VIAJE REGISTRADO EN BD (EN RUTA O ARRIBADO A FAENA) -->
+                        <div v-if="getViajeDeEquipo(eqId)" class="p-3 bg-black/70 border border-blue-500/40 rounded-xl space-y-2 font-mono text-[11px] shadow-lg">
+                          <div class="flex justify-between items-center">
+                            <span class="text-blue-400 font-bold flex items-center gap-1.5">
+                              <span class="text-base">🛰️</span> Hoja de Ruta & Telemetría GPS
+                            </span>
+                            <span :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'" class="text-[9.5px] px-2 py-0.5 rounded border font-bold">
+                              {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO A FAENA' : '🔵 EN RUTA' }}
+                            </span>
+                          </div>
+                          
+                          <div class="grid grid-cols-2 gap-2 text-[10.5px] text-slate-300 bg-white/[0.03] p-2 rounded-lg border border-white/5">
+                            <div>Odóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
+                            <div>Horóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
+                          </div>
+                          
+                          <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1">
+                            <span class="text-blue-300">🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} waypoints GPS</span>
+                            <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0" class="text-amber-300">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L (Copec)</span>
+                            <span class="text-emerald-400">🔐 PIN Validado ✅</span>
+                          </div>
+                          
+                          <div class="flex gap-2 pt-1">
+                            <button 
+                              @click.stop="abrirMapaViaje(getViajeDeEquipo(eqId))" 
+                              type="button" 
+                              class="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer font-sans uppercase tracking-wider"
+                            >
+                              <span>🗺️</span> Ver Mapa & Telemetría
+                            </button>
+                            <a 
+                              :href="`https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${getViajeDeEquipo(eqId).token_viaje}`" 
+                              target="_blank" 
+                              class="px-3 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg font-bold text-xs flex items-center justify-center gap-1 no-underline cursor-pointer font-sans"
+                              title="Abrir vista del conductor"
+                            >
+                              <span>📱</span> Ver Hoja
+                            </a>
+                            <button 
+                              @click="autorizarSalidaEquipo(eqId, true)" 
+                              :disabled="autorizandoSalidaId === eqId"
+                              type="button" 
+                              class="px-2.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg font-bold text-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 font-sans"
+                              title="Reenviar correo"
+                            >
+                              <span>🔁</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- CASO 2: SI ESTÁ AUTORIZADA LA SALIDA PERO AÚN NO INICIA DESPLAZAMIENTO -->
+                        <div v-else-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="space-y-1.5">
                           <div class="flex items-center justify-between bg-emerald-950/40 p-2 rounded border border-emerald-500/40">
                             <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
                               <span>✅</span> Salida Autorizada • {{ new Date(getInspeccionEquipo(eqId).fecha_autorizacion_salida || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
@@ -1616,47 +1668,22 @@
                               <span>🔁</span> Reenviar
                             </button>
                           </div>
-
-                          <!-- Resumen de Telemetría Real si el viaje ya tiene datos en BD -->
-                          <div v-if="getViajeDeEquipo(eqId)" class="p-2.5 bg-black/60 border border-blue-500/30 rounded-lg space-y-1.5 font-mono text-[11px] mt-1.5">
-                            <div class="flex justify-between items-center">
-                              <span class="text-blue-400 font-bold flex items-center gap-1">
-                                <span>🛰️</span> Telemetría de Viaje
-                              </span>
-                              <span :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'" class="text-[9px] px-1.5 py-0.2 rounded border font-bold">
-                                {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO A FAENA' : '🔵 EN RUTA' }}
-                              </span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
-                              <div>Odóm: <strong class="text-amber-400">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
-                              <div>Horóm: <strong class="text-amber-400">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
-                            </div>
-                            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-white/5">
-                              <span>🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} pings GPS</span>
-                              <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L Copec</span>
-                            </div>
-                            <button 
-                              @click.stop="abrirMapaViaje(eqId)" 
-                              type="button" 
-                              class="w-full mt-1 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded text-xs flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer font-sans"
-                            >
-                              <span>🗺️</span> Ver Hoja de Ruta & Mapa GPS
-                            </button>
-                          </div>
                         </div>
 
+                        <!-- CASO 3: INSPECCIÓN CONFORME, ESPERANDO AUTORIZACIÓN DEL COORDINADOR -->
                         <div v-else>
                           <button 
                             @click="autorizarSalidaEquipo(eqId, false)" 
                             :disabled="autorizandoSalidaId === eqId"
-                            type="button"
-                            class="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            type="button" 
+                            class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                           >
                             <span v-if="autorizandoSalidaId === eqId" class="animate-spin">⏳</span>
                             <span v-else>🚀</span>
                             <span>{{ autorizandoSalidaId === eqId ? 'Autorizando y Notificando...' : 'Autorizar Salida & Notificar Viaje' }}</span>
                           </button>
                         </div>
+
                       </div>
                     </div>
                   </div>
@@ -7927,10 +7954,12 @@ watch(() => operacionesSubTab.value, (newTab) => {
   if (newTab === 'preparacion_salida') {
     cargarExpedientesAsignados()
     sincronizarInspeccionesPWA()
+    cargarViajesProyecto()
     if (!autoPollTimer) {
       autoPollTimer = setInterval(() => {
         sincronizarInspeccionesPWA()
-      }, 10000)
+        cargarViajesProyecto()
+      }, 8000)
     }
   } else {
     if (autoPollTimer) {
@@ -7978,21 +8007,35 @@ const cargarViajesProyecto = async (projId) => {
 
 const getViajeDeEquipo = (eqId) => {
   const eqObj = getEquipoObj(eqId)
-  const idStr = String(eqId).trim().toUpperCase()
-  const patStr = eqObj?.patente ? String(eqObj.patente).trim().toUpperCase() : ''
-  const idEqStr = eqObj?.id_equipo ? String(eqObj.id_equipo).trim().toUpperCase() : ''
+  const idStr = String(eqId || '').trim().toUpperCase()
+  const patStr = String(eqObj?.patente || eqObj?.patente_asignada || getPatenteEquipoAsignado(eqId) || '').trim().toUpperCase()
+  const idEqStr = String(eqObj?.id_equipo || eqObj?.id || '').trim().toUpperCase()
 
-  return (viajesProyecto.value || []).find(v => {
+  const list = viajesProyecto.value || []
+  return list.find(v => {
     const vEqIdStr = String(v.id_equipo || '').trim().toUpperCase()
     const vPatStr = String(v.patente || '').trim().toUpperCase()
     const vToken = String(v.token_viaje || '').trim().toUpperCase()
 
-    return (
-      (vEqIdStr && (vEqIdStr === idStr || vEqIdStr === idEqStr)) ||
-      (patStr && vPatStr === patStr) ||
-      (idStr && vToken.includes(`-${idStr}-`)) ||
-      (idEqStr && vToken.includes(`-${idEqStr}-`))
-    )
+    const cleanPat = patStr.replace(/[^A-Z0-9]/g, '')
+    const cleanVPat = vPatStr.replace(/[^A-Z0-9]/g, '')
+
+    const matchId = (vEqIdStr && (vEqIdStr === idStr || vEqIdStr === idEqStr))
+    const matchPat = (cleanPat && cleanVPat && cleanPat === cleanVPat)
+    const matchToken = (idStr && (
+      vToken.includes(`_${idStr}_`) || 
+      vToken.includes(`-${idStr}-`) || 
+      vToken.endsWith(`_${idStr}`) || 
+      vToken.endsWith(`-${idStr}`)
+    ))
+    const matchTokenEq = (idEqStr && (
+      vToken.includes(`_${idEqStr}_`) || 
+      vToken.includes(`-${idEqStr}-`) || 
+      vToken.endsWith(`_${idEqStr}`) || 
+      vToken.endsWith(`-${idEqStr}`)
+    ))
+
+    return matchId || matchPat || matchToken || matchTokenEq
   }) || null
 }
 
