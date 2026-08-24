@@ -8472,8 +8472,7 @@ const autorizandoSalidaId = ref(null)
 const getLinkViajeOperador = (eqId) => {
   const ins = getInspeccionEquipo(eqId)
   const token = ins?.token_viaje || ('vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId)
-  const base = import.meta.env.VITE_APP_BASE_URL || '/lg-gsp-dev/'
-  return `${window.location.origin}${base.endsWith('/') ? base : base + '/'}viaje/${token}`
+  return `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
 }
 
 const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
