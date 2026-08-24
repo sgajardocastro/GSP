@@ -31,7 +31,7 @@ const viajeModel = {
         v.estado_trayecto,
         v.token_viaje,
         v.obs_termino,
-        v.pings_ruta,
+        COALESCE(v.pings_ruta, '[]'::jsonb) AS pings_ruta,
         p.nombre_proyecto,
         p.codi_proyecto,
         COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
@@ -150,7 +150,6 @@ const viajeModel = {
 
   // 4. Registrar Carga de Combustible (Copec)
   async registrarCombustible({ token_viaje, tipo_estanque, litros, monto, foto_voucher, foto_tablero, id_autorizacion_copec, odometro, horometro, observacion }) {
-    // Obtener id_proyecto e id_log_desplazamiento
     const viajeRes = await db.query(`SELECT id_proyecto, id_log_desplazamiento FROM sch_leangsp.tequ_log_desplazamiento WHERE token_viaje = $1`, [token_viaje]);
     if (viajeRes.rows.length === 0) throw new Error('Viaje no encontrado');
     const { id_proyecto, id_log_desplazamiento } = viajeRes.rows[0];
@@ -190,7 +189,26 @@ const viajeModel = {
     return res.rows[0];
   },
 
-  // 5. Registrar Llegada a Faena (Paso 3)
+  // 5. Registrar Ping de GPS para un viaje específico
+  async registrarPingViaje(token_viaje, { latitud, longitud, velocidad_kmh }) {
+    const pingObj = {
+      lat: Number(latitud) || null,
+      lng: Number(longitud) || null,
+      kmh: Number(velocidad_kmh || 0),
+      ts: new Date().toISOString()
+    };
+    const sql = `
+      UPDATE sch_leangsp.tequ_log_desplazamiento
+      SET pings_ruta = COALESCE(pings_ruta, '[]'::jsonb) || $1::jsonb
+      WHERE token_viaje = $2
+      RETURNING *;
+    `;
+    const res = await db.query(sql, [JSON.stringify([pingObj]), token_viaje]);
+    if (res.rows.length === 0) throw new Error('Viaje no encontrado para registrar ping');
+    return res.rows[0];
+  },
+
+  // 6. Registrar Llegada a Faena (Paso 3)
   async registrarLlegada({ token_viaje, km_final, horometro_final, foto_llegada, pin_hash, latitud, longitud, obs_termino }) {
     const sql = `
       UPDATE sch_leangsp.tequ_log_desplazamiento
@@ -221,7 +239,7 @@ const viajeModel = {
     return res.rows[0];
   },
 
-  // 6. Listar viajes por proyecto (Para el CRM)
+  // 7. Listar viajes por proyecto (Para el CRM)
   async getViajesPorProyecto(id_proyecto) {
     const sql = `
       SELECT 
@@ -242,7 +260,14 @@ const viajeModel = {
         WHERE categoria_costo = 'COMBUSTIBLE'
         GROUP BY id_log_desplazamiento
       ) comb ON v.id_log_desplazamiento = comb.id_log_desplazamiento
-  // 7. Obtener viaje activo para un usuario conductor (PWA)
+      WHERE v.id_proyecto = $1
+      ORDER BY v.id_log_desplazamiento DESC;
+    `;
+    const res = await db.query(sql, [id_proyecto]);
+    return res.rows;
+  },
+
+  // 8. Obtener viaje activo para un usuario conductor (PWA)
   async getViajeActivoPorUsuario(id_user) {
     const sql = `
       SELECT 

@@ -112,25 +112,15 @@ const viajeController = {
   async registrarPing(req, res) {
     try {
       const { token } = req.params;
-      const { latitud, longitud, velocidad_kmh, evento, km_inicial, km_final } = req.body;
+      const { latitud, longitud, velocidad_kmh } = req.body;
 
-      const viaje = await viajeModel.getViajePorToken(token);
-      if (!viaje) return res.status(404).json({ error: 'Viaje no encontrado' });
-
-      const data = await estadoPagoModel.registrarPingDesplazamiento({
-        id_proyecto: viaje.id_proyecto,
-        id_equipo: viaje.id_equipo,
-        patente: viaje.patente,
-        tipo_trayecto: viaje.tipo_trayecto,
+      const data = await viajeModel.registrarPingViaje(token, {
         latitud,
         longitud,
-        velocidad_kmh,
-        evento,
-        km_inicial,
-        km_final
+        velocidad_kmh
       });
 
-      res.json({ success: true, data });
+      res.json({ success: true, message: 'Ping registrado', data });
     } catch (err) {
       console.error('Error registrando ping de viaje:', err);
       res.status(500).json({ error: err.message });
