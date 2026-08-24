@@ -1570,19 +1570,66 @@
                       </div>
                     </div>
 
-                    <div v-else class="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/30 flex justify-between items-center text-xs">
-                      <div>
-                        <span class="font-bold text-emerald-300 block">🟢 Inspección Conforme (OK)</span>
-                        <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
-                        <span class="text-[10px] text-emerald-400/80 block">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
+                    <div v-else class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30 space-y-2.5 text-xs">
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <span class="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <span>🟢</span> Inspección Conforme (OK)
+                          </span>
+                          <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
+                          <span class="text-[10px] text-emerald-400/90 block font-semibold">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
+                            📄 PDF
+                          </button>
+                          <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Vista HTML en Pantalla">
+                            👁️ Web
+                          </button>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
-                          📄 Ver PDF
-                        </button>
-                        <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Vista HTML en Pantalla">
-                          👁️ Ver en Pantalla
-                        </button>
+
+                      <!-- Bloque de Autorización de Salida y Notificación de Viaje -->
+                      <div class="pt-2 border-t border-emerald-500/20">
+                        <div v-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="space-y-1.5">
+                          <div class="flex items-center justify-between bg-emerald-950/40 p-2 rounded border border-emerald-500/40">
+                            <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                              <span>✅</span> Salida Autorizada • {{ new Date(getInspeccionEquipo(eqId).fecha_autorizacion_salida || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                            </span>
+                            <span class="text-[9.5px] text-slate-400 font-mono">Notificado a Operador</span>
+                          </div>
+                          <div class="flex gap-2">
+                            <a 
+                              :href="getLinkViajeOperador(eqId)" 
+                              target="_blank" 
+                              class="flex-1 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded font-bold text-[11px] flex items-center justify-center gap-1 no-underline cursor-pointer"
+                            >
+                              <span>📲</span> Ver Registro de Viaje
+                            </a>
+                            <button 
+                              @click="autorizarSalidaEquipo(eqId, true)" 
+                              :disabled="autorizandoSalidaId === eqId"
+                              type="button" 
+                              class="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                              title="Reenviar correo de notificación al operador"
+                            >
+                              <span>🔁</span> Reenviar
+                            </button>
+                          </div>
+                        </div>
+
+                        <div v-else>
+                          <button 
+                            @click="autorizarSalidaEquipo(eqId, false)" 
+                            :disabled="autorizandoSalidaId === eqId"
+                            type="button"
+                            class="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          >
+                            <span v-if="autorizandoSalidaId === eqId" class="animate-spin">⏳</span>
+                            <span v-else>🚀</span>
+                            <span>{{ autorizandoSalidaId === eqId ? 'Autorizando y Notificando...' : 'Autorizar Salida & Notificar Viaje' }}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -8424,6 +8471,153 @@ const confirmarInspeccionSalidaPatioEquipo = async (eqId) => {
   
   const eqNombre = getNombreEquipoAsignado(eqId)
   alert(`🟢 Check List Operativo Digital de Patio confirmado para ${eqNombre}.`)
+}
+
+const autorizandoSalidaId = ref(null)
+
+const getLinkViajeOperador = (eqId) => {
+  const ins = getInspeccionEquipo(eqId)
+  const token = ins?.token_viaje || ('vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId)
+  const base = import.meta.env.VITE_APP_BASE_URL || '/lg-gsp-dev/'
+  return `${window.location.origin}${base.endsWith('/') ? base : base + '/'}viaje/${token}`
+}
+
+const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
+  const ins = getInspeccionEquipo(eqId)
+  const opUser = getOperadorAsignadoAEquipo(eqId)
+  
+  if (!opUser || !opUser.id_user) {
+    alert('⚠️ No se ha identificado al operador/chofer asignado a este equipo. Por favor verifique la asignación antes de autorizar la salida.')
+    return
+  }
+
+  // Resolver datos de equipo y operador
+  const eq = equiposAsignadosLista.value.find(e => (e.id_equipo == eqId || e.id == eqId)) || {}
+  const eqNombre = eq.descripcion || eq.marca_modelo || eq.nombre_equipo || ('Equipo #' + eqId)
+  const eqPatente = eq.patente_asignada || eq.patente || getPatenteEquipoAsignado(eqId) || 'S/P'
+  const opNombre = opUser.nombre_user || opUser.name_user || `${opUser.name_frst || ''} ${opUser.apellido_pat || ''}`.trim() || 'Operador / Conductor'
+  const opEmail = opUser.email || 'operaciones@arriendosanpablo.cl'
+
+  autorizandoSalidaId.value = eqId
+  try {
+    const token = localStorage.getItem('token') || ''
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const coordinadorNombre = currentUser.nombre || (currentUser.name_frst ? `${currentUser.name_frst || ''} ${currentUser.apellido_pat || ''}`.trim() : 'Coordinador de Operaciones')
+
+    // Generar o conservar token de viaje
+    if (!ins.token_viaje) {
+      ins.token_viaje = 'vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId + '-' + Math.random().toString(36).substring(2, 7)
+    }
+
+    const tripUrl = getLinkViajeOperador(eqId)
+
+    // Maquetación HTML B2B enriquecida
+    const htmlEmail = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0b1021; color: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div style="border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 20px; text-align: center;">
+          <h2 style="color: #10b981; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px;">🏗️ GRÚAS SAN PABLO</h2>
+          <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px; font-weight: bold; text-transform: uppercase;">
+            AUTORIZACIÓN DE SALIDA DE BASE & INICIO DE HOJA DE RUTA
+          </p>
+        </div>
+
+        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+          <p style="color: #34d399; margin: 0; font-size: 14px; font-weight: bold;">
+            ✅ Inspección de Patio Aprobada — Salida Autorizada
+          </p>
+          <p style="color: #cbd5e1; margin: 6px 0 0 0; font-size: 12px; line-height: 1.5;">
+            Estimado <strong>${opNombre}</strong>, la inspección técnica de pre-uso para su máquina ha sido verificada conforme por la Coordinación de Operaciones. Se autoriza la salida de base hacia faena.
+          </p>
+        </div>
+
+        <div style="background-color: #050810; border: 1px solid #1e293b; border-radius: 12px; padding: 18px; margin-bottom: 22px; font-size: 13px; line-height: 1.7;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="color: #64748b; padding: 4px 0; width: 38%;"><strong>Orden de Trabajo:</strong></td>
+              <td style="color: #f59e0b; font-weight: bold; font-family: monospace;">${antecedentes.value.identificador_formal || opportunity.value.codi_proyecto || 'GSP-OT'}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Equipo Autorizado:</strong></td>
+              <td style="color: #ffffff; font-weight: bold;">${eqNombre}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Patente (PPU):</strong></td>
+              <td style="color: #38bdf8; font-weight: bold; font-family: monospace;">${eqPatente}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Cliente Mandante:</strong></td>
+              <td style="color: #ffffff;">${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente || 'Cliente Mandante'}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Obra / Destino:</strong></td>
+              <td style="color: #ffffff;">${siteVisit.value.obra_nombre || 'Faena Terreno'} (${siteVisit.value.obra_ciudad || ''})</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Dirección:</strong></td>
+              <td style="color: #cbd5e1;">${siteVisit.value.obra_direccion || 'Ver en Hoja de Ruta'}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b; padding: 4px 0;"><strong>Autorizado por:</strong></td>
+              <td style="color: #10b981; font-weight: bold;">${coordinadorNombre}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0 20px 0;">
+          <a href="${tripUrl}" target="_blank" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #022c22; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-weight: 900; font-size: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">
+            📲 Iniciar Registro de Viaje y Salida
+          </a>
+          <p style="color: #64748b; font-size: 11px; margin-top: 10px;">
+            Haga clic en el botón para ingresar odómetro/horómetro de salida y PIN de seguridad.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; font-size: 11px; color: #475569;">
+          Grúas San Pablo S.A. • Torre de Control & Operaciones • Sistema LeanGlobal GSP
+        </div>
+      </div>
+    `
+
+    // Despacho de correo
+    const emailRecipients = Array.from(new Set([opEmail, 'operaciones@arriendosanpablo.cl']))
+    
+    await Promise.all(emailRecipients.map(em => 
+      apiAxios.post('/message', {
+        para: em,
+        asunto: `🚦 Salida Autorizada — Iniciar Registro de Viaje OT ${antecedentes.value.identificador_formal || 'GSP'}: ${eqNombre} (${eqPatente})`,
+        cuerpo: htmlEmail,
+        html: htmlEmail
+      })
+    ))
+
+    // Actualizar estado de autorización
+    ins.salida_autorizada = true
+    ins.fecha_autorizacion_salida = new Date().toISOString()
+    ins.autorizado_por = coordinadorNombre
+
+    // Guardar en base de datos
+    const projectId = props.proyectoId || currentProyectoId.value
+    if (projectId) {
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    }
+
+    registrarTrazaCorreo(
+      'OPERADOR_VIAJE',
+      emailRecipients.join(', '),
+      `🚦 Salida Autorizada — Iniciar Registro de Viaje OT ${antecedentes.value.identificador_formal || 'GSP'}`,
+      `Salida de patio autorizada para equipo ${eqNombre} (${eqPatente}). Notificación con link de viaje enviada a ${opNombre} (${opEmail})`
+    )
+
+    alert(`🚀 Salida autorizada exitosamente.\n\nSe ha despachado la notificación por correo al operador ${opNombre} (${opEmail}) con el enlace a su registro de viaje.`)
+  } catch (error) {
+    console.error('Error al autorizar salida de equipo:', error)
+    alert(`Error al procesar la autorización de salida: ${error.response?.data?.error || error.message}`)
+  } finally {
+    autorizandoSalidaId.value = null
+  }
 }
 
 const programarInspeccionPatio = async () => {
