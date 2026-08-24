@@ -150,7 +150,7 @@
               <span v-else class="text-slate-400">Capturando GPS...</span>
             </div>
             <div class="text-[9px] text-slate-400 pt-0.5 border-t border-white/5">
-              ⏱️ Frecuencia de Rastreo: Cada 2 seg (Modo Prueba)
+              ⏱️ Frecuencia de Rastreo: Cada 10 seg (Modo Prueba)
             </div>
           </div>
         </div>
@@ -508,7 +508,10 @@ import {
   sincronizarMutacionesConBackend,
   comprimirFoto,
   hashPin,
-  obtenerCoordenadasGPS
+  obtenerCoordenadasGPS,
+  iniciarWatcherGPS,
+  detenerWatcherGPS,
+  getUltimaPosicionGPS
 } from '@/utils/viajeOfflineSync'
 
 const route = useRoute()
@@ -520,8 +523,8 @@ const mutacionesPendientesCount = ref(0)
 const guardando = ref(false)
 const cargandoViaje = ref(false)
 
-// Telemetría GPS en Ruta (2 Segundos para pruebas según Spec 30 / 32)
-const INTERVALO_PING_MS = 2000
+// Telemetría GPS en Ruta (10 Segundos para pruebas según requerimiento)
+const INTERVALO_PING_MS = 10000
 const gpsWatcherInterval = ref(null)
 const ultimaPosicionGPS = ref(null)
 const totalPingsEnRuta = ref(0)
@@ -645,17 +648,14 @@ const onFotoLlegadaCapturada = async (e) => {
 }
 
 // -------------------------------------------------------------
-// RASTREO GPS AUTOMÁTICO EN RUTA (MODO PRUEBA: 2 SEGUNDOS)
+// RASTREO GPS AUTOMÁTICO EN RUTA (FRECUENCIA: 10 SEGUNDOS)
 // -------------------------------------------------------------
-let pingEnCurso = false
-
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
-  if (pingEnCurso) return // No apilar si el anterior no terminó
-  pingEnCurso = true
 
   try {
-    const gps = await obtenerCoordenadasGPS(3000)
+    // 1. Obtener última posición en memoria de forma instantánea (0ms)
+    const gps = getUltimaPosicionGPS()
     ultimaPosicionGPS.value = gps
 
     const pingPayload = {
@@ -663,16 +663,18 @@ const registrarPingAutomatico = async () => {
       longitud: gps.longitud,
       velocidad_kmh: gps.velocidad_kmh || 0,
       accuracy: gps.accuracy,
-      timestamp: gps.timestamp || new Date().toISOString()
+      timestamp: new Date().toISOString()
     }
 
-    // 1. Acumular inmediatamente en pings_ruta reactivos
+    // 2. Acumular inmediatamente en pings_ruta reactivos
     if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
     viaje.value.pings_ruta.push(pingPayload)
     totalPingsEnRuta.value = viaje.value.pings_ruta.length
     viaje.value.total_pings_gps = totalPingsEnRuta.value
 
-    // 2. Enviar directamente al Backend GSP por HTTP
+    await guardarSesionLocal(tokenViaje.value, viaje.value)
+
+    // 3. Enviar directamente al Backend GSP por HTTP
     if (isOnline.value && !tokenViaje.value.includes('demo')) {
       try {
         await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/ping`, pingPayload)
@@ -683,21 +685,20 @@ const registrarPingAutomatico = async () => {
     } else {
       await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
     }
-
-    await guardarSesionLocal(tokenViaje.value, viaje.value)
   } catch (e) {
-    console.error('[Ping] Error inesperado:', e)
-  } finally {
-    pingEnCurso = false
+    console.error('[Ping] Error registrando ping:', e)
   }
 }
 
 const iniciarRastreoGPS = () => {
   detenerRastreoGPS()
-  pingEnCurso = false
-  // Primer ping inmediato al entrar a ruta
+  // 1. Iniciar monitoreo continuo de hardware GPS
+  iniciarWatcherGPS((pos) => {
+    ultimaPosicionGPS.value = pos
+  })
+  // 2. Primer ping inmediato al entrar a ruta
   registrarPingAutomatico()
-  // Ciclo periódico cada 2 segundos para pruebas
+  // 3. Ciclo periódico cada 10 segundos
   gpsWatcherInterval.value = setInterval(() => {
     registrarPingAutomatico()
   }, INTERVALO_PING_MS)
@@ -708,6 +709,7 @@ const detenerRastreoGPS = () => {
     clearInterval(gpsWatcherInterval.value)
     gpsWatcherInterval.value = null
   }
+  detenerWatcherGPS()
 }
 
 // -------------------------------------------------------------

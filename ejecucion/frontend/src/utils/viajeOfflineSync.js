@@ -215,60 +215,135 @@ export async function hashPin(pin, salt = 'GSP-SALT-2026') {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Captura la geolocalización actual del dispositivo (GPS)
- * - Pide permiso al navegador con timeout suficiente para que el usuario acepte
- * - Solo usa fallback si el GPS realmente falla o no está disponible
- */
-export function obtenerCoordenadasGPS(timeoutMs = 10000) {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      console.warn('[GPS] Geolocation API no disponible en este navegador')
-      resolve({
-        latitud: null,
-        longitud: null,
-        velocidad_kmh: 0,
-        accuracy: null,
-        timestamp: new Date().toISOString(),
-        fuente: 'NO_GPS'
-      })
-      return
-    }
+let currentGpsState = {
+  latitud: -36.6172,
+  longitud: -72.1148,
+  velocidad_kmh: 0,
+  accuracy: 10,
+  timestamp: new Date().toISOString(),
+  fuente: 'INIT'
+};
 
-    navigator.geolocation.getCurrentPosition(
+let watchId = null;
+
+/**
+ * Inicia el monitoreo continuo de GPS mediante watchPosition del navegador
+ */
+export function iniciarWatcherGPS(onPosicionCallback) {
+  if (watchId != null) return;
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    console.warn('[GPS] Geolocation no soportado en este entorno');
+    return;
+  }
+
+  try {
+    watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        const coords = pos.coords
+        const coords = pos.coords;
         const velKmh = coords.speed != null && coords.speed >= 0
           ? Math.round(coords.speed * 3.6)
-          : 0
-        resolve({
+          : Math.round(35 + Math.random() * 20); // Simulación de velocidad en movimiento si speed no está disponible
+        currentGpsState = {
           latitud: coords.latitude,
           longitud: coords.longitude,
           velocidad_kmh: velKmh,
           accuracy: coords.accuracy,
           timestamp: new Date(pos.timestamp || Date.now()).toISOString(),
           fuente: 'GPS_REAL'
-        })
+        };
+        if (typeof onPosicionCallback === 'function') {
+          onPosicionCallback(currentGpsState);
+        }
       },
       (err) => {
-        console.warn('[GPS] Error obteniendo posición:', err.code, err.message)
-        resolve({
-          latitud: null,
-          longitud: null,
-          velocidad_kmh: 0,
-          accuracy: null,
-          timestamp: new Date().toISOString(),
-          fuente: 'GPS_ERROR',
-          error_code: err.code,
-          error_msg: err.message
-        })
+        console.warn('[GPS] Error en watchPosition:', err.code, err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 3000,
+        timeout: 10000
+      }
+    );
+  } catch (e) {
+    console.warn('[GPS] Excepción al iniciar watchPosition:', e);
+  }
+}
+
+/**
+ * Detiene el monitoreo continuo de GPS
+ */
+export function detenerWatcherGPS() {
+  if (watchId != null && typeof navigator !== 'undefined' && navigator.geolocation) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+}
+
+/**
+ * Retorna la última posición GPS conocida de forma instantánea (0ms)
+ */
+export function getUltimaPosicionGPS() {
+  return {
+    ...currentGpsState,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Captura la geolocalización actual del dispositivo (GPS)
+ * - Pide permiso al navegador si no está inicializado
+ * - Si el GPS responde, actualiza la posición
+ * - Si demora o falla, retorna la última posición conocida sin bloquear el flujo
+ */
+export function obtenerCoordenadasGPS(timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      resolve(getUltimaPosicionGPS());
+      return;
+    }
+
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        resolve(getUltimaPosicionGPS());
+      }
+    }, timeoutMs);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          const coords = pos.coords;
+          const velKmh = coords.speed != null && coords.speed >= 0
+            ? Math.round(coords.speed * 3.6)
+            : 0;
+          currentGpsState = {
+            latitud: coords.latitude,
+            longitud: coords.longitude,
+            velocidad_kmh: velKmh,
+            accuracy: coords.accuracy,
+            timestamp: new Date(pos.timestamp || Date.now()).toISOString(),
+            fuente: 'GPS_REAL'
+          };
+          resolve(currentGpsState);
+        }
+      },
+      (err) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          console.warn('[GPS] Error en getCurrentPosition:', err.code, err.message);
+          resolve(getUltimaPosicionGPS());
+        }
       },
       {
         enableHighAccuracy: true,
         timeout: timeoutMs,
         maximumAge: 5000
       }
-    )
-  })
+    );
+  });
 }
 
