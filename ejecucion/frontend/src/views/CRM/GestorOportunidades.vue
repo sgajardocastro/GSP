@@ -7577,18 +7577,12 @@ const getOperadorAsignadoAEquipo = (eqId) => {
 }
 
 const getNombreOperadorAsignado = (eqId) => {
-  const op = getOperadorAsignadoAEquipo(eqId)
-  if (!op || !op.id_user) {
-    const ins = preparacionSalidaState.value?.inspecciones_patio?.[eqId]
-    const uId = ins?.operador_id || ins?.jefe_patio_id
-    if (uId) {
-      const u = (usuarios.value || []).find(user => String(user.id_user) === String(uId))
-      return u?.nombre_user || u?.name_user || 'Operador Asignado'
-    }
-    return 'Sin Operador Asignado'
-  }
-  const u = (usuarios.value || []).find(user => String(user.id_user) === String(op.id_user))
-  return u?.nombre_user || u?.name_user || op.cargo || 'Operador Asignado'
+  const ins = getInspeccionEquipo(eqId)
+  const opTrip = getOperadorAsignadoAEquipo(eqId)
+  const targetUserId = ins?.operador_id || ins?.jefe_patio_id || opTrip?.id_user
+  if (!targetUserId) return 'Sin Operador Asignado'
+  const u = (usuarios.value || []).find(user => Number(user.id_user) === Number(targetUserId))
+  return u?.nombre_user || u?.name_user || (u?.name_frst ? `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() : null) || opTrip?.cargo || 'Operador Asignado'
 }
 
 const onOperadorInspeccionCambiado = (eqId, nuevoIdUser) => {
@@ -8484,19 +8478,31 @@ const getLinkViajeOperador = (eqId) => {
 
 const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
   const ins = getInspeccionEquipo(eqId)
-  const opUser = getOperadorAsignadoAEquipo(eqId)
+  const opTrip = getOperadorAsignadoAEquipo(eqId)
   
-  if (!opUser || !opUser.id_user) {
+  // 1. Obtener ID del operador asignado (priorizando selector de inspección de patio, luego asignación de OT)
+  const targetUserId = ins?.operador_id || ins?.jefe_patio_id || opTrip?.id_user
+  
+  if (!targetUserId) {
     alert('⚠️ No se ha identificado al operador/chofer asignado a este equipo. Por favor verifique la asignación antes de autorizar la salida.')
     return
   }
 
-  // Resolver datos de equipo y operador
+  // 2. Buscar usuario en el catálogo cargado
+  const fullUser = (usuarios.value || []).find(u => Number(u.id_user) === Number(targetUserId)) || {}
+
+  // 3. Resolver datos de equipo y operador
   const eq = equiposAsignadosLista.value.find(e => (e.id_equipo == eqId || e.id == eqId)) || {}
   const eqNombre = eq.descripcion || eq.marca_modelo || eq.nombre_equipo || ('Equipo #' + eqId)
   const eqPatente = eq.patente_asignada || eq.patente || getPatenteEquipoAsignado(eqId) || 'S/P'
-  const opNombre = opUser.nombre_user || opUser.name_user || `${opUser.name_frst || ''} ${opUser.apellido_pat || ''}`.trim() || 'Operador / Conductor'
-  const opEmail = opUser.email || 'operaciones@arriendosanpablo.cl'
+  
+  const opNombre = fullUser.nombre_user || fullUser.name_user || (fullUser.name_frst ? `${fullUser.name_frst || ''} ${fullUser.apellido_pat || ''}`.trim() : null) || opTrip?.cargo || 'Operador / Conductor'
+  
+  // 4. Resolver correo electrónico determinísticamente
+  let opEmail = fullUser.email || fullUser.codi_user || fullUser.email_alternativo
+  if (!opEmail || opEmail.toLowerCase().includes('transmac') || Number(targetUserId) === 53 || Number(targetUserId) === 7 || (opNombre && opNombre.toLowerCase().includes('lean global'))) {
+    opEmail = 'lguser@arriendosanpablo.cl'
+  }
 
   autorizandoSalidaId.value = eqId
   try {
