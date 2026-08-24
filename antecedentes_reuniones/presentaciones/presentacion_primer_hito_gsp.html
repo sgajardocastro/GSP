@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Presentación Primer Hito – Pipeline Operativo & Torre de Control | Grúas San Pablo</title>
+  <title>Pipeline Operativo & Torre de Control Kanban | Grúas San Pablo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -177,19 +177,19 @@
       pointer-events: none;
     }
 
-    /* ── PIPELINE INTERACTIVO ── */
-    .pipeline-grid {
+    /* ── PIPELINE INTERACTIVO (6 COLUMNAS KANBAN) ── */
+    .pipeline-grid-6 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 14px;
       position: relative;
     }
     .pipeline-step {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px 16px;
-      display: flex; flex-direction: column; gap: 12px;
+      border-radius: 14px;
+      padding: 18px 14px;
+      display: flex; flex-direction: column; gap: 10px;
       position: relative;
       cursor: pointer;
       transition: all 0.25s;
@@ -197,11 +197,11 @@
     .pipeline-step:hover, .pipeline-step.active-step {
       transform: translateY(-4px);
       border-color: var(--amber);
-      box-shadow: 0 12px 30px -8px rgba(245,166,35,0.25);
+      box-shadow: 0 10px 25px -6px rgba(245,166,35,0.25);
       background: #111a2d;
     }
     .step-number {
-      width: 28px; height: 28px; border-radius: 8px;
+      width: 26px; height: 26px; border-radius: 7px;
       background: rgba(255,255,255,0.06); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace;
@@ -268,18 +268,6 @@
       background: rgba(255,255,255,0.02);
     }
 
-    /* ── LIVE INTERACTIVE PREVIEW MODAL ── */
-    .preview-box {
-      background: #050810;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #94a3b8;
-      overflow-x: auto;
-    }
-
     .btn-action {
       background: var(--amber); color: #000;
       font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px;
@@ -292,13 +280,6 @@
     .btn-action:hover {
       background: #fbbf24; transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(245,166,35,0.35);
-    }
-    .btn-outline {
-      background: rgba(255,255,255,0.05); color: #fff;
-      border: 1px solid var(--border-md);
-    }
-    .btn-outline:hover {
-      background: rgba(255,255,255,0.1); border-color: var(--amber); color: var(--amber);
     }
   </style>
 </head>
@@ -315,9 +296,9 @@
     </a>
 
     <nav class="nav-links">
-      <a href="#bloque-alcance" class="nav-link">1. Alcance & Pipeline</a>
+      <a href="#bloque-alcance" class="nav-link">1. Pipeline Kanban (6 Estaciones)</a>
       <a href="#bloque-implementacion" class="nav-link">2. Plan Implementación</a>
-      <a href="#bloque-kanban" class="nav-link">3. 6 Estaciones Kanban</a>
+      <a href="#bloque-kanban" class="nav-link">3. Detalle por Estación</a>
       <a href="#bloque-demo" class="nav-link">4. Guion Demo en Vivo</a>
     </nav>
 
@@ -334,15 +315,15 @@
 
     <!-- HERO / INTRODUCCIÓN -->
     <section class="hero-banner glow-amber">
-      <div style="max-width: 900px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="max-width: 950px; display: flex; flex-direction: column; gap: 14px;">
         <div class="section-eyebrow">
           <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i> Dossier Ejecutivo · Primer Hito de Plataforma
         </div>
         <h1 class="section-title" style="font-size: clamp(28px, 3vw, 42px); line-height: 1.1;">
-          Blindaje y Digitalización de la Operación de Izaje
+          Blindaje y Digitalización Integral de la Operación de Izaje
         </h1>
         <p style="font-size: 15px; color: var(--t-sec); line-height: 1.6;">
-          Presentación integral para <strong style="color: #fff;">Omar Reyes (Fundador & Propietario GSP)</strong> sobre la arquitectura digital diseñada para eliminar fugas de ingresos, controlar combustible en ruta, certificar horas de grúa con firma digital del cliente y conectar Comercial con Terreno en tiempo real.
+          Presentación para <strong style="color: #fff;">Omar Reyes (Fundador & Propietario GSP)</strong>. La arquitectura digital modelada refleja exactamente las <strong style="color: var(--amber);">6 columnas del Kanban de la Torre de Control</strong>, conectando Preventa, Visita a Terreno, Asignación de Recursos, Acreditaciones, Telemetría en Ruta y Facturación sin fricción.
         </p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
@@ -356,91 +337,108 @@
     </section>
 
     <!-- ========================================================================= -->
-    <!-- BLOQUE 1: PROYECTO & EL PIPELINE OPERATIVO END-TO-END                     -->
+    <!-- BLOQUE 1: EL PIPELINE OPERATIVO IDÉNTICO AL KANBAN (6 ESTACIONES)         -->
     <!-- ========================================================================= -->
     <section id="bloque-alcance" class="card">
       <div class="section-head">
-        <div class="section-eyebrow"><i data-lucide="activity" style="width: 15px; height: 15px;"></i> Bloque 1 · Proyecto y Alcance</div>
-        <h2 class="section-title">El Pipeline Operativo End-to-End</h2>
-        <p class="section-sub">Las 5 macro-etapas que transforman una llamada de cotización en dinero en la cuenta corriente de la empresa sin desvíos.</p>
+        <div class="section-eyebrow"><i data-lucide="activity" style="width: 15px; height: 15px;"></i> Bloque 1 · Pipeline Canónico</div>
+        <h2 class="section-title">El Pipeline Operativo (1:1 con la Torre Kanban)</h2>
+        <p class="section-sub">Las 6 columnas oficiales de <code>Torre.vue</code> que estructuran toda la dinámica operacional y financiera de Grúas San Pablo.</p>
       </div>
 
-      <!-- Pipeline Interactivo -->
-      <div class="pipeline-grid" style="margin-top: 10px;">
-        <!-- Paso 1 -->
+      <!-- Pipeline Interactivo de 6 Columnas -->
+      <div class="pipeline-grid-6" style="margin-top: 10px;">
+        
+        <!-- Paso 1: Requerimiento Registrado -->
         <div class="pipeline-step active-step" onclick="scrollToStation('col-1')">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number">01</div>
-            <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--indigo);"></i>
+            <div class="step-number" style="background: var(--indigo); color: #fff;">01</div>
+            <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--indigo);"></i>
           </div>
           <div>
-            <h3 class="font-display" style="font-size: 15px; font-weight: 800; color: #fff;">Ciclo CRM y Cotización</h3>
-            <p style="font-size: 11.5px; color: var(--t-muted); margin-top: 4px; line-height: 1.4;">
-              Registro de oportunidad, visita a terreno y estructuración dinámica de servicios con flete y rigger obligatorios.
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              Oportunidad comercial, solicitud de Visita a Terreno con photoChecks y cotización PDF oficial.
             </p>
           </div>
-          <div class="tag tag-indigo" style="align-self: flex-start; font-size: 9.5px;">Cotización PDF + Tracking</div>
+          <div class="tag tag-indigo" style="align-self: flex-start; font-size: 9px;">CRM + Site Visit</div>
         </div>
 
-        <!-- Paso 2 -->
+        <!-- Paso 2: En Verificación Operaciones -->
         <div class="pipeline-step" onclick="scrollToStation('col-2')">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number">02</div>
-            <i data-lucide="calendar-check" style="width: 20px; height: 20px; color: var(--amber);"></i>
+            <div class="step-number" style="background: var(--amber); color: #000;">02</div>
+            <i data-lucide="git-compare" style="width: 18px; height: 18px; color: var(--amber);"></i>
           </div>
           <div>
-            <h3 class="font-display" style="font-size: 15px; font-weight: 800; color: #fff;">Planificación y Asignación</h3>
-            <p style="font-size: 11.5px; color: var(--t-muted); margin-top: 4px; line-height: 1.4;">
-              Survey de terreno con photoChecks, aprobación con comparador Diff y asignación del convoy completo.
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              Auditoría técnica de factibilidad, lectura de informe de terreno y Comparador Visual Diff.
             </p>
           </div>
-          <div class="tag tag-amber" style="align-self: flex-start; font-size: 9.5px;">Grúa + Chofer + Rigger + OT</div>
+          <div class="tag tag-amber" style="align-self: flex-start; font-size: 9px;">Diff Comercial vs Op</div>
         </div>
 
-        <!-- Paso 3 -->
+        <!-- Paso 3: En Asignación Recursos -->
+        <div class="pipeline-step" onclick="scrollToStation('col-3')">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="step-number" style="background: var(--blue); color: #fff;">03</div>
+            <i data-lucide="layers" style="width: 18px; height: 18px; color: var(--blue);"></i>
+          </div>
+          <div>
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              DataGrid de alta densidad: Grúa principal + Chofer + Rigger + Aparejos y generación de OT.
+            </p>
+          </div>
+          <div class="tag tag-blue" style="align-self: flex-start; font-size: 9px;">Convoy Completo OT</div>
+        </div>
+
+        <!-- Paso 4: En Preparación Operaciones -->
         <div class="pipeline-step" onclick="scrollToStation('col-4')">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number">03</div>
-            <i data-lucide="shield-alert" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+            <div class="step-number" style="background: var(--cyan); color: #000;">04</div>
+            <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--cyan);"></i>
           </div>
           <div>
-            <h3 class="font-display" style="font-size: 15px; font-weight: 800; color: #fff;">Preparación y Salida</h3>
-            <p style="font-size: 11.5px; color: var(--t-muted); margin-top: 4px; line-height: 1.4;">
-              Auditoría de despacho en patio, trincaje de aparejos, semáforo de acreditación y firma PIN de salida.
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              Dossier & Semáforo de Acreditaciones 360°, checklist de patio y Web Token con PIN.
             </p>
           </div>
-          <div class="tag tag-cyan" style="align-self: flex-start; font-size: 9.5px;">Semáforo 360° + Token PIN</div>
+          <div class="tag tag-cyan" style="align-self: flex-start; font-size: 9px;">Acreditación + Patio</div>
         </div>
 
-        <!-- Paso 4 -->
+        <!-- Paso 5: En Ejecución / Faena -->
         <div class="pipeline-step" onclick="scrollToStation('col-5')">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number">04</div>
-            <i data-lucide="smartphone" style="width: 20px; height: 20px; color: var(--purple);"></i>
+            <div class="step-number" style="background: var(--purple); color: #fff;">05</div>
+            <i data-lucide="smartphone" style="width: 18px; height: 18px; color: var(--purple);"></i>
           </div>
           <div>
-            <h3 class="font-display" style="font-size: 15px; font-weight: 800; color: #fff;">Ejecución en Terreno</h3>
-            <p style="font-size: 11.5px; color: var(--t-muted); margin-top: 4px; line-height: 1.4;">
-              Telemetría GPS cada 10s, rendición de tarjeta Copec en ruta y Reporte Diario con firma FES del mandante.
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              Telemetría GPS cada 10s, rendición Copec en ruta y Reporte Diario con firma FES mandante.
             </p>
           </div>
-          <div class="tag tag-purple" style="align-self: flex-start; font-size: 9.5px;">GPS Vivo + Copec + Firma FES</div>
+          <div class="tag tag-purple" style="align-self: flex-start; font-size: 9px;">GPS + Copec + FES</div>
         </div>
 
-        <!-- Paso 5 -->
+        <!-- Paso 6: Finalizado / Devengado -->
         <div class="pipeline-step" onclick="scrollToStation('col-6')">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number">05</div>
-            <i data-lucide="table" style="width: 20px; height: 20px; color: var(--green);"></i>
+            <div class="step-number" style="background: var(--green); color: #000;">06</div>
+            <i data-lucide="dollar-sign" style="width: 18px; height: 18px; color: var(--green);"></i>
           </div>
           <div>
-            <h3 class="font-display" style="font-size: 15px; font-weight: 800; color: #fff;">Retorno y Conciliación</h3>
-            <p style="font-size: 11.5px; color: var(--t-muted); margin-top: 4px; line-height: 1.4;">
-              Manifiesto inverso de aparejos (0 mermas), consolidación del Estado de Pago (EDP) e integración Laudus ERP.
+            <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
+            <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+              Manifiesto inverso de aparejos (0 mermas), consolidación de EDP y facturación en Laudus ERP.
             </p>
           </div>
-          <div class="tag tag-green" style="align-self: flex-start; font-size: 9.5px;">EDP Inmediato + Devengado</div>
+          <div class="tag tag-green" style="align-self: flex-start; font-size: 9px;">EDP + ERP Laudus</div>
         </div>
+
       </div>
     </section>
 
@@ -519,8 +517,8 @@
     <section id="bloque-kanban" style="display: flex; flex-direction: column; gap: 24px;">
       <div class="section-head">
         <div class="section-eyebrow"><i data-lucide="layout-grid" style="width: 15px; height: 15px;"></i> Bloque 3 · Torre de Control Operativa</div>
-        <h2 class="section-title">Las 6 Estaciones del Kanban y sus Entregables</h2>
-        <p class="section-sub">El flujo detallado de cada columna en <code>Torre.vue</code> con sus documentos, pantallas y mecanismos de control.</p>
+        <h2 class="section-title">Las 6 Estaciones del Kanban y sus Entregables Tangibles</h2>
+        <p class="section-sub">El flujo detallado de cada columna en <code>Torre.vue</code> con sus documentos, pantallas, firmas y mecanismos antifraude.</p>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px;">
@@ -539,7 +537,7 @@
 
           <div class="kanban-body">
             <p style="font-size: 12.5px; color: var(--t-sec); line-height: 1.5;">
-              Captura estructurada de la oportunidad comercial, evaluación en terreno si la maniobra lo exige, y generación de la cotización formal con reglas duras.
+              Captura estructurada de la oportunidad comercial, levantamiento en terreno con photoChecks si la maniobra lo exige, y generación de la cotización formal con reglas duras.
             </p>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -846,8 +844,8 @@
           </thead>
           <tbody>
             <tr>
-              <td><span class="mono" style="font-weight: bold; color: var(--amber);">00 - 03 min</span></td>
-              <td><strong style="color: #fff;">1. CRM Comercial</strong><br><span style="font-size: 11px; color: var(--t-muted);">GestorOportunidades.vue</span></td>
+              <td><span class="mono" style="font-weight: bold; color: var(--indigo);">00 - 03 min</span></td>
+              <td><strong style="color: #fff;">1. Requerimiento Registrado</strong><br><span style="font-size: 11px; color: var(--t-muted);">GestorOportunidades.vue</span></td>
               <td>Crear cotización en vivo: Seleccionar cliente, fijar obra en el mapa satelital, seleccionar Grúa 50T, mostrar la inyección automática del Flete ($500.000), la regla de Rigger y generar el PDF oficial con 1 clic.</td>
               <td><span class="tag tag-indigo">Cotización PDF Oficial</span></td>
             </tr>
@@ -858,27 +856,27 @@
               <td><span class="tag tag-amber">Survey con photoChecks</span></td>
             </tr>
             <tr>
-              <td><span class="mono" style="font-weight: bold; color: var(--amber);">05 - 08 min</span></td>
-              <td><strong style="color: #fff;">3. Torre de Control</strong><br><span style="font-size: 11px; color: var(--t-muted);">Torre.vue</span></td>
+              <td><span class="mono" style="font-weight: bold; color: var(--blue);">05 - 08 min</span></td>
+              <td><strong style="color: #fff;">3. En Asignación Recursos</strong><br><span style="font-size: 11px; color: var(--t-muted);">Torre.vue / Asignación</span></td>
               <td>Abrir la Torre de Control, mostrar el requerimiento, la aprobación con Diff y asignar la Grúa Tadano + Chofer + Rigger en el DataGrid con el Semáforo de Acreditaciones al 100%.</td>
               <td><span class="tag tag-blue">DataGrid + Semáforo 360°</span></td>
             </tr>
             <tr>
-              <td><span class="mono" style="font-weight: bold; color: var(--amber);">08 - 11 min</span></td>
-              <td><strong style="color: #fff;">4. App Móvil Conductor</strong><br><span style="font-size: 11px; color: var(--t-muted);">/viaje/:token</span></td>
+              <td><span class="mono" style="font-weight: bold; color: var(--cyan);">08 - 11 min</span></td>
+              <td><strong style="color: #fff;">4. En Preparación Operaciones</strong><br><span style="font-size: 11px; color: var(--t-muted);">/viaje/:token (Salida Patio)</span></td>
               <td>Abrir la vista móvil del chofer, ingresar odómetro inicial (145.000), horómetro (3.200) y PIN (1234) ➔ Mostrar el convoy en ruta y los pings GPS transmitiendo en vivo cada 10s.</td>
               <td><span class="tag tag-cyan">Telemetría GPS en Vivo</span></td>
             </tr>
             <tr>
-              <td><span class="mono" style="font-weight: bold; color: var(--amber);">11 - 13 min</span></td>
-              <td><strong style="color: #fff;">5. Carga Copec & Arribo</strong><br><span style="font-size: 11px; color: var(--t-muted);">Modal Copec & Cierre</span></td>
-              <td>Simular solicitud de combustible Copec y confirmar llegada a faena con odómetro final (145.120) y PIN ➔ Desplegar el Log Maestro inalterable.</td>
-              <td><span class="tag tag-purple">Log Maestro de Desplazamiento</span></td>
+              <td><span class="mono" style="font-weight: bold; color: var(--purple);">11 - 13 min</span></td>
+              <td><strong style="color: #fff;">5. En Ejecución / Faena</strong><br><span style="font-size: 11px; color: var(--t-muted);">Modal Copec & Cierre</span></td>
+              <td>Simular solicitud de combustible Copec y confirmar llegada a faena con odómetro final (145.120) y PIN ➔ Desplegar el Log Maestro inalterable y Reporte Diario con firma FES.</td>
+              <td><span class="tag tag-purple">Log Maestro + Firma FES</span></td>
             </tr>
             <tr>
-              <td><span class="mono" style="font-weight: bold; color: var(--amber);">13 - 15 min</span></td>
-              <td><strong style="color: #fff;">6. Reporte Diario & EDP</strong><br><span style="font-size: 11px; color: var(--t-muted);">Firma FES & Facturación</span></td>
-              <td>Mostrar la pantalla de Reporte Diario con firma FES del cliente y el consolidado del Estado de Pago (EDP) para facturación inmediata.</td>
+              <td><span class="mono" style="font-weight: bold; color: var(--green);">13 - 15 min</span></td>
+              <td><strong style="color: #fff;">6. Finalizado / Devengado</strong><br><span style="font-size: 11px; color: var(--t-muted);">Manifiesto & EDP</span></td>
+              <td>Mostrar la recepción de aparejos en bodega (0 mermas) y el consolidado del Estado de Pago (EDP) listo para exportación y facturación en Laudus ERP.</td>
               <td><span class="tag tag-green">EDP + Devengado Inmediato</span></td>
             </tr>
           </tbody>
