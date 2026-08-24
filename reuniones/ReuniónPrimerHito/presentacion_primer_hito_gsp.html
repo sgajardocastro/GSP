@@ -141,10 +141,7 @@
 
     .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.18), 0 12px 36px -10px rgba(245,166,35,0.15); }
     .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.18),  0 12px 36px -10px rgba(59,130,246,0.15); }
-    .glow-green  { box-shadow: 0 0 0 1px rgba(16,185,129,0.18),  0 12px 36px -10px rgba(16,185,129,0.15); }
-    .glow-purple { box-shadow: 0 0 0 1px rgba(139,92,246,0.18),  0 12px 36px -10px rgba(139,92,246,0.15); }
     .glow-indigo { box-shadow: 0 0 0 1px rgba(99,102,241,0.18),  0 12px 36px -10px rgba(99,102,241,0.15); }
-    .glow-cyan   { box-shadow: 0 0 0 1px rgba(6,182,212,0.18),   0 12px 36px -10px rgba(6,182,212,0.15); }
 
     /* ── Tag / Badges ── */
     .tag {
@@ -180,87 +177,108 @@
     /* ── PIPELINE INTERACTIVO (6 COLUMNAS KANBAN) ── */
     .pipeline-grid-6 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
       position: relative;
     }
-    .pipeline-step {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px 14px;
-      display: flex; flex-direction: column; gap: 10px;
-      position: relative;
-      cursor: pointer;
-      transition: all 0.25s;
-      user-select: none;
-    }
-    .pipeline-step:hover {
-      transform: translateY(-4px);
-      border-color: rgba(245,166,35,0.6);
-      background: #111a2d;
-    }
-    .pipeline-step.active-step {
-      transform: translateY(-4px);
-      border-color: var(--amber);
-      box-shadow: 0 10px 25px -6px rgba(245,166,35,0.35);
-      background: #131f37;
-    }
-    .step-number {
-      width: 28px; height: 28px; border-radius: 8px;
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace;
-      color: var(--t-muted);
-      transition: all 0.2s;
-    }
-    .pipeline-step.active-step .step-number {
-      background: var(--amber) !important; color: #000 !important; font-weight: 900;
-    }
-
-    /* ── CONTENEDOR DINÁMICO DE ESTACIÓN SELECCIONADA ── */
-    #estacion-activa-container {
-      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .kanban-detail-card {
+    .pipeline-step-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 16px;
-      overflow: hidden;
-      display: flex; flex-direction: column;
+      padding: 20px 16px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
     }
-    .kanban-header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
+    .pipeline-step-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 36px -10px rgba(0,0,0,0.6);
+      background: #121c32;
     }
-    .kanban-body {
-      padding: 24px;
-      display: flex; flex-direction: column; gap: 20px;
+    .pipeline-step-card.border-c-1:hover { border-color: var(--indigo); box-shadow: 0 12px 30px -8px rgba(99,102,241,0.35); }
+    .pipeline-step-card.border-c-2:hover { border-color: var(--amber);  box-shadow: 0 12px 30px -8px rgba(245,166,35,0.35); }
+    .pipeline-step-card.border-c-3:hover { border-color: var(--blue);   box-shadow: 0 12px 30px -8px rgba(59,130,246,0.35); }
+    .pipeline-step-card.border-c-4:hover { border-color: var(--cyan);   box-shadow: 0 12px 30px -8px rgba(6,182,212,0.35); }
+    .pipeline-step-card.border-c-5:hover { border-color: var(--purple); box-shadow: 0 12px 30px -8px rgba(139,92,246,0.35); }
+    .pipeline-step-card.border-c-6:hover { border-color: var(--green);  box-shadow: 0 12px 30px -8px rgba(16,185,129,0.35); }
+
+    .step-badge-num {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
     }
 
-    /* ── ARTEFACTOS TANGIBLES ── */
-    .artifact-pill {
+    /* ── MODAL FLOTANTE DE ALTO IMPACTO ── */
+    #modal-backdrop {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(2, 5, 12, 0.88);
+      backdrop-filter: blur(18px);
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; transition: opacity 0.25s ease-out;
+    }
+    #modal-backdrop.modal-open {
+      display: flex; opacity: 1;
+    }
+
+    #modal-window {
+      background: #090e1a;
+      border: 1px solid var(--border-amber);
+      border-radius: 20px;
+      width: 100%; max-width: 960px; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 166, 35, 0.15);
+      transform: scale(0.95); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    #modal-backdrop.modal-open #modal-window {
+      transform: scale(1);
+    }
+
+    .modal-header-bar {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .modal-scrollable-body {
+      padding: 28px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    .modal-footer-bar {
+      padding: 16px 28px;
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── ARTEFACTOS DENTRO DEL MODAL ── */
+    .modal-artifact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 16px;
+    }
+    .modal-artifact-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 14px;
-      padding: 16px;
-      display: flex; align-items: flex-start; gap: 14px;
+      padding: 18px;
+      display: flex; gap: 16px;
       transition: all 0.2s;
     }
-    .artifact-pill:hover {
-      background: rgba(245,166,35,0.05);
-      border-color: rgba(245,166,35,0.3);
+    .modal-artifact-card:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(245,166,35,0.35);
       transform: translateX(4px);
     }
-    .artifact-icon-box {
-      width: 38px; height: 38px; border-radius: 10px;
+    .modal-artifact-icon {
+      width: 44px; height: 44px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
@@ -297,16 +315,25 @@
       background: #fbbf24; transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(245,166,35,0.35);
     }
-    .btn-nav-step {
-      background: rgba(255,255,255,0.05); color: #fff;
-      border: 1px solid var(--border-md); border-radius: 8px;
-      padding: 8px 16px; font-size: 12px; font-weight: 700;
+    .btn-modal-nav {
+      background: rgba(255,255,255,0.06); color: #fff;
+      border: 1px solid var(--border-md); border-radius: 9px;
+      padding: 9px 18px; font-size: 12px; font-weight: 700;
       font-family: 'Outfit', sans-serif; text-transform: uppercase;
       cursor: pointer; transition: all 0.2s;
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: center; gap: 8px;
     }
-    .btn-nav-step:hover {
-      background: rgba(255,255,255,0.12); border-color: var(--amber); color: var(--amber);
+    .btn-modal-nav:hover {
+      background: rgba(255,255,255,0.14); border-color: var(--amber); color: var(--amber);
+    }
+    .btn-close-modal {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--t-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; font-size: 16px;
+    }
+    .btn-close-modal:hover {
+      background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); color: #f87171;
     }
   </style>
 </head>
@@ -323,7 +350,7 @@
     </a>
 
     <nav class="nav-links">
-      <a href="#bloque-alcance" class="nav-link">1. Pipeline Kanban (6 Estaciones)</a>
+      <a href="#bloque-alcance" class="nav-link">1. Pipeline Kanban (6 Pasos)</a>
       <a href="#bloque-implementacion" class="nav-link">2. Plan Implementación</a>
       <a href="#bloque-demo" class="nav-link">3. Guion Demo en Vivo</a>
     </nav>
@@ -349,7 +376,7 @@
           Blindaje y Digitalización Integral de la Operación de Izaje
         </h1>
         <p style="font-size: 15px; color: var(--t-sec); line-height: 1.6;">
-          Presentación para <strong style="color: #fff;">Omar Reyes (Fundador & Propietario GSP)</strong>. La arquitectura digital modelada refleja exactamente las <strong style="color: var(--amber);">6 columnas del Kanban de la Torre de Control</strong>, conectando Preventa, Visita a Terreno, Asignación de Recursos, Acreditaciones, Telemetría en Ruta y Facturación sin fricción.
+          Presentación ejecutiva para <strong style="color: #fff;">Omar Reyes (Fundador & Propietario GSP)</strong>. La arquitectura digital modelada refleja exactamente las <strong style="color: var(--amber);">6 columnas del Kanban de la Torre de Control</strong>, conectando Preventa, Visita a Terreno, Asignación de Recursos, Acreditaciones, Telemetría en Ruta y Facturación sin fricción.
         </p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
@@ -363,117 +390,139 @@
     </section>
 
     <!-- ========================================================================= -->
-    <!-- BLOQUE 1: EL PIPELINE OPERATIVO IDÉNTICO AL KANBAN (SELECTOR DINÁMICO)    -->
+    <!-- BLOQUE 1: EL PIPELINE OPERATIVO IDÉNTICO AL KANBAN (TARJETAS DISPARADORAS) -->
     <!-- ========================================================================= -->
     <section id="bloque-alcance" class="card">
       <div class="section-head">
         <div class="section-eyebrow"><i data-lucide="activity" style="width: 15px; height: 15px;"></i> Bloque 1 · Pipeline Canónico de 6 Columnas</div>
         <h2 class="section-title">El Pipeline Operativo (1:1 con la Torre Kanban)</h2>
-        <p class="section-sub">Haz clic en cualquiera de los 6 pasos del Kanban para desplegar en vivo el detalle operativo, documentos y artefactos de esa etapa.</p>
+        <p class="section-sub">Haz clic sobre cualquiera de las 6 etapas para abrir el <strong style="color: var(--amber);">visor flotante detallado</strong> con sus documentos, artefactos reales y compuertas de control.</p>
       </div>
 
-      <!-- Barra Interactiva de las 6 Estaciones del Kanban -->
+      <!-- Grid de 6 Tarjetas del Kanban que abren el Modal -->
       <div class="pipeline-grid-6" style="margin-top: 10px;">
         
-        <!-- Paso 1: Requerimiento Registrado -->
-        <div id="step-btn-1" class="pipeline-step active-step" onclick="seleccionarEstacion(1)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--indigo); color: #fff;">01</div>
-            <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--indigo);"></i>
+        <!-- 1. Requerimiento Registrado -->
+        <div class="pipeline-step-card border-c-1" onclick="abrirModalEstacion(1)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(99,102,241,0.2); color: var(--indigo); border: 1px solid rgba(99,102,241,0.4);">01</div>
+              <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--indigo);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                Oportunidad CRM, Visita a Terreno con photoChecks y cotización PDF oficial.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              CRM, Visita a Terreno (photoChecks) y Cotización PDF.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-indigo" style="font-size: 9px;">CRM + Site Visit</span>
+            <span style="font-size: 11px; color: var(--indigo); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-indigo" style="align-self: flex-start; font-size: 8.5px;">CRM + Site Visit</div>
         </div>
 
-        <!-- Paso 2: En Verificación Operaciones -->
-        <div id="step-btn-2" class="pipeline-step" onclick="seleccionarEstacion(2)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--amber); color: #000;">02</div>
-            <i data-lucide="git-compare" style="width: 18px; height: 18px; color: var(--amber);"></i>
+        <!-- 2. En Verificación Operaciones -->
+        <div class="pipeline-step-card border-c-2" onclick="abrirModalEstacion(2)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(245,166,35,0.2); color: var(--amber); border: 1px solid rgba(245,166,35,0.4);">02</div>
+              <i data-lucide="git-compare" style="width: 20px; height: 20px; color: var(--amber);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                Auditoría técnica de factibilidad, informe de terreno y Comparador Visual Diff.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              Revisión técnica de factibilidad y Comparador Diff.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-amber" style="font-size: 9px;">Diff Comercial vs Op</span>
+            <span style="font-size: 11px; color: var(--amber); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-amber" style="align-self: flex-start; font-size: 8.5px;">Diff Comercial vs Op</div>
         </div>
 
-        <!-- Paso 3: En Asignación Recursos -->
-        <div id="step-btn-3" class="pipeline-step" onclick="seleccionarEstacion(3)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--blue); color: #fff;">03</div>
-            <i data-lucide="layers" style="width: 18px; height: 18px; color: var(--blue);"></i>
+        <!-- 3. En Asignación Recursos -->
+        <div class="pipeline-step-card border-c-3" onclick="abrirModalEstacion(3)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(59,130,246,0.2); color: var(--blue); border: 1px solid rgba(59,130,246,0.4);">03</div>
+              <i data-lucide="layers" style="width: 20px; height: 20px; color: var(--blue);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                DataGrid: Grúa + Chofer + Rigger certificado + Aparejos ➔ Orden de Trabajo.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              DataGrid: Grúa + Chofer + Rigger + Aparejos ➔ OT.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-blue" style="font-size: 9px;">Convoy Completo OT</span>
+            <span style="font-size: 11px; color: var(--blue); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-blue" style="align-self: flex-start; font-size: 8.5px;">Convoy Completo OT</div>
         </div>
 
-        <!-- Paso 4: En Preparación Operaciones -->
-        <div id="step-btn-4" class="pipeline-step" onclick="seleccionarEstacion(4)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--cyan); color: #000;">04</div>
-            <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+        <!-- 4. En Preparación Operaciones -->
+        <div class="pipeline-step-card border-c-4" onclick="abrirModalEstacion(4)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(6,182,212,0.2); color: var(--cyan); border: 1px solid rgba(6,182,212,0.4);">04</div>
+              <i data-lucide="shield-check" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                Dossier & Semáforo de Acreditaciones 360°, checklist de patio y Token PIN.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              Acreditaciones 360°, checklist patio y Token PIN.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-cyan" style="font-size: 9px;">Acreditación + Patio</span>
+            <span style="font-size: 11px; color: var(--cyan); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-cyan" style="align-self: flex-start; font-size: 8.5px;">Acreditación + Patio</div>
         </div>
 
-        <!-- Paso 5: En Ejecución / Faena -->
-        <div id="step-btn-5" class="pipeline-step" onclick="seleccionarEstacion(5)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--purple); color: #fff;">05</div>
-            <i data-lucide="smartphone" style="width: 18px; height: 18px; color: var(--purple);"></i>
+        <!-- 5. En Ejecución / Faena -->
+        <div class="pipeline-step-card border-c-5" onclick="abrirModalEstacion(5)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(139,92,246,0.2); color: var(--purple); border: 1px solid rgba(139,92,246,0.4);">05</div>
+              <i data-lucide="smartphone" style="width: 20px; height: 20px; color: var(--purple);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                Telemetría GPS cada 10s, rendición Copec en ruta y Firma FES del mandante.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              Telemetría GPS 10s, Copec en ruta y Firma FES.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-purple" style="font-size: 9px;">GPS + Copec + FES</span>
+            <span style="font-size: 11px; color: var(--purple); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-purple" style="align-self: flex-start; font-size: 8.5px;">GPS + Copec + FES</div>
         </div>
 
-        <!-- Paso 6: Finalizado / Devengado -->
-        <div id="step-btn-6" class="pipeline-step" onclick="seleccionarEstacion(6)">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="step-number" style="background: var(--green); color: #000;">06</div>
-            <i data-lucide="dollar-sign" style="width: 18px; height: 18px; color: var(--green);"></i>
+        <!-- 6. Finalizado / Devengado -->
+        <div class="pipeline-step-card border-c-6" onclick="abrirModalEstacion(6)">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="step-badge-num" style="background: rgba(16,185,129,0.2); color: var(--green); border: 1px solid rgba(16,185,129,0.4);">06</div>
+              <i data-lucide="dollar-sign" style="width: 20px; height: 20px; color: var(--green);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
+                Manifiesto inverso de aparejos en bodega, EDP y facturación Laudus ERP.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-display" style="font-size: 13px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
-            <p style="font-size: 10.5px; color: var(--t-muted); margin-top: 3px; line-height: 1.3;">
-              Manifiesto inverso aparejos, EDP y Laudus ERP.
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
+            <span class="tag tag-green" style="font-size: 9px;">EDP + ERP Laudus</span>
+            <span style="font-size: 11px; color: var(--green); font-weight: bold;">Explorar 👁️</span>
           </div>
-          <div class="tag tag-green" style="align-self: flex-start; font-size: 8.5px;">EDP + ERP Laudus</div>
         </div>
 
       </div>
-
-      <!-- ===================================================================== -->
-      <!-- VISOR DINÁMICO: SE DESPLIEGA AL SELECCIONAR CADA PUNTO DEL KANBAN     -->
-      <!-- ===================================================================== -->
-      <div id="estacion-activa-container" style="margin-top: 24px;">
-        <!-- El contenido se inyecta dinámicamente vía JavaScript -->
-      </div>
-
     </section>
 
     <!-- ========================================================================= -->
@@ -619,260 +668,333 @@
 
   </main>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL FLOTANTE INTERACTIVO: DETALLE DE LA ESTACIÓN KANBAN                 -->
+  <!-- ========================================================================= -->
+  <div id="modal-backdrop" onclick="cerrarModalAlClicFondo(event)">
+    <div id="modal-window">
+      <!-- Encabezado del Modal -->
+      <div class="modal-header-bar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div id="m-badge-num" class="step-badge-num" style="background: rgba(245,166,35,0.2); color: var(--amber); border: 1px solid var(--border-amber);">
+            01
+          </div>
+          <div>
+            <h2 id="m-title" class="font-display" style="font-size: 18px; font-weight: 800; color: #fff; text-transform: uppercase;">
+              1. Requerimiento Registrado
+            </h2>
+            <div id="m-subtag" class="tag tag-indigo" style="margin-top: 4px; font-size: 10px;">
+              Preventa & Visita a Terreno
+            </div>
+          </div>
+        </div>
+
+        <button onclick="cerrarModal()" class="btn-close-modal" title="Cerrar modal (Esc)">✕</button>
+      </div>
+
+      <!-- Cuerpo Scrolleable del Modal -->
+      <div class="modal-scrollable-body">
+        <div>
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--t-muted); margin-bottom: 6px;">
+            Objetivo Operacional & Dinámica de la Etapa
+          </div>
+          <p id="m-desc" style="font-size: 14px; color: var(--t-sec); line-height: 1.6;">
+            Descripción detallada...
+          </p>
+        </div>
+
+        <div>
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--amber); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="layers" style="width: 14px; height: 14px;"></i> Documentos y Artefactos Tangibles de Esta Etapa
+          </div>
+          <div id="m-artifacts" class="modal-artifact-grid">
+            <!-- Inyectado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Banner de Control Antifraude -->
+        <div id="m-control-box" style="border-radius: 14px; padding: 16px 20px; font-size: 13px; font-weight: 600; line-height: 1.5;">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="modal-footer-bar">
+        <div style="display: flex; gap: 8px;">
+          <button onclick="navegarModal(-1)" class="btn-modal-nav">
+            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Anterior
+          </button>
+          <button onclick="navegarModal(1)" class="btn-modal-nav">
+            Siguiente <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+
+        <button onclick="cerrarModal()" class="btn-action" style="padding: 8px 18px; font-size: 11px;">
+          Cerrar Detalle (Esc)
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Data de las 6 Estaciones del Kanban
     const ESTACIONES_DATA = {
       1: {
+        num: "01",
         titulo: "1. Requerimiento Registrado",
-        tag: "Preventa & Visita a Terreno",
+        tag: "Preventa Comercial & Visita a Terreno",
         tagClass: "tag-indigo",
         borderColor: "var(--indigo)",
-        iconoHeader: "file-text",
-        resumen: "Captura estructurada de la oportunidad comercial, levantamiento en terreno con photoChecks si la maniobra lo exige, y generación de la cotización formal con reglas duras.",
+        resumen: "Captura estructurada de la oportunidad comercial, levantamiento en terreno con photoChecks si la maniobra lo exige, y generación de la cotización formal blindada en PDF con control de versiones.",
         artefactos: [
           {
             icono: "clipboard-check",
-            bg: "rgba(99,102,241,0.15)",
+            bg: "rgba(99,102,241,0.18)",
             color: "var(--indigo)",
             titulo: "Survey Visita a Terreno (Template 80)",
-            desc: "photoChecks con evidencia obligatoria (tipo de suelo, pendientes, accesos cama baja, líneas de alta tensión, radios de giro) y firma digital del cliente en terreno."
+            desc: "photoChecks con evidencia obligatoria (tipo de suelo, pendientes, accesos para camión cama baja, líneas eléctricas de alta tensión, radios de giro) y firma digital del cliente en terreno."
           },
           {
             icono: "file-text",
-            bg: "rgba(99,102,241,0.15)",
+            bg: "rgba(99,102,241,0.18)",
             color: "var(--indigo)",
             titulo: "PDF Oficial de Cotización & Correo B2B",
-            desc: "Inyección automática de Flete ($500.000), Rigger obligatorio, matriz de pensiones (alojamiento/comidas), control de versiones [CODI]V1-105.pdf y despacho con tracking de apertura."
+            desc: "Inyección automática de Flete ($500.000), Rigger obligatorio, matriz de pensiones (alojamiento/comidas), control de versiones [CODI]V1-105.pdf y despacho corporativo con tracking de apertura."
           }
         ],
-        control: "🛡️ Compuerta Antifraude: No se puede generar requerimiento a operaciones sin haber completado los requisitos comerciales y despachado la cotización formal.",
-        controlBg: "rgba(99,102,241,0.05)",
-        controlBorder: "rgba(99,102,241,0.2)",
-        controlText: "#a5b4fc"
+        control: "🛡️ Compuerta Antifraude: No se puede generar requerimiento formal a operaciones sin haber completado los requisitos comerciales y despachado la cotización formal al mandante.",
+        controlBg: "rgba(99,102,241,0.08)",
+        controlBorder: "rgba(99,102,241,0.25)",
+        controlText: "#c7d2fe"
       },
       2: {
+        num: "02",
         titulo: "2. En Verificación Operaciones",
         tag: "Validación Técnica & Diff",
         tagClass: "tag-amber",
         borderColor: "var(--amber)",
-        iconoHeader: "git-compare",
-        resumen: "El Coordinador de Operaciones recibe el requerimiento, consulta el informe técnico de terreno y valida la factibilidad de la grúa antes de comprometerla.",
+        resumen: "El Coordinador de Operaciones recibe el requerimiento, consulta el informe técnico levantado en terreno y valida la factibilidad de la grúa antes de comprometerla físicamente.",
         artefactos: [
           {
             icono: "git-compare",
-            bg: "rgba(245,166,35,0.15)",
+            bg: "rgba(245,166,35,0.18)",
             color: "var(--amber)",
             titulo: "Comparador Visual Diff (Comercial vs Operaciones)",
-            desc: "Si operaciones ajusta el tonelaje de la grúa (ej: 50T a 70T por radio) o añade contrapesos, el sistema resalta los cambios en rojo/amarillo (KPI de precisión comercial)."
+            desc: "Si operaciones ajusta el tonelaje de la grúa (ej: 50T a 70T por radio de trabajo) o añade contrapesos, el sistema resalta los cambios en rojo/amarillo (KPI de precisión de ventas)."
           },
           {
             icono: "check-circle-2",
-            bg: "rgba(245,166,35,0.15)",
+            bg: "rgba(245,166,35,0.18)",
             color: "var(--amber)",
             titulo: "Compuerta de Aprobación Formal",
-            desc: "Bloqueo de antecedentes en modo solo lectura para evitar modificaciones no autorizadas una vez validada la ingeniería de izaje."
+            desc: "Bloqueo inmutable de antecedentes en modo solo lectura para evitar modificaciones no autorizadas una vez validada la ingeniería de izaje."
           }
         ],
-        control: "🛡️ Control de Calidad: Impide que salgan a faena grúas subdimensionadas que puedan provocar accidentes, detenciones de obra o multas.",
-        controlBg: "rgba(245,166,35,0.05)",
-        controlBorder: "rgba(245,166,35,0.2)",
-        controlText: "#fde68a"
+        control: "🛡️ Control de Calidad: Impide que salgan a faena grúas subdimensionadas que puedan provocar accidentes, detenciones de obra o multas contractuales.",
+        controlBg: "rgba(245,166,35,0.08)",
+        controlBorder: "rgba(245,166,35,0.25)",
+        controlText: "#fef3c7"
       },
       3: {
+        num: "03",
         titulo: "3. En Asignación Recursos",
         tag: "Generación de OT & Convoy",
         tagClass: "tag-blue",
         borderColor: "var(--blue)",
-        iconoHeader: "layers",
         resumen: "Asignación física y humana mediante el DataGrid de alta densidad operacional para armar el convoy completo de izaje.",
         artefactos: [
           {
             icono: "layers",
-            bg: "rgba(59,130,246,0.15)",
+            bg: "rgba(59,130,246,0.18)",
             color: "var(--blue)",
             titulo: "DataGrid Operacional B2B de Alta Densidad",
             desc: "Asignación simultánea de Grúa principal (Tadano ATF 50, Liebherr) + Camión Pluma + Conductor + Rigger certificado + Matriz de Aparejos (eslingas, grilletes, balancines)."
           },
           {
             icono: "file-check",
-            bg: "rgba(59,130,246,0.15)",
+            bg: "rgba(59,130,246,0.18)",
             color: "var(--blue)",
             titulo: "Orden de Trabajo (OT) Oficial",
             desc: "Código maestro único que consolida los datos de obra, tripulación asignada, implementos de izaje autorizados y ruta de despacho."
           }
         ],
         control: "🛡️ Regla Canónica: Prohibido asignar personas sin validar su rol oficial (separación estricta Chofer vs Rigger vs Prevencionista).",
-        controlBg: "rgba(59,130,246,0.05)",
-        controlBorder: "rgba(59,130,246,0.2)",
-        controlText: "#93c5fd"
+        controlBg: "rgba(59,130,246,0.08)",
+        controlBorder: "rgba(59,130,246,0.25)",
+        controlText: "#bfdbfe"
       },
       4: {
+        num: "04",
         titulo: "4. En Preparación Operaciones",
         tag: "Patio & Acreditaciones 360°",
         tagClass: "tag-cyan",
         borderColor: "var(--cyan)",
-        iconoHeader: "shield-check",
-        resumen: "Blindaje de ingreso a faena (cero rechazos en portería del mandante) y auditoría mecánica de la grúa antes de cruzar el portón de salida.",
+        resumen: "Blindaje de ingreso a faena (cero rechazos en portería del mandante) y auditoría mecánica de la grúa antes de cruzar el portón de salida de base.",
         artefactos: [
           {
             icono: "shield",
-            bg: "rgba(6,182,212,0.15)",
+            bg: "rgba(6,182,212,0.18)",
             color: "var(--cyan)",
             titulo: "Dossier & Semáforo de Acreditaciones 360°",
             desc: "Micro-Gauge circular de avance y semáforo de vencimientos (< 30 días) para Empresa, Equipos y Personal con despacho directo al mandante y visor HTML."
           },
           {
             icono: "key-round",
-            bg: "rgba(6,182,212,0.15)",
+            bg: "rgba(6,182,212,0.18)",
             color: "var(--cyan)",
             titulo: "Web Token de Salida Móvil con PIN (/viaje/:token)",
             desc: "El conductor ingresa odómetro inicial, horómetro de salida y sella el despacho con su PIN de 4 dígitos (SHA-256) antes de salir de patio."
           }
         ],
         control: "🛡️ Invariante de Seguridad: Si la máquina o el operador tienen un documento vencido, la tarjeta del Kanban se bloquea en rojo.",
-        controlBg: "rgba(6,182,212,0.05)",
-        controlBorder: "rgba(6,182,212,0.2)",
-        controlText: "#a5f3fc"
+        controlBg: "rgba(6,182,212,0.08)",
+        controlBorder: "rgba(6,182,212,0.25)",
+        controlText: "#cffafe"
       },
       5: {
+        num: "05",
         titulo: "5. En Ejecución / Faena",
         tag: "Ruta, Copec & Firma FES",
         tagClass: "tag-purple",
         borderColor: "var(--purple)",
-        iconoHeader: "smartphone",
         resumen: "Monitoreo telemétrico continuo durante el trayecto, control estricto de combustible y certificación de horas de izaje con firma del mandante.",
         artefactos: [
           {
             icono: "radio",
-            bg: "rgba(139,92,246,0.15)",
+            bg: "rgba(139,92,246,0.18)",
             color: "var(--purple)",
             titulo: "Telemetría GPS en Vivo (Pings cada 10s)",
             desc: "Transmisión continua de velocidad real, coordenadas y reloj en ruta, acumulado de forma inalterable en base de datos PostgreSQL."
           },
           {
             icono: "fuel",
-            bg: "rgba(139,92,246,0.15)",
+            bg: "rgba(139,92,246,0.18)",
             color: "var(--purple)",
             titulo: "Rendición Copec Multi-Estanque & Reporte Diario FES",
             desc: "Habilitación de tarjeta Copec en ruta con foto voucher y Reporte Diario de Faena con firma digital táctil del supervisor mandante en pantalla móvil."
           }
         ],
         control: "🛡️ Resiliencia Offline-First: Si el chofer entra a zonas sin cobertura celular, la app sigue registrando y sincroniza automáticamente al volver la red.",
-        controlBg: "rgba(139,92,246,0.05)",
-        controlBorder: "rgba(139,92,246,0.2)",
-        controlText: "#ddd6fe"
+        controlBg: "rgba(139,92,246,0.08)",
+        controlBorder: "rgba(139,92,246,0.25)",
+        controlText: "#ede9fe"
       },
       6: {
+        num: "06",
         titulo: "6. Finalizado / Devengado",
         tag: "Retorno, EDP & Laudus ERP",
         tagClass: "tag-green",
         borderColor: "var(--green)",
-        iconoHeader: "dollar-sign",
         resumen: "Cierre físico y contable: recepción de aparejos en bodega y generación inmediata del Estado de Pago (EDP) sin esperar a fin de mes.",
         artefactos: [
           {
             icono: "package-check",
-            bg: "rgba(16,185,129,0.15)",
+            bg: "rgba(16,185,129,0.18)",
             color: "var(--green)",
             titulo: "Manifiesto Inverso de Aparejos",
             desc: "Chequeo de retorno de eslingas, grilletes y cadenas entregados en patio para asegurar 0% pérdidas materiales en faena."
           },
           {
             icono: "dollar-sign",
-            bg: "rgba(16,185,129,0.15)",
+            bg: "rgba(16,185,129,0.18)",
             color: "var(--green)",
             titulo: "Estado de Pago (EDP) & Devengado Diario",
             desc: "Consolidación automática de horas mínimas, fletes y combustible para facturar en Laudus ERP sin objeciones del mandante."
           }
         ],
         control: "🛡️ Impacto Financiero: Reduce el plazo de cobro de 45 días a menos de 5 días al contar con firmas y horas respaldadas legalmente.",
-        controlBg: "rgba(16,185,129,0.05)",
-        controlBorder: "rgba(16,185,129,0.2)",
-        controlText: "#a7f3d0"
+        controlBg: "rgba(16,185,129,0.08)",
+        controlBorder: "rgba(16,185,129,0.25)",
+        controlText: "#d1fae5"
       }
     };
 
-    let estacionActual = 1;
+    let modalEstacionId = 1;
 
-    function seleccionarEstacion(id) {
-      estacionActual = id;
-      
-      // Actualizar estilos de botones
-      for (let i = 1; i <= 6; i++) {
-        const btn = document.getElementById(`step-btn-${i}`);
-        if (btn) {
-          if (i === id) {
-            btn.classList.add('active-step');
-          } else {
-            btn.classList.remove('active-step');
-          }
-        }
-      }
-
-      // Renderizar el detalle de la estación
+    function abrirModalEstacion(id) {
+      modalEstacionId = id;
       const data = ESTACIONES_DATA[id];
-      const container = document.getElementById('estacion-activa-container');
-      if (!data || !container) return;
+      if (!data) return;
 
-      container.innerHTML = `
-        <div class="kanban-detail-card glow-amber" style="border-top: 4px solid ${data.borderColor};">
-          <div class="kanban-header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <span style="width: 12px; height: 12px; border-radius: 50%; background: ${data.borderColor};"></span>
-              <h3 class="font-display" style="font-size: 17px; font-weight: 800; color: #fff; text-transform: uppercase;">
-                ${data.titulo}
-              </h3>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span class="tag ${data.tagClass}">${data.tag}</span>
-              <button onclick="navegarEstacion(-1)" class="btn-nav-step" title="Estación Anterior">←</button>
-              <button onclick="navegarEstacion(1)" class="btn-nav-step" title="Estación Siguiente">→</button>
-            </div>
+      // Actualizar campos del modal
+      document.getElementById('m-badge-num').innerText = data.num;
+      document.getElementById('m-badge-num').style.color = data.borderColor;
+      document.getElementById('m-badge-num').style.borderColor = data.borderColor;
+      document.getElementById('m-title').innerText = data.titulo;
+      
+      const tagEl = document.getElementById('m-subtag');
+      tagEl.className = `tag ${data.tagClass}`;
+      tagEl.innerText = data.tag;
+
+      document.getElementById('m-desc').innerText = data.resumen;
+
+      // Renderizar artefactos
+      const artifactsContainer = document.getElementById('m-artifacts');
+      artifactsContainer.innerHTML = data.artefactos.map(art => `
+        <div class="modal-artifact-card">
+          <div class="modal-artifact-icon" style="background: ${art.bg}; color: ${art.color};">
+            <i data-lucide="${art.icono}" style="width: 24px; height: 24px;"></i>
           </div>
-
-          <div class="kanban-body">
-            <p style="font-size: 14px; color: var(--t-sec); line-height: 1.6;">
-              ${data.resumen}
-            </p>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px;">
-              ${data.artefactos.map(art => `
-                <div class="artifact-pill">
-                  <div class="artifact-icon-box" style="background: ${art.bg}; color: ${art.color};">
-                    <i data-lucide="${art.icono}" style="width: 20px; height: 20px;"></i>
-                  </div>
-                  <div style="flex: 1;">
-                    <div style="font-weight: 800; font-size: 13.5px; color: #fff; font-family: 'Outfit', sans-serif;">
-                      ${art.titulo}
-                    </div>
-                    <div style="font-size: 12px; color: var(--t-muted); margin-top: 4px; line-height: 1.45;">
-                      ${art.desc}
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
+          <div style="flex: 1;">
+            <div style="font-weight: 800; font-size: 14px; color: #fff; font-family: 'Outfit', sans-serif;">
+              ${art.titulo}
             </div>
-
-            <div style="background: ${data.controlBg}; border: 1px solid ${data.controlBorder}; border-radius: 12px; padding: 14px 18px; font-size: 12.5px; color: ${data.controlText}; font-weight: 600;">
-              ${data.control}
+            <div style="font-size: 12px; color: var(--t-muted); margin-top: 5px; line-height: 1.5;">
+              ${art.desc}
             </div>
           </div>
         </div>
-      `;
+      `).join('');
+
+      // Renderizar control antifraude
+      const controlBox = document.getElementById('m-control-box');
+      controlBox.style.background = data.controlBg;
+      controlBox.style.border = `1px solid ${data.controlBorder}`;
+      controlBox.style.color = data.controlText;
+      controlBox.innerHTML = data.control;
+
+      // Borde superior de la ventana
+      document.getElementById('modal-window').style.borderTop = `4px solid ${data.borderColor}`;
+
+      // Mostrar modal
+      const backdrop = document.getElementById('modal-backdrop');
+      backdrop.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
 
       lucide.createIcons();
     }
 
-    function navegarEstacion(delta) {
-      let nueva = estacionActual + delta;
-      if (nueva < 1) nueva = 6;
-      if (nueva > 6) nueva = 1;
-      seleccionarEstacion(nueva);
+    function cerrarModal() {
+      const backdrop = document.getElementById('modal-backdrop');
+      backdrop.classList.remove('modal-open');
+      document.body.style.overflow = 'auto';
     }
 
-    // Inicializar iconos y estación 1 por defecto
+    function cerrarModalAlClicFondo(e) {
+      if (e.target.id === 'modal-backdrop') {
+        cerrarModal();
+      }
+    }
+
+    function navegarModal(delta) {
+      let nueva = modalEstacionId + delta;
+      if (nueva < 1) nueva = 6;
+      if (nueva > 6) nueva = 1;
+      abrirModalEstacion(nueva);
+    }
+
+    // Cerrar con Escape y navegar con flechas
+    window.addEventListener('keydown', (e) => {
+      const backdrop = document.getElementById('modal-backdrop');
+      if (backdrop.classList.contains('modal-open')) {
+        if (e.key === 'Escape') cerrarModal();
+        if (e.key === 'ArrowLeft') navegarModal(-1);
+        if (e.key === 'ArrowRight') navegarModal(1);
+      }
+    });
+
+    // Inicializar iconos
     lucide.createIcons();
-    seleccionarEstacion(1);
   </script>
 </body>
 </html>
