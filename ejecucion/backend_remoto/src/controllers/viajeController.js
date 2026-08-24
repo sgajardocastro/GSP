@@ -21,7 +21,7 @@ const viajeController = {
   async registrarSalida(req, res) {
     try {
       const { token } = req.params;
-      const { km_inicial, horometro_inicial, foto_salida, pin_hash, latitud, longitud } = req.body;
+      const { km_inicial, horometro_inicial, foto_salida, pin_hash, latitud, longitud, id_proyecto, id_equipo, id_user_chofer } = req.body;
 
       if (!km_inicial || !pin_hash) {
         return res.status(400).json({ error: 'Odómetro y PIN son requeridos para iniciar salida' });
@@ -29,6 +29,9 @@ const viajeController = {
 
       const actualizado = await viajeModel.registrarSalida({
         token_viaje: token,
+        id_proyecto,
+        id_equipo,
+        id_user_chofer,
         km_inicial,
         horometro_inicial,
         foto_salida,
