@@ -7943,40 +7943,6 @@ const sincronizarInspeccionesPWA = async () => {
   }
 }
 
-let autoPollTimer = null
-watch(() => operacionesSubTab.value, (newTab) => {
-  if (newTab === 'asignacion') {
-    sincronizarTrasladosComerciales()
-    cargarExpedientesAsignados()
-  } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') {
-    cargarExpedientesAsignados()
-  }
-  if (newTab === 'preparacion_salida') {
-    cargarExpedientesAsignados()
-    sincronizarInspeccionesPWA()
-    cargarViajesProyecto()
-    if (!autoPollTimer) {
-      autoPollTimer = setInterval(() => {
-        sincronizarInspeccionesPWA()
-        cargarViajesProyecto()
-      }, 8000)
-    }
-  } else {
-    if (autoPollTimer) {
-      clearInterval(autoPollTimer)
-      autoPollTimer = null
-    }
-  }
-}, { immediate: true })
-
-watch(() => tripulacionAsignada.value, () => {
-  cargarExpedientesAsignados()
-}, { deep: true })
-
-watch(() => equiposAsignadosLista.value, () => {
-  cargarExpedientesAsignados()
-}, { deep: true })
-
 // -------------------------------------------------------------
 // TELEMETRÍA DE CONVOY, ENLACES MÓVILES & AUTORIZACIÓN COPEC (SPEC 32)
 // -------------------------------------------------------------
@@ -7991,7 +7957,10 @@ const solicitudesCopecPendientes = ref([
 ])
 
 const cargarViajesProyecto = async (projId) => {
-  const id = projId || props.proyectoId || currentProyectoId.value
+  let id = projId || props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
   if (!id) return
   cargandoViajes.value = true
   try {
@@ -8062,12 +8031,13 @@ const viajesConvoyLista = computed(() => {
     const eqId = eq.id_equipo || eq.id
     const vjReal = getViajeDeEquipo(eqId)
     
-    const chofer = tripulacionAsignada.value.find(t => 
+    const chofer = (tripulacionAsignada.value || []).find(t => 
       t.equipo_asignado_id === eq.id_equipo || t.equipo_asignado_id === eq.patente
     )
-    const choferUser = chofer?.id_user ? usuarios.value.find(u => u.id_user === chofer.id_user) : null
+    const choferUser = chofer?.id_user ? (usuarios.value || []).find(u => u.id_user === chofer.id_user) : null
     const choferNombre = vjReal?.chofer_nombre || choferUser?.nombre_user || choferUser?.name_user || 'Conductor Asignado'
-    const projId = props.proyectoId || currentProyectoId.value || '69'
+    let projId = props.proyectoId || currentProyectoId.value || '69'
+    if (typeof projId === 'object' && projId !== null) projId = projId.id_proyecto || '69'
     const token = vjReal?.token_viaje || `vj-${projId}-${eq.id_equipo || eq.patente || idx + 1}`
 
     result.push({
@@ -8117,6 +8087,40 @@ const abrirWebViaje = (token) => {
   const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
   window.open(url, '_blank')
 }
+
+let autoPollTimer = null
+watch(() => operacionesSubTab.value, (newTab) => {
+  if (newTab === 'asignacion') {
+    sincronizarTrasladosComerciales()
+    cargarExpedientesAsignados()
+  } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') {
+    cargarExpedientesAsignados()
+  }
+  if (newTab === 'preparacion_salida') {
+    cargarExpedientesAsignados()
+    sincronizarInspeccionesPWA()
+    cargarViajesProyecto()
+    if (!autoPollTimer) {
+      autoPollTimer = setInterval(() => {
+        sincronizarInspeccionesPWA()
+        cargarViajesProyecto()
+      }, 8000)
+    }
+  } else {
+    if (autoPollTimer) {
+      clearInterval(autoPollTimer)
+      autoPollTimer = null
+    }
+  }
+}, { immediate: true })
+
+watch(() => tripulacionAsignada.value, () => {
+  cargarExpedientesAsignados()
+}, { deep: true })
+
+watch(() => equiposAsignadosLista.value, () => {
+  cargarExpedientesAsignados()
+}, { deep: true })
 
 const aprobarSolicitudCopec = (sol) => {
   if (!sol.id_autorizacion_input) {
