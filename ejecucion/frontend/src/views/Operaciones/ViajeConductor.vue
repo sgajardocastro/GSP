@@ -654,18 +654,17 @@ const onFotoLlegadaCapturada = async (e) => {
 }
 
 // -------------------------------------------------------------
-// RASTREO GPS AUTOMÁTICO EN RUTA (FRECUENCIA: 10 SEGUNDOS)
+// MOTOR UNIFICADO DE TELEMETRÍA Y RELOJ EN RUTA (TICK 1 SEG)
 // -------------------------------------------------------------
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
 
-  segundosParaProximoPing.value = 10
   ultimoPingHora.value = new Date().toLocaleTimeString('es-CL')
 
   try {
     // 1. Obtener última posición en memoria de forma instantánea (0ms)
     const gps = getUltimaPosicionGPS()
-    // Pequeño desplazamiento para reflejar dinamismo en pruebas
+    // Pequeño desplazamiento continuo para reflejar avance en ruta durante prueba
     gps.latitud = Number(gps.latitud || -36.6172) + (Math.random() - 0.48) * 0.0004
     gps.longitud = Number(gps.longitud || -72.1148) + (Math.random() - 0.48) * 0.0004
     gps.velocidad_kmh = Math.round(45 + Math.random() * 20)
@@ -703,24 +702,45 @@ const registrarPingAutomatico = async () => {
   }
 }
 
-const iniciarRastreoGPS = () => {
-  detenerRastreoGPS()
+const iniciarMotorEnRuta = () => {
+  detenerMotorEnRuta()
+
   // 1. Iniciar monitoreo continuo de hardware GPS
   iniciarWatcherGPS((pos) => {
     ultimaPosicionGPS.value = pos
   })
-  // 2. Primer ping inmediato al entrar a ruta
+
+  // 2. Primer ping inmediato de inicio
+  segundosParaProximoPing.value = 10
   registrarPingAutomatico()
-  // 3. Ciclo periódico cada 10 segundos
-  gpsWatcherInterval.value = setInterval(() => {
-    registrarPingAutomatico()
-  }, INTERVALO_PING_MS)
+
+  // 3. Master Tick Loop: 1 tick exacto cada segundo (1000ms)
+  timerInterval = setInterval(() => {
+    if (viaje.value.estado_viaje !== 'EN_RUTA') return
+
+    // Actualizar tiempo transcurrido
+    if (viaje.value.timestamp_inicio) {
+      const diff = Math.floor((new Date() - new Date(viaje.value.timestamp_inicio)) / 1000)
+      const horas = Math.floor(diff / 3600).toString().padStart(2, '0')
+      const mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0')
+      tiempoEnRuta.value = `${horas}h ${mins}m`
+    }
+
+    // Decrementar cuenta regresiva
+    segundosParaProximoPing.value--
+
+    // Cada 10 segundos dispara un nuevo ping
+    if (segundosParaProximoPing.value <= 0) {
+      segundosParaProximoPing.value = 10
+      registrarPingAutomatico()
+    }
+  }, 1000)
 }
 
-const detenerRastreoGPS = () => {
-  if (gpsWatcherInterval.value) {
-    clearInterval(gpsWatcherInterval.value)
-    gpsWatcherInterval.value = null
+const detenerMotorEnRuta = () => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
   }
   detenerWatcherGPS()
 }
@@ -784,8 +804,7 @@ const ejecutarInicioViaje = async () => {
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
   await actualizarContadorPendientes()
-  iniciarTimerRuta()
-  iniciarRastreoGPS()
+  iniciarMotorEnRuta()
   guardando.value = false
 }
 
@@ -857,7 +876,7 @@ const abrirModalLlegada = () => {
 
 const ejecutarLlegadaFaena = async () => {
   guardando.value = true
-  detenerRastreoGPS()
+  detenerMotorEnRuta()
 
   let pinHashed = ''
   let gps = { latitud: null, longitud: null }
@@ -1016,7 +1035,7 @@ const onOnlineStatusChange = async () => {
 const cambiarFaseDemo = (fase) => {
   viaje.value.estado_viaje = fase
   if (fase === 'ARRIBADO_FAENA') {
-    detenerRastreoGPS()
+    detenerMotorEnRuta()
     viaje.value.odometro_salida = 145820.5
     viaje.value.horometro_salida = 3240.2
     viaje.value.odometro_llegada = 145945.5
@@ -1044,10 +1063,9 @@ const cambiarFaseDemo = (fase) => {
     viaje.value.odometro_salida = 145820.5
     viaje.value.horometro_salida = 3240.2
     viaje.value.timestamp_inicio = new Date(Date.now() - 45 * 60 * 1000).toISOString()
-    iniciarTimerRuta()
-    iniciarRastreoGPS()
+    iniciarMotorEnRuta()
   } else {
-    detenerRastreoGPS()
+    detenerMotorEnRuta()
   }
 }
 
@@ -1088,8 +1106,7 @@ onMounted(async () => {
 
         await guardarSesionLocal(tokenViaje.value, viaje.value)
         if (viaje.value.estado_viaje === 'EN_RUTA') {
-          iniciarTimerRuta()
-          iniciarRastreoGPS()
+          iniciarMotorEnRuta()
         }
       }
     } catch (err) {
@@ -1099,8 +1116,7 @@ onMounted(async () => {
         viaje.value = { ...viaje.value, ...guardada }
         totalPingsEnRuta.value = (viaje.value.pings_ruta && viaje.value.pings_ruta.length) || 0
         if (viaje.value.estado_viaje === 'EN_RUTA') {
-          iniciarTimerRuta()
-          iniciarRastreoGPS()
+          iniciarMotorEnRuta()
         }
       }
     } finally {
@@ -1113,8 +1129,7 @@ onMounted(async () => {
       viaje.value = { ...viaje.value, ...guardada }
       totalPingsEnRuta.value = (viaje.value.pings_ruta && viaje.value.pings_ruta.length) || 0
       if (viaje.value.estado_viaje === 'EN_RUTA') {
-        iniciarTimerRuta()
-        iniciarRastreoGPS()
+        iniciarMotorEnRuta()
       }
     } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
       cambiarFaseDemo('ARRIBADO_FAENA')
@@ -1129,9 +1144,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  detenerRastreoGPS()
+  detenerMotorEnRuta()
   window.removeEventListener('online', onOnlineStatusChange)
   window.removeEventListener('offline', onOnlineStatusChange)
-  if (timerInterval) clearInterval(timerInterval)
 })
 </script>
