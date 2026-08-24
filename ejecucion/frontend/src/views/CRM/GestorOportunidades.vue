@@ -1616,6 +1616,33 @@
                               <span>🔁</span> Reenviar
                             </button>
                           </div>
+
+                          <!-- Resumen de Telemetría Real si el viaje ya tiene datos en BD -->
+                          <div v-if="getViajeDeEquipo(eqId)" class="p-2.5 bg-black/60 border border-blue-500/30 rounded-lg space-y-1.5 font-mono text-[11px] mt-1.5">
+                            <div class="flex justify-between items-center">
+                              <span class="text-blue-400 font-bold flex items-center gap-1">
+                                <span>🛰️</span> Telemetría de Viaje
+                              </span>
+                              <span :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'" class="text-[9px] px-1.5 py-0.2 rounded border font-bold">
+                                {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO A FAENA' : '🔵 EN RUTA' }}
+                              </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
+                              <div>Odóm: <strong class="text-amber-400">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
+                              <div>Horóm: <strong class="text-amber-400">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-white/5">
+                              <span>🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} pings GPS</span>
+                              <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L Copec</span>
+                            </div>
+                            <button 
+                              @click.stop="abrirMapaViaje(eqId)" 
+                              type="button" 
+                              class="w-full mt-1 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded text-xs flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer font-sans"
+                            >
+                              <span>🗺️</span> Ver Hoja de Ruta & Mapa GPS
+                            </button>
+                          </div>
                         </div>
 
                         <div v-else>
@@ -1750,8 +1777,21 @@
               </div>
 
               <div class="flex items-center gap-2 pt-1">
-                <button @click="copiarEnlaceViaje(vj.token)" type="button" class="flex-1 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                  <span>📋 Copiar Link Conductor</span>
+                <button 
+                  v-if="vj.viaje_real"
+                  @click="abrirMapaViaje(vj.viaje_real)" 
+                  type="button" 
+                  class="flex-1 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer"
+                >
+                  <span>🗺️</span> Ver Mapa & Telemetría
+                </button>
+                <button 
+                  v-else
+                  @click="copiarEnlaceViaje(vj.token)" 
+                  type="button" 
+                  class="flex-1 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>📋</span> Copiar Link Conductor
                 </button>
                 <button @click="abrirWebViaje(vj.token)" type="button" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="Abrir Web App Móvil en nueva pestaña">
                   <span>👁️ Abrir</span>
@@ -1759,15 +1799,18 @@
               </div>
 
               <!-- RESUMEN DE BITÁCORA LOG MAESTRO SI YA ARRIBÓ O ESTÁ EN RUTA -->
-              <div class="bg-black/30 border border-white/5 rounded-lg p-2 text-[10px] font-mono text-slate-400 space-y-0.5">
+              <div v-if="vj.viaje_real" class="bg-black/30 border border-white/5 rounded-lg p-2 text-[10px] font-mono text-slate-400 space-y-0.5">
                 <div class="flex justify-between">
-                  <span>🛰️ Telemetría: <strong class="text-white">18 pings GPS</strong></span>
-                  <span>Vel. Max: <strong class="text-emerald-400">68 km/h</strong></span>
+                  <span>🛰️ Telemetría: <strong class="text-white">{{ vj.viaje_real.pings_ruta?.length || 0 }} pings GPS</strong></span>
+                  <span>Odóm: <strong class="text-amber-400">{{ vj.viaje_real.km_inicial || 0 }} ➔ {{ vj.viaje_real.km_final || '---' }} KM</strong></span>
                 </div>
                 <div class="flex justify-between">
-                  <span>⛽ Combustible: <strong class="text-amber-400">250 L (Copec)</strong></span>
-                  <span>Firma: <strong class="text-emerald-300">SHA-256 ✅</strong></span>
+                  <span>⛽ Combustible: <strong class="text-amber-400">{{ vj.viaje_real.total_litros || 0 }} L</strong></span>
+                  <span>Horóm: <strong class="text-emerald-300">{{ vj.viaje_real.horometro_inicial || 0 }} ➔ {{ vj.viaje_real.horometro_final || '---' }} HRS</strong></span>
                 </div>
+              </div>
+              <div v-else class="bg-black/20 border border-white/5 rounded-lg p-1.5 text-[10px] font-mono text-slate-500 text-center">
+                Esperando inicio de desplazamiento del conductor.
               </div>
             </div>
           </div>
@@ -3385,6 +3428,13 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE MAPA DE VIAJE & TELEMETRÍA GPS -->
+  <ModalMapaViaje 
+    v-model:visible="modalMapaViajeAbierto" 
+    :viaje="viajeSeleccionadoParaMapa" 
+    @close="modalMapaViajeAbierto = false" 
+  />
   </div>
 </template>
 
@@ -3397,6 +3447,12 @@ import ModalEnviarCotizacion from '../../components/CRM/ModalEnviarCotizacion.vu
 import MapSelector from '../../components/CRM/MapSelector.vue'
 import apiAxios from '../../services/api'
 import VerSurveyModal from '../../components/VerSurveyModal.vue'
+import ModalMapaViaje from '../../components/Operaciones/ModalMapaViaje.vue'
+
+const viajesProyecto = ref([])
+const cargandoViajes = ref(false)
+const modalMapaViajeAbierto = ref(false)
+const viajeSeleccionadoParaMapa = ref(null)
 
 const props = defineProps({
   proyectoId: {
@@ -7114,6 +7170,7 @@ const cargarDatosCotizacion = async () => {
     } catch (e) {
       console.error('Error al cargar proyecto:', e)
     }
+    await cargarViajesProyecto(targetId)
   } else if (opportunity.value.rut_cliente) {
     try {
       const { data } = await apiAxios.get('/empresas', {
@@ -7904,47 +7961,107 @@ const solicitudesCopecPendientes = ref([
   }
 ])
 
+const cargarViajesProyecto = async (projId) => {
+  const id = projId || props.proyectoId || currentProyectoId.value
+  if (!id) return
+  cargandoViajes.value = true
+  try {
+    const { data } = await apiAxios.get(`/viajes/proyecto/${id}`)
+    viajesProyecto.value = Array.isArray(data) ? data : []
+  } catch (err) {
+    console.warn('Error al cargar viajes del proyecto:', err)
+    viajesProyecto.value = []
+  } finally {
+    cargandoViajes.value = false
+  }
+}
+
+const getViajeDeEquipo = (eqId) => {
+  const eqObj = getEquipoObj(eqId)
+  const idStr = String(eqId).trim().toUpperCase()
+  const patStr = eqObj?.patente ? String(eqObj.patente).trim().toUpperCase() : ''
+  const idEqStr = eqObj?.id_equipo ? String(eqObj.id_equipo).trim().toUpperCase() : ''
+
+  return (viajesProyecto.value || []).find(v => {
+    const vEqIdStr = String(v.id_equipo || '').trim().toUpperCase()
+    const vPatStr = String(v.patente || '').trim().toUpperCase()
+    const vToken = String(v.token_viaje || '').trim().toUpperCase()
+
+    return (
+      (vEqIdStr && (vEqIdStr === idStr || vEqIdStr === idEqStr)) ||
+      (patStr && vPatStr === patStr) ||
+      (idStr && vToken.includes(`-${idStr}-`)) ||
+      (idEqStr && vToken.includes(`-${idEqStr}-`))
+    )
+  }) || null
+}
+
+const abrirMapaViaje = (target) => {
+  if (typeof target === 'object' && target !== null && target.id_log_desplazamiento) {
+    viajeSeleccionadoParaMapa.value = target
+  } else {
+    const vj = getViajeDeEquipo(target)
+    if (vj) {
+      viajeSeleccionadoParaMapa.value = vj
+    } else {
+      alert('⚠️ Aún no se han registrado datos de telemetría u hoja de ruta en terreno para este vehículo.')
+      return
+    }
+  }
+  modalMapaViajeAbierto.value = true
+}
+
 const viajesConvoyLista = computed(() => {
   const result = []
   const eqTotales = equiposAsignadosTotales.value || []
   
   eqTotales.forEach((eq, idx) => {
+    const eqId = eq.id_equipo || eq.id
+    const vjReal = getViajeDeEquipo(eqId)
+    
     const chofer = tripulacionAsignada.value.find(t => 
       t.equipo_asignado_id === eq.id_equipo || t.equipo_asignado_id === eq.patente
     )
     const choferUser = chofer?.id_user ? usuarios.value.find(u => u.id_user === chofer.id_user) : null
-    const choferNombre = choferUser?.nombre_user || choferUser?.name_user || 'Conductor Asignado'
+    const choferNombre = vjReal?.chofer_nombre || choferUser?.nombre_user || choferUser?.name_user || 'Conductor Asignado'
     const projId = props.proyectoId || currentProyectoId.value || '69'
-    const token = `vj-${projId}-${eq.id_equipo || eq.patente || idx + 1}`
+    const token = vjReal?.token_viaje || `vj-${projId}-${eq.id_equipo || eq.patente || idx + 1}`
 
     result.push({
       token,
       id_equipo: eq.id_equipo,
-      patente: eq.patente || 'S/P',
-      nombre_equipo: eq.nombre_equipo,
-      modelo: eq.tipo,
+      patente: vjReal?.patente || eq.patente || 'S/P',
+      nombre_equipo: eq.nombre_equipo || vjReal?.modelo || eq.tipo,
+      modelo: eq.tipo || vjReal?.tipo_equipo,
       chofer_nombre: choferNombre,
-      estado: 'EN_RUTA'
+      estado: (vjReal?.estado_trayecto === 'LLEGADO' || vjReal?.estado_viaje === 'ARRIBADO_FAENA') 
+        ? 'ARRIBADO_FAENA' 
+        : (vjReal ? 'EN_RUTA' : 'ASIGNADO'),
+      viaje_real: vjReal
     })
   })
 
-  if (result.length === 0) {
-    result.push({
-      token: `vj-${props.proyectoId || '69'}-HW-8842`,
-      id_equipo: 1,
-      patente: 'HW-8842',
-      nombre_equipo: 'Liebherr LTM 1220 (220 Ton)',
-      modelo: 'Grúa Telescópica',
-      chofer_nombre: 'Carlos Mendoza',
-      estado: 'EN_RUTA'
-    })
-  }
+  // Agregar cualquier viaje en base de datos adicional
+  ;(viajesProyecto.value || []).forEach(vj => {
+    if (!result.some(r => r.token === vj.token_viaje || (r.patente && r.patente === vj.patente))) {
+      result.push({
+        token: vj.token_viaje,
+        id_equipo: vj.id_equipo,
+        patente: vj.patente || 'S/P',
+        nombre_equipo: `${vj.marca || ''} ${vj.modelo || ''}`.trim() || 'Equipo de Flota',
+        modelo: vj.tipo_equipo || 'Izaje',
+        chofer_nombre: vj.chofer_nombre || 'Conductor Asignado',
+        estado: (vj.estado_trayecto === 'LLEGADO' || vj.estado_viaje === 'ARRIBADO_FAENA') ? 'ARRIBADO_FAENA' : 'EN_RUTA',
+        viaje_real: vj
+      })
+    }
+  })
 
   return result
 })
 
 const copiarEnlaceViaje = (token) => {
-  const url = `${window.location.origin}/viaje/${token}`
+  const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url)
     alert(`📋 Enlace copiado al portapapeles:\n\n${url}\n\nPuedes enviarlo al conductor por WhatsApp o SMS.`)
@@ -7954,7 +8071,7 @@ const copiarEnlaceViaje = (token) => {
 }
 
 const abrirWebViaje = (token) => {
-  const url = `${window.location.origin}/viaje/${token}`
+  const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
   window.open(url, '_blank')
 }
 
