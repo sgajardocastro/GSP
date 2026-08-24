@@ -12,28 +12,40 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-deep:    #03060a;
-      --bg-base:    #060a12;
-      --bg-card:    #0b111e;
-      --bg-surface: #101726;
-      --bg-hover:   #162034;
-      --amber:      #f5a623;
-      --amber-dim:  rgba(245,166,35,0.08);
-      --amber-glow: rgba(245,166,35,0.22);
-      --blue:       #3b82f6;
-      --blue-dim:   rgba(59,130,246,0.08);
-      --green:      #10b981;
-      --green-dim:  rgba(16,185,129,0.08);
-      --red:        #ef4444;
-      --purple:     #8b5cf6;
-      --cyan:       #06b6d4;
-      --indigo:     #6366f1;
-      --t-primary:  #f8fafc;
-      --t-sec:      #cbd5e1;
-      --t-muted:    #94a3b8;
-      --border:     rgba(255,255,255,0.07);
-      --border-md:  rgba(255,255,255,0.14);
-      --border-amber: rgba(245,166,35,0.35);
+      --bg-deep:     #02050a;
+      --bg-base:     #060a14;
+      --bg-card:     #0c1322;
+      --bg-surface:  #111a2e;
+      --bg-card-hover: #15223c;
+      
+      --amber:       #f5a623;
+      --amber-light: #fbbf24;
+      --amber-dim:   rgba(245,166,35,0.12);
+      --amber-glow:  rgba(245,166,35,0.3);
+      
+      --blue:        #3b82f6;
+      --blue-dim:    rgba(59,130,246,0.12);
+      
+      --green:       #10b981;
+      --green-dim:   rgba(16,185,129,0.12);
+      
+      --red:         #ef4444;
+      --purple:      #8b5cf6;
+      --purple-dim:  rgba(139,92,246,0.12);
+      
+      --cyan:        #06b6d4;
+      --cyan-dim:    rgba(6,182,212,0.12);
+      
+      --indigo:      #6366f1;
+      --indigo-dim:  rgba(99,102,241,0.12);
+      
+      --t-primary:   #f8fafc;
+      --t-sec:       #cbd5e1;
+      --t-muted:     #94a3b8;
+      
+      --border-subtle: rgba(255,255,255,0.08);
+      --border-card:   rgba(255,255,255,0.14);
+      --border-hover:  rgba(255,255,255,0.28);
     }
 
     html {
@@ -49,21 +61,21 @@
       min-height: 100vh;
       width: 100%;
       overflow-x: hidden;
-      background: radial-gradient(circle at 50% 0%, #0d1728 0%, var(--bg-deep) 70%);
+      background: radial-gradient(circle at 50% -10%, #111e38 0%, var(--bg-deep) 65%);
     }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg-deep); }
-    ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.25); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.3); border-radius: 99px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
 
     /* ── Header fijo ── */
     #top-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(4, 7, 13, 0.94);
+      background: rgba(4, 8, 16, 0.94);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
       padding: 12px 36px;
       display: flex; justify-content: space-between; align-items: center;
     }
@@ -76,7 +88,7 @@
       background: linear-gradient(135deg, #f5a623, #d97706);
       display: flex; align-items: center; justify-content: center;
       font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 16px; color: #000;
-      box-shadow: 0 4px 14px rgba(245,166,35,0.3);
+      box-shadow: 0 4px 14px rgba(245,166,35,0.35);
     }
     .brand-title {
       font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; color: #fff;
@@ -100,7 +112,7 @@
 
     .nav-badge {
       padding: 5px 12px; border-radius: 99px;
-      background: rgba(245,166,35,0.12); border: 1px solid var(--border-amber);
+      background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.35);
       color: var(--amber); font-size: 11px; font-weight: 800;
       font-family: 'Outfit', sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
     }
@@ -127,21 +139,20 @@
       font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; color: var(--t-primary);
     }
     .section-sub { font-size: 14px; color: var(--t-muted); line-height: 1.6; margin-top: 4px; }
-    .section-head { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+    .section-head { border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 24px; }
 
     /* ── Cards & Panels ── */
     .card {
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      transition: border-color 0.25s, box-shadow 0.25s;
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
     }
-    .card:hover { border-color: var(--border-md); }
 
-    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.18), 0 12px 36px -10px rgba(245,166,35,0.15); }
-    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.18),  0 12px 36px -10px rgba(59,130,246,0.15); }
-    .glow-indigo { box-shadow: 0 0 0 1px rgba(99,102,241,0.18),  0 12px 36px -10px rgba(99,102,241,0.15); }
+    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.22), 0 16px 40px -10px rgba(245,166,35,0.18); }
+    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.22),  0 16px 40px -10px rgba(59,130,246,0.18); }
+    .glow-indigo { box-shadow: 0 0 0 1px rgba(99,102,241,0.22),  0 16px 40px -10px rgba(99,102,241,0.18); }
 
     /* ── Tag / Badges ── */
     .tag {
@@ -151,18 +162,17 @@
       letter-spacing: 0.08em; text-transform: uppercase;
       border: 1px solid; white-space: nowrap;
     }
-    .tag-amber  { background: rgba(245,166,35,0.1); color: var(--amber);  border-color: rgba(245,166,35,0.3); }
-    .tag-blue   { background: rgba(59,130,246,0.1); color: var(--blue);   border-color: rgba(59,130,246,0.3); }
-    .tag-green  { background: rgba(16,185,129,0.1); color: var(--green);  border-color: rgba(16,185,129,0.3); }
-    .tag-purple { background: rgba(139,92,246,0.1); color: var(--purple); border-color: rgba(139,92,246,0.3); }
-    .tag-cyan   { background: rgba(6,182,212,0.1);   color: var(--cyan);   border-color: rgba(6,182,212,0.3); }
-    .tag-indigo { background: rgba(99,102,241,0.1); color: var(--indigo); border-color: rgba(99,102,241,0.3); }
-    .tag-red    { background: rgba(239,68,68,0.1);  color: var(--red);    border-color: rgba(239,68,68,0.3); }
+    .tag-amber  { background: rgba(245,166,35,0.12); color: var(--amber);  border-color: rgba(245,166,35,0.35); }
+    .tag-blue   { background: rgba(59,130,246,0.12); color: var(--blue);   border-color: rgba(59,130,246,0.35); }
+    .tag-green  { background: rgba(16,185,129,0.12); color: var(--green);  border-color: rgba(16,185,129,0.35); }
+    .tag-purple { background: rgba(139,92,246,0.12); color: var(--purple); border-color: rgba(139,92,246,0.35); }
+    .tag-cyan   { background: rgba(6,182,212,0.12);   color: var(--cyan);   border-color: rgba(6,182,212,0.35); }
+    .tag-indigo { background: rgba(99,102,241,0.12); color: var(--indigo); border-color: rgba(99,102,241,0.35); }
 
     /* ── HERO BANNER ── */
     .hero-banner {
-      background: linear-gradient(135deg, rgba(16, 23, 38, 0.9) 0%, rgba(6, 10, 18, 0.95) 100%);
-      border: 1px solid var(--border-amber);
+      background: linear-gradient(135deg, rgba(17, 26, 46, 0.95) 0%, rgba(6, 10, 20, 0.98) 100%);
+      border: 1px solid rgba(245,166,35,0.4);
       border-radius: 20px;
       padding: 40px;
       position: relative;
@@ -170,52 +180,98 @@
     }
     .hero-banner::after {
       content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(245,166,35,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(245,166,35,0.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    /* ── PIPELINE INTERACTIVO (6 COLUMNAS KANBAN) ── */
-    .pipeline-grid-6 {
+    /* ========================================================================= */
+    /* FLUJO BPM OPERATIVO DE ALTA DEFINICIÓN (6 Nodos Conectados)               */
+    /* ========================================================================= */
+    .bpm-flow-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
       position: relative;
+      margin-top: 18px;
     }
-    .pipeline-step-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+    @media (max-width: 1200px) {
+      .bpm-flow-container {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+    }
+    @media (max-width: 768px) {
+      .bpm-flow-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bpm-node {
+      background: #0b1220;
+      border: 1.5px solid var(--border-card);
       border-radius: 16px;
-      padding: 20px 16px;
+      padding: 18px 14px;
       display: flex; flex-direction: column; justify-content: space-between;
       gap: 14px;
       position: relative;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
-    .pipeline-step-card:hover {
+    .bpm-node:hover {
       transform: translateY(-6px);
-      box-shadow: 0 16px 36px -10px rgba(0,0,0,0.6);
-      background: #121c32;
+      background: #111b30;
+      box-shadow: 0 16px 36px -8px rgba(0,0,0,0.8);
     }
-    .pipeline-step-card.border-c-1:hover { border-color: var(--indigo); box-shadow: 0 12px 30px -8px rgba(99,102,241,0.35); }
-    .pipeline-step-card.border-c-2:hover { border-color: var(--amber);  box-shadow: 0 12px 30px -8px rgba(245,166,35,0.35); }
-    .pipeline-step-card.border-c-3:hover { border-color: var(--blue);   box-shadow: 0 12px 30px -8px rgba(59,130,246,0.35); }
-    .pipeline-step-card.border-c-4:hover { border-color: var(--cyan);   box-shadow: 0 12px 30px -8px rgba(6,182,212,0.35); }
-    .pipeline-step-card.border-c-5:hover { border-color: var(--purple); box-shadow: 0 12px 30px -8px rgba(139,92,246,0.35); }
-    .pipeline-step-card.border-c-6:hover { border-color: var(--green);  box-shadow: 0 12px 30px -8px rgba(16,185,129,0.35); }
 
-    .step-badge-num {
-      width: 30px; height: 30px; border-radius: 8px;
+    /* Colores por Estación en el Flujo BPM */
+    .bpm-node.node-1 { border-color: rgba(99,102,241,0.45); }
+    .bpm-node.node-1:hover { border-color: var(--indigo); box-shadow: 0 12px 30px -6px rgba(99,102,241,0.4); }
+
+    .bpm-node.node-2 { border-color: rgba(245,166,35,0.45); }
+    .bpm-node.node-2:hover { border-color: var(--amber); box-shadow: 0 12px 30px -6px rgba(245,166,35,0.4); }
+
+    .bpm-node.node-3 { border-color: rgba(59,130,246,0.45); }
+    .bpm-node.node-3:hover { border-color: var(--blue); box-shadow: 0 12px 30px -6px rgba(59,130,246,0.4); }
+
+    .bpm-node.node-4 { border-color: rgba(6,182,212,0.45); }
+    .bpm-node.node-4:hover { border-color: var(--cyan); box-shadow: 0 12px 30px -6px rgba(6,182,212,0.4); }
+
+    .bpm-node.node-5 { border-color: rgba(139,92,246,0.45); }
+    .bpm-node.node-5:hover { border-color: var(--purple); box-shadow: 0 12px 30px -6px rgba(139,92,246,0.4); }
+
+    .bpm-node.node-6 { border-color: rgba(16,185,129,0.45); }
+    .bpm-node.node-6:hover { border-color: var(--green); box-shadow: 0 12px 30px -6px rgba(16,185,129,0.4); }
+
+    /* Indicador de flecha BPM entre tarjetas (en desktop) */
+    .bpm-arrow {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #111a2e; border: 1.5px solid var(--border-card);
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
+      z-index: 10; font-size: 10px; color: var(--t-muted);
+      pointer-events: none;
+    }
+    @media (max-width: 1200px) {
+      .bpm-arrow { display: none; }
+    }
+
+    .node-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .node-badge {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
+      border: 1px solid;
     }
 
     /* ── MODAL FLOTANTE DE ALTO IMPACTO ── */
     #modal-backdrop {
       position: fixed; inset: 0; z-index: 1000;
-      background: rgba(2, 5, 12, 0.88);
-      backdrop-filter: blur(18px);
+      background: rgba(2, 5, 12, 0.9);
+      backdrop-filter: blur(20px);
       display: none; align-items: center; justify-content: center;
       padding: 24px;
       opacity: 0; transition: opacity 0.25s ease-out;
@@ -225,12 +281,12 @@
     }
 
     #modal-window {
-      background: #090e1a;
-      border: 1px solid var(--border-amber);
+      background: #090f1d;
+      border: 1.5px solid var(--border-card);
       border-radius: 20px;
       width: 100%; max-width: 960px; max-height: 88vh;
       display: flex; flex-direction: column;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 166, 35, 0.15);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 40px rgba(245, 166, 35, 0.15);
       transform: scale(0.95); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       overflow: hidden;
     }
@@ -240,7 +296,7 @@
 
     .modal-header-bar {
       padding: 20px 28px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
       background: rgba(255,255,255,0.02);
       display: flex; justify-content: space-between; align-items: center;
     }
@@ -253,7 +309,7 @@
 
     .modal-footer-bar {
       padding: 16px 28px;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--border-subtle);
       background: rgba(255,255,255,0.02);
       display: flex; justify-content: space-between; align-items: center;
     }
@@ -266,14 +322,14 @@
     }
     .modal-artifact-card {
       background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.09);
       border-radius: 14px;
       padding: 18px;
       display: flex; gap: 16px;
       transition: all 0.2s;
     }
     .modal-artifact-card:hover {
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.06);
       border-color: rgba(245,166,35,0.35);
       transform: translateX(4px);
     }
@@ -292,10 +348,10 @@
       padding: 12px 16px; font-family: 'Outfit', sans-serif;
       font-size: 11px; font-weight: 800; text-transform: uppercase;
       letter-spacing: 0.08em; color: var(--t-muted);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-subtle);
     }
     .demo-table td {
-      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      padding: 14px 16px; border-bottom: 1px solid var(--border-subtle);
       font-size: 13px; vertical-align: top;
     }
     .demo-table tr:hover td {
@@ -317,7 +373,7 @@
     }
     .btn-modal-nav {
       background: rgba(255,255,255,0.06); color: #fff;
-      border: 1px solid var(--border-md); border-radius: 9px;
+      border: 1px solid var(--border-card); border-radius: 9px;
       padding: 9px 18px; font-size: 12px; font-weight: 700;
       font-family: 'Outfit', sans-serif; text-transform: uppercase;
       cursor: pointer; transition: all 0.2s;
@@ -350,13 +406,13 @@
     </a>
 
     <nav class="nav-links">
-      <a href="#bloque-alcance" class="nav-link">1. Pipeline Kanban (6 Pasos)</a>
+      <a href="#bloque-alcance" class="nav-link">1. Proceso BPM (6 Pasos)</a>
       <a href="#bloque-implementacion" class="nav-link">2. Plan Implementación</a>
       <a href="#bloque-demo" class="nav-link">3. Guion Demo en Vivo</a>
     </nav>
 
     <div style="display: flex; align-items: center; gap: 12px;">
-      <span class="nav-badge">Hito 1 · Reunión Omar Reyes</span>
+      <span class="nav-badge">Hito 1 · Sesión de Directorio</span>
       <a href="http://localhost:5174/lg-gsp-dev/viaje/vj_71_35_f67d7312" target="_blank" class="btn-action" style="padding: 6px 14px; font-size: 11px;">
         <i data-lucide="external-link" style="width: 14px; height: 14px;"></i> Abrir App Viaje
       </a>
@@ -376,7 +432,7 @@
           Blindaje y Digitalización Integral de la Operación de Izaje
         </h1>
         <p style="font-size: 15px; color: var(--t-sec); line-height: 1.6;">
-          Presentación ejecutiva para <strong style="color: #fff;">Omar Reyes (Fundador & Propietario GSP)</strong>. La arquitectura digital modelada refleja exactamente las <strong style="color: var(--amber);">6 columnas del Kanban de la Torre de Control</strong>, conectando Preventa, Visita a Terreno, Asignación de Recursos, Acreditaciones, Telemetría en Ruta y Facturación sin fricción.
+          Presentación ejecutiva para <strong style="color: #fff;">Omar Reyes y Equipo Directivo GSP</strong>. La arquitectura digital modela el <strong style="color: var(--amber);">Flujo BPM de 6 Etapas</strong> conectado con la Torre de Control Kanban, garantizando el aseguramiento de cotizaciones, validación técnica, despacho certificado, telemetría y facturación oportuna.
         </p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
@@ -390,135 +446,140 @@
     </section>
 
     <!-- ========================================================================= -->
-    <!-- BLOQUE 1: EL PIPELINE OPERATIVO IDÉNTICO AL KANBAN (TARJETAS DISPARADORAS) -->
+    <!-- BLOQUE 1: PROCESO BPM OPERATIVO (6 NODOS CONECTADOS CON ESTILO VISUAL)    -->
     <!-- ========================================================================= -->
     <section id="bloque-alcance" class="card">
       <div class="section-head">
-        <div class="section-eyebrow"><i data-lucide="activity" style="width: 15px; height: 15px;"></i> Bloque 1 · Pipeline Canónico de 6 Columnas</div>
-        <h2 class="section-title">El Pipeline Operativo (1:1 con la Torre Kanban)</h2>
-        <p class="section-sub">Haz clic sobre cualquiera de las 6 etapas para abrir el <strong style="color: var(--amber);">visor flotante detallado</strong> con sus documentos, artefactos reales y compuertas de control.</p>
+        <div class="section-eyebrow"><i data-lucide="git-commit" style="width: 15px; height: 15px;"></i> Bloque 1 · Modelo de Procesos BPM (1:1 con la Torre Kanban)</div>
+        <h2 class="section-title">Pipeline de Procesos Operativos End-to-End</h2>
+        <p class="section-sub">Diagrama de flujo continuo de las 6 etapas operacionales. Haz clic en cualquiera de los nodos para abrir su <strong style="color: var(--amber);">visor flotante detallado</strong>.</p>
       </div>
 
-      <!-- Grid de 6 Tarjetas del Kanban que abren el Modal -->
-      <div class="pipeline-grid-6" style="margin-top: 10px;">
+      <!-- Diagrama de Flujo BPM de 6 Nodos Conectados -->
+      <div class="bpm-flow-container">
         
-        <!-- 1. Requerimiento Registrado -->
-        <div class="pipeline-step-card border-c-1" onclick="abrirModalEstacion(1)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(99,102,241,0.2); color: var(--indigo); border: 1px solid rgba(99,102,241,0.4);">01</div>
-              <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--indigo);"></i>
+        <!-- NODO 1: Requerimiento Registrado -->
+        <div class="bpm-node node-1" onclick="abrirModalEstacion(1)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(99,102,241,0.18); color: var(--indigo); border-color: rgba(99,102,241,0.45);">01</div>
+              <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--indigo);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                Oportunidad CRM, Visita a Terreno con photoChecks y cotización PDF oficial.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Oportunidad CRM, Visita a Terreno (photoChecks) y Cotización PDF formal.
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-indigo" style="font-size: 9px;">CRM + Site Visit</span>
-            <span style="font-size: 11px; color: var(--indigo); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-indigo" style="font-size: 8.5px; padding: 3px 8px;">CRM + Visita</span>
+            <span style="font-size: 11px; color: var(--indigo); font-weight: bold;">Ver 👁️</span>
           </div>
+          <div class="bpm-arrow">➔</div>
         </div>
 
-        <!-- 2. En Verificación Operaciones -->
-        <div class="pipeline-step-card border-c-2" onclick="abrirModalEstacion(2)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(245,166,35,0.2); color: var(--amber); border: 1px solid rgba(245,166,35,0.4);">02</div>
-              <i data-lucide="git-compare" style="width: 20px; height: 20px; color: var(--amber);"></i>
+        <!-- NODO 2: En Verificación Operaciones -->
+        <div class="bpm-node node-2" onclick="abrirModalEstacion(2)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(245,166,35,0.18); color: var(--amber); border-color: rgba(245,166,35,0.45);">02</div>
+              <i data-lucide="git-compare" style="width: 18px; height: 18px; color: var(--amber);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                Auditoría técnica de factibilidad, informe de terreno y Comparador Visual Diff.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Revisión técnica de factibilidad, informe de terreno y Comparador Diff.
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-amber" style="font-size: 9px;">Diff Comercial vs Op</span>
-            <span style="font-size: 11px; color: var(--amber); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-amber" style="font-size: 8.5px; padding: 3px 8px;">Diff Comercial/Op</span>
+            <span style="font-size: 11px; color: var(--amber); font-weight: bold;">Ver 👁️</span>
           </div>
+          <div class="bpm-arrow">➔</div>
         </div>
 
-        <!-- 3. En Asignación Recursos -->
-        <div class="pipeline-step-card border-c-3" onclick="abrirModalEstacion(3)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(59,130,246,0.2); color: var(--blue); border: 1px solid rgba(59,130,246,0.4);">03</div>
-              <i data-lucide="layers" style="width: 20px; height: 20px; color: var(--blue);"></i>
+        <!-- NODO 3: En Asignación Recursos -->
+        <div class="bpm-node node-3" onclick="abrirModalEstacion(3)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(59,130,246,0.18); color: var(--blue); border-color: rgba(59,130,246,0.45);">03</div>
+              <i data-lucide="layers" style="width: 18px; height: 18px; color: var(--blue);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                DataGrid: Grúa + Chofer + Rigger certificado + Aparejos ➔ Orden de Trabajo.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                DataGrid: Grúa + Chofer + Rigger + Aparejos ➔ Orden de Trabajo (OT).
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-blue" style="font-size: 9px;">Convoy Completo OT</span>
-            <span style="font-size: 11px; color: var(--blue); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-blue" style="font-size: 8.5px; padding: 3px 8px;">Convoy OT</span>
+            <span style="font-size: 11px; color: var(--blue); font-weight: bold;">Ver 👁️</span>
           </div>
+          <div class="bpm-arrow">➔</div>
         </div>
 
-        <!-- 4. En Preparación Operaciones -->
-        <div class="pipeline-step-card border-c-4" onclick="abrirModalEstacion(4)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(6,182,212,0.2); color: var(--cyan); border: 1px solid rgba(6,182,212,0.4);">04</div>
-              <i data-lucide="shield-check" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+        <!-- NODO 4: En Preparación Operaciones -->
+        <div class="bpm-node node-4" onclick="abrirModalEstacion(4)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(6,182,212,0.18); color: var(--cyan); border-color: rgba(6,182,212,0.45);">04</div>
+              <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--cyan);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                Dossier & Semáforo de Acreditaciones 360°, checklist de patio y Token PIN.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Acreditaciones 360°, checklist mecánico y Web Token PIN de salida.
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-cyan" style="font-size: 9px;">Acreditación + Patio</span>
-            <span style="font-size: 11px; color: var(--cyan); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-cyan" style="font-size: 8.5px; padding: 3px 8px;">Acreditación + Patio</span>
+            <span style="font-size: 11px; color: var(--cyan); font-weight: bold;">Ver 👁️</span>
           </div>
+          <div class="bpm-arrow">➔</div>
         </div>
 
-        <!-- 5. En Ejecución / Faena -->
-        <div class="pipeline-step-card border-c-5" onclick="abrirModalEstacion(5)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(139,92,246,0.2); color: var(--purple); border: 1px solid rgba(139,92,246,0.4);">05</div>
-              <i data-lucide="smartphone" style="width: 20px; height: 20px; color: var(--purple);"></i>
+        <!-- NODO 5: En Ejecución / Faena -->
+        <div class="bpm-node node-5" onclick="abrirModalEstacion(5)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(139,92,246,0.18); color: var(--purple); border-color: rgba(139,92,246,0.45);">05</div>
+              <i data-lucide="smartphone" style="width: 18px; height: 18px; color: var(--purple);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                Telemetría GPS cada 10s, rendición Copec en ruta y Firma FES del mandante.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Telemetría GPS cada 10s, rendición Copec en ruta y Firma FES mandante.
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-purple" style="font-size: 9px;">GPS + Copec + FES</span>
-            <span style="font-size: 11px; color: var(--purple); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-purple" style="font-size: 8.5px; padding: 3px 8px;">GPS + Copec + FES</span>
+            <span style="font-size: 11px; color: var(--purple); font-weight: bold;">Ver 👁️</span>
           </div>
+          <div class="bpm-arrow">➔</div>
         </div>
 
-        <!-- 6. Finalizado / Devengado -->
-        <div class="pipeline-step-card border-c-6" onclick="abrirModalEstacion(6)">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="step-badge-num" style="background: rgba(16,185,129,0.2); color: var(--green); border: 1px solid rgba(16,185,129,0.4);">06</div>
-              <i data-lucide="dollar-sign" style="width: 20px; height: 20px; color: var(--green);"></i>
+        <!-- NODO 6: Finalizado / Devengado -->
+        <div class="bpm-node node-6" onclick="abrirModalEstacion(6)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(16,185,129,0.18); color: var(--green); border-color: rgba(16,185,129,0.45);">06</div>
+              <i data-lucide="dollar-sign" style="width: 18px; height: 18px; color: var(--green);"></i>
             </div>
             <div>
-              <h3 class="font-display" style="font-size: 14.5px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
-              <p style="font-size: 11px; color: var(--t-muted); margin-top: 5px; line-height: 1.4;">
-                Manifiesto inverso de aparejos en bodega, EDP y facturación Laudus ERP.
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Manifiesto inverso de aparejos, EDP consolidado y facturación Laudus ERP.
               </p>
             </div>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 6px;">
-            <span class="tag tag-green" style="font-size: 9px;">EDP + ERP Laudus</span>
-            <span style="font-size: 11px; color: var(--green); font-weight: bold;">Explorar 👁️</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-green" style="font-size: 8.5px; padding: 3px 8px;">EDP + Laudus ERP</span>
+            <span style="font-size: 11px; color: var(--green); font-weight: bold;">Ver 👁️</span>
           </div>
         </div>
 
@@ -537,7 +598,7 @@
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
         <!-- Fase 1 -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="tag tag-green">Fase A · Completada</span>
             <span class="mono" style="font-size: 11px; color: var(--green); font-weight: bold;">100% LISTO</span>
@@ -551,7 +612,7 @@
         </div>
 
         <!-- Fase 2 -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-amber); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(245,166,35,0.4); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="tag tag-amber">Fase B · En Marcha Blanca</span>
             <span class="mono" style="font-size: 11px; color: var(--amber); font-weight: bold;">ACTIVA</span>
@@ -565,7 +626,7 @@
         </div>
 
         <!-- Fase 3 -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="tag tag-purple">Fase C · Próximo Hito</span>
             <span class="mono" style="font-size: 11px; color: var(--purple); font-weight: bold;">EN DESPLIEGUE</span>
@@ -579,7 +640,7 @@
         </div>
 
         <!-- Fase 4 -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="tag tag-cyan">Fase D · Consolidación</span>
             <span class="mono" style="font-size: 11px; color: var(--cyan); font-weight: bold;">ERP INTEGRATION</span>
@@ -601,7 +662,7 @@
       <div class="section-head">
         <div class="section-eyebrow"><i data-lucide="play-circle" style="width: 15px; height: 15px;"></i> Bloque 3 · Demostración en Vivo</div>
         <h2 class="section-title">Guion de Demostración Práctica (15 Minutos)</h2>
-        <p class="section-sub">Recorrido en tiempo real ante Omar Reyes mostrando la interconexión de todas las pantallas con datos reales.</p>
+        <p class="section-sub">Recorrido en tiempo real ante Omar Reyes y directivos mostrando la interconexión de todas las pantallas con datos reales.</p>
       </div>
 
       <div style="overflow-x: auto;">
@@ -618,7 +679,7 @@
             <tr>
               <td><span class="mono" style="font-weight: bold; color: var(--indigo);">00 - 03 min</span></td>
               <td><strong style="color: #fff;">1. Requerimiento Registrado</strong><br><span style="font-size: 11px; color: var(--t-muted);">GestorOportunidades.vue</span></td>
-              <td>Crear cotización en vivo: Seleccionar cliente, fijar obra en el mapa satelital, seleccionar Grúa 50T, mostrar la inyección automática del Flete ($500.000), la regla de Rigger y generar el PDF oficial con 1 clic.</td>
+              <td>Crear cotización en vivo: Seleccionar cliente, fijar obra en el mapa satelital, seleccionar Grúa 50T, mostrar el cálculo paramétrico de fletes, la regla de Rigger y generar el PDF oficial con 1 clic.</td>
               <td><span class="tag tag-indigo">Cotización PDF Oficial</span></td>
             </tr>
             <tr>
@@ -657,7 +718,7 @@
     </section>
 
     <!-- FOOTER -->
-    <footer style="border-top: 1px solid var(--border); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--t-muted);">
+    <footer style="border-top: 1px solid var(--border-subtle); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--t-muted);">
       <div>
         <strong>Grúas San Pablo · LeanGlobal Platform</strong> · Confidencial & Exclusivo para Reunión de Directorio
       </div>
@@ -669,14 +730,14 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL FLOTANTE INTERACTIVO: DETALLE DE LA ESTACIÓN KANBAN                 -->
+  <!-- MODAL FLOTANTE INTERACTIVO: DETALLE DE LA ETAPA BPM                       -->
   <!-- ========================================================================= -->
   <div id="modal-backdrop" onclick="cerrarModalAlClicFondo(event)">
     <div id="modal-window">
       <!-- Encabezado del Modal -->
       <div class="modal-header-bar">
         <div style="display: flex; align-items: center; gap: 14px;">
-          <div id="m-badge-num" class="step-badge-num" style="background: rgba(245,166,35,0.2); color: var(--amber); border: 1px solid var(--border-amber);">
+          <div id="m-badge-num" class="node-badge" style="width: 32px; height: 32px; font-size: 13px;">
             01
           </div>
           <div>
@@ -684,7 +745,7 @@
               1. Requerimiento Registrado
             </h2>
             <div id="m-subtag" class="tag tag-indigo" style="margin-top: 4px; font-size: 10px;">
-              Preventa & Visita a Terreno
+              Preventa Comercial & Visita a Terreno
             </div>
           </div>
         </div>
@@ -712,7 +773,7 @@
           </div>
         </div>
 
-        <!-- Banner de Control Antifraude -->
+        <!-- Banner de Aseguramiento de Calidad y Gobernanza -->
         <div id="m-control-box" style="border-radius: 14px; padding: 16px 20px; font-size: 13px; font-weight: 600; line-height: 1.5;">
           <!-- Inyectado dinámicamente -->
         </div>
@@ -737,7 +798,7 @@
   </div>
 
   <script>
-    // Data de las 6 Estaciones del Kanban
+    // Data de las 6 Etapas del Proceso BPM
     const ESTACIONES_DATA = {
       1: {
         num: "01",
@@ -745,26 +806,26 @@
         tag: "Preventa Comercial & Visita a Terreno",
         tagClass: "tag-indigo",
         borderColor: "var(--indigo)",
-        resumen: "Captura estructurada de la oportunidad comercial, levantamiento en terreno con photoChecks si la maniobra lo exige, y generación de la cotización formal blindada en PDF con control de versiones.",
+        resumen: "Captura estructurada de la oportunidad comercial, levantamiento en terreno con photoChecks si la maniobra lo exige, y generación de la cotización formal en PDF con reglas de negocio activas y trazabilidad de versiones.",
         artefactos: [
           {
             icono: "clipboard-check",
             bg: "rgba(99,102,241,0.18)",
             color: "var(--indigo)",
             titulo: "Survey Visita a Terreno (Template 80)",
-            desc: "photoChecks con evidencia obligatoria (tipo de suelo, pendientes, accesos para camión cama baja, líneas eléctricas de alta tensión, radios de giro) y firma digital del cliente en terreno."
+            desc: "photoChecks con evidencia fotográfica obligatoria (tipo de suelo, pendientes, accesos para cama baja, líneas eléctricas de alta tensión, radios de giro) y firma digital del cliente en terreno."
           },
           {
             icono: "file-text",
             bg: "rgba(99,102,241,0.18)",
             color: "var(--indigo)",
-            titulo: "PDF Oficial de Cotización & Correo B2B",
-            desc: "Inyección automática de Flete ($500.000), Rigger obligatorio, matriz de pensiones (alojamiento/comidas), control de versiones [CODI]V1-105.pdf y despacho corporativo con tracking de apertura."
+            titulo: "Cotización PDF Oficial & Reglas Paramétricas",
+            desc: "Cálculo automatizado de fletes por georreferenciación, regla de Rigger obligatorio según tonelaje, matriz de viáticos y pernoctación, control de versiones [CODIGO]V1.pdf y tracking de despacho."
           }
         ],
-        control: "🛡️ Compuerta Antifraude: No se puede generar requerimiento formal a operaciones sin haber completado los requisitos comerciales y despachado la cotización formal al mandante.",
+        control: "🛡️ Aseguramiento de Calidad Comercial: Garantiza que todo requerimiento derivado a Operaciones cuente con su cotización formal despachada, horas mínimas pactadas y condiciones de faena levantadas.",
         controlBg: "rgba(99,102,241,0.08)",
-        controlBorder: "rgba(99,102,241,0.25)",
+        controlBorder: "rgba(99,102,241,0.28)",
         controlText: "#c7d2fe"
       },
       2: {
@@ -780,19 +841,19 @@
             bg: "rgba(245,166,35,0.18)",
             color: "var(--amber)",
             titulo: "Comparador Visual Diff (Comercial vs Operaciones)",
-            desc: "Si operaciones ajusta el tonelaje de la grúa (ej: 50T a 70T por radio de trabajo) o añade contrapesos, el sistema resalta los cambios en rojo/amarillo (KPI de precisión de ventas)."
+            desc: "Si operaciones ajusta el tonelaje de la grúa (ej: 50T a 70T por radio de trabajo) o añade contrapesos, el sistema resalta las diferencias en amarillo/rojo para retroalimentar la precisión de ventas."
           },
           {
             icono: "check-circle-2",
             bg: "rgba(245,166,35,0.18)",
             color: "var(--amber)",
-            titulo: "Compuerta de Aprobación Formal",
-            desc: "Bloqueo inmutable de antecedentes en modo solo lectura para evitar modificaciones no autorizadas una vez validada la ingeniería de izaje."
+            titulo: "Compuerta de Validación Técnica",
+            desc: "Bloqueo de antecedentes validados en modo solo lectura para resguardar la ingeniería de izaje antes de la asignación de recursos."
           }
         ],
-        control: "🛡️ Control de Calidad: Impide que salgan a faena grúas subdimensionadas que puedan provocar accidentes, detenciones de obra o multas contractuales.",
+        control: "🛡️ Validación y Factibilidad Operativa: Asegura que cada maniobra cuente con la grúa y accesorios óptimos para operar bajo los más altos estándares de seguridad y productividad.",
         controlBg: "rgba(245,166,35,0.08)",
-        controlBorder: "rgba(245,166,35,0.25)",
+        controlBorder: "rgba(245,166,35,0.28)",
         controlText: "#fef3c7"
       },
       3: {
@@ -818,9 +879,9 @@
             desc: "Código maestro único que consolida los datos de obra, tripulación asignada, implementos de izaje autorizados y ruta de despacho."
           }
         ],
-        control: "🛡️ Regla Canónica: Prohibido asignar personas sin validar su rol oficial (separación estricta Chofer vs Rigger vs Prevencionista).",
+        control: "🛡️ Estándar de Dotación y Competencias: Exige la asignación exclusiva de personal debidamente calificado y certificado según el rol requerido para la faena.",
         controlBg: "rgba(59,130,246,0.08)",
-        controlBorder: "rgba(59,130,246,0.25)",
+        controlBorder: "rgba(59,130,246,0.28)",
         controlText: "#bfdbfe"
       },
       4: {
@@ -829,26 +890,26 @@
         tag: "Patio & Acreditaciones 360°",
         tagClass: "tag-cyan",
         borderColor: "var(--cyan)",
-        resumen: "Blindaje de ingreso a faena (cero rechazos en portería del mandante) y auditoría mecánica de la grúa antes de cruzar el portón de salida de base.",
+        resumen: "Gobernanza documental previa al ingreso a faena (cero rechazos en portería del mandante) y verificación de salida de los equipos desde patio.",
         artefactos: [
           {
             icono: "shield",
             bg: "rgba(6,182,212,0.18)",
             color: "var(--cyan)",
             titulo: "Dossier & Semáforo de Acreditaciones 360°",
-            desc: "Micro-Gauge circular de avance y semáforo de vencimientos (< 30 días) para Empresa, Equipos y Personal con despacho directo al mandante y visor HTML."
+            desc: "Micro-Gauge circular de avance y semáforo de vigencias para Empresa, Flota y Personal, con despacho directo del dossier digital consolidado al mandante."
           },
           {
             icono: "key-round",
             bg: "rgba(6,182,212,0.18)",
             color: "var(--cyan)",
             titulo: "Web Token de Salida Móvil con PIN (/viaje/:token)",
-            desc: "El conductor ingresa odómetro inicial, horómetro de salida y sella el despacho con su PIN de 4 dígitos (SHA-256) antes de salir de patio."
+            desc: "El conductor registra odómetro inicial, horómetro de salida y confirma la salida de patio con su PIN de 4 dígitos (SHA-256)."
           }
         ],
-        control: "🛡️ Invariante de Seguridad: Si la máquina o el operador tienen un documento vencido, la tarjeta del Kanban se bloquea en rojo.",
+        control: "🛡️ Gobernanza de Seguridad y Cumplimiento: Alerta temprana y bloqueo visual si algún documento crítico de la máquina o del personal se encuentra vencido.",
         controlBg: "rgba(6,182,212,0.08)",
-        controlBorder: "rgba(6,182,212,0.25)",
+        controlBorder: "rgba(6,182,212,0.28)",
         controlText: "#cffafe"
       },
       5: {
@@ -857,26 +918,26 @@
         tag: "Ruta, Copec & Firma FES",
         tagClass: "tag-purple",
         borderColor: "var(--purple)",
-        resumen: "Monitoreo telemétrico continuo durante el trayecto, control estricto de combustible y certificación de horas de izaje con firma del mandante.",
+        resumen: "Monitoreo telemétrico continuo durante el trayecto, rendición de combustible en ruta y certificación de horas de servicio con firma digital del mandante.",
         artefactos: [
           {
             icono: "radio",
             bg: "rgba(139,92,246,0.18)",
             color: "var(--purple)",
             titulo: "Telemetría GPS en Vivo (Pings cada 10s)",
-            desc: "Transmisión continua de velocidad real, coordenadas y reloj en ruta, acumulado de forma inalterable en base de datos PostgreSQL."
+            desc: "Transmisión continua de velocidad real, coordenadas y tiempos de traslado, consolidado en el Log Maestro de Desplazamiento."
           },
           {
             icono: "fuel",
             bg: "rgba(139,92,246,0.18)",
             color: "var(--purple)",
             titulo: "Rendición Copec Multi-Estanque & Reporte Diario FES",
-            desc: "Habilitación de tarjeta Copec en ruta con foto voucher y Reporte Diario de Faena con firma digital táctil del supervisor mandante en pantalla móvil."
+            desc: "Autorización remota de combustible con foto del voucher y Reporte Diario de Faena firmado digitalmente en pantalla por el supervisor del cliente."
           }
         ],
-        control: "🛡️ Resiliencia Offline-First: Si el chofer entra a zonas sin cobertura celular, la app sigue registrando y sincroniza automáticamente al volver la red.",
+        control: "🛡️ Trazabilidad Continua y Resiliencia Operativa: La aplicación móvil funciona 100% Offline en zonas sin cobertura y sincroniza de forma automática al recuperar señal.",
         controlBg: "rgba(139,92,246,0.08)",
-        controlBorder: "rgba(139,92,246,0.25)",
+        controlBorder: "rgba(139,92,246,0.28)",
         controlText: "#ede9fe"
       },
       6: {
@@ -885,26 +946,26 @@
         tag: "Retorno, EDP & Laudus ERP",
         tagClass: "tag-green",
         borderColor: "var(--green)",
-        resumen: "Cierre físico y contable: recepción de aparejos en bodega y generación inmediata del Estado de Pago (EDP) sin esperar a fin de mes.",
+        resumen: "Cierre físico y contable: recepción de aparejos en bodega y generación inmediata del Estado de Pago (EDP) respaldado para facturación.",
         artefactos: [
           {
             icono: "package-check",
             bg: "rgba(16,185,129,0.18)",
             color: "var(--green)",
             titulo: "Manifiesto Inverso de Aparejos",
-            desc: "Chequeo de retorno de eslingas, grilletes y cadenas entregados en patio para asegurar 0% pérdidas materiales en faena."
+            desc: "Control de retorno e inspección de eslingas, grilletes y cadenas entregados en patio para asegurar cero mermas materiales en faena."
           },
           {
             icono: "dollar-sign",
             bg: "rgba(16,185,129,0.18)",
             color: "var(--green)",
-            titulo: "Estado de Pago (EDP) & Devengado Diario",
-            desc: "Consolidación automática de horas mínimas, fletes y combustible para facturar en Laudus ERP sin objeciones del mandante."
+            titulo: "Estado de Pago (EDP) & Integración Laudus ERP",
+            desc: "Consolidación automática de horas efectivas, fletes y combustible para emitir facturación respaldada sin objeciones por parte del mandante."
           }
         ],
-        control: "🛡️ Impacto Financiero: Reduce el plazo de cobro de 45 días a menos de 5 días al contar con firmas y horas respaldadas legalmente.",
+        control: "🛡️ Aseguramiento del Devengado y Cobro Oportuno: Permite facturar el servicio con respaldo digital inmediato, reduciendo drásticamente los ciclos de cobro.",
         controlBg: "rgba(16,185,129,0.08)",
-        controlBorder: "rgba(16,185,129,0.25)",
+        controlBorder: "rgba(16,185,129,0.28)",
         controlText: "#d1fae5"
       }
     };
@@ -920,6 +981,7 @@
       document.getElementById('m-badge-num').innerText = data.num;
       document.getElementById('m-badge-num').style.color = data.borderColor;
       document.getElementById('m-badge-num').style.borderColor = data.borderColor;
+      document.getElementById('m-badge-num').style.background = `rgba(255,255,255,0.05)`;
       document.getElementById('m-title').innerText = data.titulo;
       
       const tagEl = document.getElementById('m-subtag');
@@ -946,7 +1008,7 @@
         </div>
       `).join('');
 
-      // Renderizar control antifraude
+      // Renderizar banner de aseguramiento de calidad
       const controlBox = document.getElementById('m-control-box');
       controlBox.style.background = data.controlBg;
       controlBox.style.border = `1px solid ${data.controlBorder}`;
