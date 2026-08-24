@@ -1406,9 +1406,16 @@
                         class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="">-- Seleccionar Operador Asignado --</option>
-                        <option v-for="u in (usuariosEnroladosFes || usuarios || [])" :key="u.id_user" :value="u.id_user">
-                          {{ u.nombre_user || u.name_frst }} ({{ u.email }})
-                        </option>
+                        <optgroup v-if="getUsuariosAgrupados('Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes / Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                          <option v-for="u in getUsuariosAgrupados('Chofer Cama Baja').sugeridos" :key="'pat-op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                            {{ u.nombre_user || u.name_user || u.name_frst }} ({{ u.cargo || 'Operador / Chofer' }})
+                          </option>
+                        </optgroup>
+                        <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                          <option v-for="u in getUsuariosAgrupados('Chofer Cama Baja').otros" :key="'pat-op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                            {{ u.nombre_user || u.name_user || u.name_frst }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                          </option>
+                        </optgroup>
                       </select>
                       <p class="text-[9.5px] text-slate-400 mt-1 leading-tight">
                         ℹ️ La inspección de patio es ejecutada por el operador asignado antes de salir a ruta. Al modificar el operador, se actualiza automáticamente la asignación de OT y el dossier de acreditación.
@@ -7254,12 +7261,15 @@ const getOperadorAsignadoAEquipo = (eqId) => {
   if (!eqId) return null
   const trip = tripulacionAsignada.value || []
   const eqObj = getEquipoObj(eqId)
-  const found = trip.find(t => 
-    t.equipo_asignado_id && (
-      String(t.equipo_asignado_id) === String(eqId) || 
-      (eqObj?.patente && String(t.equipo_asignado_id) === String(eqObj.patente))
-    ) && t.id_user
-  )
+  const idStr = String(eqId).trim().toUpperCase()
+  const patStr = eqObj?.patente ? String(eqObj.patente).trim().toUpperCase() : ''
+  const idEqStr = eqObj?.id_equipo ? String(eqObj.id_equipo).trim().toUpperCase() : ''
+
+  const found = trip.find(t => {
+    if (!t.id_user || !t.equipo_asignado_id) return false
+    const tEqStr = String(t.equipo_asignado_id).trim().toUpperCase()
+    return tEqStr === idStr || (patStr && tEqStr === patStr) || (idEqStr && tEqStr === idEqStr)
+  })
   return found || null
 }
 
@@ -7279,21 +7289,32 @@ const getNombreOperadorAsignado = (eqId) => {
 }
 
 const onOperadorInspeccionCambiado = (eqId, nuevoIdUser) => {
-  if (!eqId || !nuevoIdUser) return
+  if (!eqId) return
+  const numId = nuevoIdUser ? parseInt(nuevoIdUser) : null
   const ins = getInspeccionEquipo(eqId)
-  ins.operador_id = nuevoIdUser
-  ins.jefe_patio_id = nuevoIdUser
+  ins.operador_id = numId
+  ins.jefe_patio_id = numId
 
   // Sincronizar hacia atrás con la línea de la máquina en OT (Pestaña C)
   const lPrincipal = linesEquiposPrincipales.value || []
-  const matchPrincipal = lPrincipal.find(l => String(l.equipo_asignado_id) === String(eqId) || String(l.equipo_id) === String(eqId))
+  const eqObj = getEquipoObj(eqId)
+  const idStr = String(eqId).trim().toUpperCase()
+  const patStr = eqObj?.patente ? String(eqObj.patente).trim().toUpperCase() : ''
+
+  const matchPrincipal = lPrincipal.find(l => {
+    const lEqStr = String(l.equipo_asignado_id || l.equipo_id || '').trim().toUpperCase()
+    return lEqStr === idStr || (patStr && lEqStr === patStr)
+  })
   if (matchPrincipal) {
-    matchPrincipal.operador_asignado_id = nuevoIdUser
+    matchPrincipal.operador_asignado_id = numId || ''
     marcarDirtyAsignacion()
   } else if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
-    const matchExtra = operacionesAssignment.value.equipos_extra.find(e => String(e.id_equipo) === String(eqId))
+    const matchExtra = operacionesAssignment.value.equipos_extra.find(e => {
+      const eEqStr = String(e.id_equipo || '').trim().toUpperCase()
+      return eEqStr === idStr || (patStr && eEqStr === patStr)
+    })
     if (matchExtra) {
-      matchExtra.chofer_id = nuevoIdUser
+      matchExtra.chofer_id = numId || ''
       marcarDirtyAsignacion()
     }
   }
