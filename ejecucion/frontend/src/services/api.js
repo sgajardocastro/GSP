@@ -2,7 +2,7 @@ import axios from 'axios'
 import { navStore } from '../stores/navStore'
 
 const apiAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL_CORE || import.meta.env.VITE_API_BASE_URL || 'https://servidor.leanglobal.cl/lean-services-transmac-dev/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL_CORE || import.meta.env.VITE_API_BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -42,7 +42,7 @@ apiAxios.interceptors.request.use((config) => {
 })
 
 const sstAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL_SST || 'https://servidor.leanglobal.cl/transmac-api/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL_SST || 'https://servidor.leanglobal.cl/lg-gsp/api',
   headers: {
     'Content-Type': 'application/json'
   }
