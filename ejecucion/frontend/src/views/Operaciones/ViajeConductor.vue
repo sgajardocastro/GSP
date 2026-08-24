@@ -647,44 +647,54 @@ const onFotoLlegadaCapturada = async (e) => {
 // -------------------------------------------------------------
 // RASTREO GPS AUTOMÁTICO EN RUTA (MODO PRUEBA: 2 SEGUNDOS)
 // -------------------------------------------------------------
+let pingEnCurso = false
+
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
-  const gps = await obtenerCoordenadasGPS(1500)
-  ultimaPosicionGPS.value = gps
+  if (pingEnCurso) return // No apilar si el anterior no terminó
+  pingEnCurso = true
 
-  const pingPayload = {
-    latitud: gps.latitud,
-    longitud: gps.longitud,
-    velocidad_kmh: gps.velocidad_kmh,
-    accuracy: gps.accuracy,
-    timestamp: gps.timestamp || new Date().toISOString()
-  }
+  try {
+    const gps = await obtenerCoordenadasGPS(3000)
+    ultimaPosicionGPS.value = gps
 
-  // 1. Acumular inmediatamente en pings_ruta reactivos
-  if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
-  viaje.value.pings_ruta.push(pingPayload)
-  totalPingsEnRuta.value = viaje.value.pings_ruta.length
-  viaje.value.total_pings_gps = totalPingsEnRuta.value
-
-  await guardarSesionLocal(tokenViaje.value, viaje.value)
-
-  // 2. Enviar directamente al Backend GSP por HTTP
-  if (isOnline.value && !tokenViaje.value.includes('demo')) {
-    try {
-      await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/ping`, pingPayload)
-    } catch (httpErr) {
-      console.warn('Fallo de red en ping GPS, encolando en Outbox:', httpErr?.message || httpErr)
-      await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
-      await actualizarContadorPendientes()
+    const pingPayload = {
+      latitud: gps.latitud,
+      longitud: gps.longitud,
+      velocidad_kmh: gps.velocidad_kmh || 0,
+      accuracy: gps.accuracy,
+      timestamp: gps.timestamp || new Date().toISOString()
     }
-  } else {
-    await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
-    await actualizarContadorPendientes()
+
+    // 1. Acumular inmediatamente en pings_ruta reactivos
+    if (!viaje.value.pings_ruta) viaje.value.pings_ruta = []
+    viaje.value.pings_ruta.push(pingPayload)
+    totalPingsEnRuta.value = viaje.value.pings_ruta.length
+    viaje.value.total_pings_gps = totalPingsEnRuta.value
+
+    // 2. Enviar directamente al Backend GSP por HTTP
+    if (isOnline.value && !tokenViaje.value.includes('demo')) {
+      try {
+        await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/ping`, pingPayload)
+      } catch (httpErr) {
+        console.warn('[Ping] Fallo HTTP, encolando:', httpErr?.message)
+        await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
+      }
+    } else {
+      await encolarMutacion(tokenViaje.value, 'PING_GPS', pingPayload)
+    }
+
+    await guardarSesionLocal(tokenViaje.value, viaje.value)
+  } catch (e) {
+    console.error('[Ping] Error inesperado:', e)
+  } finally {
+    pingEnCurso = false
   }
 }
 
 const iniciarRastreoGPS = () => {
   detenerRastreoGPS()
+  pingEnCurso = false
   // Primer ping inmediato al entrar a ruta
   registrarPingAutomatico()
   // Ciclo periódico cada 2 segundos para pruebas
@@ -705,54 +715,63 @@ const detenerRastreoGPS = () => {
 // -------------------------------------------------------------
 const ejecutarInicioViaje = async () => {
   guardando.value = true
+
+  let pinHashed = ''
+  let gps = { latitud: null, longitud: null }
+
   try {
-    const pinHashed = await hashPin(formSalida.value.pin)
-    const gps = await obtenerCoordenadasGPS(1500)
+    pinHashed = await hashPin(formSalida.value.pin)
+  } catch (e) {
+    console.warn('[Salida] Error hasheando PIN:', e)
+  }
 
-    const payload = {
-      km_inicial: Number(formSalida.value.odometro),
-      horometro_inicial: Number(formSalida.value.horometro),
-      foto_salida: formSalida.value.foto || 'https://storage.leanglobal.cl/placeholder-tablero-salida.jpg',
-      pin_hash: pinHashed,
-      latitud: gps.latitud,
-      longitud: gps.longitud
-    }
+  try {
+    // Dar 10 segundos: es la primera vez que el browser pide permiso GPS
+    gps = await obtenerCoordenadasGPS(10000)
+  } catch (e) {
+    console.warn('[Salida] Error obteniendo GPS:', e)
+  }
 
-    // 1. Enviar directamente por HTTP al Backend GSP
-    if (isOnline.value && !tokenViaje.value.includes('demo')) {
-      try {
-        const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/salida`, payload)
-        if (resp && resp.data) {
-          viaje.value.fecha_salida_patio = resp.data.fecha_salida_patio
-          viaje.value.timestamp_inicio = resp.data.fecha_salida_patio
-          viaje.value.estado_trayecto = 'EN_RUTA'
-        }
-      } catch (httpErr) {
-        console.warn('Fallo HTTP salida, encolando en Outbox local:', httpErr?.message || httpErr)
-        await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
+  const payload = {
+    km_inicial: Number(formSalida.value.odometro),
+    horometro_inicial: Number(formSalida.value.horometro),
+    foto_salida: formSalida.value.foto || null,
+    pin_hash: pinHashed,
+    latitud: gps.latitud,
+    longitud: gps.longitud
+  }
+
+  // 1. Enviar directamente por HTTP al Backend GSP
+  if (isOnline.value && !tokenViaje.value.includes('demo')) {
+    try {
+      const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/salida`, payload)
+      if (resp && resp.data) {
+        viaje.value.fecha_salida_patio = resp.data.fecha_salida_patio
+        viaje.value.timestamp_inicio = resp.data.fecha_salida_patio
+        viaje.value.estado_trayecto = 'EN_RUTA'
       }
-    } else {
+    } catch (httpErr) {
+      console.warn('[Salida] Fallo HTTP, encolando:', httpErr?.message)
       await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
     }
-
-    // 2. Actualizar estado local reactivo
-    viaje.value.estado_viaje = 'EN_RUTA'
-    if (!viaje.value.timestamp_inicio) {
-      viaje.value.timestamp_inicio = new Date().toISOString()
-      viaje.value.fecha_salida_patio = viaje.value.timestamp_inicio
-    }
-    viaje.value.odometro_salida = payload.km_inicial
-    viaje.value.horometro_salida = payload.horometro_inicial
-
-    await guardarSesionLocal(tokenViaje.value, viaje.value)
-    await actualizarContadorPendientes()
-    iniciarTimerRuta()
-    iniciarRastreoGPS()
-  } catch (err) {
-    console.error('Error iniciando viaje:', err)
-  } finally {
-    guardando.value = false
+  } else {
+    await encolarMutacion(tokenViaje.value, 'INICIO_VIAJE', payload)
   }
+
+  // 2. SIEMPRE actualizar estado local reactivo
+  viaje.value.estado_viaje = 'EN_RUTA'
+  if (!viaje.value.timestamp_inicio) {
+    viaje.value.timestamp_inicio = new Date().toISOString()
+    viaje.value.fecha_salida_patio = viaje.value.timestamp_inicio
+  }
+  viaje.value.odometro_salida = payload.km_inicial
+  viaje.value.horometro_salida = payload.horometro_inicial
+
+  await guardarSesionLocal(tokenViaje.value, viaje.value)
+  await actualizarContadorPendientes()
+  iniciarTimerRuta()
+  iniciarRastreoGPS()
+  guardando.value = false
 }
 
 // -------------------------------------------------------------
@@ -824,61 +843,69 @@ const abrirModalLlegada = () => {
 const ejecutarLlegadaFaena = async () => {
   guardando.value = true
   detenerRastreoGPS()
+
+  let pinHashed = ''
+  let gps = { latitud: null, longitud: null }
+
   try {
-    const pinHashed = await hashPin(formLlegada.value.pin)
-    const gps = await obtenerCoordenadasGPS(1500)
+    pinHashed = await hashPin(formLlegada.value.pin)
+  } catch (e) {
+    console.warn('[Llegada] Error hasheando PIN:', e)
+  }
 
-    const payload = {
-      km_final: Number(formLlegada.value.odometro),
-      horometro_final: Number(formLlegada.value.horometro),
-      foto_llegada: formLlegada.value.foto || 'https://storage.leanglobal.cl/placeholder-tablero-llegada.jpg',
-      pin_hash: pinHashed,
-      latitud: gps.latitud,
-      longitud: gps.longitud,
-      obs_termino: formLlegada.value.obs_termino || 'Arribo a faena verificado con éxito'
-    }
+  try {
+    gps = await obtenerCoordenadasGPS(5000)
+  } catch (e) {
+    console.warn('[Llegada] Error obteniendo GPS:', e)
+  }
 
-    // 1. Enviar directamente al Backend GSP por HTTP
-    if (isOnline.value && !tokenViaje.value.includes('demo')) {
-      try {
-        const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/llegada`, payload)
-        if (resp && resp.data) {
-          viaje.value.fecha_llegada_faena = resp.data.fecha_llegada_faena
-          viaje.value.timestamp_llegada = resp.data.fecha_llegada_faena
-          viaje.value.estado_trayecto = 'LLEGADO'
-          if (resp.data.pings_ruta && resp.data.pings_ruta.length) {
-            viaje.value.pings_ruta = resp.data.pings_ruta
-            totalPingsEnRuta.value = resp.data.pings_ruta.length
-            viaje.value.total_pings_gps = totalPingsEnRuta.value
-          }
+  const payload = {
+    km_final: Number(formLlegada.value.odometro),
+    horometro_final: Number(formLlegada.value.horometro),
+    foto_llegada: formLlegada.value.foto || null,
+    pin_hash: pinHashed,
+    latitud: gps.latitud,
+    longitud: gps.longitud,
+    obs_termino: formLlegada.value.obs_termino || 'Arribo a faena verificado con éxito'
+  }
+
+  // 1. Enviar directamente al Backend GSP por HTTP
+  if (isOnline.value && !tokenViaje.value.includes('demo')) {
+    try {
+      const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/llegada`, payload)
+      if (resp && resp.data) {
+        viaje.value.fecha_llegada_faena = resp.data.fecha_llegada_faena
+        viaje.value.timestamp_llegada = resp.data.fecha_llegada_faena
+        viaje.value.estado_trayecto = 'LLEGADO'
+        if (resp.data.pings_ruta && resp.data.pings_ruta.length) {
+          viaje.value.pings_ruta = resp.data.pings_ruta
+          totalPingsEnRuta.value = resp.data.pings_ruta.length
+          viaje.value.total_pings_gps = totalPingsEnRuta.value
         }
-      } catch (httpErr) {
-        console.warn('Fallo HTTP llegada, encolando en Outbox:', httpErr?.message || httpErr)
-        await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
       }
-    } else {
+    } catch (httpErr) {
+      console.warn('[Llegada] Fallo HTTP, encolando en Outbox:', httpErr?.message)
       await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
     }
-
-    // 2. Actualizar estado reactivo
-    viaje.value.estado_viaje = 'ARRIBADO_FAENA'
-    if (!viaje.value.timestamp_llegada) {
-      viaje.value.timestamp_llegada = new Date().toISOString()
-      viaje.value.fecha_llegada_faena = viaje.value.timestamp_llegada
-    }
-    viaje.value.odometro_llegada = payload.km_final
-    viaje.value.horometro_llegada = payload.horometro_final
-    viaje.value.obs_termino = payload.obs_termino
-
-    await guardarSesionLocal(tokenViaje.value, viaje.value)
-    await actualizarContadorPendientes()
-    modalLlegada.value.visible = false
-    if (timerInterval) clearInterval(timerInterval)
-  } catch (err) {
-    console.error('Error cerrando viaje:', err)
-  } finally {
-    guardando.value = false
+  } else {
+    await encolarMutacion(tokenViaje.value, 'FIN_VIAJE', payload)
   }
+
+  // 2. SIEMPRE actualizar estado reactivo y cerrar modal
+  viaje.value.estado_viaje = 'ARRIBADO_FAENA'
+  if (!viaje.value.timestamp_llegada) {
+    viaje.value.timestamp_llegada = new Date().toISOString()
+    viaje.value.fecha_llegada_faena = viaje.value.timestamp_llegada
+  }
+  viaje.value.odometro_llegada = payload.km_final
+  viaje.value.horometro_llegada = payload.horometro_final
+  viaje.value.obs_termino = payload.obs_termino
+
+  await guardarSesionLocal(tokenViaje.value, viaje.value)
+  await actualizarContadorPendientes()
+  modalLlegada.value.visible = false
+  if (timerInterval) clearInterval(timerInterval)
+  guardando.value = false
 }
 
 // -------------------------------------------------------------

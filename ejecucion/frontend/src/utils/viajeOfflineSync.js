@@ -217,72 +217,58 @@ export async function hashPin(pin, salt = 'GSP-SALT-2026') {
 
 /**
  * Captura la geolocalización actual del dispositivo (GPS)
- * Incluye timeout estricto y fallback dinámico para evitar bloqueos en desktop/pruebas.
+ * - Pide permiso al navegador con timeout suficiente para que el usuario acepte
+ * - Solo usa fallback si el GPS realmente falla o no está disponible
  */
-export function obtenerCoordenadasGPS(timeoutMs = 2000) {
+export function obtenerCoordenadasGPS(timeoutMs = 10000) {
   return new Promise((resolve) => {
-    let resolved = false;
-
-    // Timeout de seguridad: Si el navegador no responde en timeoutMs, no colgar
-    const timer = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        resolve({
-          latitud: -36.6172 + (Math.random() - 0.5) * 0.005,
-          longitud: -72.1148 + (Math.random() - 0.5) * 0.005,
-          velocidad_kmh: Math.round(45 + Math.random() * 25),
-          accuracy: 15,
-          timestamp: new Date().toISOString()
-        });
-      }
-    }, timeoutMs);
-
     if (!navigator.geolocation) {
-      if (!resolved) {
-        resolved = true;
-        clearTimeout(timer);
-        resolve({
-          latitud: -36.6172,
-          longitud: -72.1148,
-          velocidad_kmh: 50,
-          accuracy: 20,
-          timestamp: new Date().toISOString()
-        });
-      }
-      return;
+      console.warn('[GPS] Geolocation API no disponible en este navegador')
+      resolve({
+        latitud: null,
+        longitud: null,
+        velocidad_kmh: 0,
+        accuracy: null,
+        timestamp: new Date().toISOString(),
+        fuente: 'NO_GPS'
+      })
+      return
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timer);
-          const coords = pos.coords;
-          const velKmh = coords.speed != null && coords.speed >= 0 ? Math.round(coords.speed * 3.6) : Math.round(45 + Math.random() * 25);
-          resolve({
-            latitud: coords.latitude,
-            longitud: coords.longitude,
-            velocidad_kmh: velKmh,
-            accuracy: coords.accuracy,
-            timestamp: new Date(pos.timestamp || Date.now()).toISOString()
-          });
-        }
+        const coords = pos.coords
+        const velKmh = coords.speed != null && coords.speed >= 0
+          ? Math.round(coords.speed * 3.6)
+          : 0
+        resolve({
+          latitud: coords.latitude,
+          longitud: coords.longitude,
+          velocidad_kmh: velKmh,
+          accuracy: coords.accuracy,
+          timestamp: new Date(pos.timestamp || Date.now()).toISOString(),
+          fuente: 'GPS_REAL'
+        })
       },
       (err) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timer);
-          resolve({
-            latitud: -36.6172 + (Math.random() - 0.5) * 0.005,
-            longitud: -72.1148 + (Math.random() - 0.5) * 0.005,
-            velocidad_kmh: Math.round(45 + Math.random() * 25),
-            accuracy: 25,
-            timestamp: new Date().toISOString()
-          });
-        }
+        console.warn('[GPS] Error obteniendo posición:', err.code, err.message)
+        resolve({
+          latitud: null,
+          longitud: null,
+          velocidad_kmh: 0,
+          accuracy: null,
+          timestamp: new Date().toISOString(),
+          fuente: 'GPS_ERROR',
+          error_code: err.code,
+          error_msg: err.message
+        })
       },
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 }
-    );
-  });
+      {
+        enableHighAccuracy: true,
+        timeout: timeoutMs,
+        maximumAge: 5000
+      }
+    )
+  })
 }
 
