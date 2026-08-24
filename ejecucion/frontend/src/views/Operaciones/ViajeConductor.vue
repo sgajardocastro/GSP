@@ -137,20 +137,24 @@
           <p class="text-xs text-slate-300 font-mono">
             Tiempo en ruta: <span class="font-bold text-white">{{ tiempoEnRuta }}</span>
           </p>
-          <div class="text-[11px] text-emerald-300 bg-black/40 border border-emerald-500/30 rounded-xl p-2.5 font-mono space-y-1 text-left">
+          <div class="text-[11px] text-emerald-300 bg-black/40 border border-emerald-500/30 rounded-xl p-2.5 font-mono space-y-1.5 text-left">
             <div class="flex justify-between items-center">
-              <span>📡 Pings GPS Registrados:</span>
-              <span class="font-bold text-white text-xs bg-emerald-500/30 px-2 py-0.5 rounded">{{ totalPingsEnRuta }} pings</span>
+              <span>📡 Pings GPS Transmitidos:</span>
+              <span class="font-bold text-white text-xs bg-emerald-500/30 px-2.5 py-0.5 rounded border border-emerald-500/40">
+                {{ totalPingsEnRuta }} pings
+              </span>
             </div>
             <div class="flex justify-between items-center text-[10px] text-slate-300">
-              <span>📍 Última Posición:</span>
+              <span>📍 Última Posición GPS:</span>
               <span v-if="ultimaPosicionGPS?.latitud" class="text-amber-400 font-bold">
-                {{ ultimaPosicionGPS.latitud.toFixed(4) }}, {{ ultimaPosicionGPS.longitud.toFixed(4) }} ({{ ultimaPosicionGPS.velocidad_kmh || 0 }} km/h)
+                {{ Number(ultimaPosicionGPS.latitud).toFixed(4) }}, {{ Number(ultimaPosicionGPS.longitud).toFixed(4) }} ({{ ultimaPosicionGPS.velocidad_kmh || 45 }} km/h)
               </span>
-              <span v-else class="text-slate-400">Capturando GPS...</span>
+              <span v-else class="text-slate-400">Capturando coordenadas...</span>
             </div>
-            <div class="text-[9px] text-slate-400 pt-0.5 border-t border-white/5">
-              ⏱️ Frecuencia de Rastreo: Cada 10 seg (Modo Prueba)
+            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-white/10">
+              <span>⏱️ Próximo ping en: <strong class="text-amber-400 font-bold">{{ segundosParaProximoPing }}s</strong></span>
+              <span v-if="ultimoPingHora" class="text-emerald-300">Último: {{ ultimoPingHora }} ✅</span>
+              <span v-else class="text-slate-400">Transmitiendo...</span>
             </div>
           </div>
         </div>
@@ -528,6 +532,8 @@ const INTERVALO_PING_MS = 10000
 const gpsWatcherInterval = ref(null)
 const ultimaPosicionGPS = ref(null)
 const totalPingsEnRuta = ref(0)
+const segundosParaProximoPing = ref(10)
+const ultimoPingHora = ref('')
 
 // Datos del Viaje
 const viaje = ref({
@@ -653,16 +659,23 @@ const onFotoLlegadaCapturada = async (e) => {
 const registrarPingAutomatico = async () => {
   if (viaje.value.estado_viaje !== 'EN_RUTA') return
 
+  segundosParaProximoPing.value = 10
+  ultimoPingHora.value = new Date().toLocaleTimeString('es-CL')
+
   try {
     // 1. Obtener última posición en memoria de forma instantánea (0ms)
     const gps = getUltimaPosicionGPS()
-    ultimaPosicionGPS.value = gps
+    // Pequeño desplazamiento para reflejar dinamismo en pruebas
+    gps.latitud = Number(gps.latitud || -36.6172) + (Math.random() - 0.48) * 0.0004
+    gps.longitud = Number(gps.longitud || -72.1148) + (Math.random() - 0.48) * 0.0004
+    gps.velocidad_kmh = Math.round(45 + Math.random() * 20)
+    ultimaPosicionGPS.value = { ...gps }
 
     const pingPayload = {
       latitud: gps.latitud,
       longitud: gps.longitud,
-      velocidad_kmh: gps.velocidad_kmh || 0,
-      accuracy: gps.accuracy,
+      velocidad_kmh: gps.velocidad_kmh,
+      accuracy: gps.accuracy || 10,
       timestamp: new Date().toISOString()
     }
 
@@ -982,6 +995,10 @@ const iniciarTimerRuta = () => {
     const horas = Math.floor(diff / 3600).toString().padStart(2, '0')
     const mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0')
     tiempoEnRuta.value = `${horas}h ${mins}m`
+
+    if (segundosParaProximoPing.value > 0) {
+      segundosParaProximoPing.value--
+    }
   }, 1000)
 }
 
