@@ -3858,6 +3858,9 @@ watch(() => props.initialSubTab, (newTab) => {
   if (newTab) {
     topTab.value = 'operaciones'
     operacionesSubTab.value = newTab
+    if (newTab === 'reports') {
+      cargarReportsProyecto()
+    }
   }
 }, { immediate: true })
 
@@ -7204,7 +7207,10 @@ const cargarDatosCotizacion = async () => {
             } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
               requerimientoAprobado.value = true
               asignacionConfirmada.value = true
-              operacionesSubTab.value = (props.initialSubTab === 'acreditaciones') ? 'acreditaciones' : 'preparacion_salida'
+              operacionesSubTab.value = props.initialSubTab || (estadoDb >= 5 ? (ejecucion.subtab_actual_view || 'reports') : 'preparacion_salida')
+              if (operacionesSubTab.value === 'reports' || estadoDb >= 5) {
+                cargarReportsProyecto(targetId)
+              }
             }
           } else {
             topTab.value = 'comercial'

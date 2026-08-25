@@ -266,7 +266,7 @@
           <div 
             v-for="p in maniobra" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'preparacion_salida')"
+            @click="abrirProyecto(p.id_proyecto, 'reports')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-purple-400/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-purple-400/40'"
           >
@@ -309,8 +309,12 @@
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_fin" class="text-purple-400/70"><span class="font-semibold">Término Est.:</span> {{ new Date(p.fecha_plan_fin).toLocaleDateString() }}</p>
             </div>
-            <div class="flex gap-1.5 mt-3">
-              <span class="text-[8px] font-bold uppercase bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/25 text-purple-400">Izaje</span>
+            <div class="flex items-center justify-between gap-1.5 mt-3 pt-1 border-t border-white/5">
+              <span class="text-[8px] font-bold uppercase bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/25 text-purple-400">Izaje / Faena</span>
+              <span class="text-[8px] font-bold uppercase bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 text-amber-400 flex items-center gap-1">
+                <span>📋</span>
+                <span>Reports Diarios</span>
+              </span>
             </div>
           </div>
         </div>
