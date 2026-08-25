@@ -536,10 +536,23 @@ const cargarProyectos = async () => {
     asignados.value      = proyectos.filter(p => Number(p.id_proyecto_estado) === 4)
 
     // Columna 4: En Preparación Operaciones (Patio, Checklists y Acreditaciones)
-    desplazamiento.value = proyectos.filter(p => Number(p.id_proyecto_estado) === 5)
+    desplazamiento.value = proyectos.filter(p => {
+      const st = Number(p.id_proyecto_estado)
+      if (st !== 5) return false
+      const ej = p.json_field?.ejecucion_v1 || {}
+      const enFaena = ej.preparacion_salida?.preparacion_finalizada || ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_actual_view === 'reports'
+      return !enFaena
+    })
 
-    // Columna 5: En Ejecución / Faena (Ruta y Maniobra)
-    maniobra.value       = proyectos.filter(p => [6, 7].includes(Number(p.id_proyecto_estado)))
+    // Columna 5: En Ejecución / Faena (Ruta, Izaje y Reports)
+    maniobra.value = proyectos.filter(p => {
+      const st = Number(p.id_proyecto_estado)
+      if (st === 5) {
+        const ej = p.json_field?.ejecucion_v1 || {}
+        return ej.preparacion_salida?.preparacion_finalizada || ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_actual_view === 'reports'
+      }
+      return [6, 7].includes(st)
+    })
 
     // Columna 6: Completados / Cerrados
     completados.value    = proyectos.filter(p => Number(p.id_proyecto_estado) === 8)
