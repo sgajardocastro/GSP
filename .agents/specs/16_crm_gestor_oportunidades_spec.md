@@ -356,4 +356,27 @@ Feature: Gestor de Oportunidades y Pipeline Operacional OT (Spec 16)
     Given una línea con un equipo asignado y semáforo "🟡 VNC"
     When el usuario hace clic sobre la insignia
     Then se abre el modal de Acreditaciones detallando las vigencias de revisión técnica, seguro y test de carga
-```
+
+---
+
+## 8. Subpestaña 6: Control de Ejecución & Reports Diarios de Izaje en Faena
+
+### 8.1. Propósito y Arquitectura
+Una vez que el proyecto se encuentra en ejecución operacional (`id_proyecto_estado >= 5`), el Gestor de Oportunidades habilita la subpestaña **`6. Ejecución & Reports`** (`operacionesSubTab === 'reports'`).
+
+Esta vista centraliza la auditoría técnica y financiera de la faena en tiempo real:
+1. **Tarjetas de KPI Acumulado:**
+   - **Días Operados:** Total de jornadas emitidas desde la PWA.
+   - **Horas a Facturar:** Sumatoria de `horas_facturables` (`max(horas_operadas, horas_minimas)`).
+   - **Sobretiempo Acumulado:** Sumatoria de `horas_sobretiempo` acumuladas por sobre la base diaria.
+   - **Rango de Horómetro:** Trazabilidad de horómetro motor desde el inicio del Día 1 hasta el cierre del último día reportado.
+   - **Conformidad Documental:** Conteo de reports validados vs pendientes por el analista.
+2. **Tabla Cronológica Multi-Día (`sch_leangsp.tedp_reporte_avance`):**
+   - Columnas: Día correlativo, Fecha, Horario real, Colación, Horas Efectivas, Horas Facturables, Horas Sobretiempo, Horómetros, Supervisor Mandante firmante, Estado (`✅ Validado` / `⏳ Pendiente`) y botón de acción `[ 👁️ VER ]`.
+3. **Visor de Documento Digital y Validación (`ModalVisorReport.vue`):**
+   - Visualización del documento oficial diario con estampa digital.
+   - Renderizado del canvas de firma manuscrita capturada en terreno por el mandante.
+   - Panel de aprobación con 1 clic para el Analista de Operaciones (`POST /api/operaciones/report/:id/validar`).
+4. **Navegación Reactiva e Integración con Torre de Control:**
+   - La vista responde automáticamente a parámetros de URL (`/crm?id_proyecto=XX&subtab=reports`).
+   - El tablero Kanban de la Torre de Control (`Torre.vue`) redirige directamente a la subpestaña correspondiente mediante Vue Router.

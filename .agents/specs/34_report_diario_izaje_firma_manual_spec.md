@@ -2,8 +2,8 @@
 
 **Documento:** `34_report_diario_izaje_firma_manual_spec.md`  
 **Ecosistema:** Grúas San Pablo (GSP) / LeanGlobal Platform  
-**Fase de Dominio:** Fase 5 - Ejecución del Servicio en Faena (`id_proyecto_estado = 7` / En Ejecución)  
-**Estado:** `ESPECIFICACIÓN FORMAL - PENDIENTE APROBACIÓN`  
+**Fase de Dominio:** Fase 5 - Ejecución del Servicio en Faena (`id_proyecto_estado = 5` / En Ejecución en Faena)  
+**Estado:** `ESPECIFICACIÓN FORMAL - IMPLEMENTADA & VERIFICADA`  
 **Fecha:** 25 de Agosto de 2026  
 
 ---
