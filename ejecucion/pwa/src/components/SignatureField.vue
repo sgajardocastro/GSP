@@ -1,15 +1,15 @@
 <template>
   <div class="w-full mb-4 my-3">
-    <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">
+    <label class="block text-sm sm:text-base font-black text-amber-400 uppercase tracking-wider mb-2">
       ✍️ {{ label || 'FIRMA DEL CLIENTE' }}
     </label>
     
-    <div ref="containerRef" class="border-2 border-dashed border-amber-500/50 rounded-xl overflow-hidden bg-white relative shadow-lg" style="min-height: 180px;">
+    <div ref="containerRef" class="border-2 border-dashed border-amber-500/60 rounded-2xl overflow-hidden bg-white relative shadow-xl" style="min-height: 220px;">
       <!-- Clear button -->
       <button 
         @click.prevent="clear" 
         type="button"
-        class="absolute top-2 right-2 bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-lg text-xs z-10 font-bold transition-all shadow-md flex items-center gap-1"
+        class="absolute top-3 right-3 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm z-10 font-black transition-all shadow-md flex items-center gap-1"
       >
         <span>🗑️ Limpiar Firma</span>
       </button>
@@ -17,8 +17,8 @@
       <!-- Signature canvas -->
       <canvas 
         ref="canvas" 
-        class="w-full h-44 cursor-crosshair touch-none bg-white block"
-        style="background-color: #ffffff !important; min-height: 170px;"
+        class="w-full h-56 cursor-crosshair touch-none bg-white block"
+        style="background-color: #ffffff !important; min-height: 210px;"
         @mousedown="startDrawing"
         @mousemove="draw"
         @mouseup="stopDrawing"
@@ -29,7 +29,7 @@
       ></canvas>
 
       <!-- Placeholder / Instructions -->
-      <div v-if="!hasDrawn && !modelValue" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 font-semibold text-xs uppercase tracking-wider">
+      <div v-if="!hasDrawn && !modelValue" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 font-bold text-base sm:text-lg uppercase tracking-wider">
         ✍️ Dibuje o trace su firma aquí
       </div>
     </div>

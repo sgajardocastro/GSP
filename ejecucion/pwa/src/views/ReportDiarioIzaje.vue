@@ -1,123 +1,123 @@
 <template>
-  <v-container class="pa-3 max-w-lg mx-auto pb-16" style="max-width: 600px;">
+  <v-container class="pa-3 max-w-xl mx-auto pb-24" style="max-width: 650px;">
     <!-- Top Bar -->
-    <div class="d-flex align-center justify-space-between mb-3">
-      <v-btn icon="mdi-arrow-left" variant="text" color="grey-lighten-1" @click="volver"></v-btn>
-      <div class="text-center flex-grow-1">
-        <div class="text-caption font-weight-black text-amber-400 text-uppercase tracking-wider">
+    <div class="d-flex align-center justify-space-between mb-4">
+      <v-btn icon="mdi-arrow-left" size="large" variant="flat" color="slate-800" class="border border-white/20" @click="volver"></v-btn>
+      <div class="text-center flex-grow-1 px-2">
+        <div class="text-xs sm:text-sm font-black text-amber-400 text-uppercase tracking-widest">
           GSP OPERACIONES FAENA
         </div>
-        <div class="text-subtitle-1 font-weight-black text-white">
+        <div class="text-xl sm:text-2xl font-black text-white">
           📋 Report Diario de Izaje
         </div>
       </div>
-      <v-chip size="small" color="amber-darken-3" variant="flat" class="font-weight-black">
+      <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-4 py-2">
         DÍA {{ diaCorrelativo }}
       </v-chip>
     </div>
 
     <!-- Loading State -->
-    <v-card v-if="cargando" class="pa-6 text-center rounded-xl bg-slate-900 border border-white/10">
-      <v-progress-circular indeterminate color="amber" size="48" class="mb-3"></v-progress-circular>
-      <div class="text-subtitle-2 text-grey-lighten-1">Cargando datos de la OT y faena...</div>
+    <v-card v-if="cargando" class="pa-8 text-center rounded-2xl bg-slate-900 border border-white/10">
+      <v-progress-circular indeterminate color="amber" size="64" width="6" class="mb-4"></v-progress-circular>
+      <div class="text-lg font-bold text-grey-lighten-1">Cargando datos de la OT y faena...</div>
     </v-card>
 
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-5">
       <!-- BLOQUE 1: TARJETA DE RESUMEN OT (PRECARGADA) -->
       <v-card
-        class="pa-4 rounded-xl border border-amber-500/30 text-white"
+        class="pa-5 rounded-2xl border-2 border-amber-500/40 text-white"
         style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"
-        elevation="3"
+        elevation="4"
       >
-        <div class="d-flex align-center justify-space-between mb-2">
-          <span class="text-caption font-mono text-amber-400 font-weight-bold">
+        <div class="d-flex align-center justify-space-between mb-3">
+          <span class="text-base sm:text-lg font-mono text-amber-300 font-black">
             OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
           </span>
-          <v-chip size="x-small" color="success" variant="tonal" class="font-weight-bold">
+          <v-chip size="small" color="success" variant="flat" class="font-black text-xs uppercase px-3">
             EN FAENA
           </v-chip>
         </div>
 
-        <div class="text-subtitle-1 font-weight-black text-white mb-1">
+        <div class="text-xl sm:text-2xl font-black text-white mb-2 leading-tight">
           {{ proyecto.cliente_nombre || 'Cliente GSP' }}
         </div>
-        <div class="text-caption text-grey-lighten-1 mb-2">
-          📍 <strong>Faena:</strong> {{ proyecto.obra_nombre }} <span v-if="proyecto.obra_direccion">• {{ proyecto.obra_direccion }}</span>
+        <div class="text-sm sm:text-base text-grey-lighten-1 mb-3">
+          📍 <strong class="text-white">Faena:</strong> {{ proyecto.obra_nombre }} <span v-if="proyecto.obra_direccion" class="text-grey-lighten-2">• {{ proyecto.obra_direccion }}</span>
         </div>
 
-        <v-divider class="my-2 border-white/10"></v-divider>
+        <v-divider class="my-3 border-white/20"></v-divider>
 
-        <div class="row g-2 text-caption">
+        <div class="row g-3">
           <div class="col-6">
-            <span class="text-grey-darken-1 d-block text-uppercase text-[10px]">Grúa / Equipo</span>
-            <strong class="text-amber-200 font-mono">{{ equipoSeleccionado?.patente || 'N/A' }}</strong>
-            <span class="text-grey-lighten-2 d-block text-[11px]">{{ equipoSeleccionado?.modelo || 'Grúa Telescópica' }}</span>
+            <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">🚜 Grúa / Equipo</span>
+            <strong class="text-amber-200 font-mono text-lg sm:text-xl font-black d-block">{{ equipoSeleccionado?.patente || 'N/A' }}</strong>
+            <span class="text-grey-lighten-1 d-block text-xs sm:text-sm font-semibold">{{ equipoSeleccionado?.modelo || 'Grúa Telescópica' }}</span>
           </div>
           <div class="col-6">
-            <span class="text-grey-darken-1 d-block text-uppercase text-[10px]">Operador / Rigger</span>
-            <strong class="text-white d-block">{{ operadorNombre }}</strong>
-            <span class="text-grey-lighten-2 text-[11px]">{{ riggerNombre }}</span>
+            <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">👷 Tripulación</span>
+            <strong class="text-white text-sm sm:text-base font-bold d-block">Op: {{ operadorNombre }}</strong>
+            <span class="text-grey-lighten-1 text-xs sm:text-sm font-semibold d-block">Rig: {{ riggerNombre }}</span>
           </div>
         </div>
       </v-card>
 
       <!-- BLOQUE 2: TIEMPOS, COLACIÓN Y HORÓMETROS -->
       <v-card
-        class="pa-4 rounded-xl border border-white/10 text-white"
+        class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
         style="background-color: #0b1120;"
-        elevation="2"
+        elevation="4"
       >
-        <div class="d-flex align-center ga-2 mb-3">
-          <span class="text-h6">⏱️</span>
+        <div class="d-flex align-center ga-3 mb-4">
+          <span class="text-2xl">⏱️</span>
           <div>
-            <div class="text-subtitle-2 font-weight-black text-white">Horarios & Horómetros del Día</div>
-            <div class="text-caption text-grey-lighten-1">Registro de jornada y cálculo de horas</div>
+            <div class="text-lg sm:text-xl font-black text-white">Horarios & Horómetros del Día</div>
+            <div class="text-xs sm:text-sm text-grey-lighten-1">Registro de jornada y cálculo reactivo en vivo</div>
           </div>
         </div>
 
         <!-- Fecha del servicio -->
-        <div class="mb-3">
-          <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+        <div class="mb-4">
+          <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
             📅 Fecha de la Jornada
           </label>
           <input
             v-model="form.fecha_reporte"
             type="date"
-            class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm focus:border-amber-400 focus:outline-none"
+            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none"
           />
         </div>
 
         <!-- Hora Inicio y Hora Término -->
-        <div class="row g-2 mb-3">
+        <div class="row g-3 mb-4">
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-emerald-400 text-uppercase mb-2 d-block tracking-wider">
               🟢 Hora Inicio
             </label>
             <input
               v-model="form.hora_inicio"
               type="time"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm focus:border-amber-400 focus:outline-none text-center"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-emerald-400 focus:outline-none text-center h-16 shadow-inner"
             />
           </div>
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-red-400 text-uppercase mb-2 d-block tracking-wider">
               🔴 Hora Término
             </label>
             <input
               v-model="form.hora_termino"
               type="time"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm focus:border-amber-400 focus:outline-none text-center"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-red-400 focus:outline-none text-center h-16 shadow-inner"
             />
           </div>
         </div>
 
         <!-- Tiempo de Colación (Selector Rápido) -->
-        <div class="mb-3">
-          <div class="d-flex align-center justify-space-between mb-1">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase">
+        <div class="mb-4">
+          <div class="d-flex align-center justify-space-between mb-2">
+            <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
               🥪 Tiempo de Colación
             </label>
-            <span class="text-caption font-mono font-weight-bold text-amber-400">
+            <span class="text-sm sm:text-base font-mono font-black text-amber-400 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
               {{ form.minutos_colacion }} min ({{ horasColacionFormateadas }}h)
             </span>
           </div>
@@ -125,10 +125,10 @@
             <v-btn
               v-for="opcion in [30, 45, 60, 90]"
               :key="opcion"
-              size="small"
+              size="large"
               :variant="form.minutos_colacion === opcion ? 'flat' : 'outlined'"
-              :color="form.minutos_colacion === opcion ? 'amber' : 'grey'"
-              class="flex-grow-1 font-weight-bold"
+              :color="form.minutos_colacion === opcion ? 'amber' : 'grey-lighten-2'"
+              class="flex-grow-1 font-black text-base h-12 rounded-xl"
               @click="form.minutos_colacion = opcion"
             >
               {{ opcion }}m
@@ -137,9 +137,9 @@
         </div>
 
         <!-- Horómetros -->
-        <div class="row g-2 mb-3">
+        <div class="row g-3 mb-4">
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
               ⚙️ Horómetro Inicio
             </label>
             <input
@@ -147,11 +147,11 @@
               type="number"
               step="0.1"
               placeholder="Ej: 3450.5"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm focus:border-amber-400 focus:outline-none text-center"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
             />
           </div>
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
               ⚙️ Horómetro Término
             </label>
             <input
@@ -159,108 +159,108 @@
               type="number"
               step="0.1"
               placeholder="Ej: 3459.0"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm focus:border-amber-400 focus:outline-none text-center"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
             />
           </div>
         </div>
 
         <!-- PANEL REACTIVO DE CÁLCULO DE HORAS -->
-        <div class="pa-3 rounded-lg border border-amber-500/40 bg-slate-950/80 mb-3">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <span class="text-caption text-grey-lighten-1 text-uppercase font-weight-bold">Cálculo de Jornada</span>
-            <span class="text-caption text-grey font-mono">Mínimo pactado: {{ horasMinimas }} hrs</span>
+        <div class="pa-4 rounded-2xl border-2 border-amber-500/50 bg-slate-950/90 mb-4 shadow-lg">
+          <div class="d-flex align-center justify-space-between mb-3">
+            <span class="text-xs sm:text-sm text-amber-400 text-uppercase font-black tracking-wider">⚡ Cálculo de Jornada</span>
+            <span class="text-xs sm:text-sm text-grey-lighten-1 font-mono font-bold">Mínimo pactado: {{ horasMinimas }} hrs</span>
           </div>
 
           <div class="row text-center g-2">
             <div class="col-4">
-              <div class="text-[10px] text-grey-lighten-1 text-uppercase">Horas Efectivas</div>
-              <div class="text-subtitle-1 font-mono font-weight-black text-white">
+              <div class="text-xs sm:text-sm text-grey-lighten-1 text-uppercase font-bold mb-1">Horas Efectivas</div>
+              <div class="text-2xl sm:text-3xl font-mono font-black text-white">
                 {{ calculoHoras.efectivas }}h
               </div>
             </div>
-            <div class="col-4 border-x border-white/10">
-              <div class="text-[10px] text-amber-400 text-uppercase font-weight-bold">A Facturar</div>
-              <div class="text-subtitle-1 font-mono font-weight-black text-amber-400">
+            <div class="col-4 border-x-2 border-white/20">
+              <div class="text-xs sm:text-sm text-amber-400 text-uppercase font-black mb-1">A Facturar</div>
+              <div class="text-2xl sm:text-3xl font-mono font-black text-amber-400">
                 {{ calculoHoras.facturables }}h
               </div>
             </div>
             <div class="col-4">
-              <div class="text-[10px] text-grey-lighten-1 text-uppercase">Sobretiempo</div>
+              <div class="text-xs sm:text-sm text-grey-lighten-1 text-uppercase font-bold mb-1">Sobretiempo</div>
               <div
-                class="text-subtitle-1 font-mono font-weight-black"
-                :class="calculoHoras.sobretiempo > 0 ? 'text-yellow-400' : 'text-grey-darken-1'"
+                class="text-2xl sm:text-3xl font-mono font-black"
+                :class="calculoHoras.sobretiempo > 0 ? 'text-yellow-300' : 'text-slate-600'"
               >
                 +{{ calculoHoras.sobretiempo }}h
               </div>
             </div>
           </div>
 
-          <div v-if="calculoHoras.sobretiempo > 0" class="mt-2 text-center text-caption text-amber-300 bg-amber-950/50 py-1 px-2 rounded border border-amber-500/30">
+          <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm sm:text-base font-black text-amber-300 bg-amber-950/70 py-2 px-3 rounded-xl border border-amber-500/40">
             ⚠️ <strong>Sobretiempo detectado:</strong> +{{ calculoHoras.sobretiempo }} hrs sobre la base mínima de {{ horasMinimas }} hrs.
           </div>
         </div>
 
         <!-- Observaciones -->
         <div>
-          <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+          <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
             📝 Observaciones / Maniobras Realizadas
           </label>
           <textarea
             v-model="form.observacion_trabajo"
             rows="3"
             placeholder="Detalle de maniobras de izaje, tonelajes, radios, interferencias o condiciones de faena..."
-            class="w-full bg-slate-900 border border-white/20 rounded-lg p-2 text-white text-xs focus:border-amber-400 focus:outline-none"
+            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-white text-sm sm:text-base focus:border-amber-400 focus:outline-none min-h-[90px]"
           ></textarea>
         </div>
       </v-card>
 
       <!-- BLOQUE 3: CONFORMIDAD Y FIRMA MANUAL DEL MANDANTE -->
       <v-card
-        class="pa-4 rounded-xl border border-amber-500/40 text-white"
+        class="pa-5 rounded-2xl border-2 border-amber-500/50 text-white"
         style="background-color: #0b1120;"
-        elevation="3"
+        elevation="4"
       >
-        <div class="d-flex align-center ga-2 mb-2">
-          <span class="text-h6">✍️</span>
+        <div class="d-flex align-center ga-3 mb-4">
+          <span class="text-2xl">✍️</span>
           <div>
-            <div class="text-subtitle-2 font-weight-black text-amber-400">Conformidad del Mandante</div>
-            <div class="text-caption text-grey-lighten-1">Firma manuscrita del receptor en terreno</div>
+            <div class="text-lg sm:text-xl font-black text-amber-400">Conformidad del Mandante</div>
+            <div class="text-xs sm:text-sm text-grey-lighten-1">Firma manuscrita del receptor en terreno</div>
           </div>
         </div>
 
-        <div class="mb-2">
-          <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+        <div class="mb-3">
+          <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
             👤 Nombre Supervisor Mandante *
           </label>
           <input
             v-model="form.cliente_nombre"
             type="text"
             placeholder="Nombre y Apellido del supervisor"
-            class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:border-amber-400 focus:outline-none"
+            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
           />
         </div>
 
-        <div class="row g-2 mb-2">
+        <div class="row g-3 mb-3">
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
               🆔 RUT *
             </label>
             <input
               v-model="form.cliente_rut"
               type="text"
               placeholder="12.345.678-9"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:border-amber-400 focus:outline-none"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
             />
           </div>
           <div class="col-6">
-            <label class="text-caption font-weight-bold text-grey-lighten-1 text-uppercase mb-1 d-block">
+            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
               💼 Cargo en Obra
             </label>
             <input
               v-model="form.cliente_cargo"
               type="text"
               placeholder="Ej: ITO / Jefe de Obra"
-              class="w-full bg-slate-900 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:border-amber-400 focus:outline-none"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
             />
           </div>
         </div>
@@ -271,8 +271,8 @@
           label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
         />
 
-        <div class="text-caption text-grey-darken-1 text-center my-2">
-          🛰️ Al sellar se capturará geoposición GPS inmutable y timestamp oficial.
+        <div class="text-xs sm:text-sm text-grey-lighten-2 text-center my-3 bg-slate-900/80 py-2 px-3 rounded-xl border border-white/10">
+          🛰️ Al sellar se capturará geoposición GPS inmutable y estampa de tiempo oficial.
         </div>
 
         <!-- Botón de Transmisión -->
@@ -280,7 +280,7 @@
           block
           size="x-large"
           color="amber-darken-2"
-          class="font-weight-black text-uppercase rounded-xl text-black py-4 mt-2"
+          class="font-black text-uppercase rounded-2xl text-black py-5 mt-3 min-h-[64px] text-lg sm:text-xl shadow-xl shadow-amber-500/20 tracking-wider"
           :loading="enviando"
           :disabled="!puedeEnviar"
           @click="sellarYTransmitirReport"
@@ -292,7 +292,7 @@
 
     <!-- Snackbar de Éxito / Error -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="4000">
-      {{ snackbar.text }}
+      <span class="text-base font-bold">{{ snackbar.text }}</span>
     </v-snackbar>
   </v-container>
 </template>
