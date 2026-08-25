@@ -12,6 +12,7 @@ ALTER TABLE sch_leangsp.tedp_reporte_avance
   ADD COLUMN IF NOT EXISTS dia_correlativo    INTEGER DEFAULT 1,
   ADD COLUMN IF NOT EXISTS horometro_inicio   NUMERIC(10, 2),
   ADD COLUMN IF NOT EXISTS horometro_termino  NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS foto_horometro     TEXT,
   ADD COLUMN IF NOT EXISTS horas_minimas      NUMERIC(5, 2) DEFAULT 4.00,
   ADD COLUMN IF NOT EXISTS horas_facturables  NUMERIC(5, 2) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS horas_sobretiempo  NUMERIC(5, 2) DEFAULT 0,

@@ -36,10 +36,11 @@ El presente documento especifica el módulo de **Report Diario Digital de Izaje*
   └────────────────────────────┬───────────────────────────────────────────┘
                                ▼
   ┌────────────────────────────────────────────────────────────────────────┐
-  │  2. REGISTRO DE TIEMPOS Y MANIOBRAS                                   │
+  │  2. REGISTRO DE TIEMPOS, HORÓMETROS Y FOTO TABLERO                    │
   │     • Hora Inicio (ej. 08:00) / Hora Término (ej. 18:00)             │
-  │     • Colación: [ 30m ] [ 45m ] [ 60m ] [ 90m ]                      │
+  │     • Colación: [ 0m (Sin Colación) ] [ 30m ] [ 45m ] [ 60m ] [ 90m ]│
   │     • Horómetro Inicio (faena) / Horómetro Término (faena)            │
+  │     • 📸 FOTO OBLIGATORIA DEL HORÓMETRO / TABLERO DE LA GRÚA         │
   │     ─────────────────────────────────────────────────────────────      │
   │     CÁLCULO REACTIVO EN VIVO:                                         │
   │     Horas Efectivas = (Término - Inicio) - Colación                   │

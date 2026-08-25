@@ -2081,7 +2081,7 @@
 
                   <!-- Colación -->
                   <td class="py-3.5 px-3 text-center text-slate-300 font-mono text-sm">
-                    {{ rep.horas_colacion || 1.0 }}h
+                    {{ Number(rep.horas_colacion) === 0 ? '0h' : `${rep.horas_colacion || 1.0}h` }}
                   </td>
 
                   <!-- Horas Efectivas -->
@@ -2103,7 +2103,10 @@
 
                   <!-- Horómetro -->
                   <td class="py-3.5 px-3.5 text-slate-300 font-mono text-sm">
-                    {{ rep.horometro_inicio || 0 }} ➔ {{ rep.horometro_termino || '---' }}
+                    <div class="flex items-center gap-1.5">
+                      <span>{{ rep.horometro_inicio || 0 }} ➔ {{ rep.horometro_termino || '---' }}</span>
+                      <span v-if="rep.foto_horometro" class="text-amber-400" title="Foto de horómetro adjunta">📸</span>
+                    </div>
                   </td>
 
                   <!-- Firmante Mandante -->

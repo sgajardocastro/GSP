@@ -65,7 +65,9 @@
             <div class="text-sm font-mono font-bold text-white">
               {{ formatHora(report?.fecha_inicio_servicio) }} ➔ {{ formatHora(report?.fecha_termino_servicio) }}
             </div>
-            <span class="text-xs text-slate-400 block">Colación: {{ report?.horas_colacion || 1.0 }}h</span>
+            <span class="text-xs text-slate-400 block font-medium">
+              Colación: {{ Number(report?.horas_colacion) === 0 ? 'Sin colación (0h)' : `${report?.horas_colacion || 1.0}h` }}
+            </span>
           </div>
 
           <!-- Horómetro Delta -->
@@ -104,6 +106,43 @@
               +{{ report?.horas_sobretiempo || 0 }} <span class="text-xs font-normal">HRS</span>
             </div>
             <span class="text-xs text-slate-400 block">Horas excedentes</span>
+          </div>
+        </div>
+
+        <!-- EVIDENCIA FOTOGRÁFICA DEL TABLERO / HORÓMETRO -->
+        <div class="bg-[#080d1a] border border-white/15 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              📸 Evidencia Fotográfica del Horómetro / Tablero
+            </span>
+            <span v-if="report?.foto_horometro" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">
+              ✅ Fotografía Registrada
+            </span>
+            <span v-else class="text-xs font-mono text-slate-500">
+              Sin foto adjunta
+            </span>
+          </div>
+
+          <div v-if="report?.foto_horometro" class="flex flex-col sm:flex-row items-center gap-4 bg-black/40 p-3 rounded-lg border border-white/5">
+            <div class="w-full sm:w-64 max-h-52 overflow-hidden rounded-lg border border-amber-500/40 bg-black flex items-center justify-center">
+              <img 
+                :src="report.foto_horometro" 
+                alt="Horómetro Grúa" 
+                class="w-full h-auto max-h-52 object-contain hover:scale-105 transition-transform cursor-pointer"
+                @click="abrirFotoGrande(report.foto_horometro)"
+                title="Clic para agrandar fotografía"
+              />
+            </div>
+            <div class="text-xs text-slate-300 space-y-1.5 flex-1">
+              <p class="font-bold text-white text-sm">Respaldo Visual del Panel de Control</p>
+              <p class="text-slate-400">
+                Permite al analista contrastar la lectura numérica del odómetro/horómetro de terreno ({{ report?.horometro_termino || report?.horometro_inicio || '---' }} hrs) contra la foto del tablero.
+              </p>
+              <span class="text-amber-400 font-mono text-xs block">🔎 Clic sobre la imagen para zoom completo</span>
+            </div>
+          </div>
+          <div v-else class="text-xs text-slate-400 italic bg-black/20 p-2.5 rounded border border-white/5">
+            No se adjuntó fotografía del tablero para esta jornada.
           </div>
         </div>
 
@@ -213,6 +252,23 @@
       </div>
 
     </div>
+
+    <!-- MODAL LIGHTBOX FOTO COMPLETA -->
+    <div 
+      v-if="fotoGrandeUrl" 
+      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4 cursor-pointer"
+      @click="fotoGrandeUrl = null"
+    >
+      <div class="relative max-w-5xl max-h-[90vh]" @click.stop>
+        <img :src="fotoGrandeUrl" alt="Foto Ampliada Horómetro" class="max-w-full max-h-[88vh] rounded-xl object-contain border border-white/20 shadow-2xl" />
+        <button 
+          @click="fotoGrandeUrl = null" 
+          class="absolute -top-3 -right-3 bg-red-600 hover:bg-red-500 text-white rounded-full w-9 h-9 font-bold flex items-center justify-center border-2 border-white shadow-lg cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -239,6 +295,13 @@ const emit = defineEmits(['close', 'report-validado'])
 
 const obsValidacion = ref('')
 const validando = ref(false)
+const fotoGrandeUrl = ref(null)
+
+const abrirFotoGrande = (url) => {
+  if (url) {
+    fotoGrandeUrl.value = url
+  }
+}
 
 const esValidado = computed(() => {
   return props.report?.estado_reporte === 'VALIDADO_ANALISTA'

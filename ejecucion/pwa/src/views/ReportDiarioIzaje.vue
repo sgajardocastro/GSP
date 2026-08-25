@@ -118,20 +118,20 @@
               🥪 Tiempo de Colación
             </label>
             <span class="text-sm sm:text-base font-mono font-black text-amber-400 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
-              {{ form.minutos_colacion }} min ({{ horasColacionFormateadas }}h)
+              {{ form.minutos_colacion === 0 ? 'Sin Colación (0h)' : `${form.minutos_colacion} min (${horasColacionFormateadas}h)` }}
             </span>
           </div>
-          <div class="d-flex ga-2">
+          <div class="d-flex ga-1.5 flex-wrap">
             <v-btn
-              v-for="opcion in [30, 45, 60, 90]"
+              v-for="opcion in [0, 30, 45, 60, 90]"
               :key="opcion"
               size="large"
               :variant="form.minutos_colacion === opcion ? 'flat' : 'outlined'"
               :color="form.minutos_colacion === opcion ? 'amber' : 'grey-lighten-2'"
-              class="flex-grow-1 font-black text-base h-12 rounded-xl"
+              class="flex-grow-1 font-black text-sm sm:text-base h-12 rounded-xl"
               @click="form.minutos_colacion = opcion"
             >
-              {{ opcion }}m
+              {{ opcion === 0 ? '0m (Sin Colac.)' : `${opcion}m` }}
             </v-btn>
           </div>
         </div>
@@ -161,6 +161,81 @@
               placeholder="Ej: 3459.0"
               class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
             />
+          </div>
+        </div>
+
+        <!-- FOTOGRAFÍA DEL TABLERO / HORÓMETRO (OBLIGATORIA) -->
+        <div class="mb-4 pa-4 rounded-xl border-2 border-slate-700 bg-slate-950/80">
+          <div class="d-flex align-center justify-space-between mb-2">
+            <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
+              <span>📸 Foto del Tablero / Horómetro</span>
+              <span class="text-red-400 font-bold">*</span>
+            </label>
+            <span v-if="form.foto_horometro" class="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-md border border-emerald-500/40">
+              ✅ Foto Cargada
+            </span>
+            <span v-else class="text-xs font-bold text-amber-400 bg-amber-950/70 px-2.5 py-1 rounded-md border border-amber-500/40">
+              ⚠️ Obligatoria
+            </span>
+          </div>
+          <p class="text-xs text-grey-lighten-1 mb-3">
+            Captura una fotografía clara del horómetro digital o análogo en el panel de control de la grúa.
+          </p>
+
+          <!-- Input oculto para cámara -->
+          <input
+            ref="inputFotoHorometro"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="d-none"
+            @change="onFotoHorometroSeleccionada"
+          />
+
+          <!-- Preview de foto capturada -->
+          <div v-if="form.foto_horometro" class="position-relative space-y-2">
+            <div class="rounded-xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-64 shadow-md">
+              <img
+                :src="form.foto_horometro"
+                alt="Foto Horómetro Grúa"
+                class="w-full h-auto max-h-64 object-contain"
+              />
+            </div>
+            <div class="d-flex ga-2 mt-2">
+              <v-btn
+                color="amber"
+                variant="flat"
+                size="large"
+                class="flex-grow-1 font-bold text-sm h-12 rounded-xl"
+                @click="abrirCamaraHorometro"
+              >
+                📸 Tomar otra foto
+              </v-btn>
+              <v-btn
+                color="red-lighten-1"
+                variant="outlined"
+                size="large"
+                class="font-bold text-sm h-12 rounded-xl px-4"
+                @click="form.foto_horometro = null"
+              >
+                🗑️ Borrar
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- Botón grande para tomar foto -->
+          <div v-else>
+            <v-btn
+              color="amber"
+              variant="flat"
+              size="x-large"
+              block
+              class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950"
+              @click="abrirCamaraHorometro"
+            >
+              <span class="text-2xl">📸</span>
+              <span>Fotografiar Horómetro del Tablero</span>
+            </v-btn>
           </div>
         </div>
 
@@ -316,6 +391,7 @@ const personas = ref([])
 const reportsPrevios = ref([])
 const diaCorrelativo = ref(1)
 const horasMinimas = ref(4.0)
+const inputFotoHorometro = ref(null)
 
 const form = reactive({
   fecha_reporte: new Date().toISOString().split('T')[0],
@@ -324,6 +400,7 @@ const form = reactive({
   minutos_colacion: 60,
   horometro_inicio: null,
   horometro_termino: null,
+  foto_horometro: null,
   observacion_trabajo: '',
   cliente_nombre: '',
   cliente_rut: '',
@@ -357,6 +434,50 @@ const horasColacionFormateadas = computed(() => {
   return (form.minutos_colacion / 60).toFixed(1)
 })
 
+// Acciones de cámara y compresión de imagen para el horómetro
+const abrirCamaraHorometro = () => {
+  if (inputFotoHorometro.value) {
+    inputFotoHorometro.value.click()
+  }
+}
+
+const onFotoHorometroSeleccionada = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const MAX_WIDTH = 1280
+      const MAX_HEIGHT = 1280
+      let width = img.width
+      let height = img.height
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width
+          width = MAX_WIDTH
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height
+          height = MAX_HEIGHT
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      form.foto_horometro = canvas.toDataURL('image/jpeg', 0.82)
+    }
+    img.src = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
 // Cálculo reactivo en vivo de horas
 const calculoHoras = computed(() => {
   if (!form.hora_inicio || !form.hora_termino) {
@@ -383,6 +504,7 @@ const puedeEnviar = computed(() => {
     form.cliente_firma_canvas_base64 &&
     form.hora_inicio &&
     form.hora_termino &&
+    form.foto_horometro &&
     !enviando.value
   )
 })
@@ -482,6 +604,7 @@ const sellarYTransmitirReport = async () => {
       horas_sobretiempo: calculoHoras.value.sobretiempo,
       horometro_inicio: form.horometro_inicio,
       horometro_termino: form.horometro_termino,
+      foto_horometro: form.foto_horometro,
       observacion_trabajo: form.observacion_trabajo,
       cliente_nombre: form.cliente_nombre,
       cliente_rut: form.cliente_rut,

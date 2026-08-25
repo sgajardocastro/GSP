@@ -41,7 +41,7 @@ const reportDiarioController = {
           e.modelo,
           e.marca,
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
-          e.horometro_actual
+          COALESCE((e.json_data->>'horometro')::numeric, 0) AS horometro_base
         FROM sch_leangsp.tpry_rel_equipo re
         JOIN sch_leangsp.tequ_equipo e ON re.id_equipo = e.id_equipo
         WHERE re.id_proyecto = $1;
@@ -97,8 +97,29 @@ const reportDiarioController = {
         if (ultimoReport.horometro_termino) {
           horometroSugerido = Number(ultimoReport.horometro_termino);
         }
-      } else if (eqRes.rows.length > 0 && eqRes.rows[0].horometro_actual) {
-        horometroSugerido = Number(eqRes.rows[0].horometro_actual);
+      }
+
+      // Si no hay reports previos, consultar si el viaje de desplazamiento registró horómetro
+      if (!horometroSugerido) {
+        try {
+          const vjSql = `
+            SELECT horometro_final, horometro_inicial 
+            FROM sch_leangsp.tequ_log_desplazamiento 
+            WHERE id_proyecto = $1 
+            ORDER BY id_log_desplazamiento DESC LIMIT 1;
+          `;
+          const vjRes = await db.query(vjSql, [id_proyecto]);
+          if (vjRes.rows.length > 0) {
+            const vj = vjRes.rows[0];
+            horometroSugerido = Number(vj.horometro_final || vj.horometro_inicial) || null;
+          }
+        } catch (eVj) {
+          console.warn('Error consultando viaje para horómetro:', eVj.message);
+        }
+      }
+
+      if (!horometroSugerido && eqRes.rows.length > 0 && eqRes.rows[0].horometro_base) {
+        horometroSugerido = Number(eqRes.rows[0].horometro_base);
       }
 
       // Horas mínimas configuradas en la propuesta / OT
@@ -168,6 +189,7 @@ const reportDiarioController = {
           r.horas_sobretiempo,
           r.horometro_inicio,
           r.horometro_termino,
+          r.foto_horometro,
           r.monto_devengado_dia,
           r.observacion_trabajo,
           r.cliente_nombre,
@@ -223,6 +245,8 @@ const reportDiarioController = {
         horas_sobretiempo,
         horometro_inicio,
         horometro_termino,
+        foto_horometro,
+        foto_horometro_base64,
         observacion_trabajo,
         cliente_nombre,
         cliente_rut,
@@ -240,6 +264,8 @@ const reportDiarioController = {
       if (!cliente_firma_canvas_base64) {
         return res.status(400).json({ error: 'La firma manual del mandante es obligatoria para emitir el report' });
       }
+
+      const fotoHorometroFinal = foto_horometro || foto_horometro_base64 || null;
 
       // Generar token único para el report
       const token_report = crypto.randomBytes(24).toString('hex');
@@ -270,6 +296,7 @@ const reportDiarioController = {
           horas_sobretiempo,
           horometro_inicio,
           horometro_termino,
+          foto_horometro,
           observacion_trabajo,
           cliente_nombre,
           cliente_rut,
@@ -279,7 +306,7 @@ const reportDiarioController = {
           estado_reporte,
           fecha_registro
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, CURRENT_TIMESTAMP
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, CURRENT_TIMESTAMP
         )
         RETURNING *;
       `;
@@ -298,12 +325,13 @@ const reportDiarioController = {
         longitud_inicio_servicio || null,
         accuracy_firma || null,
         horas_operadas || 0,
-        horas_colacion || 1,
+        horas_colacion !== undefined && horas_colacion !== null ? horas_colacion : 1,
         horas_minimas || 4.0,
         horas_facturables || 0,
         horas_sobretiempo || 0,
         horometro_inicio || null,
         horometro_termino || null,
+        fotoHorometroFinal,
         observacion_trabajo || '',
         cliente_nombre || 'Supervisor Mandante',
         cliente_rut || '',
@@ -316,12 +344,12 @@ const reportDiarioController = {
       const insertRes = await db.query(insertSql, values);
       const reportGuardado = insertRes.rows[0];
 
-      // Opcional: Actualizar el horómetro actual del equipo si se ingresó
+      // Opcional: Actualizar el horómetro en json_data del equipo si se ingresó
       if (id_equipo && horometro_termino) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tequ_equipo SET horometro_actual = $1 WHERE id_equipo = $2`,
-            [horometro_termino, id_equipo]
+            `UPDATE sch_leangsp.tequ_equipo SET json_data = jsonb_set(COALESCE(json_data, '{}'::jsonb), '{horometro}', $1::text::jsonb) WHERE id_equipo = $2`,
+            [JSON.stringify(horometro_termino), id_equipo]
           );
         } catch (e) {
           console.warn('No se pudo actualizar horómetro del equipo:', e.message);
