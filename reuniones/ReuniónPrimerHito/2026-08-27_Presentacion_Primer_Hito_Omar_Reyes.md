@@ -1,6 +1,8 @@
 # 🏗️ Digitalización Integral de la Operación de Izaje
 **Cliente:** Grúas San Pablo (GSP)  
 **Audiencia:** Equipo Directivo y Equipos de Administración, Comercial y Operaciones de Grúas San Pablo  
+**Plataforma:** LeanGlobal Platform  
+**Expositor:** Sergio Gajardo C. · Socio & Director de Producto, LeanGlobal  
 **Fecha de Sesión:** Jueves 27 de Agosto de 2026  
 **Objetivo:** Demostración práctica del flujo operativo en 6 pasos (conectado con la Torre de Control) y revisión de las herramientas digitales para el trabajo diario.
 
