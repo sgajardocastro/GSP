@@ -3,53 +3,53 @@
     <!-- Header -->
     <div class="flex justify-between items-end flex-shrink-0">
       <div>
-        <h2 class="text-xl font-extrabold text-white">
+        <h2 class="text-2xl font-black text-white">
           {{ isModoOperaciones ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}
-          <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-base ml-2">[{{ antecedentes.identificador_formal }}]</span>
+          <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-xl ml-2 font-black">[{{ antecedentes.identificador_formal }}]</span>
         </h2>
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="text-sm text-slate-300 mt-1">
           {{ isModoOperaciones ? 'Revisión técnica de antecedentes, auditoría de modificaciones y asignación de flota.' : 'Estructuración B2B de requerimientos de izaje y logística.' }}
         </p>
       </div>
-      <div class="flex gap-2">
-        <button @click="handleCancelar" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
+      <div class="flex gap-2.5">
+        <button @click="handleCancelar" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-sm uppercase tracking-wider transition-colors">
           Cancelar
         </button>
         <!-- BOTONES DE RETROCESO / EXCEPCIÓN -->
-        <button v-if="isModoOperaciones" @click="volverACotizar" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5" title="Devuelve el requerimiento a Preventa Comercial para permitir ediciones">
+        <button v-if="isModoOperaciones" @click="volverACotizar" class="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-2" title="Devuelve el requerimiento a Preventa Comercial para permitir ediciones">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
           <span>Devolver a Preventa</span>
         </button>
 
-        <button v-if="estadoDbActual === ESTADOS_DB.NO_GANADA" @click="restaurarACotizar" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+        <button v-if="estadoDbActual === ESTADOS_DB.NO_GANADA" @click="restaurarACotizar" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.75 8.25v.75M21 9h-6"></path></svg>
           <span>Restaurar a Cotizar</span>
         </button>
 
         <!-- ACCIONES ETAPA 1-2: PREVENTA COMERCIAL -->
         <template v-if="estadoDbActual <= 2">
-          <button v-if="(props.proyectoId || currentProyectoId) && estadoDbActual !== ESTADOS_DB.NO_GANADA" @click="abrirModalNoAsignada" class="px-4 py-2 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+          <button v-if="(props.proyectoId || currentProyectoId) && estadoDbActual !== ESTADOS_DB.NO_GANADA" @click="abrirModalNoAsignada" class="px-4 py-2.5 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
             <span>No Ganada</span>
           </button>
-          <button @click="generarPDF" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+          <button @click="generarPDF" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-1.5">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             <span>Generar Cotización</span>
           </button>
-          <button @click="guardarEnPreventa" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1">
+          <button @click="guardarEnPreventa" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-1.5">
             <span>Guardar en Preventa</span>
           </button>
-          <button @click="abrirModalGenerarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1">
+          <button @click="abrirModalGenerarRequerimiento" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             <span>Generar Requerimiento</span>
           </button>
         </template>
 
-        <!-- ACCIONES ETAPA 3: VALIDACIÓN & DIFF -->
-        <template v-else-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF">
-          <button @click="abrirModalAprobarRequerimiento" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            <span>Aprobar Requerimiento & Habilitar Asignación OT</span>
+        <!-- ACCIONES ETAPA 3: VALIDACIÓN & AUDITORÍA DE ANTECEDENTES -->
+        <template v-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF">
+          <button @click="abrirModalAprobarRequerimiento" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+            <span>Aprobar Requerimiento</span>
           </button>
         </template>
 
@@ -58,10 +58,10 @@
           <span v-if="isDirtyAsignacion" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse flex items-center gap-1.5">
             🟡 Cambios Modificados (Sin Guardar)
           </span>
-          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
             💾 Guardar Cambios
           </button>
-          <button @click="confirmarAsignacionOT" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+          <button @click="confirmarAsignacionOT" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-widest transition-colors shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             <span>Confirmar Asignación OT ➔ Preparación Salida</span>
           </button>
@@ -69,28 +69,28 @@
 
         <!-- ACCIONES ETAPA 5+: PREPARACIÓN SALIDA / PATIO -->
         <template v-else-if="estadoDbActual >= ESTADOS_DB.PREPARACION_PATIO">
-          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+          <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
             💾 Guardar Cambios
           </button>
         </template>
       </div>
     </div>
 
-    <!-- Barra de Pipeline / Stepper FSM Unificada con Candados Progresivos -->
+    <!-- SUBTABS BAR -->
     <div class="flex border-b border-white/10 bg-[#080d1a] px-3 pt-2 flex-shrink-0 transition-all duration-200 gap-2 overflow-x-auto scrollbar-hide">
       <!-- 1. PREVENTA COMERCIAL -->
       <button 
         @click="topTab = 'comercial'" 
         :class="[
           topTab === 'comercial' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white',
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer rounded-t'
         ]"
       >
-        <span v-if="estadoDbActual <= 2" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span v-else class="text-[10px] text-slate-500">👁️</span>
+        <span v-if="estadoDbActual <= 2" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span v-else class="text-xs text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         <span>1. Preventa Comercial</span>
-        <span v-if="estadoDbActual >= 3" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
+        <span v-if="estadoDbActual >= 3" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
       <!-- 2. VALIDACIÓN & DIFF -->
@@ -99,16 +99,16 @@
         :disabled="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF"
         :class="[
           estadoDbActual < ESTADOS_DB.VALIDACION_DIFF ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'validacion' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
         :title="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF ? 'Requiere Generar Requerimiento Comercial' : ''"
       >
         <span v-if="estadoDbActual < ESTADOS_DB.VALIDACION_DIFF" class="text-xs">🔒</span>
-        <span v-else-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        <span v-else class="text-[10px] text-slate-500">👁️</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span v-else class="text-xs text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         <span>2. Validación & Diff</span>
-        <span v-if="estadoDbActual > ESTADOS_DB.VALIDACION_DIFF" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.VALIDACION_DIFF" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
       <!-- 3. ASIGNACIÓN DE RECURSOS OT -->
@@ -117,16 +117,16 @@
         :disabled="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS"
         :class="[
           estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'asignacion' ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
         :title="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS ? 'Requiere Aprobar Requerimiento en Validación' : ''"
       >
         <span v-if="estadoDbActual < ESTADOS_DB.ASIGNACION_RECURSOS" class="text-xs">🔒</span>
-        <span v-else-if="estadoDbActual === ESTADOS_DB.ASIGNACION_RECURSOS" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span v-else class="text-[10px] text-slate-500">👁️</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.ASIGNACION_RECURSOS" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span v-else class="text-xs text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
         <span>3. Asignación Recursos OT</span>
-        <span v-if="estadoDbActual > ESTADOS_DB.ASIGNACION_RECURSOS" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.ASIGNACION_RECURSOS" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
       <!-- 4. ACREDITACIONES & DOSSIER -->
@@ -135,12 +135,12 @@
         :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
         :class="[
           estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'acreditaciones' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
         :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
       >
         <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
-        <span v-else class="text-[10px] text-slate-500">📄</span>
+        <span v-else class="text-xs text-slate-400">📄</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         <span>4. Acreditaciones & Dossier</span>
       </button>
@@ -151,16 +151,16 @@
         :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
         :class="[
           estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'preparacion_salida' ? 'text-indigo-400 border-b-2 border-indigo-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
         :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
       >
         <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
-        <span v-else-if="estadoDbActual === ESTADOS_DB.PREPARACION_PATIO" class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-        <span v-else class="text-[10px] text-slate-500">👁️</span>
+        <span v-else-if="estadoDbActual === ESTADOS_DB.PREPARACION_PATIO" class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
+        <span v-else class="text-xs text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         <span>5. Preparación de Salida</span>
-        <span v-if="estadoDbActual > ESTADOS_DB.PREPARACION_PATIO" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
+        <span v-if="estadoDbActual > ESTADOS_DB.PREPARACION_PATIO" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
       <!-- 6. EJECUCIÓN & REPORTS DIARIOS -->
@@ -169,15 +169,15 @@
         :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
         :class="[
           estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'reports' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
-          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
         ]"
         :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
       >
         <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
-        <span v-else class="text-[10px] text-amber-400">📋</span>
+        <span v-else class="text-xs text-amber-400">📋</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
         <span>6. Ejecución & Reports</span>
-        <span v-if="reportsProyecto.length > 0" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">{{ reportsProyecto.length }}</span>
+        <span v-if="reportsProyecto.length > 0" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono font-bold">{{ reportsProyecto.length }}</span>
       </button>
     </div>
 
@@ -1932,21 +1932,21 @@
       <div v-if="operacionesSubTab === 'reports'" class="space-y-6">
         
         <!-- HEADER DE LA ETAPA -->
-        <div class="bg-[#050810] border border-amber-500/30 rounded-xl p-4 flex flex-wrap justify-between items-center gap-4">
-          <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-center text-amber-500 font-bold font-mono text-lg">
+        <div class="bg-[#050810] border border-amber-500/40 rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/40 rounded-xl flex items-center justify-center text-amber-500 font-bold font-mono text-2xl shrink-0">
               📋
             </div>
             <div>
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">
+              <div class="flex items-center gap-3">
+                <h3 class="text-lg font-black text-white uppercase tracking-wider font-mono">
                   Control de Ejecución & Reports Diarios de Izaje
                 </h3>
-                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-md font-mono font-bold">
                   FAENA EN TERRENO
                 </span>
               </div>
-              <p class="text-xs text-slate-400">
+              <p class="text-sm text-slate-300 mt-1">
                 Seguimiento multi-día de jornadas reportadas desde la PWA, horas efectivas, horómetros, firma manual del mandante y validación del analista.
               </p>
             </div>
@@ -1955,185 +1955,185 @@
           <div class="flex items-center gap-2">
             <button
               @click="cargarReportsProyecto()"
-              class="px-3 py-1.5 bg-[#0b1021] hover:bg-slate-800 border border-white/10 text-slate-300 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+              class="px-4 py-2 bg-[#0b1021] hover:bg-slate-800 border border-white/20 text-slate-200 rounded-xl text-sm font-bold font-mono flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <svg class="w-3.5 h-3.5" :class="cargandoReports ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <svg class="w-4 h-4" :class="cargandoReports ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
               <span>Refrescar</span>
             </button>
           </div>
         </div>
 
         <!-- TARJETAS DE RESUMEN ACUMULADO (KPIS) -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
           <!-- Días Operados -->
-          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">📅 Días Operados</span>
-            <div class="text-xl font-black text-white font-mono flex items-baseline gap-1">
+          <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1.5 shadow-md">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">📅 Días Operados</span>
+            <div class="text-3xl font-black text-white font-mono flex items-baseline gap-1.5">
               <span>{{ resumenKpiReports.dias }}</span>
-              <span class="text-xs text-slate-400 font-normal">DÍAS</span>
+              <span class="text-sm text-slate-400 font-normal">DÍAS</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-mono block">Jornadas emitidas PWA</span>
+            <span class="text-xs text-slate-500 font-mono block">Jornadas emitidas PWA</span>
           </div>
 
           <!-- Horas Facturables Acumuladas -->
-          <div class="bg-[#050810] border border-amber-500/30 rounded-xl p-3.5 space-y-1 bg-amber-950/10">
-            <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">💰 Horas a Facturar</span>
-            <div class="text-xl font-black text-amber-400 font-mono flex items-baseline gap-1">
+          <div class="bg-[#050810] border border-amber-500/40 rounded-xl p-4 space-y-1.5 bg-amber-950/20 shadow-md">
+            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider block">💰 Horas a Facturar</span>
+            <div class="text-3xl font-black text-amber-400 font-mono flex items-baseline gap-1.5">
               <span>{{ resumenKpiReports.totalFacturables }}</span>
-              <span class="text-xs text-amber-300 font-normal">HRS</span>
+              <span class="text-sm text-amber-300 font-normal">HRS</span>
             </div>
-            <span class="text-[10px] text-amber-500/70 font-mono block">Σ Facturables Acum.</span>
+            <span class="text-xs text-amber-500/80 font-mono block">Σ Facturables Acum.</span>
           </div>
 
           <!-- Sobretiempo Acumulado -->
-          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'border-yellow-500/40 bg-yellow-950/10' : ''">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">⚡ Sobretiempo Total</span>
-            <div class="text-xl font-black font-mono flex items-baseline gap-1" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'text-yellow-400' : 'text-slate-500'">
+          <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1.5 shadow-md" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'border-yellow-500/50 bg-yellow-950/20' : ''">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">⚡ Sobretiempo Total</span>
+            <div class="text-3xl font-black font-mono flex items-baseline gap-1.5" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'text-yellow-400' : 'text-slate-500'">
               <span>+{{ resumenKpiReports.totalSobretiempo }}</span>
-              <span class="text-xs font-normal">HRS</span>
+              <span class="text-sm font-normal">HRS</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-mono block">Horas excedentes</span>
+            <span class="text-xs text-slate-500 font-mono block">Horas excedentes</span>
           </div>
 
           <!-- Horómetros -->
-          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">⚙️ Horómetro Motor</span>
-            <div class="text-xs font-mono font-bold text-white truncate">
+          <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1.5 shadow-md">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">⚙️ Horómetro Motor</span>
+            <div class="text-base font-mono font-bold text-white truncate pt-1">
               {{ resumenKpiReports.horometroRange }}
             </div>
-            <span class="text-[10px] text-slate-500 font-mono block">Inicial ➔ Final Faena</span>
+            <span class="text-xs text-slate-500 font-mono block pt-0.5">Inicial ➔ Final Faena</span>
           </div>
 
           <!-- Conformidad Documental -->
-          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">🛡️ Conformidad Analista</span>
-            <div class="text-xs font-mono font-bold flex items-center gap-2 pt-0.5">
+          <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1.5 shadow-md">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">🛡️ Conformidad Analista</span>
+            <div class="text-base font-mono font-bold flex items-center gap-2 pt-1">
               <span class="text-emerald-400">✅ {{ resumenKpiReports.validados }}</span>
               <span class="text-slate-500">•</span>
               <span class="text-amber-400">⏳ {{ resumenKpiReports.pendientes }}</span>
             </div>
-            <span class="text-[10px] text-slate-500 font-mono block">Validados / Pendientes</span>
+            <span class="text-xs text-slate-500 font-mono block pt-0.5">Validados / Pendientes</span>
           </div>
         </div>
 
         <!-- TABLA MULTI-DÍA DE REPORTS -->
-        <div class="bg-[#050810] border border-white/10 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-white/10 flex justify-between items-center bg-[#080d1a]">
-            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-2">
+        <div class="bg-[#050810] border border-white/15 rounded-xl overflow-hidden shadow-lg">
+          <div class="px-5 py-3.5 border-b border-white/10 flex justify-between items-center bg-[#080d1a]">
+            <h4 class="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
               <span>📋 Cronograma de Reports Diarios de Terreno</span>
             </h4>
-            <span class="text-[11px] text-slate-400 font-mono">{{ reportsProyecto.length }} report(s) registrado(s)</span>
+            <span class="text-xs text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">{{ reportsProyecto.length }} report(s) registrado(s)</span>
           </div>
 
           <!-- Loading -->
-          <div v-if="cargandoReports" class="p-8 text-center text-slate-400 text-xs">
-            <div class="animate-spin inline-block w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full mb-2"></div>
+          <div v-if="cargandoReports" class="p-10 text-center text-slate-400 text-sm">
+            <div class="animate-spin inline-block w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full mb-3"></div>
             <div>Cargando reports de la faena...</div>
           </div>
 
           <!-- Empty State -->
-          <div v-else-if="reportsProyecto.length === 0" class="p-10 text-center space-y-2">
-            <span class="text-3xl d-block">🏗️</span>
-            <div class="text-sm font-bold text-white">Aún no se han emitido reports para este servicio</div>
-            <p class="text-xs text-slate-400 max-w-md mx-auto">
+          <div v-else-if="reportsProyecto.length === 0" class="p-12 text-center space-y-3">
+            <span class="text-4xl block">🏗️</span>
+            <div class="text-base font-bold text-white">Aún no se han emitido reports para este servicio</div>
+            <p class="text-sm text-slate-400 max-w-lg mx-auto">
               El operador de la grúa puede generar el primer Report Diario desde la PWA en terreno al concluir la primera jornada de izaje.
             </p>
           </div>
 
           <!-- Table -->
           <div v-else class="overflow-x-auto">
-            <table class="w-full text-left text-xs border-collapse font-mono">
+            <table class="w-full text-left text-sm border-collapse font-sans">
               <thead>
-                <tr class="bg-[#0b1021] text-slate-400 border-b border-white/10 text-[10.5px] uppercase tracking-wider">
-                  <th class="py-2.5 px-3">Día</th>
-                  <th class="py-2.5 px-3">Fecha</th>
-                  <th class="py-2.5 px-3">Horario</th>
-                  <th class="py-2.5 px-3 text-center">Colac.</th>
-                  <th class="py-2.5 px-3 text-right">Efectivas</th>
-                  <th class="py-2.5 px-3 text-right text-amber-400">Facturables</th>
-                  <th class="py-2.5 px-3 text-right">Sobretiempo</th>
-                  <th class="py-2.5 px-3">Horómetro</th>
-                  <th class="py-2.5 px-3">Firmante Mandante</th>
-                  <th class="py-2.5 px-3 text-center">Estado</th>
-                  <th class="py-2.5 px-3 text-center">Acciones</th>
+                <tr class="bg-[#0b1021] text-slate-300 border-b border-white/10 text-xs font-bold uppercase tracking-wider">
+                  <th class="py-3 px-3.5 font-mono">Día</th>
+                  <th class="py-3 px-3.5">Fecha</th>
+                  <th class="py-3 px-3.5 font-mono">Horario</th>
+                  <th class="py-3 px-3 text-center font-mono">Colac.</th>
+                  <th class="py-3 px-3.5 text-right font-mono">Efectivas</th>
+                  <th class="py-3 px-3.5 text-right text-amber-400 font-mono">Facturables</th>
+                  <th class="py-3 px-3.5 text-right font-mono">Sobretiempo</th>
+                  <th class="py-3 px-3.5 font-mono">Horómetro</th>
+                  <th class="py-3 px-3.5">Firmante Mandante</th>
+                  <th class="py-3 px-3.5 text-center">Estado</th>
+                  <th class="py-3 px-3.5 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-white/5 text-slate-300">
+              <tbody class="divide-y divide-white/10 text-slate-200">
                 <tr 
                   v-for="rep in reportsProyecto" 
                   :key="rep.id_reporte_avance"
-                  class="hover:bg-white/[0.02] transition-colors"
+                  class="hover:bg-white/[0.03] transition-colors"
                 >
                   <!-- Día -->
-                  <td class="py-2.5 px-3 font-bold text-amber-400">
+                  <td class="py-3.5 px-3.5 font-bold font-mono text-amber-400 text-sm">
                     Día {{ rep.dia_correlativo || 1 }}
                   </td>
 
                   <!-- Fecha -->
-                  <td class="py-2.5 px-3 text-white">
+                  <td class="py-3.5 px-3.5 text-white font-medium text-sm">
                     {{ formatearFechaCorta(rep.fecha_reporte) }}
                   </td>
 
                   <!-- Horario -->
-                  <td class="py-2.5 px-3 text-slate-300">
+                  <td class="py-3.5 px-3.5 text-slate-200 font-mono text-sm">
                     {{ formatHoraCorta(rep.fecha_inicio_servicio) }} - {{ formatHoraCorta(rep.fecha_termino_servicio) }}
                   </td>
 
                   <!-- Colación -->
-                  <td class="py-2.5 px-3 text-center text-slate-400">
+                  <td class="py-3.5 px-3 text-center text-slate-300 font-mono text-sm">
                     {{ rep.horas_colacion || 1.0 }}h
                   </td>
 
                   <!-- Horas Efectivas -->
-                  <td class="py-2.5 px-3 text-right text-white font-bold">
+                  <td class="py-3.5 px-3.5 text-right text-white font-black font-mono text-sm">
                     {{ rep.horas_operadas }}h
                   </td>
 
                   <!-- Horas Facturables -->
-                  <td class="py-2.5 px-3 text-right text-amber-400 font-bold">
+                  <td class="py-3.5 px-3.5 text-right text-amber-400 font-black font-mono text-base">
                     {{ rep.horas_facturables }}h
                   </td>
 
                   <!-- Sobretiempo -->
-                  <td class="py-2.5 px-3 text-right">
-                    <span :class="Number(rep.horas_sobretiempo) > 0 ? 'text-yellow-400 font-bold' : 'text-slate-500'">
+                  <td class="py-3.5 px-3.5 text-right font-mono text-sm">
+                    <span :class="Number(rep.horas_sobretiempo) > 0 ? 'text-yellow-400 font-black' : 'text-slate-500'">
                       {{ Number(rep.horas_sobretiempo) > 0 ? `+${rep.horas_sobretiempo}h` : '0h' }}
                     </span>
                   </td>
 
                   <!-- Horómetro -->
-                  <td class="py-2.5 px-3 text-slate-400 text-[11px]">
+                  <td class="py-3.5 px-3.5 text-slate-300 font-mono text-sm">
                     {{ rep.horometro_inicio || 0 }} ➔ {{ rep.horometro_termino || '---' }}
                   </td>
 
                   <!-- Firmante Mandante -->
-                  <td class="py-2.5 px-3">
-                    <div class="text-white font-sans font-bold text-xs truncate max-w-[140px]">{{ rep.cliente_nombre || 'Mandante' }}</div>
-                    <div class="text-[10px] text-slate-500 truncate">{{ rep.cliente_cargo || 'Supervisor' }}</div>
+                  <td class="py-3.5 px-3.5">
+                    <div class="text-white font-bold text-sm truncate max-w-[160px]">{{ rep.cliente_nombre || 'Mandante' }}</div>
+                    <div class="text-xs text-slate-400 truncate">{{ rep.cliente_cargo || 'Supervisor' }}</div>
                   </td>
 
                   <!-- Estado -->
-                  <td class="py-2.5 px-3 text-center">
+                  <td class="py-3.5 px-3.5 text-center">
                     <span 
                       v-if="rep.estado_reporte === 'VALIDADO_ANALISTA'" 
-                      class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                      class="px-3 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1"
                     >
                       ✅ Validado
                     </span>
                     <span 
                       v-else 
-                      class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+                      class="px-3 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse inline-flex items-center gap-1"
                     >
                       ⏳ Pendiente
                     </span>
                   </td>
 
                   <!-- Acciones -->
-                  <td class="py-2.5 px-3 text-center">
-                    <div class="flex items-center justify-center gap-1.5">
+                  <td class="py-3.5 px-3.5 text-center">
+                    <div class="flex items-center justify-center gap-2">
                       <button
                         @click="abrirVisorReport(rep)"
-                        class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        class="px-3.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                         title="Ver Documento Digital y Firma"
                       >
                         <span>👁️</span>
