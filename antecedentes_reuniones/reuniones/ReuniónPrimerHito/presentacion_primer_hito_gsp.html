@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline Operativo & Torre de Control Kanban | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:     #02050a;
+      --bg-base:     #060a14;
+      --bg-card:     #0c1322;
+      --bg-surface:  #111a2e;
+      --bg-card-hover: #15223c;
+      
+      --amber:       #f5a623;
+      --amber-light: #fbbf24;
+      --amber-dim:   rgba(245,166,35,0.12);
+      --amber-glow:  rgba(245,166,35,0.3);
+      
+      --blue:        #3b82f6;
+      --blue-dim:    rgba(59,130,246,0.12);
+      
+      --green:       #10b981;
+      --green-dim:   rgba(16,185,129,0.12);
+      
+      --red:         #ef4444;
+      --purple:      #8b5cf6;
+      --purple-dim:  rgba(139,92,246,0.12);
+      
+      --cyan:        #06b6d4;
+      --cyan-dim:    rgba(6,182,212,0.12);
+      
+      --indigo:      #6366f1;
+      --indigo-dim:  rgba(99,102,241,0.12);
+      
+      --t-primary:   #f8fafc;
+      --t-sec:       #cbd5e1;
+      --t-muted:     #94a3b8;
+      
+      --border-subtle: rgba(255,255,255,0.08);
+      --border-card:   rgba(255,255,255,0.14);
+      --border-hover:  rgba(255,255,255,0.28);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-deep);
+      color: var(--t-primary);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-size: 15px;
+    }
+
+    body {
+      min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
+      background: radial-gradient(circle at 50% -10%, #111e38 0%, var(--bg-deep) 65%);
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.3); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ── Header fijo ── */
+    #top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(4, 8, 16, 0.94);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 36px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 14px; text-decoration: none;
+    }
+    .brand-logo-box {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #f5a623, #d97706);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 16px; color: #000;
+      box-shadow: 0 4px 14px rgba(245,166,35,0.35);
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; color: #fff;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .brand-sub {
+      font-size: 10.5px; color: var(--t-muted); letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-link {
+      color: var(--t-muted); text-decoration: none; font-size: 11.5px; font-weight: 700;
+      font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 7px 14px; border-radius: 8px; transition: all 0.2s;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--amber); background: rgba(245,166,35,0.1);
+    }
+
+    .nav-badge {
+      padding: 5px 12px; border-radius: 99px;
+      background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.35);
+      color: var(--amber); font-size: 11px; font-weight: 800;
+      font-family: 'Outfit', sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    /* ── Layout container ── */
+    .page-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 95px 32px 80px 32px;
+      display: flex; flex-direction: column; gap: 48px;
+    }
+
+    /* ── Typography & Headings ── */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .section-eyebrow {
+      font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    }
+    .section-title {
+      font-family: 'Outfit', sans-serif; font-size: clamp(24px, 2.4vw, 34px);
+      font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em; color: var(--t-primary);
+    }
+    .section-sub { font-size: 14px; color: var(--t-muted); line-height: 1.6; margin-top: 4px; }
+    .section-head { border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 24px; }
+
+    /* ── Cards & Panels ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+
+    .glow-amber  { box-shadow: 0 0 0 1px rgba(245,166,35,0.22), 0 16px 40px -10px rgba(245,166,35,0.18); }
+    .glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.22),  0 16px 40px -10px rgba(59,130,246,0.18); }
+    .glow-indigo { box-shadow: 0 0 0 1px rgba(99,102,241,0.22),  0 16px 40px -10px rgba(99,102,241,0.18); }
+
+    /* ── Tag / Badges ── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid; white-space: nowrap;
+    }
+    .tag-amber  { background: rgba(245,166,35,0.12); color: var(--amber);  border-color: rgba(245,166,35,0.35); }
+    .tag-blue   { background: rgba(59,130,246,0.12); color: var(--blue);   border-color: rgba(59,130,246,0.35); }
+    .tag-green  { background: rgba(16,185,129,0.12); color: var(--green);  border-color: rgba(16,185,129,0.35); }
+    .tag-purple { background: rgba(139,92,246,0.12); color: var(--purple); border-color: rgba(139,92,246,0.35); }
+    .tag-cyan   { background: rgba(6,182,212,0.12);   color: var(--cyan);   border-color: rgba(6,182,212,0.35); }
+    .tag-indigo { background: rgba(99,102,241,0.12); color: var(--indigo); border-color: rgba(99,102,241,0.35); }
+
+    /* ── HERO BANNER ── */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(17, 26, 46, 0.95) 0%, rgba(6, 10, 20, 0.98) 100%);
+      border: 1px solid rgba(245,166,35,0.4);
+      border-radius: 20px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::after {
+      content: ''; position: absolute; top: -50%; right: -20%; width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(245,166,35,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ========================================================================= */
+    /* FLUJO BPM OPERATIVO DE ALTA DEFINICIÓN (6 Nodos Conectados)               */
+    /* ========================================================================= */
+    .bpm-flow-container {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      position: relative;
+      margin-top: 18px;
+    }
+    @media (max-width: 1200px) {
+      .bpm-flow-container {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+    }
+    @media (max-width: 768px) {
+      .bpm-flow-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bpm-node {
+      background: #0b1220;
+      border: 1.5px solid var(--border-card);
+      border-radius: 16px;
+      padding: 18px 14px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .bpm-node:hover {
+      transform: translateY(-6px);
+      background: #111b30;
+      box-shadow: 0 16px 36px -8px rgba(0,0,0,0.8);
+    }
+
+    /* Colores por Estación en el Flujo BPM */
+    .bpm-node.node-1 { border-color: rgba(99,102,241,0.45); }
+    .bpm-node.node-1:hover { border-color: var(--indigo); box-shadow: 0 12px 30px -6px rgba(99,102,241,0.4); }
+
+    .bpm-node.node-2 { border-color: rgba(245,166,35,0.45); }
+    .bpm-node.node-2:hover { border-color: var(--amber); box-shadow: 0 12px 30px -6px rgba(245,166,35,0.4); }
+
+    .bpm-node.node-3 { border-color: rgba(59,130,246,0.45); }
+    .bpm-node.node-3:hover { border-color: var(--blue); box-shadow: 0 12px 30px -6px rgba(59,130,246,0.4); }
+
+    .bpm-node.node-4 { border-color: rgba(6,182,212,0.45); }
+    .bpm-node.node-4:hover { border-color: var(--cyan); box-shadow: 0 12px 30px -6px rgba(6,182,212,0.4); }
+
+    .bpm-node.node-5 { border-color: rgba(139,92,246,0.45); }
+    .bpm-node.node-5:hover { border-color: var(--purple); box-shadow: 0 12px 30px -6px rgba(139,92,246,0.4); }
+
+    .bpm-node.node-6 { border-color: rgba(16,185,129,0.45); }
+    .bpm-node.node-6:hover { border-color: var(--green); box-shadow: 0 12px 30px -6px rgba(16,185,129,0.4); }
+
+    /* Indicador de flecha BPM entre tarjetas (en desktop) */
+    .bpm-arrow {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #111a2e; border: 1.5px solid var(--border-card);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10; font-size: 10px; color: var(--t-muted);
+      pointer-events: none;
+    }
+    @media (max-width: 1200px) {
+      .bpm-arrow { display: none; }
+    }
+
+    .node-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .node-badge {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
+      border: 1px solid;
+    }
+
+    /* ── MODAL FLOTANTE DE ALTO IMPACTO ── */
+    #modal-backdrop {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(2, 5, 12, 0.9);
+      backdrop-filter: blur(20px);
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; transition: opacity 0.25s ease-out;
+    }
+    #modal-backdrop.modal-open {
+      display: flex; opacity: 1;
+    }
+
+    #modal-window {
+      background: #090f1d;
+      border: 1.5px solid var(--border-card);
+      border-radius: 20px;
+      width: 100%; max-width: 960px; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 40px rgba(245, 166, 35, 0.15);
+      transform: scale(0.95); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    #modal-backdrop.modal-open #modal-window {
+      transform: scale(1);
+    }
+
+    .modal-header-bar {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(255,255,255,0.02);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .modal-scrollable-body {
+      padding: 28px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    .modal-footer-bar {
+      padding: 16px 28px;
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(255,255,255,0.02);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ── ARTEFACTOS DENTRO DEL MODAL ── */
+    .modal-artifact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 16px;
+    }
+    .modal-artifact-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex; gap: 16px;
+      transition: all 0.2s;
+    }
+    .modal-artifact-card:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(245,166,35,0.35);
+      transform: translateX(4px);
+    }
+    .modal-artifact-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── GUION DEMO TABLE ── */
+    .demo-table {
+      width: 100%; border-collapse: collapse; text-align: left;
+    }
+    .demo-table th {
+      background: rgba(255,255,255,0.04);
+      padding: 12px 16px; font-family: 'Outfit', sans-serif;
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--t-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .demo-table td {
+      padding: 14px 16px; border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px; vertical-align: top;
+    }
+    .demo-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .btn-action {
+      background: var(--amber); color: #000;
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 10px 20px; border-radius: 10px; border: none;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .btn-action:hover {
+      background: #fbbf24; transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245,166,35,0.35);
+    }
+    .btn-modal-nav {
+      background: rgba(255,255,255,0.06); color: #fff;
+      border: 1px solid var(--border-card); border-radius: 9px;
+      padding: 9px 18px; font-size: 12px; font-weight: 700;
+      font-family: 'Outfit', sans-serif; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-modal-nav:hover {
+      background: rgba(255,255,255,0.14); border-color: var(--amber); color: var(--amber);
+    }
+    .btn-close-modal {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--t-muted); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; font-size: 16px;
+    }
+    .btn-close-modal:hover {
+      background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); color: #f87171;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR FIJO -->
+  <header id="top-nav">
+    <a href="#" class="nav-brand">
+      <div class="brand-logo-box">GSP</div>
+      <div>
+        <div class="brand-title">Grúas San Pablo</div>
+        <div class="brand-sub">Torre de Control & Gestión Operativa</div>
+      </div>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#bloque-alcance" class="nav-link">1. Proceso de Trabajo (6 Pasos)</a>
+      <a href="#bloque-implementacion" class="nav-link">2. Plan de Implementación</a>
+      <a href="#bloque-demo" class="nav-link">3. Demostración en Vivo</a>
+    </nav>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span class="nav-badge">Hito 1 · Presentación de Avance</span>
+      <a href="http://localhost:5174/lg-gsp-dev/viaje/vj_71_35_f67d7312" target="_blank" class="btn-action" style="padding: 6px 14px; font-size: 11px;">
+        <i data-lucide="external-link" style="width: 14px; height: 14px;"></i> Abrir App Móvil
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main class="page-container">
+
+    <!-- HERO / INTRODUCCIÓN -->
+    <section class="hero-banner glow-amber">
+      <div style="max-width: 950px; display: flex; flex-direction: column; gap: 14px;">
+        <div class="section-eyebrow">
+          <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> Primer Hito de la Plataforma de Operaciones
+        </div>
+        <h1 class="section-title" style="font-size: clamp(28px, 3vw, 42px); line-height: 1.1;">
+          Digitalización Integral de la Operación de Izaje
+        </h1>
+        <p style="font-size: 15px; color: var(--t-sec); line-height: 1.6;">
+          Presentación de trabajo para el <strong style="color: #fff;">Equipo Directivo y los equipos de Administración, Comercial y Operaciones de Grúas San Pablo</strong>. Muestra el recorrido completo del servicio en <strong style="color: var(--amber);">6 pasos prácticos</strong>, conectando desde la cotización inicial y la preparación de equipos hasta el trabajo en faena y la facturación, facilitando la labor diaria de toda la organización.
+        </p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;">
+          <div class="tag tag-blue" style="font-size: 12.5px; padding: 6px 14px; font-weight: 700;">
+            <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Calidad de la Información
+          </div>
+          <div class="tag tag-amber" style="font-size: 12.5px; padding: 6px 14px; font-weight: 700;">
+            <i data-lucide="clock" style="width: 15px; height: 15px;"></i> Oportunidad de la Información
+          </div>
+          <div class="tag tag-green" style="font-size: 12.5px; padding: 6px 14px; font-weight: 700;">
+            <i data-lucide="git-branch" style="width: 15px; height: 15px;"></i> Trazabilidad
+          </div>
+        </div>
+
+        <!-- CÁPSULA INSTITUCIONAL LEANGLOBAL -->
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 13px; color: var(--t-muted);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="building-2" style="width: 15px; height: 15px; color: var(--blue);"></i>
+            <span>Plataforma: <strong style="color: #fff;">LeanGlobal Platform</strong></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="user-check" style="width: 15px; height: 15px; color: var(--amber);"></i>
+            <span>Expositor: <strong style="color: var(--amber);">Sergio Gajardo C.</strong> · Socio & Director de Producto</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- BLOQUE 1: PROCESO BPM OPERATIVO (6 NODOS CONECTADOS CON ESTILO VISUAL)    -->
+    <!-- ========================================================================= -->
+    <section id="bloque-alcance" class="card">
+      <div class="section-head">
+        <div class="section-eyebrow"><i data-lucide="git-commit" style="width: 15px; height: 15px;"></i> Bloque 1 · Modelo de Procesos BPM (1:1 con la Torre Kanban)</div>
+        <h2 class="section-title">Pipeline de Procesos Operativos End-to-End</h2>
+        <p class="section-sub">Diagrama de flujo continuo de las 6 etapas operacionales. Haz clic en cualquiera de los nodos para abrir su <strong style="color: var(--amber);">visor flotante detallado</strong>.</p>
+      </div>
+
+      <!-- Diagrama de Flujo BPM de 6 Nodos Conectados -->
+      <div class="bpm-flow-container">
+        
+        <!-- NODO 1: Requerimiento Registrado -->
+        <div class="bpm-node node-1" onclick="abrirModalEstacion(1)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(99,102,241,0.18); color: var(--indigo); border-color: rgba(99,102,241,0.45);">01</div>
+              <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--indigo);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">1. Requerimiento Registrado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Oportunidad CRM, Visita a Terreno (photoChecks) y Cotización PDF formal.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-indigo" style="font-size: 8.5px; padding: 3px 8px;">CRM + Visita</span>
+            <span style="font-size: 11px; color: var(--indigo); font-weight: bold;">Ver 👁️</span>
+          </div>
+          <div class="bpm-arrow">➔</div>
+        </div>
+
+        <!-- NODO 2: En Verificación Operaciones -->
+        <div class="bpm-node node-2" onclick="abrirModalEstacion(2)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(245,166,35,0.18); color: var(--amber); border-color: rgba(245,166,35,0.45);">02</div>
+              <i data-lucide="git-compare" style="width: 18px; height: 18px; color: var(--amber);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">2. En Verificación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Revisión técnica de factibilidad, informe de terreno y Comparador Diff.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-amber" style="font-size: 8.5px; padding: 3px 8px;">Diff Comercial/Op</span>
+            <span style="font-size: 11px; color: var(--amber); font-weight: bold;">Ver 👁️</span>
+          </div>
+          <div class="bpm-arrow">➔</div>
+        </div>
+
+        <!-- NODO 3: En Asignación Recursos -->
+        <div class="bpm-node node-3" onclick="abrirModalEstacion(3)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(59,130,246,0.18); color: var(--blue); border-color: rgba(59,130,246,0.45);">03</div>
+              <i data-lucide="layers" style="width: 18px; height: 18px; color: var(--blue);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">3. En Asignación Recursos</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                DataGrid: Grúa + Chofer + Rigger + Aparejos ➔ Orden de Trabajo (OT).
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-blue" style="font-size: 8.5px; padding: 3px 8px;">Convoy OT</span>
+            <span style="font-size: 11px; color: var(--blue); font-weight: bold;">Ver 👁️</span>
+          </div>
+          <div class="bpm-arrow">➔</div>
+        </div>
+
+        <!-- NODO 4: En Preparación Operaciones -->
+        <div class="bpm-node node-4" onclick="abrirModalEstacion(4)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(6,182,212,0.18); color: var(--cyan); border-color: rgba(6,182,212,0.45);">04</div>
+              <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">4. En Preparación Operaciones</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Acreditaciones 360°, checklist mecánico y Web Token PIN de salida.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-cyan" style="font-size: 8.5px; padding: 3px 8px;">Acreditación + Patio</span>
+            <span style="font-size: 11px; color: var(--cyan); font-weight: bold;">Ver 👁️</span>
+          </div>
+          <div class="bpm-arrow">➔</div>
+        </div>
+
+        <!-- NODO 5: En Ejecución / Faena -->
+        <div class="bpm-node node-5" onclick="abrirModalEstacion(5)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(139,92,246,0.18); color: var(--purple); border-color: rgba(139,92,246,0.45);">05</div>
+              <i data-lucide="smartphone" style="width: 18px; height: 18px; color: var(--purple);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">5. En Ejecución / Faena</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Telemetría GPS cada 10s, rendición Copec en ruta y Firma FES mandante.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-purple" style="font-size: 8.5px; padding: 3px 8px;">GPS + Copec + FES</span>
+            <span style="font-size: 11px; color: var(--purple); font-weight: bold;">Ver 👁️</span>
+          </div>
+          <div class="bpm-arrow">➔</div>
+        </div>
+
+        <!-- NODO 6: Finalizado / Devengado -->
+        <div class="bpm-node node-6" onclick="abrirModalEstacion(6)">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="node-header">
+              <div class="node-badge" style="background: rgba(16,185,129,0.18); color: var(--green); border-color: rgba(16,185,129,0.45);">06</div>
+              <i data-lucide="dollar-sign" style="width: 18px; height: 18px; color: var(--green);"></i>
+            </div>
+            <div>
+              <h3 class="font-display" style="font-size: 13.5px; font-weight: 800; color: #fff;">6. Finalizado / Devengado</h3>
+              <p style="font-size: 11px; color: var(--t-muted); margin-top: 4px; line-height: 1.35;">
+                Manifiesto inverso de aparejos, EDP consolidado y facturación Laudus ERP.
+              </p>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            <span class="tag tag-green" style="font-size: 8.5px; padding: 3px 8px;">EDP + Laudus ERP</span>
+            <span style="font-size: 11px; color: var(--green); font-weight: bold;">Ver 👁️</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- BLOQUE 2: ESTRATEGIA DE IMPLEMENTACIÓN                                    -->
+    <!-- ========================================================================= -->
+    <section id="bloque-implementacion" class="card glow-blue">
+      <div class="section-head">
+        <div class="section-eyebrow"><i data-lucide="git-merge" style="width: 15px; height: 15px;"></i> Bloque 2 · Despliegue y Adopción</div>
+        <h2 class="section-title">Estrategia de Implementación Gradual</h2>
+        <p class="section-sub">Un plan de puesta en marcha diseñado para operar en paralelo sin detener ni arriesgar el flujo diario de servicios.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        <!-- Fase 1 -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="tag tag-green">Fase A · Completada</span>
+            <span class="mono" style="font-size: 11px; color: var(--green); font-weight: bold;">100% LISTO</span>
+          </div>
+          <h3 class="font-display" style="font-size: 16px; font-weight: 800; color: #fff;">Parametrización & Maestros</h3>
+          <ul style="font-size: 12.5px; color: var(--t-sec); line-height: 1.7; padding-left: 18px;">
+            <li>Carga de flota completa (Grúas telescópicas, camiones pluma, camas bajas).</li>
+            <li>Nómina de operadores y riggers con cargos certificados.</li>
+            <li>Base de clientes y reglas de cotización estandarizadas.</li>
+          </ul>
+        </div>
+
+        <!-- Fase 2 -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(245,166,35,0.4); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="tag tag-amber">Fase B · En Marcha Blanca</span>
+            <span class="mono" style="font-size: 11px; color: var(--amber); font-weight: bold;">ACTIVA</span>
+          </div>
+          <h3 class="font-display" style="font-size: 16px; font-weight: 800; color: #fff;">CRM & Torre de Control</h3>
+          <ul style="font-size: 12.5px; color: var(--t-sec); line-height: 1.7; padding-left: 18px;">
+            <li>Emisión mandatoria de cotizaciones PDF con control de versiones.</li>
+            <li>Asignación en Torre de Control por Jorge Ponce y equipo.</li>
+            <li>Prueba de campo del módulo de Viaje Conductor (GPS y Copec).</li>
+          </ul>
+        </div>
+
+        <!-- Fase 3 -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="tag tag-purple">Fase C · Próximo Hito</span>
+            <span class="mono" style="font-size: 11px; color: var(--purple); font-weight: bold;">EN DESPLIEGUE</span>
+          </div>
+          <h3 class="font-display" style="font-size: 16px; font-weight: 800; color: #fff;">Capacitación & Terreno</h3>
+          <ul style="font-size: 12.5px; color: var(--t-sec); line-height: 1.7; padding-left: 18px;">
+            <li>Talleres prácticos para choferes (uso de PIN de 4 dígitos y fotos).</li>
+            <li>Videos instructivos breves y manuales de procedimiento.</li>
+            <li>Firma digital FES de Reportes Diarios con clientes mandantes.</li>
+          </ul>
+        </div>
+
+        <!-- Fase 4 -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="tag tag-cyan">Fase D · Próxima Prioridad</span>
+            <span class="mono" style="font-size: 11px; color: var(--cyan); font-weight: bold;">GESTIÓN & FINANZAS</span>
+          </div>
+          <h3 class="font-display" style="font-size: 16px; font-weight: 800; color: #fff;">Inventario, Taller & Facturación</h3>
+          <ul style="font-size: 12.5px; color: var(--t-sec); line-height: 1.7; padding-left: 18px;">
+            <li>Control de stock de aparejos de izaje y repuestos de taller (cero mermas).</li>
+            <li>Mantenimiento preventivo y correctivo de flota según horómetros reales.</li>
+            <li>Generación de Estados de Pago (EDP), costos de faena y facturación contable.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- BLOQUE 3: GUION DE DEMOSTRACIÓN EN VIVO                                  -->
+    <!-- ========================================================================= -->
+    <section id="bloque-demo" class="card glow-indigo">
+      <div class="section-head">
+        <div class="section-eyebrow"><i data-lucide="play-circle" style="width: 15px; height: 15px;"></i> Bloque 3 · Demostración en Vivo</div>
+        <h2 class="section-title">Guion de Demostración Práctica (15 Minutos)</h2>
+        <p class="section-sub">Recorrido en tiempo real mostrando la interacción fluida entre pantallas y herramientas con datos reales de servicio.</p>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="demo-table">
+          <thead>
+            <tr>
+              <th style="width: 90px;">Tiempo</th>
+              <th style="width: 220px;">Estación / Pantalla</th>
+              <th>Paso Demostrativo</th>
+              <th style="width: 220px;">Resultado Tangible</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--indigo);">00 - 03 min</span></td>
+              <td><strong style="color: #fff;">1. Requerimiento Registrado</strong><br><span style="font-size: 11px; color: var(--t-muted);">Gestor de Oportunidades</span></td>
+              <td>Crear una cotización: seleccionar cliente, ubicar la faena en el mapa satelital, seleccionar grúa de 50T, verificar flete y rigger automático y generar la cotización PDF en 1 clic.</td>
+              <td><span class="tag tag-indigo">Cotización PDF Oficial</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--amber);">03 - 05 min</span></td>
+              <td><strong style="color: #fff;">2. Visita a Terreno</strong><br><span style="font-size: 11px; color: var(--t-muted);">Formulario Móvil / PWA</span></td>
+              <td>Mostrar el levantamiento técnico con fotos de terreno (suelo, accesos, cables) y la firma del cliente capturada en obra incorporada en la ficha.</td>
+              <td><span class="tag tag-amber">Informe con Fotos de Terreno</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--blue);">05 - 08 min</span></td>
+              <td><strong style="color: #fff;">3. Asignación de Recursos</strong><br><span style="font-size: 11px; color: var(--t-muted);">Torre de Control / OT</span></td>
+              <td>Ingresar a la Torre de Control, revisar la validación técnica y armar el convoy (Grúa Tadano + Chofer + Rigger + Aparejos) con semáforos de acreditación al día.</td>
+              <td><span class="tag tag-blue">Tabla OT + Acreditaciones</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--cyan);">08 - 11 min</span></td>
+              <td><strong style="color: #fff;">4. Preparación y Salida</strong><br><span style="font-size: 11px; color: var(--t-muted);">App Móvil del Conductor</span></td>
+              <td>Abrir la pantalla móvil del chofer, ingresar odómetro (145.000), horómetro (3.200) y PIN ➔ Iniciar viaje y ver la ubicación GPS actualizándose en ruta.</td>
+              <td><span class="tag tag-cyan">Ubicación GPS en Ruta</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--purple);">11 - 13 min</span></td>
+              <td><strong style="color: #fff;">5. Faena y Report Diario</strong><br><span style="font-size: 11px; color: var(--t-muted);">PWA Móvil del Operador</span></td>
+              <td>Completar el Report Diario en faena: horarios, colación, horómetros, foto del tablero y firma táctil del supervisor mandante en terreno.</td>
+              <td><span class="tag tag-purple">Report Diario Firmado + Foto</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono" style="font-weight: bold; color: var(--green);">13 - 15 min</span></td>
+              <td><strong style="color: #fff;">6. Cierre y Facturación</strong><br><span style="font-size: 11px; color: var(--t-muted);">Estado de Pago / EDP</span></td>
+              <td>Ver la aprobación del analista en la Torre de Control, el retorno de aparejos a bodega y el resumen consolidado de horas para facturación en Laudus ERP.</td>
+              <td><span class="tag tag-green">Resumen EDP Listo para Cobro</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="border-top: 1px solid var(--border-subtle); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--t-muted);">
+      <div>
+        <strong>Grúas San Pablo · Plataforma de Gestión Operativa</strong>
+      </div>
+      <div>
+        Fecha de Sesión: Jueves 27 de Agosto de 2026
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL FLOTANTE INTERACTIVO: DETALLE DE LA ETAPA BPM                       -->
+  <!-- ========================================================================= -->
+  <div id="modal-backdrop" onclick="cerrarModalAlClicFondo(event)">
+    <div id="modal-window">
+      <!-- Encabezado del Modal -->
+      <div class="modal-header-bar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div id="m-badge-num" class="node-badge" style="width: 32px; height: 32px; font-size: 13px;">
+            01
+          </div>
+          <div>
+            <h2 id="m-title" class="font-display" style="font-size: 18px; font-weight: 800; color: #fff; text-transform: uppercase;">
+              1. Requerimiento Registrado
+            </h2>
+            <div id="m-subtag" class="tag tag-indigo" style="margin-top: 4px; font-size: 10px;">
+              Preventa Comercial & Visita a Terreno
+            </div>
+          </div>
+        </div>
+
+        <button onclick="cerrarModal()" class="btn-close-modal" title="Cerrar modal (Esc)">✕</button>
+      </div>
+
+      <!-- Cuerpo Scrolleable del Modal -->
+      <div class="modal-scrollable-body">
+        <div>
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--t-muted); margin-bottom: 6px;">
+            Objetivo Operacional & Dinámica de la Etapa
+          </div>
+          <p id="m-desc" style="font-size: 14px; color: var(--t-sec); line-height: 1.6;">
+            Descripción detallada...
+          </p>
+        </div>
+
+        <div>
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--amber); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="layers" style="width: 14px; height: 14px;"></i> Documentos y Artefactos Tangibles de Esta Etapa
+          </div>
+          <div id="m-artifacts" class="modal-artifact-grid">
+            <!-- Inyectado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Banner de Aseguramiento de Calidad y Gobernanza -->
+        <div id="m-control-box" style="border-radius: 14px; padding: 16px 20px; font-size: 13px; font-weight: 600; line-height: 1.5;">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="modal-footer-bar">
+        <div style="display: flex; gap: 8px;">
+          <button onclick="navegarModal(-1)" class="btn-modal-nav">
+            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Anterior
+          </button>
+          <button onclick="navegarModal(1)" class="btn-modal-nav">
+            Siguiente <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+
+        <button onclick="cerrarModal()" class="btn-action" style="padding: 8px 18px; font-size: 11px;">
+          Cerrar Detalle (Esc)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data de las 6 Etapas del Proceso Operativo
+    const ESTACIONES_DATA = {
+      1: {
+        num: "01",
+        titulo: "1. Requerimiento Registrado",
+        tag: "Preventa Comercial & Visita a Terreno",
+        tagClass: "tag-indigo",
+        borderColor: "var(--indigo)",
+        resumen: "Registro de la oportunidad comercial, levantamiento en terreno con fotos de faena cuando se requiera, y emisión de la cotización formal en PDF con cálculo de fletes y control de versiones.",
+        artefactos: [
+          {
+            icono: "clipboard-check",
+            bg: "rgba(99,102,241,0.18)",
+            color: "var(--indigo)",
+            titulo: "Levantamiento de Visita a Terreno",
+            desc: "Registro fotográfico en obra (tipo de suelo, accesos para cama baja, cables eléctricos, radios de giro) y firma del cliente en terreno."
+          },
+          {
+            icono: "file-text",
+            bg: "rgba(99,102,241,0.18)",
+            color: "var(--indigo)",
+            titulo: "Cotización PDF Oficial & Reglas Claras",
+            desc: "Cálculo de fletes por distancia, asignación de Rigger por tonelaje, viáticos y pernoctación, y control ordenado de versiones [CODIGO]V1.pdf."
+          }
+        ],
+        control: "✅ Control Comercial: Asegura que todo servicio enviado a Operaciones cuente con su cotización formal, condiciones de faena claras y horas mínimas acordadas.",
+        controlBg: "rgba(99,102,241,0.08)",
+        controlBorder: "rgba(99,102,241,0.28)",
+        controlText: "#c7d2fe"
+      },
+      2: {
+        num: "02",
+        titulo: "2. Verificación en Operaciones",
+        tag: "Validación Técnica & Comparador",
+        tagClass: "tag-amber",
+        borderColor: "var(--amber)",
+        resumen: "El área de Operaciones revisa el requerimiento, consulta el informe de terreno y confirma la grúa y accesorios adecuados antes de asignarlos.",
+        artefactos: [
+          {
+            icono: "git-compare",
+            bg: "rgba(245,166,35,0.18)",
+            color: "var(--amber)",
+            titulo: "Comparador Comercial vs Operaciones",
+            desc: "Si Operaciones ajusta el modelo de grúa por radio de trabajo o agrega contrapesos, el sistema resalta las diferencias para mantener informada al área de ventas."
+          },
+          {
+            icono: "check-circle-2",
+            bg: "rgba(245,166,35,0.18)",
+            color: "var(--amber)",
+            titulo: "Confirmación Técnica",
+            desc: "Aprobación formal de los requerimientos técnicos antes de pasar a la asignación de flota y personal."
+          }
+        ],
+        control: "✅ Validación Operativa: Asegura que cada maniobra cuente con la grúa, tonelaje y accesorios correctos para trabajar con total seguridad y eficiencia.",
+        controlBg: "rgba(245,166,35,0.08)",
+        controlBorder: "rgba(245,166,35,0.28)",
+        controlText: "#fef3c7"
+      },
+      3: {
+        num: "03",
+        titulo: "3. Asignación de Recursos",
+        tag: "Orden de Trabajo & Convoy",
+        tagClass: "tag-blue",
+        borderColor: "var(--blue)",
+        resumen: "Asignación de equipos y personal calificado mediante una tabla ágil y compacta para armar la Orden de Trabajo (OT).",
+        artefactos: [
+          {
+            icono: "layers",
+            bg: "rgba(59,130,246,0.18)",
+            color: "var(--blue)",
+            titulo: "Tabla de Asignación Operativa",
+            desc: "Asignación ordenada de Grúa principal + Camión Pluma / Cama Baja + Conductor + Rigger calificado + Aparejos (eslingas, grilletes, balancines)."
+          },
+          {
+            icono: "file-check",
+            bg: "rgba(59,130,246,0.18)",
+            color: "var(--blue)",
+            titulo: "Orden de Trabajo (OT) Oficial",
+            desc: "Documento maestro que reúne los datos de obra, equipo asignado, personal autorizado y ventana de fechas planificada."
+          }
+        ],
+        control: "✅ Asignación Calificada: Facilita asignar conductores, operadores y riggers con sus certificaciones al día.",
+        controlBg: "rgba(59,130,246,0.08)",
+        controlBorder: "rgba(59,130,246,0.28)",
+        controlText: "#bfdbfe"
+      },
+      4: {
+        num: "04",
+        titulo: "4. Preparación y Salida de Patio",
+        tag: "Acreditaciones & Salida",
+        tagClass: "tag-cyan",
+        borderColor: "var(--cyan)",
+        resumen: "Revisión de acreditaciones para el ingreso a faena y registro de salida de los equipos desde patio.",
+        artefactos: [
+          {
+            icono: "shield",
+            bg: "rgba(6,182,212,0.18)",
+            color: "var(--cyan)",
+            titulo: "Semáforo de Acreditaciones al Día",
+            desc: "Visualización rápida del estado de documentos de Empresa, Flota y Personal para enviar el dossier al cliente con anticipación."
+          },
+          {
+            icono: "key-round",
+            bg: "rgba(6,182,212,0.18)",
+            color: "var(--cyan)",
+            titulo: "Inicio de Viaje en la App Móvil",
+            desc: "El conductor anota su odómetro y horómetro de salida e inicia el trayecto de forma sencilla con su PIN personal."
+          }
+        ],
+        control: "✅ Cumplimiento y Seguridad: Permite verificar anticipadamente que la documentación de equipos y personas esté al día para evitar demoras en portería.",
+        controlBg: "rgba(6,182,212,0.08)",
+        controlBorder: "rgba(6,182,212,0.28)",
+        controlText: "#cffafe"
+      },
+      5: {
+        num: "05",
+        titulo: "5. Ejecución en Faena & Report Diario",
+        tag: "Ruta, Combustible & Report",
+        tagClass: "tag-purple",
+        borderColor: "var(--purple)",
+        resumen: "Seguimiento del trayecto en ruta, registro de cargas de combustible y emisión del Report Diario con firma en pantalla del cliente y foto del horómetro.",
+        artefactos: [
+          {
+            icono: "radio",
+            bg: "rgba(139,92,246,0.18)",
+            color: "var(--purple)",
+            titulo: "Ubicación en Ruta y Tiempos de Traslado",
+            desc: "Registro de tiempos de viaje y llegada a obra para respaldo de traslados y fletes."
+          },
+          {
+            icono: "fuel",
+            bg: "rgba(139,92,246,0.18)",
+            color: "var(--purple)",
+            titulo: "Cargas Copec & Report Diario Firmado",
+            desc: "Registro de litros y boleta de combustible, más Report Diario con horarios, colación, horómetros, foto del tablero y firma del cliente en terreno."
+          }
+        ],
+        control: "✅ Control en Terreno: La aplicación móvil funciona incluso sin señal de internet y se actualiza automáticamente al recuperar cobertura.",
+        controlBg: "rgba(139,92,246,0.08)",
+        controlBorder: "rgba(139,92,246,0.28)",
+        controlText: "#ede9fe"
+      },
+      6: {
+        num: "06",
+        titulo: "6. Cierre y Facturación",
+        tag: "Retorno & Estado de Pago",
+        tagClass: "tag-green",
+        borderColor: "var(--green)",
+        resumen: "Cierre del servicio: revisión de aparejos al volver a patio y generación del resumen de horas y Estado de Pago (EDP) para facturación.",
+        artefactos: [
+          {
+            icono: "package-check",
+            bg: "rgba(16,185,129,0.18)",
+            color: "var(--green)",
+            titulo: "Recepción de Aparejos en Bodega",
+            desc: "Control de retorno de eslingas, grilletes y accesorios para mantener el inventario ordenado y prevenir pérdidas."
+          },
+          {
+            icono: "dollar-sign",
+            bg: "rgba(16,185,129,0.18)",
+            color: "var(--green)",
+            titulo: "Estado de Pago (EDP) e Integración ERP",
+            desc: "Consolidación automática de horas normales, sobretiempo y traslados pactados para facturación ágil en Laudus ERP."
+          }
+        ],
+        control: "✅ Cierre y Cobro Oportuno: Permite respaldar las horas efectivas trabajadas para una facturación clara y sin disputas.",
+        controlBg: "rgba(16,185,129,0.08)",
+        controlBorder: "rgba(16,185,129,0.28)",
+        controlText: "#d1fae5"
+      }
+    };
+
+    let modalEstacionId = 1;
+
+    function abrirModalEstacion(id) {
+      modalEstacionId = id;
+      const data = ESTACIONES_DATA[id];
+      if (!data) return;
+
+      // Actualizar campos del modal
+      document.getElementById('m-badge-num').innerText = data.num;
+      document.getElementById('m-badge-num').style.color = data.borderColor;
+      document.getElementById('m-badge-num').style.borderColor = data.borderColor;
+      document.getElementById('m-badge-num').style.background = `rgba(255,255,255,0.05)`;
+      document.getElementById('m-title').innerText = data.titulo;
+      
+      const tagEl = document.getElementById('m-subtag');
+      tagEl.className = `tag ${data.tagClass}`;
+      tagEl.innerText = data.tag;
+
+      document.getElementById('m-desc').innerText = data.resumen;
+
+      // Renderizar artefactos
+      const artifactsContainer = document.getElementById('m-artifacts');
+      artifactsContainer.innerHTML = data.artefactos.map(art => `
+        <div class="modal-artifact-card">
+          <div class="modal-artifact-icon" style="background: ${art.bg}; color: ${art.color};">
+            <i data-lucide="${art.icono}" style="width: 24px; height: 24px;"></i>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-weight: 800; font-size: 14px; color: #fff; font-family: 'Outfit', sans-serif;">
+              ${art.titulo}
+            </div>
+            <div style="font-size: 12px; color: var(--t-muted); margin-top: 5px; line-height: 1.5;">
+              ${art.desc}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Renderizar banner de aseguramiento de calidad
+      const controlBox = document.getElementById('m-control-box');
+      controlBox.style.background = data.controlBg;
+      controlBox.style.border = `1px solid ${data.controlBorder}`;
+      controlBox.style.color = data.controlText;
+      controlBox.innerHTML = data.control;
+
+      // Borde superior de la ventana
+      document.getElementById('modal-window').style.borderTop = `4px solid ${data.borderColor}`;
+
+      // Mostrar modal
+      const backdrop = document.getElementById('modal-backdrop');
+      backdrop.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
+
+      lucide.createIcons();
+    }
+
+    function cerrarModal() {
+      const backdrop = document.getElementById('modal-backdrop');
+      backdrop.classList.remove('modal-open');
+      document.body.style.overflow = 'auto';
+    }
+
+    function cerrarModalAlClicFondo(e) {
+      if (e.target.id === 'modal-backdrop') {
+        cerrarModal();
+      }
+    }
+
+    function navegarModal(delta) {
+      let nueva = modalEstacionId + delta;
+      if (nueva < 1) nueva = 6;
+      if (nueva > 6) nueva = 1;
+      abrirModalEstacion(nueva);
+    }
+
+    // Cerrar con Escape y navegar con flechas
+    window.addEventListener('keydown', (e) => {
+      const backdrop = document.getElementById('modal-backdrop');
+      if (backdrop.classList.contains('modal-open')) {
+        if (e.key === 'Escape') cerrarModal();
+        if (e.key === 'ArrowLeft') navegarModal(-1);
+        if (e.key === 'ArrowRight') navegarModal(1);
+      }
+    });
+
+    // Inicializar iconos
+    lucide.createIcons();
+  </script>
+</body>
+</html>
