@@ -6,16 +6,21 @@
 
 ---
 
-## 🎯 Resumen de la Presentación
+## 🎯 Principios Rectores y Resumen de la Presentación
 
-La plataforma **GSP Operaciones** presenta su primer hito funcional, integrando el trabajo diario de los equipos comerciales, de operaciones y administración en un flujo simple y ordenado:
+La plataforma **GSP Operaciones** sustenta toda su dinámica en tres principios fundamentales:
 
-1. **Cotizaciones Claras y Rápidas:** Cálculo automático de fletes por distancia, selección de rigger según tonelaje, registro de viáticos y emisión de la cotización en PDF con control de versiones.
-2. **Revisión Técnica en Operaciones:** Comparador entre lo solicitado por ventas y lo revisado por operaciones para confirmar la grúa y accesorios óptimos para el trabajo.
-3. **Asignación Rápida de Recursos:** Tabla ágil para coordinar grúas, camiones de apoyo, conductores, riggers calificados y aparejos en la Orden de Trabajo (OT).
-4. **Preparación y Acreditaciones al Día:** Semáforo visual para verificar que la documentación de personas y máquinas esté vigente antes de salir a faena.
-5. **Control de Viaje y Report Diario en Terreno:** Registro de odómetros y horómetros en la app móvil, cargas de combustible Copec y Report Diario con foto del horómetro y firma en pantalla del cliente.
-6. **Cierre de Faena y Facturación Oportuna:** Resumen consolidado de horas normales y sobretiempo para emisión de Estados de Pago (EDP) y facturación ágil en Laudus ERP.
+1. 🛡️ **Calidad de la Información:** Datos operacionales confiables, validados y contrastados desde la cotización hasta el terreno.
+2. ⏱️ **Oportunidad de la Información:** Información disponible en tiempo real para la toma de decisiones inmediata de todo el equipo.
+3. 🔗 **Trazabilidad:** Seguimiento íntegro de cada servicio, equipo, personal, combustible y horas trabajadas.
+
+### Pilares del Primer Hito:
+* **Cotizaciones Claras y Rápidas:** Cálculo automático de fletes por distancia, selección de rigger según tonelaje, registro de viáticos y emisión de la cotización en PDF con control de versiones.
+* **Revisión Técnica en Operaciones:** Comparador entre lo solicitado por ventas y lo revisado por operaciones para confirmar la grúa y accesorios óptimos para el trabajo.
+* **Asignación Rápida de Recursos:** Tabla ágil para coordinar grúas, camiones de apoyo, conductores, riggers calificados y aparejos en la Orden de Trabajo (OT).
+* **Preparación y Acreditaciones al Día:** Semáforo visual para verificar que la documentación de personas y máquinas esté vigente antes de salir a faena.
+* **Control de Viaje y Report Diario en Terreno:** Registro de odómetros y horómetros en la app móvil, cargas de combustible Copec y Report Diario con foto del horómetro y firma en pantalla del cliente.
+* **Cierre de Faena y Facturación Oportuna:** Resumen consolidado de horas normales y sobretiempo para emisión de Estados de Pago (EDP) y facturación ágil en Laudus ERP.
 
 ---
 
