@@ -113,4 +113,4 @@ graph LR
 * **Fase A (Completada):** Parametrización y Maestros (Flota, personal calificado, clientes y reglas tarifarias).
 * **Fase B (Activa en Marcha Blanca):** CRM, Cotizador PDF y Torre de Control Kanban con despacho de viajes móviles.
 * **Fase C (Próximo Despliegue):** Capacitación práctica a conductores y operadores (uso de PIN, vouchers de combustible y Report Diario digital con fotos).
-* **Fase D (Consolidación):** Integración con Laudus ERP para facturación automática de EDPs y control de bodega de aparejos.
+* **Fase D (Próxima Prioridad):** Gestión integral de Inventario de aparejos/bodega, Mantenimiento de flota (taller/horómetros) y Facturación contable de EDPs.
