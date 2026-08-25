@@ -1,107 +1,109 @@
-# 🏗️ Dossier Ejecutivo: Primer Hito de Plataforma Operativa GSP
+# 🏗️ Digitalización Integral de la Operación de Izaje
 **Cliente:** Grúas San Pablo (GSP)  
-**Audiencia Principal:** Omar Reyes (Fundador & Propietario) y Equipo Directivo  
+**Audiencia:** Omar Reyes y el equipo administrativo, comercial y de operaciones de GSP  
 **Fecha de Sesión:** Jueves 27 de Agosto de 2026  
-**Objetivo:** Demostración en vivo del Pipeline Operativo BPM de 6 Etapas (1:1 con la Torre de Control Kanban) y validación del cierre de brechas operacionales.
+**Objetivo:** Demostración práctica del flujo operativo en 6 pasos (conectado con la Torre de Control) y revisión de las herramientas digitales para el trabajo diario.
 
 ---
 
-## 🎯 Resumen Ejecutivo
+## 🎯 Resumen de la Presentación
 
-La plataforma **GSP Operaciones (LeanGlobal Platform)** ha completado su primer gran hito de desarrollo, conectando en un único flujo digital e ininterrumpido toda la dinámica comercial, operativa y logística de la compañía:
+La plataforma **GSP Operaciones** presenta su primer hito funcional, integrando el trabajo diario de los equipos comerciales, de operaciones y administración en un flujo simple y ordenado:
 
-1. **Eliminación de Fugas de Ingresos:** Cotizaciones con reglas paramétricas duras (Rigger obligatorio por tonelaje, fletes georreferenciados, viáticos y pernoctaciones) y control formal de versiones.
-2. **Validación Técnica Temprana:** Comparador Visual Diff entre lo comercial y la ingeniería operativa para evitar enviar grúas subdimensionadas o con tonelajes erróneos a faena.
-3. **Control y Seguridad en Ruta:** Registro de odómetros/horómetros, monitoreo telemétrico GPS en tiempo real (pings cada 10s) y rendición remota de combustible Copec multi-estanque con foto del voucher.
-4. **Cero Disputas de Cobro y Cero Papel:** Reporte Diario digital con firma digital FES del mandante en terreno y emisión automática de Estados de Pago (EDP) respaldados para facturación en Laudus ERP.
+1. **Cotizaciones Claras y Rápidas:** Cálculo automático de fletes por distancia, selección de rigger según tonelaje, registro de viáticos y emisión de la cotización en PDF con control de versiones.
+2. **Revisión Técnica en Operaciones:** Comparador entre lo solicitado por ventas y lo revisado por operaciones para confirmar la grúa y accesorios óptimos para el trabajo.
+3. **Asignación Rápida de Recursos:** Tabla ágil para coordinar grúas, camiones de apoyo, conductores, riggers calificados y aparejos en la Orden de Trabajo (OT).
+4. **Preparación y Acreditaciones al Día:** Semáforo visual para verificar que la documentación de personas y máquinas esté vigente antes de salir a faena.
+5. **Control de Viaje y Report Diario en Terreno:** Registro de odómetros y horómetros en la app móvil, cargas de combustible Copec y Report Diario con foto del horómetro y firma en pantalla del cliente.
+6. **Cierre de Faena y Facturación Oportuna:** Resumen consolidado de horas normales y sobretiempo para emisión de Estados de Pago (EDP) y facturación ágil en Laudus ERP.
 
 ---
 
-## 📐 El Pipeline de Procesos BPM (1:1 con la Torre Kanban)
+## 📐 Flujo Operativo en 6 Pasos
 
 ```mermaid
 graph LR
-    A["01. Requerimiento Registrado<br/>(CRM, Site Visit & Cotización PDF)"] --> B["02. En Verificación Operaciones<br/>(Validación Técnica & Diff)"]
-    B --> C["03. En Asignación Recursos<br/>(DataGrid OT: Grúa + Chofer + Rigger + Aparejos)"]
-    C --> D["04. En Preparación Operaciones<br/>(Acreditaciones 360° & Salida Patio)"]
-    D --> E["05. En Ejecución / Faena<br/>(Telemetría GPS 10s, Copec & Firma FES)"]
-    E --> F["06. Finalizado / Devengado<br/>(Manifiesto Inverso, EDP & Laudus ERP)"]
+    A["01. Requerimiento Registrado<br/>(Cotización PDF & Visita Terreno)"] --> B["02. Verificación Operaciones<br/>(Revisión Técnica de Grúa)"]
+    B --> C["03. Asignación Recursos<br/>(Tabla OT: Grúa + Chofer + Rigger + Aparejos)"]
+    C --> D["04. Preparación y Salida<br/>(Acreditaciones al Día & Inicio Viaje)"]
+    D --> E["05. Faena & Report Diario<br/>(Ruta, Copec, Foto Horómetro & Firma)"]
+    E --> F["06. Cierre & Facturación<br/>(Recepción Aparejos, EDP & Laudus ERP)"]
 ```
 
 ---
 
-## 📋 Detalle de las 6 Etapas y sus Entregables Tangibles
+## 📋 Detalle de los 6 Pasos del Servicio
 
 ### 1. Requerimiento Registrado (Preventa Comercial & Visita a Terreno)
-* **Objetivo Operativo:** Capturar la oportunidad comercial, levantar las restricciones de faena en terreno si la maniobra lo exige y emitir cotizaciones blindadas con trazabilidad.
-* **Artefactos Entregables:**
-  * **Survey Visita a Terreno (Template 80):** photoChecks con evidencia fotográfica obligatoria (tipo de suelo, pendientes, accesos para camión cama baja, líneas de alta tensión, radios de giro) y firma digital del cliente en terreno.
-  * **Cotización PDF Oficial & Reglas Paramétricas:** Cálculo automatizado de fletes por georreferenciación, regla de Rigger obligatorio según tonelaje, matriz de viáticos y pernoctación, control de versiones `[CODIGO]V1.pdf` y tracking de despacho.
-* **Aseguramiento de Calidad Comercial:** Garantiza que todo requerimiento derivado a Operaciones cuente con su cotización formal despachada, horas mínimas pactadas y condiciones de faena levantadas.
+* **Objetivo:** Registrar la oportunidad comercial, levantar las condiciones de terreno si la maniobra es compleja y emitir la cotización formal en PDF.
+* **Herramientas y Entregables:**
+  * **Levantamiento de Visita a Terreno:** Registro con fotos de terreno (suelo, accesos para cama baja, cables eléctricos, radios de giro) y firma del cliente en obra.
+  * **Cotización PDF Oficial:** Cálculo de fletes por distancia, asignación de Rigger por tonelaje, viáticos y pernoctación, y control de versiones `[CODIGO]V1.pdf`.
+* **Control Comercial:** Asegura que todo servicio enviado a Operaciones cuente con su cotización formal, condiciones de faena claras y horas mínimas acordadas.
 
 ---
 
-### 2. En Verificación Operaciones (Validación Técnica & Diff)
-* **Objetivo Operativo:** El Coordinador de Operaciones recibe el requerimiento, consulta el informe técnico levantado en terreno y valida la factibilidad de la grúa antes de comprometerla físicamente.
-* **Artefactos Entregables:**
-  * **Comparador Visual Diff (Comercial vs Operaciones):** Si operaciones ajusta el tonelaje de la grúa (ej: 50T a 70T por radio de trabajo) o añade contrapesos, el sistema resalta las diferencias en amarillo/rojo para retroalimentar la precisión de ventas.
-  * **Compuerta de Validación Técnica:** Bloqueo de antecedentes validados en modo solo lectura para resguardar la ingeniería de izaje antes de la asignación de recursos.
-* **Validación y Factibilidad Operativa:** Asegura que cada maniobra cuente con la grúa y accesorios óptimos para operar bajo los más altos estándares de seguridad y productividad.
+### 2. Verificación en Operaciones (Validación Técnica)
+* **Objetivo:** El área de Operaciones revisa el requerimiento, consulta el informe de terreno y confirma la grúa y accesorios adecuados antes de asignarlos.
+* **Herramientas y Entregables:**
+  * **Comparador Comercial vs Operaciones:** Si Operaciones ajusta el modelo de grúa por radio de trabajo o agrega contrapesos, el sistema resalta las diferencias para mantener informada al área de ventas.
+  * **Confirmación Técnica:** Aprobación formal de los requerimientos técnicos antes de pasar a la asignación de flota y personal.
+* **Validación Operativa:** Asegura que cada maniobra cuente con la grúa, tonelaje y accesorios correctos para trabajar con total seguridad y eficiencia.
 
 ---
 
-### 3. En Asignación Recursos (Generación de OT & Convoy)
-* **Objetivo Operativo:** Asignación física y humana mediante el DataGrid de alta densidad operacional para armar el convoy completo de izaje.
-* **Artefactos Entregables:**
-  * **DataGrid Operacional B2B de Alta Densidad:** Asignación simultánea de Grúa principal (Tadano ATF 50, Liebherr) + Camión Pluma + Conductor + Rigger certificado + Matriz de Aparejos (eslingas, grilletes, balancines).
-  * **Orden de Trabajo (OT) Oficial:** Código maestro único que consolida los datos de obra, tripulación asignada, implementos de izaje autorizados y ruta de despacho.
-* **Estándar de Dotación y Competencias:** Exige la asignación exclusiva de personal debidamente calificado y certificado según el rol requerido para la faena.
+### 3. Asignación de Recursos (Generación de la OT)
+* **Objetivo:** Asignación de equipos y personal calificado mediante una tabla ágil y compacta para armar la Orden de Trabajo (OT).
+* **Herramientas y Entregables:**
+  * **Tabla de Asignación Operativa:** Asignación simultánea de Grúa principal + Camión Pluma / Cama Baja + Conductor + Rigger calificado + Aparejos (eslingas, grilletes, balancines).
+  * **Orden de Trabajo (OT) Oficial:** Documento maestro que reúne los datos de obra, equipo asignado, personal autorizado y ventana de fechas planificada.
+* **Asignación Calificada:** Facilita asignar conductores, operadores y riggers con sus certificaciones al día.
 
 ---
 
-### 4. En Preparación Operaciones (Patio & Acreditaciones 360°)
-* **Objetivo Operativo:** Gobernanza documental previa al ingreso a faena (cero rechazos en portería del mandante) y verificación de salida de los equipos desde patio.
-* **Artefactos Entregables:**
-  * **Dossier & Semáforo de Acreditaciones 360°:** Micro-Gauge circular de avance y semáforo de vigencias para Empresa, Flota y Personal, con despacho directo del dossier digital consolidado al mandante.
-  * **Web Token de Salida Móvil con PIN (`/viaje/:token`):** El conductor registra odómetro inicial, horómetro de salida y confirma la salida de patio con su PIN de 4 dígitos (SHA-256).
-* **Gobernanza de Seguridad y Cumplimiento:** Alerta temprana y bloqueo visual si algún documento crítico de la máquina o del personal se encuentra vencido.
+### 4. Preparación y Salida de Patio (Acreditaciones & Salida)
+* **Objetivo:** Revisión de acreditaciones para el ingreso a faena y registro de salida de los equipos desde patio.
+* **Herramientas y Entregables:**
+  * **Semáforo de Acreditaciones al Día:** Visualización rápida del estado de documentos de Empresa, Flota y Personal para enviar el dossier al cliente con anticipación.
+  * **Inicio de Viaje en la App Móvil (`/viaje/:token`):** El conductor anota su odómetro y horómetro de salida e inicia el trayecto de forma sencilla con su PIN personal.
+* **Cumplimiento y Seguridad:** Permite verificar anticipadamente que la documentación de equipos y personas esté al día para evitar demoras en portería.
 
 ---
 
-### 5. En Ejecución / Faena (Ruta, Copec & Firma FES)
-* **Objetivo Operativo:** Monitoreo telemétrico continuo durante el trayecto, rendición de combustible en ruta y certificación de horas de servicio con firma digital del mandante.
-* **Artefactos Entregables:**
-  * **Telemetría GPS en Vivo (Pings cada 10s):** Transmisión continua de velocidad real, coordenadas y tiempos de traslado, consolidado en el Log Maestro de Desplazamiento.
-  * **Rendición Copec Multi-Estanque & Reporte Diario FES:** Autorización remota de combustible con foto del voucher y Reporte Diario de Faena firmado digitalmente en pantalla por el supervisor del cliente.
-* **Trazabilidad Continua y Resiliencia Operativa:** La aplicación móvil funciona 100% Offline en zonas sin cobertura y sincroniza de forma automática al recuperar señal.
+### 5. Ejecución en Faena (Ruta, Combustible & Report Diario)
+* **Objetivo:** Seguimiento del trayecto en ruta, registro de cargas de combustible y emisión del Report Diario con firma en pantalla del cliente y foto del horómetro.
+* **Herramientas y Entregables:**
+  * **Ubicación en Ruta y Tiempos de Traslado:** Registro de tiempos de viaje y llegada a obra para respaldo de traslados y fletes.
+  * **Cargas Copec & Report Diario Firmado:** Registro de litros y boleta de combustible, más Report Diario con horarios, colación, horómetros, foto del tablero y firma del cliente en terreno.
+* **Control en Terreno:** La aplicación móvil funciona incluso sin señal de internet y se actualiza automáticamente al recuperar cobertura.
 
 ---
 
-### 6. Finalizado / Devengado (Retorno, EDP & Laudus ERP)
-* **Objetivo Operativo:** Cierre físico y contable: recepción de aparejos en bodega y generación inmediata del Estado de Pago (EDP) respaldado para facturación.
-* **Artefactos Entregables:**
-  * **Manifiesto Inverso de Aparejos:** Control de retorno e inspección de eslingas, grilletes y cadenas entregados en patio para asegurar cero mermas materiales en faena.
-  * **Estado de Pago (EDP) & Integración Laudus ERP:** Consolidación automática de horas efectivas, fletes y combustible para emitir facturación respaldada sin objeciones por parte del mandante.
-* **Aseguramiento del Devengado y Cobro Oportuno:** Permite facturar el servicio con respaldo digital inmediato, reduciendo drásticamente los ciclos de cobro.
+### 6. Cierre y Facturación (Retorno, EDP & Laudus ERP)
+* **Objetivo:** Cierre del servicio: revisión de aparejos al volver a patio y generación del resumen de horas y Estado de Pago (EDP) para facturación.
+* **Herramientas y Entregables:**
+  * **Recepción de Aparejos en Bodega:** Control de retorno de eslingas, grilletes y accesorios para mantener el inventario ordenado y prevenir pérdidas.
+  * **Estado de Pago (EDP) e Integración ERP:** Consolidación automática de horas normales, sobretiempo y traslados pactados para facturación ágil en Laudus ERP.
+* **Cierre y Cobro Oportuno:** Permite respaldar las horas efectivas trabajadas para una facturación clara y sin disputas.
 
 ---
 
-## 🎬 Guion de la Demostración en Vivo (15 Minutos)
+## 🎬 Guion de la Demostración Práctica (15 Minutos)
 
-| Minuto | Estación / Pantalla | Acción en Vivo ante Omar Reyes y Directivos | Evidencia Tangible |
+| Tiempo | Estación / Pantalla | Paso Demostrativo | Resultado Tangible |
 |---|---|---|---|
-| **00 - 03 min** | **1. Requerimiento Registrado**<br>`GestorOportunidades.vue` | Crear cotización en vivo: Seleccionar cliente, fijar obra en mapa satelital, seleccionar Grúa 50T, mostrar el cálculo paramétrico de fletes, regla de Rigger y generar PDF oficial con 1 clic. | **Cotización PDF Oficial** |
-| **03 - 05 min** | **2. Visita a Terreno**<br>`AsignacionVisita.vue / PWA` | Mostrar el Survey técnico (Template 80) con photoChecks de terreno y la firma digital levantada en terreno inyectada en la Ficha del Proyecto. | **Survey con photoChecks** |
-| **05 - 08 min** | **3. En Asignación Recursos**<br>`Torre.vue / Asignación` | Abrir la Torre de Control, mostrar el requerimiento, la aprobación con Diff y asignar la Grúa Tadano + Chofer + Rigger en el DataGrid con el Semáforo de Acreditaciones al 100%. | **DataGrid + Semáforo 360°** |
-| **08 - 11 min** | **4. En Preparación Operaciones**<br>`/viaje/:token (Salida Patio)` | Abrir la vista móvil del chofer, ingresar odómetro inicial (145.000), horómetro (3.200) y PIN (1234) ➔ Mostrar el convoy en ruta y los pings GPS transmitiendo en vivo cada 10s. | **Telemetría GPS en Vivo** |
-| **11 - 13 min** | **5. En Ejecución / Faena**<br>`Modal Copec & Cierre` | Simular solicitud de combustible Copec y confirmar llegada a faena con odómetro final (145.120) y PIN ➔ Desplegar el Log Maestro inalterable y Reporte Diario con firma FES. | **Log Maestro + Firma FES** |
-| **13 - 15 min** | **6. Finalizado / Devengado**<br>`Manifiesto & EDP` | Mostrar la recepción de aparejos en bodega (0 mermas) y el consolidado del Estado de Pago (EDP) listo para exportación y facturación en Laudus ERP. | **EDP + Devengado Inmediato** |
+| **00 - 03 min** | **1. Requerimiento Registrado**<br>`Gestor de Oportunidades` | Crear una cotización: seleccionar cliente, ubicar la faena en el mapa satelital, seleccionar grúa de 50T, verificar flete y rigger automático y generar la cotización PDF en 1 clic. | **Cotización PDF Oficial** |
+| **03 - 05 min** | **2. Visita a Terreno**<br>`Formulario Móvil / PWA` | Mostrar el levantamiento técnico con fotos de terreno (suelo, accesos, cables) y la firma del cliente capturada en obra incorporada en la ficha. | **Informe con Fotos de Terreno** |
+| **05 - 08 min** | **3. Asignación de Recursos**<br>`Torre de Control / OT` | Ingresar a la Torre de Control, revisar la validación técnica y armar el convoy (Grúa Tadano + Chofer + Rigger + Aparejos) con semáforos de acreditación al día. | **Tabla OT + Acreditaciones** |
+| **08 - 11 min** | **4. Preparación y Salida**<br>`App Móvil del Conductor` | Abrir la pantalla móvil del chofer, ingresar odómetro (145.000), horómetro (3.200) y PIN ➔ Iniciar viaje y ver la ubicación GPS actualizándose en ruta. | **Ubicación GPS en Ruta** |
+| **11 - 13 min** | **5. Faena y Report Diario**<br>`PWA Móvil del Operador` | Completar el Report Diario en faena: horarios, colación, horómetros, foto del tablero y firma táctil del supervisor mandante en terreno. | **Report Diario Firmado + Foto** |
+| **13 - 15 min** | **6. Cierre y Facturación**<br>`Estado de Pago / EDP` | Ver la aprobación del analista en la Torre de Control, el retorno de aparejos a bodega y el resumen consolidado de horas para facturación en Laudus ERP. | **Resumen EDP Listo para Cobro** |
 
 ---
 
-## 🚀 Estrategia de Implementación Gradual
+## 🚀 Plan de Puesta en Marcha Gradual
 
-* **Fase A (100% Completada):** Parametrización y Maestros (Flota, personal certificado, clientes y reglas tarifarias).
+* **Fase A (Completada):** Parametrización y Maestros (Flota, personal calificado, clientes y reglas tarifarias).
 * **Fase B (Activa en Marcha Blanca):** CRM, Cotizador PDF y Torre de Control Kanban con despacho de viajes móviles.
-* **Fase C (Próximo Despliegue):** Capacitación práctica a choferes (uso de PIN y vouchers) y adopción del Reporte Diario digital con clientes.
-* **Fase D (Consolidación Financiera):** Integración con Laudus ERP para facturación automática de EDPs y control de bodega de aparejos.
+* **Fase C (Próximo Despliegue):** Capacitación práctica a conductores y operadores (uso de PIN, vouchers de combustible y Report Diario digital con fotos).
+* **Fase D (Consolidación):** Integración con Laudus ERP para facturación automática de EDPs y control de bodega de aparejos.
