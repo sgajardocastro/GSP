@@ -127,11 +127,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (needAuth && !auth) {
-    router.push({
-      path: "/login",
-    })
+    next({ path: '/login' })
   } else {
-    
     next()
   }
 })

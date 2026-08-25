@@ -462,7 +462,9 @@ const sellarYTransmitirReport = async () => {
         const perfil = JSON.parse(perfilStr)
         idUserOperador = perfil.id_user || 1
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Error leyendo perfil:', e)
+    }
 
     const payload = {
       id_proyecto: idProyecto.value,
