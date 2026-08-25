@@ -3713,8 +3713,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 const router = useRouter()
+const route = useRoute()
 import ModalNuevoCliente from '../../components/CRM/ModalNuevoCliente.vue'
 import ModalEnviarCotizacion from '../../components/CRM/ModalEnviarCotizacion.vue'
 import MapSelector from '../../components/CRM/MapSelector.vue'
@@ -7017,7 +7018,7 @@ const handleCancelar = () => {
 }
 
 const cargarDatosCotizacion = async () => {
-  let targetId = props.proyectoId
+  let targetId = props.proyectoId || route?.query?.id_proyecto || route?.query?.id
   if (typeof targetId === 'object' && targetId !== null) {
     targetId = targetId.id_proyecto || targetId.id || targetId.id_cotizacion
   }
@@ -7040,6 +7041,10 @@ const cargarDatosCotizacion = async () => {
           topTab.value = 'operaciones'
         } else {
           topTab.value = 'comercial'
+        }
+        if (route?.query?.subtab) {
+          topTab.value = 'operaciones'
+          operacionesSubTab.value = route.query.subtab
         }
 
         if (p.codi_proyecto) {

@@ -487,10 +487,13 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import GestorOportunidades from './CRM/GestorOportunidades.vue'
 import AcreditacionDrawer from '../components/acreditacion/AcreditacionDrawer.vue'
 import apiAxios from '../services/api'
 import { navStore } from '../stores/navStore'
+
+const router = useRouter()
 
 const mostrarModalCotizacion = ref(false)
 const proyectoSeleccionadoId  = ref(null)
@@ -581,6 +584,10 @@ const abrirProyecto = (id, subtab = null) => {
   proyectoSeleccionadoId.value = id
   proyectoSubTabInicial.value = subtab
   mostrarModalCotizacion.value = true
+}
+
+const abrirEnVistaCompleta = (id, subtab = null) => {
+  router.push({ name: 'crm', query: { id_proyecto: id, subtab: subtab || 'reports' } })
 }
 
 const calcularPorcentajeAcreditacion = (p) => {
