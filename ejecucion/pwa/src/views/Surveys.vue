@@ -32,6 +32,7 @@
       </div>
 
       <v-btn
+        v-if="viajeActivo.estado_trayecto === 'EN_RUTA' || viajeActivo.estado_trayecto === 'ASIGNADO'"
         block
         :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'amber-darken-2'"
         size="large"
@@ -39,6 +40,17 @@
         @click="abrirViajeNativo(viajeActivo.token_viaje)"
       >
         {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ Continuar Registro de Viaje' : '▶️ Iniciar Registro de Viaje (Odómetro/PIN)' }}
+      </v-btn>
+
+      <v-btn
+        v-if="viajeActivo.id_proyecto"
+        block
+        color="amber-accent-4"
+        size="large"
+        class="font-weight-black text-uppercase rounded-lg text-black mt-2"
+        @click="abrirReportDiario(viajeActivo.id_proyecto)"
+      >
+        📋 Emitir Report Diario de Izaje
       </v-btn>
     </v-card>
 
@@ -475,6 +487,11 @@ const abrirViajeNativo = (token) => {
   if (!token) return
   const baseOrigin = window.location.origin
   window.location.href = `${baseOrigin}/viaje/${token}`
+}
+
+const abrirReportDiario = (idProyecto) => {
+  if (!idProyecto) return
+  router.push(`/reportDiario?id_proyecto=${idProyecto}`)
 }
 
 const filtros = ref([

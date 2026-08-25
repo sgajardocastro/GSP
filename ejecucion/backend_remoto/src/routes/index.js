@@ -48,6 +48,8 @@ function routerApi(app) {
     app.use('/api/estado-pago', require('./estadoPagoRoutes.js'));
     app.use('/api/viajes', require('./viajeRoutes.js'));
     app.use('/api/operaciones/viaje', require('./viajeRoutes.js'));
+    app.use('/api/operaciones/report', require('./reportDiarioRoutes.js'));
+    app.use('/api/reports', require('./reportDiarioRoutes.js'));
 }
 
 module.exports = routerApi;

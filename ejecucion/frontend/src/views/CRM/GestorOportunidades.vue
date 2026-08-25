@@ -162,6 +162,23 @@
         <span>5. Preparación de Salida</span>
         <span v-if="estadoDbActual > ESTADOS_DB.PREPARACION_PATIO" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
+
+      <!-- 6. EJECUCIÓN & REPORTS DIARIOS -->
+      <button 
+        @click="cambiarYPersistirSubTab('reports')" 
+        :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
+        :class="[
+          estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'reports' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2 px-3 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
+      >
+        <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
+        <span v-else class="text-[10px] text-amber-400">📋</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+        <span>6. Ejecución & Reports</span>
+        <span v-if="reportsProyecto.length > 0" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">{{ reportsProyecto.length }}</span>
+      </button>
     </div>
 
     <!-- OPERACIONES WORKSPACE (Diff, Aprobación & Asignación OT) -->
@@ -1910,6 +1927,227 @@
           </div>
         </div>
       </div>
+
+      <!-- SUB-TAB 6: EJECUCIÓN & REPORTS DIARIOS EN FAENA -->
+      <div v-if="operacionesSubTab === 'reports'" class="space-y-6">
+        
+        <!-- HEADER DE LA ETAPA -->
+        <div class="bg-[#050810] border border-amber-500/30 rounded-xl p-4 flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-center text-amber-500 font-bold font-mono text-lg">
+              📋
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">
+                  Control de Ejecución & Reports Diarios de Izaje
+                </h3>
+                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                  FAENA EN TERRENO
+                </span>
+              </div>
+              <p class="text-xs text-slate-400">
+                Seguimiento multi-día de jornadas reportadas desde la PWA, horas efectivas, horómetros, firma manual del mandante y validación del analista.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              @click="cargarReportsProyecto()"
+              class="px-3 py-1.5 bg-[#0b1021] hover:bg-slate-800 border border-white/10 text-slate-300 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <svg class="w-3.5 h-3.5" :class="cargandoReports ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span>Refrescar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TARJETAS DE RESUMEN ACUMULADO (KPIS) -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <!-- Días Operados -->
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">📅 Días Operados</span>
+            <div class="text-xl font-black text-white font-mono flex items-baseline gap-1">
+              <span>{{ resumenKpiReports.dias }}</span>
+              <span class="text-xs text-slate-400 font-normal">DÍAS</span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono block">Jornadas emitidas PWA</span>
+          </div>
+
+          <!-- Horas Facturables Acumuladas -->
+          <div class="bg-[#050810] border border-amber-500/30 rounded-xl p-3.5 space-y-1 bg-amber-950/10">
+            <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">💰 Horas a Facturar</span>
+            <div class="text-xl font-black text-amber-400 font-mono flex items-baseline gap-1">
+              <span>{{ resumenKpiReports.totalFacturables }}</span>
+              <span class="text-xs text-amber-300 font-normal">HRS</span>
+            </div>
+            <span class="text-[10px] text-amber-500/70 font-mono block">Σ Facturables Acum.</span>
+          </div>
+
+          <!-- Sobretiempo Acumulado -->
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'border-yellow-500/40 bg-yellow-950/10' : ''">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">⚡ Sobretiempo Total</span>
+            <div class="text-xl font-black font-mono flex items-baseline gap-1" :class="Number(resumenKpiReports.totalSobretiempo) > 0 ? 'text-yellow-400' : 'text-slate-500'">
+              <span>+{{ resumenKpiReports.totalSobretiempo }}</span>
+              <span class="text-xs font-normal">HRS</span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono block">Horas excedentes</span>
+          </div>
+
+          <!-- Horómetros -->
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">⚙️ Horómetro Motor</span>
+            <div class="text-xs font-mono font-bold text-white truncate">
+              {{ resumenKpiReports.horometroRange }}
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono block">Inicial ➔ Final Faena</span>
+          </div>
+
+          <!-- Conformidad Documental -->
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-3.5 space-y-1">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">🛡️ Conformidad Analista</span>
+            <div class="text-xs font-mono font-bold flex items-center gap-2 pt-0.5">
+              <span class="text-emerald-400">✅ {{ resumenKpiReports.validados }}</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-amber-400">⏳ {{ resumenKpiReports.pendientes }}</span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono block">Validados / Pendientes</span>
+          </div>
+        </div>
+
+        <!-- TABLA MULTI-DÍA DE REPORTS -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-white/10 flex justify-between items-center bg-[#080d1a]">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-2">
+              <span>📋 Cronograma de Reports Diarios de Terreno</span>
+            </h4>
+            <span class="text-[11px] text-slate-400 font-mono">{{ reportsProyecto.length }} report(s) registrado(s)</span>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="cargandoReports" class="p-8 text-center text-slate-400 text-xs">
+            <div class="animate-spin inline-block w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full mb-2"></div>
+            <div>Cargando reports de la faena...</div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="reportsProyecto.length === 0" class="p-10 text-center space-y-2">
+            <span class="text-3xl d-block">🏗️</span>
+            <div class="text-sm font-bold text-white">Aún no se han emitido reports para este servicio</div>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">
+              El operador de la grúa puede generar el primer Report Diario desde la PWA en terreno al concluir la primera jornada de izaje.
+            </p>
+          </div>
+
+          <!-- Table -->
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse font-mono">
+              <thead>
+                <tr class="bg-[#0b1021] text-slate-400 border-b border-white/10 text-[10.5px] uppercase tracking-wider">
+                  <th class="py-2.5 px-3">Día</th>
+                  <th class="py-2.5 px-3">Fecha</th>
+                  <th class="py-2.5 px-3">Horario</th>
+                  <th class="py-2.5 px-3 text-center">Colac.</th>
+                  <th class="py-2.5 px-3 text-right">Efectivas</th>
+                  <th class="py-2.5 px-3 text-right text-amber-400">Facturables</th>
+                  <th class="py-2.5 px-3 text-right">Sobretiempo</th>
+                  <th class="py-2.5 px-3">Horómetro</th>
+                  <th class="py-2.5 px-3">Firmante Mandante</th>
+                  <th class="py-2.5 px-3 text-center">Estado</th>
+                  <th class="py-2.5 px-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 text-slate-300">
+                <tr 
+                  v-for="rep in reportsProyecto" 
+                  :key="rep.id_reporte_avance"
+                  class="hover:bg-white/[0.02] transition-colors"
+                >
+                  <!-- Día -->
+                  <td class="py-2.5 px-3 font-bold text-amber-400">
+                    Día {{ rep.dia_correlativo || 1 }}
+                  </td>
+
+                  <!-- Fecha -->
+                  <td class="py-2.5 px-3 text-white">
+                    {{ formatearFechaCorta(rep.fecha_reporte) }}
+                  </td>
+
+                  <!-- Horario -->
+                  <td class="py-2.5 px-3 text-slate-300">
+                    {{ formatHoraCorta(rep.fecha_inicio_servicio) }} - {{ formatHoraCorta(rep.fecha_termino_servicio) }}
+                  </td>
+
+                  <!-- Colación -->
+                  <td class="py-2.5 px-3 text-center text-slate-400">
+                    {{ rep.horas_colacion || 1.0 }}h
+                  </td>
+
+                  <!-- Horas Efectivas -->
+                  <td class="py-2.5 px-3 text-right text-white font-bold">
+                    {{ rep.horas_operadas }}h
+                  </td>
+
+                  <!-- Horas Facturables -->
+                  <td class="py-2.5 px-3 text-right text-amber-400 font-bold">
+                    {{ rep.horas_facturables }}h
+                  </td>
+
+                  <!-- Sobretiempo -->
+                  <td class="py-2.5 px-3 text-right">
+                    <span :class="Number(rep.horas_sobretiempo) > 0 ? 'text-yellow-400 font-bold' : 'text-slate-500'">
+                      {{ Number(rep.horas_sobretiempo) > 0 ? `+${rep.horas_sobretiempo}h` : '0h' }}
+                    </span>
+                  </td>
+
+                  <!-- Horómetro -->
+                  <td class="py-2.5 px-3 text-slate-400 text-[11px]">
+                    {{ rep.horometro_inicio || 0 }} ➔ {{ rep.horometro_termino || '---' }}
+                  </td>
+
+                  <!-- Firmante Mandante -->
+                  <td class="py-2.5 px-3">
+                    <div class="text-white font-sans font-bold text-xs truncate max-w-[140px]">{{ rep.cliente_nombre || 'Mandante' }}</div>
+                    <div class="text-[10px] text-slate-500 truncate">{{ rep.cliente_cargo || 'Supervisor' }}</div>
+                  </td>
+
+                  <!-- Estado -->
+                  <td class="py-2.5 px-3 text-center">
+                    <span 
+                      v-if="rep.estado_reporte === 'VALIDADO_ANALISTA'" 
+                      class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    >
+                      ✅ Validado
+                    </span>
+                    <span 
+                      v-else 
+                      class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+                    >
+                      ⏳ Pendiente
+                    </span>
+                  </td>
+
+                  <!-- Acciones -->
+                  <td class="py-2.5 px-3 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <button
+                        @click="abrirVisorReport(rep)"
+                        class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Ver Documento Digital y Firma"
+                      >
+                        <span>👁️</span>
+                        <span>Ver</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- Banner Modo Solo Lectura en Comercial (Inmutabilidad Etapa Concluida) -->
@@ -3462,6 +3700,14 @@
     :viaje="viajeSeleccionadoParaMapa" 
     @close="modalMapaViajeAbierto = false" 
   />
+
+  <!-- MODAL VISOR DE REPORT DIARIO & FIRMA MANDANTE -->
+  <ModalVisorReport
+    :visible="modalVisorReportAbierto"
+    :report="reportSeleccionadoParaVisor"
+    @close="modalVisorReportAbierto = false"
+    @report-validado="onReportValidado"
+  />
   </div>
 </template>
 
@@ -3475,11 +3721,17 @@ import MapSelector from '../../components/CRM/MapSelector.vue'
 import apiAxios from '../../services/api'
 import VerSurveyModal from '../../components/VerSurveyModal.vue'
 import ModalMapaViaje from '../../components/Operaciones/ModalMapaViaje.vue'
+import ModalVisorReport from '../../components/Operaciones/ModalVisorReport.vue'
 
 const viajesProyecto = ref([])
 const cargandoViajes = ref(false)
 const modalMapaViajeAbierto = ref(false)
 const viajeSeleccionadoParaMapa = ref(null)
+
+const reportsProyecto = ref([])
+const cargandoReports = ref(false)
+const modalVisorReportAbierto = ref(false)
+const reportSeleccionadoParaVisor = ref(null)
 
 const props = defineProps({
   proyectoId: {
@@ -7198,6 +7450,7 @@ const cargarDatosCotizacion = async () => {
       console.error('Error al cargar proyecto:', e)
     }
     await cargarViajesProyecto(targetId)
+    await cargarReportsProyecto(targetId)
   } else if (opportunity.value.rut_cliente) {
     try {
       const { data } = await apiAxios.get('/empresas', {
@@ -7253,7 +7506,8 @@ const MIN_ESTADO_FOR_SUBTAB = {
   'validacion': 3,
   'asignacion': 4,
   'acreditaciones': 5,
-  'preparacion_salida': 5
+  'preparacion_salida': 5,
+  'reports': 5
 }
 
 const cambiarYPersistirSubTab = async (subtabName) => {
@@ -7271,6 +7525,10 @@ const cambiarYPersistirSubTab = async (subtabName) => {
   topTab.value = 'operaciones'
   operacionesSubTab.value = subtabName
   console.log('🔄 Visualizando SubTab Operaciones:', subtabName, '| topTab:', topTab.value)
+  
+  if (subtabName === 'reports') {
+    cargarReportsProyecto()
+  }
   
   if (!rawEjecucionJson.value) rawEjecucionJson.value = {}
   rawEjecucionJson.value.subtab_actual_view = subtabName
@@ -8022,6 +8280,78 @@ const abrirMapaViaje = (target) => {
   }
   modalMapaViajeAbierto.value = true
 }
+
+const formatearFechaCorta = (fechaStr) => {
+  if (!fechaStr) return '---'
+  try {
+    const d = new Date(fechaStr)
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+  } catch (e) {
+    return fechaStr
+  }
+}
+
+const formatHoraCorta = (dtStr) => {
+  if (!dtStr) return '--:--'
+  try {
+    const d = new Date(dtStr)
+    return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  } catch (e) {
+    return String(dtStr).slice(11, 16)
+  }
+}
+
+const cargarReportsProyecto = async (projId) => {
+  let id = projId || props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  if (!id) return
+  cargandoReports.value = true
+  try {
+    const { data } = await apiAxios.get(`/operaciones/report/proyecto/${id}`)
+    reportsProyecto.value = Array.isArray(data?.data) ? data.data : []
+  } catch (err) {
+    console.warn('Error al cargar reports del proyecto:', err)
+    reportsProyecto.value = []
+  } finally {
+    cargandoReports.value = false
+  }
+}
+
+const abrirVisorReport = (report) => {
+  reportSeleccionadoParaVisor.value = report
+  modalVisorReportAbierto.value = true
+}
+
+const onReportValidado = (reportActualizado) => {
+  cargarReportsProyecto()
+}
+
+const resumenKpiReports = computed(() => {
+  const list = reportsProyecto.value || []
+  const dias = list.length
+  const totalFacturables = list.reduce((sum, r) => sum + (Number(r.horas_facturables) || 0), 0)
+  const totalSobretiempo = list.reduce((sum, r) => sum + (Number(r.horas_sobretiempo) || 0), 0)
+  const validados = list.filter(r => r.estado_reporte === 'VALIDADO_ANALISTA').length
+  const pendientes = list.filter(r => r.estado_reporte !== 'VALIDADO_ANALISTA').length
+  
+  let horometroRange = '---'
+  if (list.length > 0) {
+    const primerIni = list[0].horometro_inicio || '---'
+    const ultimoFin = list[list.length - 1].horometro_termino || '---'
+    horometroRange = `${primerIni} ➔ ${ultimoFin}`
+  }
+
+  return {
+    dias,
+    totalFacturables: totalFacturables.toFixed(1),
+    totalSobretiempo: totalSobretiempo.toFixed(1),
+    validados,
+    pendientes,
+    horometroRange
+  }
+})
 
 const viajesConvoyLista = computed(() => {
   const result = []

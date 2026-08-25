@@ -82,6 +82,14 @@ const routes = [
       requireAuth: true
     }
   },
+  {
+    path: '/reportDiario',
+    name: 'ReportDiarioIzaje',
+    component: () => import('@/views/ReportDiarioIzaje.vue'),
+    meta: {
+      requireAuth: true
+    }
+  },
 
   {
     path: '/logout',
