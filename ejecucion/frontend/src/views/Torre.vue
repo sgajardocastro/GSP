@@ -575,19 +575,15 @@ const cargarProyectos = async () => {
 }
 
 const abrirCotizacion = () => {
-  proyectoSeleccionadoId.value = null
-  proyectoSubTabInicial.value = null
-  mostrarModalCotizacion.value = true
+  router.push({ name: 'crm' })
 }
 
 const abrirProyecto = (id, subtab = null) => {
-  proyectoSeleccionadoId.value = id
-  proyectoSubTabInicial.value = subtab
-  mostrarModalCotizacion.value = true
-}
-
-const abrirEnVistaCompleta = (id, subtab = null) => {
-  router.push({ name: 'crm', query: { id_proyecto: id, subtab: subtab || 'reports' } })
+  if (id) {
+    router.push({ name: 'crm', query: { id_proyecto: id, subtab: subtab || 'reports' } })
+  } else {
+    router.push({ name: 'crm' })
+  }
 }
 
 const calcularPorcentajeAcreditacion = (p) => {

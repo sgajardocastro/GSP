@@ -7501,6 +7501,22 @@ watch(() => props.proyectoId, (newId) => {
   }
 })
 
+watch(() => route?.query?.id_proyecto, (newId) => {
+  if (newId) {
+    cargarDatosCotizacion()
+  }
+})
+
+watch(() => route?.query?.subtab, (newSubtab) => {
+  if (newSubtab) {
+    topTab.value = 'operaciones'
+    operacionesSubTab.value = newSubtab
+    if (newSubtab === 'reports') {
+      cargarReportsProyecto()
+    }
+  }
+})
+
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
