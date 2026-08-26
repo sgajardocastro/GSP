@@ -12,8 +12,9 @@
         </p>
       </div>
       <div class="flex gap-2.5">
-        <button @click="handleCancelar" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-sm uppercase tracking-wider transition-colors">
-          Cancelar
+        <button @click="handleCancelar" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm" title="Volver al Tablero Kanban de Torre de Control">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          <span>Volver al Kanban</span>
         </button>
         <!-- BOTONES DE RETROCESO / EXCEPCIÓN -->
         <button v-if="isModoOperaciones" @click="volverACotizar" class="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-2" title="Devuelve el requerimiento a Preventa Comercial para permitir ediciones">
@@ -7044,12 +7045,19 @@ onBeforeRouteLeave((to, from, next) => {
 })
 
 const handleCancelar = () => {
+  const volver = () => {
+    emit('close')
+    if (router) {
+      router.push({ name: 'torre' })
+    }
+  }
+
   if (isDirty.value) {
-    if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas cancelar y perder tu progreso?')) {
-      emit('close')
+    if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas volver al Kanban y perder tu progreso?')) {
+      volver()
     }
   } else {
-    emit('close')
+    volver()
   }
 }
 
