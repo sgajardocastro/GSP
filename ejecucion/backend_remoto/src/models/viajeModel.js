@@ -179,7 +179,21 @@ const viajeModel = {
         longitud || null,
         token_viaje
       ]);
-      return res.rows[0];
+      const viajeActualizado = res.rows[0];
+
+      // Spec 35: Elevación automática del Macro-Estado del proyecto a 5 (En Ejecución) si estaba en 4 (Preparación)
+      if (viajeActualizado.id_proyecto) {
+        try {
+          await db.query(
+            `UPDATE sch_leangsp.tpry_proyecto SET id_proyecto_estado = 5 WHERE id_proyecto = $1 AND id_proyecto_estado = 4;`,
+            [viajeActualizado.id_proyecto]
+          );
+        } catch (ePry) {
+          console.warn('Error al elevar estado del proyecto:', ePry.message);
+        }
+      }
+
+      return viajeActualizado;
     } else {
       // NO existía -> INSERT DIRECTO GARANTIZADO
       let idPry = id_proyecto;
@@ -235,7 +249,21 @@ const viajeModel = {
         latitud || null,
         longitud || null
       ]);
-      return res.rows[0];
+      const viajeNuevo = res.rows[0];
+
+      // Spec 35: Elevación automática del Macro-Estado del proyecto a 5 (En Ejecución) si estaba en 4 (Preparación)
+      if (viajeNuevo.id_proyecto) {
+        try {
+          await db.query(
+            `UPDATE sch_leangsp.tpry_proyecto SET id_proyecto_estado = 5 WHERE id_proyecto = $1 AND id_proyecto_estado = 4;`,
+            [viajeNuevo.id_proyecto]
+          );
+        } catch (ePry) {
+          console.warn('Error al elevar estado del proyecto:', ePry.message);
+        }
+      }
+
+      return viajeNuevo;
     }
   },
 
@@ -271,7 +299,7 @@ const viajeModel = {
         latitud_llegada_faena = $5,
         longitud_llegada_faena = $6,
         obs_termino = $7,
-        estado_trayecto = 'LLEGADO'
+        estado_trayecto = 'ARRIBADO'
       WHERE token_viaje = $8
       RETURNING *;
     `;

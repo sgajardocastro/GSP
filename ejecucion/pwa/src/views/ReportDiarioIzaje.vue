@@ -47,11 +47,40 @@
 
         <v-divider class="my-3 border-white/20"></v-divider>
 
+        <!-- SELECTOR DE EQUIPO MULTI-FLOTA (Spec 35) -->
+        <div v-if="equipos.length > 1" class="mb-3">
+          <label class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-2">
+            🚜 Seleccionar Equipo para este Report (Multi-Máquina)
+          </label>
+          <div class="d-flex ga-2 flex-wrap">
+            <v-btn
+              v-for="eq in equipos"
+              :key="eq.id_equipo"
+              size="default"
+              :variant="idEquipoSeleccionado === eq.id_equipo ? 'flat' : 'outlined'"
+              :color="idEquipoSeleccionado === eq.id_equipo ? 'amber' : 'grey-lighten-2'"
+              class="font-black text-xs rounded-xl flex-grow-1"
+              @click="seleccionarEquipo(eq.id_equipo)"
+            >
+              <span class="mr-1">🚜 {{ eq.patente }}</span>
+              <span class="text-caption font-normal opacity-80">({{ eq.modelo }})</span>
+            </v-btn>
+          </div>
+        </div>
+
         <div class="row g-3">
           <div class="col-6">
             <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">🚜 Grúa / Equipo</span>
             <strong class="text-amber-200 font-mono text-lg sm:text-xl font-black d-block">{{ equipoSeleccionado?.patente || 'N/A' }}</strong>
             <span class="text-grey-lighten-1 d-block text-xs sm:text-sm font-semibold">{{ equipoSeleccionado?.modelo || 'Grúa Telescópica' }}</span>
+            <v-chip
+              size="x-small"
+              :color="equipoSeleccionado?.estado_operativo === 'ARRIBADO' || equipoSeleccionado?.estado_operativo === 'EN_FAENA' ? 'success' : (equipoSeleccionado?.estado_operativo === 'EN_RUTA' ? 'info' : 'warning')"
+              variant="flat"
+              class="font-black mt-1"
+            >
+              {{ equipoSeleccionado?.estado_operativo === 'ARRIBADO' ? '🟢 EN FAENA' : (equipoSeleccionado?.estado_operativo === 'EN_RUTA' ? '🟡 EN RUTA' : '⚪ EN PATIO') }}
+            </v-chip>
           </div>
           <div class="col-6">
             <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">👷 Tripulación</span>
@@ -384,6 +413,7 @@ const router = useRouter()
 const cargando = ref(true)
 const enviando = ref(false)
 const idProyecto = ref(route.query.id_proyecto || null)
+const idEquipoSeleccionado = ref(route.query.id_equipo ? Number(route.query.id_equipo) : null)
 
 const proyecto = ref({})
 const equipos = ref([])
@@ -415,6 +445,10 @@ const snackbar = reactive({
 })
 
 const equipoSeleccionado = computed(() => {
+  if (idEquipoSeleccionado.value) {
+    const match = equipos.value.find(e => Number(e.id_equipo) === idEquipoSeleccionado.value)
+    if (match) return match
+  }
   return equipos.value.length > 0 ? equipos.value[0] : null
 })
 
@@ -509,7 +543,12 @@ const puedeEnviar = computed(() => {
   )
 })
 
-const cargarContexto = async () => {
+const seleccionarEquipo = async (idEq) => {
+  idEquipoSeleccionado.value = Number(idEq)
+  await cargarContexto(idEq)
+}
+
+const cargarContexto = async (idEqParam = null) => {
   try {
     cargando.value = true
     if (!idProyecto.value) {
@@ -526,7 +565,8 @@ const cargarContexto = async () => {
       return
     }
 
-    const res = await api.get(`/operaciones/report/contexto/${idProyecto.value}`)
+    const eqQuery = idEqParam || idEquipoSeleccionado.value ? `?id_equipo=${idEqParam || idEquipoSeleccionado.value}` : ''
+    const res = await api.get(`/operaciones/report/contexto/${idProyecto.value}${eqQuery}`)
     if (res.data && res.data.success) {
       const d = res.data.data
       proyecto.value = d.proyecto || {}
@@ -536,7 +576,11 @@ const cargarContexto = async () => {
       diaCorrelativo.value = d.dia_sugerido || 1
       horasMinimas.value = Number(d.horas_minimas) || 4.0
 
-      if (d.horometro_sugerido && !form.horometro_inicio) {
+      if (d.id_equipo_seleccionado && !idEquipoSeleccionado.value) {
+        idEquipoSeleccionado.value = Number(d.id_equipo_seleccionado)
+      }
+
+      if (d.horometro_sugerido) {
         form.horometro_inicio = Number(d.horometro_sugerido)
       }
     }

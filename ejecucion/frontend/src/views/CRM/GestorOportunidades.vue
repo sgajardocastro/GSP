@@ -2022,7 +2022,32 @@
             <h4 class="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
               <span>📋 Cronograma de Reports Diarios de Terreno</span>
             </h4>
-            <span class="text-xs text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">{{ reportsProyecto.length }} report(s) registrado(s)</span>
+            <span class="text-xs text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">{{ reportsFiltrados.length }} de {{ reportsProyecto.length }} report(s)</span>
+          </div>
+
+          <!-- FILTRO POR EQUIPO (Spec 35) -->
+          <div v-if="listaEquiposUnicosReports.length > 1" class="px-5 py-2.5 bg-[#0a0f1e] border-b border-white/10 flex items-center gap-2 overflow-x-auto">
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono mr-2 flex items-center gap-1">
+              <span>🚜</span>
+              <span>Equipo:</span>
+            </span>
+            <button
+              @click="filtroEquipoReports = 'TODOS'"
+              :class="filtroEquipoReports === 'TODOS' ? 'bg-amber-500 text-slate-950 font-black' : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'"
+              class="px-3 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer"
+            >
+              TODOS ({{ reportsProyecto.length }})
+            </button>
+            <button
+              v-for="eq in listaEquiposUnicosReports"
+              :key="eq.id_equipo"
+              @click="filtroEquipoReports = eq.id_equipo"
+              :class="filtroEquipoReports === eq.id_equipo ? 'bg-amber-500 text-slate-950 font-black' : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'"
+              class="px-3 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🚜 {{ eq.patente }}</span>
+              <span class="opacity-75">({{ eq.modelo }})</span>
+            </button>
           </div>
 
           <!-- Loading -->
@@ -2032,11 +2057,11 @@
           </div>
 
           <!-- Empty State -->
-          <div v-else-if="reportsProyecto.length === 0" class="p-12 text-center space-y-3">
+          <div v-else-if="reportsFiltrados.length === 0" class="p-12 text-center space-y-3">
             <span class="text-4xl block">🏗️</span>
-            <div class="text-base font-bold text-white">Aún no se han emitido reports para este servicio</div>
+            <div class="text-base font-bold text-white">No hay reports registrados para este criterio</div>
             <p class="text-sm text-slate-400 max-w-lg mx-auto">
-              El operador de la grúa puede generar el primer Report Diario desde la PWA en terreno al concluir la primera jornada de izaje.
+              El operador de la grúa puede generar el Report Diario desde la PWA en terreno al concluir la jornada de izaje.
             </p>
           </div>
 
@@ -2047,6 +2072,7 @@
                 <tr class="bg-[#0b1021] text-slate-300 border-b border-white/10 text-xs font-bold uppercase tracking-wider">
                   <th class="py-3 px-3.5 font-mono">Día</th>
                   <th class="py-3 px-3.5">Fecha</th>
+                  <th class="py-3 px-3.5">Equipo / Grúa</th>
                   <th class="py-3 px-3.5 font-mono">Horario</th>
                   <th class="py-3 px-3 text-center font-mono">Colac.</th>
                   <th class="py-3 px-3.5 text-right font-mono">Efectivas</th>
@@ -2060,22 +2086,28 @@
               </thead>
               <tbody class="divide-y divide-white/10 text-slate-200">
                 <tr 
-                  v-for="rep in reportsProyecto" 
+                  v-for="rep in reportsFiltrados" 
                   :key="rep.id_reporte_avance"
                   class="hover:bg-white/[0.03] transition-colors"
                 >
                   <!-- Día -->
-                  <td class="py-3.5 px-3.5 font-bold font-mono text-amber-400 text-sm">
+                  <td class="py-3.5 px-3.5 font-bold font-mono text-amber-400 text-sm whitespace-nowrap">
                     Día {{ rep.dia_correlativo || 1 }}
                   </td>
 
                   <!-- Fecha -->
-                  <td class="py-3.5 px-3.5 text-white font-medium text-sm">
+                  <td class="py-3.5 px-3.5 text-white font-medium text-sm whitespace-nowrap">
                     {{ formatearFechaCorta(rep.fecha_reporte) }}
                   </td>
 
+                  <!-- Equipo / Grúa (Spec 35) -->
+                  <td class="py-3.5 px-3.5">
+                    <div class="text-amber-300 font-bold font-mono text-sm">{{ rep.equipo_patente || 'S/P' }}</div>
+                    <div class="text-xs text-slate-400 truncate max-w-[140px]">{{ rep.equipo_modelo || 'Grúa' }}</div>
+                  </td>
+
                   <!-- Horario -->
-                  <td class="py-3.5 px-3.5 text-slate-200 font-mono text-sm">
+                  <td class="py-3.5 px-3.5 text-slate-200 font-mono text-sm whitespace-nowrap">
                     {{ formatHoraCorta(rep.fecha_inicio_servicio) }} - {{ formatHoraCorta(rep.fecha_termino_servicio) }}
                   </td>
 
@@ -2102,7 +2134,7 @@
                   </td>
 
                   <!-- Horómetro -->
-                  <td class="py-3.5 px-3.5 text-slate-300 font-mono text-sm">
+                  <td class="py-3.5 px-3.5 text-slate-300 font-mono text-sm whitespace-nowrap">
                     <div class="flex items-center gap-1.5">
                       <span>{{ rep.horometro_inicio || 0 }} ➔ {{ rep.horometro_termino || '---' }}</span>
                       <span v-if="rep.foto_horometro" class="text-amber-400" title="Foto de horómetro adjunta">📸</span>
@@ -2116,7 +2148,7 @@
                   </td>
 
                   <!-- Estado -->
-                  <td class="py-3.5 px-3.5 text-center">
+                  <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
                     <span 
                       v-if="rep.estado_reporte === 'VALIDADO_ANALISTA'" 
                       class="px-3 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1"
@@ -2132,7 +2164,7 @@
                   </td>
 
                   <!-- Acciones -->
-                  <td class="py-3.5 px-3.5 text-center">
+                  <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
                     <div class="flex items-center justify-center gap-2">
                       <button
                         @click="abrirVisorReport(rep)"
@@ -3733,6 +3765,7 @@ const modalMapaViajeAbierto = ref(false)
 const viajeSeleccionadoParaMapa = ref(null)
 
 const reportsProyecto = ref([])
+const filtroEquipoReports = ref('TODOS')
 const cargandoReports = ref(false)
 const modalVisorReportAbierto = ref(false)
 const reportSeleccionadoParaVisor = ref(null)
@@ -8358,8 +8391,28 @@ const onReportValidado = (reportActualizado) => {
   cargarReportsProyecto()
 }
 
-const resumenKpiReports = computed(() => {
+const listaEquiposUnicosReports = computed(() => {
+  const map = new Map()
+  ;(reportsProyecto.value || []).forEach(r => {
+    if (r.id_equipo && !map.has(r.id_equipo)) {
+      map.set(r.id_equipo, {
+        id_equipo: r.id_equipo,
+        patente: r.equipo_patente || 'S/P',
+        modelo: r.equipo_modelo || 'Grúa'
+      })
+    }
+  })
+  return Array.from(map.values())
+})
+
+const reportsFiltrados = computed(() => {
   const list = reportsProyecto.value || []
+  if (filtroEquipoReports.value === 'TODOS') return list
+  return list.filter(r => Number(r.id_equipo) === Number(filtroEquipoReports.value))
+})
+
+const resumenKpiReports = computed(() => {
+  const list = reportsFiltrados.value || []
   const dias = list.length
   const totalFacturables = list.reduce((sum, r) => sum + (Number(r.horas_facturables) || 0), 0)
   const totalSobretiempo = list.reduce((sum, r) => sum + (Number(r.horas_sobretiempo) || 0), 0)

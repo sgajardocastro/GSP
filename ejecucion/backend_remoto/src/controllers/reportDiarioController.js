@@ -6,6 +6,8 @@ const reportDiarioController = {
   async getReportContexto(req, res) {
     try {
       const { id_proyecto } = req.params;
+      const { id_equipo } = req.query; // Soporte para contexto por equipo específico (Spec 35)
+
       if (!id_proyecto) {
         return res.status(400).json({ error: 'id_proyecto es requerido' });
       }
@@ -31,7 +33,7 @@ const reportDiarioController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 1.2 Consultar equipos asignados
+      // 1.2 Consultar equipos asignados con su micro-estado operacional de viaje / patio (Spec 35)
       const eqSql = `
         SELECT 
           re.id_rel_equipo,
@@ -41,12 +43,26 @@ const reportDiarioController = {
           e.modelo,
           e.marca,
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
-          COALESCE((e.json_data->>'horometro')::numeric, 0) AS horometro_base
+          COALESCE((e.json_data->>'horometro')::numeric, 0) AS horometro_base,
+          COALESCE(v.estado_trayecto, 'ASIGNADO') AS estado_operativo,
+          v.token_viaje,
+          v.km_inicial,
+          v.km_final,
+          v.horometro_inicial AS horometro_viaje_salida,
+          v.horometro_final AS horometro_viaje_llegada
         FROM sch_leangsp.tpry_rel_equipo re
         JOIN sch_leangsp.tequ_equipo e ON re.id_equipo = e.id_equipo
+        LEFT JOIN LATERAL (
+          SELECT estado_trayecto, token_viaje, km_inicial, km_final, horometro_inicial, horometro_final
+          FROM sch_leangsp.tequ_log_desplazamiento
+          WHERE id_proyecto = re.id_proyecto AND id_equipo = re.id_equipo
+          ORDER BY id_log_desplazamiento DESC
+          LIMIT 1
+        ) v ON TRUE
         WHERE re.id_proyecto = $1;
       `;
       const eqRes = await db.query(eqSql, [id_proyecto]);
+      const equipos = eqRes.rows;
 
       // 1.3 Consultar personal / tripulación asignada
       const perSql = `
@@ -65,10 +81,11 @@ const reportDiarioController = {
       `;
       const perRes = await db.query(perSql, [id_proyecto]);
 
-      // 1.4 Consultar reports ya emitidos para calcular día correlativo y último horómetro
+      // 1.4 Consultar reports ya emitidos para esta OT
       const repSql = `
         SELECT 
           id_reporte_avance,
+          id_equipo,
           dia_correlativo,
           fecha_reporte,
           horometro_inicio,
@@ -86,40 +103,30 @@ const reportDiarioController = {
       const repRes = await db.query(repSql, [id_proyecto]);
       const reports = repRes.rows;
 
-      // Calcular día correlativo sugerido y horómetro de inicio sugerido
+      // 1.5 Determinar equipo objetivo y calcular día correlativo y horómetro sugerido POR EQUIPO (Spec 35)
+      const targetIdEquipo = id_equipo ? parseInt(id_equipo, 10) : (equipos.length > 0 ? equipos[0].id_equipo : null);
+      const reportsDelEquipo = targetIdEquipo ? reports.filter(r => Number(r.id_equipo) === targetIdEquipo) : reports;
+
       let diaSugerido = 1;
       let horometroSugerido = null;
 
-      if (reports.length > 0) {
-        const maxDia = Math.max(...reports.map(r => Number(r.dia_correlativo) || 0));
+      if (reportsDelEquipo.length > 0) {
+        const maxDia = Math.max(...reportsDelEquipo.map(r => Number(r.dia_correlativo) || 0));
         diaSugerido = maxDia + 1;
-        const ultimoReport = reports[reports.length - 1];
+        const ultimoReport = reportsDelEquipo[reportsDelEquipo.length - 1];
         if (ultimoReport.horometro_termino) {
           horometroSugerido = Number(ultimoReport.horometro_termino);
         }
-      }
-
-      // Si no hay reports previos, consultar si el viaje de desplazamiento registró horómetro
-      if (!horometroSugerido) {
-        try {
-          const vjSql = `
-            SELECT horometro_final, horometro_inicial 
-            FROM sch_leangsp.tequ_log_desplazamiento 
-            WHERE id_proyecto = $1 
-            ORDER BY id_log_desplazamiento DESC LIMIT 1;
-          `;
-          const vjRes = await db.query(vjSql, [id_proyecto]);
-          if (vjRes.rows.length > 0) {
-            const vj = vjRes.rows[0];
-            horometroSugerido = Number(vj.horometro_final || vj.horometro_inicial) || null;
+      } else if (targetIdEquipo) {
+        // Primer reporte para este equipo específico
+        const eqMatch = equipos.find(e => Number(e.id_equipo) === targetIdEquipo);
+        if (eqMatch) {
+          if (eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida) {
+            horometroSugerido = Number(eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida);
+          } else if (eqMatch.horometro_base) {
+            horometroSugerido = Number(eqMatch.horometro_base);
           }
-        } catch (eVj) {
-          console.warn('Error consultando viaje para horómetro:', eVj.message);
         }
-      }
-
-      if (!horometroSugerido && eqRes.rows.length > 0 && eqRes.rows[0].horometro_base) {
-        horometroSugerido = Number(eqRes.rows[0].horometro_base);
       }
 
       // Horas mínimas configuradas en la propuesta / OT
@@ -139,9 +146,11 @@ const reportDiarioController = {
         success: true,
         data: {
           proyecto,
-          equipos: eqRes.rows,
+          equipos,
+          id_equipo_seleccionado: targetIdEquipo,
           personas: perRes.rows,
           reports,
+          reports_equipo: reportsDelEquipo,
           dia_sugerido: diaSugerido,
           horometro_sugerido: horometroSugerido,
           horas_minimas: horasMinimas
