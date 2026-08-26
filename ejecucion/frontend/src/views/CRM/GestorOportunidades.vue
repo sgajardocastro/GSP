@@ -180,6 +180,24 @@
         <span>6. Ejecución & Reports</span>
         <span v-if="reportsProyecto.length > 0" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono font-bold">{{ reportsProyecto.length }}</span>
       </button>
+
+      <!-- 7. LIQUIDACIÓN & EDP (Spec 38) -->
+      <button 
+        @click="cambiarYPersistirSubTab('liquidacion')" 
+        :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
+        :class="[
+          estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'opacity-40 cursor-not-allowed text-slate-600' : (topTab === 'operaciones' && operacionesSubTab === 'liquidacion' ? 'text-emerald-400 border-b-2 border-emerald-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white cursor-pointer'),
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t'
+        ]"
+        :title="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO ? 'Requiere Confirmar Asignación OT' : ''"
+      >
+        <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
+        <span v-else-if="estadoDbActual === 7" class="text-xs text-emerald-400 font-bold">✅</span>
+        <span v-else class="text-xs text-emerald-400">💰</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>7. Liquidación & EDP</span>
+        <span v-if="estadoDbActual === 7" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold">Facturado</span>
+      </button>
     </div>
 
     <!-- OPERACIONES WORKSPACE (Diff, Aprobación & Asignación OT) -->
@@ -2184,6 +2202,255 @@
         </div>
 
       </div>
+
+      <!-- SUB-TAB 7: LIQUIDACIÓN OPERACIONAL, CONSOLIDACIÓN EDP & REGISTRO FACTURACIÓN (Spec 38) -->
+      <div v-if="operacionesSubTab === 'liquidacion'" class="space-y-6">
+        
+        <!-- CABECERA DE LIQUIDACIÓN Y ESTADO DE CIERRE -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl">
+              💰
+            </div>
+            <div>
+              <div class="flex items-center gap-3">
+                <h3 class="text-base sm:text-lg font-black text-white uppercase tracking-wider font-mono">
+                  Liquidación de Estado de Pago (EDP) & Facturación
+                </h3>
+                <span 
+                  :class="estadoDbActual === 7 || edpData?.liquidacion_guardada 
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'" 
+                  class="text-xs font-mono font-bold uppercase px-3 py-1 rounded-md border"
+                >
+                  {{ estadoDbActual === 7 || edpData?.liquidacion_guardada ? '✅ Facturado y Concluido' : '⏳ Listo para Liquidar y Facturar' }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                Conciliación automática de tarifas pactadas vs jornadas y sobretiempos respaldados con firma de mandante.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              @click="modalCaratulaEDPAbierto = true"
+              class="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow flex items-center gap-2 cursor-pointer"
+            >
+              <span>📄</span>
+              <span>Ver Carátula Oficial de EDP</span>
+            </button>
+            <button
+              @click="cargarResumenEDP"
+              class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              title="Recargar datos"
+            >
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- TARJETAS TOTALES DE LIQUIDACIÓN -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-1">
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Días de Faena</span>
+            <div class="text-2xl sm:text-3xl font-black font-mono text-white">
+              {{ edpData?.resumen_financiero?.dias_totales || 0 }} <span class="text-xs text-slate-400 font-normal">DÍAS</span>
+            </div>
+            <span class="text-xs text-emerald-400 block font-medium">100% Firmados con GPS</span>
+          </div>
+
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-1">
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Horas Facturables</span>
+            <div class="text-2xl sm:text-3xl font-black font-mono text-white">
+              {{ edpData?.resumen_financiero?.horas_facturables_totales || 0 }} <span class="text-xs text-slate-400 font-normal">HRS</span>
+            </div>
+            <span class="text-xs text-slate-400 block">Horas netas operadas</span>
+          </div>
+
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-1">
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Sobretiempo Extra</span>
+            <div class="text-2xl sm:text-3xl font-black font-mono text-yellow-400">
+              +{{ edpData?.resumen_financiero?.horas_sobretiempo_totales || 0 }} <span class="text-xs text-yellow-500 font-normal">HRS</span>
+            </div>
+            <span class="text-xs text-slate-400 block font-mono">{{ formatCurrency(edpData?.resumen_financiero?.monto_sobretiempo_neto || 0) }}</span>
+          </div>
+
+          <div class="bg-emerald-950/20 border border-emerald-500/50 rounded-xl p-4 space-y-1 shadow-lg shadow-emerald-500/5">
+            <span class="text-xs text-emerald-300 font-black uppercase font-mono block">💰 TOTAL NETO A FACTURAR</span>
+            <div class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+              {{ formatCurrency(edpData?.resumen_financiero?.total_neto || 0) }}
+            </div>
+            <span class="text-xs text-slate-300 block font-mono">Total Bruto (+19% IVA): {{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}</span>
+          </div>
+        </div>
+
+        <!-- TABLA DE DESGLOSE DE LÍNEAS CONCILIADAS -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl overflow-hidden shadow-lg">
+          <div class="px-5 py-3.5 bg-[#080d1a] border-b border-white/10 flex justify-between items-center">
+            <h4 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <span>📋 Detalle de Líneas de Servicio & Conciliación Financiera</span>
+            </h4>
+            <span class="text-xs text-slate-400 font-mono">
+              Cliente: <strong class="text-white">{{ edpData?.proyecto?.cliente_nombre || 'Mandante' }}</strong>
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-[#0b1021] text-slate-300 border-b border-white/10 font-bold uppercase font-mono">
+                  <th class="py-3 px-4">Concepto / Servicio</th>
+                  <th class="py-3 px-4">Tipo</th>
+                  <th class="py-3 px-4 text-center">Unidad</th>
+                  <th class="py-3 px-4 text-center">Cant.</th>
+                  <th class="py-3 px-4 text-right">Tarifa Pactada</th>
+                  <th class="py-3 px-4 text-right text-emerald-400">Subtotal Neto</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/10 text-slate-200">
+                <tr v-for="(l, idx) in edpData?.lineas_cotizadas || []" :key="idx" class="hover:bg-white/[0.02]">
+                  <td class="py-3.5 px-4 font-bold text-white">
+                    {{ l.descripcion || l.subcategoria || l.tipo }}
+                  </td>
+                  <td class="py-3.5 px-4 text-slate-400 font-mono">
+                    {{ l.tipo }}
+                  </td>
+                  <td class="py-3.5 px-4 text-center font-mono text-slate-300">
+                    {{ l.unidad }}
+                  </td>
+                  <td class="py-3.5 px-4 text-center font-mono font-bold text-white">
+                    {{ l.cantidad }}
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-mono text-slate-300">
+                    {{ formatCurrency(l.valorUnitario) }}
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-300">
+                    {{ formatCurrency(l.subtotal_calculado) }}
+                  </td>
+                </tr>
+
+                <!-- Sobretiempo si aplica -->
+                <tr v-if="Number(edpData?.resumen_financiero?.horas_sobretiempo_totales) > 0" class="bg-yellow-500/5">
+                  <td class="py-3.5 px-4 font-bold text-yellow-300">
+                    ⏱️ Sobretiempo de Izaje Acumulado
+                  </td>
+                  <td class="py-3.5 px-4 text-slate-400 font-mono">
+                    HORAS EXTRA
+                  </td>
+                  <td class="py-3.5 px-4 text-center font-mono text-slate-300">
+                    Horas
+                  </td>
+                  <td class="py-3.5 px-4 text-center font-mono font-bold text-yellow-300">
+                    {{ edpData?.resumen_financiero?.horas_sobretiempo_totales }}h
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-mono text-slate-300">
+                    Tarifa Extra
+                  </td>
+                  <td class="py-3.5 px-4 text-right font-mono font-bold text-yellow-300">
+                    {{ formatCurrency(edpData?.resumen_financiero?.monto_sobretiempo_neto || 0) }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-[#0b1021] text-slate-200 border-t-2 border-white/20 font-mono font-bold">
+                  <td colspan="5" class="py-3 px-4 text-right text-slate-400 uppercase">SUBTOTAL NETO DEVENGADO:</td>
+                  <td class="py-3 px-4 text-right text-white font-black text-sm">{{ formatCurrency(edpData?.resumen_financiero?.total_neto || 0) }}</td>
+                </tr>
+                <tr class="bg-[#0b1021] text-slate-200 font-mono">
+                  <td colspan="5" class="py-2 px-4 text-right text-slate-400 uppercase">IVA (19%):</td>
+                  <td class="py-2 px-4 text-right text-slate-300">{{ formatCurrency(edpData?.resumen_financiero?.iva_19 || 0) }}</td>
+                </tr>
+                <tr class="bg-[#080d1a] text-emerald-400 font-mono font-black text-sm border-t border-emerald-500/30">
+                  <td colspan="5" class="py-3 px-4 text-right uppercase">TOTAL GENERAL A FACTURAR (BRUTO):</td>
+                  <td class="py-3 px-4 text-right text-emerald-300 text-base">{{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- FORMULARIO DE REGISTRO DE FACTURACIÓN Y CIERRE DE SERVICIO -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
+          <div class="border-b border-white/10 pb-3 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🏁</span>
+              <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono">
+                Registro de Facturación Oficial & Cierre Comercial
+              </h4>
+            </div>
+            <span v-if="estadoDbActual === 7" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
+              OT Cerrada & Facturada
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- N° Factura -->
+            <div class="space-y-1">
+              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Factura Emitida <span class="text-red-400">*</span></label>
+              <input
+                v-model="formFacturacion.factura_numero"
+                type="text"
+                placeholder="ej. F-14029"
+                :disabled="estadoDbActual === 7"
+                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
+              />
+            </div>
+
+            <!-- N° HES / OC -->
+            <div class="space-y-1">
+              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Orden Compra / HES Mandante</label>
+              <input
+                v-model="formFacturacion.hes_oc_numero"
+                type="text"
+                placeholder="ej. HES-2026-9941"
+                :disabled="estadoDbActual === 7"
+                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
+              />
+            </div>
+
+            <!-- Fecha Facturación -->
+            <div class="space-y-1">
+              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">Fecha de Facturación</label>
+              <input
+                v-model="formFacturacion.fecha_facturacion"
+                type="date"
+                :disabled="estadoDbActual === 7"
+                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-amber-400 outline-none disabled:opacity-60"
+              />
+            </div>
+
+            <!-- Botón Maestro de Cierre -->
+            <div class="space-y-1 flex flex-col justify-end">
+              <button
+                v-if="estadoDbActual !== 7"
+                @click="guardarCierreFacturacion"
+                :disabled="guardandoFacturacion || !formFacturacion.factura_numero"
+                class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span v-if="guardandoFacturacion" class="animate-spin">⚙️</span>
+                <span v-else>🏁</span>
+                <span>{{ guardandoFacturacion ? 'Registrando...' : 'Declarar Facturada & Cerrar' }}</span>
+              </button>
+              <div v-else class="text-center py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-bold text-emerald-300 font-mono">
+                ✅ Proceso 100% Concluido
+              </div>
+            </div>
+          </div>
+
+          <!-- Observaciones -->
+          <div class="space-y-1">
+            <label class="text-xs font-mono font-bold uppercase text-slate-400 block">Observaciones Administrativas / Contables</label>
+            <input
+              v-model="formFacturacion.observaciones_facturacion"
+              type="text"
+              placeholder="Detalle contable o notas de conciliación..."
+              :disabled="estadoDbActual === 7"
+              class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
+            />
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- Banner Modo Solo Lectura en Comercial (Inmutabilidad Etapa Concluida) -->
@@ -3744,6 +4011,13 @@
     @close="modalVisorReportAbierto = false"
     @report-validado="onReportValidado"
   />
+
+  <!-- MODAL CARÁTULA OFICIAL DE ESTADO DE PAGO (EDP) (Spec 38) -->
+  <ModalCaratulaEDP
+    :visible="modalCaratulaEDPAbierto"
+    :edp-data="edpData"
+    @close="modalCaratulaEDPAbierto = false"
+  />
   </div>
 </template>
 
@@ -3759,6 +4033,7 @@ import apiAxios from '../../services/api'
 import VerSurveyModal from '../../components/VerSurveyModal.vue'
 import ModalMapaViaje from '../../components/Operaciones/ModalMapaViaje.vue'
 import ModalVisorReport from '../../components/Operaciones/ModalVisorReport.vue'
+import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
 
 const viajesProyecto = ref([])
 const cargandoViajes = ref(false)
@@ -3770,6 +4045,17 @@ const filtroEquipoReports = ref('TODOS')
 const cargandoReports = ref(false)
 const modalVisorReportAbierto = ref(false)
 const reportSeleccionadoParaVisor = ref(null)
+
+const edpData = ref(null)
+const cargandoEDP = ref(false)
+const modalCaratulaEDPAbierto = ref(false)
+const guardandoFacturacion = ref(false)
+const formFacturacion = reactive({
+  hes_oc_numero: '',
+  factura_numero: '',
+  fecha_facturacion: new Date().toISOString().split('T')[0],
+  observaciones_facturacion: ''
+})
 
 const props = defineProps({
   proyectoId: {
@@ -7557,6 +7843,8 @@ watch(() => route?.query?.subtab, (newSubtab) => {
     operacionesSubTab.value = newSubtab
     if (newSubtab === 'reports') {
       cargarReportsProyecto()
+    } else if (newSubtab === 'liquidacion') {
+      cargarResumenEDP()
     }
   }
 })
@@ -7578,7 +7866,8 @@ const MIN_ESTADO_FOR_SUBTAB = {
   'asignacion': 4,
   'acreditaciones': 5,
   'preparacion_salida': 5,
-  'reports': 5
+  'reports': 5,
+  'liquidacion': 5
 }
 
 const cambiarYPersistirSubTab = async (subtabName) => {
@@ -7599,6 +7888,8 @@ const cambiarYPersistirSubTab = async (subtabName) => {
   
   if (subtabName === 'reports') {
     cargarReportsProyecto()
+  } else if (subtabName === 'liquidacion') {
+    cargarResumenEDP()
   }
   
   if (!rawEjecucionJson.value) rawEjecucionJson.value = {}
@@ -8443,6 +8734,76 @@ const resumenKpiReports = computed(() => {
     horometroRange
   }
 })
+
+// === FUNCIONES DE LIQUIDACIÓN Y EDP (Spec 38) ===
+const cargarResumenEDP = async (projId) => {
+  let id = projId || props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  if (!id) return
+  cargandoEDP.value = true
+  try {
+    const { data } = await apiAxios.get(`/operaciones/report/edp/resumen/${id}`)
+    if (data?.success) {
+      edpData.value = data.data
+      if (data.data.liquidacion_guardada) {
+        const liq = data.data.liquidacion_guardada
+        formFacturacion.hes_oc_numero = liq.hes_oc_numero || ''
+        formFacturacion.factura_numero = liq.factura_numero || ''
+        formFacturacion.fecha_facturacion = liq.fecha_facturacion || new Date().toISOString().split('T')[0]
+        formFacturacion.observaciones_facturacion = liq.observaciones_facturacion || ''
+      }
+    }
+  } catch (err) {
+    console.warn('Error al cargar resumen EDP:', err)
+  } finally {
+    cargandoEDP.value = false
+  }
+}
+
+const guardarCierreFacturacion = async () => {
+  let id = props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  if (!id) return
+
+  if (!formFacturacion.factura_numero) {
+    alert('⚠️ Debes ingresar el N° de Factura Emitida para cerrar el servicio.')
+    return
+  }
+
+  if (!window.confirm(`¿Confirmas declarar la OT como FACTURADA con Factura N° ${formFacturacion.factura_numero} y concluir el servicio?`)) {
+    return
+  }
+
+  guardandoFacturacion.value = true
+  try {
+    const payload = {
+      id_proyecto: id,
+      hes_oc_numero: formFacturacion.hes_oc_numero,
+      factura_numero: formFacturacion.factura_numero,
+      fecha_facturacion: formFacturacion.fecha_facturacion,
+      monto_facturado_neto: edpData.value?.resumen_financiero?.total_neto || 0,
+      monto_facturado_bruto: edpData.value?.resumen_financiero?.total_bruto || 0,
+      observaciones_facturacion: formFacturacion.observaciones_facturacion
+    }
+
+    const { data } = await apiAxios.post('/operaciones/report/edp/cerrar-facturacion', payload)
+    if (data?.success) {
+      alert('🎉 OT Declarada Facturada y Concluida Exitosamente.')
+      estadoDbActual.value = 7
+      cargarResumenEDP(id)
+      cargarDatosCotizacion()
+    }
+  } catch (err) {
+    console.error('Error al cerrar facturación:', err)
+    alert('❌ Error al registrar facturación: ' + (err.response?.data?.error || err.message))
+  } finally {
+    guardandoFacturacion.value = false
+  }
+}
 
 const viajesConvoyLista = computed(() => {
   const result = []

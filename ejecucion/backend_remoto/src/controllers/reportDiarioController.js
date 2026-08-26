@@ -421,6 +421,227 @@ const reportDiarioController = {
       console.error('Error al validar report diario:', err);
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // 5. Obtener Resumen y Conciliación Financiera para Estado de Pago (EDP) (Spec 38)
+  async getResumenEDP(req, res) {
+    try {
+      const { id_proyecto } = req.params;
+      if (!id_proyecto) {
+        return res.status(400).json({ error: 'id_proyecto es requerido' });
+      }
+
+      // 5.1 Datos de la OT y Cliente Mandante
+      const proySql = `
+        SELECT 
+          p.id_proyecto,
+          p.codi_proyecto,
+          p.nombre_proyecto,
+          p.id_proyecto_estado,
+          p.json_field,
+          COALESCE(clt.razon_social, clt.name_empresa, 'Cliente Mandante') AS cliente_nombre,
+          COALESCE(clt.rut_empresa, '') AS cliente_rut,
+          COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.nombre_proyecto) AS obra_nombre,
+          COALESCE(p.json_field->>'obra_direccion', p.json_field->'crm_v1'->>'obra_direccion', 'Faena en Terreno') AS obra_direccion
+        FROM sch_leangsp.tpry_proyecto p
+        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        WHERE p.id_proyecto = $1;
+      `;
+      const proyRes = await db.query(proySql, [id_proyecto]);
+      if (proyRes.rows.length === 0) {
+        return res.status(404).json({ error: 'Proyecto no encontrado' });
+      }
+      const proyecto = proyRes.rows[0];
+
+      // 5.2 Obtener líneas cotizadas
+      const crmV1 = proyecto.json_field?.crm_v1 || {};
+      const lineasCotizadas = crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || [];
+
+      // 5.3 Obtener todos los reports emitidos
+      const repSql = `
+        SELECT 
+          r.id_reporte_avance,
+          r.id_equipo,
+          r.dia_correlativo,
+          r.fecha_reporte,
+          r.horas_operadas,
+          r.horas_facturables,
+          r.horas_sobretiempo,
+          r.horometro_inicio,
+          r.horometro_termino,
+          r.cliente_nombre,
+          r.cliente_cargo,
+          r.cliente_firma_canvas_base64,
+          r.estado_reporte,
+          r.fecha_inicio_servicio,
+          r.fecha_termino_servicio,
+          COALESCE(e.patente, 'S/P') AS equipo_patente,
+          COALESCE(e.modelo, 'Grúa') AS equipo_modelo
+        FROM sch_leangsp.tedp_reporte_avance r
+        LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
+        WHERE r.id_proyecto = $1
+        ORDER BY r.dia_correlativo ASC, r.fecha_reporte ASC;
+      `;
+      const repRes = await db.query(repSql, [id_proyecto]);
+      const reports = repRes.rows;
+
+      // 5.4 Motor de Conciliación Financiera
+      let totalHorasFacturables = 0;
+      let totalHorasSobretiempo = 0;
+      reports.forEach(r => {
+        totalHorasFacturables += Number(r.horas_facturables) || 0;
+        totalHorasSobretiempo += Number(r.horas_sobretiempo) || 0;
+      });
+
+      // Calcular montos por línea
+      let montoNetoEquipos = 0;
+      let montoNetoFlete = 0;
+      let montoNetoOtros = 0;
+
+      const lineasCalculadas = lineasCotizadas.map(l => {
+        const valUnit = Number(l.valorUnitario) || 0;
+        const cant = Number(l.cantidad) || 1;
+        let subtotal = 0;
+        let horasCalculo = 0;
+
+        if (l.tipo === 'TRASLADOS' || l.subcategoria?.includes('ESCOLTA') || l.subcategoria?.includes('FLETE')) {
+          subtotal = valUnit * cant;
+          montoNetoFlete += subtotal;
+        } else if (l.tipo === 'GRUAS TELESCOPICAS' || l.tipo === 'GRUA HORQUILLA' || l.tipo === 'MANIPULADOR TELESCOPICO' || l.tipo === 'CAMION PLUMA') {
+          // Si la cotización tiene valor unitario, multiplicamos por las horas reales o tarifa diaria
+          if (l.unidad === 'Diario') {
+            const diasFaena = Math.max(1, reports.length);
+            subtotal = valUnit * diasFaena * cant;
+            horasCalculo = totalHorasFacturables;
+          } else {
+            // Por horas
+            subtotal = valUnit * (totalHorasFacturables > 0 ? totalHorasFacturables : (cant * 8));
+            horasCalculo = totalHorasFacturables;
+          }
+          montoNetoEquipos += subtotal;
+        } else {
+          subtotal = valUnit * cant;
+          montoNetoOtros += subtotal;
+        }
+
+        return {
+          ...l,
+          subtotal_calculado: subtotal,
+          horas_aplicadas: horasCalculo
+        };
+      });
+
+      // Cálculo de sobretiempo (tarifa estimada sobretiempo = 1.5x o pactada)
+      const tarifaSobretiempoPromedio = montoNetoEquipos > 0 && totalHorasFacturables > 0 
+        ? (montoNetoEquipos / totalHorasFacturables) * 1.5 
+        : 50000;
+      const montoSobretiempoNeto = Math.round(totalHorasSobretiempo * tarifaSobretiempoPromedio);
+
+      const totalNeto = montoNetoEquipos + montoNetoFlete + montoNetoOtros + montoSobretiempoNeto;
+      const iva19 = Math.round(totalNeto * 0.19);
+      const totalBruto = totalNeto + iva19;
+
+      const liquidacionGuardada = proyecto.json_field?.liquidacion_v1 || null;
+
+      res.json({
+        success: true,
+        data: {
+          proyecto: {
+            id_proyecto: proyecto.id_proyecto,
+            codi_proyecto: proyecto.codi_proyecto,
+            nombre_proyecto: proyecto.nombre_proyecto,
+            id_proyecto_estado: proyecto.id_proyecto_estado,
+            cliente_nombre: proyecto.cliente_nombre,
+            cliente_rut: proyecto.cliente_rut,
+            obra_nombre: proyecto.obra_nombre,
+            obra_direccion: proyecto.obra_direccion
+          },
+          lineas_cotizadas: lineasCalculadas,
+          reports_validados: reports,
+          resumen_financiero: {
+            dias_totales: reports.length,
+            horas_facturables_totales: totalHorasFacturables.toFixed(1),
+            horas_sobretiempo_totales: totalHorasSobretiempo.toFixed(1),
+            monto_equipos_neto: montoNetoEquipos,
+            monto_flete_neto: montoNetoFlete,
+            monto_otros_neto: montoNetoOtros,
+            monto_sobretiempo_neto: montoSobretiempoNeto,
+            total_neto: totalNeto,
+            iva_19: iva19,
+            total_bruto: totalBruto
+          },
+          liquidacion_guardada: liquidacionGuardada
+        }
+      });
+    } catch (err) {
+      console.error('Error al obtener resumen de EDP:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // 6. Registrar Facturación y Cerrar Servicio OT (Spec 38)
+  async cerrarFacturacion(req, res) {
+    try {
+      const { 
+        id_proyecto, 
+        hes_oc_numero, 
+        factura_numero, 
+        fecha_facturacion, 
+        monto_facturado_neto,
+        monto_facturado_bruto,
+        observaciones_facturacion,
+        id_user_cierre
+      } = req.body;
+
+      if (!id_proyecto) {
+        return res.status(400).json({ error: 'id_proyecto es requerido' });
+      }
+
+      const liquidacionData = {
+        hes_oc_numero: hes_oc_numero || '',
+        factura_numero: factura_numero || '',
+        fecha_facturacion: fecha_facturacion || new Date().toISOString().split('T')[0],
+        monto_facturado_neto: Number(monto_facturado_neto) || 0,
+        monto_facturado_bruto: Number(monto_facturado_bruto) || 0,
+        observaciones_facturacion: observaciones_facturacion || '',
+        id_user_cierre: id_user_cierre || null,
+        fecha_cierre: new Date().toISOString(),
+        estado_financiero: 'FACTURADO_CONFORME'
+      };
+
+      // Actualizar estado a 7 (Facturado / Cerrado) y guardar liquidacion_v1
+      const updateSql = `
+        UPDATE sch_leangsp.tpry_proyecto
+        SET 
+          id_proyecto_estado = 7,
+          json_field = jsonb_set(
+            COALESCE(json_field, '{}'::jsonb),
+            '{liquidacion_v1}',
+            $1::jsonb,
+            true
+          )
+        WHERE id_proyecto = $2
+        RETURNING id_proyecto, codi_proyecto, id_proyecto_estado, json_field;
+      `;
+
+      const result = await db.query(updateSql, [
+        JSON.stringify(liquidacionData),
+        id_proyecto
+      ]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Proyecto no encontrado' });
+      }
+
+      res.json({
+        success: true,
+        message: 'OT declarada Facturada y Concluida exitosamente',
+        data: result.rows[0]
+      });
+    } catch (err) {
+      console.error('Error al cerrar facturación de OT:', err);
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
