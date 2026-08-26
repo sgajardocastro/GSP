@@ -160,11 +160,11 @@
         <span v-else-if="estadoDbActual === ESTADOS_DB.PREPARACION_PATIO" class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
         <span v-else class="text-xs text-slate-500">👁️</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-        <span>5. Preparación de Salida</span>
+        <span>5. Control de Flota & Despacho</span>
         <span v-if="estadoDbActual > ESTADOS_DB.PREPARACION_PATIO" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
       </button>
 
-      <!-- 6. EJECUCIÓN & REPORTS DIARIOS -->
+      <!-- 6. REPORTES DIARIOS DE IZAJE (Cara al Mandante) -->
       <button 
         @click="cambiarYPersistirSubTab('reports')" 
         :disabled="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO"
@@ -177,7 +177,7 @@
         <span v-if="estadoDbActual < ESTADOS_DB.PREPARACION_PATIO" class="text-xs">🔒</span>
         <span v-else class="text-xs text-amber-400">📋</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-        <span>6. Ejecución & Reports</span>
+        <span>6. Reportes Diarios de Izaje</span>
         <span v-if="reportsProyecto.length > 0" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono font-bold">{{ reportsProyecto.length }}</span>
       </button>
 

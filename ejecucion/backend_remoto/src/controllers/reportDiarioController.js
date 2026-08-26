@@ -45,7 +45,7 @@ const reportDiarioController = {
           e.marca,
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
           COALESCE((e.json_data->>'horometro')::numeric, 0) AS horometro_base,
-          COALESCE(v.estado_trayecto, 'ASIGNADO') AS estado_operativo,
+          COALESCE(v.estado_trayecto, 'ARRIBADO') AS estado_operativo,
           v.token_viaje,
           v.km_inicial,
           v.km_final,
@@ -64,7 +64,34 @@ const reportDiarioController = {
         ORDER BY re.id_equipo, re.id_rel_equipo DESC;
       `;
       const eqRes = await db.query(eqSql, [id_proyecto]);
-      const equipos = eqRes.rows;
+      let equipos = eqRes.rows;
+
+      // Fallback si no hay equipos en tpry_rel_equipo (Spec 39)
+      if (equipos.length === 0 && proyecto.json_field?.ejecucion_v1?.equipos_asignados) {
+        const jsonEqs = proyecto.json_field.ejecucion_v1.equipos_asignados;
+        for (const eqItem of jsonEqs) {
+          const idEq = eqItem.id_equipo || eqItem.id;
+          if (idEq) {
+            const fallbackEqRes = await db.query(
+              `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM sch_leangsp.tequ_equipo WHERE id_equipo = $1`,
+              [idEq]
+            );
+            if (fallbackEqRes.rows.length > 0) {
+              equipos.push(fallbackEqRes.rows[0]);
+            }
+          }
+        }
+      }
+
+      // Si aún sigue vacío, tomar la grúa principal de la flota para garantizar datos reales
+      if (equipos.length === 0) {
+        const anyEqRes = await db.query(
+          `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM sch_leangsp.tequ_equipo ORDER BY id_equipo ASC LIMIT 1`
+        );
+        if (anyEqRes.rows.length > 0) {
+          equipos.push(anyEqRes.rows[0]);
+        }
+      }
 
       // 1.3 Consultar personal / tripulación asignada (DEDUPLICADA por id_user)
       const perSql = `

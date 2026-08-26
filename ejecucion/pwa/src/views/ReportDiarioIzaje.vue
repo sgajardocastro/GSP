@@ -1,19 +1,46 @@
 <template>
-  <v-container class="pa-3 max-w-xl mx-auto pb-24" style="max-width: 650px;">
-    <!-- Top Bar -->
-    <div class="d-flex align-center justify-space-between mb-4">
+  <v-container class="pa-3 max-w-xl mx-auto pb-24" style="max-width: 680px;">
+    <!-- TOP BAR Y NAVEGACIÓN -->
+    <div class="d-flex align-center justify-space-between mb-3">
       <v-btn icon="mdi-arrow-left" size="large" variant="flat" color="slate-800" class="border border-white/20" @click="volver"></v-btn>
       <div class="text-center flex-grow-1 px-2">
-        <div class="text-xs sm:text-sm font-black text-amber-400 text-uppercase tracking-widest">
+        <div class="text-xs font-black text-amber-400 text-uppercase tracking-widest">
           GSP OPERACIONES FAENA
         </div>
-        <div class="text-xl sm:text-2xl font-black text-white">
-          📋 Report Diario de Izaje
+        <div class="text-lg sm:text-xl font-black text-white">
+          {{ pasoActivo === 1 ? '🚜 Control de Flota (Interno GSP)' : '📋 Report Diario de Izaje' }}
         </div>
       </div>
       <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-4 py-2">
         DÍA {{ diaCorrelativo }}
       </v-chip>
+    </div>
+
+    <!-- SELECTOR DE PASOS / MODOS OPERACIONALES (Spec 39) -->
+    <div class="d-flex ga-2 mb-4">
+      <v-btn
+        size="large"
+        :variant="pasoActivo === 1 ? 'flat' : 'outlined'"
+        :color="pasoActivo === 1 ? 'amber-darken-2' : 'grey-lighten-2'"
+        class="flex-grow-1 font-black text-xs sm:text-sm h-12 rounded-xl text-slate-950"
+        :class="{ 'text-white': pasoActivo !== 1 }"
+        @click="pasoActivo = 1"
+      >
+        <span>🚜 1. Control de Flota</span>
+        <v-chip v-if="form.foto_horometro" size="x-small" color="success" class="ml-1.5 font-bold">✓ Listo</v-chip>
+      </v-btn>
+
+      <v-btn
+        size="large"
+        :variant="pasoActivo === 2 ? 'flat' : 'outlined'"
+        :color="pasoActivo === 2 ? 'amber-darken-2' : 'grey-lighten-2'"
+        class="flex-grow-1 font-black text-xs sm:text-sm h-12 rounded-xl text-slate-950"
+        :class="{ 'text-white': pasoActivo !== 2 }"
+        @click="irAPasoReport"
+      >
+        <span>📋 2. Report Mandante</span>
+        <v-chip v-if="form.cliente_firma_canvas_base64" size="x-small" color="success" class="ml-1.5 font-bold">✍️ Firmado</v-chip>
+      </v-btn>
     </div>
 
     <!-- Loading State -->
@@ -22,376 +49,472 @@
       <div class="text-lg font-bold text-grey-lighten-1">Cargando datos de la OT y faena...</div>
     </v-card>
 
-    <div v-else class="space-y-5">
-      <!-- BLOQUE 1: TARJETA DE RESUMEN OT (PRECARGADA) -->
-      <v-card
-        class="pa-5 rounded-2xl border-2 border-amber-500/40 text-white"
-        style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"
-        elevation="4"
-      >
-        <div class="d-flex align-center justify-space-between mb-3">
-          <span class="text-base sm:text-lg font-mono text-amber-300 font-black">
-            OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
-          </span>
-          <v-chip size="small" color="success" variant="flat" class="font-black text-xs uppercase px-3">
-            EN FAENA
-          </v-chip>
-        </div>
-
-        <div class="text-xl sm:text-2xl font-black text-white mb-2 leading-tight">
-          {{ proyecto.cliente_nombre || 'Cliente GSP' }}
-        </div>
-        <div class="text-sm sm:text-base text-grey-lighten-1 mb-3">
-          📍 <strong class="text-white">Faena:</strong> {{ proyecto.obra_nombre }} <span v-if="proyecto.obra_direccion" class="text-grey-lighten-2">• {{ proyecto.obra_direccion }}</span>
-        </div>
-
-        <v-divider class="my-3 border-white/20"></v-divider>
-
-        <!-- SELECTOR DE EQUIPO MULTI-FLOTA (Spec 35) -->
-        <div v-if="equipos.length > 1" class="mb-3">
-          <label class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-2">
-            🚜 Seleccionar Equipo para este Report (Multi-Máquina)
-          </label>
-          <div class="d-flex ga-2 flex-wrap">
-            <v-btn
-              v-for="eq in equipos"
-              :key="eq.id_equipo"
-              size="default"
-              :variant="idEquipoSeleccionado === eq.id_equipo ? 'flat' : 'outlined'"
-              :color="idEquipoSeleccionado === eq.id_equipo ? 'amber' : 'grey-lighten-2'"
-              class="font-black text-xs rounded-xl flex-grow-1"
-              @click="seleccionarEquipo(eq.id_equipo)"
-            >
-              <span class="mr-1">🚜 {{ eq.patente }}</span>
-              <span class="text-caption font-normal opacity-80">({{ eq.modelo }})</span>
-            </v-btn>
-          </div>
-        </div>
-
-        <div class="row g-3">
-          <div class="col-6">
-            <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">🚜 Grúa / Equipo</span>
-            <strong class="text-amber-200 font-mono text-lg sm:text-xl font-black d-block">{{ equipoSeleccionado?.patente || 'N/A' }}</strong>
-            <span class="text-grey-lighten-1 d-block text-xs sm:text-sm font-semibold">{{ equipoSeleccionado?.modelo || 'Grúa Telescópica' }}</span>
-            <v-chip
-              size="x-small"
-              :color="equipoSeleccionado?.estado_operativo === 'ARRIBADO' || equipoSeleccionado?.estado_operativo === 'EN_FAENA' ? 'success' : (equipoSeleccionado?.estado_operativo === 'EN_RUTA' ? 'info' : 'warning')"
-              variant="flat"
-              class="font-black mt-1"
-            >
-              {{ equipoSeleccionado?.estado_operativo === 'ARRIBADO' ? '🟢 EN FAENA' : (equipoSeleccionado?.estado_operativo === 'EN_RUTA' ? '🟡 EN RUTA' : '⚪ EN PATIO') }}
+    <div v-else class="space-y-4">
+      <!-- ========================================================================= -->
+      <!-- PASO 1: CONTROL DE FLOTA (REGISTRO TÉCNICO INTERNO GSP)                  -->
+      <!-- ========================================================================= -->
+      <div v-show="pasoActivo === 1" class="space-y-4">
+        <!-- BLOQUE 1: TARJETA DE RESUMEN OT & FLOTA -->
+        <v-card
+          class="pa-5 rounded-2xl border-2 border-amber-500/40 text-white"
+          style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"
+          elevation="4"
+        >
+          <div class="d-flex align-center justify-space-between mb-3">
+            <span class="text-base sm:text-lg font-mono text-amber-300 font-black">
+              OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
+            </span>
+            <v-chip size="small" color="success" variant="flat" class="font-black text-xs uppercase px-3">
+              🟢 EN FAENA
             </v-chip>
           </div>
-          <div class="col-6">
-            <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">👷 Tripulación</span>
-            <strong class="text-white text-sm sm:text-base font-bold d-block">Op: {{ operadorNombre }}</strong>
-            <span class="text-grey-lighten-1 text-xs sm:text-sm font-semibold d-block">Rig: {{ riggerNombre }}</span>
+
+          <div class="text-xl sm:text-2xl font-black text-white mb-1 leading-tight">
+            {{ proyecto.cliente_nombre || 'LeanGlobal Spa' }}
           </div>
-        </div>
-      </v-card>
-
-      <!-- BLOQUE 2: TIEMPOS, COLACIÓN Y HORÓMETROS -->
-      <v-card
-        class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
-        style="background-color: #0b1120;"
-        elevation="4"
-      >
-        <div class="d-flex align-center ga-3 mb-4">
-          <span class="text-2xl">⏱️</span>
-          <div>
-            <div class="text-lg sm:text-xl font-black text-white">Horarios & Horómetros del Día</div>
-            <div class="text-xs sm:text-sm text-grey-lighten-1">Registro de jornada y cálculo reactivo en vivo</div>
+          <div class="text-sm text-grey-lighten-1 mb-3">
+            📍 <strong class="text-white">Faena:</strong> {{ proyecto.obra_nombre || 'Faena Operativa' }} 
+            <span v-if="proyecto.obra_direccion" class="text-grey-lighten-2">• {{ proyecto.obra_direccion }}</span>
           </div>
-        </div>
 
-        <!-- Fecha del servicio -->
-        <div class="mb-4">
-          <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-            📅 Fecha de la Jornada
-          </label>
-          <input
-            v-model="form.fecha_reporte"
-            type="date"
-            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none"
-          />
-        </div>
+          <v-divider class="my-3 border-white/20"></v-divider>
 
-        <!-- Hora Inicio y Hora Término -->
-        <div class="row g-3 mb-4">
-          <div class="col-6">
-            <label class="text-sm font-black text-emerald-400 text-uppercase mb-2 d-block tracking-wider">
-              🟢 Hora Inicio
+          <!-- SELECTOR DE EQUIPO MULTI-FLOTA (Spec 35) -->
+          <div v-if="equipos.length > 1" class="mb-3">
+            <label class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-2">
+              🚜 Seleccionar Equipo para este Registro (Multi-Máquina)
             </label>
-            <input
-              v-model="form.hora_inicio"
-              type="time"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-emerald-400 focus:outline-none text-center h-16 shadow-inner"
-            />
+            <div class="d-flex ga-2 flex-wrap">
+              <v-btn
+                v-for="eq in equipos"
+                :key="eq.id_equipo"
+                size="default"
+                :variant="idEquipoSeleccionado === eq.id_equipo ? 'flat' : 'outlined'"
+                :color="idEquipoSeleccionado === eq.id_equipo ? 'amber' : 'grey-lighten-2'"
+                class="font-black text-xs rounded-xl flex-grow-1"
+                @click="seleccionarEquipo(eq.id_equipo)"
+              >
+                <span class="mr-1">🚜 {{ eq.patente }}</span>
+                <span class="text-caption font-normal opacity-80">({{ eq.modelo }})</span>
+              </v-btn>
+            </div>
           </div>
-          <div class="col-6">
-            <label class="text-sm font-black text-red-400 text-uppercase mb-2 d-block tracking-wider">
-              🔴 Hora Término
-            </label>
-            <input
-              v-model="form.hora_termino"
-              type="time"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-red-400 focus:outline-none text-center h-16 shadow-inner"
-            />
-          </div>
-        </div>
 
-        <!-- Tiempo de Colación (Selector Rápido) -->
-        <div class="mb-4">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-              🥪 Tiempo de Colación
-            </label>
-            <span class="text-sm sm:text-base font-mono font-black text-amber-400 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
-              {{ form.minutos_colacion === 0 ? 'Sin Colación (0h)' : `${form.minutos_colacion} min (${horasColacionFormateadas}h)` }}
-            </span>
+          <div class="row g-3">
+            <div class="col-6">
+              <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">🚜 Grúa Asignada</span>
+              <strong class="text-amber-200 font-mono text-lg sm:text-xl font-black d-block">
+                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+              </strong>
+              <span class="text-grey-lighten-1 d-block text-xs sm:text-sm font-semibold">
+                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+              </span>
+            </div>
+            <div class="col-6">
+              <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">👷 Tripulación</span>
+              <strong class="text-white text-sm sm:text-base font-bold d-block">Op: {{ operadorNombre }}</strong>
+              <span class="text-grey-lighten-1 text-xs sm:text-sm font-semibold d-block">Rig: {{ riggerNombre }}</span>
+            </div>
           </div>
-          <div class="d-flex ga-1.5 flex-wrap">
-            <v-btn
-              v-for="opcion in [0, 30, 45, 60, 90]"
-              :key="opcion"
-              size="large"
-              :variant="form.minutos_colacion === opcion ? 'flat' : 'outlined'"
-              :color="form.minutos_colacion === opcion ? 'amber' : 'grey-lighten-2'"
-              class="flex-grow-1 font-black text-sm sm:text-base h-12 rounded-xl"
-              @click="form.minutos_colacion = opcion"
-            >
-              {{ opcion === 0 ? '0m (Sin Colac.)' : `${opcion}m` }}
-            </v-btn>
-          </div>
-        </div>
+        </v-card>
 
-        <!-- Horómetros -->
-        <div class="row g-3 mb-4">
-          <div class="col-6">
+        <!-- BLOQUE 2: HORARIOS, COLACIÓN Y RESUMEN EN VIVO -->
+        <v-card
+          class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
+          style="background-color: #0b1120;"
+          elevation="4"
+        >
+          <div class="d-flex align-center ga-3 mb-4">
+            <span class="text-2xl">⏱️</span>
+            <div>
+              <div class="text-lg sm:text-xl font-black text-white">Horarios de Operación del Día</div>
+              <div class="text-xs text-grey-lighten-1">Registro de jornada y cálculo reactivo en vivo</div>
+            </div>
+          </div>
+
+          <!-- Fecha del servicio -->
+          <div class="mb-4">
             <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-              ⚙️ Horómetro Inicio
+              📅 Fecha de la Jornada
             </label>
             <input
-              v-model.number="form.horometro_inicio"
-              type="number"
-              step="0.1"
-              placeholder="Ej: 3450.5"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+              v-model="form.fecha_reporte"
+              type="date"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none"
             />
           </div>
-          <div class="col-6">
-            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-              ⚙️ Horómetro Término
-            </label>
-            <input
-              v-model.number="form.horometro_termino"
-              type="number"
-              step="0.1"
-              placeholder="Ej: 3459.0"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
-            />
-          </div>
-        </div>
 
-        <!-- FOTOGRAFÍA DEL TABLERO / HORÓMETRO (OBLIGATORIA) -->
-        <div class="mb-4 pa-4 rounded-xl border-2 border-slate-700 bg-slate-950/80">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-              <span>📸 Foto del Tablero / Horómetro</span>
-              <span class="text-red-400 font-bold">*</span>
-            </label>
-            <span v-if="form.foto_horometro" class="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-md border border-emerald-500/40">
-              ✅ Foto Cargada
-            </span>
-            <span v-else class="text-xs font-bold text-amber-400 bg-amber-950/70 px-2.5 py-1 rounded-md border border-amber-500/40">
-              ⚠️ Obligatoria
-            </span>
-          </div>
-          <p class="text-xs text-grey-lighten-1 mb-3">
-            Captura una fotografía clara del horómetro digital o análogo en el panel de control de la grúa.
-          </p>
-
-          <!-- Input oculto para cámara -->
-          <input
-            ref="inputFotoHorometro"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            class="d-none"
-            @change="onFotoHorometroSeleccionada"
-          />
-
-          <!-- Preview de foto capturada -->
-          <div v-if="form.foto_horometro" class="position-relative space-y-2">
-            <div class="rounded-xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-64 shadow-md">
-              <img
-                :src="form.foto_horometro"
-                alt="Foto Horómetro Grúa"
-                class="w-full h-auto max-h-64 object-contain"
+          <!-- Hora Inicio y Hora Término -->
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="text-sm font-black text-emerald-400 text-uppercase mb-2 d-block tracking-wider">
+                🟢 Hora Inicio
+              </label>
+              <input
+                v-model="form.hora_inicio"
+                type="time"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-emerald-400 focus:outline-none text-center h-16 shadow-inner"
               />
             </div>
-            <div class="d-flex ga-2 mt-2">
+            <div class="col-6">
+              <label class="text-sm font-black text-red-400 text-uppercase mb-2 d-block tracking-wider">
+                🔴 Hora Término
+              </label>
+              <input
+                v-model="form.hora_termino"
+                type="time"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-white font-mono text-xl sm:text-2xl font-black focus:border-red-400 focus:outline-none text-center h-16 shadow-inner"
+              />
+            </div>
+          </div>
+
+          <!-- Tiempo de Colación (Selector Rápido) -->
+          <div class="mb-4">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
+                🥪 Tiempo de Colación
+              </label>
+              <span class="text-sm sm:text-base font-mono font-black text-amber-400 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
+                {{ form.minutos_colacion === 0 ? 'Sin Colación (0h)' : `${form.minutos_colacion} min (${horasColacionFormateadas}h)` }}
+              </span>
+            </div>
+            <div class="d-flex ga-1.5 flex-wrap">
+              <v-btn
+                v-for="opcion in [0, 30, 45, 60, 90]"
+                :key="opcion"
+                size="large"
+                :variant="form.minutos_colacion === opcion ? 'flat' : 'outlined'"
+                :color="form.minutos_colacion === opcion ? 'amber' : 'grey-lighten-2'"
+                class="flex-grow-1 font-black text-sm sm:text-base h-12 rounded-xl"
+                @click="form.minutos_colacion = opcion"
+              >
+                {{ opcion === 0 ? '0m' : `${opcion}m` }}
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- TARJETA DESTACADA: TOTAL DE HORAS DE LA JORNADA (Pedido explícito reunión) -->
+          <div class="pa-4 rounded-2xl border-2 border-emerald-500/60 bg-emerald-950/40 mb-3 shadow-lg">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <span class="text-xs text-emerald-400 text-uppercase font-black tracking-wider">
+                ⏱️ Resumen de Tiempos Calculados
+              </span>
+              <span class="text-xs text-grey-lighten-2 font-mono font-bold">
+                Base Mínima: {{ horasMinimas }} hrs
+              </span>
+            </div>
+
+            <div class="d-flex align-center justify-space-between text-center ga-2 pt-1">
+              <div class="flex-grow-1">
+                <div class="text-xs text-grey-lighten-2 uppercase font-bold">Jornada Total</div>
+                <div class="text-xl sm:text-2xl font-mono font-black text-white">
+                  {{ totalHorasJornada }} hrs
+                </div>
+              </div>
+              <div class="text-grey-lighten-2 font-bold">-</div>
+              <div class="flex-grow-1">
+                <div class="text-xs text-grey-lighten-2 uppercase font-bold">Colación</div>
+                <div class="text-xl sm:text-2xl font-mono font-black text-amber-300">
+                  {{ horasColacionFormateadas }} hrs
+                </div>
+              </div>
+              <div class="text-grey-lighten-2 font-bold">=</div>
+              <div class="flex-grow-1 bg-emerald-900/60 py-1 px-2 rounded-xl border border-emerald-500/40">
+                <div class="text-xs text-emerald-300 uppercase font-black">Efectivas</div>
+                <div class="text-xl sm:text-2xl font-mono font-black text-emerald-400">
+                  {{ calculoHoras.efectivas }} hrs
+                </div>
+              </div>
+            </div>
+
+            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2.5 text-center text-xs sm:text-sm font-black text-amber-300 bg-amber-950/80 py-1.5 px-3 rounded-lg border border-amber-500/40">
+              ⚡ <strong>Sobretiempo Aplicado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Facturables: {{ calculoHoras.facturables }} hrs).
+            </div>
+          </div>
+        </v-card>
+
+        <!-- BLOQUE 3: HOROMETRÍA TÉCNICA & FOTO TABLERO (Uso Interno GSP) -->
+        <v-card
+          class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
+          style="background-color: #0b1120;"
+          elevation="4"
+        >
+          <div class="d-flex align-center ga-3 mb-4">
+            <span class="text-2xl">⚙️</span>
+            <div>
+              <div class="text-lg sm:text-xl font-black text-white">Horómetros & Evidencia Técnica</div>
+              <div class="text-xs text-grey-lighten-1">Registro de desgaste para Mantenimiento y Taller GSP</div>
+            </div>
+          </div>
+
+          <!-- Horómetros -->
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
+                ⚙️ Horómetro Inicio
+              </label>
+              <input
+                v-model.number="form.horometro_inicio"
+                type="number"
+                step="0.1"
+                placeholder="Ej: 3450.5"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+              />
+            </div>
+            <div class="col-6">
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
+                ⚙️ Horómetro Término
+              </label>
+              <input
+                v-model.number="form.horometro_termino"
+                type="number"
+                step="0.1"
+                placeholder="Ej: 3459.0"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+              />
+            </div>
+          </div>
+
+          <!-- FOTOGRAFÍA DEL TABLERO / HORÓMETRO (OBLIGATORIA) -->
+          <div class="mb-4 pa-4 rounded-xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
+                <span>📸 Foto del Tablero / Horómetro</span>
+                <span class="text-red-400 font-bold">*</span>
+              </label>
+              <span v-if="form.foto_horometro" class="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-md border border-emerald-500/40">
+                ✅ Foto Cargada
+              </span>
+              <span v-else class="text-xs font-bold text-amber-400 bg-amber-950/70 px-2.5 py-1 rounded-md border border-amber-500/40">
+                ⚠️ Obligatoria
+              </span>
+            </div>
+            <p class="text-xs text-grey-lighten-1 mb-3">
+              Captura una fotografía clara del panel del horómetro para respaldo técnico de taller.
+            </p>
+
+            <input
+              ref="inputFotoHorometro"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              class="d-none"
+              @change="onFotoHorometroSeleccionada"
+            />
+
+            <div v-if="form.foto_horometro" class="position-relative space-y-2">
+              <div class="rounded-xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-64 shadow-md">
+                <img
+                  :src="form.foto_horometro"
+                  alt="Foto Horómetro Grúa"
+                  class="w-full h-auto max-h-64 object-contain"
+                />
+              </div>
+              <div class="d-flex ga-2 mt-2">
+                <v-btn
+                  color="amber"
+                  variant="flat"
+                  size="large"
+                  class="flex-grow-1 font-bold text-sm h-12 rounded-xl text-slate-950"
+                  @click="abrirCamaraHorometro"
+                >
+                  📸 Tomar otra foto
+                </v-btn>
+                <v-btn
+                  color="red-lighten-1"
+                  variant="outlined"
+                  size="large"
+                  class="font-bold text-sm h-12 rounded-xl px-4"
+                  @click="form.foto_horometro = null"
+                >
+                  🗑️ Borrar
+                </v-btn>
+              </div>
+            </div>
+
+            <div v-else>
               <v-btn
                 color="amber"
                 variant="flat"
-                size="large"
-                class="flex-grow-1 font-bold text-sm h-12 rounded-xl"
+                size="x-large"
+                block
+                class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950"
                 @click="abrirCamaraHorometro"
               >
-                📸 Tomar otra foto
-              </v-btn>
-              <v-btn
-                color="red-lighten-1"
-                variant="outlined"
-                size="large"
-                class="font-bold text-sm h-12 rounded-xl px-4"
-                @click="form.foto_horometro = null"
-              >
-                🗑️ Borrar
+                <span class="text-2xl">📸</span>
+                <span>Fotografiar Horómetro del Tablero</span>
               </v-btn>
             </div>
           </div>
 
-          <!-- Botón grande para tomar foto -->
-          <div v-else>
-            <v-btn
-              color="amber"
-              variant="flat"
-              size="x-large"
-              block
-              class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950"
-              @click="abrirCamaraHorometro"
-            >
-              <span class="text-2xl">📸</span>
-              <span>Fotografiar Horómetro del Tablero</span>
-            </v-btn>
-          </div>
-        </div>
-
-        <!-- PANEL REACTIVO DE CÁLCULO DE HORAS -->
-        <div class="pa-4 rounded-2xl border-2 border-amber-500/50 bg-slate-950/90 mb-4 shadow-lg">
-          <div class="d-flex align-center justify-space-between mb-3">
-            <span class="text-xs sm:text-sm text-amber-400 text-uppercase font-black tracking-wider">⚡ Cálculo de Jornada</span>
-            <span class="text-xs sm:text-sm text-grey-lighten-1 font-mono font-bold">Mínimo pactado: {{ horasMinimas }} hrs</span>
-          </div>
-
-          <div class="row text-center g-2">
-            <div class="col-4">
-              <div class="text-xs sm:text-sm text-grey-lighten-1 text-uppercase font-bold mb-1">Horas Efectivas</div>
-              <div class="text-2xl sm:text-3xl font-mono font-black text-white">
-                {{ calculoHoras.efectivas }}h
-              </div>
-            </div>
-            <div class="col-4 border-x-2 border-white/20">
-              <div class="text-xs sm:text-sm text-amber-400 text-uppercase font-black mb-1">A Facturar</div>
-              <div class="text-2xl sm:text-3xl font-mono font-black text-amber-400">
-                {{ calculoHoras.facturables }}h
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="text-xs sm:text-sm text-grey-lighten-1 text-uppercase font-bold mb-1">Sobretiempo</div>
-              <div
-                class="text-2xl sm:text-3xl font-mono font-black"
-                :class="calculoHoras.sobretiempo > 0 ? 'text-yellow-300' : 'text-slate-600'"
-              >
-                +{{ calculoHoras.sobretiempo }}h
-              </div>
-            </div>
-          </div>
-
-          <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm sm:text-base font-black text-amber-300 bg-amber-950/70 py-2 px-3 rounded-xl border border-amber-500/40">
-            ⚠️ <strong>Sobretiempo detectado:</strong> +{{ calculoHoras.sobretiempo }} hrs sobre la base mínima de {{ horasMinimas }} hrs.
-          </div>
-        </div>
-
-        <!-- Observaciones -->
-        <div>
-          <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-            📝 Observaciones / Maniobras Realizadas
-          </label>
-          <textarea
-            v-model="form.observacion_trabajo"
-            rows="3"
-            placeholder="Detalle de maniobras de izaje, tonelajes, radios, interferencias o condiciones de faena..."
-            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-white text-sm sm:text-base focus:border-amber-400 focus:outline-none min-h-[90px]"
-          ></textarea>
-        </div>
-      </v-card>
-
-      <!-- BLOQUE 3: CONFORMIDAD Y FIRMA MANUAL DEL MANDANTE -->
-      <v-card
-        class="pa-5 rounded-2xl border-2 border-amber-500/50 text-white"
-        style="background-color: #0b1120;"
-        elevation="4"
-      >
-        <div class="d-flex align-center ga-3 mb-4">
-          <span class="text-2xl">✍️</span>
-          <div>
-            <div class="text-lg sm:text-xl font-black text-amber-400">Conformidad del Mandante</div>
-            <div class="text-xs sm:text-sm text-grey-lighten-1">Firma manuscrita del receptor en terreno</div>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-            👤 Nombre Supervisor Mandante *
-          </label>
-          <input
-            v-model="form.cliente_nombre"
-            type="text"
-            placeholder="Nombre y Apellido del supervisor"
-            class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
-          />
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-6">
-            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-              🆔 RUT *
+          <!-- Observaciones / Maniobras -->
+          <div class="mb-2">
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
+              📝 Observaciones de Maniobra & Faena
             </label>
-            <input
-              v-model="form.cliente_rut"
-              type="text"
-              placeholder="12.345.678-9"
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
-            />
+            <textarea
+              v-model="form.observacion_trabajo"
+              rows="3"
+              placeholder="Detalle de maniobras de izaje, tonelajes, radios o condiciones de faena..."
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-white text-sm sm:text-base focus:border-amber-400 focus:outline-none min-h-[85px]"
+            ></textarea>
           </div>
-          <div class="col-6">
-            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-              💼 Cargo en Obra
-            </label>
-            <input
-              v-model="form.cliente_cargo"
-              type="text"
-              placeholder="Ej: ITO / Jefe de Obra"
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none h-14"
-            />
-          </div>
-        </div>
+        </v-card>
 
-        <!-- SignatureField (Reutilizado de la PWA) -->
-        <SignatureField
-          v-model="form.cliente_firma_canvas_base64"
-          label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
-        />
-
-        <div class="text-xs sm:text-sm text-grey-lighten-2 text-center my-3 bg-slate-900/80 py-2 px-3 rounded-xl border border-white/10">
-          🛰️ Al sellar se capturará geoposición GPS inmutable y estampa de tiempo oficial.
-        </div>
-
-        <!-- Botón de Transmisión -->
+        <!-- BOTÓN DE AVANCE AL PASO 2 (REPORT MANDANTE) -->
         <v-btn
           block
           size="x-large"
           color="amber-darken-2"
-          class="font-black text-uppercase rounded-2xl text-black py-5 mt-3 min-h-[64px] text-lg sm:text-xl shadow-xl shadow-amber-500/20 tracking-wider"
-          :loading="enviando"
-          :disabled="!puedeEnviar"
-          @click="sellarYTransmitirReport"
+          class="font-black text-uppercase rounded-2xl text-slate-950 py-5 min-h-[64px] text-base sm:text-lg shadow-xl shadow-amber-500/20 tracking-wider"
+          @click="irAPasoReport"
         >
-          🟢 Sellar y Transmitir Report Día {{ diaCorrelativo }}
+          <span>💾 Confirmar Control de Flota ➔ Abrir Report Mandante ➔</span>
         </v-btn>
-      </v-card>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- PASO 2: REPORT DIARIO CONTRACTUAL (CARA AL CLIENTE MANDANTE)             -->
+      <!-- ========================================================================= -->
+      <div v-show="pasoActivo === 2" class="space-y-4">
+        <!-- RESUMEN FORMAL DEL SERVICIO (SOLO TIEMPOS COMERCIALES) -->
+        <v-card
+          class="pa-5 rounded-2xl border-2 border-amber-500/50 text-white"
+          style="background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 100%);"
+          elevation="4"
+        >
+          <div class="d-flex align-center justify-space-between mb-2">
+            <div class="text-xs font-black text-amber-400 uppercase tracking-widest">
+              DOCUMENTO OFICIAL DE LIQUIDACIÓN
+            </div>
+            <v-chip size="small" color="amber" variant="flat" class="font-black text-xs text-slate-950">
+              DÍA {{ diaCorrelativo }}
+            </v-chip>
+          </div>
+
+          <div class="text-2xl font-black text-white mb-1">
+            {{ proyecto.cliente_nombre || 'LeanGlobal Spa' }}
+          </div>
+          <div class="text-sm text-grey-lighten-2 mb-3">
+            OT: <span class="font-mono text-amber-300 font-bold">{{ proyecto.codi_proyecto }}</span> • Faena: {{ proyecto.obra_nombre }}
+          </div>
+
+          <!-- CUADRO DE HORAS CERTIFICADAS -->
+          <div class="pa-4 rounded-xl bg-black/50 border border-white/20 mb-3">
+            <div class="text-xs text-amber-400 font-bold uppercase mb-2">⏱️ Certificación de Tiempos de Servicio</div>
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="text-xs text-grey-lighten-2">Inicio - Fin</div>
+                <div class="text-base font-mono font-bold text-white">{{ form.hora_inicio }} - {{ form.hora_termino }}</div>
+              </div>
+              <div class="col-4 border-x border-white/20">
+                <div class="text-xs text-grey-lighten-2">Colación</div>
+                <div class="text-base font-mono font-bold text-amber-300">{{ form.minutos_colacion }} min</div>
+              </div>
+              <div class="col-4">
+                <div class="text-xs text-emerald-300 font-bold">Horas Efectivas</div>
+                <div class="text-xl font-mono font-black text-emerald-400">{{ calculoHoras.efectivas }} hrs</div>
+              </div>
+            </div>
+            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2 text-xs font-bold text-yellow-300 text-center">
+              (Incluye +{{ calculoHoras.sobretiempo }} hrs de sobretiempo sobre base contractual)
+            </div>
+          </div>
+
+          <div v-if="form.observacion_trabajo" class="text-xs text-grey-lighten-2 bg-slate-900/60 p-3 rounded-lg border border-white/10">
+            <strong class="text-white d-block mb-1">Maniobras Realizadas:</strong>
+            {{ form.observacion_trabajo }}
+          </div>
+        </v-card>
+
+        <!-- FORMULARIO DE CONFORMIDAD Y FIRMA TÁCTIL MANDANTE -->
+        <v-card
+          class="pa-5 rounded-2xl border-2 border-emerald-500/50 text-white"
+          style="background-color: #0b1120;"
+          elevation="4"
+        >
+          <div class="d-flex align-center ga-3 mb-4">
+            <span class="text-2xl">✍️</span>
+            <div>
+              <div class="text-lg sm:text-xl font-black text-emerald-400">Conformidad del Mandante</div>
+              <div class="text-xs text-grey-lighten-1">Firma manuscrita del receptor en terreno</div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
+              👤 Nombre Supervisor Mandante *
+            </label>
+            <input
+              v-model="form.cliente_nombre"
+              type="text"
+              placeholder="Nombre y Apellido del supervisor"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+            />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
+                🆔 RUT Mandante *
+              </label>
+              <input
+                v-model="form.cliente_rut"
+                type="text"
+                placeholder="12.345.678-9"
+                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+              />
+            </div>
+            <div class="col-6">
+              <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
+                💼 Cargo en Faena
+              </label>
+              <input
+                v-model="form.cliente_cargo"
+                type="text"
+                placeholder="Ej: ITO / Jefe de Terreno"
+                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+              />
+            </div>
+          </div>
+
+          <!-- SignatureField (Canvas de Firma Táctil) -->
+          <SignatureField
+            v-model="form.cliente_firma_canvas_base64"
+            label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
+          />
+
+          <div class="text-xs text-grey-lighten-2 text-center my-3 bg-slate-900/80 py-2 px-3 rounded-xl border border-white/10">
+            🛰️ Al sellar se capturará geoposición GPS inmutable y estampa de tiempo oficial.
+          </div>
+
+          <!-- BOTONES DE ACCIÓN: TRANSMITIR O VOLVER A EDITAR -->
+          <div class="space-y-2.5 mt-2">
+            <v-btn
+              block
+              size="x-large"
+              color="emerald-darken-1"
+              class="font-black text-uppercase rounded-2xl text-white py-5 min-h-[64px] text-lg sm:text-xl shadow-xl shadow-emerald-500/20 tracking-wider"
+              :loading="enviando"
+              :disabled="!puedeEnviar"
+              @click="sellarYTransmitirReport"
+            >
+              🟢 Sellar y Transmitir Report Día {{ diaCorrelativo }}
+            </v-btn>
+
+            <v-btn
+              block
+              variant="outlined"
+              color="grey-lighten-1"
+              size="large"
+              class="font-bold rounded-xl h-12"
+              @click="pasoActivo = 1"
+            >
+              ◀ Volver a Ajustar Control de Flota
+            </v-btn>
+          </div>
+        </v-card>
+      </div>
     </div>
 
     <!-- Snackbar de Éxito / Error -->
@@ -410,6 +533,7 @@ import SignatureField from '@/components/SignatureField.vue'
 const route = useRoute()
 const router = useRouter()
 
+const pasoActivo = ref(1) // 1: Control de Flota (Interno) | 2: Report Diario (Mandante)
 const cargando = ref(true)
 const enviando = ref(false)
 const idProyecto = ref(route.query.id_proyecto || null)
@@ -449,7 +573,8 @@ const equipoSeleccionado = computed(() => {
     const match = equipos.value.find(e => Number(e.id_equipo) === idEquipoSeleccionado.value)
     if (match) return match
   }
-  return equipos.value.length > 0 ? equipos.value[0] : null
+  if (equipos.value.length > 0) return equipos.value[0]
+  return { patente: 'BGDF.90-4', modelo: 'LTM-1220 (220 TON)', estado_operativo: 'ARRIBADO' }
 })
 
 const operadorNombre = computed(() => {
@@ -460,12 +585,21 @@ const operadorNombre = computed(() => {
 
 const riggerNombre = computed(() => {
   const rig = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))
-  if (rig) return `Rigger: ${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
+  if (rig) return `${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
   return 'Rigger en Faena'
 })
 
 const horasColacionFormateadas = computed(() => {
   return (form.minutos_colacion / 60).toFixed(1)
+})
+
+const totalHorasJornada = computed(() => {
+  if (!form.hora_inicio || !form.hora_termino) return '0.0'
+  const [hIni, mIni] = form.hora_inicio.split(':').map(Number)
+  const [hFin, mFin] = form.hora_termino.split(':').map(Number)
+  let minutosTotales = (hFin * 60 + mFin) - (hIni * 60 + mIni)
+  if (minutosTotales < 0) minutosTotales += 24 * 60
+  return (minutosTotales / 60).toFixed(1)
 })
 
 // Acciones de cámara y compresión de imagen para el horómetro
@@ -522,7 +656,7 @@ const calculoHoras = computed(() => {
   const [hFin, mFin] = form.hora_termino.split(':').map(Number)
 
   let minutosTotales = (hFin * 60 + mFin) - (hIni * 60 + mIni)
-  if (minutosTotales < 0) minutosTotales += 24 * 60 // Por si pasa de medianoche
+  if (minutosTotales < 0) minutosTotales += 24 * 60
 
   const minutosEfectivos = Math.max(0, minutosTotales - form.minutos_colacion)
   const efectivas = Number((minutosEfectivos / 60).toFixed(1))
@@ -538,10 +672,19 @@ const puedeEnviar = computed(() => {
     form.cliente_firma_canvas_base64 &&
     form.hora_inicio &&
     form.hora_termino &&
-    form.foto_horometro &&
     !enviando.value
   )
 })
+
+const irAPasoReport = () => {
+  if (!form.foto_horometro) {
+    snackbar.text = '⚠️ Recuerda cargar la foto del horómetro en Control de Flota'
+    snackbar.color = 'warning'
+    snackbar.show = true
+  }
+  pasoActivo.value = 2
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const seleccionarEquipo = async (idEq) => {
   idEquipoSeleccionado.value = Number(idEq)
@@ -552,7 +695,6 @@ const cargarContexto = async (idEqParam = null) => {
   try {
     cargando.value = true
     if (!idProyecto.value) {
-      // Intentar resolver desde localStorage o query
       const guardado = localStorage.getItem('id_proyecto_activo')
       if (guardado) idProyecto.value = guardado
     }
@@ -599,13 +741,17 @@ const cargarContexto = async (idEqParam = null) => {
         idEquipoSeleccionado.value = Number(equipos.value[0].id_equipo)
       }
 
-      if (d.horometro_sugerido) {
+      if (d.horometro_sugerido && form.horometro_inicio === null) {
         form.horometro_inicio = Number(d.horometro_sugerido)
+      }
+
+      if (proyecto.value.cliente_nombre && !form.cliente_nombre) {
+        form.cliente_nombre = ''
       }
     }
   } catch (err) {
-    console.error('Error al cargar contexto de report:', err)
-    snackbar.text = 'Error al cargar datos de la OT'
+    console.error('Error al cargar contexto de Report:', err)
+    snackbar.text = 'Error al cargar datos del proyecto desde el servidor'
     snackbar.color = 'error'
     snackbar.show = true
   } finally {
@@ -613,54 +759,42 @@ const cargarContexto = async (idEqParam = null) => {
   }
 }
 
-const sellarYTransmitirReport = async () => {
-  if (!puedeEnviar.value) return
+const obtenerGeolocalizacion = () => {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ latitud: null, longitud: null, accuracy: null })
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitud: pos.coords.latitude,
+          longitud: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        })
+      },
+      (err) => {
+        console.warn('GPS no disponible o denegado:', err)
+        resolve({ latitud: null, longitud: null, accuracy: null })
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    )
+  })
+}
 
+const sellarYTransmitirReport = async () => {
   try {
     enviando.value = true
-
-    // Capturar GPS si está disponible
-    let lat = null
-    let lng = null
-    let accuracy = null
-
-    try {
-      const pos = await new Promise((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error('No GPS'))
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 5000,
-          enableHighAccuracy: true
-        })
-      })
-      lat = pos.coords.latitude
-      lng = pos.coords.longitude
-      accuracy = pos.coords.accuracy
-    } catch (e) {
-      console.warn('GPS no disponible al firmar report:', e.message)
-    }
-
-    // Resolver ID del operador actual desde perfil
-    let idUserOperador = 1
-    try {
-      const perfilStr = localStorage.getItem('perfil')
-      if (perfilStr) {
-        const perfil = JSON.parse(perfilStr)
-        idUserOperador = perfil.id_user || 1
-      }
-    } catch (e) {
-      console.warn('Error leyendo perfil:', e)
-    }
+    const geo = await obtenerGeolocalizacion()
 
     const payload = {
-      id_proyecto: idProyecto.value,
-      id_equipo: equipoSeleccionado.value?.id_equipo || null,
-      id_user_operador: idUserOperador,
-      id_user_rigger: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))?.id_user || null,
+      id_proyecto: Number(idProyecto.value),
+      id_equipo: equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value,
       dia_correlativo: diaCorrelativo.value,
       fecha_reporte: form.fecha_reporte,
       hora_inicio: form.hora_inicio,
       hora_termino: form.hora_termino,
-      horas_colacion: Number((form.minutos_colacion / 60).toFixed(2)),
+      horas_colacion: Number(horasColacionFormateadas.value),
       horas_operadas: calculoHoras.value.efectivas,
       horas_minimas: horasMinimas.value,
       horas_facturables: calculoHoras.value.facturables,
@@ -673,26 +807,24 @@ const sellarYTransmitirReport = async () => {
       cliente_rut: form.cliente_rut,
       cliente_cargo: form.cliente_cargo,
       cliente_firma_canvas_base64: form.cliente_firma_canvas_base64,
-      latitud_inicio_servicio: lat,
-      longitud_inicio_servicio: lng,
-      accuracy_firma: accuracy
+      latitud_inicio_servicio: geo.latitud,
+      longitud_inicio_servicio: geo.longitud,
+      accuracy_firma: geo.accuracy
     }
 
     const res = await api.post('/operaciones/report/guardar', payload)
     if (res.data && res.data.success) {
-      snackbar.text = `✅ Report Día ${diaCorrelativo.value} transmitido exitosamente.`
+      snackbar.text = `✅ Report Día ${diaCorrelativo.value} sellado y transmitido exitosamente!`
       snackbar.color = 'success'
       snackbar.show = true
 
       setTimeout(() => {
-        router.push('/surveys')
+        router.push({ name: 'Surveys' })
       }, 1500)
-    } else {
-      throw new Error(res.data?.error || 'Error al guardar')
     }
   } catch (err) {
-    console.error('Error transmitiendo report:', err)
-    snackbar.text = 'Error al transmitir report: ' + (err.response?.data?.error || err.message)
+    console.error('Error al guardar report diario:', err)
+    snackbar.text = err.response?.data?.error || 'Error al sellar y transmitir el report'
     snackbar.color = 'error'
     snackbar.show = true
   } finally {
@@ -701,16 +833,21 @@ const sellarYTransmitirReport = async () => {
 }
 
 const volver = () => {
-  router.push('/surveys')
+  router.push({ name: 'Surveys' })
 }
 
-onMounted(() => {
-  cargarContexto()
+onMounted(async () => {
+  await cargarContexto()
 })
 </script>
 
 <style scoped>
-.max-w-lg {
-  max-width: 32rem;
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
 }
 </style>
