@@ -570,14 +570,33 @@ const cargarContexto = async (idEqParam = null) => {
     if (res.data && res.data.success) {
       const d = res.data.data
       proyecto.value = d.proyecto || {}
-      equipos.value = d.equipos || []
-      personas.value = d.personas || []
+      
+      // Deduplicar equipos por id_equipo
+      const mapEq = new Map()
+      ;(d.equipos || []).forEach(e => {
+        if (!mapEq.has(Number(e.id_equipo))) {
+          mapEq.set(Number(e.id_equipo), e)
+        }
+      })
+      equipos.value = Array.from(mapEq.values())
+
+      // Deduplicar personas por id_user
+      const mapPer = new Map()
+      ;(d.personas || []).forEach(p => {
+        if (!mapPer.has(Number(p.id_user))) {
+          mapPer.set(Number(p.id_user), p)
+        }
+      })
+      personas.value = Array.from(mapPer.values())
+
       reportsPrevios.value = d.reports || []
       diaCorrelativo.value = d.dia_sugerido || 1
       horasMinimas.value = Number(d.horas_minimas) || 4.0
 
       if (d.id_equipo_seleccionado && !idEquipoSeleccionado.value) {
         idEquipoSeleccionado.value = Number(d.id_equipo_seleccionado)
+      } else if (!idEquipoSeleccionado.value && equipos.value.length > 0) {
+        idEquipoSeleccionado.value = Number(equipos.value[0].id_equipo)
       }
 
       if (d.horometro_sugerido) {

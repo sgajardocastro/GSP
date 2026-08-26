@@ -12,7 +12,7 @@ const reportDiarioController = {
         return res.status(400).json({ error: 'id_proyecto es requerido' });
       }
 
-      // 1.1 Consultar datos del proyecto / OT
+      // 1.1 Consultar datos del proyecto / OT con Razón Social real del cliente (tpar_empresas)
       const proySql = `
         SELECT 
           p.id_proyecto,
@@ -20,11 +20,12 @@ const reportDiarioController = {
           p.nombre_proyecto,
           p.id_proyecto_estado,
           p.json_field,
-          COALESCE(p.json_field->>'cliente_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'razon_social', 'Cliente GSP') AS cliente_nombre,
-          COALESCE(p.json_field->>'cliente_rut', p.json_field->'ejecucion_v1'->'cliente'->>'rut', '') AS cliente_rut,
-          COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
-          COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena en Terreno') AS obra_direccion
+          COALESCE(clt.razon_social, clt.name_empresa, p.json_field->>'cliente_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'razon_social', 'Cliente Mandante') AS cliente_nombre,
+          COALESCE(clt.rut_empresa, p.json_field->>'cliente_rut', p.json_field->'ejecucion_v1'->'cliente'->>'rut', '') AS cliente_rut,
+          COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
+          COALESCE(p.json_field->>'obra_direccion', p.json_field->'crm_v1'->>'obra_direccion', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena en Terreno') AS obra_direccion
         FROM sch_leangsp.tpry_proyecto p
+        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
         WHERE p.id_proyecto = $1;
       `;
       const proyRes = await db.query(proySql, [id_proyecto]);
@@ -33,9 +34,9 @@ const reportDiarioController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 1.2 Consultar equipos asignados con su micro-estado operacional de viaje / patio (Spec 35)
+      // 1.2 Consultar equipos asignados (DEDUPLICADOS por id_equipo) con su micro-estado operacional (Spec 35)
       const eqSql = `
-        SELECT 
+        SELECT DISTINCT ON (re.id_equipo)
           re.id_rel_equipo,
           re.id_equipo,
           re.rol_equipo,
@@ -59,14 +60,15 @@ const reportDiarioController = {
           ORDER BY id_log_desplazamiento DESC
           LIMIT 1
         ) v ON TRUE
-        WHERE re.id_proyecto = $1;
+        WHERE re.id_proyecto = $1
+        ORDER BY re.id_equipo, re.id_rel_equipo DESC;
       `;
       const eqRes = await db.query(eqSql, [id_proyecto]);
       const equipos = eqRes.rows;
 
-      // 1.3 Consultar personal / tripulación asignada
+      // 1.3 Consultar personal / tripulación asignada (DEDUPLICADA por id_user)
       const perSql = `
-        SELECT 
+        SELECT DISTINCT ON (rp.id_user)
           rp.id_rel_persona,
           rp.id_user,
           rp.rol_asignado,
@@ -77,7 +79,8 @@ const reportDiarioController = {
           u.rut
         FROM sch_leangsp.tpry_rel_persona rp
         JOIN sch_leangsp.tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1;
+        WHERE rp.id_proyecto = $1
+        ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `;
       const perRes = await db.query(perSql, [id_proyecto]);
 
@@ -212,7 +215,8 @@ const reportDiarioController = {
           r.fecha_registro,
           p.nombre_proyecto,
           p.codi_proyecto,
-          COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
+          COALESCE(clt.razon_social, clt.name_empresa, 'Cliente Mandante') AS cliente_razon_social,
+          COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
           COALESCE(e.patente, 'N/A') AS equipo_patente,
           COALESCE(e.modelo, 'Grúa') AS equipo_modelo,
           COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
@@ -220,6 +224,7 @@ const reportDiarioController = {
           COALESCE(u_val.name_frst || ' ' || u_val.apellido_pat, 'Analista GSP') AS validador_nombre
         FROM sch_leangsp.tedp_reporte_avance r
         JOIN sch_leangsp.tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
         LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
         LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
         LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
