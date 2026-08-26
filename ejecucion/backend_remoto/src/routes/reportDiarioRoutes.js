@@ -8,7 +8,10 @@ router.get('/contexto/:id_proyecto', reportDiarioController.getReportContexto);
 // 2. Obtener todos los reports de una OT (Torre de Control)
 router.get('/proyecto/:id_proyecto', reportDiarioController.getReportsPorProyecto);
 
-// 3. Guardar y sellar report diario desde PWA
+// 3. Registrar Inicio de Jornada (Momento 1: Control de Flota)
+router.post('/inicio-jornada', reportDiarioController.guardarInicioJornada);
+
+// 4. Guardar y sellar report diario desde PWA (Momento 2 + Report Mandante)
 router.post('/guardar', reportDiarioController.guardarReportDiario);
 
 // 4. Validar report diario por el analista
