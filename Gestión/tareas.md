@@ -185,6 +185,16 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] Revisar modificaciones (Baja):** Analizar los cambios realizados y notificar a Jorge Ponce para ejecutar la prueba del desarrollo.
 *   [ ] **[Sergio Gajardo] Tratamiento de Alimentos, Hospedaje y Traslados de Personal en Tierra (Media-Alta):** Diseñar e implementar el registro y control operativo de alimentación, hospedaje y traslados para el personal de faena (Riggers, Prevencionistas, Supervisores) que no se desplaza en las cabinas de los equipos de izaje/maquinaria.
 
+**Reunión 26-Ago-2026 (Seguimiento Operativo, Despacho y Presentación):**
+*   [ ] **[Sergio Gajardo] Cálculo Horario en UI:** Mostrar el cálculo total de horas de la jornada debajo de los campos de horarios de inicio y término.
+*   [x] **[Sergio Gajardo] Homologar Control Flota vs Report:** Separar conceptual y funcionalmente el registro de control de flota (viajes/telemetría) del reporte diario orientado al mandante.
+*   [ ] **[Sergio Gajardo] Ajustar Formato PDF Checklist:** Imprimir texto completo (*Bueno, Regular, Malo*) en lugar de iniciales en los reportes exportados.
+*   [x] **[Sergio Gajardo] Especificar e Inyectar AST Simple por Equipo:** Formalización de Spec 36 y seeding en base de datos (`TMPL-GSP-AST-SIMPLE` ID 77).
+*   [x] **[Sergio Gajardo] Especificar e Inyectar Plan de Izaje Digital:** Formalización de Spec 37 y seeding en base de datos (`TMPL-GSP-PLAN-IZAJE` ID 78).
+*   [ ] **[Sergio Gajardo] Preparar Presentación Presencial:** Desarrollar el material técnico y soporte del enfoque sistémico para la sesión del 27-Ago.
+*   [ ] **[Jorge Ponce] Agendar Sesiones Individuales:** Coordinar reuniones breves de la tarde con Secretaría, Contabilidad, Operador y Coordinador.
+*   [ ] **[Jorge Ponce] Conversar con Prevencionista:** Validar con Dayana la periodicidad y alcance del AST simple por equipo.
+
 ---
 
 ### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Herencia Global Manager - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c`)
@@ -280,4 +290,5 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[AST Simple (1 Usuario / Dupla) - Spec 36]:** Especificación formal del template dinámico AST en 60 segundos (`.agents/specs/36_ast_simple_usuario_spec.md`), reducción del formato papel a 4 segmentos clave (EPP 1-tap, 5 Controles Críticos de Izaje, Declaración y Firmas FES) y generación del script de seeding SQL (`ejecucion/bd/seed_ast_simple_gsp.sql`).
 * [x] **[Plan de Izaje Digital & Calculadora Reactiva - Spec 37]:** Especificación formal de la memoria de maniobra (`.agents/specs/37_plan_de_izaje_reactivo_spec.md`), cálculo automático de Peso Total y % de Utilización de Grúa, compuerta de seguridad dura al 85%, verificación de aparejos/suelo/clima y script de seeding SQL (`ejecucion/bd/seed_plan_de_izaje_gsp.sql`).
 * [x] **[Liquidación Operacional, Consolidación de EDP y Registro de Facturación - Spec 38]:** Subpestaña 7 *"Liquidación & EDP"* en Gestor de Oportunidades, motor de consolidación financiera cruzando cotización vs reports diarios validados (horas base, sobretiempo y flete), modal carátula formal de EDP (`ModalCaratulaEDP.vue`), registro de N° HES/OC y N° Factura con transición final a Estado 7 (Facturado/Concluido) en la Torre de Control. `VERIFICADO EN PRODUCCIÓN Y COMPILADO 0 ERRORES`.
+* [x] **[Tratamiento Integral de Registros de Flota: Viaje, Control de Flota y Report - Spec 39]:** Especificación formal consolidada (`.agents/specs/39_tratamiento_integral_flota_viaje_control_y_report_spec.md`) del modelo de 3 pilares de GSP: 1. Registro de Viaje (Desplazamiento, Odómetros/Horómetros con foto, Copec multi-estanque, PIN FES), 2. Control de Flota Interno (Gestión técnica, horometría diaria y mantenimiento Taller), 3. Report Diario (Horarios, colación, horas efectivas, sobretiempo, firma táctil mandante y GPS para EDP).
 
