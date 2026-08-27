@@ -258,7 +258,7 @@ const confirmarConPin = async () => {
       console.warn("No se pudo obtener el template 80 directamente, usando estructura limpia", e)
     }
 
-    // Pre-llenar datos del proyecto en el bodySeed
+    // Pre-llenar datos del proyecto ÚNICAMENTE en el Segmento 1 (Datos Generales)
     if (Array.isArray(bodySeed.segmentos)) {
       bodySeed.segmentos.forEach(seg => {
         if (Array.isArray(seg.attributes)) {
@@ -268,37 +268,43 @@ const confirmarConPin = async () => {
             return !label.includes('REFERENCIA')
           })
 
-          seg.attributes.forEach(attr => {
-            const label = (attr.label || '').toUpperCase()
-            const dirObra = proyectoData.value.obra_direccion || proyectoData.value.direccion || proyectoData.value.observacion_proyecto || ''
-            if (label.includes('RAZON') || label.includes('SOCIAL')) {
-              attr.default = proyectoData.value.cliente_nombre || ''
-            }
-            if (label.includes('RUT')) {
-              attr.default = proyectoData.value.cliente_rut || ''
-            }
-            if (label.includes('NOMBRE DE LA OBRA') || (label.includes('OBRA') && !label.includes('DIRECCION') && !label.includes('GEOLOCALIZACION'))) {
-              attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
-            }
-            if (label.includes('DIRECCION') || label.includes('DIRECCIÓN')) {
-              attr.default = dirObra
-            }
-            if (label.includes('CONTACTO EN TERRENO') || (label.includes('CONTACTO') && !label.includes('TELEFONO') && !label.includes('CORREO') && !label.includes('ELECTRONICO'))) {
-              attr.default = proyectoData.value.contacto_nombre || ''
-            }
-            if (label.includes('TELEFONO') || label.includes('TELÉFONO') || label.includes('TELEFÓNICO') || label.includes('CELULAR')) {
-              attr.default = proyectoData.value.contacto_telefono || ''
-            }
-            if (label.includes('CORREO') || label.includes('EMAIL') || label.includes('ELECTRÓNICO') || label.includes('ELECTRONICO')) {
-              attr.default = proyectoData.value.contacto_email || ''
-            }
-            if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
-              attr.default = form.value.comentarios_coordinador || 'No especificado'
-            }
-            if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
-              attr.default = proyectoData.value.coordenadas_mapa
-            }
-          })
+          const segLabel = (seg.label || '').toUpperCase()
+          const isGeneralSegment = segLabel.includes('GENERAL') || segLabel.includes('DATOS GENERALES') || segLabel.includes('1.')
+
+          if (isGeneralSegment) {
+            seg.attributes.forEach(attr => {
+              const label = (attr.label || '').toUpperCase()
+              const dirObra = proyectoData.value.obra_direccion || proyectoData.value.direccion || proyectoData.value.observacion_proyecto || ''
+              
+              if ((label.includes('RAZON') || label.includes('SOCIAL')) && !label.includes('RUTA')) {
+                attr.default = proyectoData.value.cliente_nombre || ''
+              }
+              if ((label === 'RUT' || label.includes('RUT EMPRESA') || label.includes('RUT CLIENTE') || label.includes('RUT DEL CLIENTE')) && !label.includes('RUTA')) {
+                attr.default = proyectoData.value.cliente_rut || ''
+              }
+              if (label.includes('NOMBRE DE LA OBRA') || (label.includes('OBRA') && !label.includes('DIRECCION') && !label.includes('GEOLOCALIZACION'))) {
+                attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
+              }
+              if (label.includes('DIRECCION') || label.includes('DIRECCIÓN')) {
+                attr.default = dirObra
+              }
+              if (label.includes('CONTACTO EN TERRENO') || (label.includes('CONTACTO') && !label.includes('TELEFONO') && !label.includes('CORREO') && !label.includes('ELECTRONICO'))) {
+                attr.default = proyectoData.value.contacto_nombre || ''
+              }
+              if (label.includes('TELEFONO') || label.includes('TELÉFONO') || label.includes('TELEFÓNICO') || label.includes('CELULAR')) {
+                attr.default = proyectoData.value.contacto_telefono || ''
+              }
+              if (label.includes('CORREO') || label.includes('EMAIL') || label.includes('ELECTRÓNICO') || label.includes('ELECTRONICO')) {
+                attr.default = proyectoData.value.contacto_email || ''
+              }
+              if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
+                attr.default = form.value.comentarios_coordinador || 'No especificado'
+              }
+              if (attr.type === 'geoLocation' && proyectoData.value.coordenadas_mapa) {
+                attr.default = proyectoData.value.coordenadas_mapa
+              }
+            })
+          }
         }
       })
     }
