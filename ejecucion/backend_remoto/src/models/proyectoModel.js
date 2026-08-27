@@ -956,9 +956,10 @@ class ProyectoModel {
         if (!uId) return null;
         const u = allUsers.find(user => Number(user.id_user) === Number(uId));
         if (!u) return null;
+        const fullName = `${u.name_frst || ''} ${u.apellido_pat || ''} ${u.apellido_mat || ''}`.replace(/\s+/g, ' ').trim();
         return {
           ...u,
-          nombre_user: u.nombre_user || u.name_user || `${u.name_frst || ''} ${u.name_last || ''}`.trim() || 'Usuario Asignado'
+          nombre_user: fullName || u.nombre_user || u.name_user || u.name_frst || 'Usuario Asignado'
         };
       };
 
@@ -1097,19 +1098,40 @@ class ProyectoModel {
       });
 
       // Matriz de Aparejos
-      const aparejosJson = ejec.aparejos_asignados_json || ejec.aparejos_solicitados_json || crm.aparejos || {};
+      const aparejosRaw = ejec.aparejos_asignados_json || ejec.implementos_survey || ejec.aparejos_solicitados_json || crm.aparejos || [];
+      const aparejosJson = typeof aparejosRaw === 'string' ? JSON.parse(aparejosRaw) : aparejosRaw;
       let aparejosHtml = '';
-      if (typeof aparejosJson === 'object' && Object.keys(aparejosJson).length > 0) {
+      
+      if (Array.isArray(aparejosJson) && aparejosJson.length > 0) {
+        const rowsApar = [];
+        aparejosJson.forEach(item => {
+          if (item && (item.requerido || (item.detalle && String(item.detalle).trim() !== '' && String(item.detalle).trim() !== '0'))) {
+            const label = item.label || item.nombre || item.id || 'Aparejo';
+            const det = item.detalle ? ` — Cantidad / Capacidad: <strong>${item.detalle}</strong>` : ' <em>(Requerido)</em>';
+            rowsApar.push(`<li><strong>${label}</strong>${det}</li>`);
+          }
+        });
+        if (rowsApar.length > 0) {
+          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.6; color: #334155;">${rowsApar.join('')}</ul>`;
+        }
+      } else if (typeof aparejosJson === 'object' && aparejosJson !== null && Object.keys(aparejosJson).length > 0) {
         const rowsApar = [];
         for (const [k, v] of Object.entries(aparejosJson)) {
           if (v && v !== '0' && v !== false) {
-            rowsApar.push(`<li><strong>${k.replace(/_/g, ' ').toUpperCase()}:</strong> ${typeof v === 'boolean' ? 'Requerido / Asignado' : v}</li>`);
+            if (typeof v === 'object') {
+              const label = v.label || v.nombre || k.replace(/_/g, ' ').toUpperCase();
+              const det = v.detalle ? ` — Cantidad / Capacidad: <strong>${v.detalle}</strong>` : ' <em>(Requerido)</em>';
+              rowsApar.push(`<li><strong>${label}</strong>${det}</li>`);
+            } else {
+              rowsApar.push(`<li><strong>${k.replace(/_/g, ' ').toUpperCase()}:</strong> ${typeof v === 'boolean' ? 'Requerido / Asignado' : v}</li>`);
+            }
           }
         }
         if (rowsApar.length > 0) {
           aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.6; color: #334155;">${rowsApar.join('')}</ul>`;
         }
       }
+
       if (!aparejosHtml) {
         aparejosHtml = '<p style="margin: 0; font-size: 10px; color: #64748b; font-style: italic;">Aparejos estándar de faena (Eslingas certificadas, grilletes omega y fajas de alta resistencia según tabla de carga).</p>';
       }
