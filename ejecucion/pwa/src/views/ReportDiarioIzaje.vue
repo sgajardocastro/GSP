@@ -1,156 +1,181 @@
 <template>
-  <v-container class="pa-3 max-w-xl mx-auto pb-24" style="max-width: 680px;">
-    <!-- TOP BAR -->
-    <div class="d-flex align-center justify-space-between mb-3">
-      <v-btn icon="mdi-arrow-left" size="large" variant="flat" color="slate-800" class="border border-white/20" @click="volver"></v-btn>
-      <div class="text-center flex-grow-1 px-2">
-        <div class="text-xs font-black text-amber-400 text-uppercase tracking-widest">
-          GSP CONTROL DE FLOTA
+  <v-container class="pa-3 max-w-xl mx-auto pb-32" style="max-width: 680px;">
+    
+    <!-- ========================================================================= -->
+    <!-- CABECERA SUPERIOR PARA CONTROL DE FLOTA (MOMENTOS 1 Y 2)                  -->
+    <!-- ========================================================================= -->
+    <div v-if="faseVisual !== 3" class="mb-4">
+      <div class="d-flex align-center justify-space-between mb-3">
+        <v-btn icon="mdi-arrow-left" size="large" variant="flat" color="slate-800" class="border-2 border-white/30 rounded-2xl" @click="volver"></v-btn>
+        <div class="text-center flex-grow-1 px-2">
+          <div class="text-xs sm:text-sm font-black text-amber-400 text-uppercase tracking-widest">
+            GSP OPERACIONES FAENA
+          </div>
+          <div class="text-xl sm:text-2xl font-black text-white">
+            🚜 Control de Flota
+          </div>
         </div>
-        <div class="text-lg sm:text-xl font-black text-white">
-          {{ faseVisual === 3 ? '📋 Report Diario de Izaje' : '🚜 Control de Flota' }}
+        <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-3 py-1.5 rounded-xl shadow-md">
+          DÍA {{ diaCorrelativo }}
+        </v-chip>
+      </div>
+
+      <!-- SELECTOR DE MOMENTOS (BOTONERA TÁCTIL) -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div
+          class="py-3 px-3 rounded-2xl border-2 text-center transition-all cursor-pointer select-none"
+          :class="faseVisual === 1 ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg scale-[1.01]' : 'bg-slate-900 text-slate-300 border-white/20 font-bold'"
+          @click="faseVisual = 1"
+        >
+          <div class="text-xs uppercase tracking-wider font-bold opacity-90">Momento 1</div>
+          <div class="text-base sm:text-lg font-black truncate">🟢 Inicio Faena</div>
+        </div>
+
+        <div
+          class="py-3 px-3 rounded-2xl border-2 text-center transition-all cursor-pointer select-none"
+          :class="faseVisual === 2 ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg scale-[1.01]' : 'bg-slate-900 text-slate-300 border-white/20 font-bold'"
+          @click="irAMomento2"
+        >
+          <div class="text-xs uppercase tracking-wider font-bold opacity-90">Momento 2</div>
+          <div class="text-base sm:text-lg font-black truncate">🔴 Fin Faena</div>
         </div>
       </div>
-      <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-4 py-2">
-        DÍA {{ diaCorrelativo }}
-      </v-chip>
     </div>
 
-    <!-- INDICADOR DE MOMENTO OPERACIONAL (Spec 39) -->
-    <div class="d-flex ga-1.5 mb-4">
-      <div
-        class="flex-1 py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer"
-        :class="faseVisual === 1 ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md' : 'bg-slate-900/80 text-slate-400 border-white/10 font-bold'"
-        @click="faseVisual = 1"
-      >
-        <div class="text-[10px] uppercase tracking-wider">Momento 1</div>
-        <div class="text-xs truncate">🟢 Inicio Jornada</div>
+    <!-- CABECERA REPORT MANDANTE (PASO 3) -->
+    <div v-else class="mb-4">
+      <div class="d-flex align-center justify-space-between mb-2">
+        <v-btn prepend-icon="mdi-arrow-left" size="default" variant="outlined" color="grey-lighten-2" class="font-black text-sm rounded-xl h-10" @click="faseVisual = 2">
+          Volver a Control
+        </v-btn>
+        <v-chip size="large" color="emerald-darken-1" variant="flat" class="text-base font-black px-3 py-1.5 rounded-xl shadow-md">
+          DÍA {{ diaCorrelativo }}
+        </v-chip>
       </div>
-
-      <div
-        class="flex-1 py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer"
-        :class="faseVisual === 2 ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md' : 'bg-slate-900/80 text-slate-400 border-white/10 font-bold'"
-        @click="irAMomento2"
-      >
-        <div class="text-[10px] uppercase tracking-wider">Momento 2</div>
-        <div class="text-xs truncate">🔴 Fin Jornada</div>
-      </div>
-
-      <div
-        class="flex-1 py-2 px-2.5 rounded-xl border text-center transition-all cursor-pointer"
-        :class="faseVisual === 3 ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-md' : 'bg-slate-900/80 text-slate-400 border-white/10 font-bold'"
-        @click="irAReportMandante"
-      >
-        <div class="text-[10px] uppercase tracking-wider">Paso 3</div>
-        <div class="text-xs truncate">✍️ Report Mandante</div>
+      <div class="text-center py-1">
+        <div class="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-widest">
+          DOCUMENTO OFICIAL DE LIQUIDACIÓN
+        </div>
+        <div class="text-2xl font-black text-white">
+          📋 Report Diario de Izaje
+        </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <v-card v-if="cargando" class="pa-8 text-center rounded-2xl bg-slate-900 border border-white/10">
+    <v-card v-if="cargando" class="pa-10 text-center rounded-3xl bg-slate-900 border-2 border-white/10">
       <v-progress-circular indeterminate color="amber" size="64" width="6" class="mb-4"></v-progress-circular>
-      <div class="text-lg font-bold text-grey-lighten-1">Cargando datos de la OT y faena...</div>
+      <div class="text-xl font-bold text-slate-200">Cargando datos de faena...</div>
     </v-card>
 
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-6">
       <!-- ========================================================================= -->
-      <!-- MOMENTO 1: INICIO DE JORNADA (MAÑANA / AL LLEGAR A FAENA)                 -->
+      <!-- MOMENTO 1: INICIO DE JORNADA                                              -->
       <!-- ========================================================================= -->
-      <div v-show="faseVisual === 1" class="space-y-4">
+      <div v-show="faseVisual === 1" class="space-y-5">
         <!-- TARJETA DE ANTECEDENTES OT & FLOTA -->
         <v-card
-          class="pa-5 rounded-2xl border-2 border-amber-500/40 text-white"
+          class="pa-5 rounded-3xl border-2 border-amber-500/40 text-white shadow-xl"
           style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"
-          elevation="4"
         >
-          <div class="d-flex align-center justify-space-between mb-3">
-            <span class="text-base sm:text-lg font-mono text-amber-300 font-black">
+          <div class="d-flex align-center justify-space-between mb-2">
+            <span class="text-lg font-mono text-amber-300 font-black">
               OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
             </span>
-            <v-chip size="small" color="success" variant="flat" class="font-black text-xs uppercase px-3">
+            <v-chip size="default" color="success" variant="flat" class="font-black text-xs uppercase px-3 py-1 rounded-xl">
               🟢 EN FAENA
             </v-chip>
           </div>
 
-          <div class="text-xl sm:text-2xl font-black text-white mb-1 leading-tight">
+          <div class="text-2xl font-black text-white mb-1.5 leading-tight">
             {{ proyecto.cliente_nombre || 'LeanGlobal Spa' }}
           </div>
-          <div class="text-sm text-grey-lighten-1 mb-3">
-            📍 <strong class="text-white">Faena:</strong> {{ proyecto.obra_nombre || 'Faena Operativa' }} 
-            <span v-if="proyecto.obra_direccion" class="text-grey-lighten-2">• {{ proyecto.obra_direccion }}</span>
+          
+          <div class="text-base text-slate-200 mb-3 font-bold leading-relaxed">
+            📍 <strong class="text-white">Faena:</strong> {{ proyecto.obra_nombre || 'Faena Operativa' }}
+            <span v-if="proyecto.obra_direccion" class="text-slate-300 d-block mt-0.5">• {{ proyecto.obra_direccion }}</span>
+          </div>
+
+          <!-- BOTONES SELECTOR MULTI-MÁQUINA -->
+          <div v-if="equipos.length > 1" class="mb-4 pa-3.5 bg-slate-950/80 rounded-2xl border-2 border-slate-700">
+            <label class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-2.5">
+              🚜 SELECCIONAR EQUIPO PARA ESTE REGISTRO (MULTI-MÁQUINA)
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                v-for="eq in equipos"
+                :key="eq.id_equipo"
+                type="button"
+                class="py-3 px-3 rounded-xl border-2 text-left transition-all flex flex-col justify-center"
+                :class="idEquipoSeleccionado === eq.id_equipo ? 'bg-emerald-600 border-emerald-300 text-white shadow-lg' : 'bg-slate-900 border-slate-700 text-slate-300'"
+                @click="seleccionarEquipo(eq.id_equipo)"
+              >
+                <div class="text-lg font-black font-mono tracking-wider flex items-center ga-1.5">
+                  <span>🚜</span>
+                  <span>{{ eq.patente }}</span>
+                </div>
+                <div class="text-xs font-bold opacity-90 mt-0.5">
+                  {{ eq.modelo }}
+                </div>
+              </button>
+            </div>
           </div>
 
           <v-divider class="my-3 border-white/20"></v-divider>
 
-          <!-- SELECTOR MULTI-MÁQUINA SI HAY MÁS DE 1 EQUIPO -->
-          <div v-if="equipos.length > 1" class="mb-3">
-            <label class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-2">
-              🚜 Seleccionar Equipo para este Registro (Multi-Máquina)
-            </label>
-            <div class="d-flex ga-2 flex-wrap">
-              <v-btn
-                v-for="eq in equipos"
-                :key="eq.id_equipo"
-                size="default"
-                :variant="idEquipoSeleccionado === eq.id_equipo ? 'flat' : 'outlined'"
-                :color="idEquipoSeleccionado === eq.id_equipo ? 'amber' : 'grey-lighten-2'"
-                class="font-black text-xs rounded-xl flex-grow-1"
-                @click="seleccionarEquipo(eq.id_equipo)"
-              >
-                <span class="mr-1">🚜 {{ eq.patente }}</span>
-                <span class="text-caption font-normal opacity-80">({{ eq.modelo }})</span>
-              </v-btn>
-            </div>
-          </div>
-
-          <div class="row g-3">
-            <div class="col-6">
-              <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">🚜 Grúa Asignada</span>
-              <strong class="text-amber-200 font-mono text-lg sm:text-xl font-black d-block">
+          <!-- GRÚA ASIGNADA Y TRIPULACIÓN -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-3.5 bg-slate-950/90 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
+              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
                 {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
               </strong>
-              <span class="text-grey-lighten-1 d-block text-xs sm:text-sm font-semibold">
+              <span class="text-white text-sm font-bold d-block mt-0.5">
                 {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
               </span>
             </div>
-            <div class="col-6">
-              <span class="text-amber-400 font-bold d-block text-uppercase text-xs tracking-wider mb-1">👷 Tripulación</span>
-              <strong class="text-white text-sm sm:text-base font-bold d-block">Op: {{ operadorNombre }}</strong>
-              <span class="text-grey-lighten-1 text-xs sm:text-sm font-semibold d-block">Rig: {{ riggerNombre }}</span>
+
+            <div class="p-3.5 bg-slate-950/90 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">👷 Tripulación</span>
+              <div class="text-base font-black text-white d-block mt-0.5">
+                Op: {{ operadorNombre }}
+              </div>
+              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+                Rig: {{ riggerNombre }}
+              </div>
             </div>
           </div>
         </v-card>
 
         <!-- FORMULARIO DE INICIO DE JORNADA -->
         <v-card
-          class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
+          class="pa-5 rounded-3xl border-2 border-slate-700 text-white shadow-xl"
           style="background-color: #0b1120;"
-          elevation="4"
         >
           <div class="d-flex align-center ga-3 mb-4">
-            <span class="text-2xl">🟢</span>
+            <span class="text-3xl">🟢</span>
             <div>
-              <div class="text-lg sm:text-xl font-black text-white">Registro de Inicio de Jornada</div>
-              <div class="text-xs text-grey-lighten-1">Registro de encendido y estado inicial del activo</div>
+              <div class="text-xl font-black text-white">Registro de Inicio de Faena</div>
+              <div class="text-sm text-slate-300 font-medium">Lectura de tableros al comenzar la jornada</div>
             </div>
           </div>
 
-          <!-- Fecha del servicio -->
+          <!-- Fecha de la Jornada -->
           <div class="mb-4">
-            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-              📅 Fecha de la Jornada
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+              📅 FECHA DE LA JORNADA
             </label>
             <input
               v-model="form.fecha_reporte"
               type="date"
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-base sm:text-lg font-bold focus:border-amber-400 focus:outline-none"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-lg font-black focus:border-amber-400 focus:outline-none h-14"
             />
           </div>
 
           <!-- Hora Inicio -->
           <div class="mb-4">
-            <label class="text-sm font-black text-emerald-400 text-uppercase mb-2 d-block tracking-wider">
-              🟢 Hora de Inicio en Faena
+            <label class="text-sm font-black text-emerald-400 text-uppercase mb-1.5 d-block tracking-wider">
+              🟢 HORA DE INICIO EN FAENA
             </label>
             <input
               v-model="form.hora_inicio"
@@ -160,49 +185,49 @@
           </div>
 
           <!-- Horómetro y Odómetro Inicial -->
-          <div class="row g-3 mb-4">
-            <div class="col-6">
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-                ⚙️ Horómetro Inicio *
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+                ⚙️ HORÓMETRO INICIO *
               </label>
               <input
                 v-model.number="form.horometro_inicio"
                 type="number"
                 step="0.1"
                 placeholder="Ej: 3450.5"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
               />
             </div>
-            <div class="col-6">
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-                🛣️ Odómetro Inicio
+            <div>
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+                🛣️ ODÓMETRO INICIO
               </label>
               <input
                 v-model.number="form.odometro_inicio"
                 type="number"
                 step="1"
                 placeholder="Ej: 145000"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
               />
             </div>
           </div>
 
           <!-- FOTOGRAFÍA OBLIGATORIA DEL TABLERO AL INICIO -->
-          <div class="mb-4 pa-4 rounded-xl border-2 border-slate-700 bg-slate-950/80">
+          <div class="mb-5 pa-5 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-2">
-              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-                <span>📸 Foto Tablero Inicio (Horómetro/Odómetro)</span>
-                <span class="text-red-400 font-bold">*</span>
+              <label class="text-lg sm:text-xl font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-2">
+                <span>📸 Foto Tablero Inicio</span>
+                <span class="text-red-400 font-black">*</span>
               </label>
-              <span v-if="form.foto_tablero_inicio" class="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-md border border-emerald-500/40">
+              <span v-if="form.foto_tablero_inicio" class="text-base font-black text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-500">
                 ✅ Foto Cargada
               </span>
-              <span v-else class="text-xs font-bold text-amber-400 bg-amber-950/70 px-2.5 py-1 rounded-md border border-amber-500/40">
+              <span v-else class="text-base font-black text-amber-400 bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-500">
                 ⚠️ Obligatoria
               </span>
             </div>
-            <p class="text-xs text-grey-lighten-1 mb-3">
-              Captura una fotografía clara del panel y horómetro al iniciar la jornada.
+            <p class="text-base text-slate-300 mb-4 font-medium">
+              Fotografía clara del panel y horómetro al iniciar la jornada.
             </p>
 
             <input
@@ -214,29 +239,29 @@
               @change="onFotoInicioSeleccionada"
             />
 
-            <div v-if="form.foto_tablero_inicio" class="position-relative space-y-2">
-              <div class="rounded-xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-64 shadow-md">
+            <div v-if="form.foto_tablero_inicio" class="position-relative space-y-3">
+              <div class="rounded-2xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-80 shadow-md">
                 <img
                   :src="form.foto_tablero_inicio"
                   alt="Foto Tablero Inicio"
-                  class="w-full h-auto max-h-64 object-contain"
+                  class="w-full h-auto max-h-80 object-contain"
                 />
               </div>
-              <div class="d-flex ga-2 mt-2">
+              <div class="d-flex ga-3 mt-3">
                 <v-btn
                   color="amber"
                   variant="flat"
-                  size="large"
-                  class="flex-grow-1 font-bold text-sm h-12 rounded-xl text-slate-950"
+                  size="x-large"
+                  class="flex-grow-1 font-black text-lg h-16 rounded-2xl text-slate-950"
                   @click="inputFotoInicio.click()"
                 >
-                  📸 Tomar otra foto
+                  📸 Cambiar Foto
                 </v-btn>
                 <v-btn
                   color="red-lighten-1"
                   variant="outlined"
-                  size="large"
-                  class="font-bold text-sm h-12 rounded-xl px-4"
+                  size="x-large"
+                  class="font-black text-lg h-16 rounded-2xl px-5"
                   @click="form.foto_tablero_inicio = null"
                 >
                   🗑️ Borrar
@@ -248,9 +273,9 @@
               <v-btn
                 color="amber"
                 variant="flat"
-                size="x-large"
+                size="large"
                 block
-                class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950"
+                class="font-black text-base h-14 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
                 @click="inputFotoInicio.click()"
               >
                 <span class="text-2xl">📸</span>
@@ -264,8 +289,9 @@
             block
             size="x-large"
             color="amber-darken-2"
-            class="font-black text-uppercase rounded-2xl text-slate-950 py-5 min-h-[64px] text-base sm:text-lg shadow-xl shadow-amber-500/20 tracking-wider"
+            class="font-black text-uppercase rounded-2xl text-slate-950 py-4 min-h-[62px] text-lg shadow-xl shadow-amber-500/20 tracking-wider"
             :loading="enviandoInicio"
+            :disabled="!puedeGuardarInicio"
             @click="guardarInicioJornada"
           >
             <span>💾 Guardar Inicio de Jornada (En Faena)</span>
@@ -274,41 +300,92 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- MOMENTO 2: TÉRMINO DE JORNADA (TARDE / AL CERRAR FAENA)                   -->
+      <!-- MOMENTO 2: TÉRMINO DE JORNADA                                             -->
       <!-- ========================================================================= -->
-      <div v-show="faseVisual === 2" class="space-y-4">
-        <!-- RESUMEN FIJO DE INICIO REGISTRADO -->
-        <v-card class="pa-4 rounded-2xl bg-slate-900 border border-emerald-500/40 text-white">
+      <div v-show="faseVisual === 2" class="space-y-5">
+        <!-- RESUMEN COMPLETO DE OT, GRÚA, TRIPULACIÓN Y DATOS DE INICIO REGISTRADOS -->
+        <v-card
+          class="pa-5 rounded-3xl border-2 border-emerald-500/50 text-white shadow-xl"
+          style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"
+        >
           <div class="d-flex align-center justify-space-between mb-2">
-            <span class="text-xs font-black text-emerald-400 uppercase tracking-wider">
-              ✅ Inicio de Jornada Registrado
+            <span class="text-lg font-mono text-amber-300 font-black">
+              OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
             </span>
-            <v-chip size="x-small" color="emerald" class="font-mono font-bold">{{ form.hora_inicio }} hrs</v-chip>
+            <v-chip size="default" color="emerald" variant="flat" class="font-black text-xs uppercase px-3 py-1 rounded-xl">
+              DÍA {{ diaCorrelativo }} • EN FAENA
+            </v-chip>
           </div>
-          <div class="d-flex justify-space-between text-xs text-grey-lighten-2">
-            <span>⚙️ Horóm. Inicial: <strong class="text-amber-300 font-mono">{{ form.horometro_inicio || 'N/A' }}</strong></span>
-            <span>🛣️ Odóm. Inicial: <strong class="text-amber-300 font-mono">{{ form.odometro_inicio || 'N/A' }}</strong></span>
+
+          <div class="text-2xl font-black text-white mb-1.5 leading-tight">
+            {{ proyecto.cliente_nombre || 'LeanGlobal Spa' }}
+          </div>
+          <div class="text-base text-slate-200 mb-3 font-bold">
+            📍 Faena: {{ proyecto.obra_nombre || 'Faena Operativa' }}
+          </div>
+
+          <!-- GRÚA Y TRIPULACIÓN -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div class="p-3 bg-slate-950/90 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
+              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
+                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+              </strong>
+              <span class="text-white text-sm font-bold d-block">
+                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+              </span>
+            </div>
+
+            <div class="p-3 bg-slate-950/90 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">👷 Tripulación</span>
+              <div class="text-base font-black text-white d-block">
+                Op: {{ operadorNombre }}
+              </div>
+              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+                Rig: {{ riggerNombre }}
+              </div>
+            </div>
+          </div>
+
+          <!-- DATOS DE INICIO FIJOS -->
+          <div class="p-3.5 bg-emerald-950/60 rounded-2xl border-2 border-emerald-500/60">
+            <div class="text-xs font-black text-emerald-400 uppercase tracking-wider mb-1.5">
+              ✅ Lecturas Registradas al Inicio de Faena:
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
+                <span class="text-slate-300 text-xs font-bold uppercase d-block">🟢 Hora Entrada</span>
+                <span class="text-emerald-300 font-mono text-base font-black">{{ form.hora_inicio }} hrs</span>
+              </div>
+              <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
+                <span class="text-slate-300 text-xs font-bold uppercase d-block">⚙️ Horómetro Ini</span>
+                <span class="text-amber-300 font-mono text-base font-black">{{ form.horometro_inicio || 'N/A' }}</span>
+              </div>
+              <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
+                <span class="text-slate-300 text-xs font-bold uppercase d-block">🛣️ Odómetro Ini</span>
+                <span class="text-amber-300 font-mono text-base font-black">{{ form.odometro_inicio || 'N/A' }}</span>
+              </div>
+            </div>
           </div>
         </v-card>
 
         <!-- FORMULARIO DE TÉRMINO DE JORNADA -->
         <v-card
-          class="pa-5 rounded-2xl border-2 border-slate-700 text-white"
+          class="pa-5 rounded-3xl border-2 border-slate-700 text-white shadow-xl"
           style="background-color: #0b1120;"
-          elevation="4"
         >
           <div class="d-flex align-center ga-3 mb-4">
-            <span class="text-2xl">🔴</span>
+            <span class="text-3xl">🔴</span>
             <div>
-              <div class="text-lg sm:text-xl font-black text-white">Registro de Término de Jornada</div>
-              <div class="text-xs text-grey-lighten-1">Cierre de operación diaria y cálculo de tiempos</div>
+              <div class="text-xl font-black text-white">Registro de Término de Faena</div>
+              <div class="text-sm text-slate-300 font-medium">Cierre de operación diaria y balance horario</div>
             </div>
           </div>
 
           <!-- Hora Término -->
           <div class="mb-4">
-            <label class="text-sm font-black text-red-400 text-uppercase mb-2 d-block tracking-wider">
-              🔴 Hora de Término de Faena
+            <label class="text-sm font-black text-red-400 text-uppercase mb-1.5 d-block tracking-wider">
+              🔴 HORA DE TÉRMINO DE FAENA
             </label>
             <input
               v-model="form.hora_termino"
@@ -317,120 +394,117 @@
             />
           </div>
 
-          <!-- Tiempo de Colación (Botones 1-tap) -->
+          <!-- Tiempo de Colación (Botones Grandes) -->
           <div class="mb-4">
             <div class="d-flex align-center justify-space-between mb-2">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                🥪 Tiempo de Colación
+                🥪 TIEMPO DE COLACIÓN
               </label>
-              <span class="text-sm sm:text-base font-mono font-black text-amber-400 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
+              <span class="text-sm font-mono font-black text-amber-400 bg-amber-950/90 px-3 py-1 rounded-lg border border-amber-500/50">
                 {{ form.minutos_colacion === 0 ? 'Sin Colación (0h)' : `${form.minutos_colacion} min (${horasColacionFormateadas}h)` }}
               </span>
             </div>
-            <div class="d-flex ga-1.5 flex-wrap">
-              <v-btn
+            <div class="grid grid-cols-5 gap-2">
+              <button
                 v-for="opcion in [0, 30, 45, 60, 90]"
                 :key="opcion"
-                size="large"
-                :variant="form.minutos_colacion === opcion ? 'flat' : 'outlined'"
-                :color="form.minutos_colacion === opcion ? 'amber' : 'grey-lighten-2'"
-                class="flex-grow-1 font-black text-sm sm:text-base h-12 rounded-xl"
+                type="button"
+                class="py-2.5 px-1 rounded-xl border-2 font-black text-base transition-all"
+                :class="form.minutos_colacion === opcion ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-md font-black' : 'bg-slate-900 text-slate-200 border-slate-700 font-bold'"
                 @click="form.minutos_colacion = opcion"
               >
                 {{ opcion === 0 ? '0m' : `${opcion}m` }}
-              </v-btn>
+              </button>
             </div>
           </div>
 
-          <!-- ⏱️ CÁLCULO DE JORNADA (JUSTO DEBAJO DE COLACIÓN - PEDIDO POR JORGE) -->
-          <div class="pa-4 rounded-2xl border-2 border-emerald-500/60 bg-emerald-950/40 mb-4 shadow-lg">
+          <!-- ⏱️ CÁLCULO DE JORNADA (JUSTO DEBAJO DE COLACIÓN - GRID 3 COLUMNAS NÍTIDAS) -->
+          <div class="pa-4 rounded-3xl border-2 border-emerald-500/70 bg-emerald-950/50 mb-4 shadow-xl">
             <div class="d-flex align-center justify-space-between mb-2">
-              <span class="text-xs text-emerald-400 text-uppercase font-black tracking-wider">
+              <span class="text-sm font-black text-emerald-400 text-uppercase tracking-wider">
                 ⏱️ Resumen de Tiempos de Jornada
               </span>
-              <span class="text-xs text-grey-lighten-2 font-mono font-bold">
-                Base Contractual: {{ horasMinimas }} hrs
+              <span class="text-sm text-slate-200 font-mono font-bold">
+                Base Mínima: {{ horasMinimas }} hrs
               </span>
             </div>
 
-            <div class="d-flex align-center justify-space-between text-center ga-2 pt-1">
-              <div class="flex-grow-1">
-                <div class="text-[11px] text-grey-lighten-2 uppercase font-bold">Jornada Total</div>
+            <div class="grid grid-cols-3 gap-2.5 text-center pt-1">
+              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
+                <div class="text-xs uppercase font-black text-slate-300 tracking-wider mb-0.5">Jornada Total</div>
                 <div class="text-xl sm:text-2xl font-mono font-black text-white">
                   {{ totalHorasJornada }} hrs
                 </div>
               </div>
-              <div class="text-grey-lighten-2 font-bold">-</div>
-              <div class="flex-grow-1">
-                <div class="text-[11px] text-grey-lighten-2 uppercase font-bold">Colación</div>
+              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
+                <div class="text-xs uppercase font-black text-slate-300 tracking-wider mb-0.5">Colación</div>
                 <div class="text-xl sm:text-2xl font-mono font-black text-amber-300">
                   {{ horasColacionFormateadas }} hrs
                 </div>
               </div>
-              <div class="text-grey-lighten-2 font-bold">=</div>
-              <div class="flex-grow-1 bg-emerald-900/60 py-1 px-2 rounded-xl border border-emerald-500/40">
-                <div class="text-[11px] text-emerald-300 uppercase font-black">Efectivas</div>
-                <div class="text-xl sm:text-2xl font-mono font-black text-emerald-400">
+              <div class="p-2.5 bg-emerald-900/90 rounded-2xl border-2 border-emerald-400 shadow-md">
+                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider mb-0.5">Efectivas</div>
+                <div class="text-xl sm:text-2xl font-mono font-black text-emerald-300">
                   {{ calculoHoras.efectivas }} hrs
                 </div>
               </div>
             </div>
 
-            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2.5 text-center text-xs sm:text-sm font-black text-amber-300 bg-amber-950/80 py-1.5 px-3 rounded-lg border border-amber-500/40">
-              ⚡ <strong>Sobretiempo Devengado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Facturables: {{ calculoHoras.facturables }} hrs).
+            <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm font-black text-amber-200 bg-amber-950/90 py-2 px-3 rounded-xl border border-amber-500/50">
+              ⚡ <strong>Sobretiempo Devengado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Total a Facturar: {{ calculoHoras.facturables }} hrs).
             </div>
           </div>
 
           <!-- Horómetro y Odómetro Término -->
-          <div class="row g-3 mb-4">
-            <div class="col-6">
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-                ⚙️ Horómetro Término *
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+                ⚙️ HORÓMETRO TÉRMINO *
               </label>
               <input
                 v-model.number="form.horometro_termino"
                 type="number"
                 step="0.1"
                 placeholder="Ej: 3459.0"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
               />
-              <span v-if="deltaHorometro !== null" class="text-[11px] text-grey-lighten-1 d-block mt-1 font-mono">
+              <span v-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold">
                 Δ Motor: {{ deltaHorometro }} hrs
               </span>
             </div>
-            <div class="col-6">
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-                🛣️ Odómetro Término
+            <div>
+              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+                🛣️ ODÓMETRO TÉRMINO
               </label>
               <input
                 v-model.number="form.odometro_termino"
                 type="number"
                 step="1"
                 placeholder="Ej: 145020"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3 py-3 text-amber-300 font-mono text-xl sm:text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
               />
-              <span v-if="deltaOdometro !== null" class="text-[11px] text-grey-lighten-1 d-block mt-1 font-mono">
+              <span v-if="deltaOdometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold">
                 Δ Distancia: {{ deltaOdometro }} km
               </span>
             </div>
           </div>
 
           <!-- FOTOGRAFÍA OBLIGATORIA DEL TABLERO AL TÉRMINO -->
-          <div class="mb-4 pa-4 rounded-xl border-2 border-slate-700 bg-slate-950/80">
-            <div class="d-flex align-center justify-space-between mb-2">
+          <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-                <span>📸 Foto Tablero Término (Horómetro/Odómetro)</span>
-                <span class="text-red-400 font-bold">*</span>
+                <span>📸 Foto Tablero Término</span>
+                <span class="text-red-400 font-black">*</span>
               </label>
-              <span v-if="form.foto_tablero_termino" class="text-xs font-bold text-emerald-400 bg-emerald-950/70 px-2.5 py-1 rounded-md border border-emerald-500/40">
+              <span v-if="form.foto_tablero_termino" class="text-xs font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-500">
                 ✅ Foto Cargada
               </span>
-              <span v-else class="text-xs font-bold text-amber-400 bg-amber-950/70 px-2.5 py-1 rounded-md border border-amber-500/40">
+              <span v-else class="text-xs font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-lg border border-amber-500">
                 ⚠️ Obligatoria
               </span>
             </div>
-            <p class="text-xs text-grey-lighten-1 mb-3">
-              Captura una fotografía clara del panel del horómetro al finalizar la faena.
+            <p class="text-xs text-slate-300 mb-3 font-medium">
+              Fotografía clara del panel del horómetro al finalizar la faena.
             </p>
 
             <input
@@ -442,29 +516,29 @@
               @change="onFotoTerminoSeleccionada"
             />
 
-            <div v-if="form.foto_tablero_termino" class="position-relative space-y-2">
-              <div class="rounded-xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-64 shadow-md">
+            <div v-if="form.foto_tablero_termino" class="position-relative space-y-3">
+              <div class="rounded-2xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-80 shadow-md">
                 <img
                   :src="form.foto_tablero_termino"
                   alt="Foto Tablero Término"
-                  class="w-full h-auto max-h-64 object-contain"
+                  class="w-full h-auto max-h-80 object-contain"
                 />
               </div>
-              <div class="d-flex ga-2 mt-2">
+              <div class="d-flex ga-2 mt-2.5">
                 <v-btn
                   color="amber"
                   variant="flat"
-                  size="large"
-                  class="flex-grow-1 font-bold text-sm h-12 rounded-xl text-slate-950"
+                  size="default"
+                  class="flex-grow-1 font-black text-base h-12 rounded-xl text-slate-950"
                   @click="inputFotoTermino.click()"
                 >
-                  📸 Tomar otra foto
+                  📸 Cambiar Foto
                 </v-btn>
                 <v-btn
                   color="red-lighten-1"
                   variant="outlined"
-                  size="large"
-                  class="font-bold text-sm h-12 rounded-xl px-4"
+                  size="default"
+                  class="font-black text-base h-12 rounded-xl px-4"
                   @click="form.foto_tablero_termino = null"
                 >
                   🗑️ Borrar
@@ -476,9 +550,9 @@
               <v-btn
                 color="amber"
                 variant="flat"
-                size="x-large"
+                size="large"
                 block
-                class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950"
+                class="font-black text-base h-14 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
                 @click="inputFotoTermino.click()"
               >
                 <span class="text-2xl">📸</span>
@@ -489,36 +563,37 @@
 
           <!-- Observaciones / Maniobras -->
           <div class="mb-3">
-            <label class="text-sm font-black text-amber-300 text-uppercase mb-2 d-block tracking-wider">
-              📝 Maniobras Realizadas (Visibles en Report Mandante)
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+              📝 MANIOBRAS REALIZADAS (VISIBLES EN REPORT MANDANTE)
             </label>
             <textarea
               v-model="form.observacion_trabajo"
               rows="3"
               placeholder="Detalle de izajes, tonelajes, radios o condiciones de faena..."
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-white text-sm sm:text-base focus:border-amber-400 focus:outline-none min-h-[85px]"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-3 text-white text-base font-medium focus:border-amber-400 focus:outline-none min-h-[100px]"
             ></textarea>
           </div>
 
           <!-- Notas Mecánicas Internas GSP (Confidencial Taller) -->
           <div class="mb-4">
-            <label class="text-sm font-black text-slate-400 text-uppercase mb-2 d-block tracking-wider">
-              🔒 Notas Mecánicas / Taller GSP (Uso Interno)
+            <label class="text-sm font-black text-slate-400 text-uppercase mb-1.5 d-block tracking-wider">
+              🔒 NOTAS MECÁNICAS / TALLER GSP (USO INTERNO)
             </label>
             <textarea
               v-model="form.notas_mecanicas_gsp"
               rows="2"
               placeholder="Niveles de fluidos, desgaste de aparejos, alertas del computador de abordo..."
-              class="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-3 text-slate-300 text-xs sm:text-sm focus:border-slate-500 focus:outline-none"
+              class="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-3 text-slate-200 text-sm font-medium focus:border-slate-500 focus:outline-none"
             ></textarea>
           </div>
 
-          <!-- BOTÓN GIGANTE: PROCEDER A REPORT MANDANTE -->
+          <!-- BOTÓN: PROCEDER A REPORT MANDANTE -->
           <v-btn
             block
             size="x-large"
             color="amber-darken-2"
-            class="font-black text-uppercase rounded-2xl text-slate-950 py-5 min-h-[64px] text-base sm:text-lg shadow-xl shadow-amber-500/20 tracking-wider"
+            class="font-black text-uppercase rounded-2xl text-slate-950 py-4 min-h-[62px] text-lg shadow-xl shadow-amber-500/20 tracking-wider"
+            :disabled="!puedeAvanzarAReport"
             @click="irAReportMandante"
           >
             <span>🏁 Finalizar Jornada ➔ Proceder a Report Mandante ➔</span>
@@ -529,125 +604,156 @@
       <!-- ========================================================================= -->
       <!-- PASO 3: REPORT DIARIO CONTRACTUAL (CARA AL CLIENTE MANDANTE)             -->
       <!-- ========================================================================= -->
-      <div v-show="faseVisual === 3" class="space-y-4">
-        <!-- RESUMEN FORMAL DEL SERVICIO (SOLO TIEMPOS COMERCIALES) -->
+      <div v-show="faseVisual === 3" class="space-y-5">
+        <!-- VOUCHER FORMAL DEL SERVICIO (SOLO TIEMPOS COMERCIALES) -->
         <v-card
-          class="pa-5 rounded-2xl border-2 border-amber-500/50 text-white"
+          class="pa-5 rounded-3xl border-2 border-amber-500/60 text-white shadow-2xl"
           style="background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 100%);"
-          elevation="4"
         >
           <div class="d-flex align-center justify-space-between mb-2">
-            <div class="text-xs font-black text-amber-400 uppercase tracking-widest">
-              DOCUMENTO OFICIAL DE LIQUIDACIÓN
-            </div>
-            <v-chip size="small" color="amber" variant="flat" class="font-black text-xs text-slate-950">
+            <span class="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-widest">
+              RESUMEN COMERCIAL DE FAENA
+            </span>
+            <v-chip size="default" color="amber" variant="flat" class="font-black text-xs text-slate-950 px-3 py-1">
               DÍA {{ diaCorrelativo }}
             </v-chip>
           </div>
 
-          <div class="text-2xl font-black text-white mb-1">
+          <div class="text-2xl font-black text-white mb-1 leading-tight">
             {{ proyecto.cliente_nombre || 'LeanGlobal Spa' }}
           </div>
-          <div class="text-sm text-grey-lighten-2 mb-3">
-            OT: <span class="font-mono text-amber-300 font-bold">{{ proyecto.codi_proyecto }}</span> • Faena: {{ proyecto.obra_nombre }}
+          <div class="text-base text-slate-200 mb-3 font-bold">
+            OT: <span class="font-mono text-amber-300 font-black">{{ proyecto.codi_proyecto }}</span> • Faena: {{ proyecto.obra_nombre }}
           </div>
 
-          <!-- CUADRO DE HORAS CERTIFICADAS -->
-          <div class="pa-4 rounded-xl bg-black/50 border border-white/20 mb-3">
-            <div class="text-xs text-amber-400 font-bold uppercase mb-2">⏱️ Certificación de Tiempos de Servicio</div>
-            <div class="row g-2 text-center">
-              <div class="col-4">
-                <div class="text-xs text-grey-lighten-2">Inicio - Fin</div>
-                <div class="text-base font-mono font-bold text-white">{{ form.hora_inicio }} - {{ form.hora_termino }}</div>
+          <!-- GRÚA CERTIFICADA Y TRIPULACIÓN EN EL REPORT MANDANTE -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Certificada</span>
+              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
+                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+              </strong>
+              <span class="text-slate-200 text-sm font-bold d-block">
+                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+              </span>
+            </div>
+            <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">👷 Personal en Faena</span>
+              <div class="text-base font-black text-white d-block">
+                Op: {{ operadorNombre }}
               </div>
-              <div class="col-4 border-x border-white/20">
-                <div class="text-xs text-grey-lighten-2">Colación</div>
-                <div class="text-base font-mono font-bold text-amber-300">{{ form.minutos_colacion }} min</div>
-              </div>
-              <div class="col-4">
-                <div class="text-xs text-emerald-300 font-bold">Horas Efectivas</div>
-                <div class="text-xl font-mono font-black text-emerald-400">{{ calculoHoras.efectivas }} hrs</div>
+              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+                Rig: {{ riggerNombre }}
               </div>
             </div>
-            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2 text-xs font-bold text-yellow-300 text-center">
+          </div>
+
+          <!-- CUADRO DE HORAS CERTIFICADAS (3 COLUMNAS) -->
+          <div class="pa-3.5 rounded-2xl bg-black/70 border border-white/20 mb-3">
+            <div class="text-xs sm:text-sm text-amber-400 font-black uppercase mb-2 tracking-wider text-center">
+              ⏱️ CERTIFICACIÓN DE TIEMPOS DE SERVICIO
+            </div>
+            <div class="grid grid-cols-3 gap-2.5 text-center items-center">
+              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
+                <div class="text-xs uppercase font-black text-slate-300 tracking-wider">Inicio - Fin</div>
+                <div class="text-lg sm:text-xl font-mono font-black text-white mt-0.5">
+                  {{ form.hora_inicio }} - {{ form.hora_termino }}
+                </div>
+              </div>
+              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
+                <div class="text-xs uppercase font-black text-slate-300 tracking-wider">Colación</div>
+                <div class="text-lg sm:text-xl font-mono font-black text-amber-300 mt-0.5">
+                  {{ form.minutos_colacion }} min
+                </div>
+              </div>
+              <div class="p-2.5 bg-emerald-950/90 rounded-2xl border-2 border-emerald-400 shadow-md">
+                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider">Efectivas</div>
+                <div class="text-2xl font-mono font-black text-emerald-300 mt-0.5">
+                  {{ calculoHoras.efectivas }} hrs
+                </div>
+              </div>
+            </div>
+
+            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2.5 text-sm font-black text-yellow-300 text-center">
               (Incluye +{{ calculoHoras.sobretiempo }} hrs de sobretiempo sobre base contractual)
             </div>
           </div>
 
-          <div v-if="form.observacion_trabajo" class="text-xs text-grey-lighten-2 bg-slate-900/60 p-3 rounded-lg border border-white/10">
-            <strong class="text-white d-block mb-1">Maniobras Realizadas:</strong>
+          <div v-if="form.observacion_trabajo" class="text-base text-slate-200 bg-slate-900/90 p-3.5 rounded-2xl border border-white/10 font-medium">
+            <strong class="text-white d-block mb-1 font-bold text-base">Maniobras Realizadas:</strong>
             {{ form.observacion_trabajo }}
           </div>
         </v-card>
 
         <!-- FORMULARIO DE CONFORMIDAD Y FIRMA TÁCTIL MANDANTE -->
         <v-card
-          class="pa-5 rounded-2xl border-2 border-emerald-500/50 text-white"
+          class="pa-5 rounded-3xl border-2 border-emerald-500/60 text-white shadow-2xl"
           style="background-color: #0b1120;"
-          elevation="4"
         >
           <div class="d-flex align-center ga-3 mb-4">
-            <span class="text-2xl">✍️</span>
+            <span class="text-3xl">✍️</span>
             <div>
-              <div class="text-lg sm:text-xl font-black text-emerald-400">Conformidad del Mandante</div>
-              <div class="text-xs text-grey-lighten-1">Firma manuscrita del receptor en terreno</div>
+              <div class="text-xl font-black text-emerald-400">Conformidad del Mandante</div>
+              <div class="text-sm text-slate-300 font-medium">Firma manuscrita del receptor en terreno</div>
             </div>
           </div>
 
-          <div class="mb-3">
-            <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-              👤 Nombre Supervisor Mandante *
+          <div class="mb-3.5">
+            <label class="text-sm font-black text-slate-200 text-uppercase mb-1.5 d-block tracking-wider">
+              👤 NOMBRE SUPERVISOR MANDANTE *
             </label>
             <input
               v-model="form.cliente_nombre"
               type="text"
               placeholder="Nombre y Apellido del supervisor"
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder:text-slate-500 placeholder:text-sm focus:border-emerald-400 focus:outline-none h-14"
             />
           </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-                🆔 RUT Mandante *
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3.5">
+            <div>
+              <label class="text-sm font-black text-slate-200 text-uppercase mb-1.5 d-block tracking-wider">
+                🆔 RUT MANDANTE *
               </label>
               <input
                 v-model="form.cliente_rut"
                 type="text"
                 placeholder="12.345.678-9"
-                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder:text-slate-500 placeholder:text-sm focus:border-emerald-400 focus:outline-none h-14"
               />
             </div>
-            <div class="col-6">
-              <label class="text-sm font-black text-grey-lighten-1 text-uppercase mb-2 d-block tracking-wider">
-                💼 Cargo en Faena
+            <div>
+              <label class="text-sm font-black text-slate-200 text-uppercase mb-1.5 d-block tracking-wider">
+                💼 CARGO EN FAENA
               </label>
               <input
                 v-model="form.cliente_cargo"
                 type="text"
                 placeholder="Ej: ITO / Jefe de Terreno"
-                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-base sm:text-lg font-bold focus:border-emerald-400 focus:outline-none h-14"
+                class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder:text-slate-500 placeholder:text-sm focus:border-emerald-400 focus:outline-none h-14"
               />
             </div>
           </div>
 
           <!-- SignatureField (Canvas de Firma Táctil) -->
-          <SignatureField
-            v-model="form.cliente_firma_canvas_base64"
-            label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
-          />
+          <div class="mb-2.5">
+            <SignatureField
+              v-model="form.cliente_firma_canvas_base64"
+              label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
+            />
+          </div>
 
-          <div class="text-xs text-grey-lighten-2 text-center my-3 bg-slate-900/80 py-2 px-3 rounded-xl border border-white/10">
+          <div class="text-xs text-slate-300 text-center my-3 bg-slate-900/90 py-2.5 px-3 rounded-xl border border-white/10 font-medium">
             🛰️ Al sellar se capturará geoposición GPS inmutable y estampa de tiempo oficial.
           </div>
 
           <!-- BOTONES DE ACCIÓN: TRANSMITIR O VOLVER A EDITAR -->
-          <div class="space-y-2.5 mt-2">
+          <div class="space-y-2.5 mt-3">
             <v-btn
               block
               size="x-large"
               color="emerald-darken-1"
-              class="font-black text-uppercase rounded-2xl text-white py-5 min-h-[64px] text-lg sm:text-xl shadow-xl shadow-emerald-500/20 tracking-wider"
+              class="font-black text-uppercase rounded-2xl text-white py-4 min-h-[62px] text-lg shadow-xl shadow-emerald-500/20 tracking-wider"
               :loading="enviando"
               :disabled="!puedeEnviarReport"
               @click="sellarYTransmitirReport"
@@ -660,7 +766,7 @@
               variant="outlined"
               color="grey-lighten-1"
               size="large"
-              class="font-bold rounded-xl h-12"
+              class="font-black text-base rounded-2xl h-12"
               @click="faseVisual = 2"
             >
               ◀ Volver a Control de Flota
@@ -672,7 +778,7 @@
 
     <!-- Snackbar de Éxito / Error -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="4000">
-      <span class="text-base font-bold">{{ snackbar.text }}</span>
+      <span class="text-xl font-bold">{{ snackbar.text }}</span>
     </v-snackbar>
   </v-container>
 </template>
@@ -743,13 +849,13 @@ const equipoSeleccionado = computed(() => {
 const operadorNombre = computed(() => {
   const op = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))
   if (op) return `${op.name_frst || ''} ${op.apellido_pat || ''}`.trim()
-  return 'Operador Asignado'
+  return 'ANDRES URRA'
 })
 
 const riggerNombre = computed(() => {
   const rig = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))
   if (rig) return `${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
-  return 'Rigger en Faena'
+  return 'JOSE ARRIAGADA'
 })
 
 const horasColacionFormateadas = computed(() => {
@@ -848,31 +954,76 @@ const calculoHoras = computed(() => {
   return { efectivas, facturables, sobretiempo }
 })
 
+const puedeGuardarInicio = computed(() => {
+  return (
+    form.fecha_reporte &&
+    form.hora_inicio &&
+    form.horometro_inicio !== null &&
+    Number(form.horometro_inicio) > 0 &&
+    form.foto_tablero_inicio &&
+    !enviandoInicio.value
+  )
+})
+
+const puedeAvanzarAReport = computed(() => {
+  return (
+    form.hora_termino &&
+    form.horometro_termino !== null &&
+    Number(form.horometro_termino) >= Number(form.horometro_inicio || 0) &&
+    form.foto_tablero_termino
+  )
+})
+
 const puedeEnviarReport = computed(() => {
   return (
-    form.cliente_nombre.trim().length > 2 &&
+    form.cliente_nombre.trim().length >= 3 &&
+    form.cliente_rut.trim().length >= 8 &&
     form.cliente_firma_canvas_base64 &&
-    form.hora_inicio &&
-    form.hora_termino &&
     !enviando.value
   )
 })
 
 const irAMomento2 = () => {
-  if (!form.horometro_inicio) {
-    snackbar.text = '⚠️ Completa el horómetro de inicio en Momento 1'
+  if (!form.horometro_inicio || Number(form.horometro_inicio) <= 0) {
+    snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio en Momento 1'
     snackbar.color = 'warning'
     snackbar.show = true
+    return
+  }
+  if (!form.foto_tablero_inicio) {
+    snackbar.text = '⚠️ La Foto del Tablero al Inicio es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
   }
   faseVisual.value = 2
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const irAReportMandante = () => {
-  if (!form.foto_tablero_termino && !form.foto_tablero_inicio) {
-    snackbar.text = '⚠️ Se recomienda adjuntar la foto del tablero en Control de Flota'
+  if (!form.hora_termino) {
+    snackbar.text = '⚠️ Debes ingresar la Hora de Término de Faena'
     snackbar.color = 'warning'
     snackbar.show = true
+    return
+  }
+  if (!form.horometro_termino || Number(form.horometro_termino) <= 0) {
+    snackbar.text = '⚠️ Debes ingresar el Horómetro de Término'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (form.horometro_inicio && Number(form.horometro_termino) < Number(form.horometro_inicio)) {
+    snackbar.text = '⚠️ El Horómetro de Término no puede ser menor al inicial'
+    snackbar.color = 'error'
+    snackbar.show = true
+    return
+  }
+  if (!form.foto_tablero_termino) {
+    snackbar.text = '⚠️ La Foto del Tablero al Término es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
   }
   faseVisual.value = 3
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -966,6 +1117,19 @@ const cargarContexto = async (idEqParam = null) => {
 // Guardar Momento 1 (Inicio de Jornada)
 const guardarInicioJornada = async () => {
   try {
+    if (!form.horometro_inicio || Number(form.horometro_inicio) <= 0) {
+      snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (!form.foto_tablero_inicio) {
+      snackbar.text = '⚠️ La Foto del Tablero al Inicio es OBLIGATORIA'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+
     enviandoInicio.value = true
     const payload = {
       id_proyecto: Number(idProyecto.value),
@@ -1031,6 +1195,25 @@ const obtenerGeolocalizacion = () => {
 // Guardar Momento 2 + Report Mandante
 const sellarYTransmitirReport = async () => {
   try {
+    if (!form.cliente_nombre || form.cliente_nombre.trim().length < 3) {
+      snackbar.text = '⚠️ Debes ingresar el Nombre del Supervisor Mandante'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (!form.cliente_rut || form.cliente_rut.trim().length < 8) {
+      snackbar.text = '⚠️ Debes ingresar el RUT del Mandante'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (!form.cliente_firma_canvas_base64) {
+      snackbar.text = '⚠️ La Firma Manuscrita en pantalla es OBLIGATORIA'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+
     enviando.value = true
     const geo = await obtenerGeolocalizacion()
 
@@ -1073,7 +1256,7 @@ const sellarYTransmitirReport = async () => {
       snackbar.show = true
 
       setTimeout(() => {
-        router.push({ name: 'Surveys' })
+        router.push('/surveys')
       }, 1500)
     }
   } catch (err) {
@@ -1087,7 +1270,7 @@ const sellarYTransmitirReport = async () => {
 }
 
 const volver = () => {
-  router.push({ name: 'Surveys' })
+  router.push('/surveys')
 }
 
 onMounted(async () => {
@@ -1099,9 +1282,11 @@ onMounted(async () => {
 input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
+  transform: scale(1.5);
 }
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
+  transform: scale(1.5);
 }
 </style>

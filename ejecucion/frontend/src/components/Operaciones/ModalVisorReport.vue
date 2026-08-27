@@ -109,40 +109,54 @@
           </div>
         </div>
 
-        <!-- EVIDENCIA FOTOGRÁFICA DEL TABLERO / HORÓMETRO -->
-        <div class="bg-[#080d1a] border border-white/15 rounded-xl p-4 space-y-2.5">
+        <!-- EVIDENCIA FOTOGRÁFICA DEL TABLERO (DUAL: INICIO Y TÉRMINO) -->
+        <div class="bg-[#080d1a] border border-white/15 rounded-xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-              📸 Evidencia Fotográfica del Horómetro / Tablero
-            </span>
-            <span v-if="report?.foto_horometro" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">
-              ✅ Fotografía Registrada
-            </span>
-            <span v-else class="text-xs font-mono text-slate-500">
-              Sin foto adjunta
+              📸 Evidencias Fotográficas de Panel / Odómetros / Horómetros
             </span>
           </div>
 
-          <div v-if="report?.foto_horometro" class="flex flex-col sm:flex-row items-center gap-4 bg-black/40 p-3 rounded-lg border border-white/5">
-            <div class="w-full sm:w-64 max-h-52 overflow-hidden rounded-lg border border-amber-500/40 bg-black flex items-center justify-center">
-              <img 
-                :src="report.foto_horometro" 
-                alt="Horómetro Grúa" 
-                class="w-full h-auto max-h-52 object-contain hover:scale-105 transition-transform cursor-pointer"
-                @click="abrirFotoGrande(report.foto_horometro)"
-                title="Clic para agrandar fotografía"
-              />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- FOTO INICIO -->
+            <div class="bg-black/50 p-3 rounded-xl border border-white/10 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-400 uppercase">🟢 Tablero Inicio (Mañana)</span>
+                <span class="text-xs font-mono text-slate-300">Horóm: {{ report?.horometro_inicio || '---' }} | Odóm: {{ report?.odometro_inicio || '---' }}</span>
+              </div>
+              <div v-if="report?.foto_tablero_inicio || report?.foto_horometro" class="h-48 overflow-hidden rounded-lg border border-emerald-500/40 bg-black flex items-center justify-center">
+                <img 
+                  :src="report?.foto_tablero_inicio || report?.foto_horometro" 
+                  alt="Foto Tablero Inicio" 
+                  class="w-full h-auto max-h-48 object-contain hover:scale-105 transition-transform cursor-pointer"
+                  @click="abrirFotoGrande(report?.foto_tablero_inicio || report?.foto_horometro)"
+                  title="Clic para ampliar foto de inicio"
+                />
+              </div>
+              <div v-else class="h-48 rounded-lg border border-dashed border-white/10 flex items-center justify-center text-xs text-slate-500 italic">
+                Sin foto de inicio registrada
+              </div>
             </div>
-            <div class="text-xs text-slate-300 space-y-1.5 flex-1">
-              <p class="font-bold text-white text-sm">Respaldo Visual del Panel de Control</p>
-              <p class="text-slate-400">
-                Permite al analista contrastar la lectura numérica del odómetro/horómetro de terreno ({{ report?.horometro_termino || report?.horometro_inicio || '---' }} hrs) contra la foto del tablero.
-              </p>
-              <span class="text-amber-400 font-mono text-xs block">🔎 Clic sobre la imagen para zoom completo</span>
+
+            <!-- FOTO TÉRMINO -->
+            <div class="bg-black/50 p-3 rounded-xl border border-white/10 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-red-400 uppercase">🔴 Tablero Término (Tarde)</span>
+                <span class="text-xs font-mono text-slate-300">Horóm: {{ report?.horometro_termino || '---' }} | Odóm: {{ report?.odometro_termino || '---' }}</span>
+              </div>
+              <div v-if="report?.foto_tablero_termino" class="h-48 overflow-hidden rounded-lg border border-red-500/40 bg-black flex items-center justify-center">
+                <img 
+                  :src="report?.foto_tablero_termino" 
+                  alt="Foto Tablero Término" 
+                  class="w-full h-auto max-h-48 object-contain hover:scale-105 transition-transform cursor-pointer"
+                  @click="abrirFotoGrande(report?.foto_tablero_termino)"
+                  title="Clic para ampliar foto de término"
+                />
+              </div>
+              <div v-else class="h-48 rounded-lg border border-dashed border-white/10 flex items-center justify-center text-xs text-slate-500 italic">
+                Sin foto de término registrada
+              </div>
             </div>
-          </div>
-          <div v-else class="text-xs text-slate-400 italic bg-black/20 p-2.5 rounded border border-white/5">
-            No se adjuntó fotografía del tablero para esta jornada.
           </div>
         </div>
 
@@ -151,6 +165,14 @@
           <span class="text-xs text-slate-300 font-bold uppercase tracking-wider block">📝 Maniobras / Observaciones Registradas</span>
           <p class="text-sm text-slate-200 italic bg-black/40 p-3 rounded-lg border border-white/5 whitespace-pre-wrap leading-relaxed">
             {{ report?.observacion_trabajo || 'Sin observaciones adicionales registradas para este día.' }}
+          </p>
+        </div>
+
+        <!-- NOTAS MECÁNICAS GSP (TALLER) -->
+        <div v-if="report?.notas_mecanicas_gsp" class="bg-[#080d1a] border border-slate-700 rounded-xl p-4 space-y-2">
+          <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">🔒 Notas Mecánicas / Taller GSP (Uso Interno)</span>
+          <p class="text-xs text-slate-300 bg-black/40 p-2.5 rounded-lg border border-white/5 whitespace-pre-wrap">
+            {{ report?.notas_mecanicas_gsp }}
           </p>
         </div>
 

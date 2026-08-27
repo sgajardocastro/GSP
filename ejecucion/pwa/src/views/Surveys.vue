@@ -1,8 +1,46 @@
 <template>
   <v-container class="surveys-page">
-    <!-- 🚛 BANNER / WIDGET NATIVO DE VIAJE ACTIVO ASIGNADO O EN RUTA -->
+    <!-- 🚜 TARJETA DESTACADA: CONTROL DE FLOTA & REPORT DIARIO EN FAENA -->
     <v-card
-      v-if="viajeActivo"
+      class="mb-4 rounded-2xl border-2 border-emerald-500/50 text-white pa-4"
+      style="background: linear-gradient(135deg, #0a0f1e 0%, #112211 100%); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25);"
+      elevation="4"
+    >
+      <div class="d-flex align-center justify-space-between mb-2">
+        <div class="d-flex align-center ga-2">
+          <span class="text-2xl">🚜</span>
+          <div>
+            <div class="text-xs font-black text-emerald-400 text-uppercase tracking-wider">
+              OPERACIÓN DIARIA EN FAENA (GSP)
+            </div>
+            <div class="text-base font-black text-white font-mono">
+              OT: GSP-2608-4851-037 • BGDF.90-4
+            </div>
+          </div>
+        </div>
+        <v-chip size="small" color="emerald" variant="flat" class="font-black text-xs">
+          🟢 EN CURSO
+        </v-chip>
+      </div>
+
+      <div class="text-sm text-slate-200 mb-3 bg-black/60 pa-2.5 rounded-xl border border-white/10">
+        📍 <strong>Mandante:</strong> LeanGlobal Spa • <strong>Faena:</strong> Obra Cliente
+      </div>
+
+      <v-btn
+        block
+        color="emerald-darken-1"
+        size="x-large"
+        class="font-black text-uppercase rounded-xl text-white py-4 min-h-[58px] text-base shadow-lg shadow-emerald-500/20 tracking-wider"
+        @click="abrirReportDiario(69)"
+      >
+        🚜 Abrir Control de Flota & Report ➔
+      </v-btn>
+    </v-card>
+
+    <!-- 🚛 BANNER DE VIAJE SI ESTÁ EN TRÁNSITO -->
+    <v-card
+      v-if="viajeActivo && viajeActivo.estado_trayecto === 'EN_RUTA'"
       class="mb-4 rounded-xl border border-amber-500/40 text-white pa-4"
       style="background: linear-gradient(135deg, #0a0f1e 0%, #151e36 100%); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);"
       elevation="4"
@@ -12,45 +50,26 @@
           <span class="text-h6">🚛</span>
           <div>
             <div class="text-caption font-weight-black text-amber-400 text-uppercase tracking-wider">
-              {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ En Tránsito / En Ruta' : '🚀 Salida de Patio Programada' }}
+              🛰️ En Tránsito / En Ruta
             </div>
             <div class="text-subtitle-2 font-weight-black text-white font-mono">
               {{ viajeActivo.patente }} <span class="text-grey-lighten-1 font-weight-normal">• {{ viajeActivo.modelo }}</span>
             </div>
           </div>
         </div>
-        <v-chip size="small" :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'" variant="flat" class="font-weight-bold">
+        <v-chip size="small" color="info" variant="flat" class="font-weight-bold">
           {{ viajeActivo.estado_trayecto }}
         </v-chip>
       </div>
 
-      <div class="text-caption text-grey-lighten-2 mb-3 bg-black pa-2 rounded-lg border border-white/10">
-        📍 <strong>Destino:</strong> {{ viajeActivo.obra_nombre }} <span class="text-amber-300">({{ viajeActivo.codi_proyecto }})</span>
-        <div v-if="viajeActivo.obra_direccion" class="text-grey text-caption text-truncate">
-          {{ viajeActivo.obra_direccion }}
-        </div>
-      </div>
-
       <v-btn
-        v-if="viajeActivo.estado_trayecto === 'EN_RUTA' || viajeActivo.estado_trayecto === 'ASIGNADO'"
         block
-        :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'amber-darken-2'"
+        color="info"
         size="large"
         class="font-weight-black text-uppercase rounded-lg text-black"
         @click="abrirViajeNativo(viajeActivo.token_viaje)"
       >
-        {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ Continuar Registro de Viaje' : '▶️ Iniciar Registro de Viaje (Odómetro/PIN)' }}
-      </v-btn>
-
-      <v-btn
-        v-if="viajeActivo.id_proyecto"
-        block
-        color="amber-accent-4"
-        size="large"
-        class="font-weight-black text-uppercase rounded-lg text-black mt-2"
-        @click="abrirReportDiario(viajeActivo.id_proyecto)"
-      >
-        📋 Emitir Report Diario de Izaje
+        🛰️ Continuar Registro de Viaje
       </v-btn>
     </v-card>
 
