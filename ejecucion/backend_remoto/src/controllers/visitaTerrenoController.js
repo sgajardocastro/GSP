@@ -27,8 +27,8 @@ const solicitarVisita = async (req, res) => {
 
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, e.razon_social as cliente_nombre
-            FROM tpry_proyecto p
-            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM sch_leangsp.tpry_proyecto p
+            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.id_proyecto = $1
         `, [id_proyecto]);
 
@@ -45,8 +45,8 @@ const solicitarVisita = async (req, res) => {
         let resolvedCoordinadorId = id_coordinador ? Number(id_coordinador) : null;
         if (!resolvedCoordinadorId && email_coordinador) {
             const uRes = await pool.query(
-                `SELECT id_user FROM tsec_users 
-                 WHERE LOWER(email) = LOWER($1) OR LOWER(correo) = LOWER($1) OR LOWER(username) = LOWER($1) 
+                `SELECT id_user FROM sch_leangsp.tsec_users 
+                 WHERE LOWER(email) = LOWER($1) 
                  LIMIT 1`,
                 [email_coordinador.trim()]
             );
@@ -66,7 +66,7 @@ const solicitarVisita = async (req, res) => {
         if (detalle_servicio) jsonField.crm_v1.detalle_servicio = detalle_servicio;
 
         await pool.query(`
-            UPDATE tpry_proyecto
+            UPDATE sch_leangsp.tpry_proyecto
             SET token_visita = $1,
                 estado_solicitud_visita = 'PENDIENTE_ASIGNACION',
                 json_field = $2
@@ -140,8 +140,8 @@ const getDatosVisita = async (req, res) => {
 
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.id_empresa_cliente, e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
-            FROM tpry_proyecto p
-            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM sch_leangsp.tpry_proyecto p
+            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.token_visita = $1
         `, [token]);
 
@@ -157,7 +157,7 @@ const getDatosVisita = async (req, res) => {
         if (crm.coordinador_visita) {
             const coordRes = await pool.query(`
                 SELECT id_user, email, CONCAT(name_frst, ' ', apellido_pat) as nombre
-                FROM tsec_users
+                FROM sch_leangsp.tsec_users
                 WHERE id_user = $1
             `, [crm.coordinador_visita]);
 
@@ -198,7 +198,7 @@ const asignarVisita = async (req, res) => {
         // 1. Obtener proyecto y resolver coordinador si no viene en el body
         const tokenPryRes = await pool.query(`
             SELECT id_proyecto, nombre_proyecto, id_empresa_cliente, json_field 
-            FROM tpry_proyecto 
+            FROM sch_leangsp.tpry_proyecto 
             WHERE token_visita = $1
         `, [token]);
 
@@ -212,12 +212,26 @@ const asignarVisita = async (req, res) => {
 
         let resolvedCoordId = id_coordinador ? Number(id_coordinador) : (crm.coordinador_visita ? Number(crm.coordinador_visita) : null);
 
+        // Fallback robusto: Si no viene en el body ni en json_field, resolver por el PIN hash FES del usuario
+        if (!resolvedCoordId && fes_pin_hash) {
+            const uPinRes = await pool.query(
+                `SELECT id_user FROM sch_leangsp.tsec_users WHERE pass_hash_fes = $1 LIMIT 1`,
+                [fes_pin_hash.trim()]
+            );
+            if (uPinRes.rowCount > 0) {
+                resolvedCoordId = uPinRes.rows[0].id_user;
+                if (!crm.coordinador_visita) {
+                    crm.coordinador_visita = resolvedCoordId;
+                }
+            }
+        }
+
         if (!id_ejecutor || !fecha_visita || !resolvedCoordId || !fes_pin_hash) {
             return res.status(400).json({ error: "Faltan datos requeridos (incluyendo Firma FES)" });
         }
 
         // 2. Validar FES PIN del coordinador
-        const userRes = await pool.query(`SELECT pass_hash_fes FROM tsec_users WHERE id_user = $1`, [resolvedCoordId]);
+        const userRes = await pool.query(`SELECT pass_hash_fes FROM sch_leangsp.tsec_users WHERE id_user = $1`, [resolvedCoordId]);
         if (userRes.rowCount === 0) {
             return res.status(404).json({ error: "Usuario coordinador no encontrado." });
         }
@@ -232,7 +246,7 @@ const asignarVisita = async (req, res) => {
             crm.comentarios_visita_coordinador = comentarios_coordinador;
         }
         await pool.query(`
-            UPDATE tpry_proyecto
+            UPDATE sch_leangsp.tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
                 token_visita = NULL,
                 json_field = $1

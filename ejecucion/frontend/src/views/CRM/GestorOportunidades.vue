@@ -9884,8 +9884,9 @@ const solicitarAsignacionVisita = async () => {
   estadoAsignacion.value = null
   try {
     const token = localStorage.getItem('token') || ''
-    const coordinador = usuarios.value.find(u => (u.email || u.correo || u.username) === emailCoordinadorSeleccionado.value) ||
-                        coordinadoresVisita.value.find(u => (u.email || u.correo || u.username) === emailCoordinadorSeleccionado.value);
+    const targetEmail = (emailCoordinadorSeleccionado.value || '').trim().toLowerCase()
+    const coordinador = usuarios.value.find(u => (u.email || u.correo || u.username || '').trim().toLowerCase() === targetEmail) ||
+                        coordinadoresVisita.value.find(u => (u.email || u.correo || u.username || '').trim().toLowerCase() === targetEmail);
     
     await apiAxios.post(`/visitas/solicitar/${currentProyectoId.value}`, {
       email_coordinador: emailCoordinadorSeleccionado.value,

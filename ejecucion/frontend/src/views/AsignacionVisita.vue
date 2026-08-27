@@ -271,10 +271,27 @@ const confirmarConPin = async () => {
           seg.attributes.forEach(attr => {
             const label = (attr.label || '').toUpperCase()
             const dirObra = proyectoData.value.obra_direccion || proyectoData.value.direccion || proyectoData.value.observacion_proyecto || ''
-            if (label.includes('RAZON') || label.includes('SOCIAL')) attr.default = proyectoData.value.cliente_nombre || ''
-            if (label.includes('RUT')) attr.default = proyectoData.value.cliente_rut || ''
-            if (label.includes('NOMBRE DE LA OBRA')) attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
-            if (label.includes('DIRECCION')) attr.default = dirObra
+            if (label.includes('RAZON') || label.includes('SOCIAL')) {
+              attr.default = proyectoData.value.cliente_nombre || ''
+            }
+            if (label.includes('RUT')) {
+              attr.default = proyectoData.value.cliente_rut || ''
+            }
+            if (label.includes('NOMBRE DE LA OBRA') || (label.includes('OBRA') && !label.includes('DIRECCION') && !label.includes('GEOLOCALIZACION'))) {
+              attr.default = proyectoData.value.obra_nombre || proyectoData.value.nombre_proyecto || ''
+            }
+            if (label.includes('DIRECCION') || label.includes('DIRECCIÓN')) {
+              attr.default = dirObra
+            }
+            if (label.includes('CONTACTO EN TERRENO') || (label.includes('CONTACTO') && !label.includes('TELEFONO') && !label.includes('CORREO') && !label.includes('ELECTRONICO'))) {
+              attr.default = proyectoData.value.contacto_nombre || ''
+            }
+            if (label.includes('TELEFONO') || label.includes('TELÉFONO') || label.includes('TELEFÓNICO') || label.includes('CELULAR')) {
+              attr.default = proyectoData.value.contacto_telefono || ''
+            }
+            if (label.includes('CORREO') || label.includes('EMAIL') || label.includes('ELECTRÓNICO') || label.includes('ELECTRONICO')) {
+              attr.default = proyectoData.value.contacto_email || ''
+            }
             if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
               attr.default = form.value.comentarios_coordinador || 'No especificado'
             }
@@ -315,10 +332,15 @@ const confirmarConPin = async () => {
     }
 
     // 3. Firmar con FES y actualizar estado de la solicitud
+    let storageUser = null
+    try {
+      storageUser = JSON.parse(localStorage.getItem('usuario') || '{}')
+    } catch (_) {}
+
     await apiAxios.post(`/visitas/token/${token}/asignar`, {
       id_ejecutor: form.value.id_ejecutor,
       fecha_visita: form.value.fecha_visita,
-      id_coordinador: proyectoData.value.coordinador?.id_user || null,
+      id_coordinador: proyectoData.value.coordinador?.id_user || storageUser?.id_user || null,
       comentarios_coordinador: form.value.comentarios_coordinador || '',
       fes_pin_hash: pinHash
     })
