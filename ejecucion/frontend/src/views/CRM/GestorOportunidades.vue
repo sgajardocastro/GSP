@@ -6893,7 +6893,7 @@ const mostrarHistorialVisitasModal = ref(false)
 const parseAparejosDesdeSurvey = (visita) => {
   const result = getInitialImplementos()
   if (!visita || !visita.body_exec) return result
-  const body = visita.body_exec || {}
+  const body = typeof visita.body_exec === 'string' ? JSON.parse(visita.body_exec) : (visita.body_exec || {})
 
   const searchAttrs = (segList) => {
     if (!segList || !Array.isArray(segList)) return
@@ -6904,7 +6904,7 @@ const parseAparejosDesdeSurvey = (visita) => {
         const labelStr = (attr.label || attr.values?.quest || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
         
         // 1. Extraer observaciones generales si el atributo es de observaciones
-        if (labelStr.includes('OBSERVACIONES GENERALES') || labelStr.includes('OBSERVACION')) {
+        if (labelStr.includes('OBSERVACIONES GENERALES') || (labelStr.includes('OBSERVACION') && (labelStr.includes('APAREJO') || labelStr.includes('IZAJE')))) {
           const obsVal = attr.value !== undefined ? attr.value : (attr.default || '')
           if (obsVal && !operacionesAssignment.value.observaciones_operaciones) {
             operacionesAssignment.value.observaciones_operaciones = String(obsVal).trim()
@@ -6946,18 +6946,31 @@ const parseAparejosDesdeSurvey = (visita) => {
   return result
 }
 
+const sincronizarAparejosSiAplica = () => {
+  if (visitasDelProyecto.value.length > 0) {
+    const ultimaVisita = visitasDelProyecto.value[0]
+    const tieneManuales = operacionesAssignment.value.implementos_survey?.some(p => p.requerido || (p.detalle && p.detalle.trim() !== ''))
+    
+    // Si no tiene datos reales guardados o si la visita tiene implementos definidos
+    if (!tieneManuales || !operacionesAssignment.value.aparejos_bloqueados_survey) {
+      const parsed = parseAparejosDesdeSurvey(ultimaVisita)
+      if (parsed.some(p => p.requerido || (p.detalle && p.detalle.trim() !== ''))) {
+        operacionesAssignment.value.implementos_survey = parsed
+        operacionesAssignment.value.aparejos = parsed
+      }
+    }
+  }
+}
+
+watch(visitasDelProyecto, () => {
+  sincronizarAparejosSiAplica()
+}, { immediate: true, deep: true })
+
 const fetchVisitasTerreno = async () => {
   try {
     const { data } = await apiAxios.get('/survey/visitas-terreno')
     visitasTerreno.value = data
-
-    // Sincronizar automáticamente aparejos de la última visita del proyecto sólo si no han sido guardados
-    if (visitasDelProyecto.value.length > 0 && !operacionesAssignment.value.aparejos_bloqueados_survey) {
-      const parsed = parseAparejosDesdeSurvey(visitasDelProyecto.value[0])
-      if (parsed.some(p => p.requerido)) {
-        operacionesAssignment.value.implementos_survey = parsed
-      }
-    }
+    sincronizarAparejosSiAplica()
   } catch (error) {
     console.error('Error fetching visitas terreno:', error)
   }
@@ -7667,12 +7680,19 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
           if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
           const apData = ejecucion.implementos_survey || ejecucion.aparejos_asignados_json || ejecucion.aparejos
-          if (apData) {
-            operacionesAssignment.value.aparejos = apData
-            if (Array.isArray(apData) && apData.length > 0) {
+          if (apData && Array.isArray(apData) && apData.length > 0) {
+            const tieneDatosReales = apData.some(p => p.requerido || (p.detalle && p.detalle.trim() !== ''))
+            if (tieneDatosReales) {
+              operacionesAssignment.value.aparejos = apData
               operacionesAssignment.value.implementos_survey = JSON.parse(JSON.stringify(apData))
               operacionesAssignment.value.aparejos_bloqueados_survey = true
+            } else {
+              operacionesAssignment.value.aparejos_bloqueados_survey = false
+              sincronizarAparejosSiAplica()
             }
+          } else {
+            operacionesAssignment.value.aparejos_bloqueados_survey = false
+            sincronizarAparejosSiAplica()
           }
           if (ejecucion.cumplimiento_acreditaciones) {
             operacionesAssignment.value.cumplimiento_acreditaciones = ejecucion.cumplimiento_acreditaciones
