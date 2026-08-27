@@ -480,17 +480,6 @@ class ProyectoModel {
       // Generar secciones extra dinámicas para los tabs del CRM (ej. Datos Servicio & Visita)
       let extraSectionsHtml = '';
 
-      const requiresRigger = jsonField.preventa_v1?.requiere_rigger ? 'SÍ' : 'NO';
-      const requerimientosHtml = `
-        <table class="info-table" style="width: 100%; margin-top: 10px;">
-          <tr>
-            <td style="width: 25%; font-weight: bold;">REQUIERE RIGGER:</td>
-            <td style="width: 75%; font-weight: bold; color: ${jsonField.preventa_v1?.requiere_rigger ? '#000' : '#666'};">${requiresRigger}</td>
-          </tr>
-        </table>
-      `;
-      extraSectionsHtml += requerimientosHtml;
-
       const standardKeys = ['lineas_servicio', 'cotizaciones_historicas', 'condiciones_pdf', 'prioridad', 'contacto_nombre', 'contacto_telefono', 'tipo_pago', 'requiere_oc_hes', 'obra_nombre', 'obra_direccion', 'obra_ciudad', 'coordenadas_mapa', 'detalle_servicio', 'tipo_carga', 'peso_carga', 'volumen_carga', 'radios_trabajo', 'alturas_trabajo', 'visita_terreno', 'validez_dias', 'moneda', 'condicion_servicio'];
       let sectionCounter = 4; // Empezamos en 4 porque 1, 2 y 3 ya están definidos arriba (la sección de Condiciones Comerciales será la última)
       
