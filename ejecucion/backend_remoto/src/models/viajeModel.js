@@ -2,81 +2,6 @@ const db = require('../config/dbConfig');
 const crypto = require('crypto');
 
 const viajeModel = {
-  // 1. Obtener viaje completo por token (con fallback dinámico por token de proyecto/equipo)
-  async getViajePorToken(token) {
-    if (!token) throw new Error('Token requerido');
-
-    // 1.1 Buscar primero si ya existe un registro de log de desplazamiento
-    const sql = `
-      SELECT 
-        v.id_log_desplazamiento,
-        v.id_proyecto,
-        v.id_equipo,
-        v.id_user_chofer,
-        v.patente,
-        v.tipo_trayecto,
-        v.fecha_salida_patio,
-        v.fecha_llegada_faena,
-        v.fecha_salida_faena,
-        v.fecha_llegada_patio,
-        v.latitud_salida_patio,
-        v.longitud_salida_patio,
-        v.latitud_llegada_faena,
-        v.longitud_llegada_faena,
-        v.km_inicial,
-        v.km_final,
-        v.horometro_inicial,
-        v.horometro_final,
-        v.foto_tablero_salida_path,
-        v.foto_tablero_llegada_path,
-        v.estado_trayecto,
-        v.token_viaje,
-        v.obs_termino,
-        COALESCE(v.pings_ruta, '[]'::jsonb) AS pings_ruta,
-        p.nombre_proyecto,
-        p.codi_proyecto,
-        COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
-        COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
-        COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Conductor Asignado') AS chofer_nombre,
-        u.email AS chofer_email,
-        COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
-        COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
-        COALESCE(e.marca, 'GSP') AS marca
-      FROM sch_leangsp.tequ_log_desplazamiento v
-      JOIN sch_leangsp.tpry_proyecto p ON v.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
-      LEFT JOIN sch_leangsp.tsec_users u ON v.id_user_chofer = u.id_user
-      WHERE v.token_viaje = $1;
-    `;
-    const res = await db.query(sql, [token]);
-    if (res.rows.length > 0) {
-      const viaje = res.rows[0];
-      // Consultar cargas de combustible asociadas
-      const fuelSql = `
-        SELECT 
-          id_costo,
-          id_log_desplazamiento,
-          categoria_costo,
-          monto_costo,
-          litros_combustible,
-          kilometraje_odometro,
-          horometro_odometro,
-          tipo_estanque,
-          id_autorizacion_copec,
-          numero_comprobante,
-          archivo_comprobante_path,
-          foto_tablero_path,
-          observacion,
-          fecha_registro
-        FROM sch_leangsp.tedp_costos_servicio
-        WHERE id_log_desplazamiento = $1
-        ORDER BY id_costo ASC;
-      `;
-      const fuelRes = await db.query(fuelSql, [viaje.id_log_desplazamiento]);
-      viaje.cargas_combustible = fuelRes.rows;
-      return viaje;
-    }
-
   // 1.3 Resolver dinámicamente el proyecto y equipo a partir del token (sin importar formato)
   async resolverContextoPorToken(token) {
     if (!token) return { id_proyecto: null, id_equipo: null };
@@ -515,7 +440,7 @@ const viajeModel = {
     return res.rows;
   },
 
-  // 8. Obtener viaje activo para un usuario conductor (PWA)
+  // 8. Obtener viaje activo o arribado para un usuario conductor (PWA)
   async getViajeActivoPorUsuario(id_user) {
     const sql = `
       SELECT 
@@ -527,11 +452,15 @@ const viajeModel = {
         v.estado_trayecto,
         v.token_viaje,
         v.fecha_salida_patio,
+        v.fecha_llegada_faena,
         v.km_inicial,
+        v.km_final,
         v.horometro_inicial,
+        v.horometro_final,
         p.nombre_proyecto,
         p.codi_proyecto,
         COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
+        COALESCE(p.json_field->>'cliente_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'razon_social', 'Mandante GSP') AS cliente_nombre,
         COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
@@ -539,7 +468,7 @@ const viajeModel = {
       FROM sch_leangsp.tequ_log_desplazamiento v
       JOIN sch_leangsp.tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
-      WHERE v.id_user_chofer = $1 AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA')
+      WHERE v.id_user_chofer = $1
       ORDER BY v.id_log_desplazamiento DESC
       LIMIT 1;
     `;

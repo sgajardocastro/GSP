@@ -1,46 +1,51 @@
 <template>
   <v-container class="surveys-page">
-    <!-- 🚜 TARJETA DESTACADA: CONTROL DE FLOTA & REPORT DIARIO EN FAENA -->
+    <!-- 🚜 TARJETA DESTACADA: CONTROL DE FLOTA CUANDO EL EQUIPO YA ARRIBÓ A FAENA -->
     <v-card
-      class="mb-4 rounded-2xl border-2 border-emerald-500/50 text-white pa-4"
-      style="background: linear-gradient(135deg, #0a0f1e 0%, #112211 100%); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25);"
-      elevation="4"
+      v-if="viajeActivo && (viajeActivo.estado_trayecto === 'ARRIBADO' || viajeActivo.estado_trayecto === 'LLEGADO')"
+      class="mb-4 rounded-2xl border-2 border-emerald-500/60 text-white pa-4"
+      style="background: linear-gradient(135deg, #07130e 0%, #0d281e 100%); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.35);"
+      elevation="6"
     >
       <div class="d-flex align-center justify-space-between mb-2">
         <div class="d-flex align-center ga-2">
           <span class="text-2xl">🚜</span>
           <div>
             <div class="text-xs font-black text-emerald-400 text-uppercase tracking-wider">
-              OPERACIÓN DIARIA EN FAENA (GSP)
+              OPERACIÓN & CONTROL DE FLOTA EN FAENA (GSP)
             </div>
             <div class="text-base font-black text-white font-mono">
-              OT: GSP-2608-4851-037 • BGDF.90-4
+              OT: {{ viajeActivo.codi_proyecto || 'GSP-OT' }} • {{ viajeActivo.patente }}
+              <span class="text-grey-lighten-1 font-weight-normal text-xs font-sans">({{ viajeActivo.modelo }})</span>
             </div>
           </div>
         </div>
         <v-chip size="small" color="emerald" variant="flat" class="font-black text-xs">
-          🟢 EN CURSO
+          🟢 ARRIBADO
         </v-chip>
       </div>
 
-      <div class="text-sm text-slate-200 mb-3 bg-black/60 pa-2.5 rounded-xl border border-white/10">
-        📍 <strong>Mandante:</strong> LeanGlobal Spa • <strong>Faena:</strong> Obra Cliente
+      <div class="text-xs text-slate-200 mb-2 bg-black/60 pa-2.5 rounded-xl border border-white/10 d-flex flex-column ga-1">
+        <div>📍 <strong>Mandante:</strong> {{ viajeActivo.cliente_nombre || 'Cliente Mandante' }} • <strong>Faena:</strong> {{ viajeActivo.obra_nombre || 'Obra en Faena' }}</div>
+        <div class="font-mono text-emerald-300">
+          ⏱️ <strong>Odóm. Arribo:</strong> {{ viajeActivo.km_final || viajeActivo.km_inicial || 0 }} KM • <strong>Horóm. Arribo:</strong> {{ viajeActivo.horometro_final || viajeActivo.horometro_inicial || 0 }} HRS
+        </div>
       </div>
 
       <v-btn
         block
         color="emerald-darken-1"
         size="x-large"
-        class="font-black text-uppercase rounded-xl text-white py-4 min-h-[58px] text-base shadow-lg shadow-emerald-500/20 tracking-wider"
-        @click="abrirReportDiario(69)"
+        class="font-black text-uppercase rounded-xl text-white py-4 min-h-[56px] text-sm sm:text-base shadow-lg shadow-emerald-500/20 tracking-wider"
+        @click="abrirReportDiario(viajeActivo.id_proyecto)"
       >
         🚜 Abrir Control de Flota & Report ➔
       </v-btn>
     </v-card>
 
-    <!-- 🚛 BANNER DE VIAJE SI ESTÁ EN TRÁNSITO -->
+    <!-- 🚛 BANNER DE VIAJE SI ESTÁ EN TRÁNSITO O ASIGNADO -->
     <v-card
-      v-if="viajeActivo && viajeActivo.estado_trayecto === 'EN_RUTA'"
+      v-else-if="viajeActivo && (viajeActivo.estado_trayecto === 'EN_RUTA' || viajeActivo.estado_trayecto === 'ASIGNADO')"
       class="mb-4 rounded-xl border border-amber-500/40 text-white pa-4"
       style="background: linear-gradient(135deg, #0a0f1e 0%, #151e36 100%); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);"
       elevation="4"
@@ -50,27 +55,56 @@
           <span class="text-h6">🚛</span>
           <div>
             <div class="text-caption font-weight-black text-amber-400 text-uppercase tracking-wider">
-              🛰️ En Tránsito / En Ruta
+              {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ En Tránsito / En Ruta' : '🚦 Salida Autorizada — Iniciar Viaje' }}
             </div>
             <div class="text-subtitle-2 font-weight-black text-white font-mono">
               {{ viajeActivo.patente }} <span class="text-grey-lighten-1 font-weight-normal">• {{ viajeActivo.modelo }}</span>
             </div>
           </div>
         </div>
-        <v-chip size="small" color="info" variant="flat" class="font-weight-bold">
+        <v-chip size="small" :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'" variant="flat" class="font-weight-bold">
           {{ viajeActivo.estado_trayecto }}
         </v-chip>
       </div>
 
+      <div class="text-caption text-slate-300 mb-2">
+        📍 <strong>Destino:</strong> {{ viajeActivo.obra_nombre || 'Faena Operacional' }} (OT {{ viajeActivo.codi_proyecto || 'GSP' }})
+      </div>
+
       <v-btn
         block
-        color="info"
+        :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'"
         size="large"
         class="font-weight-black text-uppercase rounded-lg text-black"
         @click="abrirViajeNativo(viajeActivo.token_viaje)"
       >
-        🛰️ Continuar Registro de Viaje
+        {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ Continuar Registro de Viaje' : '🟢 Iniciar Salida de Patio (Odómetro/PIN)' }}
       </v-btn>
+    </v-card>
+
+    <!-- 🚜 ACCESO RÁPIDO SI NO HAY VIAJE ASIGNADO AL USUARIO -->
+    <v-card
+      v-else-if="!cargandoViajeActivo"
+      class="mb-4 rounded-xl border border-white/10 text-white pa-3 bg-[#0b1021]"
+    >
+      <div class="d-flex align-center justify-space-between">
+        <div class="d-flex align-center ga-2">
+          <span class="text-xl">🚜</span>
+          <div>
+            <div class="text-[11px] font-bold text-slate-300">Control de Flota & Operación Diaria</div>
+            <div class="text-[10px] text-slate-500 font-mono">Seleccione su servicio para registrar jornada</div>
+          </div>
+        </div>
+        <v-btn
+          size="small"
+          color="emerald"
+          variant="tonal"
+          class="font-bold text-xs"
+          @click="abrirReportDiario(74)"
+        >
+          Abrir Control ➔
+        </v-btn>
+      </div>
     </v-card>
 
     <v-row dense class="align-center">
