@@ -802,6 +802,9 @@ const ejecutarInicioViaje = async () => {
   }
 
   const payload = {
+    id_proyecto: viaje.value.id_proyecto || null,
+    id_equipo: viaje.value.id_equipo || null,
+    id_user_chofer: viaje.value.id_user_chofer || null,
     km_inicial: Number(formSalida.value.odometro),
     horometro_inicial: Number(formSalida.value.horometro),
     foto_salida: formSalida.value.foto || null,

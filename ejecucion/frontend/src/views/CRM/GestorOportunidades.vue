@@ -9475,9 +9475,10 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     const coordinadorNombre = currentUser.nombre || (currentUser.name_frst ? `${currentUser.name_frst || ''} ${currentUser.apellido_pat || ''}`.trim() : 'Coordinador de Operaciones')
 
-    // Generar o conservar token de viaje
+    // Generar o conservar token de viaje determinístico
+    const targetProjId = String(props.proyectoId || currentProyectoId.value || '74')
     if (!ins.token_viaje) {
-      ins.token_viaje = 'vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId + '-' + Math.random().toString(36).substring(2, 7)
+      ins.token_viaje = 'vj-' + targetProjId + '-' + eqId + '-' + Math.random().toString(36).substring(2, 7)
     }
 
     const tripUrl = getLinkViajeOperador(eqId)

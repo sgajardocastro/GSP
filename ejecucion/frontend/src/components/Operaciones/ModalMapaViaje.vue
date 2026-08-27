@@ -12,12 +12,12 @@
                 Hoja de Ruta & Telemetría GPS — {{ viaje?.patente || 'S/P' }}
               </h3>
               <span 
-                :class="viaje?.estado_trayecto === 'LLEGADO' || viaje?.estado_viaje === 'ARRIBADO_FAENA' 
+                :class="viaje?.estado_trayecto === 'LLEGADO' || viaje?.estado_trayecto === 'ARRIBADO' || viaje?.estado_viaje === 'ARRIBADO_FAENA' 
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
                   : 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'" 
                 class="text-[9.5px] font-mono font-bold uppercase px-2 py-0.5 rounded border"
               >
-                {{ viaje?.estado_trayecto === 'LLEGADO' || viaje?.estado_viaje === 'ARRIBADO_FAENA' ? '🟢 Arribado a Faena' : '🛰️ En Ruta (GPS Live)' }}
+                {{ viaje?.estado_trayecto === 'LLEGADO' || viaje?.estado_trayecto === 'ARRIBADO' || viaje?.estado_viaje === 'ARRIBADO_FAENA' ? '🟢 Arribado a Faena' : '🛰️ En Ruta (GPS Live)' }}
               </span>
             </div>
             <p class="text-[11px] text-slate-400">
