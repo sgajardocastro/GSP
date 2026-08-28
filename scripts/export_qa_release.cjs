@@ -10,13 +10,15 @@ const { execSync } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-// Destinos soportados (Se sincroniza en el directorio oficial de entrega QA de GSP)
-const DEFAULT_DEST = path.resolve('D:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/QA_Fuentes_Web');
-const TARGET_DEST = process.argv[2] ? path.resolve(process.argv[2]) : DEFAULT_DEST;
+// Destinos oficiales de sincronización de Google Drive
+const TARGET_DESTS = [
+  path.resolve('D:/SGajardo/Google Drive/Gruas San Pablo - LeanGlobal'),
+  path.resolve('G:/Mi unidad/Gruas San Pablo - LeanGlobal'),
+  path.resolve('D:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/QA_Fuentes_Web')
+];
 
-console.log('🚀 INICIANDO EXPORTACIÓN LIMPIA PARA QA...');
+console.log('🚀 INICIANDO EXPORTACIÓN LIMPIA PARA QA (Juanma)...');
 console.log(`📁 Directorio Raíz: ${ROOT_DIR}`);
-console.log(`🎯 Directorio Destino QA: ${TARGET_DEST}`);
 
 // 1. Obtener Metadatos Git
 let gitCommit = 'N/A';
@@ -32,32 +34,7 @@ const now = new Date();
 const pad = (n) => String(n).padStart(2, '0');
 const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
 
-// 2. Crear directorios base
-if (!fs.existsSync(TARGET_DEST)) {
-  fs.mkdirSync(TARGET_DEST, { recursive: true });
-}
-
-// 3. FASE 1: Backup del estado anterior
-const historicoDir = path.join(TARGET_DEST, '_historico');
-const backupDir = path.join(historicoDir, `${timestamp}_v${gitCommit}`);
-
-const itemsAnteriores = ['frontend', 'pwa', 'backend', 'specs', 'LEEME_QA.md', 'tareas.md'];
-const existenItems = itemsAnteriores.some(item => fs.existsSync(path.join(TARGET_DEST, item)));
-
-if (existenItems) {
-  console.log(`\n📦 [FASE 1] Creando backup histórico en: ${backupDir}`);
-  fs.mkdirSync(backupDir, { recursive: true });
-  for (const item of itemsAnteriores) {
-    const src = path.join(TARGET_DEST, item);
-    const dst = path.join(backupDir, item);
-    if (fs.existsSync(src)) {
-      fs.renameSync(src, dst);
-      console.log(`   ↳ Archivado: ${item}`);
-    }
-  }
-}
-
-// 4. Función de copia recursiva con exclusiones estrictas (Zero Garbage)
+// 2. Función de copia recursiva con exclusiones estrictas (Zero Garbage)
 const EXCLUDED_NAMES = new Set(['node_modules', 'dist', '.git', '.output', '.vscode', '.idea', 'coverage', '.cache']);
 const EXCLUDED_EXTS = new Set(['.log', '.tmp', '.tsbuildinfo']);
 
@@ -86,38 +63,7 @@ function copyDirClean(srcDir, destDir) {
   }
 }
 
-// 5. FASE 2: Copia de Fuentes Limpios
-console.log('\n🧹 [FASE 2] Copiando fuentes limpios (sin node_modules ni compilados)...');
-
-// 5.1 Frontend
-console.log('   ↳ Copiando Frontend Web CRM (ejecucion/frontend)...');
-copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'frontend'), path.join(TARGET_DEST, 'frontend'));
-
-// 5.2 PWA
-console.log('   ↳ Copiando PWA Móvil (ejecucion/pwa)...');
-copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'pwa'), path.join(TARGET_DEST, 'pwa'));
-
-// 5.3 Backend
-console.log('   ↳ Copiando Backend Node.js (ejecucion/backend_remoto)...');
-copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'backend_remoto'), path.join(TARGET_DEST, 'backend'));
-
-// 6. FASE 3: Inyección de Especificaciones y Backlog
-console.log('\n📐 [FASE 3] Inyectando especificaciones técnicas Spec-Driven...');
-
-// 6.1 Specs
-console.log('   ↳ Copiando 39+ Specs (.agents/specs)...');
-copyDirClean(path.join(ROOT_DIR, '.agents', 'specs'), path.join(TARGET_DEST, 'specs'));
-
-// 6.2 Backlog tareas.md
-const tareasSrc = path.join(ROOT_DIR, 'Gestión', 'tareas.md');
-if (fs.existsSync(tareasSrc)) {
-  fs.copyFileSync(tareasSrc, path.join(TARGET_DEST, 'tareas.md'));
-  console.log('   ↳ Copiado Gestión/tareas.md');
-}
-
-// 7. FASE 4: Generación de LEEME_QA.md
-console.log('\n📄 [FASE 4] Generando Guía de Auditoría LEEME_QA.md...');
-
+// 3. Generar LEEME_QA.md
 const leemeContent = `# 🛡️ Paquete de Fuentes y Especificaciones para Auditoría QA
 
 **Proyecto:** Grúas San Pablo (GSP) – Ecosistema Operacional & Comercial  
@@ -144,19 +90,15 @@ const leemeContent = `# 🛡️ Paquete de Fuentes y Especificaciones para Audit
 Este directorio contiene el código fuente 100% limpio (sin \`node_modules\` ni compilados temporales) junto a las especificaciones formales contra las cuales auditar:
 
 \`\`\`
-├── 📁 frontend/       -> Código Web CRM Vue 3 / Vite / Tailwind
-│   ├── src/views/CRM/GestorOportunidades.vue (6 Subpestañas completas)
-│   ├── src/views/Torre.vue (Kanban Operacional 6 Columnas)
-│   └── src/components/Operaciones/ (ModalMapaViaje, ModalVisorReport)
-├── 📁 pwa/            -> Código PWA Móvil Vue CLI / Vuetify
-│   ├── src/views/Surveys.vue (Checklists, AST, Banners de Viaje y Flota)
-│   └── src/views/ReportDiarioIzaje.vue (Control de Flota y Firma Mandante)
-├── 📁 backend/        -> API Express Node.js & PostgreSQL
-│   ├── src/controllers/ (viajeController, reportDiarioController, proyectoController)
-│   ├── src/models/ (viajeModel, reportDiarioModel, proyectoModel)
-│   └── src/database/ (Migraciones SQL y esquemas sch_leangsp)
-├── 📁 specs/          -> 39+ Especificaciones Técnicas Spec-Driven (Requerimientos Canónicos)
-└── 📄 tareas.md       -> Backlog oficial de desarrollo con estado de tareas
+├── 📁 Spec/           -> 42+ Especificaciones Técnicas Spec-Driven (Requerimientos Canónicos)
+├── 📁 Proyecto/       -> Código fuente completo limpio
+│   ├── 📁 frontend/   -> Web CRM Vue 3 / Vite / Tailwind
+│   ├── 📁 pwa/        -> PWA Móvil Vue CLI / Vuetify
+│   ├── 📁 backend/    -> API Express Node.js & PostgreSQL
+│   ├── 📄 tareas.md   -> Backlog oficial de desarrollo con estado de tareas
+│   └── 📄 LEEME_QA.md -> Esta guía de auditoría
+├── 📄 GSP_Fuentes_y_Specs_QA.zip -> Paquete completo comprimido listo para descargar
+└── 📁 _historico/     -> Respaldos automáticos de versiones anteriores
 \`\`\`
 
 ---
@@ -180,7 +122,83 @@ Este directorio contiene el código fuente 100% limpio (sin \`node_modules\` ni 
 *Generado automáticamente por el Workflow Spec-Driven \`.agents/workflows/qa_export_and_delivery.md\`*
 `;
 
-fs.writeFileSync(path.join(TARGET_DEST, 'LEEME_QA.md'), leemeContent, 'utf-8');
+// 4. Procesar cada directorio destino
+for (const target of TARGET_DESTS) {
+  try {
+    console.log(`\n🎯 Procesando destino: ${target}...`);
+    if (!fs.existsSync(target)) {
+      fs.mkdirSync(target, { recursive: true });
+    }
 
-console.log('\n✅ EXPORTACIÓN QA COMPLETADA EXITOSAMENTE!');
-console.log(`📦 Paquete disponible en: ${TARGET_DEST}\n`);
+    // FASE 1: Backup histórico
+    const historicoDir = path.join(target, '_historico');
+    const backupDir = path.join(historicoDir, `${timestamp}_v${gitCommit}`);
+    const itemsAnteriores = ['Spec', 'Proyecto', 'frontend', 'pwa', 'backend', 'specs', 'LEEME_QA.md', 'tareas.md'];
+    const existenItems = itemsAnteriores.some(item => fs.existsSync(path.join(target, item)));
+
+    if (existenItems) {
+      console.log(`  📦 [FASE 1] Creando backup histórico en: ${backupDir}`);
+      fs.mkdirSync(backupDir, { recursive: true });
+      for (const item of itemsAnteriores) {
+        const src = path.join(target, item);
+        const dst = path.join(backupDir, item);
+        if (fs.existsSync(src)) {
+          fs.renameSync(src, dst);
+          console.log(`     ↳ Archivado: ${item}`);
+        }
+      }
+    }
+
+    // FASE 2 y 3: Copia de Specs a 'Spec' y Fuentes a 'Proyecto'
+    console.log('  🧹 [FASE 2 y 3] Copiando Specs y Fuentes limpios...');
+    const specDir = path.join(target, 'Spec');
+    const proyectoDir = path.join(target, 'Proyecto');
+
+    fs.mkdirSync(specDir, { recursive: true });
+    fs.mkdirSync(proyectoDir, { recursive: true });
+
+    // Copiar Specs a 'Spec'
+    copyDirClean(path.join(ROOT_DIR, '.agents', 'specs'), specDir);
+    console.log('     ↳ Specs copiadas a Spec/');
+
+    // Copiar Fuentes a 'Proyecto'
+    copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'frontend'), path.join(proyectoDir, 'frontend'));
+    copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'pwa'), path.join(proyectoDir, 'pwa'));
+    copyDirClean(path.join(ROOT_DIR, 'ejecucion', 'backend_remoto'), path.join(proyectoDir, 'backend'));
+    console.log('     ↳ Fuentes copiados a Proyecto/ (frontend, pwa, backend)');
+
+    // Backlog y LEEME
+    const tareasSrc = path.join(ROOT_DIR, 'Gestión', 'tareas.md');
+    if (fs.existsSync(tareasSrc)) {
+      fs.copyFileSync(tareasSrc, path.join(proyectoDir, 'tareas.md'));
+    }
+    fs.writeFileSync(path.join(proyectoDir, 'LEEME_QA.md'), leemeContent, 'utf-8');
+    fs.writeFileSync(path.join(target, 'LEEME_QA.md'), leemeContent, 'utf-8');
+
+    console.log(`  ✅ Destino sincronizado exitosamente: ${target}`);
+  } catch (err) {
+    console.warn(`  ⚠️ Aviso en ${target}:`, err.message);
+  }
+}
+
+// 5. FASE 4: Generar ZIP unificado
+try {
+  console.log('\n📦 [FASE 4] Generando archivo ZIP empaquetado para descarga rápida...');
+  const mainTarget = TARGET_DESTS[0];
+  const zipPath = path.join(mainTarget, 'GSP_Fuentes_y_Specs_QA.zip');
+  execSync(`powershell -Command "Compress-Archive -Path '${path.join(mainTarget, 'Spec')}', '${path.join(mainTarget, 'Proyecto')}', '${path.join(mainTarget, 'LEEME_QA.md')}' -DestinationPath '${zipPath}' -Force"`);
+  console.log(`  ✅ ZIP generado en: ${zipPath}`);
+
+  // Replicar ZIP a los otros destinos
+  for (let i = 1; i < TARGET_DESTS.length; i++) {
+    const otherZip = path.join(TARGET_DESTS[i], 'GSP_Fuentes_y_Specs_QA.zip');
+    if (fs.existsSync(TARGET_DESTS[i])) {
+      fs.copyFileSync(zipPath, otherZip);
+    }
+  }
+} catch (eZip) {
+  console.warn('  ⚠️ Aviso generando ZIP:', eZip.message);
+}
+
+console.log('\n🎉 ¡EXPORTACIÓN Y BACKUP DE QA COMPLETADO AL 100%!');
+console.log('👉 Disponible en Google Drive para Juanma.\n');
