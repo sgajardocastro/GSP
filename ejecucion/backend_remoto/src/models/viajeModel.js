@@ -218,11 +218,23 @@ const viajeModel = {
       ]);
       const viajeActualizado = res.rows[0];
 
-      // Spec 35: Elevación automática del Macro-Estado del proyecto a 5 (En Ejecución) si estaba en 4 (Preparación)
       if (viajeActualizado.id_proyecto) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tpry_proyecto SET id_proyecto_estado = 5 WHERE id_proyecto = $1 AND id_proyecto_estado = 4;`,
+            `UPDATE sch_leangsp.tpry_proyecto 
+             SET id_proyecto_estado = 5,
+                 json_field = jsonb_set(
+                   jsonb_set(
+                     COALESCE(json_field, '{}'::jsonb),
+                     '{ejecucion_v1,viaje_iniciado}',
+                     'true'::jsonb,
+                     true
+                   ),
+                   '{ejecucion_v1,preparacion_salida,preparacion_finalizada}',
+                   'true'::jsonb,
+                   true
+                 )
+             WHERE id_proyecto = $1;`,
             [viajeActualizado.id_proyecto]
           );
         } catch (ePry) {
@@ -288,7 +300,20 @@ const viajeModel = {
       if (viajeNuevo.id_proyecto) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tpry_proyecto SET id_proyecto_estado = 5 WHERE id_proyecto = $1 AND id_proyecto_estado = 4;`,
+            `UPDATE sch_leangsp.tpry_proyecto 
+             SET id_proyecto_estado = 5,
+                 json_field = jsonb_set(
+                   jsonb_set(
+                     COALESCE(json_field, '{}'::jsonb),
+                     '{ejecucion_v1,viaje_iniciado}',
+                     'true'::jsonb,
+                     true
+                   ),
+                   '{ejecucion_v1,preparacion_salida,preparacion_finalizada}',
+                   'true'::jsonb,
+                   true
+                 )
+             WHERE id_proyecto = $1;`,
             [viajeNuevo.id_proyecto]
           );
         } catch (ePry) {

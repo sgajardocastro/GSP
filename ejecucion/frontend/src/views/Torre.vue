@@ -538,21 +538,29 @@ const cargarProyectos = async () => {
     // Columna 3: En Asignación Recursos OT (Flota y Tripulación)
     asignados.value      = proyectos.filter(p => Number(p.id_proyecto_estado) === 4)
 
+    // Helper para determinar si un proyecto en estado 5 ya tiene equipos autorizados o en faena
+    const estaEnFaena = (p) => {
+      const ej = p.json_field?.ejecucion_v1 || {}
+      if (ej.preparacion_salida?.preparacion_finalizada || ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_activa === 'despacho' || ej.subtab_actual_view === 'reports') {
+        return true
+      }
+      const insPatio = ej.preparacion_salida?.inspecciones_patio || {}
+      const algunAutorizado = Object.values(insPatio).some(i => i && (i.salida_autorizada || i.patio_checklist_completado))
+      return algunAutorizado
+    }
+
     // Columna 4: En Preparación Operaciones (Patio, Checklists y Acreditaciones)
     desplazamiento.value = proyectos.filter(p => {
       const st = Number(p.id_proyecto_estado)
       if (st !== 5) return false
-      const ej = p.json_field?.ejecucion_v1 || {}
-      const enFaena = ej.preparacion_salida?.preparacion_finalizada || ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_actual_view === 'reports'
-      return !enFaena
+      return !estaEnFaena(p)
     })
 
     // Columna 5: En Ejecución / Faena (Ruta, Izaje y Reports)
     maniobra.value = proyectos.filter(p => {
       const st = Number(p.id_proyecto_estado)
       if (st === 5) {
-        const ej = p.json_field?.ejecucion_v1 || {}
-        return ej.preparacion_salida?.preparacion_finalizada || ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_actual_view === 'reports'
+        return estaEnFaena(p)
       }
       return [6, 7].includes(st)
     })
