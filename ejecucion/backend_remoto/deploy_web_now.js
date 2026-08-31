@@ -1,4 +1,4 @@
-const { NodeSSH } = require('node-ssh');
+const { NodeSSH } = require('d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/ejecucion/backend_remoto/node_modules/node-ssh');
 const path = require('path');
 
 const ssh = new NodeSSH();
@@ -6,17 +6,18 @@ const localDist = 'd:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propues
 const remoteDir = '/var/www/html/lg-gsp-dev';
 
 async function run() {
+  console.log("🚀 Iniciando despliegue de Frontend Web a servidor remoto...");
   try {
-    console.log("Connecting via SSH...");
     await ssh.connect({
-      host: 'servidor.leanglobal.cl',
+      host: '138.255.103.18',
       username: 'root',
       password: 'lgbl2025.',
-      port: 1295
+      port: 1295,
+      readyTimeout: 15000
     });
-    console.log("Connected!");
+    console.log("✅ Conectado por SSH como root!");
 
-    console.log(`Uploading ${localDist} to ${remoteDir}...`);
+    console.log(`Subiendo ${localDist} a ${remoteDir}...`);
     const status = await ssh.putDirectory(localDist, remoteDir, {
       recursive: true,
       concurrency: 10,
@@ -26,17 +27,19 @@ async function run() {
     });
 
     if (status) {
-      console.log("Frontend uploaded successfully!");
+      console.log("✅ Frontend subido exitosamente a /var/www/html/lg-gsp-dev!");
     } else {
-      console.log("Some files failed to upload.");
+      console.log("⚠️ Algunos archivos no se pudieron subir.");
     }
 
-    console.log("Setting directory permissions...");
+    console.log("Ajustando permisos...");
     await ssh.execCommand(`chown -R nginx:nginx ${remoteDir} || chown -R root:root ${remoteDir}`);
+    await ssh.execCommand(`chmod -R 755 ${remoteDir}`);
 
-    console.log("🎉 Frontend successfully updated!");
+    console.log("🎉 Frontend Web desplegado exitosamente en servidor remoto!");
   } catch (err) {
-    console.error("Deployment failed:", err);
+    console.error("❌ Error en despliegue Frontend:", err);
+    process.exit(1);
   } finally {
     ssh.dispose();
   }
