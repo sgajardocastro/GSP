@@ -2234,6 +2234,14 @@
 
           <div class="flex items-center gap-3">
             <button
+              @click="descargarDossierPdfGlobal"
+              :disabled="descargandoPdfEDP"
+              class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer"
+            >
+              <span>📥</span>
+              <span>{{ descargandoPdfEDP ? 'Generando PDF...' : 'Descargar Dossier PDF' }}</span>
+            </button>
+            <button
               @click="modalCaratulaEDPAbierto = true"
               class="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow flex items-center gap-2 cursor-pointer"
             >
@@ -8755,7 +8763,26 @@ const resumenKpiReports = computed(() => {
   }
 })
 
-// === FUNCIONES DE LIQUIDACIÓN Y EDP (Spec 38) ===
+// === FUNCIONES DE LIQUIDACIÓN Y EDP (Spec 38 & Spec 40) ===
+const descargandoPdfEDP = ref(false)
+
+const descargarDossierPdfGlobal = () => {
+  let id = props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  if (!id) return
+  const idEdp = edpData.value?.edp?.id_edp || edpData.value?.id_edp || 1
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://servidor.leanglobal.cl/lg-gsp'
+  const pdfUrl = `${baseUrl}/api/operaciones/edp/${idEdp}/pdf`
+  
+  descargandoPdfEDP.value = true
+  window.open(pdfUrl, '_blank')
+  setTimeout(() => {
+    descargandoPdfEDP.value = false
+  }, 2500)
+}
+
 const cargarResumenEDP = async (projId) => {
   let id = projId || props.proyectoId || currentProyectoId.value
   if (typeof id === 'object' && id !== null) {

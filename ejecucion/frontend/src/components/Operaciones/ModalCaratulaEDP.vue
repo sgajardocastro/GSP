@@ -248,11 +248,19 @@
         </div>
         <div class="flex items-center gap-3">
           <button 
+            @click="descargarDossierPdf" 
+            :disabled="descargandoPdf"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20"
+          >
+            <span>📥</span>
+            <span>{{ descargandoPdf ? 'Generando PDF...' : 'Descargar Dossier PDF Oficial' }}</span>
+          </button>
+          <button 
             @click="imprimirCaratula" 
             class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
           >
             <span>🖨️</span>
-            <span>Imprimir / PDF</span>
+            <span>Imprimir</span>
           </button>
           <button 
             @click="cerrar" 
@@ -268,7 +276,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   visible: {
@@ -282,6 +290,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+const descargandoPdf = ref(false)
 
 const esFacturado = computed(() => {
   return props.edpData?.proyecto?.id_proyecto_estado === 7 || props.edpData?.liquidacion_guardada !== null
@@ -308,6 +318,21 @@ const formatearFecha = (fStr) => {
 
 const imprimirCaratula = () => {
   window.print()
+}
+
+const descargarDossierPdf = () => {
+  const idEdp = props.edpData?.edp?.id_edp || props.edpData?.id_edp || 1
+  const idProyecto = props.edpData?.proyecto?.id_proyecto
+  
+  // Endpoint oficial del backend
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://servidor.leanglobal.cl/lg-gsp'
+  const pdfUrl = `${baseUrl}/api/operaciones/edp/${idEdp}/pdf`
+  
+  descargandoPdf.value = true
+  window.open(pdfUrl, '_blank')
+  setTimeout(() => {
+    descargandoPdf.value = false
+  }, 2500)
 }
 </script>
 
