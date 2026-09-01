@@ -8772,9 +8772,8 @@ const descargarDossierPdfGlobal = () => {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
   if (!id) return
-  const idEdp = edpData.value?.edp?.id_edp || edpData.value?.id_edp || 1
   const baseUrl = import.meta.env.VITE_API_URL || 'https://servidor.leanglobal.cl/lg-gsp'
-  const pdfUrl = `${baseUrl}/api/operaciones/edp/${idEdp}/pdf`
+  const pdfUrl = `${baseUrl}/api/operaciones/edp/proyecto/${id}/pdf`
   
   descargandoPdfEDP.value = true
   window.open(pdfUrl, '_blank')

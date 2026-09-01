@@ -16,6 +16,7 @@ router.get('/proyecto/:id_proyecto', estadoPagoController.getEstadosPagoPorProye
 router.get('/proyectos/:id', estadoPagoController.getEstadosPagoPorProyecto);
 
 // 4. Dossier PDF Oficial de Estado de Pago
+router.get('/proyecto/:id_proyecto/pdf', estadoPagoController.generarPdfEdp);
 router.get('/:id_edp/pdf', estadoPagoController.generarPdfEdp);
 
 // 5. Cierre, Facturación y Estado

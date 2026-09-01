@@ -54,9 +54,9 @@ exports.getEstadosPagoPorProyecto = async (req, res) => {
     // 2. Obtener reportes validados no asociados a ningún EDP aún (disponibles para liquidar)
     const repSql = `
       SELECT r.*, 
-             e.patente, e.modelo, e.tonelaje,
-             u_op.first_name || ' ' || u_op.last_name AS operador_nombre,
-             u_rig.first_name || ' ' || u_rig.last_name AS rigger_nombre
+             e.patente, e.modelo, e.marca,
+             COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
+             COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
       FROM sch_leangsp.tedp_reporte_avance r
       LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
       LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
@@ -85,81 +85,152 @@ exports.getEstadosPagoPorProyecto = async (req, res) => {
   }
 };
 
-// Generación y descarga del PDF Oficial del EDP
+// Generación y descarga del PDF Oficial del EDP (Soporta ID de EDP o ID de Proyecto)
 exports.generarPdfEdp = async (req, res) => {
   try {
-    const { id_edp } = req.params;
+    const paramId = req.params.id_edp || req.params.id_proyecto || req.params.id;
 
-    // 1. Obtener cabecera EDP
+    let edp = null;
+    let idProyecto = null;
+    let reports = [];
+    let detalles_adicionales = [];
+
+    // 1. Intentar buscar por ID de EDP en la tabla tedp_estado_pago
     const edpRes = await db.query(`
       SELECT e.*, p.codi_proyecto, p.json_field AS proy_json
       FROM sch_leangsp.tedp_estado_pago e
       JOIN sch_leangsp.tpry_proyecto p ON e.id_proyecto = p.id_proyecto
       WHERE e.id_edp = $1;
-    `, [id_edp]);
+    `, [paramId]);
 
-    if (edpRes.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Estado de pago no encontrado" });
+    if (edpRes.rows.length > 0) {
+      edp = edpRes.rows[0];
+      idProyecto = edp.id_proyecto;
+
+      // Obtener detalles adicionales si existen
+      const detRes = await db.query(`
+        SELECT * FROM sch_leangsp.tedp_estado_pago_detalle
+        WHERE id_edp = $1
+        ORDER BY id_edp_detalle ASC;
+      `, [edp.id_edp]);
+      detalles_adicionales = detRes.rows;
+    } else {
+      // 2. Si no es un id_edp existente, tratar paramId como id_proyecto
+      idProyecto = paramId;
     }
 
-    const edp = edpRes.rows[0];
-    const idProyecto = edp.id_proyecto;
-
-    // 2. Obtener datos completos del Proyecto y Cliente
+    // 3. Obtener datos completos del Proyecto y Cliente
     const proyRes = await db.query(`
       SELECT p.*, 
-             c.razon_social AS cliente_nombre,
-             c.rut AS cliente_rut
+             COALESCE(c.razon_social, c.name_empresa) AS cliente_nombre,
+             c.rut_empresa AS cliente_rut
       FROM sch_leangsp.tpry_proyecto p
-      LEFT JOIN sch_leangsp.tclt_cliente c ON p.id_cliente = c.id_cliente
+      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       WHERE p.id_proyecto = $1;
     `, [idProyecto]);
-    const proyecto = proyRes.rows[0] || {};
 
-    // 3. Obtener Reports Diarios vinculados a este EDP
+    if (proyRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Proyecto no encontrado para generar EDP" });
+    }
+    const proyecto = proyRes.rows[0];
+
+    // 4. Obtener Reports Diarios del proyecto
     const repRes = await db.query(`
       SELECT r.*,
-             e.patente, e.modelo, e.tonelaje,
-             u_op.first_name || ' ' || u_op.last_name AS operador_nombre,
-             u_rig.first_name || ' ' || u_rig.last_name AS rigger_nombre
+             e.patente, e.modelo, e.marca,
+             COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
+             COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
       FROM sch_leangsp.tedp_reporte_avance r
       LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
       LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
       LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
-      WHERE r.id_edp = $1 OR (r.id_proyecto = $2 AND $1 IS NULL)
+      WHERE (r.id_edp = $1 AND $1 IS NOT NULL) OR (r.id_proyecto = $2)
       ORDER BY r.fecha_reporte ASC, r.dia_correlativo ASC;
-    `, [id_edp, idProyecto]);
-    const reports = repRes.rows;
+    `, [edp?.id_edp || null, idProyecto]);
+    reports = repRes.rows;
 
-    // 4. Obtener detalles adicionales si existen
-    const detRes = await db.query(`
-      SELECT * FROM sch_leangsp.tedp_estado_pago_detalle
-      WHERE id_edp = $1
-      ORDER BY id_edp_detalle ASC;
-    `, [id_edp]);
-    const detalles_adicionales = detRes.rows;
+    // 5. Si no había un registro en tedp_estado_pago, calcular montos en vivo de la cotización y reports
+    if (!edp) {
+      const snapLines = proyecto.json_field?.snapshot_comercial?.lines || proyecto.json_field?.lines || [];
+      
+      let totalNeto = 0;
+      let totalHorasFact = 0;
+      let totalST = 0;
 
-    // 5. Compilar datos para el PDF
+      reports.forEach(r => {
+        totalHorasFact += Number(r.horas_facturables || 0);
+        totalST += Number(r.horas_sobretiempo || 0);
+      });
+
+      // Sumar líneas cotizadas
+      snapLines.forEach(l => {
+        const valUnit = Number(l.valorUnitario || l.precio_unitario || 0);
+        const cant = Number(l.cantidad || 1);
+        const sub = Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
+        totalNeto += sub;
+      });
+
+      // Si no hay líneas cotizadas, usar valor estimado de los reports
+      if (totalNeto === 0 && reports.length > 0) {
+        totalNeto = totalHorasFact * 90000; // Tarifa base referencial
+      }
+
+      // Si hay sobretiempo, calcular adicional si no estaba en líneas
+      const tarifaSobretiempo = 90000;
+      const montoSobretiempo = totalST * tarifaSobretiempo;
+      if (montoSobretiempo > 0 && !snapLines.some(l => (l.tipo || '').toLowerCase().includes('sobretiempo'))) {
+        totalNeto += montoSobretiempo;
+      }
+
+      const totalIva = Math.round(totalNeto * 0.19);
+      const totalBruto = totalNeto + totalIva;
+
+      const fInicio = reports[0]?.fecha_reporte || proyecto.json_field?.datos_generales?.fecha_inicio || new Date().toISOString().split('T')[0];
+      const fFin = reports[reports.length - 1]?.fecha_reporte || proyecto.json_field?.datos_generales?.fecha_termino || new Date().toISOString().split('T')[0];
+
+      edp = {
+        id_edp: 1,
+        numero_edp: 'EDP-01',
+        fecha_emision: new Date(),
+        fecha_corte_inicio: fInicio,
+        fecha_corte_fin: fFin,
+        monto_neto: totalNeto,
+        monto_iva: totalIva,
+        monto_total: totalBruto,
+        estado_edp: 'BORRADOR'
+      };
+
+      // Mapear líneas adicionales para el PDF
+      detalles_adicionales = snapLines.map(l => ({
+        concepto: l.descripcion || l.subcategoria || l.tipo || 'Servicio de Izaje',
+        unidad_cobro: l.unidad || 'GL',
+        cantidad: Number(l.cantidad || 1),
+        precio_unitario: Number(l.valorUnitario || l.precio_unitario || 0),
+        monto_subtotal: Number(l.subtotal_calculado || l.subtotal || 0)
+      }));
+    }
+
+    // 6. Compilar datos para el PDF
     const edpData = {
       edp,
       proyecto: {
         id_proyecto: proyecto.id_proyecto,
         codi_proyecto: proyecto.codi_proyecto,
-        cliente_nombre: proyecto.cliente_nombre || proyecto.json_field?.datos_generales?.cliente_nombre,
-        cliente_rut: proyecto.cliente_rut || proyecto.json_field?.datos_generales?.cliente_rut,
-        obra_nombre: proyecto.nombre || proyecto.json_field?.datos_generales?.obra_nombre,
-        obra_direccion: proyecto.json_field?.datos_generales?.obra_direccion,
-        obra_comuna: proyecto.json_field?.datos_generales?.obra_comuna,
-        contacto_nombre: proyecto.json_field?.datos_generales?.contacto_nombre
+        cliente_nombre: proyecto.cliente_nombre || proyecto.json_field?.datos_generales?.cliente_nombre || 'Cliente Mandante',
+        cliente_rut: proyecto.cliente_rut || proyecto.json_field?.datos_generales?.cliente_rut || 'N/A',
+        obra_nombre: proyecto.nombre || proyecto.json_field?.datos_generales?.obra_nombre || 'Faena Principal',
+        obra_direccion: proyecto.json_field?.datos_generales?.obra_direccion || 'En Faena',
+        obra_comuna: proyecto.json_field?.datos_generales?.obra_comuna || '',
+        contacto_nombre: proyecto.json_field?.datos_generales?.contacto_nombre || 'Administración de Obra'
       },
       reports,
       detalles_adicionales
     };
 
-    // 6. Generar buffer PDF con Puppeteer
+    // 7. Generar buffer PDF con Puppeteer
     const pdfBuffer = await edpPdfService.generarPdfEdpBuffer(edpData);
 
-    // 7. Transmitir archivo PDF
+    // 8. Transmitir archivo PDF
     const filename = `EDP_${edp.numero_edp || '01'}_${proyecto.codi_proyecto || 'GSP'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);

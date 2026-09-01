@@ -321,12 +321,14 @@ const imprimirCaratula = () => {
 }
 
 const descargarDossierPdf = () => {
-  const idEdp = props.edpData?.edp?.id_edp || props.edpData?.id_edp || 1
-  const idProyecto = props.edpData?.proyecto?.id_proyecto
+  const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
+  const idEdp = props.edpData?.edp?.id_edp || props.edpData?.id_edp
   
   // Endpoint oficial del backend
   const baseUrl = import.meta.env.VITE_API_URL || 'https://servidor.leanglobal.cl/lg-gsp'
-  const pdfUrl = `${baseUrl}/api/operaciones/edp/${idEdp}/pdf`
+  const pdfUrl = idEdp 
+    ? `${baseUrl}/api/operaciones/edp/${idEdp}/pdf`
+    : `${baseUrl}/api/operaciones/edp/proyecto/${idProyecto}/pdf`
   
   descargandoPdf.value = true
   window.open(pdfUrl, '_blank')
