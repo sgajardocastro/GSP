@@ -158,7 +158,7 @@ class Usuario {
 
        // 1.5. Asignar automáticamente el rol de enrolamiento USR-CONSENT (id_rol = 3)
        await client.query(
-         `INSERT INTO tsec_user_roles (id_user, id_rol, id_empresa) VALUES ($1, 3, 1) ON CONFLICT DO NOTHING`,
+         `INSERT INTO tsec_user_roles (id_user, id_rol) VALUES ($1, 3) ON CONFLICT DO NOTHING`,
          [user.id_user]
        );
 
