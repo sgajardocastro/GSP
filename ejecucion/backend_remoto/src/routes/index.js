@@ -45,6 +45,8 @@ function routerApi(app) {
     app.use('/api/acreditaciones', acreditacionRouter);
     app.use('/api/v1/storage', require('./storageRoutes.js'));
     app.use('/api/visitas', require('./visitaTerrenoRoutes.js'));
+    app.use('/api/operaciones/visita', require('./visitaTerrenoRoutes.js'));
+    app.use('/api/contactos', require('./contactoRoutes.js'));
     app.use('/api/estado-pago', require('./estadoPagoRoutes.js'));
     app.use('/api/operaciones/edp', require('./estadoPagoRoutes.js'));
     app.use('/api/viajes', require('./viajeRoutes.js'));

@@ -234,6 +234,292 @@
           </div>
         </div>
 
+        <!-- SPEC 41: TARJETA DESTACADA [ 📍 GESTIÓN DE VISITAS TÉCNICAS A TERRENO ] -->
+        <div class="bg-gradient-to-r from-[#070c18] via-[#0a1124] to-[#070c18] border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+          <!-- Card Header -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg font-bold">
+                📍
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-black text-white uppercase tracking-wider">
+                    Gestión de Visitas Técnicas a Terreno
+                  </h3>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                    SPEC 41
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400">
+                  Supervisión, evaluación de maniobras e inspección técnica previa en obra.
+                </p>
+              </div>
+            </div>
+
+            <!-- Status Badges in Header -->
+            <div class="flex items-center gap-2">
+              <!-- Modo 4 Badge -->
+              <span v-if="!siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="text-[10px] bg-slate-800 text-slate-400 border border-white/10 px-2.5 py-1 rounded-lg font-bold uppercase">
+                ⚪ No Solicitada en Preventa
+              </span>
+              <!-- Modo 1 Badge -->
+              <span v-else-if="siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded-lg font-black uppercase flex items-center gap-1.5 animate-pulse">
+                ⚠️ Solicitud Pendiente de Asignación
+              </span>
+              <!-- Modo 2 Badge -->
+              <span v-else-if="isUltimaVisitaAsignada" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg font-black uppercase flex items-center gap-1.5">
+                🟡 Inspector Asignado: {{ getNombreTecnico(ultimaVisitaActiva?.id_user) }}
+              </span>
+              <!-- Modo 3 Badge -->
+              <span v-else-if="visitasDelProyecto.length > 0" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg font-bold uppercase flex items-center gap-1.5">
+                ✅ {{ visitasDelProyecto.length }} Visita(s) Registrada(s)
+              </span>
+            </div>
+          </div>
+
+          <!-- MODO 4: NO SOLICITADA EN PREVENTA -->
+          <div v-if="!siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/30 border border-white/5 p-4 rounded-xl">
+            <div class="space-y-1">
+              <div class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                <span class="text-slate-500">ℹ️</span>
+                <span>El área comercial no solicitó inspección en terreno para esta cotización.</span>
+              </div>
+              <p class="text-[11px] text-slate-400">
+                Si las condiciones del izaje (radio, altura, accesos o peso) son críticas, Operaciones puede exigir la visita técnica obligatoria con un solo clic.
+              </p>
+            </div>
+            <button 
+              type="button"
+              @click="activarVisitaDesdeOperaciones" 
+              class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 whitespace-nowrap cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <span>📍 Exigir Visita Técnica Obligatoria (Operaciones)</span>
+            </button>
+          </div>
+
+          <!-- MODO 1: SOLICITADA POR COMERCIAL (PENDIENTE) O FORMULARIO NUEVA VISITA ADICIONAL -->
+          <div v-else-if="(siteVisit.visita_terreno && visitasDelProyecto.length === 0) || mostrarFormNuevaVisita" class="space-y-4">
+            <div class="bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                {{ mostrarFormNuevaVisita ? 'Programación de Visita Adicional (Replanteo Técnico)' : 'Asignación de Inspector para Visita Solicitada por Preventa' }}
+              </span>
+              <button v-if="mostrarFormNuevaVisita" @click="mostrarFormNuevaVisita = false" class="text-xs text-slate-400 hover:text-white">
+                ✕ Cancelar Replanteo
+              </button>
+            </div>
+
+            <!-- Datos de Obra y Contacto Precargados -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/40 border border-white/5 p-3.5 rounded-xl text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Obra & Ubicación:</span>
+                <span class="font-bold text-white">{{ siteVisit.obra_nombre || opportunity.nombre_proyecto || 'Obra no especificada' }}</span>
+                <span class="text-slate-400 block text-[11px]">{{ siteVisit.obra_direccion || 'Sin dirección' }} ({{ siteVisit.obra_ciudad || 'Sin ciudad' }})</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Contacto en Terreno:</span>
+                <span class="font-bold text-amber-400">{{ siteVisit.contacto_terreno_nombre || siteVisit.contacto_visita || opportunity.contacto_nombre || 'No informado' }}</span>
+                <span class="text-slate-300 block text-[11px]">Tel: {{ siteVisit.contacto_terreno_telefono || siteVisit.telefono_contacto_visita || opportunity.contacto_telefono || 'S/N' }}</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Correo Contacto:</span>
+                <span class="text-slate-300 font-mono text-[11px] truncate block" :title="siteVisit.contacto_terreno_email || siteVisit.correo_contacto_visita || opportunity.contacto_correo">
+                  {{ siteVisit.contacto_terreno_email || siteVisit.correo_contacto_visita || opportunity.contacto_correo || 'No informado' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Formulario de Asignación -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-white/[0.02] border border-white/5 p-3.5 rounded-xl">
+              <div class="sm:col-span-5">
+                <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Inspector / Especialista Técnico <span class="text-amber-400">*</span>:
+                </label>
+                <select v-model="panelVisitaForm.id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                  <option value="">-- Seleccionar Técnico (tsec_users) --</option>
+                  <option v-for="u in tecnicosInspectores" :key="'tec-spec41-'+u.id_user" :value="u.id_user">
+                    {{ u.nombre_user || u.name_user || u.username }} ({{ u.cargo || u.role_name || 'Técnico / Operador' }})
+                  </option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-4">
+                <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Fecha y Hora Programada <span class="text-amber-400">*</span>:
+                </label>
+                <input 
+                  type="datetime-local" 
+                  v-model="panelVisitaForm.fecha_programada" 
+                  class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-white outline-none font-mono"
+                />
+              </div>
+
+              <div class="sm:col-span-3 flex gap-2">
+                <button 
+                  type="button" 
+                  :disabled="!panelVisitaForm.id_tecnico || !panelVisitaForm.fecha_programada || ejecutandoAccionVisita"
+                  @click="asignarInspectorWeb" 
+                  class="flex-1 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  <span>{{ ejecutandoAccionVisita ? 'Asignando...' : '👷 Asignar Inspector desde la Web' }}</span>
+                </button>
+                <button 
+                  v-if="mostrarFormNuevaVisita"
+                  type="button"
+                  @click="mostrarFormNuevaVisita = false"
+                  class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg cursor-pointer"
+                  title="Cancelar"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODO 2: ASIGNADA (GESTIÓN DE IMPREVISTOS) -->
+          <div v-if="isUltimaVisitaAsignada && !mostrarFormNuevaVisita" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></div>
+                <div>
+                  <div class="text-xs font-black text-amber-300 uppercase tracking-wide flex flex-wrap items-center gap-2">
+                    <span>Inspector Asignado:</span>
+                    <span class="text-white font-bold bg-black/40 px-2 py-0.5 rounded border border-white/10 font-mono">{{ getNombreTecnico(ultimaVisitaActiva?.id_user) }}</span>
+                    <span class="text-slate-400 text-[11px] font-normal">| Programada: {{ ultimaVisitaActiva?.fecha_plan_ini ? new Date(ultimaVisitaActiva.fecha_plan_ini).toLocaleString() : 'S/F' }}</span>
+                  </div>
+                  <span class="text-[10px] text-slate-400">Estado de la Visita: <strong class="text-amber-400 font-mono uppercase">{{ ultimaVisitaActiva?.estado_srv || 'Asignada' }}</strong></span>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                @click="abrirModalReasignacion(ultimaVisitaActiva)" 
+                class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg uppercase tracking-wider transition-all flex items-center gap-1.5 shadow cursor-pointer"
+              >
+                <span>🔄 Cambiar / Reasignar Técnico</span>
+              </button>
+            </div>
+
+            <!-- Drawer / Formulario de Reasignación si está abierto -->
+            <div v-if="mostrarModalReasignar" class="bg-black/70 border border-amber-500/40 p-4 rounded-xl mt-3 space-y-3">
+              <div class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Gestión de Imprevistos: Reasignar Técnico de Visita #{{ panelReasignarForm.id_survey }}</span>
+                <button @click="mostrarModalReasignar = false" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] text-slate-300 font-bold mb-1">Nuevo Técnico Responsable *:</label>
+                  <select v-model="panelReasignarForm.nuevo_id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none">
+                    <option value="">-- Seleccionar Nuevo Inspector --</option>
+                    <option v-for="u in tecnicosInspectores" :key="'reasig-'+u.id_user" :value="u.id_user">
+                      {{ u.nombre_user || u.name_user || u.username }} ({{ u.cargo || 'Técnico' }})
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-300 font-bold mb-1">Motivo del Cambio / Imprevisto *:</label>
+                  <input 
+                    type="text" 
+                    v-model="panelReasignarForm.motivo_reasignacion" 
+                    placeholder="Ej: Licencia médica, falla de vehículo, reasignación de faena..." 
+                    class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+                <button @click="mostrarModalReasignar = false" type="button" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded cursor-pointer">Cancelar</button>
+                <button 
+                  type="button" 
+                  :disabled="!panelReasignarForm.nuevo_id_tecnico || !panelReasignarForm.motivo_reasignacion || ejecutandoAccionVisita"
+                  @click="confirmarReasignacionTecnico" 
+                  class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                >
+                  {{ ejecutandoAccionVisita ? 'Guardando...' : 'Confirmar Reasignación' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODO 3: MULTI-VISITA (HISTORIAL 1:N) -->
+          <div v-if="visitasDelProyecto.length > 0" class="space-y-3 pt-1">
+            <div class="flex items-center justify-between border-t border-white/5 pt-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-white uppercase tracking-wider">Historial de Visitas en Terreno</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-white/10">{{ visitasDelProyecto.length }} registrada(s)</span>
+              </div>
+              
+              <button 
+                v-if="!mostrarFormNuevaVisita"
+                type="button" 
+                @click="iniciarVisitaAdicional" 
+                class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-lg uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>+ Programar Visita Adicional (Replanteo)</span>
+              </button>
+            </div>
+
+            <!-- Timeline de Visitas -->
+            <div class="space-y-2">
+              <div 
+                v-for="(v, vIdx) in visitasDelProyecto" 
+                :key="'spec41-v-'+v.id_survey"
+                class="bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs transition-all"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-mono font-bold text-amber-400 text-[11px]">
+                    #{{ v.id_survey }}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-white">{{ v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || siteVisit.obra_nombre || 'Visita Técnica' }}</span>
+                      <span 
+                        class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase"
+                        :class="v.estado_srv === 'Realizada' || v.estado_srv === 'Completado' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+                      >
+                        {{ v.estado_srv || 'Asignada' }}
+                      </span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5 flex gap-3">
+                      <span>Técnico: <strong class="text-slate-200">{{ getNombreTecnico(v.id_user) }}</strong></span>
+                      <span>Fecha: <strong class="text-slate-300 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Links e Informe PDF -->
+                <div class="flex items-center gap-2">
+                  <a 
+                    :href="getSurveyReportUrl(v.id_survey)" 
+                    target="_blank" 
+                    class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] rounded-lg transition-colors no-underline flex items-center gap-1"
+                  >
+                    <span>🌐 Ver Web</span>
+                  </a>
+                  <a 
+                    :href="getArchivoUrl(v.id_doc || v.id_survey)" 
+                    target="_blank" 
+                    class="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px] rounded-lg transition-colors no-underline flex items-center gap-1"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>PDF Informe</span>
+                  </a>
+                  <button 
+                    type="button" 
+                    @click="() => { selectedSurveyId = v.id_survey; cargarVisitaDesdeBD(); }" 
+                    class="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
+                    title="Sincronizar datos de la visita con el formulario"
+                  >
+                    📥 Cargar Datos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Secciones A + B Unificadas en Panel Continuo -->
         <div v-if="isRequerimientoAprobado" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center text-xs text-amber-300 font-bold mb-4">
           <span class="flex items-center gap-2">
@@ -355,12 +641,20 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
-                  <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02]">
+                  <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02] transition-colors">
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_tipo', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_tipo', idx) }}
+                      <div v-if="!isOriginalLine(idx)" class="mb-1">
+                        <span class="inline-block px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded text-[9px] font-bold uppercase tracking-wider">
+                          + Nueva Línea
+                        </span>
                       </div>
-                      <select v-model="line.tipo" @change="line.subcategoria = ''" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28" :class="hasDiff('equipo_tipo', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
+                      <select 
+                        v-model="line.tipo" 
+                        @change="line.subcategoria = ''" 
+                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
+                        :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                        :title="hasDiff('equipo_tipo', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_tipo', idx)) : ''"
+                      >
                         <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
                         <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                           {{ cat.nombre_categoria }}
@@ -368,10 +662,12 @@
                       </select>
                     </td>
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_subcategoria', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_subcategoria', idx) }}
-                      </div>
-                      <select v-model="line.subcategoria" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full" :class="hasDiff('equipo_subcategoria', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
+                      <select 
+                        v-model="line.subcategoria" 
+                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
+                        :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                        :title="hasDiff('equipo_subcategoria', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_subcategoria', idx)) : ''"
+                      >
                         <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
                         <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                           {{ sub.nombre_subcategoria }}
@@ -379,22 +675,32 @@
                       </select>
                     </td>
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_descripcion', idx) }}
-                      </div>
-                      <input type="text" v-model="line.descripcion" placeholder="Ej: Liebherr LTM 1220..." class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white" :class="hasDiff('equipo_descripcion', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'" />
+                      <input 
+                        type="text" 
+                        v-model="line.descripcion" 
+                        placeholder="Ej: Liebherr LTM 1220..." 
+                        class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
+                        :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                        :title="hasDiff('equipo_descripcion', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_descripcion', idx)) : ''"
+                      />
                     </td>
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_cantidad', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_cantidad', idx) }}
-                      </div>
-                      <input type="number" v-model.number="line.cantidad" min="1" class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white" :class="hasDiff('equipo_cantidad', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'" />
+                      <input 
+                        type="number" 
+                        v-model.number="line.cantidad" 
+                        min="1" 
+                        class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
+                        :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                        :title="hasDiff('equipo_cantidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_cantidad', idx)) : ''"
+                      />
                     </td>
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_unidad', idx) }}
-                      </div>
-                      <select v-model="line.unidad" class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full" :class="hasDiff('equipo_unidad', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'">
+                      <select 
+                        v-model="line.unidad" 
+                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
+                        :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                        :title="hasDiff('equipo_unidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_unidad', idx)) : ''"
+                      >
                         <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
                         <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
                         <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
@@ -404,16 +710,21 @@
                       </select>
                     </td>
                     <td class="p-2">
-                      <div v-if="hasDiff('equipo_valor', idx)" class="text-[9px] line-through text-red-400 font-mono bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 mb-1">
-                        Orig: {{ getOriginalValue('equipo_valor', idx) }}
-                      </div>
-                      <input disabled type="number" v-model.number="line.valorUnitario" min="0" class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed" :class="hasDiff('equipo_valor', idx) ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'" title="No puede modificar el precio base de la cotización en Operaciones." />
+                      <input 
+                        disabled 
+                        type="number" 
+                        v-model.number="line.valorUnitario" 
+                        min="0" 
+                        class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
+                        :class="hasDiff('equipo_valor', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                        :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
+                      />
                     </td>
                     <td class="p-2 text-right font-bold text-amber-400 font-mono">
                       {{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}
                     </td>
                     <td class="p-2 text-center">
-                      <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400">
+                      <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
@@ -2544,40 +2855,58 @@
               <button @click.prevent="editarClienteActual" class="text-[10px] bg-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white px-2 py-0.5 rounded transition-colors">+ Gestionar Contactos</button>
             </div>
             <select v-model="opportunity.contacto_obj" @change="alCambiarContacto" class="w-full bg-[#0a0f1e] border border-amber-500/50 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white mb-3">
-              <option :value="null">-- Seleccionar Contacto --</option>
+              <option :value="null">-- Nuevo / Ingresar Manualmente --</option>
               <option v-for="(cto, idx) in clienteSeleccionado.json_field?.puntos_contacto || []" :key="idx" :value="cto">
-                {{ cto.nombre }} - {{ cto.correo }} ({{ cto.telefono }})
+                {{ cto.nombre }} - {{ cto.correo || cto.email }} ({{ cto.telefono }})
               </option>
-              <option v-if="!clienteSeleccionado.json_field?.puntos_contacto?.length" disabled>Sin contactos registrados. Haz click en "+ Gestionar Contactos".</option>
+              <option v-if="!clienteSeleccionado.json_field?.puntos_contacto?.length" disabled>Sin contactos registrados. Ingrese uno abajo o click en "+ Gestionar Contactos".</option>
             </select>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
-                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+                <label class="text-[10px] text-slate-400 font-semibold block mb-1">
                   Nombre Contacto <span class="text-red-400">*</span>:
                 </label>
                 <input 
                   type="text" 
                   v-model="opportunity.contacto_nombre" 
+                  @change="autoGuardarContactoManual"
                   placeholder="Nombre solicitante..." 
-                  class="w-full bg-[#0a0f1e] border rounded-lg px-3 py-2 text-xs text-white outline-none transition-colors" 
+                  class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                   :readonly="!!opportunity.contacto_obj" 
                 />
               </div>
               <div>
-                <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
+                <label class="text-[10px] text-slate-400 font-semibold block mb-1">
                   Teléfono Contacto <span class="text-red-400">*</span>:
                 </label>
                 <input 
                   type="text" 
                   v-model="opportunity.contacto_telefono" 
+                  @change="autoGuardarContactoManual"
                   placeholder="Ej: +569..." 
-                  class="w-full bg-[#0a0f1e] border rounded-lg px-3 py-2 text-xs text-white outline-none transition-colors" 
+                  class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_telefono ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                   :readonly="!!opportunity.contacto_obj" 
                 />
               </div>
+              <div>
+                <label class="text-[10px] text-slate-400 font-semibold block mb-1">
+                  Correo Contacto:
+                </label>
+                <input 
+                  type="email" 
+                  v-model="opportunity.contacto_correo" 
+                  @change="autoGuardarContactoManual"
+                  placeholder="contacto@empresa.cl" 
+                  class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
+                  :readonly="!!opportunity.contacto_obj" 
+                />
+              </div>
+            </div>
+            <div v-if="guardandoContactoManual" class="text-[10px] text-amber-400 mt-1 italic animate-pulse">
+              💾 Guardando contacto en la ficha del cliente...
             </div>
           </div>
           
@@ -3057,10 +3386,52 @@
                     </label>
                     <input type="text" v-model="siteVisit.peso_carga" placeholder="45 Ton" class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white" :class="hasDiff('peso_carga') ? 'border-red-500/60 bg-red-500/5' : 'border-white/10'" />
                   </div>
-                  <div>
-                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Volumen (LxAxA)</label>
-                    <input type="text" v-model="siteVisit.volumen_carga" placeholder="12m x 3m x 4m" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" />
+
+                  <!-- PUNTO 2: DIMENSIONES DE CARGA (3 COLUMNAS + CÁLCULO REACTIVO EN VIVO) -->
+                  <div class="col-span-2 bg-[#0a0f1e]/80 border border-white/10 p-3 rounded-lg space-y-2">
+                    <div class="flex justify-between items-center">
+                      <label class="block text-[10px] text-amber-400 font-bold uppercase tracking-wider">Dimensiones de la Carga</label>
+                      <span class="text-[11px] font-bold font-mono px-2 py-0.5 rounded border transition-colors" :class="volumenCalculado > 0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-slate-500 bg-white/5 border-white/10'">
+                        📦 Volumen Calculado: {{ volumenCalculado > 0 ? volumenCalculado.toFixed(2) : '0.00' }} m³
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="block text-[9px] text-slate-400 font-semibold mb-1">Largo (m):</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0" 
+                          v-model.number="siteVisit.dimensiones.largo" 
+                          placeholder="0.00" 
+                          class="w-full bg-[#050810] border border-white/10 focus:border-amber-500 rounded px-2.5 py-1.5 text-xs text-white text-center font-mono outline-none transition-colors" 
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[9px] text-slate-400 font-semibold mb-1">Ancho (m):</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0" 
+                          v-model.number="siteVisit.dimensiones.ancho" 
+                          placeholder="0.00" 
+                          class="w-full bg-[#050810] border border-white/10 focus:border-amber-500 rounded px-2.5 py-1.5 text-xs text-white text-center font-mono outline-none transition-colors" 
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[9px] text-slate-400 font-semibold mb-1">Alto (m):</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0" 
+                          v-model.number="siteVisit.dimensiones.alto" 
+                          placeholder="0.00" 
+                          class="w-full bg-[#050810] border border-white/10 focus:border-amber-500 rounded px-2.5 py-1.5 text-xs text-white text-center font-mono outline-none transition-colors" 
+                        />
+                      </div>
+                    </div>
                   </div>
+
                   <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label class="block text-[10px] text-slate-400 font-semibold mb-1">
@@ -3081,6 +3452,32 @@
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">Detalle del Servicio a realizar</label>
                     <textarea v-model="siteVisit.detalle_servicio" rows="2" placeholder="Describa la maniobra..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none resize-none"></textarea>
                   </div>
+                </div>
+
+                <!-- PUNTO 3A: PRECARGA Y TOGGLE VISITA TÉCNICA A TERRENO -->
+                <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl flex items-center justify-between mt-4">
+                  <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      v-model="siteVisit.visita_terreno" 
+                      @change="onToggleRequiereVisita" 
+                      class="w-4 h-4 rounded text-amber-500 bg-slate-900 border-white/20 cursor-pointer focus:ring-amber-500" 
+                    />
+                    <div>
+                      <span class="text-xs font-black text-amber-400 uppercase tracking-wider block">
+                        📍 Requiere Visita Técnica a Terreno
+                      </span>
+                      <span class="text-[10px] text-slate-300">
+                        Marcar para solicitar la inspección técnica previa en obra por un especialista.
+                      </span>
+                    </div>
+                  </label>
+                  <span v-if="siteVisit.visita_terreno" class="text-[10px] bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded font-black uppercase tracking-wider shadow">
+                    Activada
+                  </span>
+                  <span v-else class="text-[10px] text-slate-500 font-mono">
+                    No Solicitada
+                  </span>
                 </div>
 
                 <!-- Programación de Visitas Técnica -->
@@ -4235,6 +4632,7 @@ const opportunity = ref({
   familia_servicio: 'Grúas Telescópicas',
   contacto_nombre: '',
   contacto_telefono: '',
+  contacto_correo: '',
   contacto_obj: null,
   tipo_pago: 'transferencia',
   requiere_oc_hes: null,
@@ -6382,6 +6780,14 @@ const modoAprobacionRequerimiento = computed(() => {
 
 const snapshotComercial = ref({})
 
+const isOriginalLine = (index) => {
+  if (!snapshotComercial.value) return false
+  if (Array.isArray(snapshotComercial.value.lines)) {
+    return index < snapshotComercial.value.lines.length
+  }
+  return index === 0 && !!snapshotComercial.value.equipo_descripcion
+}
+
 const cleanVal = (v) => (v === null || v === undefined) ? '' : String(v).trim()
 
 const hasDiff = (field, index = 0) => {
@@ -6404,7 +6810,10 @@ const hasDiff = (field, index = 0) => {
   if (field === 'obra_direccion') return cleanVal(siteVisit.value.obra_direccion) !== cleanVal(snapshotComercial.value.obra_direccion)
   if (field === 'obra_ciudad') return cleanVal(siteVisit.value.obra_ciudad) !== cleanVal(snapshotComercial.value.obra_ciudad)
   
-  // Diff en Líneas del Estructurador (Tabla B)
+  // Diff en Líneas del Estructurador (Tabla B) - Si es línea nueva, no es un diff de celda
+  if (field.startsWith('equipo_') && !isOriginalLine(index)) {
+    return false
+  }
   if (field === 'equipo_descripcion') {
     const orig = snapshotComercial.value.lines?.[index]?.descripcion ?? snapshotComercial.value.equipo_descripcion ?? ''
     return cleanVal(lines.value[index]?.descripcion) !== cleanVal(orig)
@@ -6470,12 +6879,16 @@ const diffsCount = computed(() => {
   if (hasDiff('obra_ciudad')) count++
   
   lines.value.forEach((l, idx) => {
-    if (hasDiff('equipo_descripcion', idx)) count++
-    if (hasDiff('equipo_cantidad', idx)) count++
-    if (hasDiff('equipo_valor', idx)) count++
-    if (hasDiff('equipo_tipo', idx)) count++
-    if (hasDiff('equipo_subcategoria', idx)) count++
-    if (hasDiff('equipo_unidad', idx)) count++
+    if (!isOriginalLine(idx)) {
+      count++
+    } else {
+      if (hasDiff('equipo_descripcion', idx)) count++
+      if (hasDiff('equipo_cantidad', idx)) count++
+      if (hasDiff('equipo_valor', idx)) count++
+      if (hasDiff('equipo_tipo', idx)) count++
+      if (hasDiff('equipo_subcategoria', idx)) count++
+      if (hasDiff('equipo_unidad', idx)) count++
+    }
   })
   
   return count
@@ -6750,6 +7163,70 @@ const alCambiarContacto = () => {
   if (opportunity.value.contacto_obj) {
     opportunity.value.contacto_nombre = opportunity.value.contacto_obj.nombre || ''
     opportunity.value.contacto_telefono = opportunity.value.contacto_obj.telefono || ''
+    opportunity.value.contacto_correo = opportunity.value.contacto_obj.correo || opportunity.value.contacto_obj.email || ''
+  }
+}
+
+const guardandoContactoManual = ref(false)
+
+const autoGuardarContactoManual = async () => {
+  if (opportunity.value.contacto_obj) return
+  if (!clienteSeleccionado.value || !clienteSeleccionado.value.id_empresa) return
+
+  const nombre = String(opportunity.value.contacto_nombre || '').trim()
+  const fono = String(opportunity.value.contacto_telefono || '').trim()
+  const correo = String(opportunity.value.contacto_correo || '').trim()
+
+  if (!nombre || nombre.length < 2) return
+
+  const cli = clienteSeleccionado.value
+  const jsonField = cli.json_field && typeof cli.json_field === 'object' ? JSON.parse(JSON.stringify(cli.json_field)) : {}
+  if (!Array.isArray(jsonField.puntos_contacto)) {
+    jsonField.puntos_contacto = []
+  }
+
+  const yaExiste = jsonField.puntos_contacto.find(c => 
+    c.nombre?.toLowerCase().trim() === nombre.toLowerCase() && 
+    ((correo && (c.correo?.toLowerCase().trim() === correo.toLowerCase() || c.email?.toLowerCase().trim() === correo.toLowerCase())) || 
+     (fono && c.telefono?.trim() === fono))
+  )
+
+  if (yaExiste) {
+    opportunity.value.contacto_obj = yaExiste
+    return
+  }
+
+  const nuevoContacto = {
+    nombre,
+    telefono: fono,
+    correo,
+    observaciones: 'Auto-guardado desde Preventa Comercial'
+  }
+
+  jsonField.puntos_contacto.push(nuevoContacto)
+
+  try {
+    guardandoContactoManual.value = true
+    const token = localStorage.getItem('token') || ''
+    const payload = {
+      ...cli,
+      json_field: jsonField
+    }
+    await apiAxios.put(`/empresas/${cli.id_empresa}`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (selectedClient.value) {
+      selectedClient.value.json_field = jsonField
+    }
+    opportunity.value.contacto_obj = nuevoContacto
+
+    await fetchClientes(searchQuery.value || '')
+    console.log('✔ Contacto guardado automáticamente en la ficha del cliente:', nuevoContacto)
+  } catch (err) {
+    console.warn('No se pudo auto-guardar contacto en cliente:', err)
+  } finally {
+    guardandoContactoManual.value = false
   }
 }
 
@@ -6832,6 +7309,12 @@ const siteVisit = ref({
   detalle_servicio: '',
   peso_carga: '',
   volumen_carga: '',
+  dimensiones: {
+    largo: null,
+    ancho: null,
+    alto: null,
+    volumen_m3: null
+  },
   radios_trabajo: '',
   alturas_trabajo: '',
   visita_terreno: false,
@@ -6839,8 +7322,45 @@ const siteVisit = ref({
   fecha_hora_termino: '',
   contacto_terreno_nombre: '',
   contacto_terreno_telefono: '',
-  contacto_terreno_email: ''
+  contacto_terreno_email: '',
+  contacto_visita: '',
+  telefono_contacto_visita: '',
+  correo_contacto_visita: ''
 })
+
+const volumenCalculado = computed(() => {
+  const l = Number(siteVisit.value?.dimensiones?.largo) || 0
+  const a = Number(siteVisit.value?.dimensiones?.ancho) || 0
+  const h = Number(siteVisit.value?.dimensiones?.alto) || 0
+  if (l > 0 && a > 0 && h > 0) {
+    const vol = Math.round(l * a * h * 100) / 100
+    if (siteVisit.value?.dimensiones) {
+      siteVisit.value.dimensiones.volumen_m3 = vol
+    }
+    siteVisit.value.volumen_carga = `${vol.toFixed(2)} m³ (${l}x${a}x${h}m)`
+    return vol
+  }
+  if (siteVisit.value?.dimensiones) {
+    siteVisit.value.dimensiones.volumen_m3 = null
+  }
+  return 0
+})
+
+const onToggleRequiereVisita = () => {
+  if (siteVisit.value.visita_terreno) {
+    const cNom = opportunity.value.contacto_nombre || ''
+    const cTel = opportunity.value.contacto_telefono || ''
+    const cMail = opportunity.value.contacto_correo || opportunity.value.contacto_obj?.correo || opportunity.value.contacto_obj?.email || ''
+
+    if (!siteVisit.value.contacto_terreno_nombre) siteVisit.value.contacto_terreno_nombre = cNom
+    if (!siteVisit.value.contacto_terreno_telefono) siteVisit.value.contacto_terreno_telefono = cTel
+    if (!siteVisit.value.contacto_terreno_email) siteVisit.value.contacto_terreno_email = cMail
+
+    siteVisit.value.contacto_visita = siteVisit.value.contacto_terreno_nombre
+    siteVisit.value.telefono_contacto_visita = siteVisit.value.contacto_terreno_telefono
+    siteVisit.value.correo_contacto_visita = siteVisit.value.contacto_terreno_email
+  }
+}
 
 const filteredClientes = computed(() => {
   return clientes.value
@@ -6982,6 +7502,177 @@ const fetchVisitasTerreno = async () => {
   } catch (error) {
     console.error('Error fetching visitas terreno:', error)
   }
+}
+
+// ==========================================
+// SPEC 41: PANEL DE GESTIÓN DE VISITAS TÉCNICAS A TERRENO (PESTAÑA 2)
+// ==========================================
+const panelVisitaForm = ref({
+  id_tecnico: '',
+  fecha_programada: '',
+  instrucciones: ''
+})
+
+const panelReasignarForm = ref({
+  id_survey: null,
+  nuevo_id_tecnico: '',
+  motivo_reasignacion: ''
+})
+
+const mostrarModalReasignar = ref(false)
+const mostrarFormNuevaVisita = ref(false)
+const ejecutandoAccionVisita = ref(false)
+
+const tecnicosInspectores = computed(() => {
+  const list = usuarios.value.filter(u => {
+    const cargo = (u.cargo || u.role_name || u.tipo_usuario || '').toLowerCase()
+    const name = (u.nombre_user || u.name_user || u.username || '').toLowerCase()
+    return cargo.includes('inspector') || cargo.includes('tecnico') || cargo.includes('técnico') || 
+           cargo.includes('operador') || cargo.includes('coordinad') || cargo.includes('supervisor') || 
+           cargo.includes('prevenc') || name.includes('inspector') || name.includes('operador')
+  })
+  return list.length > 0 ? list : usuarios.value
+})
+
+const ultimaVisitaActiva = computed(() => {
+  if (visitasDelProyecto.value.length === 0) return null
+  const activa = visitasDelProyecto.value.find(v => v.estado_srv !== 'Realizada' && v.estado_srv !== 'Completado' && v.estado_srv !== 'Cancelado')
+  return activa || visitasDelProyecto.value[0]
+})
+
+const isUltimaVisitaAsignada = computed(() => {
+  if (!ultimaVisitaActiva.value) return false
+  return !!ultimaVisitaActiva.value.id_user && ultimaVisitaActiva.value.estado_srv !== 'Realizada' && ultimaVisitaActiva.value.estado_srv !== 'Completado'
+})
+
+const getNombreTecnico = (idUser) => {
+  if (!idUser) return 'Sin Asignar'
+  const u = usuarios.value.find(user => String(user.id_user) === String(idUser))
+  return u ? (u.nombre_user || u.name_user || u.username) : `Técnico #${idUser}`
+}
+
+const activarVisitaDesdeOperaciones = () => {
+  siteVisit.value.visita_terreno = true
+  onToggleRequiereVisita()
+  if (opportunity.value.fecha_tentativa && !panelVisitaForm.value.fecha_programada) {
+    panelVisitaForm.value.fecha_programada = `${opportunity.value.fecha_tentativa}T09:00`
+  }
+}
+
+const asignarInspectorWeb = async () => {
+  if (!panelVisitaForm.value.id_tecnico || !panelVisitaForm.value.fecha_programada) {
+    alert('Por favor selecciona el inspector y la fecha/hora de la visita programada.')
+    return
+  }
+
+  let projId = props.proyectoId || currentProyectoId.value
+  if (!projId) {
+    try {
+      await guardarEnPreventa()
+      projId = currentProyectoId.value
+    } catch (err) {
+      console.error('Error guardando preventa antes de asignar visita:', err)
+    }
+  }
+
+  try {
+    ejecutandoAccionVisita.value = true
+    const token = localStorage.getItem('token') || ''
+    let storageUser = null
+    try { storageUser = JSON.parse(localStorage.getItem('usuario') || '{}') } catch (_) {}
+
+    const payloadSurvey = {
+      id_tipo_srv: 2,
+      id_template: 80,
+      id_user: panelVisitaForm.value.id_tecnico,
+      id_user_creacion: storageUser?.id_user || 1,
+      id_empresa_cliente: selectedClient.value?.id_empresa || null,
+      estado_srv: 'Asignada',
+      fecha_plan_ini: panelVisitaForm.value.fecha_programada,
+      fecha_plan_fin: panelVisitaForm.value.fecha_programada,
+      latitud: siteVisit.value.lat != null ? Number(siteVisit.value.lat) : null,
+      longitud: siteVisit.value.lng != null ? Number(siteVisit.value.lng) : null,
+      id_proyecto: projId || null,
+      body_exec: {
+        obra_nombre: siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || '',
+        obra_direccion: siteVisit.value.obra_direccion || '',
+        obra_ciudad: siteVisit.value.obra_ciudad || '',
+        contacto_nombre: siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || '',
+        contacto_telefono: siteVisit.value.contacto_terreno_telefono || siteVisit.value.telefono_contacto_visita || opportunity.value.contacto_telefono || '',
+        contacto_email: siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || '',
+        instrucciones: panelVisitaForm.value.instrucciones || ''
+      }
+    }
+
+    await apiAxios.post('/survey', payloadSurvey, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    siteVisit.value.visita_terreno = true
+    mostrarFormNuevaVisita.value = false
+    await fetchVisitasTerreno()
+    alert('✔ Inspector técnico asignado exitosamente desde la Web.')
+  } catch (err) {
+    console.error('Error al asignar inspector desde la web:', err)
+    alert('Error al asignar inspector: ' + (err.response?.data?.error || err.message))
+  } finally {
+    ejecutandoAccionVisita.value = false
+  }
+}
+
+const abrirModalReasignacion = (visita) => {
+  panelReasignarForm.value = {
+    id_survey: visita.id_survey,
+    nuevo_id_tecnico: visita.id_user || '',
+    motivo_reasignacion: ''
+  }
+  mostrarModalReasignar.value = true
+}
+
+const confirmarReasignacionTecnico = async () => {
+  if (!panelReasignarForm.value.nuevo_id_tecnico || !panelReasignarForm.value.motivo_reasignacion) {
+    alert('Debe seleccionar el nuevo técnico e indicar el motivo de la reasignación.')
+    return
+  }
+
+  try {
+    ejecutandoAccionVisita.value = true
+    const sid = panelReasignarForm.value.id_survey
+    const token = localStorage.getItem('token') || ''
+
+    await apiAxios.put(`/survey/UpdPlan/${sid}`, {
+      id_user: Number(panelReasignarForm.value.nuevo_id_tecnico)
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    const projId = props.proyectoId || currentProyectoId.value
+    if (projId) {
+      try {
+        await apiAxios.post('/bitacora', {
+          id_proyecto: projId,
+          evento: `Reasignación de Técnico Visita #${sid}`,
+          descripcion: `Técnico anterior reasignado a ${getNombreTecnico(panelReasignarForm.value.nuevo_id_tecnico)}. Motivo: ${panelReasignarForm.value.motivo_reasignacion}`
+        }, { headers: { Authorization: `Bearer ${token}` } })
+      } catch (_) {}
+    }
+
+    mostrarModalReasignar.value = false
+    await fetchVisitasTerreno()
+    alert('✔ Técnico reasignado exitosamente.')
+  } catch (err) {
+    console.error('Error al reasignar técnico:', err)
+    alert('Error al reasignar técnico: ' + (err.response?.data?.error || err.message))
+  } finally {
+    ejecutandoAccionVisita.value = false
+  }
+}
+
+const iniciarVisitaAdicional = () => {
+  mostrarFormNuevaVisita.value = true
+  panelVisitaForm.value.id_tecnico = ''
+  panelVisitaForm.value.fecha_programada = ''
+  panelVisitaForm.value.instrucciones = 'Replanteo técnico adicional'
 }
 
 const getAttrValue = (body, label) => {
@@ -7417,6 +8108,7 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.familia_servicio      = crm.familia_servicio || 'Grúas Telescópicas'
           opportunity.value.contacto_nombre       = crm.contacto_nombre || ''
           opportunity.value.contacto_telefono     = crm.contacto_telefono || ''
+          opportunity.value.contacto_correo       = crm.contacto_correo || crm.contacto_email || ''
           opportunity.value.contacto_obj          = crm.contacto_obj || null
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
           opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes !== undefined ? crm.requiere_oc_hes : null
@@ -7490,11 +8182,25 @@ const cargarDatosCotizacion = async () => {
           siteVisit.value.detalle_servicio = crm.detalle_servicio || p.observacion_proyecto || ''
           siteVisit.value.peso_carga = crm.peso_carga || ''
           siteVisit.value.volumen_carga = crm.volumen_carga || ''
+          if (crm.dimensiones) {
+            siteVisit.value.dimensiones = {
+              largo: crm.dimensiones.largo !== undefined ? crm.dimensiones.largo : null,
+              ancho: crm.dimensiones.ancho !== undefined ? crm.dimensiones.ancho : null,
+              alto: crm.dimensiones.alto !== undefined ? crm.dimensiones.alto : null,
+              volumen_m3: crm.dimensiones.volumen_m3 !== undefined ? crm.dimensiones.volumen_m3 : null
+            }
+          }
           siteVisit.value.radios_trabajo = crm.radios_trabajo || ''
           siteVisit.value.alturas_trabajo = crm.alturas_trabajo || ''
           siteVisit.value.visita_terreno = crm.visita_terreno || false
           siteVisit.value.fecha_hora_inicio = crm.fecha_hora_inicio || ''
           siteVisit.value.fecha_hora_termino = crm.fecha_hora_termino || ''
+          siteVisit.value.contacto_terreno_nombre = crm.contacto_terreno_nombre || crm.contacto_visita || ''
+          siteVisit.value.contacto_terreno_telefono = crm.contacto_terreno_telefono || crm.telefono_contacto_visita || ''
+          siteVisit.value.contacto_terreno_email = crm.contacto_terreno_email || crm.correo_contacto_visita || ''
+          siteVisit.value.contacto_visita = siteVisit.value.contacto_terreno_nombre
+          siteVisit.value.telefono_contacto_visita = siteVisit.value.contacto_terreno_telefono
+          siteVisit.value.correo_contacto_visita = siteVisit.value.contacto_terreno_email
           
           if (crm.coordenadas_mapa) {
             siteVisit.value.lat = crm.coordenadas_mapa.lat
@@ -7971,10 +8677,20 @@ const buildPayload = () => {
       crm_v1: {
         prioridad:             opportunity.value.prioridad,
         familia_servicio:      opportunity.value.familia_servicio,
-        contacto_nombre:       siteVisit.value.contacto_terreno_nombre || opportunity.value.contacto_nombre || '',
-        contacto_telefono:     siteVisit.value.contacto_terreno_telefono || opportunity.value.contacto_telefono || '',
-        contacto_email:        siteVisit.value.contacto_terreno_email || opportunity.value.contacto_obj?.email || '',
+        contacto_nombre:       siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || '',
+        contacto_telefono:     siteVisit.value.contacto_terreno_telefono || siteVisit.value.telefono_contacto_visita || opportunity.value.contacto_telefono || '',
+        contacto_email:        siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || opportunity.value.contacto_obj?.email || '',
+        contacto_correo:       siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || opportunity.value.contacto_obj?.email || '',
+        contacto_visita:       siteVisit.value.contacto_visita || siteVisit.value.contacto_terreno_nombre || '',
+        telefono_contacto_visita: siteVisit.value.telefono_contacto_visita || siteVisit.value.contacto_terreno_telefono || '',
+        correo_contacto_visita: siteVisit.value.correo_contacto_visita || siteVisit.value.contacto_terreno_email || '',
         contacto_obj:          opportunity.value.contacto_obj,
+        dimensiones: {
+          largo: siteVisit.value.dimensiones?.largo || null,
+          ancho: siteVisit.value.dimensiones?.ancho || null,
+          alto: siteVisit.value.dimensiones?.alto || null,
+          volumen_m3: siteVisit.value.dimensiones?.volumen_m3 || (volumenCalculado.value > 0 ? volumenCalculado.value : null)
+        },
         tipo_pago:             opportunity.value.tipo_pago,
         requiere_oc_hes:       opportunity.value.requiere_oc_hes,
         requiere_acreditacion: opportunity.value.requiere_acreditacion,
@@ -8051,6 +8767,12 @@ const guardarEnPreventa = async () => {
   if (!opportunity.value.rut_cliente) {
     alert('⚠️ Requerimiento Obligatorio: Debe seleccionar un Cliente Mandante antes de guardar.')
     return
+  }
+
+  if (opportunity.value.contacto_nombre && !opportunity.value.contacto_obj) {
+    try {
+      await autoGuardarContactoManual()
+    } catch (_) {}
   }
   
   try {

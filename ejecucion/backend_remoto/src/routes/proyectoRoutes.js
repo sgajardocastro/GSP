@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const proyectoController = require('../controllers/proyectosController.js');
+const contactoController = require('../controllers/contactoController.js');
 const asignacionRecursosRoutes = require('./asignacionRecursosRoutes.js');
+
+// Auto-guardado de contacto nuevo desde cotización / oportunidad
+router.post('/contacto/auto-guardar', contactoController.autoGuardarContacto);
 
 // Obtener todos los proyectos
 router.get('/', proyectoController.getProyectos);

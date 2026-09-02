@@ -10,8 +10,9 @@ const { execSync } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-// Destinos oficiales de sincronización de Google Drive
+// Destinos oficiales de sincronización de Google Drive (incluyendo el shortcut target directo del ID)
 const TARGET_DESTS = [
+  path.resolve('G:/.shortcut-targets-by-id/1yHYhyIH6_FpQGxJdFBuvI54GEoRr1c3H/Gruas San Pablo - LeanGlobal'),
   path.resolve('D:/SGajardo/Google Drive/Gruas San Pablo - LeanGlobal'),
   path.resolve('G:/Mi unidad/Gruas San Pablo - LeanGlobal'),
   path.resolve('D:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/QA_Fuentes_Web')
@@ -127,6 +128,7 @@ for (const target of TARGET_DESTS) {
   try {
     console.log(`\n🎯 Procesando destino: ${target}...`);
     if (!fs.existsSync(target)) {
+      console.log(`  Creando destino no existente: ${target}`);
       fs.mkdirSync(target, { recursive: true });
     }
 
@@ -134,16 +136,24 @@ for (const target of TARGET_DESTS) {
     const historicoDir = path.join(target, '_historico');
     const backupDir = path.join(historicoDir, `${timestamp}_v${gitCommit}`);
     const itemsAnteriores = ['Spec', 'Proyecto', 'frontend', 'pwa', 'backend', 'specs', 'LEEME_QA.md', 'tareas.md'];
-    const existenItems = itemsAnteriores.some(item => fs.existsSync(path.join(target, item)));
+    
+    // Solo hacer backup si no estamos pisando una carpeta de solo lectura o vacía
+    const existenArchivosReales = itemsAnteriores.some(item => {
+      const p = path.join(target, item);
+      if (!fs.existsSync(p)) return false;
+      const entries = fs.readdirSync(p);
+      return entries.length > 0 && !entries.every(e => e === 'desktop.ini');
+    });
 
-    if (existenItems) {
+    if (existenArchivosReales) {
       console.log(`  📦 [FASE 1] Creando backup histórico en: ${backupDir}`);
       fs.mkdirSync(backupDir, { recursive: true });
       for (const item of itemsAnteriores) {
         const src = path.join(target, item);
         const dst = path.join(backupDir, item);
         if (fs.existsSync(src)) {
-          fs.renameSync(src, dst);
+          // Copiar en lugar de rename para carpetas de nube que bloquean rename
+          copyDirClean(src, dst);
           console.log(`     ↳ Archivado: ${item}`);
         }
       }
@@ -186,7 +196,7 @@ try {
   console.log('\n📦 [FASE 4] Generando archivo ZIP empaquetado para descarga rápida...');
   const mainTarget = TARGET_DESTS[0];
   const zipPath = path.join(mainTarget, 'GSP_Fuentes_y_Specs_QA.zip');
-  execSync(`powershell -Command "Compress-Archive -Path '${path.join(mainTarget, 'Spec')}', '${path.join(mainTarget, 'Proyecto')}', '${path.join(mainTarget, 'LEEME_QA.md')}' -DestinationPath '${zipPath}' -Force"`);
+  execSync(`powershell -Command "Compress-Archive -Path '${path.join(ROOT_DIR, '.agents', 'specs')}', '${path.join(ROOT_DIR, 'ejecucion', 'frontend')}', '${path.join(ROOT_DIR, 'ejecucion', 'pwa')}', '${path.join(ROOT_DIR, 'ejecucion', 'backend_remoto')}' -DestinationPath '${zipPath}' -Force"`);
   console.log(`  ✅ ZIP generado en: ${zipPath}`);
 
   // Replicar ZIP a los otros destinos

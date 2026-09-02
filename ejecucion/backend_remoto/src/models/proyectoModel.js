@@ -103,6 +103,107 @@ class ProyectoModel {
     }
   }
 
+  // Auto-guardado de contacto nuevo en tpar_contactos si crm.contacto_nombre tiene valor pero crm.id_contacto es nulo
+  async autoGuardarContactoSiAplica(jsonField, idEmpresaCliente, dbClient) {
+    try {
+      if (!jsonField) return jsonField;
+      const crm = jsonField.crm_v1 || {};
+      const contactoNombre = (crm.contacto_nombre || '').trim();
+      const idContacto = crm.id_contacto;
+
+      if (contactoNombre && (!idContacto || Number(idContacto) === 0)) {
+        const idEmpresa = idEmpresaCliente || crm.id_empresa_cliente || crm.cliente_id;
+        if (!idEmpresa) return jsonField;
+
+        const client = dbClient || this.pool;
+
+        // 1. Asegurar existencia de la tabla sch_leangsp.tpar_contactos
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS sch_leangsp.tpar_contactos (
+            id_contacto SERIAL PRIMARY KEY,
+            id_empresa INT,
+            nombre VARCHAR(255) NOT NULL,
+            fono VARCHAR(100),
+            email VARCHAR(255),
+            cargo VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        const fono = (crm.contacto_telefono || crm.contacto_fono || '').trim() || null;
+        const email = (crm.contacto_email || '').trim() || null;
+
+        // 2. Verificar si ya existe en tpar_contactos para ese cliente
+        const checkRes = await client.query(`
+          SELECT id_contacto, nombre, fono, email 
+          FROM sch_leangsp.tpar_contactos 
+          WHERE id_empresa = $1 AND LOWER(TRIM(nombre)) = LOWER(TRIM($2))
+          LIMIT 1
+        `, [Number(idEmpresa), contactoNombre]);
+
+        let resolvedId = null;
+
+        if (checkRes.rowCount > 0) {
+          resolvedId = checkRes.rows[0].id_contacto;
+          if ((fono && !checkRes.rows[0].fono) || (email && !checkRes.rows[0].email)) {
+            await client.query(`
+              UPDATE sch_leangsp.tpar_contactos 
+              SET fono = COALESCE($1, fono), email = COALESCE($2, email), updated_at = NOW() 
+              WHERE id_contacto = $3
+            `, [fono, email, resolvedId]);
+          }
+        } else {
+          // Si no existe, insertar nuevo contacto en tpar_contactos
+          const insRes = await client.query(`
+            INSERT INTO sch_leangsp.tpar_contactos (id_empresa, nombre, fono, email)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id_contacto
+          `, [Number(idEmpresa), contactoNombre, fono, email]);
+          resolvedId = insRes.rows[0].id_contacto;
+        }
+
+        crm.id_contacto = resolvedId;
+        jsonField.crm_v1 = crm;
+
+        // 3. Sincronizar reactivamente en tpar_empresas.json_field.puntos_contacto para retrocompatibilidad
+        try {
+          const empRes = await client.query(`SELECT json_field FROM sch_leangsp.tpar_empresas WHERE id_empresa = $1`, [Number(idEmpresa)]);
+          if (empRes.rowCount > 0) {
+            let empJson = empRes.rows[0].json_field;
+            if (typeof empJson === 'string') {
+              try { empJson = JSON.parse(empJson); } catch (_) { empJson = {}; }
+            }
+            if (!empJson || typeof empJson !== 'object') empJson = {};
+            if (!Array.isArray(empJson.puntos_contacto)) empJson.puntos_contacto = [];
+
+            const existeEnPuntos = empJson.puntos_contacto.some(p => 
+              (p.id_contacto && Number(p.id_contacto) === Number(resolvedId)) || 
+              (p.nombre && p.nombre.trim().toLowerCase() === contactoNombre.toLowerCase())
+            );
+
+            if (!existeEnPuntos) {
+              empJson.puntos_contacto.push({
+                id_contacto: resolvedId,
+                nombre: contactoNombre,
+                telefono: fono || '',
+                correo: email || '',
+                cargo: 'Contacto Comercial'
+              });
+              await client.query(`UPDATE sch_leangsp.tpar_empresas SET json_field = $1 WHERE id_empresa = $2`, [JSON.stringify(empJson), Number(idEmpresa)]);
+            }
+          }
+        } catch (empErr) {
+          console.warn("[autoGuardarContactoSiAplica] Sync tpar_empresas warning:", empErr.message);
+        }
+      }
+      return jsonField;
+    } catch (err) {
+      console.error("[autoGuardarContactoSiAplica] Error en auto-guardado de contacto:", err);
+      return jsonField;
+    }
+  }
+
   // Crear proyecto
   async createProyecto(data) {
     const {
@@ -125,6 +226,20 @@ class ProyectoModel {
       id_empresa = null,
       json_field = null
     } = data;
+
+    // Auto-guardado de contacto si aplica
+    let json_field_processed = json_field;
+    if (json_field_processed) {
+      let isStr = typeof json_field_processed === 'string';
+      let parsed = isStr ? null : json_field_processed;
+      if (isStr) {
+        try { parsed = JSON.parse(json_field_processed); } catch (_) { parsed = null; }
+      }
+      if (parsed) {
+        parsed = await this.autoGuardarContactoSiAplica(parsed, id_empresa_cliente);
+        json_field_processed = isStr ? JSON.stringify(parsed) : parsed;
+      }
+    }
 
     const query = `
       INSERT INTO tpry_proyecto (
@@ -175,7 +290,7 @@ class ProyectoModel {
       objetivo_proyecto,
       observacion_proyecto,
       id_user_creacion,
-      json_field
+      json_field_processed
     ];
 
     try {
@@ -204,6 +319,25 @@ class ProyectoModel {
       json_field = null,
       id_user_modificacion = null
     } = data;
+
+    // Auto-guardado de contacto si aplica
+    let json_field_processed = json_field;
+    if (json_field_processed) {
+      let isStr = typeof json_field_processed === 'string';
+      let parsed = isStr ? null : json_field_processed;
+      if (isStr) {
+        try { parsed = JSON.parse(json_field_processed); } catch (_) { parsed = null; }
+      }
+      if (parsed) {
+        let idEmpresa = id_empresa_cliente;
+        if (!idEmpresa) {
+          const currentPry = await this.getProyectoById(id_proyecto);
+          idEmpresa = currentPry?.id_empresa_cliente;
+        }
+        parsed = await this.autoGuardarContactoSiAplica(parsed, idEmpresa);
+        json_field_processed = isStr ? JSON.stringify(parsed) : parsed;
+      }
+    }
 
     const query = `
       UPDATE tpry_proyecto
@@ -238,7 +372,7 @@ class ProyectoModel {
       fecha_plan_fin,
       objetivo_proyecto,
       observacion_proyecto,
-      json_field,
+      json_field_processed,
       id_user_modificacion,
       id_proyecto
     ];
