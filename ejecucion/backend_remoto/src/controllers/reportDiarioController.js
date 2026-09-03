@@ -24,8 +24,8 @@ const reportDiarioController = {
           COALESCE(clt.rut_empresa, p.json_field->>'cliente_rut', p.json_field->'ejecucion_v1'->'cliente'->>'rut', '') AS cliente_rut,
           COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
           COALESCE(p.json_field->>'obra_direccion', p.json_field->'crm_v1'->>'obra_direccion', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena en Terreno') AS obra_direccion
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
         WHERE p.id_proyecto = $1;
       `;
       const proyRes = await db.query(proySql, [id_proyecto]);
@@ -51,11 +51,11 @@ const reportDiarioController = {
           v.km_final,
           v.horometro_inicial AS horometro_viaje_salida,
           v.horometro_final AS horometro_viaje_llegada
-        FROM sch_leangsp.tpry_rel_equipo re
-        JOIN sch_leangsp.tequ_equipo e ON re.id_equipo = e.id_equipo
+        FROM tpry_rel_equipo re
+        JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
         LEFT JOIN LATERAL (
           SELECT estado_trayecto, token_viaje, km_inicial, km_final, horometro_inicial, horometro_final
-          FROM sch_leangsp.tequ_log_desplazamiento
+          FROM tequ_log_desplazamiento
           WHERE id_proyecto = re.id_proyecto AND id_equipo = re.id_equipo
           ORDER BY id_log_desplazamiento DESC
           LIMIT 1
@@ -73,7 +73,7 @@ const reportDiarioController = {
           const idEq = eqItem.id_equipo || eqItem.id;
           if (idEq) {
             const fallbackEqRes = await db.query(
-              `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM sch_leangsp.tequ_equipo WHERE id_equipo = $1`,
+              `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM tequ_equipo WHERE id_equipo = $1`,
               [idEq]
             );
             if (fallbackEqRes.rows.length > 0) {
@@ -86,7 +86,7 @@ const reportDiarioController = {
       // Si aún sigue vacío, tomar la grúa principal de la flota para garantizar datos reales
       if (equipos.length === 0) {
         const anyEqRes = await db.query(
-          `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM sch_leangsp.tequ_equipo ORDER BY id_equipo ASC LIMIT 1`
+          `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM tequ_equipo ORDER BY id_equipo ASC LIMIT 1`
         );
         if (anyEqRes.rows.length > 0) {
           equipos.push(anyEqRes.rows[0]);
@@ -104,8 +104,8 @@ const reportDiarioController = {
           u.apellido_mat,
           u.email,
           u.rut
-        FROM sch_leangsp.tpry_rel_persona rp
-        JOIN sch_leangsp.tsec_users u ON rp.id_user = u.id_user
+        FROM tpry_rel_persona rp
+        JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1
         ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `;
@@ -126,7 +126,7 @@ const reportDiarioController = {
           estado_reporte,
           cliente_nombre,
           fecha_registro
-        FROM sch_leangsp.tedp_reporte_avance
+        FROM tedp_reporte_avance
         WHERE id_proyecto = $1
         ORDER BY dia_correlativo ASC, fecha_reporte ASC;
       `;
@@ -140,7 +140,7 @@ const reportDiarioController = {
       if (targetIdEquipo) {
         const actSql = `
           SELECT *
-          FROM sch_leangsp.tedp_reporte_avance
+          FROM tedp_reporte_avance
           WHERE id_proyecto = $1 AND id_equipo = $2 AND estado_reporte = 'JORNADA_EN_CURSO'
           ORDER BY id_reporte_avance DESC
           LIMIT 1;
@@ -242,7 +242,7 @@ const reportDiarioController = {
       // Verificar si ya existe una jornada en curso para hoy y este equipo
       const existSql = `
         SELECT id_reporte_avance 
-        FROM sch_leangsp.tedp_reporte_avance 
+        FROM tedp_reporte_avance 
         WHERE id_proyecto = $1 AND id_equipo = $2 AND estado_reporte = 'JORNADA_EN_CURSO'
         ORDER BY id_reporte_avance DESC LIMIT 1;
       `;
@@ -251,7 +251,7 @@ const reportDiarioController = {
       let reportRow;
       if (existRes.rows.length > 0) {
         const updateSql = `
-          UPDATE sch_leangsp.tedp_reporte_avance SET
+          UPDATE tedp_reporte_avance SET
             id_user_rigger = $1,
             dia_correlativo = $2,
             fecha_reporte = $3,
@@ -277,7 +277,7 @@ const reportDiarioController = {
       } else {
         const token_report = crypto.randomBytes(24).toString('hex');
         const insertSql = `
-          INSERT INTO sch_leangsp.tedp_reporte_avance (
+          INSERT INTO tedp_reporte_avance (
             id_proyecto,
             id_equipo,
             id_user_operador,
@@ -382,13 +382,13 @@ const reportDiarioController = {
           COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
           COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre,
           COALESCE(u_val.name_frst || ' ' || u_val.apellido_pat, 'Analista GSP') AS validador_nombre
-        FROM sch_leangsp.tedp_reporte_avance r
-        JOIN sch_leangsp.tpry_proyecto p ON r.id_proyecto = p.id_proyecto
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
-        LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_val ON r.id_user_validador = u_val.id_user
+        FROM tedp_reporte_avance r
+        JOIN tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tequ_equipo e ON r.id_equipo = e.id_equipo
+        LEFT JOIN tsec_users u_op ON r.id_user_operador = u_op.id_user
+        LEFT JOIN tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
+        LEFT JOIN tsec_users u_val ON r.id_user_validador = u_val.id_user
         WHERE r.id_proyecto = $1
         ORDER BY r.dia_correlativo ASC, r.fecha_reporte ASC;
       `;
@@ -455,7 +455,7 @@ const reportDiarioController = {
       if (id_reporte_avance) {
         // Actualizar el registro existente de Momento 1
         const updateSql = `
-          UPDATE sch_leangsp.tedp_reporte_avance SET
+          UPDATE tedp_reporte_avance SET
             id_equipo = $1,
             id_user_operador = $2,
             id_user_rigger = $3,
@@ -525,7 +525,7 @@ const reportDiarioController = {
         // Inserción directa en un solo paso
         const token_report = crypto.randomBytes(24).toString('hex');
         const insertSql = `
-          INSERT INTO sch_leangsp.tedp_reporte_avance (
+          INSERT INTO tedp_reporte_avance (
             id_proyecto,
             id_equipo,
             id_user_operador,
@@ -606,7 +606,7 @@ const reportDiarioController = {
       if (id_equipo && horometro_termino) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tequ_equipo SET json_data = jsonb_set(COALESCE(json_data, '{}'::jsonb), '{horometro}', $1::text::jsonb) WHERE id_equipo = $2`,
+            `UPDATE tequ_equipo SET json_data = jsonb_set(COALESCE(json_data, '{}'::jsonb), '{horometro}', $1::text::jsonb) WHERE id_equipo = $2`,
             [JSON.stringify(horometro_termino), id_equipo]
           );
         } catch (e) {
@@ -636,7 +636,7 @@ const reportDiarioController = {
       }
 
       const updateSql = `
-        UPDATE sch_leangsp.tedp_reporte_avance
+        UPDATE tedp_reporte_avance
         SET 
           estado_reporte = 'VALIDADO_ANALISTA',
           id_user_validador = $1,
@@ -687,8 +687,8 @@ const reportDiarioController = {
           COALESCE(clt.rut_empresa, '') AS cliente_rut,
           COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.nombre_proyecto) AS obra_nombre,
           COALESCE(p.json_field->>'obra_direccion', p.json_field->'crm_v1'->>'obra_direccion', 'Faena en Terreno') AS obra_direccion
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
         WHERE p.id_proyecto = $1;
       `;
       const proyRes = await db.query(proySql, [id_proyecto]);
@@ -721,8 +721,8 @@ const reportDiarioController = {
           r.fecha_termino_servicio,
           COALESCE(e.patente, 'S/P') AS equipo_patente,
           COALESCE(e.modelo, 'Grúa') AS equipo_modelo
-        FROM sch_leangsp.tedp_reporte_avance r
-        LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
+        FROM tedp_reporte_avance r
+        LEFT JOIN tequ_equipo e ON r.id_equipo = e.id_equipo
         WHERE r.id_proyecto = $1
         ORDER BY r.dia_correlativo ASC, r.fecha_reporte ASC;
       `;
@@ -855,7 +855,7 @@ const reportDiarioController = {
 
       // Actualizar estado a 7 (Facturado / Cerrado) y guardar liquidacion_v1
       const updateSql = `
-        UPDATE sch_leangsp.tpry_proyecto
+        UPDATE tpry_proyecto
         SET 
           id_proyecto_estado = 7,
           json_field = jsonb_set(

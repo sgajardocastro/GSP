@@ -57,10 +57,10 @@ exports.getEstadosPagoPorProyecto = async (req, res) => {
              e.patente, e.modelo, e.marca,
              COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
              COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
-      FROM sch_leangsp.tedp_reporte_avance r
-      LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
-      LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
-      LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
+      FROM tedp_reporte_avance r
+      LEFT JOIN tequ_equipo e ON r.id_equipo = e.id_equipo
+      LEFT JOIN tsec_users u_op ON r.id_user_operador = u_op.id_user
+      LEFT JOIN tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
       WHERE r.id_proyecto = $1
       ORDER BY r.fecha_reporte ASC, r.dia_correlativo ASC;
     `;
@@ -98,8 +98,8 @@ exports.generarPdfEdp = async (req, res) => {
     // 1. Intentar buscar por ID de EDP en la tabla tedp_estado_pago
     const edpRes = await db.query(`
       SELECT e.*, p.codi_proyecto, p.json_field AS proy_json
-      FROM sch_leangsp.tedp_estado_pago e
-      JOIN sch_leangsp.tpry_proyecto p ON e.id_proyecto = p.id_proyecto
+      FROM tedp_estado_pago e
+      JOIN tpry_proyecto p ON e.id_proyecto = p.id_proyecto
       WHERE e.id_edp = $1;
     `, [paramId]);
 
@@ -109,7 +109,7 @@ exports.generarPdfEdp = async (req, res) => {
 
       // Obtener detalles adicionales si existen
       const detRes = await db.query(`
-        SELECT * FROM sch_leangsp.tedp_estado_pago_detalle
+        SELECT * FROM tedp_estado_pago_detalle
         WHERE id_edp = $1
         ORDER BY id_edp_detalle ASC;
       `, [edp.id_edp]);
@@ -124,8 +124,8 @@ exports.generarPdfEdp = async (req, res) => {
       SELECT p.*, 
              COALESCE(c.razon_social, c.name_empresa) AS cliente_nombre,
              c.rut_empresa AS cliente_rut
-      FROM sch_leangsp.tpry_proyecto p
-      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
+      FROM tpry_proyecto p
+      LEFT JOIN tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       WHERE p.id_proyecto = $1;
     `, [idProyecto]);
 
@@ -140,10 +140,10 @@ exports.generarPdfEdp = async (req, res) => {
              e.patente, e.modelo, e.marca,
              COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
              COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
-      FROM sch_leangsp.tedp_reporte_avance r
-      LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
-      LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
-      LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
+      FROM tedp_reporte_avance r
+      LEFT JOIN tequ_equipo e ON r.id_equipo = e.id_equipo
+      LEFT JOIN tsec_users u_op ON r.id_user_operador = u_op.id_user
+      LEFT JOIN tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
       WHERE (r.id_edp = $1 AND $1 IS NOT NULL) OR (r.id_proyecto = $2)
       ORDER BY r.fecha_reporte ASC, r.dia_correlativo ASC;
     `, [edp?.id_edp || null, idProyecto]);
@@ -250,7 +250,7 @@ exports.actualizarEstadoEdp = async (req, res) => {
     const { estado_edp, hes_oc_numero, factura_numero, fecha_facturacion, observaciones } = req.body;
 
     const sql = `
-      UPDATE sch_leangsp.tedp_estado_pago
+      UPDATE tedp_estado_pago
       SET estado_edp = COALESCE($1, estado_edp),
           hes_oc_numero = COALESCE($2, hes_oc_numero),
           factura_numero = COALESCE($3, factura_numero),
@@ -270,7 +270,7 @@ exports.actualizarEstadoEdp = async (req, res) => {
     // Si se declara facturado, verificar si transiciona proyecto a Estado 7
     if (estado_edp === 'FACTURADO') {
       await db.query(`
-        UPDATE sch_leangsp.tpry_proyecto
+        UPDATE tpry_proyecto
         SET id_proyecto_estado = 7,
             json_field = jsonb_set(
               COALESCE(json_field, '{}'::jsonb),

@@ -16,7 +16,9 @@ const client = new Client({
 client
   .connect()
   .then(() => {
-    console.log("Conectado a PostgreSQL con usuario: " + process.env.DB_USER);
+    const schema = process.env.DB_SCHEMA || 'sch_leangsp_prod';
+    console.log("Conectado a PostgreSQL con usuario: " + process.env.DB_USER + " Schema: " + schema);
+    return client.query(`SET search_path TO ${schema}, public`);
   })
   .catch((err) => {
     console.error("Error de conexión o consulta", err.stack);

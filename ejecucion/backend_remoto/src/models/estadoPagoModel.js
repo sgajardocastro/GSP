@@ -6,7 +6,7 @@ const estadoPagoModel = {
     // Buscar si ya existe un trayecto en_ruta activo para este proyecto/equipo
     const checkSql = `
       SELECT id_log_desplazamiento, pings_ruta 
-      FROM sch_leangsp.tequ_log_desplazamiento 
+      FROM tequ_log_desplazamiento 
       WHERE id_proyecto = $1 AND estado_trayecto = 'EN_RUTA' 
       ORDER BY id_log_desplazamiento DESC LIMIT 1;
     `;
@@ -24,7 +24,7 @@ const estadoPagoModel = {
       // Actualizar trayecto existente agregando el ping al arreglo JSONB
       const idLog = checkRes.rows[0].id_log_desplazamiento;
       let updateSql = `
-        UPDATE sch_leangsp.tequ_log_desplazamiento
+        UPDATE tequ_log_desplazamiento
         SET pings_ruta = pings_ruta || $1::jsonb
       `;
       const params = [JSON.stringify([pingObj])];
@@ -48,7 +48,7 @@ const estadoPagoModel = {
     } else {
       // Crear nuevo registro de trayecto
       const insertSql = `
-        INSERT INTO sch_leangsp.tequ_log_desplazamiento (
+        INSERT INTO tequ_log_desplazamiento (
           id_proyecto, id_equipo, patente, tipo_trayecto, 
           fecha_salida_patio, latitud_salida_patio, longitud_salida_patio,
           km_inicial, estado_trayecto, pings_ruta
@@ -76,7 +76,7 @@ const estadoPagoModel = {
     } = data;
 
     const sql = `
-      INSERT INTO sch_leangsp.tedp_reporte_avance (
+      INSERT INTO tedp_reporte_avance (
         id_proyecto, id_log_desplazamiento, id_user_operador, fecha_reporte,
         unidad_cobro, incluye_flete_independiente,
         fecha_inicio_servicio, fecha_termino_servicio,
@@ -107,8 +107,8 @@ const estadoPagoModel = {
   async getReportesDiariosPorProyecto(id_proyecto) {
     const sql = `
       SELECT r.*, u.name_frst || ' ' || u.apellido_pat AS nombre_operador
-      FROM sch_leangsp.tedp_reporte_avance r
-      LEFT JOIN sch_leangsp.tsec_users u ON r.id_user_operador = u.id_user
+      FROM tedp_reporte_avance r
+      LEFT JOIN tsec_users u ON r.id_user_operador = u.id_user
       WHERE r.id_proyecto = $1
       ORDER BY r.fecha_reporte DESC, r.id_reporte_avance DESC;
     `;
@@ -127,7 +127,7 @@ const estadoPagoModel = {
       if (reportes_ids && reportes_ids.length > 0) {
         const sumRes = await client.query(`
           SELECT COALESCE(SUM(monto_devengado_dia), 0) AS total 
-          FROM sch_leangsp.tedp_reporte_avance 
+          FROM tedp_reporte_avance 
           WHERE id_reporte_avance = ANY($1::bigint[]);
         `, [reportes_ids]);
         montoNetoReportes = Number(sumRes.rows[0].total || 0);
@@ -145,7 +145,7 @@ const estadoPagoModel = {
 
       // Insertar EDP
       const edpSql = `
-        INSERT INTO sch_leangsp.tedp_estado_pago (
+        INSERT INTO tedp_estado_pago (
           id_proyecto, numero_edp, fecha_corte_inicio, fecha_corte_fin,
           monto_neto, monto_iva, monto_total, estado_edp
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'BORRADOR')
@@ -160,7 +160,7 @@ const estadoPagoModel = {
       // Vincular id_edp en los reportes liquidados
       if (reportes_ids && reportes_ids.length > 0) {
         await client.query(`
-          UPDATE sch_leangsp.tedp_reporte_avance 
+          UPDATE tedp_reporte_avance 
           SET id_edp = $1, estado_reporte = 'AGRUPADO_EDP' 
           WHERE id_reporte_avance = ANY($2::bigint[]);
         `, [nuevoEdp.id_edp, reportes_ids]);
@@ -170,7 +170,7 @@ const estadoPagoModel = {
       if (items_adicionales && items_adicionales.length > 0) {
         for (const item of items_adicionales) {
           await client.query(`
-            INSERT INTO sch_leangsp.tedp_estado_pago_detalle (
+            INSERT INTO tedp_estado_pago_detalle (
               id_edp, concepto, unidad_cobro, cantidad, precio_unitario, monto_subtotal
             ) VALUES ($1, $2, $3, $4, $5, $6);
           `, [nuevoEdp.id_edp, item.concepto, item.unidad_cobro || 'FIJO', item.cantidad || 1, item.precio_unitario || 0, item.monto_subtotal || 0]);
@@ -192,8 +192,8 @@ const estadoPagoModel = {
     const sql = `
       SELECT e.*, 
         COUNT(r.id_reporte_avance) AS total_reportes_agrupados
-      FROM sch_leangsp.tedp_estado_pago e
-      LEFT JOIN sch_leangsp.tedp_reporte_avance r ON e.id_edp = r.id_edp
+      FROM tedp_estado_pago e
+      LEFT JOIN tedp_reporte_avance r ON e.id_edp = r.id_edp
       WHERE e.id_proyecto = $1
       GROUP BY e.id_edp
       ORDER BY e.id_edp DESC;
@@ -205,7 +205,7 @@ const estadoPagoModel = {
   // 6. Adjuntar Factura ERP del Cliente
   async adjuntarFacturaErp(id_edp, { folio_factura_erp, fecha_facturacion_erp, archivo_factura_pdf_path, archivo_factura_xml_path }) {
     const sql = `
-      UPDATE sch_leangsp.tedp_estado_pago
+      UPDATE tedp_estado_pago
       SET folio_factura_erp = $1,
           fecha_facturacion_erp = $2,
           archivo_factura_pdf_path = $3,
@@ -221,7 +221,7 @@ const estadoPagoModel = {
   // 7. Imputar Costo Operacional Real (Combustible, Viáticos, etc.)
   async imputarCostoServicio({ id_proyecto, id_edp, categoria_costo, monto_costo, litros_combustible, kilometraje_odometro, numero_comprobante, archivo_comprobante_path, observacion }) {
     const sql = `
-      INSERT INTO sch_leangsp.tedp_costos_servicio (
+      INSERT INTO tedp_costos_servicio (
         id_proyecto, id_edp, categoria_costo, monto_costo,
         litros_combustible, kilometraje_odometro, numero_comprobante,
         archivo_comprobante_path, observacion
@@ -240,13 +240,13 @@ const estadoPagoModel = {
   async getVisor360Proyecto(id_proyecto) {
     const devRes = await db.query(`
       SELECT COALESCE(SUM(monto_devengado_dia), 0) AS devengado_total
-      FROM sch_leangsp.tedp_reporte_avance
+      FROM tedp_reporte_avance
       WHERE id_proyecto = $1;
     `, [id_proyecto]);
 
     const costRes = await db.query(`
       SELECT categoria_costo, COALESCE(SUM(monto_costo), 0) AS total_categoria, COALESCE(SUM(litros_combustible), 0) AS total_litros
-      FROM sch_leangsp.tedp_costos_servicio
+      FROM tedp_costos_servicio
       WHERE id_proyecto = $1
       GROUP BY categoria_costo;
     `, [id_proyecto]);

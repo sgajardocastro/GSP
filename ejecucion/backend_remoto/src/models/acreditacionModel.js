@@ -19,12 +19,12 @@ const acreditacionModel = {
         COUNT(d.id_acreditacion_doc) AS total_docs,
         COUNT(CASE WHEN d.estado_doc = 'APROBADO' THEN 1 END) AS docs_aprobados,
         COUNT(CASE WHEN d.estado_doc = 'RECHAZADO' THEN 1 END) AS docs_rechazados
-      FROM sch_leangsp.tpry_acreditacion a
-      JOIN sch_leangsp.tpry_proyecto p ON a.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
-      LEFT JOIN sch_leangsp.tsec_users com ON a.id_user_comercial = com.id_user
-      LEFT JOIN sch_leangsp.tsec_users ana ON a.id_user_analista = ana.id_user
-      LEFT JOIN sch_leangsp.tpry_acreditacion_doc d ON a.id_acreditacion = d.id_acreditacion
+      FROM tpry_acreditacion a
+      JOIN tpry_proyecto p ON a.id_proyecto = p.id_proyecto
+      LEFT JOIN tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
+      LEFT JOIN tsec_users com ON a.id_user_comercial = com.id_user
+      LEFT JOIN tsec_users ana ON a.id_user_analista = ana.id_user
+      LEFT JOIN tpry_acreditacion_doc d ON a.id_acreditacion = d.id_acreditacion
       GROUP BY a.id_acreditacion, p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, c.name_empresa, com.name_frst, com.apellido_pat, ana.name_frst, ana.apellido_pat
       ORDER BY a.updated_at DESC
     `;
@@ -69,9 +69,9 @@ const acreditacionModel = {
           ELSE 'habilitado'
         END AS estado
 
-      FROM sch_leangsp.tsec_users u
-      LEFT JOIN sch_leangsp.tsec_certificados_persona cp ON u.id_user = cp.id_user
-      LEFT JOIN sch_leangsp.tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+      FROM tsec_users u
+      LEFT JOIN tsec_certificados_persona cp ON u.id_user = cp.id_user
+      LEFT JOIN tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
       ${whereClause}
       GROUP BY u.id_user
       ORDER BY u.id_user DESC
@@ -100,7 +100,7 @@ const acreditacionModel = {
         u.movil,
         u.activo,
         u.json_data
-      FROM sch_leangsp.tsec_users u
+      FROM tsec_users u
       WHERE u.id_user = $1
     `;
     const checkUser = await db.query(userSql, [id_user]);
@@ -130,8 +130,8 @@ const acreditacionModel = {
           WHEN cp.fecha_vencimiento <= CURRENT_DATE + INTERVAL '30 days' THEN 'Por Vencer'
           ELSE 'Vigente'
         END AS estado_vigencia
-      FROM sch_leangsp.tsec_certificados_persona cp
-      JOIN sch_leangsp.tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+      FROM tsec_certificados_persona cp
+      JOIN tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
       WHERE cp.id_user = $1
       ORDER BY cp.fecha_vencimiento DESC NULLS FIRST, cp.id_certificado_persona DESC
     `;
@@ -167,7 +167,7 @@ const acreditacionModel = {
         COALESCE(u.json_data->>'cargo', 'Operador') AS cargo,
         u.activo,
         u.json_data
-      FROM sch_leangsp.tsec_users u
+      FROM tsec_users u
       WHERE UPPER(REGEXP_REPLACE(u.rut, '[^0-9kK]', '', 'g')) = $1
     `;
     const resUser = await db.query(sqlUser, [cleanRut]);
@@ -189,12 +189,12 @@ const acreditacionModel = {
   async updatePersonalDetail(id_user, data) {
     const { name_frst, name_sec, apellido_pat, apellido_mat, rut, email, movil, cargo, activo } = data;
     
-    const check = await db.query('SELECT json_data FROM sch_leangsp.tsec_users WHERE id_user = $1', [id_user]);
+    const check = await db.query('SELECT json_data FROM tsec_users WHERE id_user = $1', [id_user]);
     const currentJson = check.rows[0]?.json_data || {};
     currentJson.cargo = cargo || currentJson.cargo || 'Operador';
 
     const sql = `
-      UPDATE sch_leangsp.tsec_users
+      UPDATE tsec_users
       SET name_frst = $2,
           name_sec = $3,
           apellido_pat = $4,
@@ -217,7 +217,7 @@ const acreditacionModel = {
     const { id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, observaciones, id_doc } = certData;
 
     const sql = `
-      INSERT INTO sch_leangsp.tsec_certificados_persona (
+      INSERT INTO tsec_certificados_persona (
         id_user, id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, id_doc, observaciones
       )
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -232,7 +232,7 @@ const acreditacionModel = {
     ]);
 
     // Actualizar json_data temporalmente por retrocompatibilidad visual si se necesita (opcional, pero la query lee la tabla)
-    await db.query('UPDATE sch_leangsp.tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
+    await db.query('UPDATE tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
 
     return { id_cert: rows[0].id_cert };
   },
@@ -240,13 +240,13 @@ const acreditacionModel = {
   // Eliminar certificado de expediente
   async deleteCertificado(id_user, id_cert) {
     const sql = `
-      DELETE FROM sch_leangsp.tsec_certificados_persona
+      DELETE FROM tsec_certificados_persona
       WHERE id_certificado_persona = $1 AND id_user = $2
     `;
     const { rowCount } = await db.query(sql, [id_cert, id_user]);
     
     if (rowCount > 0) {
-      await db.query('UPDATE sch_leangsp.tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
+      await db.query('UPDATE tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [id_user]);
       return true;
     }
     return false;
@@ -257,7 +257,7 @@ const acreditacionModel = {
     try {
       const sql = `
         SELECT id_tipo_certificado_persona, nombre_tipo, obligatorio, dias_alerta
-        FROM sch_leangsp.tsec_tipos_certificado_persona
+        FROM tsec_tipos_certificado_persona
         ORDER BY obligatorio DESC, nombre_tipo ASC
       `;
       const { rows } = await db.query(sql);
@@ -284,9 +284,9 @@ const acreditacionModel = {
         p.nombre_proyecto,
         p.codi_proyecto,
         COALESCE(c.name_empresa, 'Cliente GSP') AS nombre_cliente
-      FROM sch_leangsp.tpry_acreditacion a
-      JOIN sch_leangsp.tpry_proyecto p ON a.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
+      FROM tpry_acreditacion a
+      JOIN tpry_proyecto p ON a.id_proyecto = p.id_proyecto
+      LEFT JOIN tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       WHERE a.id_acreditacion = $1
     `;
     const resHead = await db.query(sqlHead, [id_acreditacion]);
@@ -298,8 +298,8 @@ const acreditacionModel = {
         f.name_file_original,
         f.name_file_disk,
         f.path_file
-      FROM sch_leangsp.tpry_acreditacion_doc d
-      LEFT JOIN sch_leangsp.tfmg_file f ON d.id_doc = f.id_doc
+      FROM tpry_acreditacion_doc d
+      LEFT JOIN tfmg_file f ON d.id_doc = f.id_doc
       WHERE d.id_acreditacion = $1
       ORDER BY d.id_acreditacion_doc ASC
     `;
@@ -314,7 +314,7 @@ const acreditacionModel = {
   // Subir o actualizar documento
   async subirDocumento(id_acreditacion_doc, id_doc) {
     const sql = `
-      UPDATE sch_leangsp.tpry_acreditacion_doc
+      UPDATE tpry_acreditacion_doc
       SET id_doc = $2, estado_doc = 'SUBIDO', updated_at = NOW()
       WHERE id_acreditacion_doc = $1
       RETURNING *
@@ -327,7 +327,7 @@ const acreditacionModel = {
   // Auditar documento por Analista de Gestión (Aprobar / Rechazar)
   async auditarDocumento(id_acreditacion_doc, estado_doc, observacion_analista, id_user_analista) {
     const sql = `
-      UPDATE sch_leangsp.tpry_acreditacion_doc
+      UPDATE tpry_acreditacion_doc
       SET estado_doc = $2, observacion_analista = $3, updated_at = NOW()
       WHERE id_acreditacion_doc = $1
       RETURNING *
@@ -337,7 +337,7 @@ const acreditacionModel = {
 
     // Asignar analista al encabezado si no estaba asignado
     if (id_user_analista) {
-      await db.query(`UPDATE sch_leangsp.tpry_acreditacion SET id_user_analista = $2 WHERE id_acreditacion = $1 AND id_user_analista IS NULL`, [doc.id_acreditacion, id_user_analista]);
+      await db.query(`UPDATE tpry_acreditacion SET id_user_analista = $2 WHERE id_acreditacion = $1 AND id_user_analista IS NULL`, [doc.id_acreditacion, id_user_analista]);
     }
 
     await this.recalcularAvance(doc.id_acreditacion);
@@ -351,7 +351,7 @@ const acreditacionModel = {
         COUNT(*) AS total,
         COUNT(CASE WHEN estado_doc = 'APROBADO' THEN 1 END) AS aprobados,
         COUNT(CASE WHEN estado_doc = 'RECHAZADO' THEN 1 END) AS rechazados
-      FROM sch_leangsp.tpry_acreditacion_doc
+      FROM tpry_acreditacion_doc
       WHERE id_acreditacion = $1
     `;
     const resCount = await db.query(sqlCount, [id_acreditacion]);
@@ -371,7 +371,7 @@ const acreditacionModel = {
     }
 
     const sqlUpdate = `
-      UPDATE sch_leangsp.tpry_acreditacion
+      UPDATE tpry_acreditacion
       SET porcentaje_avance = $2, 
           estado_acreditacion = $3,
           fecha_aprobacion_final = (CASE WHEN $3 = 'ACREDITADO_OK' THEN NOW() ELSE fecha_aprobacion_final END),

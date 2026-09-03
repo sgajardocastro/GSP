@@ -1,10 +1,10 @@
 const pool = require('../config/postgresPool');
 
-// Asegurar existencia de la tabla sch_leangsp.tpar_contactos
+// Asegurar existencia de la tabla tpar_contactos
 async function asegurarTablaContactos(client) {
     const db = client || pool;
     await db.query(`
-        CREATE TABLE IF NOT EXISTS sch_leangsp.tpar_contactos (
+        CREATE TABLE IF NOT EXISTS tpar_contactos (
             id_contacto SERIAL PRIMARY KEY,
             id_empresa INT,
             nombre VARCHAR(255) NOT NULL,
@@ -22,7 +22,7 @@ async function sincronizarPuntosContactoEmpresa(idEmpresa, contact, client) {
     const db = client || pool;
     try {
         const empRes = await db.query(
-            `SELECT json_field FROM sch_leangsp.tpar_empresas WHERE id_empresa = $1`,
+            `SELECT json_field FROM tpar_empresas WHERE id_empresa = $1`,
             [Number(idEmpresa)]
         );
         if (empRes.rowCount > 0) {
@@ -53,7 +53,7 @@ async function sincronizarPuntosContactoEmpresa(idEmpresa, contact, client) {
             }
 
             await db.query(
-                `UPDATE sch_leangsp.tpar_empresas SET json_field = $1 WHERE id_empresa = $2`,
+                `UPDATE tpar_empresas SET json_field = $1 WHERE id_empresa = $2`,
                 [JSON.stringify(empJson), Number(idEmpresa)]
             );
         }
@@ -87,7 +87,7 @@ const autoGuardarContacto = async (req, res) => {
         // 1. Verificar si ya existe para esa empresa
         const checkRes = await pool.query(`
             SELECT id_contacto, id_empresa, nombre, fono, email, cargo 
-            FROM sch_leangsp.tpar_contactos 
+            FROM tpar_contactos 
             WHERE id_empresa = $1 AND LOWER(TRIM(nombre)) = LOWER(TRIM($2))
             LIMIT 1
         `, [Number(id_empresa), nombre]);
@@ -103,7 +103,7 @@ const autoGuardarContacto = async (req, res) => {
 
             if (nuevoFono !== contact.fono || nuevoEmail !== contact.email || nuevoCargo !== contact.cargo) {
                 const upRes = await pool.query(`
-                    UPDATE sch_leangsp.tpar_contactos 
+                    UPDATE tpar_contactos 
                     SET fono = $1, email = $2, cargo = $3, updated_at = NOW()
                     WHERE id_contacto = $4
                     RETURNING *;
@@ -113,7 +113,7 @@ const autoGuardarContacto = async (req, res) => {
         } else {
             // Insertar nuevo contacto
             const insRes = await pool.query(`
-                INSERT INTO sch_leangsp.tpar_contactos (id_empresa, nombre, fono, email, cargo)
+                INSERT INTO tpar_contactos (id_empresa, nombre, fono, email, cargo)
                 VALUES ($1, $2, $3, $4, $5)
                 RETURNING *;
             `, [Number(id_empresa), nombre, fono, email, cargo]);
@@ -123,7 +123,7 @@ const autoGuardarContacto = async (req, res) => {
         // 2. Si viene id_proyecto, vincular ID en tpry_proyecto.json_field.crm_v1
         if (id_proyecto) {
             const pryRes = await pool.query(
-                `SELECT id_proyecto, json_field FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1`,
+                `SELECT id_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1`,
                 [Number(id_proyecto)]
             );
             if (pryRes.rowCount > 0) {
@@ -140,7 +140,7 @@ const autoGuardarContacto = async (req, res) => {
                 if (contact.email) jf.crm_v1.contacto_email = contact.email;
 
                 await pool.query(
-                    `UPDATE sch_leangsp.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`,
+                    `UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`,
                     [JSON.stringify(jf), Number(id_proyecto)]
                 );
             }
@@ -187,7 +187,7 @@ const upsertContactoEmpresa = async (req, res) => {
         if (id_contacto) {
             // Actualizar por id_contacto
             const upRes = await pool.query(`
-                UPDATE sch_leangsp.tpar_contactos
+                UPDATE tpar_contactos
                 SET nombre = $1, fono = $2, email = $3, cargo = $4, updated_at = NOW()
                 WHERE id_contacto = $5 AND id_empresa = $6
                 RETURNING *;
@@ -201,7 +201,7 @@ const upsertContactoEmpresa = async (req, res) => {
         if (!contact) {
             // Buscar por nombre en la misma empresa
             const checkRes = await pool.query(`
-                SELECT * FROM sch_leangsp.tpar_contactos 
+                SELECT * FROM tpar_contactos 
                 WHERE id_empresa = $1 AND LOWER(TRIM(nombre)) = LOWER(TRIM($2))
                 LIMIT 1
             `, [Number(id_empresa), nombre]);
@@ -209,7 +209,7 @@ const upsertContactoEmpresa = async (req, res) => {
             if (checkRes.rowCount > 0) {
                 const existing = checkRes.rows[0];
                 const upRes = await pool.query(`
-                    UPDATE sch_leangsp.tpar_contactos 
+                    UPDATE tpar_contactos 
                     SET fono = COALESCE($1, fono), email = COALESCE($2, email), cargo = COALESCE($3, cargo), updated_at = NOW()
                     WHERE id_contacto = $4
                     RETURNING *;
@@ -217,7 +217,7 @@ const upsertContactoEmpresa = async (req, res) => {
                 contact = upRes.rows[0];
             } else {
                 const insRes = await pool.query(`
-                    INSERT INTO sch_leangsp.tpar_contactos (id_empresa, nombre, fono, email, cargo)
+                    INSERT INTO tpar_contactos (id_empresa, nombre, fono, email, cargo)
                     VALUES ($1, $2, $3, $4, $5)
                     RETURNING *;
                 `, [Number(id_empresa), nombre, fono, email, cargo]);
@@ -228,7 +228,7 @@ const upsertContactoEmpresa = async (req, res) => {
         // Si viene id_proyecto, vincular
         if (id_proyecto && contact) {
             const pryRes = await pool.query(
-                `SELECT id_proyecto, json_field FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1`,
+                `SELECT id_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1`,
                 [Number(id_proyecto)]
             );
             if (pryRes.rowCount > 0) {
@@ -245,7 +245,7 @@ const upsertContactoEmpresa = async (req, res) => {
                 if (contact.email) jf.crm_v1.contacto_email = contact.email;
 
                 await pool.query(
-                    `UPDATE sch_leangsp.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`,
+                    `UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`,
                     [JSON.stringify(jf), Number(id_proyecto)]
                 );
             }
@@ -278,7 +278,7 @@ const getContactosByEmpresa = async (req, res) => {
 
         const { rows } = await pool.query(`
             SELECT id_contacto, id_empresa, nombre, fono, email, cargo, created_at
-            FROM sch_leangsp.tpar_contactos
+            FROM tpar_contactos
             WHERE id_empresa = $1
             ORDER BY nombre ASC;
         `, [Number(id_empresa)]);
@@ -286,7 +286,7 @@ const getContactosByEmpresa = async (req, res) => {
         // Si la tabla relacional aún no tiene contactos para esta empresa, verificar legacy en json_field
         if (rows.length === 0) {
             const empRes = await pool.query(
-                `SELECT json_field FROM sch_leangsp.tpar_empresas WHERE id_empresa = $1`,
+                `SELECT json_field FROM tpar_empresas WHERE id_empresa = $1`,
                 [Number(id_empresa)]
             );
             if (empRes.rowCount > 0) {
@@ -301,7 +301,7 @@ const getContactosByEmpresa = async (req, res) => {
                     for (const item of legacy) {
                         if (item.nombre && item.nombre.trim()) {
                             const insRes = await pool.query(`
-                                INSERT INTO sch_leangsp.tpar_contactos (id_empresa, nombre, fono, email, cargo)
+                                INSERT INTO tpar_contactos (id_empresa, nombre, fono, email, cargo)
                                 VALUES ($1, $2, $3, $4, $5)
                                 RETURNING *;
                             `, [Number(id_empresa), item.nombre.trim(), item.telefono || null, item.correo || null, item.cargo || 'Contacto Comercial']);

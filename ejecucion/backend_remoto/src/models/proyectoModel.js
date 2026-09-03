@@ -117,9 +117,9 @@ class ProyectoModel {
 
         const client = dbClient || this.pool;
 
-        // 1. Asegurar existencia de la tabla sch_leangsp.tpar_contactos
+        // 1. Asegurar existencia de la tabla tpar_contactos
         await client.query(`
-          CREATE TABLE IF NOT EXISTS sch_leangsp.tpar_contactos (
+          CREATE TABLE IF NOT EXISTS tpar_contactos (
             id_contacto SERIAL PRIMARY KEY,
             id_empresa INT,
             nombre VARCHAR(255) NOT NULL,
@@ -137,7 +137,7 @@ class ProyectoModel {
         // 2. Verificar si ya existe en tpar_contactos para ese cliente
         const checkRes = await client.query(`
           SELECT id_contacto, nombre, fono, email 
-          FROM sch_leangsp.tpar_contactos 
+          FROM tpar_contactos 
           WHERE id_empresa = $1 AND LOWER(TRIM(nombre)) = LOWER(TRIM($2))
           LIMIT 1
         `, [Number(idEmpresa), contactoNombre]);
@@ -148,7 +148,7 @@ class ProyectoModel {
           resolvedId = checkRes.rows[0].id_contacto;
           if ((fono && !checkRes.rows[0].fono) || (email && !checkRes.rows[0].email)) {
             await client.query(`
-              UPDATE sch_leangsp.tpar_contactos 
+              UPDATE tpar_contactos 
               SET fono = COALESCE($1, fono), email = COALESCE($2, email), updated_at = NOW() 
               WHERE id_contacto = $3
             `, [fono, email, resolvedId]);
@@ -156,7 +156,7 @@ class ProyectoModel {
         } else {
           // Si no existe, insertar nuevo contacto en tpar_contactos
           const insRes = await client.query(`
-            INSERT INTO sch_leangsp.tpar_contactos (id_empresa, nombre, fono, email)
+            INSERT INTO tpar_contactos (id_empresa, nombre, fono, email)
             VALUES ($1, $2, $3, $4)
             RETURNING id_contacto
           `, [Number(idEmpresa), contactoNombre, fono, email]);
@@ -168,7 +168,7 @@ class ProyectoModel {
 
         // 3. Sincronizar reactivamente en tpar_empresas.json_field.puntos_contacto para retrocompatibilidad
         try {
-          const empRes = await client.query(`SELECT json_field FROM sch_leangsp.tpar_empresas WHERE id_empresa = $1`, [Number(idEmpresa)]);
+          const empRes = await client.query(`SELECT json_field FROM tpar_empresas WHERE id_empresa = $1`, [Number(idEmpresa)]);
           if (empRes.rowCount > 0) {
             let empJson = empRes.rows[0].json_field;
             if (typeof empJson === 'string') {
@@ -190,7 +190,7 @@ class ProyectoModel {
                 correo: email || '',
                 cargo: 'Contacto Comercial'
               });
-              await client.query(`UPDATE sch_leangsp.tpar_empresas SET json_field = $1 WHERE id_empresa = $2`, [JSON.stringify(empJson), Number(idEmpresa)]);
+              await client.query(`UPDATE tpar_empresas SET json_field = $1 WHERE id_empresa = $2`, [JSON.stringify(empJson), Number(idEmpresa)]);
             }
           }
         } catch (empErr) {
@@ -437,9 +437,9 @@ class ProyectoModel {
         await client.query('UPDATE tpry_proyecto SET codi_proyecto = $1 WHERE id_proyecto = $2', [codi, id_proyecto]);
       }
       
-      await client.query('CREATE SEQUENCE IF NOT EXISTS sch_leangsp.seq_id_cotizacion START 1');
+      await client.query('CREATE SEQUENCE IF NOT EXISTS seq_id_cotizacion START 1');
       
-      const seqResult = await client.query("SELECT nextval('sch_leangsp.seq_id_cotizacion') AS next_id");
+      const seqResult = await client.query("SELECT nextval('seq_id_cotizacion') AS next_id");
       const nextId = seqResult.rows[0].next_id;
       
       const jsonField = p.json_field || {};
@@ -974,9 +974,9 @@ class ProyectoModel {
         await client.query('UPDATE tpry_proyecto SET codi_proyecto = $1 WHERE id_proyecto = $2', [codi, id_proyecto]);
       }
       
-      await client.query('CREATE SEQUENCE IF NOT EXISTS sch_leangsp.seq_id_ot START 1');
+      await client.query('CREATE SEQUENCE IF NOT EXISTS seq_id_ot START 1');
       
-      const seqResult = await client.query("SELECT nextval('sch_leangsp.seq_id_ot') AS next_id");
+      const seqResult = await client.query("SELECT nextval('seq_id_ot') AS next_id");
       const nextId = seqResult.rows[0].next_id;
       
       const jsonField = p.json_field || {};

@@ -38,7 +38,7 @@ module.exports =
   {
     "uri": "/leanglobal/procesosSurvey",
     "tipo": "normal",
-    "query": "select ts.id_survey, ar.name_area, te.name_template_srv , te.codi_template_srv , te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, ts.id_user, ts.estado_srv from sch_leangsp.tsrv_survey ts join sch_leangsp.tsrv_templates te on ts.id_template = te.id_template join sch_leangsp.tsrv_tipo_template tt on ts.id_tipo_srv = tt.id_tipo_srv join sch_leangsp.tpar_area ar on tt.id_area = ar.id_area join sch_leangsp.tpar_empresas em on ts.id_empresa_cliente = em.id_empresa left join sch_leangsp.tpry_proyecto py on ts.id_proyecto = py.id_proyecto order by ts.id_survey",
+    "query": "select ts.id_survey, ar.name_area, te.name_template_srv , te.codi_template_srv , te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, ts.id_user, ts.estado_srv from tsrv_survey ts join tsrv_templates te on ts.id_template = te.id_template join tsrv_tipo_template tt on ts.id_tipo_srv = tt.id_tipo_srv join tpar_area ar on tt.id_area = ar.id_area join tpar_empresas em on ts.id_empresa_cliente = em.id_empresa left join tpry_proyecto py on ts.id_proyecto = py.id_proyecto order by ts.id_survey",
     "where": true
   }
 
@@ -46,7 +46,7 @@ module.exports =
   {
     "uri": "/leanglobal/procesosSurveyDetail",
     "tipo": "normal",
-    "query": "select te.id_template, ts.id_survey, ar.name_area, ts.fecha_ejec_fin, tt.name_tipo_srv, tt.codi_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, to_char(ts.fecha_plan_fin, 'yyyy-mm-dd') fecha_plan_fin, to_char(ts.fecha_real_ini, 'yyyy-mm-dd') fecha_real_ini, to_char(ts.fecha_real_fin, 'yyyy-mm-dd') fecha_real_fin, ts.id_user, ts.estado_srv, ts.latitud, ts.longitud, ts.header_exec, ts.body_exec, ts.approval_exec from sch_leangsp.tsrv_survey ts join sch_leangsp.tsrv_templates te on ts.id_template = te.id_template left join sch_leangsp.tsrv_tipo_template tt on ts.id_tipo_srv = tt.id_tipo_srv left join sch_leangsp.tpar_area ar on tt.id_area = ar.id_area left join sch_leangsp.tpar_empresas em on ts.id_empresa_cliente = em.id_empresa left join sch_leangsp.tpry_proyecto py on ts.id_proyecto = py.id_proyecto",
+    "query": "select te.id_template, ts.id_survey, ar.name_area, ts.fecha_ejec_fin, tt.name_tipo_srv, tt.codi_tipo_srv, te.name_template_srv, te.codi_template_srv, te.desc_template_srv, py.nombre_proyecto, em.name_empresa name_empresa_cliente, to_char(ts.fecha_plan_ini, 'yyyy-mm-dd') fecha_plan_ini, to_char(ts.fecha_plan_fin, 'yyyy-mm-dd') fecha_plan_fin, to_char(ts.fecha_real_ini, 'yyyy-mm-dd') fecha_real_ini, to_char(ts.fecha_real_fin, 'yyyy-mm-dd') fecha_real_fin, ts.id_user, ts.estado_srv, ts.latitud, ts.longitud, ts.header_exec, ts.body_exec, ts.approval_exec from tsrv_survey ts join tsrv_templates te on ts.id_template = te.id_template left join tsrv_tipo_template tt on ts.id_tipo_srv = tt.id_tipo_srv left join tpar_area ar on tt.id_area = ar.id_area left join tpar_empresas em on ts.id_empresa_cliente = em.id_empresa left join tpry_proyecto py on ts.id_proyecto = py.id_proyecto",
     "where": true
   }
 
@@ -2102,7 +2102,7 @@ module.exports =
   {
     "uri": "/leanglobal/obtenerCargosUnicos",
     "tipo": "normal",
-    "query": "SELECT DISTINCT TRIM(json_data->>'cargo') AS cargo, id_empresa FROM sch_leangsp.tsec_users WHERE json_data->>'cargo' IS NOT NULL AND TRIM(json_data->>'cargo') != ''",
+    "query": "SELECT DISTINCT TRIM(json_data->>'cargo') AS cargo, id_empresa FROM tsec_users WHERE json_data->>'cargo' IS NOT NULL AND TRIM(json_data->>'cargo') != ''",
     "where": true
   }
 ]

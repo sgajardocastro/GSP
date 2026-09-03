@@ -886,13 +886,13 @@ class SignatureModel {
 
       // 1) Actualizar paso actual
       await client.query(
-        `UPDATE sch_leangsp.tflw_flow_steps SET id_doc_out = $1, id_fes = $2 WHERE id_flow_stp = $3`,
+        `UPDATE tflw_flow_steps SET id_doc_out = $1, id_fes = $2 WHERE id_flow_stp = $3`,
         [id_doc, id_fes, id_flow_stp]
       );
 
       // 2) Obtener id_flow y orden del paso actual
       const stepRes = await client.query(
-        `SELECT id_flow, flow_tmpl_step_orden FROM sch_leangsp.tflw_flow_steps WHERE id_flow_stp = $1`,
+        `SELECT id_flow, flow_tmpl_step_orden FROM tflw_flow_steps WHERE id_flow_stp = $1`,
         [id_flow_stp]
       );
       if (stepRes.rows.length > 0) {
@@ -901,7 +901,7 @@ class SignatureModel {
         
         // 3) Propagar el id_doc generado al id_doc_in del paso siguiente
         await client.query(
-          `UPDATE sch_leangsp.tflw_flow_steps 
+          `UPDATE tflw_flow_steps 
               SET id_doc_in = $1 
             WHERE id_flow = $2 
               AND flow_tmpl_step_orden = $3`,
@@ -912,7 +912,7 @@ class SignatureModel {
 
       // 4) Actualizar firma
       await client.query(
-        `UPDATE sch_leangsp.tfes_signatures SET hash_pdf = $1, id_doc = $2, tsa_token = $3 WHERE id_fes = $4`,
+        `UPDATE tfes_signatures SET hash_pdf = $1, id_doc = $2, tsa_token = $3 WHERE id_fes = $4`,
         [hash_pdf, id_doc, tsa_token, id_fes]
       );
 

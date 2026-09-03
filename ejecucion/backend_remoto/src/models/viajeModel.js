@@ -23,7 +23,7 @@ const viajeModel = {
       if (!isNaN(eqNum)) {
         idEq = eqNum;
       } else {
-        const eqRes = await db.query('SELECT id_equipo FROM sch_leangsp.tequ_equipo WHERE patente ILIKE $1 LIMIT 1', [part2]);
+        const eqRes = await db.query('SELECT id_equipo FROM tequ_equipo WHERE patente ILIKE $1 LIMIT 1', [part2]);
         if (eqRes.rows.length > 0) idEq = eqRes.rows[0].id_equipo;
       }
 
@@ -34,7 +34,7 @@ const viajeModel = {
       } else {
         const cleanCodi = part1.toLowerCase().replace(/[^a-z0-9]/g, '');
         const pryRes = await db.query(`
-          SELECT id_proyecto FROM sch_leangsp.tpry_proyecto 
+          SELECT id_proyecto FROM tpry_proyecto 
           WHERE LOWER(REPLACE(codi_proyecto, '-', '')) LIKE '%' || $1 || '%'
              OR LOWER(REPLACE(nombre_proyecto, '-', '')) LIKE '%' || $1 || '%'
           ORDER BY id_proyecto DESC LIMIT 1;
@@ -86,10 +86,10 @@ const viajeModel = {
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
         COALESCE(e.marca, 'GSP') AS marca
-      FROM sch_leangsp.tequ_log_desplazamiento v
-      JOIN sch_leangsp.tpry_proyecto p ON v.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
-      LEFT JOIN sch_leangsp.tsec_users u ON v.id_user_chofer = u.id_user
+      FROM tequ_log_desplazamiento v
+      JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
+      LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
+      LEFT JOIN tsec_users u ON v.id_user_chofer = u.id_user
       WHERE v.token_viaje = $1;
     `;
     const res = await db.query(sql, [token]);
@@ -111,7 +111,7 @@ const viajeModel = {
           foto_tablero_path,
           observacion,
           fecha_registro
-        FROM sch_leangsp.tedp_costos_servicio
+        FROM tedp_costos_servicio
         WHERE id_log_desplazamiento = $1
         ORDER BY id_costo ASC;
       `;
@@ -135,8 +135,8 @@ const viajeModel = {
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
           COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
           COALESCE(e.marca, 'GSP') AS marca
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tequ_equipo e ON e.id_equipo = $2
+        FROM tpry_proyecto p
+        LEFT JOIN tequ_equipo e ON e.id_equipo = $2
         WHERE p.id_proyecto = $1;
       `;
       const infoRes = await db.query(infoSql, [id_proyecto, id_equipo || 0]);
@@ -188,13 +188,13 @@ const viajeModel = {
     if (!token_viaje) throw new Error('token_viaje requerido');
 
     // 2.1 Verificar si ya existe fila para este token
-    const checkSql = `SELECT id_log_desplazamiento FROM sch_leangsp.tequ_log_desplazamiento WHERE token_viaje = $1;`;
+    const checkSql = `SELECT id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1;`;
     const checkRes = await db.query(checkSql, [token_viaje]);
 
     if (checkRes.rows.length > 0) {
       // Ya existía -> Actualizar
       const updateSql = `
-        UPDATE sch_leangsp.tequ_log_desplazamiento
+        UPDATE tequ_log_desplazamiento
         SET 
           km_inicial = $1,
           horometro_inicial = $2,
@@ -221,7 +221,7 @@ const viajeModel = {
       if (viajeActualizado.id_proyecto) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tpry_proyecto 
+            `UPDATE tpry_proyecto 
              SET id_proyecto_estado = 5,
                  json_field = jsonb_set(
                    jsonb_set(
@@ -256,12 +256,12 @@ const viajeModel = {
       }
 
       if (idEq) {
-        const eqRes = await db.query('SELECT patente FROM sch_leangsp.tequ_equipo WHERE id_equipo = $1', [idEq]);
+        const eqRes = await db.query('SELECT patente FROM tequ_equipo WHERE id_equipo = $1', [idEq]);
         if (eqRes.rows.length > 0) pat = eqRes.rows[0].patente;
       }
 
       const insertSql = `
-        INSERT INTO sch_leangsp.tequ_log_desplazamiento (
+        INSERT INTO tequ_log_desplazamiento (
           id_proyecto,
           id_equipo,
           id_user_chofer,
@@ -300,7 +300,7 @@ const viajeModel = {
       if (viajeNuevo.id_proyecto) {
         try {
           await db.query(
-            `UPDATE sch_leangsp.tpry_proyecto 
+            `UPDATE tpry_proyecto 
              SET id_proyecto_estado = 5,
                  json_field = jsonb_set(
                    jsonb_set(
@@ -334,7 +334,7 @@ const viajeModel = {
       ts: new Date().toISOString()
     };
     const sql = `
-      UPDATE sch_leangsp.tequ_log_desplazamiento
+      UPDATE tequ_log_desplazamiento
       SET pings_ruta = COALESCE(pings_ruta, '[]'::jsonb) || $1::jsonb
       WHERE token_viaje = $2
       RETURNING *;
@@ -347,7 +347,7 @@ const viajeModel = {
   // 4. Registrar Llegada a Faena (Paso 3)
   async registrarLlegada({ token_viaje, km_final, horometro_final, foto_llegada, pin_hash, latitud, longitud, obs_termino }) {
     const sql = `
-      UPDATE sch_leangsp.tequ_log_desplazamiento
+      UPDATE tequ_log_desplazamiento
       SET 
         km_final = $1,
         horometro_final = $2,
@@ -377,12 +377,12 @@ const viajeModel = {
 
   // 5. Registrar Carga de Combustible (Copec)
   async registrarCombustible({ token_viaje, tipo_estanque, litros, monto, foto_voucher, foto_tablero, id_autorizacion_copec, odometro, horometro, observacion }) {
-    const viajeRes = await db.query(`SELECT id_proyecto, id_log_desplazamiento FROM sch_leangsp.tequ_log_desplazamiento WHERE token_viaje = $1`, [token_viaje]);
+    const viajeRes = await db.query(`SELECT id_proyecto, id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1`, [token_viaje]);
     if (viajeRes.rows.length === 0) throw new Error('Viaje no encontrado');
     const { id_proyecto, id_log_desplazamiento } = viajeRes.rows[0];
 
     const sql = `
-      INSERT INTO sch_leangsp.tedp_costos_servicio (
+      INSERT INTO tedp_costos_servicio (
         id_proyecto,
         id_log_desplazamiento,
         categoria_costo,
@@ -420,7 +420,7 @@ const viajeModel = {
   async crearOObtenerViaje({ id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto }) {
     const token = `vj_${id_proyecto}_${id_equipo}_${crypto.randomBytes(4).toString('hex')}`;
     const insertSql = `
-      INSERT INTO sch_leangsp.tequ_log_desplazamiento (
+      INSERT INTO tequ_log_desplazamiento (
         id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto,
         estado_trayecto, token_viaje, pings_ruta
       ) VALUES ($1, $2, $3, $4, $5, 'ASIGNADO', $6, '[]'::jsonb)
@@ -449,12 +449,12 @@ const viajeModel = {
         e.marca,
         COALESCE(comb.total_litros, 0) AS total_litros,
         COALESCE(comb.total_gasto, 0) AS total_gasto
-      FROM sch_leangsp.tequ_log_desplazamiento v
-      LEFT JOIN sch_leangsp.tsec_users u ON v.id_user_chofer = u.id_user
-      LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
+      FROM tequ_log_desplazamiento v
+      LEFT JOIN tsec_users u ON v.id_user_chofer = u.id_user
+      LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
       LEFT JOIN (
         SELECT id_log_desplazamiento, SUM(litros_combustible) AS total_litros, SUM(monto_costo) AS total_gasto
-        FROM sch_leangsp.tedp_costos_servicio
+        FROM tedp_costos_servicio
         WHERE categoria_costo = 'COMBUSTIBLE'
         GROUP BY id_log_desplazamiento
       ) comb ON v.id_log_desplazamiento = comb.id_log_desplazamiento
@@ -490,9 +490,9 @@ const viajeModel = {
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
         COALESCE(e.marca, 'GSP') AS marca
-      FROM sch_leangsp.tequ_log_desplazamiento v
-      JOIN sch_leangsp.tpry_proyecto p ON v.id_proyecto = p.id_proyecto
-      LEFT JOIN sch_leangsp.tequ_equipo e ON v.id_equipo = e.id_equipo
+      FROM tequ_log_desplazamiento v
+      JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
+      LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
       WHERE v.id_user_chofer = $1
       ORDER BY v.id_log_desplazamiento DESC
       LIMIT 1;
