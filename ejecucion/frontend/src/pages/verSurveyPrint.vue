@@ -1,5 +1,6 @@
 <template>
   <div class="print-page">
+    <div id="pdf-ready" v-if="dataLoaded" style="display:none;"></div>
     <!-- ✅ CABECERA FIJA ARRIBA -->
     <div class="fixed-header">
       <div class="logo">
@@ -4623,6 +4624,7 @@ const superiorUser = ref(null)
 const usarTablaFirmas = ref(true)
 const flowStepsActuales = ref([])
 const equiposProyectosMiembrosFES = ref([])
+const dataLoaded = ref(false)
 
 // Inicial
 idSurvey.value = route.query.idInspeccion || route.query.idSurvey || route.query.id_survey || ''
@@ -4716,6 +4718,11 @@ watch(() => route.query.idInspeccion || route.query.idSurvey || route.query.id_s
 })
 
 onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramId = urlParams.get('idInspeccion') || urlParams.get('idSurvey') || urlParams.get('id_survey') || route.query.idInspeccion || route.query.idSurvey || route.query.id_survey || '';
+  if (paramId) {
+    idSurvey.value = String(paramId);
+  }
   await getSurvey();
   console.log("SURVEY DETAIL JSON:", JSON.stringify(surveyDetailStore.surveyDetail, null, 2));
   await nextTick();
@@ -4738,7 +4745,8 @@ onMounted(async () => {
   }
 
   await renderAllCharts(segmentos); // ← pinta todos los gráficos
-  // opcional: window.print();
+  await nextTick();
+  dataLoaded.value = true;
 });
 
 function formatCL(isoOrDate) {
@@ -6302,8 +6310,7 @@ async function getSurvey() {
       }
     }
 
-    const apiBase = apiAxios.defaults.baseURL || 'https://servidor.leanglobal.cl/lean-services-transmac-dev/api';
-    const response = await axios.get(`${apiBase}/servicio/leanglobal/procesosSurveyDetail?id_survey=${idSurvey.value}`);
+    const response = await apiAxios.get(`/servicio/leanglobal/procesosSurveyDetail?id_survey=${idSurvey.value}`, { params: { _bypass_empresa: true } });
     console.log("=================SURVEY Detail ========", response.data);
     surveys.value = response.data;
     surveyDetailStore.surveyDetail = response.data;
