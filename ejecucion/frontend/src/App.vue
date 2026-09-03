@@ -75,9 +75,9 @@ import { navStore } from './stores/navStore'
 
 const route = useRoute()
 
-const isPrintLayout = computed(() => route.meta.layout === 'print')
-const isAuthLayout = computed(() => route.meta.layout === 'auth')
-const isPublicLayout = computed(() => route.meta.layout === 'public')
+const isPrintLayout = computed(() => route.meta.layout === 'print' || route.name === 'versurveyprint' || route.path.includes('versurveyprint'))
+const isAuthLayout = computed(() => route.meta.layout === 'auth' && !isPrintLayout.value)
+const isPublicLayout = computed(() => route.meta.layout === 'public' && !isPrintLayout.value)
 
 const companyThemes = {
   9: {

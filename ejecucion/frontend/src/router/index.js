@@ -29,7 +29,7 @@ const router = createRouter({
       path: '/versurveyprint',
       name: 'versurveyprint',
       component: verSurveyPrint,
-      meta: { layout: 'auth' }
+      meta: { layout: 'print', public: true }
     },
     {
       path: '/dashboard',
@@ -227,7 +227,7 @@ router.beforeEach((to, from, next) => {
     return next()
   }
 
-  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.meta?.layout !== 'public') {
+  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.meta?.layout !== 'public' && to.meta?.layout !== 'print') {
     return next({ name: 'login' })
   }
 

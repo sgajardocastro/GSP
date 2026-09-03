@@ -556,34 +556,35 @@
                     </div>
                   </div>
 
-                  <!-- BOTONES CONDICIONALES SEGÚN ESTADO REAL -->
+                  <!-- BOTONES ACCIÓN VISITA -->
                   <div class="flex items-center gap-2">
-                    <!-- Si está en ejecución, en proceso, verificación o aprobado: Ver Web -->
+                    <!-- Siempre permitir Ver Web en tiempo real -->
                     <a 
-                      v-if="v.estado_srv === 'En Ejecución' || v.estado_srv === 'En Proceso' || v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
                       :href="getSurveyReportUrl(v.id_survey)" 
                       target="_blank" 
-                      class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] rounded transition-colors no-underline"
+                      class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] rounded transition-colors no-underline flex items-center gap-1"
+                      title="Ver levantamiento en tiempo real en la Web"
                     >
                       🌐 Ver Web
                     </a>
 
-                    <!-- Si está en verificación o aprobado: PDF Informe -->
+                    <!-- PDF Informe -->
                     <a 
-                      v-if="v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
+                      v-if="v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO' || v.id_doc"
                       :href="getArchivoUrl(v.id_doc || v.id_survey)" 
                       target="_blank" 
-                      class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px] rounded transition-colors no-underline"
+                      class="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px] rounded transition-colors no-underline flex items-center gap-1"
+                      title="Descargar o visualizar informe PDF"
                     >
                       📄 PDF Informe
                     </a>
 
-                    <!-- Si está PLANIFICADO o Creado: Reasignar Técnico -->
+                    <!-- Reasignar Técnico (disponible si no está aprobado) -->
                     <button 
-                      v-if="v.estado_srv === 'PLANIFICADO' || v.estado_srv === 'Creado' || v.estado_srv === 'Asignada' || !v.estado_srv"
+                      v-if="v.estado_srv !== 'APROBADO'"
                       type="button" 
                       @click="abrirModalReasignacion(v)" 
-                      class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px] rounded transition-colors cursor-pointer"
+                      class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 font-bold text-[10px] rounded transition-colors cursor-pointer flex items-center gap-1"
                     >
                       🔄 Reasignar
                     </button>
