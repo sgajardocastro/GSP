@@ -136,8 +136,41 @@ Valida la información mercantil de preventa antes de permitir la emisión de co
 ### 🏗️ 3.2. Panel Derecho: Pestaña 1 (Site Visit & Viabilidad)
 - **Ventana Operativa Obligatoria:** `fecha_inicio_plan` + `hora_inicio_plan` y `fecha_fin_plan` + `hora_fin_plan`. Bloqueante para emitir cotización.
 - **Datos de Faena:** Nombre de Obra, Dirección y Comuna/Ciudad.
-- **Ingeniería de Maniobra:** Detalle de Servicio, Tipo de Carga, Peso (Ton), Volumen, Radios y Alturas de Trabajo.
-- **Importación de Inspección en Terreno:** Vinculación con `tsrv_survey` (Template 80).
+- **Ingeniería de Maniobra y Dimensiones Explícitas (Feedback Natalia Giselini):**
+  - Desglose de cubicación en **3 campos numéricos independientes**: `Largo (m) × Ancho (m) × Alto (m)`.
+  - Cálculo reactivo automático en vivo: \( \text{Volumen} = \text{Largo} \times \text{Ancho} \times \text{Alto} \) en \( \text{m}^3 \).
+  - Detalle de Servicio, Tipo de Carga, Peso (Ton), Radios y Alturas de Trabajo.
+- **Precarga de Contacto en Faena:** Al marcar `[x] Requiere Visita a Terreno`, el sistema precarga por defecto el nombre, teléfono y correo del contacto comercial principal (`contacto_nombre`, `contacto_telefono`, `contacto_email`), permitiendo editarlo únicamente si el receptor en obra es diferente.
+- **Auto-Guardado (Upsert) de Contactos:** Al ingresar manualmente un nuevo contacto sin ID en la libreta, se registra automáticamente en `tpar_contactos` asociado a la empresa cliente para su reutilización futura.
+- **Gestión de Inspecciones Previas en Preventa:**
+  - Despliegue de tarjetas de visita asociadas (`visitasDelProyecto`) respetando estrictamente el ciclo de vida oficial (ver Sección 3.7).
+  - Eliminación definitiva de botones legacy de importación arbitraria (`[ Cargar ]`).
+
+---
+
+### 📍 3.7. Gestión Canónica de Visitas Técnicas a Terreno (Pestaña 1 y Pestaña 2)
+La gestión de visitas técnicas a terreno (Template 80: `Visita Terreno`) opera de forma determinística bajo los estándares del motor de flujos (`tsrv_survey` / `tflw_*`):
+
+#### 1. Ciclo de Vida y Visibilidad de Acciones por Estado Real:
+| Estado Real BD (`estado_srv`) | Badge Visual | Botones Habilitados | Acciones Prohibidas / Ocultas |
+| :--- | :---: | :--- | :--- |
+| **`PLANIFICADO` / `Creado` / `Asignada`** | 🟡 `PLANIFICADO` | `[ 🔄 Reasignar ]` | ❌ Cero `Ver Web` (no iniciada)<br>❌ Cero `PDF Informe` (no existe) |
+| **`En Proceso` / `En Ejecución`** | 🔵 `EN PROCESO` | `[ 🌐 Ver Web ]` | ❌ Cero `Reasignar` (en faena)<br>❌ Cero `PDF Informe` (no concluida) |
+| **`VERIFICACION` / `APROBADO`** | 🟢 `APROBADO` / `VERIFICACIÓN` | `[ 🌐 Ver Web ]`<br>`[ 📄 PDF Informe ]` | ❌ **Prohibido Reasignar** (inspección concluida y formalizada) |
+
+#### 2. Reglas de Invarianza y Persistencia:
+1. **Invariante de Existencia:** Si existen registros en `tsrv_survey` asociados al proyecto (`visitasDelProyecto.length > 0`), el sistema fuerza reactivamente `siteVisit.visita_terreno = true` e impide de forma absoluta la visualización del banner *"Comercial no requirió visita"*.
+2. **Persistencia Transaccional al Asignar:** Al confirmar la asignación de inspector desde la web (`asignarInspectorWeb`), además de emitir `POST /api/survey` con Template 80, se persiste inmediatamente `visita_terreno = true` en `tpry_proyecto.json_field.crm_v1` (`PUT /api/proyectos/:id`) garantizando la permanencia del estado tras cerrar sesión o reingresar.
+3. **Reasignación Oficial:** Toda reasignación de técnico inspector se ejecuta mediante el endpoint canónico del core `PUT /survey/UpdPlan/:id` con `{ id_user: nuevo_id }` y registro de traza en `header_exec`.
+
+---
+
+### 🔍 3.8. Pestaña 2: Validación & Diff (Auditoría de Antecedentes y Limpieza de Traza)
+Permite al Coordinador de Operaciones auditar la cotización enviada por Comercial frente a las condiciones reales de ejecución:
+1. **Limpieza de Traza Visual (Cero Etiquetas Invasivas):**
+   - **Líneas Nuevas:** Si la línea fue agregada posteriormente (`!isOriginalLine`), se marca únicamente con un badge sobrio `[ + Nueva Línea ]`, eliminando de raíz cajas tachadas innecesarias.
+   - **Campos Modificados:** Se destacan sutilmente con borde de advertencia (`border-amber-500/50`) y tooltip contextual nativo `title="Valor Preventa: ..."` al pasar el cursor, preservando la legibilidad limpia de la celda.
+2. **Gestión de Visitas Técnicas Obligatorias:** Si Comercial no solicitó visita pero la criticidad de la maniobra lo amerita, Operaciones dispone del botón directo `[ 📍 Exigir Visita Técnica Obligatoria ]`.
 
 ---
 
@@ -356,6 +389,39 @@ Feature: Gestor de Oportunidades y Pipeline Operacional OT (Spec 16)
     Given una línea con un equipo asignado y semáforo "🟡 VNC"
     When el usuario hace clic sobre la insignia
     Then se abre el modal de Acreditaciones detallando las vigencias de revisión técnica, seguro y test de carga
+
+  Scenario: Dimensionamiento de Carga en 3 Columnas y Cálculo Reactivo
+    Given que el usuario está en la Pestaña "1. Preventa Comercial"
+    When el usuario ingresa Largo "12.5", Ancho "2.4" y Alto "3.1"
+    Then el sistema calcula automáticamente el volumen como "93.00 m³"
+    And persiste la estructura en `json_field.crm_v1.dimensiones` al guardar
+
+  Scenario: Precarga Automática de Contacto al Activar Visita a Terreno
+    Given que la cotización tiene definidos "contacto_nombre", "contacto_telefono" y "contacto_email"
+    When el usuario marca el checkbox "Requiere Visita a Terreno"
+    Then los campos de contacto en obra se inicializan automáticamente con dichos valores
+    And el usuario puede editarlos libremente si el receptor en obra es diferente
+
+  Scenario: Auto-guardado (Upsert) de Nuevos Contactos
+    Given que el usuario ingresa manualmente un contacto no existente en el dropdown
+    When se guarda o actualiza la cotización
+    Then el backend ejecuta un upsert en `tpar_contactos` asociándolo a la empresa cliente
+    And el nuevo contacto queda disponible en el selector para futuras cotizaciones
+
+  Scenario: Limpieza Visual de Traza Diff en Validación Operacional
+    Given que el proyecto se encuentra en Estado 3 (VALIDACION_DIFF)
+    When el usuario visualiza la tabla del estructurador
+    Then las líneas agregadas muestran únicamente el badge "[ + Nueva Línea ]" sin etiquetas de texto tachado
+    And los campos modificados presentan un borde ámbar con tooltip contextual nativo sin obstruir los inputs
+
+  Scenario: Ciclo de Vida y Restricción Estricta de Botones en Visitas a Terreno
+    Given una visita técnica en estado "APROBADO" o "VERIFICACION"
+    When el usuario visualiza la tarjeta de la visita en Pestaña 1 o Pestaña 2
+    Then se muestran los botones "[ 🌐 Ver Web ]" y "[ 📄 PDF Informe ]"
+    And el botón "[ 🔄 Reasignar ]" se oculta completamente
+    And el botón legacy "[ Cargar ]" no se renderiza en ninguna vista
+    When la visita se encuentra en estado "PLANIFICADO" o "Creado"
+    Then se muestra únicamente el botón "[ 🔄 Reasignar ]" y se ocultan Web y PDF
 
 ---
 

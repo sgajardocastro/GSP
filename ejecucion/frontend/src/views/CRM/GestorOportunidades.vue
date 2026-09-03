@@ -234,292 +234,6 @@
           </div>
         </div>
 
-        <!-- SPEC 41: TARJETA DESTACADA [ 📍 GESTIÓN DE VISITAS TÉCNICAS A TERRENO ] -->
-        <div class="bg-gradient-to-r from-[#070c18] via-[#0a1124] to-[#070c18] border border-amber-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
-          <!-- Card Header -->
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg font-bold">
-                📍
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-black text-white uppercase tracking-wider">
-                    Gestión de Visitas Técnicas a Terreno
-                  </h3>
-                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                    SPEC 41
-                  </span>
-                </div>
-                <p class="text-[11px] text-slate-400">
-                  Supervisión, evaluación de maniobras e inspección técnica previa en obra.
-                </p>
-              </div>
-            </div>
-
-            <!-- Status Badges in Header -->
-            <div class="flex items-center gap-2">
-              <!-- Modo 4 Badge -->
-              <span v-if="!siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="text-[10px] bg-slate-800 text-slate-400 border border-white/10 px-2.5 py-1 rounded-lg font-bold uppercase">
-                ⚪ No Solicitada en Preventa
-              </span>
-              <!-- Modo 1 Badge -->
-              <span v-else-if="siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded-lg font-black uppercase flex items-center gap-1.5 animate-pulse">
-                ⚠️ Solicitud Pendiente de Asignación
-              </span>
-              <!-- Modo 2 Badge -->
-              <span v-else-if="isUltimaVisitaAsignada" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg font-black uppercase flex items-center gap-1.5">
-                🟡 Inspector Asignado: {{ getNombreTecnico(ultimaVisitaActiva?.id_user) }}
-              </span>
-              <!-- Modo 3 Badge -->
-              <span v-else-if="visitasDelProyecto.length > 0" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg font-bold uppercase flex items-center gap-1.5">
-                ✅ {{ visitasDelProyecto.length }} Visita(s) Registrada(s)
-              </span>
-            </div>
-          </div>
-
-          <!-- MODO 4: NO SOLICITADA EN PREVENTA -->
-          <div v-if="!siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/30 border border-white/5 p-4 rounded-xl">
-            <div class="space-y-1">
-              <div class="text-xs font-bold text-slate-300 flex items-center gap-2">
-                <span class="text-slate-500">ℹ️</span>
-                <span>El área comercial no solicitó inspección en terreno para esta cotización.</span>
-              </div>
-              <p class="text-[11px] text-slate-400">
-                Si las condiciones del izaje (radio, altura, accesos o peso) son críticas, Operaciones puede exigir la visita técnica obligatoria con un solo clic.
-              </p>
-            </div>
-            <button 
-              type="button"
-              @click="activarVisitaDesdeOperaciones" 
-              class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              <span>📍 Exigir Visita Técnica Obligatoria (Operaciones)</span>
-            </button>
-          </div>
-
-          <!-- MODO 1: SOLICITADA POR COMERCIAL (PENDIENTE) O FORMULARIO NUEVA VISITA ADICIONAL -->
-          <div v-else-if="(siteVisit.visita_terreno && visitasDelProyecto.length === 0) || mostrarFormNuevaVisita" class="space-y-4">
-            <div class="bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl flex items-center justify-between">
-              <span class="text-xs font-bold text-amber-400 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                {{ mostrarFormNuevaVisita ? 'Programación de Visita Adicional (Replanteo Técnico)' : 'Asignación de Inspector para Visita Solicitada por Preventa' }}
-              </span>
-              <button v-if="mostrarFormNuevaVisita" @click="mostrarFormNuevaVisita = false" class="text-xs text-slate-400 hover:text-white">
-                ✕ Cancelar Replanteo
-              </button>
-            </div>
-
-            <!-- Datos de Obra y Contacto Precargados -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/40 border border-white/5 p-3.5 rounded-xl text-xs">
-              <div>
-                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Obra & Ubicación:</span>
-                <span class="font-bold text-white">{{ siteVisit.obra_nombre || opportunity.nombre_proyecto || 'Obra no especificada' }}</span>
-                <span class="text-slate-400 block text-[11px]">{{ siteVisit.obra_direccion || 'Sin dirección' }} ({{ siteVisit.obra_ciudad || 'Sin ciudad' }})</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Contacto en Terreno:</span>
-                <span class="font-bold text-amber-400">{{ siteVisit.contacto_terreno_nombre || siteVisit.contacto_visita || opportunity.contacto_nombre || 'No informado' }}</span>
-                <span class="text-slate-300 block text-[11px]">Tel: {{ siteVisit.contacto_terreno_telefono || siteVisit.telefono_contacto_visita || opportunity.contacto_telefono || 'S/N' }}</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Correo Contacto:</span>
-                <span class="text-slate-300 font-mono text-[11px] truncate block" :title="siteVisit.contacto_terreno_email || siteVisit.correo_contacto_visita || opportunity.contacto_correo">
-                  {{ siteVisit.contacto_terreno_email || siteVisit.correo_contacto_visita || opportunity.contacto_correo || 'No informado' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Formulario de Asignación -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-white/[0.02] border border-white/5 p-3.5 rounded-xl">
-              <div class="sm:col-span-5">
-                <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Inspector / Especialista Técnico <span class="text-amber-400">*</span>:
-                </label>
-                <select v-model="panelVisitaForm.id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-white outline-none">
-                  <option value="">-- Seleccionar Técnico (tsec_users) --</option>
-                  <option v-for="u in tecnicosInspectores" :key="'tec-spec41-'+u.id_user" :value="u.id_user">
-                    {{ u.nombre_user || u.name_user || u.username }} ({{ u.cargo || u.role_name || 'Técnico / Operador' }})
-                  </option>
-                </select>
-              </div>
-
-              <div class="sm:col-span-4">
-                <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Fecha y Hora Programada <span class="text-amber-400">*</span>:
-                </label>
-                <input 
-                  type="datetime-local" 
-                  v-model="panelVisitaForm.fecha_programada" 
-                  class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-white outline-none font-mono"
-                />
-              </div>
-
-              <div class="sm:col-span-3 flex gap-2">
-                <button 
-                  type="button" 
-                  :disabled="!panelVisitaForm.id_tecnico || !panelVisitaForm.fecha_programada || ejecutandoAccionVisita"
-                  @click="asignarInspectorWeb" 
-                  class="flex-1 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                  <span>{{ ejecutandoAccionVisita ? 'Asignando...' : '👷 Asignar Inspector desde la Web' }}</span>
-                </button>
-                <button 
-                  v-if="mostrarFormNuevaVisita"
-                  type="button"
-                  @click="mostrarFormNuevaVisita = false"
-                  class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg cursor-pointer"
-                  title="Cancelar"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- MODO 2: ASIGNADA (GESTIÓN DE IMPREVISTOS) -->
-          <div v-if="isUltimaVisitaAsignada && !mostrarFormNuevaVisita" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></div>
-                <div>
-                  <div class="text-xs font-black text-amber-300 uppercase tracking-wide flex flex-wrap items-center gap-2">
-                    <span>Inspector Asignado:</span>
-                    <span class="text-white font-bold bg-black/40 px-2 py-0.5 rounded border border-white/10 font-mono">{{ getNombreTecnico(ultimaVisitaActiva?.id_user) }}</span>
-                    <span class="text-slate-400 text-[11px] font-normal">| Programada: {{ ultimaVisitaActiva?.fecha_plan_ini ? new Date(ultimaVisitaActiva.fecha_plan_ini).toLocaleString() : 'S/F' }}</span>
-                  </div>
-                  <span class="text-[10px] text-slate-400">Estado de la Visita: <strong class="text-amber-400 font-mono uppercase">{{ ultimaVisitaActiva?.estado_srv || 'Asignada' }}</strong></span>
-                </div>
-              </div>
-
-              <button 
-                type="button" 
-                @click="abrirModalReasignacion(ultimaVisitaActiva)" 
-                class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg uppercase tracking-wider transition-all flex items-center gap-1.5 shadow cursor-pointer"
-              >
-                <span>🔄 Cambiar / Reasignar Técnico</span>
-              </button>
-            </div>
-
-            <!-- Drawer / Formulario de Reasignación si está abierto -->
-            <div v-if="mostrarModalReasignar" class="bg-black/70 border border-amber-500/40 p-4 rounded-xl mt-3 space-y-3">
-              <div class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Gestión de Imprevistos: Reasignar Técnico de Visita #{{ panelReasignarForm.id_survey }}</span>
-                <button @click="mostrarModalReasignar = false" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[10px] text-slate-300 font-bold mb-1">Nuevo Técnico Responsable *:</label>
-                  <select v-model="panelReasignarForm.nuevo_id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none">
-                    <option value="">-- Seleccionar Nuevo Inspector --</option>
-                    <option v-for="u in tecnicosInspectores" :key="'reasig-'+u.id_user" :value="u.id_user">
-                      {{ u.nombre_user || u.name_user || u.username }} ({{ u.cargo || 'Técnico' }})
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-300 font-bold mb-1">Motivo del Cambio / Imprevisto *:</label>
-                  <input 
-                    type="text" 
-                    v-model="panelReasignarForm.motivo_reasignacion" 
-                    placeholder="Ej: Licencia médica, falla de vehículo, reasignación de faena..." 
-                    class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none"
-                  />
-                </div>
-              </div>
-              <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
-                <button @click="mostrarModalReasignar = false" type="button" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded cursor-pointer">Cancelar</button>
-                <button 
-                  type="button" 
-                  :disabled="!panelReasignarForm.nuevo_id_tecnico || !panelReasignarForm.motivo_reasignacion || ejecutandoAccionVisita"
-                  @click="confirmarReasignacionTecnico" 
-                  class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded uppercase tracking-wider disabled:opacity-50 cursor-pointer"
-                >
-                  {{ ejecutandoAccionVisita ? 'Guardando...' : 'Confirmar Reasignación' }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- MODO 3: MULTI-VISITA (HISTORIAL 1:N) -->
-          <div v-if="visitasDelProyecto.length > 0" class="space-y-3 pt-1">
-            <div class="flex items-center justify-between border-t border-white/5 pt-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-white uppercase tracking-wider">Historial de Visitas en Terreno</span>
-                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-white/10">{{ visitasDelProyecto.length }} registrada(s)</span>
-              </div>
-              
-              <button 
-                v-if="!mostrarFormNuevaVisita"
-                type="button" 
-                @click="iniciarVisitaAdicional" 
-                class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-lg uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>+ Programar Visita Adicional (Replanteo)</span>
-              </button>
-            </div>
-
-            <!-- Timeline de Visitas -->
-            <div class="space-y-2">
-              <div 
-                v-for="(v, vIdx) in visitasDelProyecto" 
-                :key="'spec41-v-'+v.id_survey"
-                class="bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs transition-all"
-              >
-                <div class="flex items-center gap-3">
-                  <div class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-mono font-bold text-amber-400 text-[11px]">
-                    #{{ v.id_survey }}
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-bold text-white">{{ v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || siteVisit.obra_nombre || 'Visita Técnica' }}</span>
-                      <span 
-                        class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase"
-                        :class="v.estado_srv === 'Realizada' || v.estado_srv === 'Completado' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
-                      >
-                        {{ v.estado_srv || 'Asignada' }}
-                      </span>
-                    </div>
-                    <div class="text-[11px] text-slate-400 mt-0.5 flex gap-3">
-                      <span>Técnico: <strong class="text-slate-200">{{ getNombreTecnico(v.id_user) }}</strong></span>
-                      <span>Fecha: <strong class="text-slate-300 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Links e Informe PDF -->
-                <div class="flex items-center gap-2">
-                  <a 
-                    :href="getSurveyReportUrl(v.id_survey)" 
-                    target="_blank" 
-                    class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] rounded-lg transition-colors no-underline flex items-center gap-1"
-                  >
-                    <span>🌐 Ver Web</span>
-                  </a>
-                  <a 
-                    :href="getArchivoUrl(v.id_doc || v.id_survey)" 
-                    target="_blank" 
-                    class="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px] rounded-lg transition-colors no-underline flex items-center gap-1"
-                  >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <span>PDF Informe</span>
-                  </a>
-                  <button 
-                    type="button" 
-                    @click="() => { selectedSurveyId = v.id_survey; cargarVisitaDesdeBD(); }" 
-                    class="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
-                    title="Sincronizar datos de la visita con el formulario"
-                  >
-                    📥 Cargar Datos
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Secciones A + B Unificadas en Panel Continuo -->
         <div v-if="isRequerimientoAprobado" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center text-xs text-amber-300 font-bold mb-4">
           <span class="flex items-center gap-2">
@@ -616,128 +330,292 @@
           </fieldset>
 
           <!-- Columna Derecha: Pestaña B (Estructurador de Servicios IDÉNTICO A PREVENTA) -->
-          <fieldset :disabled="isRequerimientoAprobado" class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4 flex flex-col">
-            <div class="flex justify-between items-center border-b border-white/5 pb-2">
-              <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                🏗️ Pestaña B: Estructurador de Servicios (Idéntico a Preventa)
-              </span>
-              <button @click="agregarLinea" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
-                + Agregar Línea
-              </button>
-            </div>
+          <div class="space-y-6">
+            <fieldset :disabled="isRequerimientoAprobado" class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
+              <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">
+                  🏗️ Pestaña B: Estructurador de Servicios (Idéntico a Preventa)
+                </span>
+                <button @click="agregarLinea" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
+                  + Agregar Línea
+                </button>
+              </div>
 
-            <div class="flex-1 border border-white/5 rounded-lg overflow-hidden bg-black/20 overflow-y-auto scrollbar-hide min-h-[300px]">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                    <th class="p-2.5">Categoría</th>
-                    <th class="p-2.5 w-32">Subcategoría</th>
-                    <th class="p-2.5">Descripción / Equipo</th>
-                    <th class="p-2.5 text-center w-14">Cant.</th>
-                    <th class="p-2.5 w-24">Unidad</th>
-                    <th class="p-2.5 text-right w-24">Valor Unit.</th>
-                    <th class="p-2.5 text-right w-24">Subtotal</th>
-                    <th class="p-2 text-center w-8"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                  <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02] transition-colors">
-                    <td class="p-2">
-                      <div v-if="!isOriginalLine(idx)" class="mb-1">
-                        <span class="inline-block px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded text-[9px] font-bold uppercase tracking-wider">
-                          + Nueva Línea
+              <div class="border border-white/5 rounded-lg overflow-hidden bg-black/20 overflow-y-auto scrollbar-hide">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
+                      <th class="p-2.5">Categoría</th>
+                      <th class="p-2.5 w-32">Subcategoría</th>
+                      <th class="p-2.5">Descripción / Equipo</th>
+                      <th class="p-2.5 text-center w-14">Cant.</th>
+                      <th class="p-2.5 w-24">Unidad</th>
+                      <th class="p-2.5 text-right w-24">Valor Unit.</th>
+                      <th class="p-2.5 text-right w-24">Subtotal</th>
+                      <th class="p-2 text-center w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02] transition-colors">
+                      <td class="p-2">
+                        <div v-if="!isOriginalLine(idx)" class="mb-1">
+                          <span class="inline-block px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded text-[9px] font-bold uppercase tracking-wider">
+                            + Nueva Línea
+                          </span>
+                        </div>
+                        <select 
+                          v-model="line.tipo" 
+                          @change="line.subcategoria = ''" 
+                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
+                          :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                          :title="hasDiff('equipo_tipo', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_tipo', idx)) : ''"
+                        >
+                          <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
+                          <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
+                            {{ cat.nombre_categoria }}
+                          </option>
+                        </select>
+                      </td>
+                      <td class="p-2">
+                        <select 
+                          v-model="line.subcategoria" 
+                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
+                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                          :title="hasDiff('equipo_subcategoria', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_subcategoria', idx)) : ''"
+                        >
+                          <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
+                          <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                            {{ sub.nombre_subcategoria }}
+                          </option>
+                        </select>
+                      </td>
+                      <td class="p-2">
+                        <input 
+                          type="text" 
+                          v-model="line.descripcion" 
+                          placeholder="Ej: Liebherr LTM 1220..." 
+                          class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
+                          :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                          :title="hasDiff('equipo_descripcion', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_descripcion', idx)) : ''"
+                        />
+                      </td>
+                      <td class="p-2">
+                        <input 
+                          type="number" 
+                          v-model.number="line.cantidad" 
+                          min="1" 
+                          class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
+                          :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                          :title="hasDiff('equipo_cantidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_cantidad', idx)) : ''"
+                        />
+                      </td>
+                      <td class="p-2">
+                        <select 
+                          v-model="line.unidad" 
+                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
+                          :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
+                          :title="hasDiff('equipo_unidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_unidad', idx)) : ''"
+                        >
+                          <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
+                          <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
+                          <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
+                          <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
+                          <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
+                          <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
+                        </select>
+                      </td>
+                      <td class="p-2">
+                        <input 
+                          disabled 
+                          type="number" 
+                          v-model.number="line.valorUnitario" 
+                          min="0" 
+                          class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
+                          :class="hasDiff('equipo_valor', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                          :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
+                        />
+                      </td>
+                      <td class="p-2 text-right font-bold text-amber-400 font-mono">
+                        {{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}
+                      </td>
+                      <td class="p-2 text-center">
+                        <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Observaciones de Operaciones / Motivos de Ajuste:</label>
+                <textarea v-model="operacionesAssignment.observaciones_operaciones" :disabled="estadoDbActual >= ESTADOS_DB.ASIGNACION_RECURSOS" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-75 disabled:bg-slate-900/60"></textarea>
+              </div>
+            </fieldset>
+
+            <!-- GESTIÓN DE VISITAS TÉCNICAS A TERRENO (DEBAJO DEL ESTRUCTURADOR) -->
+            <div class="bg-[#050810] border border-amber-500/30 rounded-xl p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">📍</span>
+                  <span class="text-xs font-bold text-white uppercase tracking-wider">Gestión de Visitas Técnicas a Terreno</span>
+                </div>
+                <button 
+                  v-if="visitasDelProyecto.length > 0 && !mostrarFormNuevaVisita"
+                  type="button" 
+                  @click="iniciarVisitaAdicional" 
+                  class="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold rounded uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <span>+ Programar Visita Adicional (Replanteo)</span>
+                </button>
+              </div>
+
+              <!-- CASO A: NO SOLICITADA EN PREVENTA -->
+              <div v-if="!siteVisit.visita_terreno && visitasDelProyecto.length === 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/30 border border-white/5 p-3 rounded-lg">
+                <div class="text-[11px] text-slate-400">
+                  <span>ℹ️ Comercial no requirió visita. Si la maniobra es crítica, puedes exigirla desde aquí.</span>
+                </div>
+                <button 
+                  type="button" 
+                  @click="activarVisitaDesdeOperaciones" 
+                  class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded uppercase tracking-wider transition-all shadow cursor-pointer whitespace-nowrap"
+                >
+                  📍 Exigir Visita Técnica Obligatoria
+                </button>
+              </div>
+
+              <!-- CASO B: FORMULARIO DE ASIGNACIÓN (SOLICITADA O REPLANTEO) -->
+              <div v-else-if="(siteVisit.visita_terreno && visitasDelProyecto.length === 0) || mostrarFormNuevaVisita" class="space-y-3 bg-black/40 border border-white/5 p-3 rounded-lg">
+                <div class="flex items-center justify-between text-xs font-bold text-amber-400">
+                  <span>{{ mostrarFormNuevaVisita ? 'Programar Nueva Visita (Replanteo)' : 'Asignar Inspector a Terreno' }}</span>
+                  <button v-if="mostrarFormNuevaVisita" @click="mostrarFormNuevaVisita = false" class="text-slate-400 hover:text-white text-[11px] cursor-pointer">✕ Cancelar</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Inspector Técnico *:</label>
+                    <select v-model="panelVisitaForm.id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none">
+                      <option value="">-- Seleccionar Técnico --</option>
+                      <option v-for="u in tecnicosInspectores" :key="'tec-p2-'+u.id_user" :value="u.id_user">
+                        {{ u.nombre_user || u.name_user || (u.name_frst ? (u.name_frst + ' ' + (u.apellido_pat || '')) : u.username) }} ({{ u.cargo || 'Técnico' }})
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Fecha Programada *:</label>
+                    <input type="datetime-local" v-model="panelVisitaForm.fecha_programada" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none font-mono" />
+                  </div>
+                </div>
+
+                <div class="flex justify-end pt-1">
+                  <button 
+                    type="button" 
+                    :disabled="!panelVisitaForm.id_tecnico || !panelVisitaForm.fecha_programada || ejecutandoAccionVisita"
+                    @click="asignarInspectorWeb" 
+                    class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {{ ejecutandoAccionVisita ? 'Asignando...' : '👷 Confirmar Asignación desde la Web' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- CASO C: LISTADO DE VISITAS DE LA OT -->
+              <div v-if="visitasDelProyecto.length > 0" class="space-y-2">
+                <div 
+                  v-for="v in visitasDelProyecto" 
+                  :key="'v-p2-'+v.id_survey"
+                  class="bg-black/30 border border-white/5 hover:border-white/10 rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-amber-400 text-[11px] bg-white/5 px-1.5 py-0.5 rounded">#{{ v.id_survey }}</span>
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-white">{{ siteVisit.obra_nombre || opportunity.nombre_proyecto || 'Visita a Terreno' }}</span>
+                        <span 
+                          class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase"
+                          :class="v.estado_srv === 'APROBADO' || v.estado_srv === 'VERIFICACION' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (v.estado_srv === 'En Ejecución' || v.estado_srv === 'En Proceso' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30')"
+                        >
+                          {{ v.estado_srv || 'PLANIFICADO' }}
                         </span>
                       </div>
-                      <select 
-                        v-model="line.tipo" 
-                        @change="line.subcategoria = ''" 
-                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
-                        :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                        :title="hasDiff('equipo_tipo', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_tipo', idx)) : ''"
-                      >
-                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
-                        <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                          {{ cat.nombre_categoria }}
-                        </option>
-                      </select>
-                    </td>
-                    <td class="p-2">
-                      <select 
-                        v-model="line.subcategoria" 
-                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                        :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                        :title="hasDiff('equipo_subcategoria', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_subcategoria', idx)) : ''"
-                      >
-                        <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
-                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                          {{ sub.nombre_subcategoria }}
-                        </option>
-                      </select>
-                    </td>
-                    <td class="p-2">
-                      <input 
-                        type="text" 
-                        v-model="line.descripcion" 
-                        placeholder="Ej: Liebherr LTM 1220..." 
-                        class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
-                        :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
-                        :title="hasDiff('equipo_descripcion', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_descripcion', idx)) : ''"
-                      />
-                    </td>
-                    <td class="p-2">
-                      <input 
-                        type="number" 
-                        v-model.number="line.cantidad" 
-                        min="1" 
-                        class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
-                        :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
-                        :title="hasDiff('equipo_cantidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_cantidad', idx)) : ''"
-                      />
-                    </td>
-                    <td class="p-2">
-                      <select 
-                        v-model="line.unidad" 
-                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                        :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                        :title="hasDiff('equipo_unidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_unidad', idx)) : ''"
-                      >
-                        <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
-                        <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
-                        <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
-                        <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
-                        <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
-                        <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
-                      </select>
-                    </td>
-                    <td class="p-2">
-                      <input 
-                        disabled 
-                        type="number" 
-                        v-model.number="line.valorUnitario" 
-                        min="0" 
-                        class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
-                        :class="hasDiff('equipo_valor', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
-                        :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
-                      />
-                    </td>
-                    <td class="p-2 text-right font-bold text-amber-400 font-mono">
-                      {{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}
-                    </td>
-                    <td class="p-2 text-center">
-                      <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                      <div class="text-[10px] text-slate-400 flex gap-2">
+                        <span>Técnico: <strong class="text-slate-200">{{ getNombreTecnico(v.id_user, v) }}</strong></span>
+                        <span>Fecha: <strong class="text-slate-300 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</strong></span>
+                      </div>
+                    </div>
+                  </div>
 
-            <div>
-              <label class="block text-[10px] text-slate-400 font-semibold mb-1">Observaciones de Operaciones / Motivos de Ajuste:</label>
-              <textarea v-model="operacionesAssignment.observaciones_operaciones" :disabled="estadoDbActual >= ESTADOS_DB.ASIGNACION_RECURSOS" rows="2" placeholder="Detalle observaciones o razones de modificación..." class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none resize-none disabled:opacity-75 disabled:bg-slate-900/60"></textarea>
+                  <!-- BOTONES CONDICIONALES SEGÚN ESTADO REAL -->
+                  <div class="flex items-center gap-2">
+                    <!-- Si está en ejecución, en proceso, verificación o aprobado: Ver Web -->
+                    <a 
+                      v-if="v.estado_srv === 'En Ejecución' || v.estado_srv === 'En Proceso' || v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
+                      :href="getSurveyReportUrl(v.id_survey)" 
+                      target="_blank" 
+                      class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] rounded transition-colors no-underline"
+                    >
+                      🌐 Ver Web
+                    </a>
+
+                    <!-- Si está en verificación o aprobado: PDF Informe -->
+                    <a 
+                      v-if="v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
+                      :href="getArchivoUrl(v.id_doc || v.id_survey)" 
+                      target="_blank" 
+                      class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px] rounded transition-colors no-underline"
+                    >
+                      📄 PDF Informe
+                    </a>
+
+                    <!-- Si está PLANIFICADO o Creado: Reasignar Técnico -->
+                    <button 
+                      v-if="v.estado_srv === 'PLANIFICADO' || v.estado_srv === 'Creado' || v.estado_srv === 'Asignada' || !v.estado_srv"
+                      type="button" 
+                      @click="abrirModalReasignacion(v)" 
+                      class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px] rounded transition-colors cursor-pointer"
+                    >
+                      🔄 Reasignar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Modal / Drawer Reasignación Integrado -->
+                <div v-if="mostrarModalReasignar" class="bg-black/90 border border-amber-500/40 p-3 rounded-lg space-y-2 mt-2">
+                  <div class="text-xs font-bold text-amber-400 flex items-center justify-between">
+                    <span>Reasignar Técnico Visita #{{ panelReasignarForm.id_survey }}</span>
+                    <button @click="mostrarModalReasignar = false" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[10px] text-slate-300 font-bold mb-0.5">Nuevo Técnico *:</label>
+                      <select v-model="panelReasignarForm.nuevo_id_tecnico" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none">
+                        <option value="">-- Seleccionar Técnico --</option>
+                        <option v-for="u in tecnicosInspectores" :key="'reasig-opt-'+u.id_user" :value="u.id_user">
+                          {{ u.nombre_user || u.name_user || (u.name_frst ? (u.name_frst + ' ' + (u.apellido_pat || '')) : u.username) }} ({{ u.cargo || 'Técnico' }})
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-300 font-bold mb-0.5">Motivo de Reasignación *:</label>
+                      <input type="text" v-model="panelReasignarForm.motivo_reasignacion" placeholder="Ej: Imprevisto en faena, licencia..." class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none" />
+                    </div>
+                  </div>
+                  <div class="flex justify-end gap-2 pt-1 border-t border-white/10">
+                    <button @click="mostrarModalReasignar = false" type="button" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded cursor-pointer">Cancelar</button>
+                    <button 
+                      type="button" 
+                      :disabled="!panelReasignarForm.nuevo_id_tecnico || !panelReasignarForm.motivo_reasignacion || ejecutandoAccionVisita"
+                      @click="confirmarReasignacionTecnico" 
+                      class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                    >
+                      {{ ejecutandoAccionVisita ? 'Guardando...' : 'Confirmar' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </fieldset>
+          </div>
 
             <div v-if="estadoDbActual >= ESTADOS_DB.ASIGNACION_RECURSOS" class="pt-2">
               <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 text-center flex items-center justify-center gap-2 text-xs text-emerald-300 font-bold">
@@ -3546,20 +3424,39 @@
                     <div class="font-bold text-[10px] text-indigo-400 uppercase mb-1">Visitas del Proyecto</div>
                     <div v-for="v in visitasDelProyecto" :key="v.id_survey" class="flex justify-between items-center bg-black/40 p-1.5 rounded text-indigo-200">
                       <div class="flex flex-col">
-                        <span class="font-bold">Visita #{{ v.id_survey }} ({{ v.estado_srv }})</span>
-                        <span class="text-[9px] opacity-70">{{ v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || 'Sin nombre de obra' }}</span>
+                        <div class="flex items-center gap-1.5">
+                          <span class="font-bold">Visita #{{ v.id_survey }}</span>
+                          <span 
+                            class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase"
+                            :class="v.estado_srv === 'APROBADO' || v.estado_srv === 'VERIFICACION' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (v.estado_srv === 'En Ejecución' || v.estado_srv === 'En Proceso' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30')"
+                          >
+                            {{ v.estado_srv || 'PLANIFICADO' }}
+                          </span>
+                        </div>
+                        <span class="text-[9px] opacity-70">{{ siteVisit.obra_nombre || opportunity.nombre_proyecto || v.body_exec?.nombre_obra || v.body_exec?.obra_nombre || 'Visita a Terreno' }}</span>
                       </div>
                       <div class="flex gap-2 items-center">
-                        <span>{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</span>
-                        <a :href="getSurveyReportUrl(v.id_survey)" target="_blank" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 font-bold px-2 py-1 text-[10px] rounded transition-colors no-underline" title="Visualizar detalles de la visita en Web">
-                          Ver Web
+                        <span class="text-[10px] text-slate-400 font-mono">{{ v.fecha_plan_ini ? new Date(v.fecha_plan_ini).toLocaleDateString() : 'S/F' }}</span>
+                        <!-- Si está en ejecución, en proceso, verificación o aprobado: Ver Web -->
+                        <a 
+                          v-if="v.estado_srv === 'En Ejecución' || v.estado_srv === 'En Proceso' || v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
+                          :href="getSurveyReportUrl(v.id_survey)" 
+                          target="_blank" 
+                          class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 font-bold px-2 py-1 text-[10px] rounded transition-colors no-underline" 
+                          title="Visualizar detalles de la visita en Web"
+                        >
+                          🌐 Ver Web
                         </a>
-                        <a :href="getArchivoUrl(v.id_doc || v.id_survey)" target="_blank" class="inline-flex items-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-bold px-2 py-1 text-[10px] rounded transition-colors no-underline" title="Visualizar reporte PDF firmado">
-                          Ver Reporte / PDF
+                        <!-- Si está en verificación o aprobado: PDF Informe -->
+                        <a 
+                          v-if="v.estado_srv === 'VERIFICACION' || v.estado_srv === 'APROBADO'"
+                          :href="getArchivoUrl(v.id_doc || v.id_survey)" 
+                          target="_blank" 
+                          class="inline-flex items-center bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 font-bold px-2 py-1 text-[10px] rounded transition-colors no-underline border border-rose-500/30" 
+                          title="Visualizar reporte PDF firmado"
+                        >
+                          📄 PDF Informe
                         </a>
-                        <button @click="() => { selectedSurveyId = v.id_survey; cargarVisitaDesdeBD(); }" type="button" class="bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 font-bold px-2 py-1 text-[10px] rounded transition-colors cursor-pointer" title="Cargar datos de esta visita al formulario">
-                          Cargar
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -7402,7 +7299,11 @@ const visitasTerreno = ref([])
 const selectedSurveyId = ref('')
 
 const visitasDelProyecto = computed(() => {
-  const targetId = String(props.proyectoId || currentProyectoId.value || '')
+  let pid = props.proyectoId
+  if (pid && typeof pid === 'object') {
+    pid = pid.id_proyecto || pid.id || pid.id_cotizacion
+  }
+  const targetId = String(pid || currentProyectoId.value || opportunity.value?.id_proyecto || route?.query?.id_proyecto || route?.query?.id || '')
   if (!targetId) return []
   return visitasTerreno.value.filter(v => {
     if (!v) return false
@@ -7490,14 +7391,17 @@ const sincronizarAparejosSiAplica = () => {
   }
 }
 
-watch(visitasDelProyecto, () => {
+watch(visitasDelProyecto, (newVisitas) => {
+  if (Array.isArray(newVisitas) && newVisitas.length > 0) {
+    siteVisit.value.visita_terreno = true
+  }
   sincronizarAparejosSiAplica()
 }, { immediate: true, deep: true })
 
 const fetchVisitasTerreno = async () => {
   try {
     const { data } = await apiAxios.get('/survey/visitas-terreno')
-    visitasTerreno.value = data
+    visitasTerreno.value = Array.isArray(data) ? data : []
     sincronizarAparejosSiAplica()
   } catch (error) {
     console.error('Error fetching visitas terreno:', error)
@@ -7545,10 +7449,22 @@ const isUltimaVisitaAsignada = computed(() => {
   return !!ultimaVisitaActiva.value.id_user && ultimaVisitaActiva.value.estado_srv !== 'Realizada' && ultimaVisitaActiva.value.estado_srv !== 'Completado'
 })
 
-const getNombreTecnico = (idUser) => {
-  if (!idUser) return 'Sin Asignar'
-  const u = usuarios.value.find(user => String(user.id_user) === String(idUser))
-  return u ? (u.nombre_user || u.name_user || u.username) : `Técnico #${idUser}`
+const getNombreTecnico = (idUser, visita = null) => {
+  let uid = idUser
+  if (!uid && visita) {
+    uid = visita.id_user || visita.body_exec?.id_user || visita.header_exec?.id_user
+  }
+  if (!uid && tecnicosInspectores.value?.length > 0) {
+    const defaultInsp = tecnicosInspectores.value[0]
+    return defaultInsp.nombre_user || defaultInsp.name_user || (defaultInsp.name_frst ? `${defaultInsp.name_frst} ${defaultInsp.apellido_pat || ''}`.trim() : defaultInsp.username)
+  }
+  if (!uid) return 'Lean Global GSP (Técnico)'
+  const u = (usuarios.value || []).find(user => String(user.id_user) === String(uid)) ||
+            (tecnicosInspectores.value || []).find(user => String(user.id_user) === String(uid))
+  if (u) {
+    return u.nombre_user || u.name_user || (u.name_frst ? `${u.name_frst} ${u.apellido_pat || ''}`.trim() : u.username)
+  }
+  return `Técnico #${uid}`
 }
 
 const activarVisitaDesdeOperaciones = () => {
@@ -7565,11 +7481,11 @@ const asignarInspectorWeb = async () => {
     return
   }
 
-  let projId = props.proyectoId || currentProyectoId.value
+  let projId = props.proyectoId || currentProyectoId.value || opportunity.value?.id_proyecto
   if (!projId) {
     try {
       await guardarEnPreventa()
-      projId = currentProyectoId.value
+      projId = currentProyectoId.value || opportunity.value?.id_proyecto
     } catch (err) {
       console.error('Error guardando preventa antes de asignar visita:', err)
     }
@@ -7577,44 +7493,118 @@ const asignarInspectorWeb = async () => {
 
   try {
     ejecutandoAccionVisita.value = true
-    const token = localStorage.getItem('token') || ''
+
+    // 1. Obtener Template 80 desde el endpoint oficial (Idéntico a AsignacionVisita.vue)
+    let bodySeed = { segmentos: [] }
+    let headerSeed = {}
+    let approvalSeed = {}
+    let idFlowTmpl = 1
+
+    try {
+      const tmplRes = await apiAxios.get('/servicio/leanglobal/obtenerTemplates')
+      const templates = Array.isArray(tmplRes.data) ? tmplRes.data : []
+      const template = templates.find(t => Number(t.id_template) === 80)
+      if (template) {
+        bodySeed = typeof template.body_seed === 'string' ? JSON.parse(template.body_seed) : (template.body_seed || { segmentos: [] })
+        headerSeed = typeof template.header_seed === 'string' ? JSON.parse(template.header_seed) : (template.header_seed || {})
+        approvalSeed = typeof template.approval_seed === 'string' ? JSON.parse(template.approval_seed) : (template.approval_seed || {})
+        idFlowTmpl = Number(template.id_flow_tmpl) || 1
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener el template 80 directamente, usando fallback:', e)
+    }
+
+    // 2. Pre-sembrar datos de faena y contacto en Segmento 1 (Idéntico a AsignacionVisita.vue)
+    if (Array.isArray(bodySeed.segmentos)) {
+      bodySeed.segmentos.forEach(seg => {
+        if (Array.isArray(seg.attributes)) {
+          // Filtrar REFERENCIA DE LA DIRECCION
+          seg.attributes = seg.attributes.filter(attr => {
+            const label = (attr.label || '').toUpperCase()
+            return !label.includes('REFERENCIA')
+          })
+
+          const segLabel = (seg.label || '').toUpperCase()
+          const isGeneral = segLabel.includes('GENERAL') || segLabel.includes('DATOS GENERALES') || segLabel.includes('1.')
+
+          if (isGeneral) {
+            seg.attributes.forEach(attr => {
+              const label = (attr.label || '').toUpperCase()
+              const dirObra = siteVisit.value.obra_direccion || opportunity.value.obra_direccion || ''
+              const nomObra = siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || ''
+              const cliNombre = selectedClient.value?.razon_social || selectedClient.value?.name_empresa || ''
+              const cliRut = selectedClient.value?.rut_empresa || opportunity.value.rut_cliente || ''
+              const ctoNombre = siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || ''
+              const ctoFono = siteVisit.value.contacto_terreno_telefono || siteVisit.value.telefono_contacto_visita || opportunity.value.contacto_telefono || ''
+              const ctoEmail = siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || ''
+
+              if ((label.includes('RAZON') || label.includes('SOCIAL')) && !label.includes('RUTA')) attr.default = cliNombre
+              if ((label === 'RUT' || label.includes('RUT EMPRESA') || label.includes('RUT CLIENTE') || label.includes('RUT DEL CLIENTE')) && !label.includes('RUTA')) attr.default = cliRut
+              if (label.includes('NOMBRE DE LA OBRA') || (label.includes('OBRA') && !label.includes('DIRECCION') && !label.includes('GEOLOCALIZACION'))) attr.default = nomObra
+              if (label.includes('DIRECCION') || label.includes('DIRECCIÓN')) attr.default = dirObra
+              if (label.includes('CONTACTO EN TERRENO') || (label.includes('CONTACTO') && !label.includes('TELEFONO') && !label.includes('CORREO') && !label.includes('ELECTRONICO'))) attr.default = ctoNombre
+              if (label.includes('TELEFONO') || label.includes('TELÉFONO') || label.includes('TELEFÓNICO') || label.includes('CELULAR')) attr.default = ctoFono
+              if (label.includes('CORREO') || label.includes('EMAIL') || label.includes('ELECTRÓNICO') || label.includes('ELECTRONICO')) attr.default = ctoEmail
+              if (label.includes('COMENTARIOS DEL COORDINADOR') || label.includes('INSTRUCCIONES DEL COORDINADOR') || label.includes('COMENTARIO')) {
+                attr.default = panelVisitaForm.value.instrucciones || 'No especificado'
+              }
+              if (attr.type === 'geoLocation' && siteVisit.value.lat != null) {
+                attr.default = { lat: Number(siteVisit.value.lat), lng: Number(siteVisit.value.lng) }
+              }
+            })
+          }
+        }
+      })
+    }
+
+    // 3. Crear Survey mediante el endpoint oficial POST /api/survey (Idéntico a AsignacionVisita.vue)
     let storageUser = null
     try { storageUser = JSON.parse(localStorage.getItem('usuario') || '{}') } catch (_) {}
 
     const payloadSurvey = {
       id_tipo_srv: 2,
       id_template: 80,
-      id_user: panelVisitaForm.value.id_tecnico,
+      id_user: Number(panelVisitaForm.value.id_tecnico),
       id_user_creacion: storageUser?.id_user || 1,
-      id_empresa_cliente: selectedClient.value?.id_empresa || null,
-      estado_srv: 'Asignada',
+      id_empresa_cliente: selectedClient.value?.id_empresa || opportunity.value?.id_empresa_cliente || null,
+      estado_srv: 'Creado',
+      header_seed: JSON.stringify(headerSeed),
+      body_seed: JSON.stringify(bodySeed),
+      approval_seed: JSON.stringify(approvalSeed),
+      header_exec: JSON.stringify(headerSeed),
+      body_exec: JSON.stringify(bodySeed),
+      approval_exec: JSON.stringify(approvalSeed),
       fecha_plan_ini: panelVisitaForm.value.fecha_programada,
       fecha_plan_fin: panelVisitaForm.value.fecha_programada,
       latitud: siteVisit.value.lat != null ? Number(siteVisit.value.lat) : null,
       longitud: siteVisit.value.lng != null ? Number(siteVisit.value.lng) : null,
-      id_proyecto: projId || null,
-      body_exec: {
-        obra_nombre: siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || '',
-        obra_direccion: siteVisit.value.obra_direccion || '',
-        obra_ciudad: siteVisit.value.obra_ciudad || '',
-        contacto_nombre: siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || '',
-        contacto_telefono: siteVisit.value.contacto_terreno_telefono || siteVisit.value.telefono_contacto_visita || opportunity.value.contacto_telefono || '',
-        contacto_email: siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || '',
-        instrucciones: panelVisitaForm.value.instrucciones || ''
-      }
+      id_proyecto: Number(projId),
+      id_flow_tmpl: idFlowTmpl
     }
 
-    await apiAxios.post('/survey', payloadSurvey, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    await apiAxios.post('/survey', payloadSurvey)
 
     siteVisit.value.visita_terreno = true
+
+    // Persistir visita_terreno: true en el proyecto para que persista al salir y volver
+    try {
+      const payload = buildPayload()
+      if (payload?.json_field?.crm_v1) {
+        payload.json_field.crm_v1.visita_terreno = true
+      }
+      await apiAxios.put(`/proyectos/${projId}`, payload)
+    } catch (saveErr) {
+      console.warn('No se pudo persistir visita_terreno en proyecto:', saveErr)
+    }
+
     mostrarFormNuevaVisita.value = false
+    panelVisitaForm.value.id_tecnico = ''
+    panelVisitaForm.value.fecha_programada = ''
     await fetchVisitasTerreno()
-    alert('✔ Inspector técnico asignado exitosamente desde la Web.')
+    alert('✔ Visita a terreno asignada exitosamente e ingresada a la PWA.')
   } catch (err) {
     console.error('Error al asignar inspector desde la web:', err)
-    alert('Error al asignar inspector: ' + (err.response?.data?.error || err.message))
+    alert('Error al asignar inspector: ' + (err.response?.data?.error || err.response?.data?.message || err.message))
   } finally {
     ejecutandoAccionVisita.value = false
   }
@@ -7630,39 +7620,26 @@ const abrirModalReasignacion = (visita) => {
 }
 
 const confirmarReasignacionTecnico = async () => {
-  if (!panelReasignarForm.value.nuevo_id_tecnico || !panelReasignarForm.value.motivo_reasignacion) {
-    alert('Debe seleccionar el nuevo técnico e indicar el motivo de la reasignación.')
+  if (!panelReasignarForm.value.nuevo_id_tecnico) {
+    alert('Debe seleccionar el nuevo técnico.')
     return
   }
 
   try {
     ejecutandoAccionVisita.value = true
     const sid = panelReasignarForm.value.id_survey
-    const token = localStorage.getItem('token') || ''
 
+    // Endpoint oficial del producto para reasignar plan
     await apiAxios.put(`/survey/UpdPlan/${sid}`, {
       id_user: Number(panelReasignarForm.value.nuevo_id_tecnico)
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
     })
-
-    const projId = props.proyectoId || currentProyectoId.value
-    if (projId) {
-      try {
-        await apiAxios.post('/bitacora', {
-          id_proyecto: projId,
-          evento: `Reasignación de Técnico Visita #${sid}`,
-          descripcion: `Técnico anterior reasignado a ${getNombreTecnico(panelReasignarForm.value.nuevo_id_tecnico)}. Motivo: ${panelReasignarForm.value.motivo_reasignacion}`
-        }, { headers: { Authorization: `Bearer ${token}` } })
-      } catch (_) {}
-    }
 
     mostrarModalReasignar.value = false
     await fetchVisitasTerreno()
     alert('✔ Técnico reasignado exitosamente.')
   } catch (err) {
     console.error('Error al reasignar técnico:', err)
-    alert('Error al reasignar técnico: ' + (err.response?.data?.error || err.message))
+    alert('Error al reasignar técnico: ' + (err.response?.data?.error || err.response?.data?.message || err.message))
   } finally {
     ejecutandoAccionVisita.value = false
   }
@@ -8540,7 +8517,10 @@ const cargarDatosCotizacion = async () => {
     }
   }
 
-  fetchVisitasTerreno()
+  await fetchVisitasTerreno()
+  if (visitasDelProyecto.value.length > 0) {
+    siteVisit.value.visita_terreno = true
+  }
   loading.value = false
 
   // Reseteamos los flags para que la carga inicial no dispare advertencias de cambios sin guardar
