@@ -367,27 +367,31 @@
                           v-model="line.tipo" 
                           @change="line.subcategoria = ''" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
-                          :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                          :title="hasDiff('equipo_tipo', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_tipo', idx)) : ''"
+                          :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
                           <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                             {{ cat.nombre_categoria }}
                           </option>
                         </select>
+                        <div v-if="hasDiff('equipo_tipo', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through">
+                          Orig: {{ getOriginalValue('equipo_tipo', idx) || '(Vacío)' }}
+                        </div>
                       </td>
                       <td class="p-2">
                         <select 
                           v-model="line.subcategoria" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                          :title="hasDiff('equipo_subcategoria', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_subcategoria', idx)) : ''"
+                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
                           <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                             {{ sub.nombre_subcategoria }}
                           </option>
                         </select>
+                        <div v-if="hasDiff('equipo_subcategoria', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through truncate max-w-[120px]" :title="getOriginalValue('equipo_subcategoria', idx)">
+                          Orig: {{ getOriginalValue('equipo_subcategoria', idx) || '(Vacío)' }}
+                        </div>
                       </td>
                       <td class="p-2">
                         <input 
@@ -395,9 +399,11 @@
                           v-model="line.descripcion" 
                           placeholder="Ej: Liebherr LTM 1220..." 
                           class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
-                          :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
-                          :title="hasDiff('equipo_descripcion', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_descripcion', idx)) : ''"
+                          :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
                         />
+                        <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through truncate max-w-[200px]" :title="getOriginalValue('equipo_descripcion', idx)">
+                          Orig: {{ getOriginalValue('equipo_descripcion', idx) || '(Vacío)' }}
+                        </div>
                       </td>
                       <td class="p-2">
                         <input 
@@ -405,16 +411,17 @@
                           v-model.number="line.cantidad" 
                           min="1" 
                           class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
-                          :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
-                          :title="hasDiff('equipo_cantidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_cantidad', idx)) : ''"
+                          :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
                         />
+                        <div v-if="hasDiff('equipo_cantidad', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 text-center line-through">
+                          Orig: {{ getOriginalValue('equipo_cantidad', idx) }}
+                        </div>
                       </td>
                       <td class="p-2">
                         <select 
                           v-model="line.unidad" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'"
-                          :title="hasDiff('equipo_unidad', idx) ? ('Valor preventa: ' + getOriginalValue('equipo_unidad', idx)) : ''"
+                          :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
                           <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
@@ -423,6 +430,9 @@
                           <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
                           <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
                         </select>
+                        <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through">
+                          Orig: {{ getOriginalValue('equipo_unidad', idx) }}
+                        </div>
                       </td>
                       <td class="p-2">
                         <input 
@@ -6688,11 +6698,8 @@ const isOriginalLine = (index) => {
 const cleanVal = (v) => (v === null || v === undefined) ? '' : String(v).trim()
 
 const hasDiff = (field, index = 0) => {
-  // El control de cambios (diff) SOLO aplica en la Pestaña de Operaciones / Sub-Pestaña Validación & Diff
-  if (topTab.value !== 'operaciones' || operacionesSubTab.value !== 'validacion') {
-    return false
-  }
-  if (!isModoOperaciones.value) {
+  // El control de cambios (diff) aplica en la Pestaña de Operaciones / Sub-Pestaña Validación & Diff
+  if (operacionesSubTab.value !== 'validacion') {
     return false
   }
   if (!snapshotComercial.value || Object.keys(snapshotComercial.value).length === 0) return false
@@ -8705,13 +8712,24 @@ const buildPayload = () => {
         moneda: comercial.value.moneda,
         condicion_servicio: comercial.value.condicion_servicio,
         pensiones: comercial.value.pensiones,
-        snapshot_comercial: {
-          ...snapshotComercial.value,
-          lines: JSON.parse(JSON.stringify(lines.value)),
-          equipo_descripcion: lines.value[0]?.descripcion || '',
-          equipo_cantidad: lines.value[0]?.cantidad || 1,
-          equipo_valor: lines.value[0]?.valorUnitario || 0
-        }
+        snapshot_comercial: (estadoDbActual.value >= 3 && snapshotComercial.value && Object.keys(snapshotComercial.value).length > 0)
+          ? JSON.parse(JSON.stringify(snapshotComercial.value))
+          : {
+              peso_carga: siteVisit.value.peso_carga || '',
+              volumen_carga: siteVisit.value.volumen_carga || '',
+              radios_trabajo: siteVisit.value.radios_trabajo || '',
+              alturas_trabajo: siteVisit.value.alturas_trabajo || '',
+              tipo_carga: siteVisit.value.tipo_carga || '',
+              detalle_servicio: siteVisit.value.detalle_servicio || '',
+              obra_nombre: siteVisit.value.obra_nombre || '',
+              obra_direccion: siteVisit.value.obra_direccion || '',
+              obra_ciudad: siteVisit.value.obra_ciudad || '',
+              lines: JSON.parse(JSON.stringify(lines.value)),
+              equipo_descripcion: lines.value[0]?.descripcion || '',
+              equipo_cantidad: lines.value[0]?.cantidad || 1,
+              equipo_valor: lines.value[0]?.valorUnitario || 0,
+              pensiones: { ...comercial.value.pensiones }
+            }
       },
       ejecucion_v1: {
         ...(rawEjecucionJson.value || {}),
@@ -8812,6 +8830,7 @@ const generarRequerimiento = async () => {
     radios_trabajo: siteVisit.value.radios_trabajo || '',
     alturas_trabajo: siteVisit.value.alturas_trabajo || '',
     tipo_carga: siteVisit.value.tipo_carga || '',
+    detalle_servicio: siteVisit.value.detalle_servicio || '',
     obra_nombre: siteVisit.value.obra_nombre || '',
     obra_direccion: siteVisit.value.obra_direccion || '',
     obra_ciudad: siteVisit.value.obra_ciudad || '',
