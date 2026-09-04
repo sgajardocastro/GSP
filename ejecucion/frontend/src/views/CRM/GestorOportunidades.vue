@@ -367,14 +367,14 @@
                           v-model="line.tipo" 
                           @change="line.subcategoria = ''" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
-                          :class="hasDiff('equipo_tipo', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
+                          :class="hasDiff('equipo_tipo', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
                           <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
                             {{ cat.nombre_categoria }}
                           </option>
                         </select>
-                        <div v-if="hasDiff('equipo_tipo', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through">
+                        <div v-if="hasDiff('equipo_tipo', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
                           Orig: {{ getOriginalValue('equipo_tipo', idx) || '(Vacío)' }}
                         </div>
                       </td>
@@ -382,14 +382,14 @@
                         <select 
                           v-model="line.subcategoria" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
+                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
                           <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                             {{ sub.nombre_subcategoria }}
                           </option>
                         </select>
-                        <div v-if="hasDiff('equipo_subcategoria', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through truncate max-w-[120px]" :title="getOriginalValue('equipo_subcategoria', idx)">
+                        <div v-if="hasDiff('equipo_subcategoria', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through truncate max-w-[120px]" :title="getOriginalValue('equipo_subcategoria', idx)">
                           Orig: {{ getOriginalValue('equipo_subcategoria', idx) || '(Vacío)' }}
                         </div>
                       </td>
@@ -399,9 +399,9 @@
                           v-model="line.descripcion" 
                           placeholder="Ej: Liebherr LTM 1220..." 
                           class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
-                          :class="hasDiff('equipo_descripcion', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
+                          :class="hasDiff('equipo_descripcion', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         />
-                        <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through truncate max-w-[200px]" :title="getOriginalValue('equipo_descripcion', idx)">
+                        <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through truncate max-w-[200px]" :title="getOriginalValue('equipo_descripcion', idx)">
                           Orig: {{ getOriginalValue('equipo_descripcion', idx) || '(Vacío)' }}
                         </div>
                       </td>
@@ -411,9 +411,9 @@
                           v-model.number="line.cantidad" 
                           min="1" 
                           class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
-                          :class="hasDiff('equipo_cantidad', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
+                          :class="hasDiff('equipo_cantidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         />
-                        <div v-if="hasDiff('equipo_cantidad', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 text-center line-through">
+                        <div v-if="hasDiff('equipo_cantidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 text-center line-through">
                           Orig: {{ getOriginalValue('equipo_cantidad', idx) }}
                         </div>
                       </td>
@@ -421,7 +421,7 @@
                         <select 
                           v-model="line.unidad" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_unidad', idx) ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40 text-amber-200 font-semibold' : 'border-white/10'" 
+                          :class="hasDiff('equipo_unidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
                           <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
@@ -430,7 +430,7 @@
                           <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
                           <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
                         </select>
-                        <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-amber-400 font-mono mt-0.5 line-through">
+                        <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
                           Orig: {{ getOriginalValue('equipo_unidad', idx) }}
                         </div>
                       </td>
@@ -441,7 +441,7 @@
                           v-model.number="line.valorUnitario" 
                           min="0" 
                           class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
-                          :class="hasDiff('equipo_valor', idx) ? 'border-amber-500/60 bg-amber-500/5 ring-1 ring-amber-500/30' : 'border-white/10'" 
+                          :class="hasDiff('equipo_valor', idx) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
                           :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
                         />
                       </td>
