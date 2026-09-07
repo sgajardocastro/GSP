@@ -74,7 +74,10 @@ const patioController = {
 
       let operadorNombre = 'Inspector de Patio';
       if (id_user) {
-        const uRes = await pool.query("SELECT nombre_user, id_empresa FROM tsec_users WHERE id_user = $1", [id_user]);
+        const uRes = await pool.query(
+          "SELECT COALESCE(TRIM(CONCAT_WS(' ', name_frst, apellido_pat)), email, 'Inspector de Patio') AS nombre_user, id_empresa FROM tsec_users WHERE id_user = $1", 
+          [id_user]
+        );
         if (uRes.rows.length > 0) {
           operadorNombre = uRes.rows[0].nombre_user;
         }
