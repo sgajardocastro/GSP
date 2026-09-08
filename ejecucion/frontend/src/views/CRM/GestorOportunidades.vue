@@ -1263,16 +1263,31 @@
       <div v-if="operacionesSubTab === 'acreditaciones'" class="space-y-6">
         <div class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-5">
           
-          <!-- Encabezado del Dossier de Acreditación con Datos Reales -->
-          <div class="border-b border-white/5 pb-4 flex justify-between items-start">
+          <!-- Encabezado del Dossier de Acreditación con Datos Reales y Selector de Empresa Contratista (Spec 45) -->
+          <div class="border-b border-white/5 pb-4 flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">
                 📑 Dossier de Acreditaciones de Recursos (Post-Asignación)
               </span>
-              <div class="flex items-center gap-3 mt-1.5 text-xs text-slate-300">
-                <span>Cliente: <strong class="text-white">{{ selectedClient?.razon_social || selectedClient?.name_empresa || opportunity.empresa_razon_social || 'Cliente Mandante' }}</strong></span>
+              <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-300">
+                <!-- SELECTOR / BADGE DE EMPRESA CONTRATISTA EJECUTORA -->
+                <div class="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-amber-500/40 shadow-sm">
+                  <span class="text-slate-400 font-semibold text-[11px]">🏢 Contratista Ejecutora:</span>
+                  <select
+                    v-model="opportunity.id_empresa_emisora"
+                    class="bg-transparent text-amber-300 font-bold border-none outline-none cursor-pointer text-xs"
+                    title="Razón social contratista para validar compatibilidad laboral de la tripulación"
+                  >
+                    <option value="9" class="bg-slate-900 text-white">🏗️ Grúas San Pablo SpA</option>
+                    <option value="7" class="bg-slate-900 text-white">🚜 Bestmaq Arriendos SpA</option>
+                    <option value="8" class="bg-slate-900 text-white">🚛 Logística del Sur SpA</option>
+                    <option value="11" class="bg-slate-900 text-white">🏢 Royal Rental SpA</option>
+                  </select>
+                </div>
                 <span class="text-slate-600">|</span>
-                <span>Proceso: <strong class="text-amber-400 font-mono">{{ antecedentes.identificador_formal || opportunity.codi_proyecto || 'GSP-2026-001' }}</strong></span>
+                <span>Cliente Mandante: <strong class="text-white">{{ selectedClient?.razon_social || selectedClient?.name_empresa || opportunity.empresa_razon_social || 'Cliente Mandante' }}</strong></span>
+                <span class="text-slate-600">|</span>
+                <span>OT: <strong class="text-amber-400 font-mono">{{ antecedentes.identificador_formal || opportunity.codi_proyecto || 'GSP-2026-001' }}</strong></span>
                 <span class="text-slate-600">|</span>
                 <span>Faena: <strong class="text-slate-200">{{ siteVisit.obra_nombre || opportunity.nombre_proyecto || 'Obra Terreno' }}</strong></span>
               </div>
@@ -1302,11 +1317,14 @@
           <!-- GRID DE 3 COLUMNAS PARA OPTIMIZACIÓN ESPACIAL (EMPRESA | EQUIPOS | PERSONAS) CON ACCIONES IN-SITU -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- COLUMNA 1: EMPRESA -->
+            <!-- COLUMNA 1: EMPRESA CONTRATISTA -->
             <div class="bg-[#0a0f1e] border border-white/10 rounded-xl p-4 space-y-3 flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">🏢 1. Empresa Mandante</span>
+                  <div>
+                    <span class="text-xs font-bold text-sky-400 uppercase tracking-wider block">🏛️ 1. Empresa Contratista</span>
+                    <span class="text-[10px] text-slate-400 font-mono">{{ getNombreEmpresaContratista(opportunity.id_empresa_emisora) }} (RUT: {{ getRutEmpresaContratista(opportunity.id_empresa_emisora) }})</span>
+                  </div>
                   <button @click="agregarDocAdHoc('empresa')" type="button" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1">
                     + Exigir Doc
                   </button>
@@ -1399,10 +1417,16 @@
                     <div v-if="opportunity.acreditacion_docs?.personas && opportunity.acreditacion_docs.personas.length > 0" class="space-y-1.5 pl-2 border-l-2 border-emerald-500/30">
                       <div v-for="(doc, dIdx) in opportunity.acreditacion_docs.personas" :key="'dos-per-'+dIdx" class="flex justify-between items-center text-xs bg-white/5 p-2 rounded">
                         <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
-                          <span :class="checkDocVigente(doc, 'personas', t) ? 'text-emerald-400 font-bold text-sm' : 'text-red-500 font-bold text-sm'">
-                            {{ checkDocVigente(doc, 'personas', t) ? '✅' : '❌' }}
+                          <span :class="checkDocVigente(doc, 'personas', t) ? 'text-emerald-400 font-bold text-sm' : (getConflictoEmpresaPersona(doc, t) ? 'text-amber-400 font-bold text-sm' : 'text-red-500 font-bold text-sm')">
+                            {{ checkDocVigente(doc, 'personas', t) ? '✅' : (getConflictoEmpresaPersona(doc, t) ? '⚠️' : '❌') }}
                           </span>
-                          <span class="text-slate-300 truncate">{{ extractDocName(doc) }}</span>
+                          <div class="min-w-0">
+                            <span class="text-slate-300 truncate block">{{ extractDocName(doc) }}</span>
+                            <!-- Aviso explícito de Incompatibilidad de Razón Social (Spec 45) -->
+                            <span v-if="!checkDocVigente(doc, 'personas', t) && getConflictoEmpresaPersona(doc, t)" class="text-[9px] text-amber-300/90 font-mono block">
+                              Incompatible: Registrado bajo {{ getConflictoEmpresaPersona(doc, t).empresa_emisora }} (OT exige {{ getNombreEmpresaContratista(opportunity.id_empresa_emisora) }})
+                            </span>
+                          </div>
                         </div>
                         <div class="flex items-center gap-1.5 flex-shrink-0">
                           <button v-if="checkDocVigente(doc, 'personas', t)" @click="verDocumentoDossier(doc, 'personas', t)" type="button" class="cursor-pointer text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5">
@@ -5254,6 +5278,7 @@ const mapaEstadoAcreditaciones = computed(() => {
       const scopedKey = `per-${uId}-${dName}`
 
       let matchedCert = null
+      let conflictoEmpresa = null
 
       for (const c of certs) {
         const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || '')
@@ -5293,9 +5318,13 @@ const mapaEstadoAcreditaciones = computed(() => {
 
         if (match) {
           // Spec 45 Regla Persona-Empresa: Si es empresa-dependiente, validar razón social de la OT
-          const idEmpresaOT = Number(opportunity.value?.id_empresa || antecedentes.value?.id_empresa_cotizante || 9)
+          const idEmpresaOT = Number(opportunity.value?.id_empresa_emisora || opportunity.value?.id_empresa || antecedentes.value?.id_empresa_cotizante || 9)
           if (c.es_empresa_dependiente && c.id_empresa && Number(c.id_empresa) !== idEmpresaOT) {
-            // Pertenece a otra razón social del grupo -> No es válido para esta OT
+            // Registrar conflicto explicativo para advertir en la interfaz
+            conflictoEmpresa = {
+              id_empresa: c.id_empresa,
+              empresa_emisora: c.empresa_emisora || getNombreEmpresaContratista(c.id_empresa)
+            }
             continue;
           }
 
@@ -5325,6 +5354,7 @@ const mapaEstadoAcreditaciones = computed(() => {
       result.personas[lookupKey] = {
         vigente: isVigente,
         cert: matchedCert,
+        conflicto: conflictoEmpresa,
         manual: manualVinculado,
         url: matchedCert?.url || manualVinculado?.url || (matchedCert?.id_doc ? `${archivoBaseUrl.value}/archivo/ver/${matchedCert.id_doc}` : null)
       }
@@ -5623,6 +5653,33 @@ const checkDocVigente = (docNombre, categoria, entityObj = null) => {
 
     return false
   }
+}
+
+// --- HELPERS PARA MULTI-EMPRESA EN DOSSIER DE ACREDITACIONES (SPEC 45) ---
+const empresasGrupoGSP = [
+  { id_empresa: 9, nombre: 'Grúas San Pablo SpA', sigla: 'GSP SpA', rut: '76.123.456-7', icon: '🏗️' },
+  { id_empresa: 7, nombre: 'Bestmaq Arriendos SpA', sigla: 'Bestmaq', rut: '76.209.534-3', icon: '🚜' },
+  { id_empresa: 8, nombre: 'Logística del Sur SpA', sigla: 'Logística del Sur', rut: '76.890.123-4', icon: '🚛' },
+  { id_empresa: 11, nombre: 'Royal Rental SpA', sigla: 'Royal Rental', rut: '76.345.678-9', icon: '🏢' }
+]
+
+const getNombreEmpresaContratista = (idEmpresa) => {
+  const found = empresasGrupoGSP.find(e => Number(e.id_empresa) === Number(idEmpresa))
+  return found ? `${found.icon} ${found.nombre}` : '🏗️ Grúas San Pablo SpA'
+}
+
+const getRutEmpresaContratista = (idEmpresa) => {
+  const found = empresasGrupoGSP.find(e => Number(e.id_empresa) === Number(idEmpresa))
+  return found ? found.rut : '76.123.456-7'
+}
+
+const getConflictoEmpresaPersona = (docNombre, entityObj) => {
+  const dName = extractDocName(docNombre)
+  if (!dName) return null
+  const dNameNorm = normalizarTextoAcred(dName)
+  const uId = entityObj?.id_user ? String(entityObj.id_user) : (entityObj?.id ? String(entityObj.id) : (entityObj?.user_id ? String(entityObj.user_id) : (typeof entityObj === 'number' || typeof entityObj === 'string' ? String(entityObj) : '')))
+  if (!uId) return null
+  return mapaEstadoAcreditaciones.value.personas[`${uId}___${dNameNorm}`]?.conflicto || null
 }
 
 const subirArchivoInSitu = async (categoria, docNombre, event, entityObj = null) => {
