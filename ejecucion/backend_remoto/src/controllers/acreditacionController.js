@@ -145,3 +145,47 @@ exports.deleteCertificado = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar certificado", error: error.message });
   }
 };
+
+exports.getDocumentosEmpresa = async (req, res) => {
+  try {
+    const { id_empresa } = req.params;
+    const data = await acreditacionModel.getDocumentosEmpresa(id_empresa);
+    res.status(200).json({ status: "success", data });
+  } catch (error) {
+    console.error("[ACREDITACION] Error obteniendo documentos empresa:", error.message);
+    res.status(500).json({ message: "Error al obtener documentos de la empresa", error: error.message });
+  }
+};
+
+exports.subirDocumentoEmpresa = async (req, res) => {
+  try {
+    const { id_empresa } = req.params;
+    const { id_doc, id_user } = req.body;
+    if (!id_doc) {
+      return res.status(400).json({ message: "id_doc es requerido" });
+    }
+    const data = await acreditacionModel.subirDocumentoEmpresa({
+      id_empresa,
+      id_doc,
+      id_user: id_user || req.user?.id_user
+    });
+    res.status(201).json({ status: "success", message: "Documento institucional vinculado correctamente", data });
+  } catch (error) {
+    console.error("[ACREDITACION] Error subiendo documento empresa:", error.message);
+    res.status(500).json({ message: "Error al vincular documento de empresa", error: error.message });
+  }
+};
+
+exports.eliminarDocumentoEmpresa = async (req, res) => {
+  try {
+    const { id_empresa, id_doc } = req.params;
+    const success = await acreditacionModel.eliminarDocumentoEmpresa(id_doc, id_empresa);
+    if (!success) {
+      return res.status(404).json({ message: "Documento de empresa no encontrado" });
+    }
+    res.status(200).json({ status: "success", message: "Documento eliminado correctamente" });
+  } catch (error) {
+    console.error("[ACREDITACION] Error eliminando documento empresa:", error.message);
+    res.status(500).json({ message: "Error al eliminar documento de empresa", error: error.message });
+  }
+};

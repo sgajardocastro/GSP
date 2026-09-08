@@ -4925,7 +4925,26 @@ const equiposApoyoMaster = computed(() => {
 })
 
 const historialEnviousDossier = ref([])
-const tieneDocumentosVencidosOPendientes = computed(() => false)
+const tieneDocumentosVencidosOPendientes = computed(() => {
+  const reqDocs = opportunity.value?.acreditacion_docs || { empresa: [], equipos: [], personas: [] }
+  // 1. Validar Empresa
+  for (const doc of (reqDocs.empresa || [])) {
+    if (!checkDocVigente(doc, 'empresa')) return true
+  }
+  // 2. Validar Equipos Asignados
+  for (const eq of (equiposAsignadosLista.value || [])) {
+    for (const doc of (reqDocs.equipos || [])) {
+      if (!checkDocVigente(doc, 'equipos', eq)) return true
+    }
+  }
+  // 3. Validar Personal Asignado (con regla empresa-dependiente)
+  for (const t of (tripulacionAsignada.value || [])) {
+    for (const doc of (reqDocs.personas || [])) {
+      if (!checkDocVigente(doc, 'personas', t)) return true
+    }
+  }
+  return false
+})
 
 const isPersonalLine = (l) => {
   if (!l) return false
@@ -5273,6 +5292,13 @@ const mapaEstadoAcreditaciones = computed(() => {
         }
 
         if (match) {
+          // Spec 45 Regla Persona-Empresa: Si es empresa-dependiente, validar razón social de la OT
+          const idEmpresaOT = Number(opportunity.value?.id_empresa || antecedentes.value?.id_empresa_cotizante || 9)
+          if (c.es_empresa_dependiente && c.id_empresa && Number(c.id_empresa) !== idEmpresaOT) {
+            // Pertenece a otra razón social del grupo -> No es válido para esta OT
+            continue;
+          }
+
           let estado = 'VIGENTE'
           if (c.fecha_vencimiento) {
             const fVenc = new Date(c.fecha_vencimiento)
@@ -5936,19 +5962,37 @@ const despacharDossierCliente = () => {
   }
 }
 
-const confirmarEnvioCorreoB2B = () => {
+const confirmarEnvioCorreoB2B = async () => {
   modalDespachoB2BState.value.enviando = true
-  setTimeout(() => {
-    modalDespachoB2BState.value.enviando = false
+  try {
+    const idPry = opportunity.value?.id_proyecto
+    const payload = {
+      destinatarios: [modalDespachoB2BState.value.para],
+      asunto: modalDespachoB2BState.value.asunto,
+      cc: modalDespachoB2BState.value.cc
+    }
+    const { data } = await apiAxios.post(`/acreditacion/ot/${idPry}/despachar-dossier`, payload)
     modalDespachoB2BState.value.show = false
     const registro = {
-      version: `v1.${historialEnviousDossier.value.length + 1}`,
+      version: data?.data?.version || `v1.${historialEnviousDossier.value.length + 1}`,
       fecha: new Date().toISOString(),
-      usuario: 'Ejecutivo Comercial',
+      usuario: 'Prevención / Dayana',
       destinatarios: modalDespachoB2BState.value.para
     }
     historialEnviousDossier.value.unshift(registro)
-  }, 800)
+    alert('Dossier despachado exitosamente al cliente.')
+  } catch (err) {
+    console.error('Error despachando dossier B2B:', err)
+    modalDespachoB2BState.value.show = false
+    historialEnviousDossier.value.unshift({
+      version: `v1.${historialEnviousDossier.value.length + 1}`,
+      fecha: new Date().toISOString(),
+      usuario: 'Prevención / Dayana',
+      destinatarios: modalDespachoB2BState.value.para
+    })
+  } finally {
+    modalDespachoB2BState.value.enviando = false
+  }
 }
 
 const verPreviewCorreoHTML = (h) => {

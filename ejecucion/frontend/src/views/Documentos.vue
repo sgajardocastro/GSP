@@ -353,6 +353,20 @@
                             <span class="text-emerald-400 font-medium">{{ file.tipo || 'Certificado' }}</span>
                             <span>•</span>
                             <span>Emisor: {{ file.emisor || 'GSP' }}</span>
+                            <!-- Badge de Razón Social Emisora (Spec 45) -->
+                            <span
+                              v-if="file.empresa_emisora"
+                              class="font-mono text-[9px] px-1.5 py-0.2 rounded font-bold border"
+                              :class="file.id_empresa === 9 ? 'bg-blue-500/10 text-blue-300 border-blue-500/30' :
+                                      file.id_empresa === 7 ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                                      file.id_empresa === 8 ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
+                                      'bg-purple-500/10 text-purple-300 border-purple-500/30'"
+                            >
+                              🏢 {{ file.empresa_emisora }}
+                            </span>
+                            <span v-else-if="file.es_universal" class="font-mono text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.2 rounded">
+                              🌐 Universal
+                            </span>
                             <span>•</span>
                             <span class="font-mono text-slate-500">ID Doc: {{ file.id_doc }}</span>
                             <span>•</span>
@@ -439,6 +453,7 @@ const reportSeleccionadoParaVisor = ref(null)
 // Caché reactivo de certificados cargados desde PostgreSQL
 const certsEquiposCache = ref(new Map())
 const certsPersonasCache = ref(new Map())
+const certsEmpresasCache = ref(new Map())
 
 // --- DEFINICIÓN DE DIMENSIONES CANÓNICAS ---
 const dimensiones = computed(() => [
@@ -504,6 +519,12 @@ const fetchDatosDimensiones = async () => {
       await Promise.allSettled(promesasReports)
     }
 
+    // CARGA CONCURRENTE DE DOCUMENTOS INSTITUCIONALES DE EMPRESAS (Spec 45)
+    if (empresasList.value.length > 0) {
+      const promesasEmpresas = empresasList.value.map(emp => cargarDocumentosEmpresaDirecto(emp.id_empresa))
+      await Promise.allSettled(promesasEmpresas)
+    }
+
   } catch (err) {
     console.error('Error cargando datos para el Gestor Documental:', err)
   } finally {
@@ -543,6 +564,10 @@ const cargarCertificadosPersonaDirecto = async (idUser) => {
       name: c.observaciones?.replace(/^Carga inicial masiva - Archivo:\s*/i, '') || `${c.nombre_tipo}.pdf`,
       tipo: c.nombre_tipo || 'Certificado Personal',
       emisor: c.entidad_emisora || 'GSP',
+      es_empresa_dependiente: !!c.es_empresa_dependiente,
+      es_universal: !c.es_empresa_dependiente,
+      id_empresa: c.id_empresa || null,
+      empresa_emisora: c.empresa_emisora || (c.id_empresa === 9 ? 'GSP SpA' : (c.id_empresa ? `Empresa ${c.id_empresa}` : null)),
       fecha_emision: c.fecha_emision || 'S/I',
       fecha_vencimiento: c.fecha_vencimiento || 'Permanente',
       size: 'PDF Oficial'
@@ -552,11 +577,33 @@ const cargarCertificadosPersonaDirecto = async (idUser) => {
   }
 }
 
+const cargarDocumentosEmpresaDirecto = async (idEmpresa) => {
+  if (certsEmpresasCache.value.has(idEmpresa)) return
+  try {
+    const { data } = await apiAxios.get(`/acreditacion/empresa/${idEmpresa}/documentos`)
+    const docs = Array.isArray(data?.data) ? data.data : []
+    certsEmpresasCache.value.set(idEmpresa, docs.map(d => ({
+      id_doc: d.id_doc,
+      id_certificado: d.id_doc,
+      name: d.name_doc_orig || `${d.name_doc_interno || 'Documento_Empresa'}.pdf`,
+      tipo: 'Documento Institucional',
+      emisor: d.name_empresa || 'Holding GSP',
+      id_empresa: d.id_empresa,
+      empresa_emisora: d.name_empresa,
+      fecha_emision: d.fecha_creacion ? d.fecha_creacion.split('T')[0] : 'S/I',
+      fecha_vencimiento: 'Permanente',
+      size: 'PDF Oficial'
+    })))
+  } catch (err) {
+    certsEmpresasCache.value.set(idEmpresa, [])
+  }
+}
+
 // --- CONSTRUCCIÓN DEL ÁRBOL COMPLETO DE LAS 4 DIMENSIONES CON DATOS REALES ---
 const allTreeRoots = computed(() => {
   const roots = []
 
-  // 1. DIMENSIÓN EMPRESA / HOLDING (SIN MOCKS: Solo si existen en BD)
+  // 1. DIMENSIÓN EMPRESA / HOLDING (Expediente Institucional Real Spec 45)
   roots.push({
     id: 'dim-empresa',
     dimKey: 'empresa',
@@ -566,9 +613,12 @@ const allTreeRoots = computed(() => {
     badge: `${empresasList.value.length} Empresas`,
     children: empresasList.value.map(emp => ({
       id: `emp-${emp.id_empresa}`,
+      id_empresa: emp.id_empresa,
       label: `${emp.name} • RUT: ${emp.rut}`,
       icon: '🏢',
-      files: []
+      get files() {
+        return certsEmpresasCache.value.get(emp.id_empresa) || []
+      }
     }))
   })
 

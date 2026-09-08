@@ -1,4 +1,4 @@
-const db = require('../config/dbConfig');
+const db = require('../config/postgresPool');
 
 const acreditacionModel = {
   // Obtener todas las acreditaciones activas para el Kanban de Torre de Control
@@ -120,6 +120,9 @@ const acreditacionModel = {
         cp.id_tipo_certificado_persona,
         tp.nombre_tipo,
         tp.obligatorio,
+        COALESCE(tp.es_empresa_dependiente, false) AS es_empresa_dependiente,
+        cp.id_empresa,
+        emp.name_empresa AS empresa_emisora,
         cp.fecha_emision,
         cp.fecha_vencimiento,
         cp.id_doc,
@@ -132,6 +135,7 @@ const acreditacionModel = {
         END AS estado_vigencia
       FROM tsec_certificados_persona cp
       JOIN tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+      LEFT JOIN tpar_empresas emp ON cp.id_empresa = emp.id_empresa
       WHERE cp.id_user = $1
       ORDER BY cp.fecha_vencimiento DESC NULLS FIRST, cp.id_certificado_persona DESC
     `;
@@ -214,13 +218,13 @@ const acreditacionModel = {
 
   // Vincular certificado a expediente de trabajador
   async addPersonalCertificado(id_user, certData) {
-    const { id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, observaciones, id_doc } = certData;
+    const { id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, observaciones, id_doc, id_empresa } = certData;
 
     const sql = `
       INSERT INTO tsec_certificados_persona (
-        id_user, id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, id_doc, observaciones
+        id_user, id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, id_doc, observaciones, id_empresa
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id_certificado_persona as id_cert
     `;
     const { rows } = await db.query(sql, [
@@ -228,7 +232,8 @@ const acreditacionModel = {
       fecha_emision || null, 
       fecha_vencimiento || null, 
       id_doc || null, 
-      observaciones || null
+      observaciones || null,
+      id_empresa || null
     ]);
 
     // Actualizar json_data temporalmente por retrocompatibilidad visual si se necesita (opcional, pero la query lee la tabla)
@@ -256,7 +261,7 @@ const acreditacionModel = {
   async getTiposCertificadoPersona() {
     try {
       const sql = `
-        SELECT id_tipo_certificado_persona, nombre_tipo, obligatorio, dias_alerta
+        SELECT id_tipo_certificado_persona, nombre_tipo, obligatorio, COALESCE(es_empresa_dependiente, false) AS es_empresa_dependiente
         FROM tsec_tipos_certificado_persona
         ORDER BY obligatorio DESC, nombre_tipo ASC
       `;
@@ -379,6 +384,56 @@ const acreditacionModel = {
       WHERE id_acreditacion = $1
     `;
     await db.query(sqlUpdate, [id_acreditacion, porcentaje, nuevoEstado]);
+  },
+
+  // Obtener documentos institucionales de una empresa del grupo (Opción A en tfmg_file)
+  async getDocumentosEmpresa(id_empresa) {
+    const sql = `
+      SELECT 
+        f.id_doc,
+        f.name_doc_orig,
+        f.name_doc_interno,
+        f.mimetype,
+        f.fecha_creacion,
+        f.id_proceso AS id_empresa,
+        emp.name_empresa,
+        emp.rut_empresa,
+        '/api/archivo/ver/' || f.id_doc AS url_visor
+      FROM tfmg_file f
+      JOIN tpar_empresas emp ON f.id_proceso = emp.id_empresa
+      WHERE f.tipo_doc = 'DOC_EMPRESA' 
+        AND f.id_proceso = $1
+        AND (f.estado IS NULL OR f.estado != 'ELIMINADO')
+      ORDER BY f.fecha_creacion DESC
+    `;
+    const { rows } = await db.query(sql, [id_empresa]);
+    return rows;
+  },
+
+  // Registrar o asociar documento institucional a una empresa
+  async subirDocumentoEmpresa({ id_empresa, id_doc, id_user }) {
+    const sql = `
+      UPDATE tfmg_file 
+      SET tipo_doc = 'DOC_EMPRESA',
+          id_proceso = $1,
+          id_user = COALESCE($3, id_user),
+          estado = 'ACTIVO'
+      WHERE id_doc = $2
+      RETURNING *
+    `;
+    const { rows } = await db.query(sql, [id_empresa, id_doc, id_user || null]);
+    return rows[0];
+  },
+
+  // Dar de baja documento de empresa
+  async eliminarDocumentoEmpresa(id_doc, id_empresa) {
+    const sql = `
+      UPDATE tfmg_file
+      SET estado = 'ELIMINADO'
+      WHERE id_doc = $1 AND id_proceso = $2 AND tipo_doc = 'DOC_EMPRESA'
+    `;
+    const { rowCount } = await db.query(sql, [id_doc, id_empresa]);
+    return rowCount > 0;
   }
 };
 
