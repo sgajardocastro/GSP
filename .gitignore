@@ -23,3 +23,6 @@ Thumbs.db
 # Archivos Pesados
 *.zip
 Documentos ejemplo/
+dist-dev/
+audit_data.json
+template_80_body_seed.json

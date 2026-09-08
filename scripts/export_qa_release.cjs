@@ -118,6 +118,11 @@ Este directorio contiene el código fuente 100% limpio (sin \`node_modules\` ni 
    * Lienzo Canvas para firma táctil del ITO Mandante y coordenadas GPS.
 5. **Documentos PDF Oficiales:**
    * Certificar que la Cotización y la OT generen los apellidos completos de la tripulación y la matriz de aparejos sin \`[object Object]\`.
+6. **Gestor Documental Dimensional Multi-Eje (Spec 44):**
+   * Verificar en \`/lg-gsp-dev/documentos\` el árbol unificado de 1 sola columna de ancho completo.
+   * Certificar que las 4 dimensiones (Empresa, Flota 110 equipos, Personas 32 colaboradores y Clientes 26 OTs) contabilicen y muestren semáforos compactos de vigencia (\`🟢 N  🟡 N  🔴 N\`).
+   * Verificar que en la Dimensión 4 cada OT liste sus cotizaciones históricas (v1-v3), OTs formalizadas, informes de visitas técnicas y reports diarios de izaje con firma del mandante y GPS.
+   * Probar apertura directa en nueva pestaña de los PDFs reales (\`/api/archivo/ver/:id_doc\`) y del visor interactivo modal de reportes.
 
 ---
 *Generado automáticamente por el Workflow Spec-Driven \`.agents/workflows/qa_export_and_delivery.md\`*
@@ -141,8 +146,12 @@ for (const target of TARGET_DESTS) {
     const existenArchivosReales = itemsAnteriores.some(item => {
       const p = path.join(target, item);
       if (!fs.existsSync(p)) return false;
-      const entries = fs.readdirSync(p);
-      return entries.length > 0 && !entries.every(e => e === 'desktop.ini');
+      const stat = fs.lstatSync(p);
+      if (stat.isDirectory()) {
+        const entries = fs.readdirSync(p);
+        return entries.length > 0 && !entries.every(e => e === 'desktop.ini');
+      }
+      return stat.size > 0;
     });
 
     if (existenArchivosReales) {
@@ -152,8 +161,12 @@ for (const target of TARGET_DESTS) {
         const src = path.join(target, item);
         const dst = path.join(backupDir, item);
         if (fs.existsSync(src)) {
-          // Copiar en lugar de rename para carpetas de nube que bloquean rename
-          copyDirClean(src, dst);
+          const stat = fs.lstatSync(src);
+          if (stat.isDirectory()) {
+            copyDirClean(src, dst);
+          } else if (stat.isFile()) {
+            fs.copyFileSync(src, dst);
+          }
           console.log(`     ↳ Archivado: ${item}`);
         }
       }
@@ -194,16 +207,24 @@ for (const target of TARGET_DESTS) {
 // 5. FASE 4: Generar ZIP unificado
 try {
   console.log('\n📦 [FASE 4] Generando archivo ZIP empaquetado para descarga rápida...');
-  const mainTarget = TARGET_DESTS[0];
-  const zipPath = path.join(mainTarget, 'GSP_Fuentes_y_Specs_QA.zip');
-  execSync(`powershell -Command "Compress-Archive -Path '${path.join(ROOT_DIR, '.agents', 'specs')}', '${path.join(ROOT_DIR, 'ejecucion', 'frontend')}', '${path.join(ROOT_DIR, 'ejecucion', 'pwa')}', '${path.join(ROOT_DIR, 'ejecucion', 'backend_remoto')}' -DestinationPath '${zipPath}' -Force"`);
-  console.log(`  ✅ ZIP generado en: ${zipPath}`);
+  const localTarget = TARGET_DESTS.find(t => t.includes('QA_Fuentes_Web')) || TARGET_DESTS[0];
+  const zipPath = path.join(localTarget, 'GSP_Fuentes_y_Specs_QA.zip');
+  const cleanSpec = path.join(localTarget, 'Spec');
+  const cleanProyecto = path.join(localTarget, 'Proyecto');
+  
+  execSync(`powershell -Command "Compress-Archive -Path '${cleanSpec}', '${cleanProyecto}' -DestinationPath '${zipPath}' -Force"`);
+  console.log(`  ✅ ZIP generado exitosamente en: ${zipPath}`);
 
-  // Replicar ZIP a los otros destinos
-  for (let i = 1; i < TARGET_DESTS.length; i++) {
-    const otherZip = path.join(TARGET_DESTS[i], 'GSP_Fuentes_y_Specs_QA.zip');
-    if (fs.existsSync(TARGET_DESTS[i])) {
-      fs.copyFileSync(zipPath, otherZip);
+  // Replicar ZIP a todos los demás destinos
+  for (const target of TARGET_DESTS) {
+    if (target !== localTarget && fs.existsSync(target)) {
+      const otherZip = path.join(target, 'GSP_Fuentes_y_Specs_QA.zip');
+      try {
+        fs.copyFileSync(zipPath, otherZip);
+        console.log(`  ↳ Replicado a: ${otherZip}`);
+      } catch (e) {
+        console.warn(`  ⚠️ No se pudo replicar a ${otherZip}:`, e.message);
+      }
     }
   }
 } catch (eZip) {

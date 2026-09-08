@@ -107,6 +107,126 @@
       </div>
     </v-card>
 
+    <!-- 🚧 ACCESO RÁPIDO: INSPECCIÓN DE ENTRADA Y SALIDA DE PATIO (CHECKLIST AUTÓNOMO) -->
+    <v-card
+      class="mb-4 rounded-xl border border-amber-500/30 text-white pa-3"
+      style="background: linear-gradient(135deg, #0b1426 0%, #17264a 100%);"
+    >
+      <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+        <div class="d-flex align-center ga-2">
+          <span class="text-2xl">🚧</span>
+          <div>
+            <div class="text-xs font-black text-amber-400 text-uppercase tracking-wider">
+              Control de Portón & Patio
+            </div>
+            <div class="text-xs text-slate-300">
+              Inspección Autónoma de Equipos (Entrada / Salida)
+            </div>
+          </div>
+        </div>
+        <v-btn
+          color="amber-darken-2"
+          variant="flat"
+          class="font-black text-xs text-black"
+          prepend-icon="mdi-clipboard-check-outline"
+          @click="abrirModalPatio"
+        >
+          Nueva Inspección ➔
+        </v-btn>
+      </div>
+    </v-card>
+
+    <!-- 🚧 MODAL DE INSPECCIÓN DE PATIO -->
+    <v-dialog v-model="dialogPatio" max-width="540">
+      <v-card class="bg-[#0f172a] text-white border border-slate-700 rounded-xl">
+        <v-card-title class="d-flex align-center ga-2 text-subtitle-1 font-weight-black text-amber-400 border-b border-slate-800 pa-4">
+          <span>🚧</span> Inspección de Entrada / Salida de Patio
+        </v-card-title>
+        <v-card-text class="pa-4">
+          <v-row dense>
+            <v-col cols="12" class="mb-2">
+              <label class="text-xs font-bold text-slate-300 d-block mb-1">Tipo de Movimiento</label>
+              <div class="d-flex ga-2">
+                <v-btn
+                  class="flex-1 font-black text-xs py-3 rounded-lg"
+                  :color="formPatio.tipo_movimiento === 'ENTRADA' ? 'emerald-darken-2' : 'grey-darken-4'"
+                  :variant="formPatio.tipo_movimiento === 'ENTRADA' ? 'flat' : 'outlined'"
+                  @click="formPatio.tipo_movimiento = 'ENTRADA'"
+                >
+                  🟢 ENTRADA A PATIO
+                </v-btn>
+                <v-btn
+                  class="flex-1 font-black text-xs py-3 rounded-lg"
+                  :color="formPatio.tipo_movimiento === 'SALIDA' ? 'amber-darken-2' : 'grey-darken-4'"
+                  :variant="formPatio.tipo_movimiento === 'SALIDA' ? 'flat' : 'outlined'"
+                  @click="formPatio.tipo_movimiento = 'SALIDA'"
+                >
+                  🔴 SALIDA A FAENA
+                </v-btn>
+              </div>
+            </v-col>
+
+            <v-col cols="12" class="mb-1">
+              <v-autocomplete
+                v-model="formPatio.equipoSeleccionado"
+                :items="equiposPatio"
+                item-title="display_label"
+                return-object
+                label="Buscar Equipo o Patente (ej: 1070, LTM, Patente)"
+                placeholder="Escriba para buscar..."
+                variant="outlined"
+                density="comfortable"
+                :loading="cargandoEquiposPatio"
+                clearable
+                hide-details="auto"
+                prepend-inner-icon="mdi-truck-cargo-container"
+              >
+                <template #item="{ props, item }">
+                  <v-list-item v-bind="props" :subtitle="`${item.raw.tipo_equipo || 'Equipo'} • ${item.raw.marca || ''}`">
+                    <template #prepend>
+                      <v-chip size="x-small" color="amber" class="mr-2 font-mono font-bold">{{ item.raw.patente }}</v-chip>
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-autocomplete>
+            </v-col>
+
+            <v-col cols="12" class="mt-2">
+              <v-textarea
+                v-model="formPatio.observaciones"
+                label="Observación o novedad de portón (opcional)"
+                variant="outlined"
+                density="compact"
+                rows="2"
+                hide-details
+              />
+            </v-col>
+
+            <v-col cols="12" v-if="errorIniciandoPatio">
+              <v-alert type="error" density="compact" variant="tonal" class="mt-2 text-xs">
+                {{ errorIniciandoPatio }}
+              </v-alert>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="pa-4 border-t border-slate-800 justify-end ga-2">
+          <v-btn variant="text" color="slate-400" @click="dialogPatio = false">
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="amber-darken-2"
+            variant="flat"
+            class="font-black text-black"
+            :loading="iniciandoPatio"
+            :disabled="!formPatio.equipoSeleccionado"
+            @click="iniciarChecklistPatio"
+          >
+            🚀 Iniciar Checklist
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-row dense class="align-center">
       <v-col v-if="!esVistaReclamos" cols="12" md="6" class="py-1">
         <div class="asignacion-dia-title">
@@ -517,6 +637,134 @@ const idUser = computed(() => userDetailStore.userDetail?.id_user ?? null)
 // --- MÓDULO DE VIAJE CONVOY / CHOFER PWA ---
 const viajeActivo = ref(null)
 const cargandoViajeActivo = ref(false)
+
+// --- MÓDULO DE INSPECCIÓN AUTÓNOMA DE PATIO (TEMPLATE 79) ---
+const dialogPatio = ref(false)
+const cargandoEquiposPatio = ref(false)
+const iniciandoPatio = ref(false)
+const errorIniciandoPatio = ref('')
+const equiposPatio = ref([])
+const formPatio = reactive({
+  tipo_movimiento: 'ENTRADA',
+  equipoSeleccionado: null,
+  observaciones: ''
+})
+
+const cargarEquiposPatio = async () => {
+  if (equiposPatio.value.length > 0) return
+  try {
+    cargandoEquiposPatio.value = true
+    const { data } = await apiAxios.get('/tequ-equipos')
+    const lista = data?.data || []
+    equiposPatio.value = lista.map(e => ({
+      ...e,
+      display_label: `${e.patente} • ${e.marca || ''} ${e.modelo || ''} (${e.nombre_categoria || e.tipo_equipo || 'Equipo'})`
+    }))
+  } catch (err) {
+    console.error('Error cargando equipos de patio:', err)
+  } finally {
+    cargandoEquiposPatio.value = false
+  }
+}
+
+const abrirModalPatio = async () => {
+  dialogPatio.value = true
+  errorIniciandoPatio.value = ''
+  formPatio.tipo_movimiento = 'ENTRADA'
+  formPatio.equipoSeleccionado = null
+  formPatio.observaciones = ''
+  await cargarEquiposPatio()
+}
+
+const iniciarChecklistPatio = async () => {
+  if (!formPatio.equipoSeleccionado) return
+  try {
+    iniciandoPatio.value = true
+    errorIniciandoPatio.value = ''
+    const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
+    const eq = formPatio.equipoSeleccionado
+    const fechaActual = fechaActualYMD()
+
+    // 1. Obtener la semilla canónica del Template 79
+    const { data: tplData } = await apiAxios.get('/servicio/leanglobal/obtenerTemplates?id_template=79')
+    const tpl = Array.isArray(tplData) ? tplData[0] : (tplData?.datos?.[0] || tplData)
+    if (!tpl) throw new Error('No se pudo obtener la plantilla del checklist de patio')
+
+    const headerSeed = typeof tpl.header_seed === 'string' ? JSON.parse(tpl.header_seed) : (tpl.header_seed || {})
+    const bodySeed = typeof tpl.body_seed === 'string' ? JSON.parse(tpl.body_seed) : (tpl.body_seed || { segmentos: [] })
+    const approvalSeed = typeof tpl.approval_seed === 'string' ? JSON.parse(tpl.approval_seed) : (tpl.approval_seed || {})
+
+    // 2. Inyectar datos del equipo y movimiento en la estructura de ejecución
+    const bodyExec = JSON.parse(JSON.stringify(bodySeed))
+    if (bodyExec.segmentos && bodyExec.segmentos[0] && bodyExec.segmentos[0].attributes) {
+      bodyExec.segmentos[0].attributes.forEach(attr => {
+        if (attr.label === 'TIPO DE MOVIMIENTO' && attr.values) {
+          attr.values.selected = formPatio.tipo_movimiento
+          attr.default = formPatio.tipo_movimiento
+        }
+        if (attr.label === 'PLACA PATENTE / EQUIPO') {
+          attr.default = eq.patente
+          attr.text = eq.patente
+        }
+        if (attr.label === 'CATEGORÍA DEL EQUIPO') {
+          attr.default = eq.nombre_categoria || eq.tipo_equipo || ''
+          attr.text = eq.nombre_categoria || eq.tipo_equipo || ''
+        }
+        if (attr.label === 'SUBCATEGORÍA / MODELO') {
+          attr.default = `${eq.marca || ''} ${eq.modelo || ''}`.trim()
+          attr.text = `${eq.marca || ''} ${eq.modelo || ''}`.trim()
+        }
+      })
+    }
+
+    const headerExec = {
+      ...headerSeed,
+      patente: eq.patente,
+      tipo_movimiento: formPatio.tipo_movimiento,
+      marca: eq.marca || '',
+      modelo: eq.modelo || '',
+      tipo_equipo: eq.nombre_categoria || eq.tipo_equipo || '',
+      id_equipo: eq.id_equipo,
+      observaciones: formPatio.observaciones || ''
+    }
+
+    const payload = {
+      id_tipo_srv: Number(tpl.id_tipo_srv) || 2,
+      id_template: 79,
+      id_survey_padre: null,
+      id_user: Number(uid),
+      id_user_creacion: Number(uid),
+      id_empresa_cliente: Number(eq.id_empresa || 11),
+      estado_srv: 'CREADO',
+      header_seed: JSON.stringify(headerSeed),
+      body_seed: JSON.stringify(bodySeed),
+      approval_seed: JSON.stringify(approvalSeed),
+      header_exec: JSON.stringify(headerExec),
+      body_exec: JSON.stringify(bodyExec),
+      approval_exec: JSON.stringify(approvalSeed),
+      fecha_plan_ini: fechaActual,
+      fecha_plan_fin: fechaActual,
+      id_flow_tmpl: tpl.id_flow_tmpl || 1
+    }
+
+    const { data } = await apiAxios.post('/survey/', payload)
+    const idSurvey = data?.idSurvey || data?.id_survey
+    if (idSurvey) {
+      dialogPatio.value = false
+      router.push({
+        path: '/inspeccion',
+        query: { idInspeccion: String(idSurvey) }
+      })
+    } else {
+      throw new Error(data?.message || 'No se pudo generar el checklist')
+    }
+  } catch (err) {
+    console.error('Error iniciando checklist de patio:', err)
+    errorIniciandoPatio.value = err?.response?.data?.message || err?.message || 'Error al iniciar checklist'
+  } finally {
+    iniciandoPatio.value = false
+  }
+}
 
 const consultarViajeActivo = async () => {
   const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
