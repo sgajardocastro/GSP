@@ -3235,20 +3235,33 @@
                 </select>
               </div>
 
-              <!-- 3. Servicio incluye Traslado / Flete -->
+              <!-- 3. Distancia Estimada a Faena (Ida desde Casa Matriz) -->
               <div>
-                <label class="text-[10px] text-slate-300 font-bold block mb-1">
-                  Incluye Flete / Traslado <span class="text-red-400">*</span>:
-                </label>
-                <select 
-                  v-model="opportunity.incluye_flete" 
-                  class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors"
-                  :class="opportunity.incluye_flete === null ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                >
-                  <option :value="null">-- Seleccionar (Obligatorio) --</option>
-                  <option :value="true">SÍ (Cobro Flete $500.000)</option>
-                  <option :value="false">NO (Sin Cobro Flete)</option>
-                </select>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-[10px] text-slate-300 font-bold">
+                    Distancia Estimada Faena <span class="text-red-400">*</span>:
+                  </label>
+                  <span 
+                    v-if="opportunity.distancia_km !== null && opportunity.distancia_km !== ''"
+                    class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border"
+                    :class="(parseFloat(opportunity.distancia_km) || 0) <= 30 
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' 
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'"
+                  >
+                    {{ (parseFloat(opportunity.distancia_km) || 0) <= 30 ? '🏙️ URBANO (≤30km)' : '🚜 RURAL (>30km)' }}
+                  </span>
+                </div>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    v-model.number="opportunity.distancia_km" 
+                    min="1" 
+                    placeholder="Ej. 15 km (ida desde Temuco)" 
+                    class="w-full bg-[#050810] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors font-mono"
+                    :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                  />
+                  <span class="absolute right-2.5 top-1.5 text-[11px] text-slate-500 font-mono pointer-events-none">km ida</span>
+                </div>
               </div>
 
               <!-- 4. Requiere Rigger Certificado -->
@@ -3483,6 +3496,40 @@
               <button @click="agregarLinea" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
                 + Agregar Línea
               </button>
+            </div>
+
+            <!-- BANNER REACTIVO DE EVALUACIÓN DE FLETE / TRASLADO -->
+            <div 
+              v-if="(parseFloat(opportunity.distancia_km) || 0) > 30 && !tieneFleteEnLineas" 
+              class="bg-rose-950/40 border border-rose-500/60 rounded-xl p-3 text-xs flex items-center justify-between gap-3 text-rose-200"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-xl">⚠️</span>
+                <div>
+                  <strong class="font-mono uppercase font-bold text-rose-300 block">Alerta Anti-Fuga: Servicio Rural ({{ opportunity.distancia_km }} km)</strong>
+                  <span>La distancia supera el umbral urbano (30 km) y <strong>no hay línea de flete/traslado</strong>. Esto genera fuga comercial para GSP.</span>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                @click="inyectarFleteRecomendado"
+                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow"
+              >
+                + Inyectar Flete Recomendado
+              </button>
+            </div>
+
+            <div 
+              v-else-if="(parseFloat(opportunity.distancia_km) || 0) > 0 && (parseFloat(opportunity.distancia_km) || 0) <= 30 && tieneFleteEnLineas" 
+              class="bg-blue-950/30 border border-blue-500/40 rounded-xl p-3 text-xs flex items-center justify-between gap-3 text-blue-200"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-lg">ℹ️</span>
+                <div>
+                  <strong class="font-mono uppercase font-bold text-blue-300 block">Servicio Urbano (≤ 30 km):</strong>
+                  <span>El traslado de la grúa va dentro de las horas de arriendo desde Casa Matriz, salvo transporte de contrapesos para grúas pesadas (≥ 90T).</span>
+                </div>
+              </div>
             </div>
             
             <div class="flex-1 border border-white/5 rounded-lg bg-black/20 overflow-auto scrollbar-hide">
@@ -5195,7 +5242,7 @@ const opportunity = ref({
   tipo_pago: 'transferencia',
   requiere_oc_hes: null,
   requiere_acreditacion: null,
-  incluye_flete: null,
+  distancia_km: null,
   requiere_rigger: null,
   requiere_prevencionista: null,
   cliente_pone_combustible: null,
@@ -5646,7 +5693,7 @@ const linesEquiposPrincipales = computed(() => {
 })
 
 const tieneLineaTrasladoOExtra = computed(() => {
-  const tieneComercial = (linesValidas.value || []).some(l => isTrasladoLine(l)) || opportunity.value?.incluye_flete === true
+  const tieneComercial = (linesValidas.value || []).some(l => isTrasladoLine(l)) || (parseFloat(opportunity.value?.distancia_km) || 0) > 30
   const tieneExtras = Array.isArray(operacionesAssignment.value.equipos_extra) && operacionesAssignment.value.equipos_extra.length > 0
   return tieneComercial || tieneExtras
 })
@@ -7054,7 +7101,8 @@ const eliminarEquipoPrincipal = (line) => {
 
 const sincronizarTrasladosComerciales = () => {
   const trasladosComerciales = (lines.value || []).filter(l => isTrasladoLine(l))
-  if (trasladosComerciales.length === 0 && !opportunity.value?.incluye_flete) return
+  const esRural = (parseFloat(opportunity.value?.distancia_km) || 0) > 30
+  if (trasladosComerciales.length === 0 && !esRural) return
 
   const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
     ? [...operacionesAssignment.value.equipos_extra] 
@@ -7063,8 +7111,8 @@ const sincronizarTrasladosComerciales = () => {
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || opportunity.value?.fecha_tentativa || ''
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || opportunity.value?.fecha_tentativa || ''
 
-  // 1. Si no hay líneas explícitas pero incluye_flete = true
-  if (trasladosComerciales.length === 0 && opportunity.value?.incluye_flete) {
+  // 1. Si no hay líneas explícitas pero es servicio rural (> 30 km)
+  if (trasladosComerciales.length === 0 && esRural) {
     const yaExiste = currentExtras.some(ex => ex.is_linea_base)
     if (!yaExiste) {
       currentExtras.unshift({
@@ -7280,11 +7328,11 @@ const validarDatosPreventaParaCotizar = () => {
     return false
   }
 
-  // 4. Requerimientos Comerciales (6 selectores obligatorios)
+  // 4. Requerimientos Comerciales (5 selectores obligatorios + distancia faena)
   const flagsFaltantes = []
   if (opportunity.value.requiere_oc_hes === null) flagsFaltantes.push('Requiere OC / HES')
   if (opportunity.value.requiere_acreditacion === null) flagsFaltantes.push('Requiere Acreditación')
-  if (opportunity.value.incluye_flete === null) flagsFaltantes.push('Incluye Flete / Traslado')
+  if (!opportunity.value.distancia_km || parseFloat(opportunity.value.distancia_km) <= 0) flagsFaltantes.push('Distancia Estimada Faena (km ida)')
   if (opportunity.value.requiere_rigger === null) flagsFaltantes.push('Requiere Rigger')
   if (opportunity.value.requiere_prevencionista === null) flagsFaltantes.push('Prevencionista Certificado')
   if (opportunity.value.cliente_pone_combustible === null) flagsFaltantes.push('Cliente pone Combustible')
@@ -8856,19 +8904,23 @@ const fetchClientes = async (query = '') => {
 // ==========================================
 // PREVENCIÓN DE PÉRDIDA DE DATOS
 // ==========================================
-watch(() => opportunity.value.incluye_flete, (newVal) => {
-  if (newVal) {
-    const hasFlete = lines.value.some(l => l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete')))
-    if (!hasFlete) {
-      lines.value.push({ 
-        tipo: 'TRASLADOS', subcategoria: '', descripcion: 'Servicio de Traslado/Flete', 
-        cantidad: 1, unidad: 'Fijo', valorUnitario: 500000 
-      })
-    }
-  } else {
-    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete'))))
-  }
+const tieneFleteEnLineas = computed(() => {
+  return (lines.value || []).some(l => l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete')))
 })
+
+const inyectarFleteRecomendado = () => {
+  const km = parseFloat(opportunity.value.distancia_km) || 0
+  const valorSugerido = km > 70 ? 600000 : 400000
+  lines.value.push({
+    tipo: 'TRASLADOS',
+    subcategoria: 'CAMA BAJA',
+    descripcion: `Flete / Traslado Vial (${km} km ida)`,
+    unidad: 'Traslado',
+    cantidad: 1,
+    valorUnitario: valorSugerido,
+    subtotal: valorSugerido
+  })
+}
 
 watch(() => opportunity.value.requiere_rigger, (newVal) => {
   if (newVal) {
@@ -9008,7 +9060,7 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
           opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes !== undefined ? crm.requiere_oc_hes : null
           opportunity.value.requiere_acreditacion = crm.requiere_acreditacion !== undefined ? crm.requiere_acreditacion : null
-          opportunity.value.incluye_flete         = crm.incluye_flete !== undefined ? crm.incluye_flete : null
+          opportunity.value.distancia_km          = crm.distancia_km !== undefined ? crm.distancia_km : (crm.incluye_flete ? 35 : null)
           opportunity.value.requiere_rigger       = crm.requiere_rigger !== undefined ? crm.requiere_rigger : null
           opportunity.value.requiere_prevencionista = crm.requiere_prevencionista !== undefined ? crm.requiere_prevencionista : null
           opportunity.value.cliente_pone_combustible = crm.cliente_pone_combustible !== undefined ? crm.cliente_pone_combustible : null
@@ -9658,7 +9710,7 @@ const buildPayload = () => {
         tipo_pago:             opportunity.value.tipo_pago,
         requiere_oc_hes:       opportunity.value.requiere_oc_hes,
         requiere_acreditacion: opportunity.value.requiere_acreditacion,
-        incluye_flete:         opportunity.value.incluye_flete,
+        distancia_km:          opportunity.value.distancia_km,
         requiere_rigger:       opportunity.value.requiere_rigger,
         requiere_prevencionista: opportunity.value.requiere_prevencionista,
         cliente_pone_combustible: opportunity.value.cliente_pone_combustible,

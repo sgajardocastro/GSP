@@ -299,5 +299,17 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Estructurador de Servicios Contextual, Consistencia PDF & Guardián de Estado (Spec 16)]:** Especificación e implementación formal del estructurador con inputs contextuales estrictos por tipo de cobro (Horas Diarias Minimas: Días 1..30 × Horas 1..24 × $/hr; Horas Mes Minimas: Meses ≥ 1 × Horas > 1 × $/hr; Traslado y Valor Fijo: Cantidad ≥ 1 × $), consistencia matemática idéntica en el generador PDF (`proyectoModel.js`), guardián de navegación por estado bloqueando acceso a operaciones en Estado < 3 y normalización resiliente de flota en `cargarDatosCotizacion`. `DOCUMENTADO EN SPEC 16 Y COMPILADO 0 ERRORES`.
 * [ ] **[Flujo de Aprobación FES Triple Firma y Generación PDF para ITS - bosquejo_firma.md]:** Implementación del circuito formal de triple firma electrónica con PIN FES (Analista ➔ Jefe Operaciones ➔ Contabilidad), gestión transaccional de observaciones por responsable, circuito de rechazo con retorno automático al Analista Operativo para subsanación, generación de PDF oficial A4 (logos paramétricos en Base64, balance económico, jornadas y costos 8 categorías), estampado visual con pdf-lib y sellado de tiempo TSA RFC 3161.
 
+### 📌 Sprint Activo (11-Sep-2026) - Reglas de Distancia, Limpieza PWA y Pruebas en Paralelo (Hito 21-Sep)
+*(Derivado de los acuerdos de las reuniones del 10 y 11 de septiembre con Jorge Ponce)*
+* [x] **[POC Cotizador por Distancia - PocCotizadorDistancia.vue]:** Maquetación en 2 columnas, cálculo reactivo de fletes, alertas rojas anti-fuga y cláusula dinámica urbano/rural. `VALIDADO CON JORGE PONCE`.
+* [ ] **[Migración Cotizador Distancia a CRM - GestorOportunidades.vue]:** Reemplazar flag manual `incluye_flete` ($500.000) por input numérico estimado de `distancia_km` (ida desde Casa Matriz, sin selector de comunas), inyectando las 3 líneas canónicas en Caso 4 (Horas Grúa, Flete Grúa, Traslado Contrapesos).
+* [ ] **[Cálculo Interno Duplicado de Distancia - Backend & PDF]:** Multiplicar distancia de ida por 2 internamente ($D \times 2$) para costos operacionales e inyectar cláusula contractual dinámica de faena en el PDF de cotización.
+* [ ] **[Simplificación PWA Chofer - ViajeConductor.vue]:** Erradicar el log maestro y elementos técnicos; reducir a 5 estados gigantes (Salida Patio, En Ruta, Llegada Faena, Término, Sellar Report).
+* [ ] **[Depuración Torre de Control - Torre.vue]:** Eliminar la pestaña redundante "Calidad de Gestión" y consolidar en "Inspección de Patio".
+* [ ] **[Candado FES en Estado de Pago (EDP)]:** Bloquear generación de EDP hasta que el Coordinador Richard apruebe el ITS con su PIN FES de 4 dígitos.
+* [ ] **[Mapa Didáctico de Entregables por Etapa]:** Confeccionar documento guía para Jorge Ponce y equipo comercial/operativo.
+* [ ] **[Hito Pruebas en Paralelo - 21 de Septiembre]:** Inicio de marcha blanca con vendedores cotizando en vivo en Casa Matriz.
+
+
 
 
