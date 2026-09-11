@@ -21,10 +21,11 @@ El objeto de oportunidad no es solo una tarifa por horas, sino un expediente int
   tipo_pago: "transferencia", // efectivo, transferencia, credito, debito, cheque, otros
   prioridad: "normal",        // normal, alta
   
-  // 1. Matriz de 6 Requerimientos Comerciales Mandatorios (Flags Booleanos)
+  // 1. Matriz de Requerimientos Comerciales Mandatorios (Flags Booleanos y Distancia Vial)
   requiere_oc_hes: true,
   requiere_acreditacion: true,
-  incluye_flete: true,
+  distancia_km: 85,             // Distancia vial estimada de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco)
+  regimen_operacional: "RURAL", // Derivado reactivo: "URBANO" (<= 30 km) | "RURAL" (> 30 km)
   requiere_rigger: true,
   requiere_prevencionista: false,
   cliente_pone_combustible: false,
@@ -124,14 +125,15 @@ Valida la información mercantil de preventa antes de permitir la emisión de co
    - Autocompleta: Razón Social, RUT, Dirección Comercial y Giro.
 3. **Contacto Mandante:** Selector (`contacto_id`) que rellena Nombre, Teléfono y Correo.
 4. **Tipo de Pago:** Selector (`transferencia`, `credito`, `efectivo`, `debito`, `cheque`, `otros`).
-5. **Matriz de 6 Selectores / Flags Combobox Obligatorios (`null` inicial):**
-   Todos los flags inician en estado `null` (*"Seleccionar..."*). Mientras un selector esté en `null`, se marca con **borde rojo de advertencia** (`border-red-500 bg-red-500/5`):
-   - **`requiere_oc_hes`:** Bloquea facturación hasta carga de OC formal.
-   - **`requiere_acreditacion`:** Habilita matriz documental de faena.
-   - **`incluye_flete`:** Con `SÍ`, inyecta automáticamente una línea de Flete ($500.000, `TRASLADOS`, `Fijo`) en el estructurador. Con `NO`, la remueve.
+5. **Matriz de Requerimientos Comerciales y Control de Distancia Vial:**
+   - **`distancia_km` (Input Numérico de Ida):** Distancia vial estimada de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco). El sistema determina reactivamente el régimen operacional:
+     * **`URBANO (≤ 30 km)`:** Badge verde inline. El cómputo de horas corre desde la salida de Casa Matriz hasta el retorno. Flete de grúa autotransportada = $0.
+     * **`RURAL (> 30 km)`:** Badge ámbar inline. El cómputo de horas corre en faena (portón a portón). Exige cobro obligatorio de flete independiente.
+   - **`requiere_oc_hes`:** Bloquea facturación final hasta carga de OC formal.
+   - **`requiere_acreditacion`:** Habilita matriz documental de faena en Operaciones.
    - **`requiere_rigger`:** Sincronizado bidireccionalmente con `PERSONAL CERTIFICADO ➔ RIGGER`.
-   - **`requiere_prevencionista`:** Sincronizado con `PERSONAL CERTIFICADO ➔ PREVENCIONISTA`.
-   - **`cliente_pone_combustible`:** Exigencia contractual explícita reflejada en PDF.
+   - **`requiere_prevencionista`:** Sincronizado bidireccionalmente con `PERSONAL CERTIFICADO ➔ PREVENCIONISTA`.
+   - **`cliente_pone_combustible`:** Exigencia contractual explícita reflejada en el PDF de cotización.
 
 ---
 
@@ -325,7 +327,7 @@ Se eliminaron de la base de datos las 5 categorías legacy (`1: Equipo (Grúa)`,
 Existen 3 conceptos operacionales indispensables para estructurar la cotización y la faena que no representan una máquina individual en `tequ_categoria`:
 1. **`TRASLADOS` (Logística de Transporte):**
    - Subcategorías: `CAMA BAJA`, `RAMPLA`, `TRACTO CAMIÓN`, `ESCOLTA / GUÍA`.
-   - Vinculado al flag de preventa `incluye_flete = SÍ/NO` ($500.000, unidad `Fijo` o `Viaje`).
+   - Gobernado reactivamente por la **Matriz de 4 Casos Canónicos** según la distancia estimada de ida (`distancia_km`) y la configuración de contrapesos.
    - Sincronizado automáticamente hacia el Segmento 2 de Asignación OT como línea base protegida (`is_linea_base: true`).
 2. **`PERSONAL CERTIFICADO` (Especialistas en Tierra):**
    - Subcategorías: `RIGGER`, `OPERADOR`, `PREVENCIONISTA`, `OTROS`.
@@ -352,7 +354,24 @@ Por ende, cuando una línea comercial o recurso de traslado posee categoría **`
 
 ---
 
-### 4.4. Regla de Homologación Absoluta en Segmento 2 (Traslados)
+### 4.4. Matriz Canónica de los 4 Casos de Cobro y Comportamiento del Estructurador (Acuerdo Jorge Ponce - 11-Sep-2026)
+A partir de la calibración técnica del 11 de septiembre de 2026 con Gerencia General, se erradica el combobox manual de flete (`incluye_flete`) y se formaliza la siguiente matriz determinística de 4 escenarios según la distancia de ida a faena (`distancia_km`) y la presencia de contrapesos:
+
+| Escenario de Negocio | Condición Operativa | Comportamiento del Estructurador (Líneas Facturables) | Cómputo de Tiempos & Cláusula Legal PDF |
+| :--- | :--- | :--- | :--- |
+| **Caso 1: Urbano sin Contrapeso** | $\text{distancia\_km} \le 30$ km<br>Grúa liviana / mediana ($< 90\text{T}$) | **1 sola línea:**<br>• `Horas de Arriendo Grúa` ($0 flete adicional). | El tiempo corre desde la salida de Casa Matriz (Km 678) hasta el término de maniobra. |
+| **Caso 2: Urbano con Contrapeso** | $\text{distancia\_km} \le 30$ km<br>Grúa pesada ($\ge 90\text{T}$ a $400\text{T}$) | **2 líneas separadas:**<br>1. `Horas de Arriendo Grúa`<br>2. `Traslado Contrapesos` (Fijo \$500.000, unidad `Traslado`). | El tiempo de grúa corre desde salida de base. El traslado de contrapesos se cobra a valor fijo a todo evento. |
+| **Caso 3: Rural sin Contrapeso** | $\text{distancia\_km} > 30$ km<br>Grúa liviana / mediana ($< 90\text{T}$) | **2 líneas separadas:**<br>1. `Horas de Arriendo Grúa` (operación en obra)<br>2. `Flete / Traslado Grúa` (ida y vuelta cerrada). | El tiempo de arriendo corre a partir del arribo a portería de faena. El flete carretero se factura independiente. |
+| **Caso 4: Rural con Contrapeso** | $\text{distancia\_km} > 30$ km<br>Grúa pesada ($\ge 90\text{T}$ a $400\text{T}$) | **3 LÍNEAS SEPARADAS OBLIGATORIAS:**<br>1. `Horas de Arriendo Grúa` (operación en faena)<br>2. `Flete / Traslado Grúa` (movilización vial grúa)<br>3. `Traslado de Contrapesos` (cama baja / tracto). | Horas efectivas en obra. Flete de grúa y traslado de contrapesos se desglosan en 2 líneas de transporte independientes para trazabilidad de costos de combustible y patentes en el ITS. |
+
+#### Reglas de Gobierno en el Estructurador:
+1. **Banner Reactivo Anti-Fuga:** Si $\text{distancia\_km} > 30$ y el estructurador no posee líneas de flete (`tipo === 'TRASLADOS'`), se despliega una alerta roja bloqueante con el botón de inyección automática.
+2. **Duplicación Interna de Distancia ($D \times 2$):** El vendedor digita exclusivamente la distancia de IDA (ej. 85 km). El backend y el modelo de costos operacionales del ITS multiplican automáticamente por 2 ($85 \times 2 = 170$ km) para calcular consumo de combustible, desgaste de neumáticos y peajes ida y vuelta.
+3. **Compuerta Comercial Estricta:** Queda prohibido generar la cotización o avanzar a requerimiento si se detecta un viaje rural sin sus respectivas partidas de flete estructuradas.
+
+---
+
+### 4.5. Regla de Homologación Absoluta en Segmento 2 (Traslados)
 Para mantener consistencia total con el Segmento 1 (Flota Principal):
 1. **Línea Base Cotizada (`is_linea_base = true`):**
    - Muestra el título comercial (`Servicio de Traslado / Flete`).
@@ -369,7 +388,7 @@ Para mantener consistencia total con el Segmento 1 (Flota Principal):
 
 ---
 
-### 4.5. Regla de Segregación para `PERSONAL CERTIFICADO`
+### 4.6. Regla de Segregación para `PERSONAL CERTIFICADO`
 Cuando una línea pertenece a `PERSONAL CERTIFICADO` (detectada por `isPersonalLine(line)`):
 1. Se segrega automáticamente hacia la **Sección 3 (Especialistas & Personal Técnico en Terreno)**.
 2. La columna de equipo físico se **deshabilita** con la etiqueta `— (Personal en Tierra) —`.
@@ -378,7 +397,7 @@ Cuando una línea pertenece a `PERSONAL CERTIFICADO` (detectada por `isPersonalL
 
 ---
 
-### 4.6. Estándar de Inspección de Salida de Patio (Template 76: `TMPL-GSP-CHK-EQUIPOS`)
+### 4.7. Estándar de Inspección de Salida de Patio (Template 76: `TMPL-GSP-CHK-EQUIPOS`)
 1. **Responsable de la Inspección:** Se elimina el campo redundante de texto `NOMBRE OPERADOR` en el Segmento 1 (`DATOS GENERALES`). La trazabilidad y responsabilidad técnica recae directamente en el usuario autenticado en la plataforma que ejecuta el formulario de inspección.
 2. **Conformidad y Firma Electrónica:** Se elimina el lienzo de firma manual `FIRMA DEL OPERADOR` en el Segmento 8 (`CIERRE Y FIRMAS`), manteniendo únicamente `OBSERVACIONES GENERALES`. La conformidad técnica y legal se formaliza exclusivamente a través del flujo **FES con PIN (Firma Electrónica Simple)**.
 
