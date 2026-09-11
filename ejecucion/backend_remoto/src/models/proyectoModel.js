@@ -632,8 +632,14 @@ class ProyectoModel {
       const ivaVal = Math.round(totalNetoVal * 0.19);
       const totalGeneralVal = totalNetoVal + ivaVal;
 
-      // Formatear saltos de línea de condiciones para HTML
-      const condicionesHtml = crm.condiciones_pdf || '';
+      // Formatear saltos de línea de condiciones para HTML y cláusula contractual de régimen
+      const kmEstimado = parseFloat(crm.distancia_km) || (crm.incluye_flete ? 35 : 0);
+      const esUrbano = kmEstimado <= 30;
+      const clausulaRegimen = esUrbano
+        ? `• RÉGIMEN URBANO (≤ 30 km): La jornada y el cómputo de horas de arriendo inician al momento de la salida del equipo desde las instalaciones de Grúas San Pablo (Panamericana Sur Km 678, Temuco) y finalizan al retornar a las mismas.`
+        : `• RÉGIMEN RURAL (> 30 km): La jornada de arriendo del equipo inicia a la llegada a faena y concluye al término del servicio diario. La movilización (flete ida y retorno) se factura de forma independiente.`;
+      
+      const condicionesHtml = [clausulaRegimen, crm.condiciones_pdf || ''].filter(Boolean).join('\n\n');
 
       // Generar secciones extra dinámicas para los tabs del CRM (ej. Datos Servicio & Visita)
       let extraSectionsHtml = '';
@@ -817,7 +823,7 @@ class ProyectoModel {
               <td class="info-label">Condiciones Operativas:</td>
               <td class="info-value" colspan="3">
                 • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Incluye Traslado / Flete:</strong> ${crm.incluye_flete === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Régimen Operacional:</strong> ${esUrbano ? 'URBANO (≤ 30 km)' : 'RURAL (> 30 km)'} (${kmEstimado > 0 ? kmEstimado + ' km estim. ida' : 'No especificada'})&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Prevencionista:</strong> ${crm.requiere_prevencionista === true ? 'SÍ' : 'NO'}<br>
                 • <strong>Cliente pone Combustible:</strong> <strong>${crm.cliente_pone_combustible === true ? 'SÍ (Suministrado por Mandante)' : 'NO (Suministrado por San Pablo)'}</strong>
