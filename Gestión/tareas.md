@@ -302,8 +302,8 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 ### 📌 Sprint Activo (11-Sep-2026) - Reglas de Distancia, Limpieza PWA y Pruebas en Paralelo (Hito 21-Sep)
 *(Derivado de los acuerdos de las reuniones del 10 y 11 de septiembre con Jorge Ponce)*
 * [x] **[POC Cotizador por Distancia - PocCotizadorDistancia.vue]:** Maquetación en 2 columnas, cálculo reactivo de fletes, alertas rojas anti-fuga y cláusula dinámica urbano/rural. `VALIDADO CON JORGE PONCE`.
-* [ ] **[Migración Cotizador Distancia a CRM - GestorOportunidades.vue]:** Reemplazar flag manual `incluye_flete` ($500.000) por input numérico estimado de `distancia_km` (ida desde Casa Matriz, sin selector de comunas), inyectando las 3 líneas canónicas en Caso 4 (Horas Grúa, Flete Grúa, Traslado Contrapesos).
-* [ ] **[Cálculo Interno Duplicado de Distancia - Backend & PDF]:** Multiplicar distancia de ida por 2 internamente ($D \times 2$) para costos operacionales e inyectar cláusula contractual dinámica de faena en el PDF de cotización.
+* [x] **[Migración Cotizador Distancia a CRM - GestorOportunidades.vue]:** Reemplazar flag manual `incluye_flete` ($500.000) por input numérico estimado de `distancia_km` (ida desde Casa Matriz, sin selector de comunas), inyectando las 3 líneas canónicas en Caso 4 (Horas Grúa, Flete Grúa, Traslado Contrapesos). `COMPILADO 0 ERRORES Y VERIFICADO`.
+* [x] **[Cálculo Interno Duplicado de Distancia - Backend & PDF]:** Multiplicar distancia de ida por 2 internamente ($D \times 2$) para costos operacionales e inyectar cláusula contractual dinámica de faena en el PDF de cotización (`proyectoModel.js`). `COMPLETADO`.
 * [ ] **[Simplificación PWA Chofer - ViajeConductor.vue]:** Erradicar el log maestro y elementos técnicos; reducir a 5 estados gigantes (Salida Patio, En Ruta, Llegada Faena, Término, Sellar Report).
 * [ ] **[Depuración Torre de Control - Torre.vue]:** Eliminar la pestaña redundante "Calidad de Gestión" y consolidar en "Inspección de Patio".
 * [ ] **[Candado FES en Estado de Pago (EDP)]:** Bloquear generación de EDP hasta que el Coordinador Richard apruebe el ITS con su PIN FES de 4 dígitos.
