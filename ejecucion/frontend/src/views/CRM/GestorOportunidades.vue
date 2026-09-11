@@ -1612,32 +1612,10 @@
         <div class="bg-[#050810] border border-white/10 rounded-2xl p-4 shadow-xl">
           <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             
-            <!-- INDICADORES STEPPER HORIZONTALES CONECTADOS -->
-            <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-3 relative">
+            <!-- INDICADORES STEPPER HORIZONTALES CONECTADOS (2 PASOS) -->
+            <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-3 relative">
               
-              <!-- PASO 1: CALIDAD -->
-              <div :class="[
-                'p-3 rounded-xl border transition-all duration-300 flex items-center justify-between',
-                statusSegmento1 === 'GREEN' ? 'bg-emerald-950/30 border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'bg-[#0a0f1e] border-white/10'
-              ]">
-                <div class="flex items-center gap-3">
-                  <div :class="[
-                    'w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs',
-                    statusSegmento1 === 'GREEN' ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                  ]">
-                    1
-                  </div>
-                  <div>
-                    <span class="text-xs font-bold text-white block">🛡️ Control Calidad</span>
-                    <span class="text-[10px] text-slate-400 block">Notificación Antecedentes</span>
-                  </div>
-                </div>
-                <span :class="statusSegmento1 === 'GREEN' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' : 'text-red-400 bg-red-500/20 border-red-500/30'" class="text-[10px] font-bold px-2 py-0.5 rounded border">
-                  {{ statusSegmento1 === 'GREEN' ? '🟢 Notificado' : '🔴 Pendiente' }}
-                </span>
-              </div>
-
-              <!-- PASO 2: PATIO -->
+              <!-- PASO 1: PATIO & FLOTA -->
               <div :class="[
                 'p-3 rounded-xl border transition-all duration-300 flex items-center justify-between',
                 statusSegmento2 === 'GREEN' ? 'bg-emerald-950/30 border-emerald-500/50 shadow-lg shadow-emerald-500/10' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500/10 border-amber-500 shadow-md shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
@@ -1647,11 +1625,11 @@
                     'w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs',
                     statusSegmento2 === 'GREEN' ? 'bg-emerald-500 text-slate-950 font-black' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500 text-slate-950 font-black' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30')
                   ]">
-                    2
+                    1
                   </div>
                   <div>
-                    <span class="text-xs font-bold text-white block">🚜 Inspección Patio</span>
-                    <span class="text-[10px] text-slate-400 block">Inspección de Patio</span>
+                    <span class="text-xs font-bold text-white block">🚜 Inspección Patio & Flota</span>
+                    <span class="text-[10px] text-slate-400 block">Checklist FES de Equipos</span>
                   </div>
                 </div>
                 <span :class="statusSegmento2 === 'GREEN' ? 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30' : (statusSegmento2 === 'YELLOW' ? 'text-amber-400 bg-amber-500/20 border-amber-500/30' : 'text-slate-400 bg-slate-800 border-slate-700')" class="text-[10px] font-bold px-2 py-0.5 rounded border">
@@ -1659,7 +1637,7 @@
                 </span>
               </div>
 
-              <!-- PASO 3: ANALISTA 360 & GPS -->
+              <!-- PASO 2: ANALISTA & GPS -->
               <div :class="[
                 'p-3 rounded-xl border transition-all duration-300 flex items-center justify-between',
                 statusSegmento3 === 'GREEN' ? 'bg-emerald-950/30 border-emerald-500/50 shadow-lg shadow-emerald-500/10' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500/10 border-amber-500 shadow-md shadow-amber-500/10' : 'bg-[#0a0f1e] border-white/10')
@@ -1669,10 +1647,10 @@
                     'w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs',
                     statusSegmento3 === 'GREEN' ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   ]">
-                    3
+                    2
                   </div>
                   <div>
-                    <span class="text-xs font-bold text-white block">💻 Analista & GPS</span>
+                    <span class="text-xs font-bold text-white block">💻 Despacho Conductor & GPS</span>
                     <span class="text-[10px] text-slate-400 block">Revisión 360 & Geocerca</span>
                   </div>
                 </div>
@@ -1688,74 +1666,27 @@
               <div class="text-right">
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estado Pase Terreno</span>
                 <span :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 font-black' : 'text-amber-400 font-bold'" class="text-xs font-mono block">
-                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 PASE LIBERADO' : '🔒 PENDIENTE (REQUISITOS)' }}
+                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 PASE LIBERADO' : '🔒 PENDIENTE' }}
                 </span>
               </div>
               <div :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'" class="p-2 rounded-lg font-bold text-xs">
-                {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '3/3' : '1/3' }}
+                {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '2/2' : ((statusSegmento2 === 'GREEN' || statusSegmento3 === 'GREEN') ? '1/2' : '0/2') }}
               </div>
             </div>
 
           </div>
         </div>
 
-        <!-- GRILLA DE 3 COLUMNAS PARALELAS SIMÉTRICAS -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- GRILLA DE 2 COLUMNAS PARALELAS SIMÉTRICAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           
-          <!-- COLUMNA 1: CONTROL DE CALIDAD -->
-          <div class="bg-[#0a0f1e] border border-purple-500/20 hover:border-purple-500/40 transition-all rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-xl min-h-[460px]">
-            <div class="space-y-4">
-              <div class="flex justify-between items-center border-b border-white/10 pb-3">
-                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento1 === 'GREEN' ? 'bg-emerald-500' : 'bg-red-500'"></span>
-                  🛡️ 1. Control de Calidad
-                </span>
-                <span v-if="preparacionSalidaState.cc_notificado" class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                  ✅ Notificado
-                </span>
-              </div>
-
-              <div class="bg-[#050810] p-3.5 rounded-xl border border-white/5 space-y-2 text-xs">
-                <span class="text-[11px] font-bold text-slate-300 block border-b border-white/5 pb-1">📋 Antecedentes del Servicio</span>
-                <div>Cliente: <strong class="text-white">{{ selectedClient?.razon_social || opportunity.rut_cliente }}</strong></div>
-                <div>Servicio / Carga: <strong class="text-amber-400">{{ siteVisit.tipo_carga || 'General' }}</strong> ({{ siteVisit.peso_carga || 'N/A' }})</div>
-                <div>Lugar: <strong class="text-slate-200">{{ siteVisit.obra_nombre || 'Obra' }} - {{ siteVisit.obra_ciudad || '' }}</strong></div>
-              </div>
-
-              <div class="space-y-2">
-                <label class="block text-[10px] text-slate-400 font-semibold">Notas & Riesgos de Calidad:</label>
-                <textarea v-model="preparacionSalidaState.cc_notas_riesgo" :disabled="preparacionSalidaState.cc_notificado" rows="3" placeholder="Detalle requisitos especiales de EPP, certificaciones o maniobra..." class="w-full bg-[#050810] border border-white/10 rounded-xl p-2.5 text-xs text-white outline-none resize-none focus:border-purple-500/50 disabled:opacity-50"></textarea>
-              </div>
-            </div>
-
-            <div class="space-y-3 pt-2">
-              <button 
-                @click="notificarControlCalidad" 
-                :disabled="preparacionSalidaState.cc_notificado" 
-                class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                <span>{{ preparacionSalidaState.cc_notificado ? 'Calidad Notificado' : 'Notificar a Calidad por Correo' }}</span>
-              </button>
-
-              <div v-if="preparacionSalidaState.cc_notificado" class="p-3 bg-[#050810] rounded-xl border border-emerald-500/30 text-xs space-y-1">
-                <div class="flex justify-between items-center border-b border-white/5 pb-1">
-                  <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">📜 Traza Calidad</span>
-                  <span class="text-[10px] text-slate-400 font-mono">⏱️ {{ trazaCalidad?.fecha_hora || 'Registrado' }}</span>
-                </div>
-                <div class="text-[10px] text-slate-300 truncate">Para: <strong class="text-white">{{ trazaCalidad?.para || 'calidad@arriendosanpablo.cl' }}</strong></div>
-                <div class="text-[10px] text-slate-300 truncate">Asunto: <strong class="text-amber-400">{{ trazaCalidad?.asunto || '🛡️ Requerimientos Calidad' }}</strong></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- COLUMNA 2: INSPECCIÓN SALIDA DE PATIO POR EQUIPO -->
+          <!-- COLUMNA 1: INSPECCIÓN SALIDA DE PATIO POR EQUIPO -->
           <div class="bg-[#0a0f1e] border border-amber-500/20 hover:border-amber-500/40 transition-all rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-xl min-h-[460px]">
             <div class="space-y-4 flex-1 flex flex-col min-h-0">
               <div class="flex justify-between items-center border-b border-white/10 pb-3 flex-shrink-0">
                 <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento2 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento2 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
-                  🚜 2. Inspección Patio
+                  🚜 1. Inspección Patio & Flota
                 </span>
                 <div class="flex items-center gap-2">
                   <button 
@@ -2090,13 +2021,13 @@
             </div>
           </div>
 
-          <!-- COLUMNA 3: ANALISTA 360 & GEOCERCA GPS -->
+          <!-- COLUMNA 2: DESPACHO CONDUCTOR & GPS -->
           <div class="bg-[#0a0f1e] border border-emerald-500/20 hover:border-emerald-500/40 transition-all rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-xl min-h-[460px]">
             <div class="space-y-4">
               <div class="flex justify-between items-center border-b border-white/10 pb-3">
                 <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full" :class="statusSegmento3 === 'GREEN' ? 'bg-emerald-500' : (statusSegmento3 === 'YELLOW' ? 'bg-amber-500' : 'bg-red-500')"></span>
-                  💻 3. Analista 360 & Geocerca
+                  💻 2. Despacho Conductor & GPS
                 </span>
                 <span class="text-[10px] text-emerald-300 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">GPS Live</span>
               </div>
@@ -2645,6 +2576,30 @@
 
         <!-- PASO 2: CONCILIACIÓN & ESTADO DE PAGO (EDP MANDANTE) -->
         <div v-else-if="pasoCierreActivo === 'edp'" class="space-y-6">
+
+          <!-- BANNER CANDADO CRIPTOGRÁFICO FES (SPEC 47) -->
+          <div v-if="!itsAprobadoPorOperaciones" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl flex-shrink-0">
+                🔒
+              </div>
+              <div>
+                <span class="font-bold text-amber-300 block text-sm">Candado Criptográfico FES Activo</span>
+                <span class="text-slate-400 block">
+                  La Carátula Oficial de EDP se desbloquea una vez que Jefatura de Operaciones (Richard) vise el ITS con su PIN FES. Estado actual: <strong class="text-white font-mono uppercase">{{ itsEstadoActual }}</strong>.
+                </span>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              @click="pasoCierreActivo = 'its'"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg uppercase tracking-wider text-xs flex items-center gap-2 cursor-pointer shadow flex-shrink-0 transition-all"
+            >
+              <span>🔏</span>
+              <span>Ir a Visar ITS con PIN FES</span>
+            </button>
+          </div>
+
           <!-- CABECERA DE LIQUIDACIÓN Y ESTADO DE CIERRE (PASO 2) -->
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
           <div class="flex items-center gap-4">
@@ -2682,9 +2637,14 @@
             </button>
             <button
               @click="modalCaratulaEDPAbierto = true"
-              class="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow flex items-center gap-2 cursor-pointer"
+              :disabled="!itsAprobadoPorOperaciones"
+              :class="!itsAprobadoPorOperaciones 
+                ? 'opacity-50 cursor-not-allowed bg-slate-800 border-white/10 text-slate-400' 
+                : 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/50 text-amber-300 cursor-pointer'"
+              class="px-4 py-2.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow flex items-center gap-2"
+              :title="!itsAprobadoPorOperaciones ? 'Bloqueado: Requiere V°B° con PIN FES de Jefatura de Operaciones en ITS' : 'Ver Carátula Oficial de EDP'"
             >
-              <span>📄</span>
+              <span>{{ itsAprobadoPorOperaciones ? '📄' : '🔒' }}</span>
               <span>Ver Carátula Oficial de EDP</span>
             </button>
             <button
@@ -4929,6 +4889,8 @@ const edpData = ref(null)
 const cargandoEDP = ref(false)
 const modalCaratulaEDPAbierto = ref(false)
 const modalITSAbierto = ref(false)
+const itsEstadoActual = ref('BORRADOR')
+const itsAprobadoPorOperaciones = computed(() => ['EN_REVISION_CONTABILIDAD', 'CONCLUIDO'].includes(itsEstadoActual.value))
 
 const activeProjectId = computed(() => {
   const pId = props.proyectoId
@@ -10552,6 +10514,18 @@ const cargarResumenEDP = async (projId) => {
         formFacturacion.observaciones_facturacion = liq.observaciones_facturacion || ''
       }
     }
+    // Candado Criptográfico FES en EDP (Spec 47)
+    try {
+      const itsRes = await apiAxios.get(`/operaciones/its/${id}`)
+      if (itsRes?.data?.success && itsRes.data.data?.its) {
+        itsEstadoActual.value = itsRes.data.data.its.estado_its || 'BORRADOR'
+        if (edpData.value) {
+          edpData.value.its = itsRes.data.data.its
+        }
+      }
+    } catch (itsErr) {
+      console.warn('No se pudo verificar estado ITS para candado EDP:', itsErr)
+    }
   } catch (err) {
     console.warn('Error al cargar resumen EDP:', err)
   } finally {
@@ -11201,10 +11175,6 @@ const programarInspeccionPatioEquipo = async (eqId) => {
 }
 
 const confirmarInspeccionSalidaPatioEquipo = async (eqId) => {
-  if (!preparacionSalidaState.value.cc_notificado) {
-    alert('⚠️ Debe notificar previamente a Control de Calidad (Paso 1).')
-    return
-  }
   const ins = getInspeccionEquipo(eqId)
   ins.patio_checklist_completado = true
   
@@ -11387,10 +11357,6 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
 }
 
 const programarInspeccionPatio = async () => {
-  if (!preparacionSalidaState.value.cc_notificado) {
-    alert('⚠️ Paso 2 es secuencial de Paso 1. Debe notificar a Control de Calidad (Paso 1) antes de programar la Inspección de Patio.')
-    return
-  }
   if (!preparacionSalidaState.value.jefe_patio_id) {
     alert('⚠️ Por favor seleccione el Jefe de Patio asignado.')
     return
@@ -11417,10 +11383,6 @@ const programarInspeccionPatio = async () => {
 }
 
 const confirmarInspeccionSalidaPatio = async () => {
-  if (!preparacionSalidaState.value.cc_notificado) {
-    alert('⚠️ Debe notificar previamente a Control de Calidad (Paso 1).')
-    return
-  }
   preparacionSalidaState.value.patio_checklist_completado = true
   preparacionSalidaState.value.patio_contrapesos_cargados = true
   preparacionSalidaState.value.patio_aparejos_cargados = true
