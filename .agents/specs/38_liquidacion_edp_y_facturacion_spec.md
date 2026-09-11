@@ -16,8 +16,8 @@ La **Subpestaña 7 ("Valorización, ITS & Facturación")** consolida el cierre d
 
 Conforme a las definiciones operativas y contables acordadas con Gerencia General y Jefatura de Contabilidad (8 de Septiembre de 2026), este módulo unifica en un **Pipeline Secuencial de 4 Pasos** todo el proceso de cierre para eliminar fugas de facturación y discrepancias con el mandante:
 
-1. **Paso 1 - ITS (Informe de Término de Servicio - [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md)):** Liquidación técnica de horas de terreno (auto-pobladas de PWA), imputación de costos directos en 8 categorías, determinación de Utilidad Bruta y Margen % reactivo, plantillas de observación de 1-clic y triple firma interna previa a la emisión del EDP.
-2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas operadas contra tarifas pactadas, cálculo de sobretiempos y emisión de la Carátula Oficial de Estado de Pago respaldada por reports firmados con geolocalización.
+1. **Paso 1 - ITS (Informe de Término de Servicio - [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md) & [Spec 47](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/47_its_pdf_flujo_aprobacion_fes_spec.md)):** Liquidación técnica de horas de terreno (auto-pobladas de PWA), imputación de costos directos en 8 categorías, determinación de Utilidad Bruta y Margen % reactivo, plantillas de observación de 1-clic y triple firma interna previa a la emisión del EDP.
+2. **Paso 2 - EDP Mandante (Protegido por Candado Criptográfico FES):** Conciliación automática de jornadas operadas contra tarifas pactadas, cálculo de sobretiempos y emisión de la Carátula Oficial de Estado de Pago respaldada por reports firmados con geolocalización. **Invariante:** La Carátula Oficial permanece bloqueada hasta que Jefatura de Operaciones (Richard) apruebe el ITS con su PIN FES de 4 dígitos.
 3. **Paso 3 - Respaldo OC (Orden de Compra Mandante):** Repositorio documental de Órdenes de Compra / HES recibidas del cliente con validación financiera de cobertura:
    $$\sum \text{Monto OCs} \ge \text{Total Neto EDP}$$
 4. **Paso 4 - Factura DTE:** Vinculación al ERP Laudus, asociación de la OC seleccionada con un solo clic, registro de Folio DTE y cierre formal de la OT en estado `7` (Facturado y Concluido).
@@ -69,6 +69,17 @@ Conforme a las definiciones operativas y contables acordadas con Gerencia Genera
   │  • Transición relacional inmediata: id_proyecto_estado = 7 (Facturado / Cerrado).    │
   └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+### 2.1. Invariante del Candado Criptográfico FES en EDP Mandante (Spec 47)
+Para blindar el proceso comercial y erradicar discrepancias entre lo ejecutado en terreno y lo facturado:
+1. **Regla de Bloqueo Inviolable:**
+   - Si el ITS está en estado `BORRADOR`, `EN_CORRECCION` o `EN_REVISION_OPERACIONES`:
+     * El botón **`[ Ver Carátula Oficial de EDP ]`** permanece **bloqueado (`disabled`)** con icono `🔒`.
+     * Se renderiza un **Banner Dorado de Bloqueo** informando el estado actual del ITS y un botón de navegación directa `[ 🔏 Ir a Visar ITS con PIN FES ]`.
+2. **Desbloqueo Criptográfico:**
+   - Una vez que Jefatura de Operaciones (Richard) firma el ITS con su PIN OTP de 4 dígitos (Paso 2 `EN_REVISION_CONTABILIDAD` o `CONCLUIDO`), el candado se libera automáticamente, habilitando la apertura y descarga de la Carátula Oficial de EDP.
 
 ---
 
