@@ -53,6 +53,8 @@ function routerApi(app) {
     app.use('/api/reports', require('./reportDiarioRoutes.js'));
     app.use('/api/operaciones/patio', require('./patioRoutes.js'));
     app.use('/api/patio', require('./patioRoutes.js'));
+    app.use('/api/operaciones/its', require('./itsRoutes.js'));
+    app.use('/api/its', require('./itsRoutes.js'));
 }
 
 module.exports = routerApi;

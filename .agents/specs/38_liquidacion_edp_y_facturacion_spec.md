@@ -1,65 +1,72 @@
-# 📐 Especificación Técnica: Liquidación Operacional, Consolidación de EDP y Registro de Facturación (Spec 38)
+# 📐 Especificación Técnica: Subpestaña 7 - Valorización, ITS & Facturación (Spec 38)
 
 **Documento:** `38_liquidacion_edp_y_facturacion_spec.md`  
 **Ecosistema:** Grúas San Pablo (GSP) / LeanGlobal Platform  
-**Fase de Dominio:** Fase 6 & 7 - Cierre Operacional, Liquidación y Facturación (`id_proyecto_estado = 6` / Liquidación y `id_proyecto_estado = 7` / Facturado y Concluido)  
-**Estado:** `ESPECIFICACIÓN FORMAL - PROPUESTA PARA APROBACIÓN`  
-**Fecha:** 26 de Agosto de 2026  
+**Módulo:** Torre de Control CRM / Operaciones (`GestorOportunidades.vue`)  
+**Subpestaña:** Subpestaña 7: `7. Valorización, ITS & Facturación`  
+**Fase de Dominio:** Fases 6 & 7 - Cierre Operacional, Conciliación, Respaldo OC y Emisión DTE (`id_proyecto_estado = 6` / Liquidación y `id_proyecto_estado = 7` / Facturado y Concluido)  
+**Estado:** `CANÓNICO VIGENTE`  
+**Última Actualización:** 8 de Septiembre de 2026 (Consolidación Pipeline 4 Pasos & Repositorio OCs Mandante)  
 
 ---
 
-## 1. 📌 Resumen Ejecutivo y Objetivo
+## 1. 📌 Resumen Ejecutivo y Objetivo de Negocio
 
-El presente documento especifica el módulo final del ciclo de vida de una Orden de Trabajo (OT) en Grúas San Pablo: **La Liquidación Financiera, Emisión de Carátula de Estado de Pago (EDP) y Registro de Facturación**.
+La **Subpestaña 7 ("Valorización, ITS & Facturación")** consolida el cierre de ciclo de una Orden de Trabajo (OT) en Grúas San Pablo tras la ejecución en terreno.
 
-Este módulo actúa como el puente definitivo entre las operaciones de terreno (Reports Diarios firmados por el cliente) y la administración comercial, garantizando que el **100% de las horas operadas, sobretiempos y fletes se liquiden sin fricción ni discrepancias**, cerrando el *Happy Path* de punta a punta.
+Conforme a las definiciones operativas y contables acordadas con Gerencia General y Jefatura de Contabilidad (8 de Septiembre de 2026), este módulo unifica en un **Pipeline Secuencial de 4 Pasos** todo el proceso de cierre para eliminar fugas de facturación y discrepancias con el mandante:
 
-### 🎯 Principios de Negocio:
-1. **Liquidación Automática por Conciliación:** El sistema cruza automáticamente la tarifa pactada en la cotización comercial con las horas reales facturables y sobretiempos de los reports validados.
-2. **Respaldo Documental Indiscutible:** Toda carátula de EDP está respaldada por los Reports Diarios inmutables con firma manuscrita del mandante, geolocalización GPS y fotografías de horómetro.
-3. **Cierre de Ciclo en Kanban:** El registro del N° de Factura y N° de HES/OC transiciona el proyecto a **"Facturado / Concluido"**, completando el ciclo de vida en la Torre de Control.
+1. **Paso 1 - ITS (Informe de Término de Servicio - [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md)):** Liquidación técnica de horas de terreno (auto-pobladas de PWA), imputación de costos directos en 8 categorías, determinación de Utilidad Bruta y Margen % reactivo, plantillas de observación de 1-clic y triple firma interna previa a la emisión del EDP.
+2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas operadas contra tarifas pactadas, cálculo de sobretiempos y emisión de la Carátula Oficial de Estado de Pago respaldada por reports firmados con geolocalización.
+3. **Paso 3 - Respaldo OC (Orden de Compra Mandante):** Repositorio documental de Órdenes de Compra / HES recibidas del cliente con validación financiera de cobertura:
+   $$\sum \text{Monto OCs} \ge \text{Total Neto EDP}$$
+4. **Paso 4 - Factura DTE:** Vinculación al ERP Laudus, asociación de la OC seleccionada con un solo clic, registro de Folio DTE y cierre formal de la OT en estado `7` (Facturado y Concluido).
 
 ---
 
-## 2. 🔄 Diagrama del Flujo de Liquidación y Cierre
+## 2. 🔄 Diagrama del Pipeline Canónico de 4 Pasos (Navegación Nativa Full-Screen)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        FLUJO DE LIQUIDACIÓN Y FACTURACIÓN GSP                          │
+│               PIPELINE DE VALORIZACIÓN, LIQUIDACIÓN Y FACTURACIÓN (SUBPESTAÑA 7)       │
+│               Barra Superior de Selección: [ ① ITS ] ➔ [ ② EDP ] ➔ [ ③ OC ] ➔ [ ④ DTE ] │
 └────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-  1. FAENA CONCLUIDA EN TERRENO             ▼
+                                             │
+  PASO ①: ITS (INFORME TÉRMINO DE SERVICIO - SPEC 46)  ▼
   ┌──────────────────────────────────────────────────────────────────────────────────────┐
-  │  • Todos los días de servicio cuentan con Report Diario validado por el Analista.    │
-  │  • La OT se encuentra en estado >= 5 (En Ejecución / Lista para Liquidar).           │
+  │  • Renderizado NATIVO a pantalla completa mediante ModalITS.vue (:embedded="true").  │
+  │  • Auto-población de horas desde Reports Diarios PWA y ajuste con filas tachadas.    │
+  │  • Imputación de Costos Directos en 8 categorías (Alimentación, Peajes, Pensiones,  │
+  │    Personal Externo, Feriados, Subcontrato Flete, Gastos Extra, Costo Hora Operador).│
+  │  • Balance Financiero en vivo: Venta vs Costos ➔ Utilidad Bruta & Margen Operacional.│
+  │  • Plantillas de Observación [ Urbano ] / [ Rural ] y Triple V°B° Interno.           │
+  │  • Navegación: Botón [ ➔ Guardar y Pasar a EDP ] que transiciona a Paso ②.          │
   └─────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            ▼
-  2. CONSOLIDACIÓN FINANCIERA (Subpestaña 7: Liquidación & EDP)
+                                             │
+  PASO ②: EDP MANDANTE (CONCILIACIÓN)       ▼
   ┌──────────────────────────────────────────────────────────────────────────────────────┐
-  │  • Cuadro Resumen de Cobro:                                                          │
-  │    - Grúa / Maquinaria: Base $/hr o $/día pactada                                    │
-  │    - Total Horas Facturables Acumuladas (Σ reports validados)                        │
-  │    - Total Sobretiempos Acumulados ($/hr extra pactada)                              │
-  │    - Traslados / Fletes Fijos pactados                                               │
-  │    ─────────────────────────────────────────────────────────────────────────────     │
-  │    MONTO NETO TOTAL LIQUIDADO = Σ (Horas × Tarifa) + Σ Sobretiempos + Fletes          │
+  │  • Pantalla completa de conciliación de jornadas y horas extras validadas.           │
+  │  • Base Tarifa según Unidad Canónica (Piso Diario 8h, Piso Mes 180h, Traslado, Fijo).│
+  │  • Carátula de Estado de Pago, dossier y visualización de respaldos.                │
+  │  • Navegación: [ ⬅️ Volver a ITS (Costos) ] | [ ➔ Continuar a Respaldo OC ].          │
   └─────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            ▼
-  3. EMISIÓN DE CARÁTULA DE EDP (ModalCaratulaEDP.vue)
+                                             │
+  PASO ③: RESPALDO OC (REPOSITORIO)         ▼
   ┌──────────────────────────────────────────────────────────────────────────────────────┐
-  │  • Generación de Documento Formal de Cobro con membrete Grúas San Pablo.             │
-  │  • Datos del Mandante (Razón Social, RUT, Faena, Contacto).                          │
-  │  • Desglose cronológico día por día con detalle de horas y firmante mandante.        │
-  │  • Botón: [ 🖨️ Exportar Carátula EDP / PDF de Respaldo ]                            │
+  │  • Repositorio documental de Órdenes de Compra / HES recibidas del mandante (PDFs).  │
+  │  • Semáforo de Cobertura Financiera: Suma OCs >= Monto EDP (100% Cubierto).          │
+  │  • Visor integrado de PDF para auditoría rápida en pantalla completa.                │
+  │  • Navegación: [ ⬅️ Volver a EDP Mandante ] | [ ➔ Continuar a Facturación DTE ].      │
   └─────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            ▼
-  4. REGISTRO DE FACTURA & CIERRE COMERCIAL
+                                             │
+  PASO ④: FACTURA DTE (CIERRE LAUDUS)       ▼
   ┌──────────────────────────────────────────────────────────────────────────────────────┐
-  │  • Ingreso de N° Orden de Compra / HES del Mandante (ej. HES-49201)                  │
-  │  • Ingreso de N° Factura Emitida (ej. F-12940)                                       │
-  │  • Fecha de Facturación y Monto Final Facturado                                      │
-  │  • Botón: [ 🏁 Declarar OT Facturada y Cerrar Servicio ]                             │
-  │  • Transición de Estado: id_proyecto_estado = 7 (Facturado / Cerrado)                │
+  │  • Selector rápido (chips) para precargar el N° de OC validada en el Paso 3.         │
+  │  • Selección de Tipo de Documento: Factura Electrónica (33) / Exenta (34).           │
+  │  • Registro de Folio Factura y Fecha de Emisión.                                     │
+  │  • Botón Maestro: [ 🏁 Declarar OT Facturada y Cerrar Servicio ].                     │
+  │  • Navegación: [ ⬅️ Volver a Respaldo OC ].                                          │
+  │  • Transición relacional inmediata: id_proyecto_estado = 7 (Facturado / Cerrado).    │
   └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,45 +74,60 @@ Este módulo actúa como el puente definitivo entre las operaciones de terreno (
 
 ## 3. 🗄️ Modelo de Datos y Persistencia PostgreSQL
 
-### 3.1. Almacenamiento en `sch_leangsp.tpry_proyecto`
-Para mantener simplicidad y robustez sin añadir migraciones complejas antes de la presentación, la información de liquidación y facturación se persiste directamente en la estructura `json_field->'liquidacion_v1'` y se actualiza el estado relacional `id_proyecto_estado`.
+Toda la traza documental y financiera de la Subpestaña 7 reside en el esquema `sch_leangsp.tpry_proyecto`:
 
+### 3.1. Repositorio de Órdenes de Compra (`json_field->'crm_v1'->'ordenes_compra'`)
+```json
+[
+  {
+    "id": "oc-1725804901234",
+    "numero_oc": "OC-MINERA-99482",
+    "fecha_emision": "2026-09-08",
+    "monto_neto": 3500000,
+    "centro_costo": "CC-FAENA-NORTE",
+    "archivo": {
+      "id_doc": 885,
+      "nombre": "Orden_Compra_99482_Firmada.pdf",
+      "url": "/archivo/ver/885"
+    },
+    "observaciones": "OC que cubre servicio de grúa 80T y flete cama baja"
+  }
+]
+```
+
+### 3.2. Registro de Cierre y Facturación (`json_field->'liquidacion_v1'`)
 ```json
 {
-  "liquidacion_v1": {
-    "total_horas_base": 18.0,
-    "total_horas_sobretiempo": 2.5,
-    "monto_neto_equipos": 1800000,
-    "monto_neto_sobretiempo": 375000,
-    "monto_neto_flete": 500000,
-    "subtotal_neto": 2675000,
-    "iva_19": 508250,
-    "total_bruto": 3183250,
-    "hes_oc_numero": "HES-2026-8841",
-    "factura_numero": "F-14029",
-    "fecha_facturacion": "2026-08-26",
-    "observaciones_facturacion": "Facturado conforme a HES aprobada por ITO mandante.",
-    "usuario_cierre_id": 55,
-    "fecha_cierre": "2026-08-26T00:30:00Z"
-  }
+  "total_horas_base": 18.0,
+  "total_horas_sobretiempo": 2.5,
+  "monto_neto_equipos": 1800000,
+  "monto_neto_sobretiempo": 375000,
+  "monto_neto_flete": 500000,
+  "subtotal_neto": 2675000,
+  "iva_19": 508250,
+  "total_bruto": 3183250,
+  "tipo_dte": "Factura Electrónica",
+  "hes_oc_numero": "OC-MINERA-99482",
+  "factura_numero": "F-14029",
+  "fecha_facturacion": "2026-09-08",
+  "observaciones_facturacion": "Facturado conforme a OC aprobada por mandante.",
+  "usuario_cierre_id": 55,
+  "fecha_cierre": "2026-09-08T18:30:00Z"
 }
 ```
 
 ---
 
-## 4. 🔌 Especificación de Endpoints API Backend
-
-**Controlador:** `ejecucion/backend_remoto/src/controllers/estadoPagoController.js` (o `reportDiarioController.js`)  
-**Rutas:** `/api/operaciones/edp/*`
+## 4. 🔌 Especificación de Endpoints Backend
 
 ### 4.1. `GET /api/operaciones/edp/resumen/:id_proyecto`
-* **Descripción:** Calcula y retorna la conciliación financiera completa cruzando la cotización comercial con los reports validados.
+* **Descripción:** Calcula la conciliación financiera cruzando las líneas de la cotización comercial con los reports validados.
 * **Respuesta:**
 ```json
 {
   "success": true,
   "data": {
-    "proyecto": { "id_proyecto": 69, "codi_proyecto": "GSP-2608-4851-037", "cliente_nombre": "LeanGlobal Spa" },
+    "proyecto": { "id_proyecto": 69, "codi_proyecto": "GSP-2608-4851-037", "cliente_nombre": "Minera El Abra" },
     "lineas_cotizadas": [ ... ],
     "reports_validados": [ ... ],
     "resumen_liquidacion": {
@@ -118,54 +140,47 @@ Para mantener simplicidad y robustez sin añadir migraciones complejas antes de 
       "total_neto": 2625000,
       "iva": 498750,
       "total_bruto": 3123750
-    },
-    "facturacion_guardada": { ... }
+    }
   }
 }
 ```
 
 ### 4.2. `POST /api/operaciones/edp/cerrar-facturacion`
-* **Body:** `{ id_proyecto, hes_oc_numero, factura_numero, fecha_facturacion, monto_facturado, observaciones }`
-* **Acción:**
-  1. Guarda los datos en `json_field->'liquidacion_v1'`.
-  2. Actualiza `id_proyecto_estado = 7` (Facturado / Cerrado).
-  3. Retorna `{ success: true, message: 'OT Facturada y Concluida exitosamente' }`.
+* **Body:** `{ id_proyecto, tipo_dte, hes_oc_numero, factura_numero, fecha_facturacion, monto_facturado, observaciones }`
+* **Comportamiento:**
+  1. Persiste el cierre en `json_field->'liquidacion_v1'`.
+  2. Actualiza relacionalmente `id_proyecto_estado = 7` (Facturado / Cerrado).
+  3. Despacha evento de cierre y retorna `{ success: true, message: 'OT Facturada y Concluida exitosamente' }`.
+
+### 4.3. `POST /archivo/upload` o `POST /v1/storage/upload`
+* **Descripción:** Sube el PDF de la Orden de Compra física/digital y retorna `{ id_doc, url }` para su almacenamiento en el repositorio de OCs del proyecto.
 
 ---
 
-## 5. 🖥️ Interfaz en Torre de Control CRM (`GestorOportunidades.vue`)
+## 5. 🖥️ Interfaz en GestorOportunidades.vue (Subpestaña 7)
 
-### 5.1. Subpestaña 7: `7. Liquidación & EDP`
-* **Identificador:** `operacionesSubTab === 'liquidacion'`.
-* **Condición de acceso:** Visible para proyectos con `estadoDbActual >= 5`.
-* **Contenido Visual:**
-  * **Bloque A - Tarjetas KPI Financieras:**
-    * `💰 Total Neto Liquidado` (en tipografía dorada destacada).
-    * `⏱️ Horas Totales a Facturar` (desglose Base + Sobretiempo).
-    * `📑 Días Operados Respaldados` (con badge 100% firmado).
-  * **Bloque B - Tabla de Detalle de Conciliación:**
-    * Fila por cada equipo / línea de servicio con cantidad, horas, tarifa unitaria y subtotal.
-    * Fila de Flete / Traslado.
-    * Fila de Sobretiempos devengados.
-  * **Bloque C - Carátula de EDP & Acciones:**
-    * Botón destacado: `[ 📄 Ver Carátula Oficial de EDP ]` (Abre `ModalCaratulaEDP.vue`).
-  * **Bloque D - Formulario de Cierre de Facturación:**
-    * Input N° Orden de Compra / HES Mandante.
-    * Input N° Factura Emitida.
-    * Input Fecha de Facturación.
-    * Botón de Cierre Maestro: `[ 🏁 Declarar OT Facturada y Cerrar Servicio ]`.
-
-### 5.2. Componente `ModalCaratulaEDP.vue` [NUEVO]
-* **Ubicación:** `ejecucion/frontend/src/components/Operaciones/ModalCaratulaEDP.vue`
-* **Diseño:** Documento ejecutivo A4 en pantalla con membrete Grúas San Pablo, identificación del mandante, desglose de jornadas, tabla de horas efectivas y galería de miniaturas de las firmas de los supervisores en terreno.
+* **Identificador de Vista:** `operacionesSubTab === 'liquidacion'`.
+* **Regla de Visualización:** Habilitada para proyectos con `estadoDbActual >= 5`.
+* **Componentes Embebidos:**
+  * **Paso 1 (Card ITS):** Indicador de costos directos registrados en faena, margen porcentual estimado y botón `[ 📄 Generar / Editar Informe Término de Servicio (ITS) ]` que abre `ModalITS.vue` (gobernado por la [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md)).
+  * **Paso 2 (Card EDP):** Cuadro de mando con Total Neto Liquidado, Horas Acumuladas, Días Operados y botón `[ 📄 Ver Carátula Oficial de EDP ]` que abre `ModalCaratulaEDP.vue`.
+  * **Paso 3 (Repositorio OCs):**
+    * Botón `[ + Adjuntar Orden de Compra (OC) ]` para abrir modal de carga.
+    * Barra comparativa de cobertura: Monto Total OCs vs Total Neto EDP.
+    * Grid de tarjetas de OCs con número, monto, centro de costo, badge de archivo PDF y botón de previsualización.
+  * **Paso 4 (Cierre DTE):**
+    * Chips seleccionables con las OCs cargadas en el Paso 3 para auto-completar el número de OC sin errores tipográficos.
+    * Formulario de Folio Factura, Tipo DTE y Fecha.
+    * Botón maestro `[ 🏁 Declarar OT Facturada y Cerrar Servicio ]`.
 
 ---
 
-## 6. 🧪 Matriz de Validación y Criterios de Aceptación (QA)
+## 6. 🧪 Matriz de Verificación y Criterios de Aceptación (QA)
 
 | ID | Escenario de Prueba | Criterio de Aceptación |
 | :--- | :--- | :--- |
-| **QA-38-01** | Conciliación Automática | El sistema calcula el total neto sumando las horas de los reports validados multiplicadas por la tarifa de la cotización + fletes. |
-| **QA-38-02** | Visualización de Carátula EDP | Al presionar `[ Ver Carátula Oficial de EDP ]`, se abre el modal con membrete GSP y desglose completo. |
-| **QA-38-03** | Registro de Factura y Cierre | Al ingresar N° Factura (ej. `F-12049`) y N° HES (ej. `HES-8821`) y confirmar, el proyecto pasa a estado `7`. |
-| **QA-38-04** | Actualización en Kanban | Al regresar a la Torre de Control, la tarjeta del proyecto aparece en la columna final de facturados. |
+| **QA-38-01** | Conciliación Automática | El total neto liquida las horas de los reports validados respetando los pisos mínimos pactados ($8.0$ o $180.0$ hrs) más sobretiempos y fletes. |
+| **QA-38-02** | Visualización de Carátula EDP | Al presionar `[ Ver Carátula Oficial de EDP ]`, abre `ModalCaratulaEDP.vue` con firmas manuscritas y membrete institucional. |
+| **QA-38-03** | Carga y Repositorio de OC | Permite subir el archivo PDF de la OC, calcular la cobertura respecto al EDP y visualizar el documento en el visor nativo. |
+| **QA-38-04** | Auto-completado de OC en Facturación | Al hacer clic en el chip de una OC del Paso 3, el campo N° OC del Paso 4 se llena automáticamente. |
+| **QA-38-05** | Cierre y Transición a Facturado | Al registrar la factura y confirmar el cierre, la OT pasa a `id_proyecto_estado = 7` y se refleja en la columna final del Kanban. |

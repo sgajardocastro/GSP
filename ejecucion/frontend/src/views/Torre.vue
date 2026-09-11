@@ -27,7 +27,7 @@
           <div 
             v-for="p in preventa" 
             :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto)"
+            @click="abrirProyecto(p.id_proyecto, 'comercial')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-[#6366f1]/5 transition-all cursor-pointer text-left"
             :class="p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-[#6366f1]/40'"
           >
@@ -588,7 +588,7 @@ const abrirCotizacion = () => {
 
 const abrirProyecto = (id, subtab = null) => {
   if (id) {
-    router.push({ name: 'crm', query: { id_proyecto: id, subtab: subtab || 'reports' } })
+    router.push({ name: 'crm', query: { id_proyecto: id, subtab: subtab || 'comercial' } })
   } else {
     router.push({ name: 'crm' })
   }

@@ -82,6 +82,12 @@ const router = createRouter({
       component: GestorOportunidades
     },
     {
+      path: '/poc-distancia',
+      name: 'poc_distancia',
+      component: () => import('../views/CRM/PocCotizadorDistancia.vue'),
+      meta: { layout: 'public' }
+    },
+    {
       path: '/mantenedores',
       name: 'mantenedores',
       component: Mantenedores

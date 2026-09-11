@@ -31,19 +31,37 @@ const getAsignacionesPersona = async (req, res) => {
     }
 };
 
-// POST /api/proyectos/:id/asignaciones/personas
+// POST /api/proyectos/:id/asignaciones/personas (Idempotente)
 const crearAsignacionPersona = async (req, res) => {
     try {
         const { id } = req.params;
         const { id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, observaciones } = req.body;
         
-        const result = await pool.query(
-            `INSERT INTO tpry_rel_persona 
-            (id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, observaciones)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            RETURNING *`,
-            [id, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real || 'PROGRAMADO', id_user_creacion, observaciones]
+        const existente = await pool.query(
+            `SELECT id_rel_persona FROM tpry_rel_persona 
+             WHERE id_proyecto = $1 AND id_user = $2 AND estado_real = 'PROGRAMADO'`,
+            [id, id_user]
         );
+
+        let result;
+        if (existente.rows.length > 0) {
+            result = await pool.query(
+                `UPDATE tpry_rel_persona 
+                 SET rol_asignado = $1, fecha_plan_ini = $2, fecha_plan_fin = $3, 
+                     turnos_plan = $4, horas_plan = $5, observaciones = $6
+                 WHERE id_rel_persona = $7
+                 RETURNING *`,
+                [rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, observaciones, existente.rows[0].id_rel_persona]
+            );
+        } else {
+            result = await pool.query(
+                `INSERT INTO tpry_rel_persona 
+                (id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, observaciones)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                RETURNING *`,
+                [id, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real || 'PROGRAMADO', id_user_creacion, observaciones]
+            );
+        }
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error al crear asignación de persona:', error);
@@ -104,19 +122,37 @@ const getAsignacionesEquipo = async (req, res) => {
     }
 };
 
-// POST /api/proyectos/:id/asignaciones/equipos
+// POST /api/proyectos/:id/asignaciones/equipos (Idempotente)
 const crearAsignacionEquipo = async (req, res) => {
     try {
         const { id } = req.params;
         const { id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, json_field, observaciones } = req.body;
         
-        const result = await pool.query(
-            `INSERT INTO tpry_rel_equipo 
-            (id_proyecto, id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, json_field, observaciones)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING *`,
-            [id, id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real || 'PROGRAMADO', id_user_creacion, json_field || {}, observaciones]
+        const existente = await pool.query(
+            `SELECT id_rel_equipo FROM tpry_rel_equipo 
+             WHERE id_proyecto = $1 AND id_equipo = $2 AND estado_real = 'PROGRAMADO'`,
+            [id, id_equipo]
         );
+
+        let result;
+        if (existente.rows.length > 0) {
+            result = await pool.query(
+                `UPDATE tpry_rel_equipo 
+                 SET rol_equipo = $1, fecha_plan_ini = $2, fecha_plan_fin = $3, 
+                     turnos_plan = $4, horas_plan = $5, json_field = $6, observaciones = $7
+                 WHERE id_rel_equipo = $8
+                 RETURNING *`,
+                [rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, json_field || {}, observaciones, existente.rows[0].id_rel_equipo]
+            );
+        } else {
+            result = await pool.query(
+                `INSERT INTO tpry_rel_equipo 
+                (id_proyecto, id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, json_field, observaciones)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                RETURNING *`,
+                [id, id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real || 'PROGRAMADO', id_user_creacion, json_field || {}, observaciones]
+            );
+        }
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error al crear asignación de equipo:', error);

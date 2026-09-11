@@ -575,9 +575,36 @@ class ProyectoModel {
       // 4. Compilar líneas de servicios en tabla HTML
       let lineasHtml = '';
       lineas.forEach((line, index) => {
-        const qty = Number(line.cantidad || 0);
-        const price = Number(line.valorUnitario || line.valor_unitario || 0);
-        const totalLine = qty * price;
+        const unidad = line.unidad || 'Horas Diarias Minimas';
+        const price = Number(line.valor_unitario !== undefined ? line.valor_unitario : (line.valorUnitario || 0));
+        let cantBaseTexto = '';
+        let totalLine = 0;
+        let tarifaTexto = '';
+        
+        if (unidad === 'Horas Diarias Minimas') {
+          const dias = Number(line.cantidad_dias !== undefined ? line.cantidad_dias : line.cantidad) || 1;
+          const horas = Number(line.cantidad_horas !== undefined ? line.cantidad_horas : line.pisoMinimo) || 8;
+          cantBaseTexto = `${dias} ${dias === 1 ? 'Día' : 'Días'} × ${horas} hrs/día`;
+          tarifaTexto = `${formatCLP(price)} / hr`;
+          totalLine = dias * horas * price;
+        } else if (unidad === 'Horas Mes Minimas' || unidad === 'Horas Mensuales Minimas') {
+          const meses = Number(line.cantidad_meses !== undefined ? line.cantidad_meses : line.cantidad) || 1;
+          const horas = Number(line.cantidad_horas !== undefined ? line.cantidad_horas : line.pisoMinimo) || 180;
+          cantBaseTexto = `${meses} ${meses === 1 ? 'Mes' : 'Meses'} × ${horas} hrs/mes`;
+          tarifaTexto = `${formatCLP(price)} / hr`;
+          totalLine = meses * horas * price;
+        } else if (unidad === 'Traslado') {
+          const cant = Number(line.cantidad) || 1;
+          cantBaseTexto = `${cant} ${cant === 1 ? 'Viaje' : 'Viajes'}`;
+          tarifaTexto = formatCLP(price);
+          totalLine = cant * price;
+        } else {
+          // Cobro Fijo u otro
+          const cant = Number(line.cantidad) || 1;
+          cantBaseTexto = `${cant} ${cant === 1 ? 'Servicio' : 'Servicios'}`;
+          tarifaTexto = formatCLP(price);
+          totalLine = cant * price;
+        }
         lineasHtml += `
           <tr>
             <td style="text-align: center;">${index + 1}</td>
@@ -588,13 +615,10 @@ class ProyectoModel {
               <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
                 ${line.descripcion || '—'}
               </div>
-              <ul style="margin: 3px 0 0 15px; padding: 0; font-size: 8px; color: #4a5568;">
-                ${Object.keys(line).filter(k => !['tipo','subcategoria','descripcion','cantidad','valorUnitario','valor_unitario','unidad'].includes(k)).map(k => `<li><strong>${String(k).toUpperCase().replace(/_/g, ' ')}:</strong> ${typeof line[k] === 'object' ? JSON.stringify(line[k]) : line[k]}</li>`).join('')}
-              </ul>
             </td>
-            <td style="text-align: center;">${qty}</td>
-            <td style="text-align: center;">${line.unidad || 'Día'}</td>
-            <td style="text-align: right;">${formatCLP(price)}</td>
+            <td style="text-align: center; font-size: 8px;">${unidad}</td>
+            <td style="text-align: center; font-weight: 600; color: #1e293b;">${cantBaseTexto}</td>
+            <td style="text-align: right;">${tarifaTexto}</td>
             <td style="text-align: right;">${formatCLP(totalLine)}</td>
           </tr>
         `;
@@ -811,10 +835,10 @@ class ProyectoModel {
             <thead>
               <tr>
                 <th style="width: 5%;">Item</th>
-                <th style="width: 55%;">Descripción del Servicio</th>
-                <th style="width: 8%; text-align: center;">Cantidad</th>
-                <th style="width: 8%; text-align: center;">Unidad</th>
-                <th style="width: 12%; text-align: right;">Unitario (Neto)</th>
+                <th style="width: 40%;">Descripción del Servicio</th>
+                <th style="width: 16%; text-align: center;">Unidad de Cobro</th>
+                <th style="width: 16%; text-align: center;">Cantidad(es) / Base</th>
+                <th style="width: 11%; text-align: right;">Tarifa Unitario</th>
                 <th style="width: 12%; text-align: right;">Subtotal (Neto)</th>
               </tr>
             </thead>

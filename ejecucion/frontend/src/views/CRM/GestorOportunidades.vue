@@ -195,7 +195,7 @@
         <span v-else-if="estadoDbActual === 7" class="text-xs text-emerald-400 font-bold">✅</span>
         <span v-else class="text-xs text-emerald-400">💰</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <span>7. Liquidación & EDP</span>
+        <span>7. Valorización, ITS & Facturación</span>
         <span v-if="estadoDbActual === 7" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold">Facturado</span>
       </button>
     </div>
@@ -348,8 +348,8 @@
                       <th class="p-2.5">Categoría</th>
                       <th class="p-2.5 w-32">Subcategoría</th>
                       <th class="p-2.5">Descripción / Equipo</th>
-                      <th class="p-2.5 text-center w-14">Cant.</th>
-                      <th class="p-2.5 w-24">Unidad</th>
+                      <th class="p-2.5 w-36">Unidad</th>
+                      <th class="p-2.5 text-center min-w-[150px]">Cantidad(es)</th>
                       <th class="p-2.5 text-right w-24">Valor Unit.</th>
                       <th class="p-2.5 text-right w-24">Subtotal</th>
                       <th class="p-2 text-center w-8"></th>
@@ -365,7 +365,7 @@
                         </div>
                         <select 
                           v-model="line.tipo" 
-                          @change="line.subcategoria = ''" 
+                          @change="onTipoChange(line)" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
                           :class="hasDiff('equipo_tipo', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
@@ -406,33 +406,102 @@
                         </div>
                       </td>
                       <td class="p-2">
-                        <input 
-                          type="number" 
-                          v-model.number="line.cantidad" 
-                          min="1" 
-                          class="w-full bg-[#0a0f1e] border rounded text-center px-1 py-1 text-xs text-white transition-colors font-mono" 
-                          :class="hasDiff('equipo_cantidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
-                        />
-                        <div v-if="hasDiff('equipo_cantidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 text-center line-through">
-                          Orig: {{ getOriginalValue('equipo_cantidad', idx) }}
-                        </div>
-                      </td>
-                      <td class="p-2">
                         <select 
                           v-model="line.unidad" 
+                          @change="onUnidadChange(line)"
+                          :disabled="line.tipo === 'TRASLADOS'"
+                          :title="line.tipo === 'TRASLADOS' ? 'Para la categoría TRASLADOS, la unidad de cobro es exclusivamente Traslado.' : ''"
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_unidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
+                          :class="[
+                            line.tipo === 'TRASLADOS' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-white/5' : '',
+                            hasDiff('equipo_unidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'
+                          ]" 
                         >
-                          <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
-                          <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
-                          <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
-                          <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
-                          <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
-                          <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
+                          <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
+                          <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
+                          <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
+                          <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
                         </select>
                         <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
                           Orig: {{ getOriginalValue('equipo_unidad', idx) }}
                         </div>
+                      </td>
+                      <td class="p-2">
+                        <!-- Horas Diarias Minimas: Días (1..30) y Horas (1..24) -->
+                        <template v-if="line.unidad === 'Horas Diarias Minimas'">
+                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                            <div class="flex items-center gap-1">
+                              <span class="text-[10px] text-slate-400 font-mono">Días:</span>
+                              <input 
+                                type="number" 
+                                v-model.number="line.cantidad_dias" 
+                                @input="line.cantidad = line.cantidad_dias"
+                                min="1" 
+                                max="30" 
+                                class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                                :class="(line.cantidad_dias < 1 || line.cantidad_dias > 30) ? 'border-red-500 text-red-300' : 'border-white/10'"
+                                title="Cantidad de Días (1 a 30)"
+                              />
+                            </div>
+                            <div class="flex items-center gap-1">
+                              <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
+                              <input 
+                                type="number" 
+                                v-model.number="line.cantidad_horas" 
+                                @input="line.pisoMinimo = line.cantidad_horas"
+                                min="1" 
+                                max="24" 
+                                step="0.5" 
+                                class="w-14 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
+                                :class="(line.cantidad_horas < 1 || line.cantidad_horas > 24) ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
+                                title="Cantidad de Horas (1 a 24)"
+                              />
+                            </div>
+                          </div>
+                        </template>
+                        <!-- Horas Mes Minimas: Meses (>= 1) y Horas (> 1) -->
+                        <template v-else-if="line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas'">
+                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                            <div class="flex items-center gap-1">
+                              <span class="text-[10px] text-slate-400 font-mono">Meses:</span>
+                              <input 
+                                type="number" 
+                                v-model.number="line.cantidad_meses" 
+                                @input="line.cantidad = line.cantidad_meses"
+                                min="1" 
+                                class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                                :class="line.cantidad_meses < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
+                                title="Cantidad de Meses (>= 1)"
+                              />
+                            </div>
+                            <div class="flex items-center gap-1">
+                              <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
+                              <input 
+                                type="number" 
+                                v-model.number="line.cantidad_horas" 
+                                @input="line.pisoMinimo = line.cantidad_horas"
+                                min="2" 
+                                class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
+                                :class="line.cantidad_horas <= 1 ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
+                                title="Cantidad de Horas (> 1)"
+                              />
+                            </div>
+                          </div>
+                        </template>
+                        <!-- Traslado o Valor Fijo: Cantidad (>= 1) -->
+                        <template v-else>
+                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border border-white/5">
+                            <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
+                            <input 
+                              type="number" 
+                              v-model.number="line.cantidad" 
+                              min="1" 
+                              class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                              :class="line.cantidad < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
+                              title="Cantidad (>= 1)"
+                            />
+                          </div>
+                        </template>
                       </td>
                       <td class="p-2">
                         <input 
@@ -446,7 +515,7 @@
                         />
                       </td>
                       <td class="p-2 text-right font-bold text-amber-400 font-mono">
-                        {{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}
+                        {{ formatCurrency(calcularSubtotalLinea(line)) }}
                       </td>
                       <td class="p-2 text-center">
                         <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
@@ -1337,18 +1406,39 @@
                       </span>
                       <span class="text-slate-200 font-medium truncate">{{ doc }}</span>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                      <button v-if="checkDocVigente(doc, 'empresa')" @click="verDocumentoDossier(doc, 'empresa')" type="button" class="cursor-pointer text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5">
-                        👁️ Ver
+                    <div class="flex items-center gap-1.5 flex-shrink-0 relative">
+                      <!-- Si está vigente: botón minimalista de ojo -->
+                      <button v-if="checkDocVigente(doc, 'empresa')" @click.stop="verDocumentoDossier(doc, 'empresa')" type="button" title="Ver documento" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        <svg class="w-4 h-4 text-emerald-400/80 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                       </button>
-                      <button @click="abrirModalVincularDoc(doc, 'empresa')" type="button" class="cursor-pointer text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded font-bold border border-purple-500/40 transition-all flex items-center gap-0.5">
-                        🔗 Vincular
-                      </button>
-                      <label class="cursor-pointer text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded font-bold border border-blue-500/40 transition-all flex items-center gap-0.5">
-                        📤 Subir
+                      <!-- Si está faltante: botón sobrio de Subir -->
+                      <label v-else title="Subir archivo" class="cursor-pointer text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white px-2 py-1 rounded-lg font-bold border border-white/10 transition-all flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span>Subir</span>
                         <input type="file" class="hidden" @change="subirArchivoInSitu('empresa', doc, $event)" />
                       </label>
-                      <button @click="quitarDocExigido('empresa', dIdx)" class="text-slate-500 hover:text-red-400 font-bold px-1 text-xs">&times;</button>
+                      <!-- Menú Kebab [...] -->
+                      <div class="relative">
+                        <button @click.stop="toggleKebabMenu('emp-' + dIdx)" type="button" title="Más opciones" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                        </button>
+                        <div v-if="activeKebabMenuKey === 'emp-' + dIdx" class="absolute right-0 top-full mt-1 w-48 bg-[#0b1329] border border-white/10 rounded-xl shadow-2xl py-1.5 z-40 text-xs backdrop-blur-md">
+                          <button @click="abrirModalVincularDoc(doc, 'empresa'); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
+                            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <span>Vincular de Biblioteca</span>
+                          </button>
+                          <label class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span>{{ checkDocVigente(doc, 'empresa') ? 'Reemplazar archivo' : 'Subir archivo' }}</span>
+                            <input type="file" class="hidden" @change="subirArchivoInSitu('empresa', doc, $event); activeKebabMenuKey = null" />
+                          </label>
+                          <div class="border-t border-white/5 my-1"></div>
+                          <button @click="quitarDocExigido('empresa', dIdx); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Quitar exigencia</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1380,18 +1470,39 @@
                           </span>
                           <span class="text-slate-300 truncate">{{ extractDocName(doc) }}</span>
                         </div>
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                          <button v-if="checkDocVigente(doc, 'equipos', eqId)" @click="verDocumentoDossier(doc, 'equipos', eqId)" type="button" class="cursor-pointer text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5">
-                            👁️ Ver
+                        <div class="flex items-center gap-1.5 flex-shrink-0 relative">
+                          <!-- Si está vigente: botón minimalista de ojo -->
+                          <button v-if="checkDocVigente(doc, 'equipos', eqId)" @click.stop="verDocumentoDossier(doc, 'equipos', eqId)" type="button" title="Ver documento" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                            <svg class="w-4 h-4 text-emerald-400/80 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                           </button>
-                          <button @click="abrirModalVincularDoc(doc, 'equipos', eqId)" type="button" class="cursor-pointer text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded font-bold border border-purple-500/40 transition-all flex items-center gap-0.5">
-                            🔗 Vincular
-                          </button>
-                          <label class="cursor-pointer text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded font-bold border border-amber-500/40 transition-all flex items-center gap-0.5">
-                            📤 Subir
+                          <!-- Si está faltante: botón sobrio de Subir -->
+                          <label v-else title="Subir archivo" class="cursor-pointer text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white px-2 py-1 rounded-lg font-bold border border-white/10 transition-all flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span>Subir</span>
                             <input type="file" class="hidden" @change="subirArchivoInSitu('equipos', doc, $event, eqId)" />
                           </label>
-                          <button @click="quitarDocExigido('equipos', dIdx)" class="text-slate-500 hover:text-red-400 font-bold px-1 text-xs">&times;</button>
+                          <!-- Menú Kebab [...] -->
+                          <div class="relative">
+                            <button @click.stop="toggleKebabMenu('eq-' + eqId + '-' + dIdx)" type="button" title="Más opciones" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                            </button>
+                            <div v-if="activeKebabMenuKey === 'eq-' + eqId + '-' + dIdx" class="absolute right-0 top-full mt-1 w-48 bg-[#0b1329] border border-white/10 rounded-xl shadow-2xl py-1.5 z-40 text-xs backdrop-blur-md">
+                              <button @click="abrirModalVincularDoc(doc, 'equipos', eqId); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
+                                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                <span>Vincular de Biblioteca</span>
+                              </button>
+                              <label class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer">
+                                <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span>{{ checkDocVigente(doc, 'equipos', eqId) ? 'Reemplazar archivo' : 'Subir archivo' }}</span>
+                                <input type="file" class="hidden" @change="subirArchivoInSitu('equipos', doc, $event, eqId); activeKebabMenuKey = null" />
+                              </label>
+                              <div class="border-t border-white/5 my-1"></div>
+                              <button @click="quitarDocExigido('equipos', dIdx); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span>Quitar exigencia</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1428,18 +1539,39 @@
                             </span>
                           </div>
                         </div>
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                          <button v-if="checkDocVigente(doc, 'personas', t)" @click="verDocumentoDossier(doc, 'personas', t)" type="button" class="cursor-pointer text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5">
-                            👁️ Ver
+                        <div class="flex items-center gap-1.5 flex-shrink-0 relative">
+                          <!-- Si está vigente: botón minimalista de ojo -->
+                          <button v-if="checkDocVigente(doc, 'personas', t)" @click.stop="verDocumentoDossier(doc, 'personas', t)" type="button" title="Ver documento" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                            <svg class="w-4 h-4 text-emerald-400/80 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                           </button>
-                          <button @click="abrirModalVincularDoc(doc, 'personas', t)" type="button" class="cursor-pointer text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded font-bold border border-purple-500/40 transition-all flex items-center gap-0.5">
-                            🔗 Vincular
-                          </button>
-                          <label class="cursor-pointer text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5">
-                            📤 Subir
+                          <!-- Si está faltante: botón sobrio de Subir -->
+                          <label v-else title="Subir archivo" class="cursor-pointer text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white px-2 py-1 rounded-lg font-bold border border-white/10 transition-all flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span>Subir</span>
                             <input type="file" class="hidden" @change="subirArchivoInSitu('personas', doc, $event, t)" />
                           </label>
-                          <button @click="quitarDocExigido('personas', dIdx)" class="text-slate-500 hover:text-red-400 font-bold px-1 text-xs">&times;</button>
+                          <!-- Menú Kebab [...] -->
+                          <div class="relative">
+                            <button @click.stop="toggleKebabMenu('per-' + idx + '-' + dIdx)" type="button" title="Más opciones" class="cursor-pointer p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                            </button>
+                            <div v-if="activeKebabMenuKey === 'per-' + idx + '-' + dIdx" class="absolute right-0 top-full mt-1 w-48 bg-[#0b1329] border border-white/10 rounded-xl shadow-2xl py-1.5 z-40 text-xs backdrop-blur-md">
+                              <button @click="abrirModalVincularDoc(doc, 'personas', t); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
+                                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                <span>Vincular de Biblioteca</span>
+                              </button>
+                              <label class="w-full text-left px-3 py-1.5 text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer">
+                                <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span>{{ checkDocVigente(doc, 'personas', t) ? 'Reemplazar archivo' : 'Subir archivo' }}</span>
+                                <input type="file" class="hidden" @change="subirArchivoInSitu('personas', doc, $event, t); activeKebabMenuKey = null" />
+                              </label>
+                              <div class="border-t border-white/5 my-1"></div>
+                              <button @click="quitarDocExigido('personas', dIdx); activeKebabMenuKey = null" type="button" class="w-full text-left px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span>Quitar exigencia</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2427,11 +2559,94 @@
 
       </div>
 
-      <!-- SUB-TAB 7: LIQUIDACIÓN OPERACIONAL, CONSOLIDACIÓN EDP & REGISTRO FACTURACIÓN (Spec 38) -->
+      <!-- SUB-TAB 7: VALORIZACIÓN, ITS & FACTURACIÓN (Spec 46) -->
       <div v-if="operacionesSubTab === 'liquidacion'" class="space-y-6">
         
-        <!-- CABECERA DE LIQUIDACIÓN Y ESTADO DE CIERRE -->
-        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
+        <!-- STEPPER DE PROGRESO DE CIERRE ECONÓMICO (4 PASOS NAVEGABLES) -->
+        <div class="bg-[#0b1021] border border-white/10 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+          <div class="flex flex-wrap items-center gap-2">
+            <button 
+              type="button" 
+              @click="pasoCierreActivo = 'its'"
+              class="px-3 py-1.5 rounded-lg font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="pasoCierreActivo === 'its' 
+                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-500/30' 
+                : (edpData?.its?.estado_its === 'CONCLUIDO' || edpData?.its?.id_its 
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30' 
+                    : 'bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700')"
+            >
+              <span>① ITS (Costos & Margen)</span>
+              <span v-if="edpData?.its?.estado_its === 'CONCLUIDO'" class="text-emerald-400">✓</span>
+            </button>
+
+            <span class="text-slate-600">➔</span>
+
+            <button 
+              type="button" 
+              @click="pasoCierreActivo = 'edp'"
+              class="px-3 py-1.5 rounded-lg font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="pasoCierreActivo === 'edp' 
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md font-black ring-2 ring-emerald-500/30' 
+                : (edpData?.resumen_financiero?.total_neto > 0 
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30' 
+                    : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700')"
+            >
+              <span>② EDP Mandante</span>
+              <span v-if="edpData?.liquidacion_guardada" class="text-emerald-400">✓</span>
+            </button>
+
+            <span class="text-slate-600">➔</span>
+
+            <button 
+              type="button" 
+              @click="pasoCierreActivo = 'oc'"
+              class="px-3 py-1.5 rounded-lg font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="pasoCierreActivo === 'oc' 
+                ? 'bg-blue-500 text-white border-blue-400 shadow-md font-black ring-2 ring-blue-500/30' 
+                : (ordenesCompra.length > 0 
+                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-500/30' 
+                    : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700')"
+            >
+              <span>③ Respaldo OC</span>
+              <span v-if="ordenesCompra.length > 0" class="text-blue-300">({{ ordenesCompra.length }})</span>
+            </button>
+
+            <span class="text-slate-600">➔</span>
+
+            <button 
+              type="button" 
+              @click="pasoCierreActivo = 'factura'"
+              class="px-3 py-1.5 rounded-lg font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="pasoCierreActivo === 'factura' 
+                ? 'bg-purple-600 text-white border-purple-400 shadow-md font-black ring-2 ring-purple-500/30' 
+                : (estadoDbActual === 7 
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30' 
+                    : 'bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700')"
+            >
+              <span>④ Factura DTE</span>
+              <span v-if="estadoDbActual === 7" class="text-emerald-400">✓</span>
+            </button>
+          </div>
+          <div class="text-[11px] font-mono text-slate-400">
+            Pipeline Oficial de Cierre Económico B2B
+          </div>
+        </div>
+
+        <!-- PASO 1: INFORME DE TÉRMINO DE SERVICIO (ITS INTEGRADO INLINE) -->
+        <div v-if="pasoCierreActivo === 'its'">
+          <ModalITS
+            :visible="true"
+            :embedded="true"
+            :id-proyecto="activeProjectId"
+            @avanzar-edp="pasoCierreActivo = 'edp'"
+            @actualizado="cargarResumenEDP"
+          />
+        </div>
+
+        <!-- PASO 2: CONCILIACIÓN & ESTADO DE PAGO (EDP MANDANTE) -->
+        <div v-else-if="pasoCierreActivo === 'edp'" class="space-y-6">
+          <!-- CABECERA DE LIQUIDACIÓN Y ESTADO DE CIERRE (PASO 2) -->
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-wrap justify-between items-center gap-4">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl">
               💰
@@ -2439,7 +2654,7 @@
             <div>
               <div class="flex items-center gap-3">
                 <h3 class="text-base sm:text-lg font-black text-white uppercase tracking-wider font-mono">
-                  Liquidación de Estado de Pago (EDP) & Facturación
+                  Paso 2: Conciliación & Estado de Pago (EDP Mandante)
                 </h3>
                 <span 
                   :class="estadoDbActual === 7 || edpData?.liquidacion_guardada 
@@ -2505,81 +2720,73 @@
             <div class="text-2xl sm:text-3xl font-black font-mono text-yellow-400">
               +{{ edpData?.resumen_financiero?.horas_sobretiempo_totales || 0 }} <span class="text-xs text-yellow-500 font-normal">HRS</span>
             </div>
-            <span class="text-xs text-slate-400 block font-mono">{{ formatCurrency(edpData?.resumen_financiero?.monto_sobretiempo_neto || 0) }}</span>
+            <span class="text-xs text-slate-400 block font-medium">Jornadas extendidas</span>
           </div>
 
-          <div class="bg-emerald-950/20 border border-emerald-500/50 rounded-xl p-4 space-y-1 shadow-lg shadow-emerald-500/5">
-            <span class="text-xs text-emerald-300 font-black uppercase font-mono block">💰 TOTAL NETO A FACTURAR</span>
-            <div class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+          <div class="bg-[#050810] border border-emerald-500/30 rounded-xl p-4 space-y-1 shadow-lg shadow-emerald-500/5">
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Total Neto Devengado</span>
+            <div class="text-xl sm:text-2xl font-black font-mono text-emerald-400 truncate">
               {{ formatCurrency(edpData?.resumen_financiero?.total_neto || 0) }}
             </div>
-            <span class="text-xs text-slate-300 block font-mono">Total Bruto (+19% IVA): {{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}</span>
+            <span class="text-xs text-slate-400 block font-mono">Total Bruto: {{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}</span>
           </div>
         </div>
 
-        <!-- TABLA DE DESGLOSE DE LÍNEAS CONCILIADAS -->
-        <div class="bg-[#050810] border border-white/10 rounded-xl overflow-hidden shadow-lg">
-          <div class="px-5 py-3.5 bg-[#080d1a] border-b border-white/10 flex justify-between items-center">
-            <h4 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <span>📋 Detalle de Líneas de Servicio & Conciliación Financiera</span>
+        <!-- TABLA DETALLE DE CONCILIACIÓN DIARIA MULTI-DÍA -->
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-3 border-b border-white/10 pb-3">
+            <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+              <span>📅 Detalle de Jornadas & Maniobras Firmadas (Respaldo Documental)</span>
+              <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold">
+                {{ edpData?.detalle_jornadas?.length || 0 }} Días Validados
+              </span>
             </h4>
             <span class="text-xs text-slate-400 font-mono">
-              Cliente: <strong class="text-white">{{ edpData?.proyecto?.cliente_nombre || 'Mandante' }}</strong>
+              Fórmula: Horas Facturables = max(Efectivas, Mínimas) + Sobretiempos
             </span>
           </div>
-          <div class="overflow-x-auto">
+
+          <div class="border border-white/10 rounded-xl overflow-hidden overflow-x-auto bg-[#080d1a]">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="bg-[#0b1021] text-slate-300 border-b border-white/10 font-bold uppercase font-mono">
-                  <th class="py-3 px-4">Concepto / Servicio</th>
-                  <th class="py-3 px-4">Tipo</th>
-                  <th class="py-3 px-4 text-center">Unidad</th>
-                  <th class="py-3 px-4 text-center">Cant.</th>
-                  <th class="py-3 px-4 text-right">Tarifa Pactada</th>
-                  <th class="py-3 px-4 text-right text-emerald-400">Subtotal Neto</th>
+                <tr class="bg-[#050810] text-slate-400 font-mono font-bold uppercase text-[11px] border-b border-white/10">
+                  <th class="py-3 px-4">Fecha</th>
+                  <th class="py-3 px-4">Equipo / Grúa</th>
+                  <th class="py-3 px-3 text-center">Horas Efectivas</th>
+                  <th class="py-3 px-3 text-center">Horas Mínimas</th>
+                  <th class="py-3 px-3 text-center">Horas Sobretiempo</th>
+                  <th class="py-3 px-4 text-right">Subtotal Neto</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-white/10 text-slate-200">
-                <tr v-for="(l, idx) in edpData?.lineas_cotizadas || []" :key="idx" class="hover:bg-white/[0.02]">
-                  <td class="py-3.5 px-4 font-bold text-white">
-                    {{ l.descripcion || l.subcategoria || l.tipo }}
+              <tbody class="divide-y divide-white/5 font-mono">
+                <tr 
+                  v-for="j in (edpData?.detalle_jornadas || [])" 
+                  :key="j.id_reporte_avance" 
+                  class="hover:bg-white/[0.02] transition-colors"
+                >
+                  <td class="py-3 px-4 text-white font-medium">
+                    {{ new Date(j.fecha_reporte).toLocaleDateString('es-CL') }}
                   </td>
-                  <td class="py-3.5 px-4 text-slate-400 font-mono">
-                    {{ l.tipo }}
+                  <td class="py-3 px-4">
+                    <span class="text-amber-400 font-bold">{{ j.patente || 'EQUIPO' }}</span>
+                    <span class="text-slate-400 ml-2 font-sans text-[11px]">{{ j.modelo_equipo || '' }}</span>
                   </td>
-                  <td class="py-3.5 px-4 text-center font-mono text-slate-300">
-                    {{ l.unidad }}
+                  <td class="py-3 px-3 text-center text-slate-300 font-bold">
+                    {{ j.horas_efectivas || 0 }} hrs
                   </td>
-                  <td class="py-3.5 px-4 text-center font-mono font-bold text-white">
-                    {{ l.cantidad }}
+                  <td class="py-3 px-3 text-center text-slate-300">
+                    {{ j.horas_minimas || 8 }} hrs
                   </td>
-                  <td class="py-3.5 px-4 text-right font-mono text-slate-300">
-                    {{ formatCurrency(l.valorUnitario) }}
+                  <td class="py-3 px-3 text-center font-bold" :class="Number(j.horas_sobretiempo) > 0 ? 'text-yellow-400' : 'text-slate-500'">
+                    +{{ j.horas_sobretiempo || 0 }} hrs
                   </td>
-                  <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-300">
-                    {{ formatCurrency(l.subtotal_calculado) }}
+                  <td class="py-3 px-4 text-right font-black text-emerald-400">
+                    {{ formatCurrency(j.subtotal_neto || 0) }}
                   </td>
                 </tr>
-
-                <!-- Sobretiempo si aplica -->
-                <tr v-if="Number(edpData?.resumen_financiero?.horas_sobretiempo_totales) > 0" class="bg-yellow-500/5">
-                  <td class="py-3.5 px-4 font-bold text-yellow-300">
-                    ⏱️ Sobretiempo de Izaje Acumulado
-                  </td>
-                  <td class="py-3.5 px-4 text-slate-400 font-mono">
-                    HORAS EXTRA
-                  </td>
-                  <td class="py-3.5 px-4 text-center font-mono text-slate-300">
-                    Horas
-                  </td>
-                  <td class="py-3.5 px-4 text-center font-mono font-bold text-yellow-300">
-                    {{ edpData?.resumen_financiero?.horas_sobretiempo_totales }}h
-                  </td>
-                  <td class="py-3.5 px-4 text-right font-mono text-slate-300">
-                    Tarifa Extra
-                  </td>
-                  <td class="py-3.5 px-4 text-right font-mono font-bold text-yellow-300">
-                    {{ formatCurrency(edpData?.resumen_financiero?.monto_sobretiempo_neto || 0) }}
+                <tr v-if="!edpData?.detalle_jornadas?.length">
+                  <td colspan="6" class="py-8 text-center text-slate-500 italic font-sans text-xs">
+                    No hay reportes de terreno validados para este servicio aún.
                   </td>
                 </tr>
               </tbody>
@@ -2599,15 +2806,123 @@
               </tfoot>
             </table>
           </div>
+          <!-- BARRA DE NAVEGACIÓN PASO 2 -->
+          <div class="flex justify-between items-center bg-[#050810] border border-white/10 rounded-xl p-4">
+            <button
+              type="button"
+              @click="pasoCierreActivo = 'its'"
+              class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold font-mono transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <span>⬅️</span>
+              <span>Volver a ITS (Costos)</span>
+            </button>
+            <button
+              type="button"
+              @click="pasoCierreActivo = 'oc'"
+              class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 cursor-pointer"
+            >
+              <span>Continuar a Respaldo OC</span>
+              <span>➔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+        <!-- PASO 3: RESPALDO DE ÓRDENES DE COMPRA (OC / HES DEL MANDANTE) -->
+        <div v-else-if="pasoCierreActivo === 'oc'" class="space-y-6">
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-3 border-b border-white/10 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl">
+                📑
+              </div>
+              <div>
+                <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                  <span>Paso 3: Órdenes de Compra del Cliente (OC / HES)</span>
+                  <span v-if="ordenesCompra.length > 0" class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-mono">
+                    {{ ordenesCompra.length }} Registrada(s)
+                  </span>
+                </h4>
+                <p class="text-[11px] text-slate-400">
+                  Respaldo legal de cobro: archivo PDF y monto autorizado por el mandante para emitir DTE.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div v-if="edpData?.resumen_financiero?.total_neto > 0" class="text-right">
+                <div class="text-[10px] font-mono text-slate-400">
+                  Total OCs: <strong class="text-white">{{ formatCurrency(totalMontoOCs) }}</strong> / EDP: <strong class="text-amber-400">{{ formatCurrency(edpData?.resumen_financiero?.total_neto) }}</strong>
+                </div>
+                <div class="text-[10px] font-bold font-mono" :class="totalMontoOCs >= (edpData?.resumen_financiero?.total_neto || 0) ? 'text-emerald-400' : 'text-amber-400'">
+                  {{ totalMontoOCs >= (edpData?.resumen_financiero?.total_neto || 0) ? '✔ 100% Cubierto' : '⚠️ Saldo pendiente: ' + formatCurrency((edpData?.resumen_financiero?.total_neto || 0) - totalMontoOCs) }}
+                </div>
+              </div>
+              <button
+                type="button"
+                @click="abrirModalNuevaOC"
+                class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>+ Adjuntar OC (PDF)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Listado de OCs -->
+          <div v-if="ordenesCompra.length > 0" class="space-y-2">
+            <div v-for="(oc, ocIdx) in ordenesCompra" :key="ocIdx" class="bg-black/30 border border-white/5 rounded-lg p-3 flex flex-wrap justify-between items-center gap-3 text-xs">
+              <div>
+                <div class="flex items-center gap-3 font-mono">
+                  <span class="font-black text-amber-400 text-sm">{{ oc.numero_oc }}</span>
+                  <span class="text-slate-400">Fecha: {{ oc.fecha_emision }}</span>
+                  <span class="text-emerald-400 font-bold font-mono">Neto: {{ formatCurrency(oc.monto_neto) }}</span>
+                </div>
+                <div v-if="oc.centro_costo" class="text-[11px] text-slate-400 mt-1">
+                  Faena / Centro Costo: <span class="text-slate-200">{{ oc.centro_costo }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a v-if="oc.archivo?.url" :href="getFullStaticUrl(oc.archivo.url)" target="_blank" class="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs font-bold flex items-center gap-1 no-underline">
+                  📄 Ver PDF
+                </a>
+                <button type="button" @click="eliminarOC(ocIdx)" class="p-1 text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar OC">🗑️</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center py-4 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-500 text-xs">
+            Sin Órdenes de Compra adjuntas. Haz clic en "+ Adjuntar OC (PDF)" para registrar la del cliente.
+          </div>
         </div>
 
-        <!-- FORMULARIO DE REGISTRO DE FACTURACIÓN Y CIERRE DE SERVICIO -->
-        <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
+        <!-- BARRA DE NAVEGACIÓN PASO 3 -->
+        <div class="flex justify-between items-center bg-[#050810] border border-white/10 rounded-xl p-4">
+          <button
+            type="button"
+            @click="pasoCierreActivo = 'edp'"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <span>⬅️</span>
+            <span>Volver a EDP Mandante</span>
+          </button>
+          <button
+            type="button"
+            @click="pasoCierreActivo = 'factura'"
+            class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2 cursor-pointer"
+          >
+            <span>Continuar a Facturación DTE</span>
+            <span>➔</span>
+          </button>
+        </div>
+      </div>
+
+        <!-- FORMULARIO DE REGISTRO DE FACTURACIÓN Y CIERRE DE SERVICIO (PASO 4) -->
+        <div v-else-if="pasoCierreActivo === 'factura'" class="space-y-6">
+          <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
           <div class="border-b border-white/10 pb-3 flex justify-between items-center">
             <div class="flex items-center gap-2.5">
               <span class="text-xl">🏁</span>
               <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono">
-                Registro de Facturación Oficial & Cierre Comercial
+                Paso 4: Registro de Facturación Oficial (DTE / Laudus)
               </h4>
             </div>
             <span v-if="estadoDbActual === 7" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
@@ -2630,6 +2945,19 @@
 
             <!-- N° HES / OC -->
             <div class="space-y-1">
+              <div v-if="ordenesCompra.length > 0" class="flex flex-wrap gap-1 mb-1">
+                <span class="text-[10px] text-amber-400 font-mono font-bold">OCs del Paso 3:</span>
+                <button
+                  v-for="(oc, oIdx) in ordenesCompra"
+                  :key="oIdx"
+                  type="button"
+                  @click="seleccionarOCParaFactura(oc)"
+                  class="text-[9px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-1.5 py-0.5 font-mono cursor-pointer"
+                  :title="'Asociar ' + oc.numero_oc"
+                >
+                  + {{ oc.numero_oc }}
+                </button>
+              </div>
               <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Orden Compra / HES Mandante</label>
               <input
                 v-model="formFacturacion.hes_oc_numero"
@@ -2682,8 +3010,21 @@
           </div>
         </div>
 
+        <!-- BARRA DE NAVEGACIÓN PASO 4 -->
+        <div class="flex justify-start items-center bg-[#050810] border border-white/10 rounded-xl p-4">
+          <button
+            type="button"
+            @click="pasoCierreActivo = 'oc'"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <span>⬅️</span>
+            <span>Volver a Respaldo OC</span>
+          </button>
+        </div>
       </div>
+
     </div>
+  </div>
 
     <!-- Banner Modo Solo Lectura en Comercial (Inmutabilidad Etapa Concluida) -->
     <div v-if="topTab === 'comercial' && isModoOperaciones" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200 flex-shrink-0">
@@ -3151,9 +3492,9 @@
                     <th class="p-3 min-w-[210px]">Categoría</th>
                     <th class="p-3 min-w-[170px]">Subcategoría</th>
                     <th class="p-3 min-w-[150px] w-full">Descripción / Equipo</th>
-                    <th class="p-3 text-center min-w-[70px]">Cant.</th>
-                    <th class="p-3 min-w-[110px]">Unidad</th>
-                    <th class="p-3 text-right min-w-[110px]">Valor Unit.</th>
+                    <th class="p-3 min-w-[150px]">Unidad de Cobro</th>
+                    <th class="p-3 text-center min-w-[170px]">Cantidad(es)</th>
+                    <th class="p-3 text-right min-w-[110px]">Valor Unitario</th>
                     <th class="p-3 text-right min-w-[120px]">Subtotal</th>
                     <th class="p-3 text-center min-w-[40px]"></th>
                   </tr>
@@ -3163,7 +3504,7 @@
                     <td class="p-2">
                       <select 
                         v-model="line.tipo" 
-                        @change="line.subcategoria = ''" 
+                        @change="onTipoChange(line)" 
                         class="bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none w-full transition-colors"
                         :class="!line.tipo ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                       >
@@ -3189,23 +3530,108 @@
                       <input type="text" v-model="line.descripcion" placeholder="Ej: Liebherr LTM 1220..." class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white" />
                     </td>
                     <td class="p-2">
-                      <input type="number" v-model.number="line.whitespace" min="1" class="hidden" /><input type="number" v-model.number="line.cantidad" min="1" class="w-full bg-[#0a0f1e] border border-white/10 rounded text-center px-1 py-1 text-xs text-white" />
-                    </td>
-                    <td class="p-2">
-                      <select v-model="line.unidad" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-full">
-                        <option value="Horas" class="bg-[#0a0f1e] text-white">Horas</option>
-                        <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
-                        <option value="Semanal" class="bg-[#0a0f1e] text-white">Semanal</option>
-                        <option value="Mensual" class="bg-[#0a0f1e] text-white">Mensual</option>
-                        <option value="Fijo" class="bg-[#0a0f1e] text-white">Fijo</option>
-                        <option value="Flete" class="bg-[#0a0f1e] text-white">Flete</option>
+                      <select 
+                        v-model="line.unidad" 
+                        @change="onUnidadChange(line)" 
+                        :disabled="line.tipo === 'TRASLADOS'"
+                        :class="line.tipo === 'TRASLADOS' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-white/5' : 'border-white/10'"
+                        :title="line.tipo === 'TRASLADOS' ? 'Para la categoría TRASLADOS, la unidad de cobro es exclusivamente Traslado.' : ''"
+                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none w-full transition-colors"
+                      >
+                        <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
+                        <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
+                        <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
+                        <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
                       </select>
                     </td>
                     <td class="p-2">
-                      <input type="number" v-model.number="line.valorUnitario" min="0" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-right text-xs text-white" />
+                      <!-- Horas Diarias Minimas: Días (1..30) y Horas (1..24) -->
+                      <template v-if="line.unidad === 'Horas Diarias Minimas'">
+                        <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-slate-400 font-mono">Días:</span>
+                            <input 
+                              type="number" 
+                              v-model.number="line.cantidad_dias" 
+                              @input="line.cantidad = line.cantidad_dias"
+                              min="1" 
+                              max="30" 
+                              class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                              :class="(line.cantidad_dias < 1 || line.cantidad_dias > 30) ? 'border-red-500 text-red-300' : 'border-white/10'"
+                              title="Cantidad de Días (1 a 30)"
+                            />
+                          </div>
+                          <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
+                            <input 
+                              type="number" 
+                              v-model.number="line.cantidad_horas" 
+                              @input="line.pisoMinimo = line.cantidad_horas"
+                              min="1" 
+                              max="24" 
+                              step="0.5" 
+                              class="w-14 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
+                              :class="(line.cantidad_horas < 1 || line.cantidad_horas > 24) ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
+                              title="Cantidad de Horas (1 a 24)"
+                            />
+                          </div>
+                        </div>
+                      </template>
+                      <!-- Horas Mes Minimas: Meses (>= 1) y Horas (> 1) -->
+                      <template v-else-if="line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas'">
+                        <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-slate-400 font-mono">Meses:</span>
+                            <input 
+                              type="number" 
+                              v-model.number="line.cantidad_meses" 
+                              @input="line.cantidad = line.cantidad_meses"
+                              min="1" 
+                              class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                              :class="line.cantidad_meses < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
+                              title="Cantidad de Meses (>= 1)"
+                            />
+                          </div>
+                          <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
+                            <input 
+                              type="number" 
+                              v-model.number="line.cantidad_horas" 
+                              @input="line.pisoMinimo = line.cantidad_horas"
+                              min="2" 
+                              class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
+                              :class="line.cantidad_horas <= 1 ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
+                              title="Cantidad de Horas (> 1)"
+                            />
+                          </div>
+                        </div>
+                      </template>
+                      <!-- Traslado o Valor Fijo: Cantidad (>= 1) -->
+                      <template v-else>
+                        <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
+                          <input 
+                            type="number" 
+                            v-model.number="line.cantidad" 
+                            min="1" 
+                            class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
+                            :class="line.cantidad < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
+                            title="Cantidad (>= 1)"
+                          />
+                        </div>
+                      </template>
+                    </td>
+                    <td class="p-2">
+                      <input 
+                        type="number" 
+                        v-model.number="line.valorUnitario" 
+                        @input="line.valor_unitario = line.valorUnitario"
+                        min="0" 
+                        class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-right text-xs text-white font-mono" 
+                      />
                     </td>
                     <td class="p-2 text-right font-bold text-amber-500 font-mono">
-                      {{ formatCurrency(line.cantidad * (line.valorUnitario || 0)) }}
+                      {{ formatCurrency(calcularSubtotalLinea(line)) }}
                     </td>
                     <td class="p-2 text-center">
                       <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400">
@@ -4355,6 +4781,74 @@
     :edp-data="edpData"
     @close="modalCaratulaEDPAbierto = false"
   />
+
+  <!-- NOTA: ModalITS ahora se renderiza de forma nativa e inline dentro del Paso 1 de Sub-tab 7 (Liquidación) -->
+
+  <!-- MODAL ADJUNTAR ORDEN DE COMPRA (OC / HES MANDANTE) -->
+  <div v-if="mostrarModalOC" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[#0b1021] border border-blue-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div class="bg-gradient-to-r from-blue-950 to-[#0b1021] border-b border-white/10 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-lg">
+            📑
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">Adjuntar Orden de Compra (OC / HES)</h3>
+            <p class="text-[11px] text-slate-400">Respaldo legal mandante para emitir DTE</p>
+          </div>
+        </div>
+        <button @click="mostrarModalOC = false" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">N° Orden de Compra <span class="text-red-400">*</span></label>
+            <input v-model="formOC.numero_oc" type="text" placeholder="ej. OC-88491 / HES-492" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Fecha Emisión</label>
+            <input v-model="formOC.fecha_emision" type="date" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-400 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Monto Neto (CLP)</label>
+            <input v-model.number="formOC.monto_neto" type="number" step="1000" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-emerald-400 font-mono font-bold focus:border-blue-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Centro Costo / Faena</label>
+            <input v-model="formOC.centro_costo" type="text" placeholder="ej. Faena Los Bronces" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-400 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Archivo Respaldo (PDF OC Mandante)</label>
+          <div class="flex items-center gap-3">
+            <input type="file" accept=".pdf,.doc,.docx" @change="onArchivoOCSeleccionado" class="text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+            <span v-if="subiendoArchivoOC" class="text-xs text-amber-400 animate-pulse font-mono">Subiendo...</span>
+            <span v-else-if="formOC.archivo?.nombre" class="text-xs text-emerald-400 font-mono">✔ {{ formOC.archivo.nombre }}</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Observaciones</label>
+          <textarea v-model="formOC.observaciones" rows="2" placeholder="Notas sobre la OC o condiciones especiales..." class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:border-blue-400 outline-none"></textarea>
+        </div>
+      </div>
+
+      <div class="bg-[#050810] border-t border-white/10 px-6 py-3 flex justify-end gap-3">
+        <button type="button" @click="mostrarModalOC = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" @click="guardarOC" :disabled="subiendoArchivoOC" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/30">
+          <span>💾</span>
+          <span>Guardar OC</span>
+        </button>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
@@ -4371,6 +4865,7 @@ import VerSurveyModal from '../../components/VerSurveyModal.vue'
 import ModalMapaViaje from '../../components/Operaciones/ModalMapaViaje.vue'
 import ModalVisorReport from '../../components/Operaciones/ModalVisorReport.vue'
 import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
+import ModalITS from '../../components/Operaciones/ModalITS.vue'
 
 const viajesProyecto = ref([])
 const cargandoViajes = ref(false)
@@ -4386,6 +4881,17 @@ const reportSeleccionadoParaVisor = ref(null)
 const edpData = ref(null)
 const cargandoEDP = ref(false)
 const modalCaratulaEDPAbierto = ref(false)
+const modalITSAbierto = ref(false)
+
+const activeProjectId = computed(() => {
+  const pId = props.proyectoId
+  if (pId && typeof pId === 'object') return pId.id_proyecto || pId.id || pId.id_cotizacion
+  if (pId) return pId
+  if (currentProyectoId.value) return currentProyectoId.value
+  if (route?.query?.id_proyecto) return route.query.id_proyecto
+  if (route?.query?.id) return route.query.id
+  return null
+})
 const guardandoFacturacion = ref(false)
 const formFacturacion = reactive({
   hes_oc_numero: '',
@@ -4393,6 +4899,125 @@ const formFacturacion = reactive({
   fecha_facturacion: new Date().toISOString().split('T')[0],
   observaciones_facturacion: ''
 })
+
+// ÓRDENES DE COMPRA (OC / HES MANDANTE) - PASO 3
+const ordenesCompra = ref([])
+const mostrarModalOC = ref(false)
+const subiendoArchivoOC = ref(false)
+const formOC = reactive({
+  numero_oc: '',
+  fecha_emision: new Date().toISOString().split('T')[0],
+  monto_neto: 0,
+  centro_costo: '',
+  archivo: null,
+  observaciones: ''
+})
+
+const totalMontoOCs = computed(() => {
+  return (ordenesCompra.value || []).reduce((acc, o) => acc + (Number(o.monto_neto) || 0), 0)
+})
+
+const abrirModalNuevaOC = () => {
+  formOC.numero_oc = ''
+  formOC.fecha_emision = new Date().toISOString().split('T')[0]
+  formOC.monto_neto = edpData.value?.resumen_financiero?.total_neto || totalNeto.value || 0
+  formOC.centro_costo = siteVisit.value?.obra_nombre || ''
+  formOC.archivo = null
+  formOC.observaciones = ''
+  mostrarModalOC.value = true
+}
+
+const onArchivoOCSeleccionado = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  subiendoArchivoOC.value = true
+  try {
+    const formData = new FormData()
+    formData.append('archivo', file)
+    formData.append('categoria', 'ORDEN_COMPRA')
+    const token = localStorage.getItem('token') || ''
+    
+    let res
+    try {
+      res = await apiAxios.post('/archivo/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+      })
+    } catch (e1) {
+      res = await apiAxios.post('/v1/storage/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+      })
+    }
+    
+    const docData = res?.data?.documento || res?.data?.data || res?.data || {}
+    formOC.archivo = {
+      id_doc: docData.id_doc || docData.id || null,
+      nombre: file.name,
+      url: docData.url || docData.path || `/archivo/ver/${docData.id_doc || ''}`
+    }
+  } catch (err) {
+    console.error('Error al subir archivo de OC:', err)
+    alert('Error al subir el archivo PDF de la Orden de Compra: ' + (err.response?.data?.error || err.message))
+  } finally {
+    subiendoArchivoOC.value = false
+  }
+}
+
+const guardarOC = async () => {
+  if (!formOC.numero_oc) {
+    alert('⚠️ Debe ingresar el Número de la Orden de Compra (OC / HES).')
+    return
+  }
+  
+  const nuevaOC = {
+    id: 'oc-' + Date.now(),
+    numero_oc: formOC.numero_oc,
+    fecha_emision: formOC.fecha_emision,
+    monto_neto: Number(formOC.monto_neto) || 0,
+    centro_costo: formOC.centro_costo,
+    archivo: formOC.archivo ? { ...formOC.archivo } : null,
+    observaciones: formOC.observaciones
+  }
+  
+  ordenesCompra.value.push(nuevaOC)
+  mostrarModalOC.value = false
+  
+  // Auto-guardado en PostgreSQL
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (projectId) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      alert(`✅ Orden de Compra "${nuevaOC.numero_oc}" registrada exitosamente.`)
+    } catch (e) {
+      console.warn('Error al auto-guardar OC:', e)
+    }
+  }
+}
+
+const eliminarOC = async (idx) => {
+  if (!confirm(`¿Estás seguro de eliminar la Orden de Compra "${ordenesCompra.value[idx]?.numero_oc}"?`)) return
+  ordenesCompra.value.splice(idx, 1)
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (projectId) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch (e) {
+      console.warn('Error al guardar eliminación de OC:', e)
+    }
+  }
+}
+
+const seleccionarOCParaFactura = (oc) => {
+  formFacturacion.hes_oc_numero = oc.numero_oc
+}
+
 
 const props = defineProps({
   proyectoId: {
@@ -4513,6 +5138,7 @@ const getSurveyReportUrl = (idSurvey) => {
 const activeTab = ref('terreno')
 const topTab = ref('comercial') // 'comercial' | 'operaciones'
 const operacionesSubTab = ref('validacion') // 'validacion' | 'asignacion'
+const pasoCierreActivo = ref('its') // 'its' | 'edp' | 'oc' | 'factura'
 const requerimientoAprobado = ref(false)
 
 watch(() => props.initialSubTab, (newTab) => {
@@ -4708,40 +5334,50 @@ const guardarCambiosAsignacion = async () => {
     const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
     const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
 
-    // 1. Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22)
+    // 1. Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22) - Deduplicado en memoria
     try {
-      for (const p of (tripulacionAsignada.value || [])) {
+      const mapPersonas = new Map()
+      ;(tripulacionAsignada.value || []).forEach(p => {
         if (p.id_user && !isNaN(parseInt(p.id_user))) {
-          const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
-          const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
-          await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
-            id_proyecto: parseInt(projectId),
-            id_user: parseInt(p.id_user),
-            rol_asignado: p.cargo || 'Personal Asignado',
-            fecha_plan_ini: fIni,
-            fecha_plan_fin: fFin,
-            estado_real: 'PROGRAMADO',
-            id_user_creacion: currentUser.id_user || 1
-          }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+          mapPersonas.set(parseInt(p.id_user), p)
         }
+      })
+
+      for (const p of mapPersonas.values()) {
+        const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
+        const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
+        await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
+          id_proyecto: parseInt(projectId),
+          id_user: parseInt(p.id_user),
+          rol_asignado: p.cargo || 'Personal Asignado',
+          fecha_plan_ini: fIni,
+          fecha_plan_fin: fFin,
+          estado_real: 'PROGRAMADO',
+          id_user_creacion: currentUser.id_user || 1
+        }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
       }
     } catch (relErr) {
       console.warn('Advertencia en sincronización relacional de personas:', relErr)
     }
 
-    // 2. Persistir equipos en tpry_rel_equipo en PostgreSQL (Spec 22)
+    // 2. Persistir equipos en tpry_rel_equipo en PostgreSQL (Spec 22) - Deduplicado en memoria
     try {
-      const equiposLista = (linesValidas.value || []).map(l => ({
-        id_equipo: l.equipo_asignado_id,
-        rol: l.tipo || 'Equipo Principal',
-        f_ini: l.fecha_plan_ini,
-        f_fin: l.fecha_plan_fin
-      }))
+      const mapEquipos = new Map()
+      ;(linesValidas.value || []).forEach(l => {
+        if (l.equipo_asignado_id && !isNaN(parseInt(l.equipo_asignado_id))) {
+          mapEquipos.set(parseInt(l.equipo_asignado_id), {
+            id_equipo: l.equipo_asignado_id,
+            rol: l.tipo || 'Equipo Principal',
+            f_ini: l.fecha_plan_ini,
+            f_fin: l.fecha_plan_fin
+          })
+        }
+      })
       
       if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
         operacionesAssignment.value.equipos_extra.forEach(ex => {
-          if (ex.id_equipo) {
-            equiposLista.push({
+          if (ex.id_equipo && !isNaN(parseInt(ex.id_equipo)) && !mapEquipos.has(parseInt(ex.id_equipo))) {
+            mapEquipos.set(parseInt(ex.id_equipo), {
               id_equipo: ex.id_equipo,
               rol: ex.rol || 'Equipo Traslado',
               f_ini: ex.fecha_plan_ini,
@@ -4751,20 +5387,18 @@ const guardarCambiosAsignacion = async () => {
         })
       }
 
-      for (const eq of equiposLista) {
-        if (eq.id_equipo && !isNaN(parseInt(eq.id_equipo))) {
-          const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
-          const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
-          await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
-            id_proyecto: parseInt(projectId),
-            id_equipo: parseInt(eq.id_equipo),
-            rol_equipo: eq.rol || 'Equipo Asignado',
-            fecha_plan_ini: fIni,
-            fecha_plan_fin: fFin,
-            estado_real: 'PROGRAMADO',
-            id_user_creacion: currentUser.id_user || 1
-          }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
-        }
+      for (const eq of mapEquipos.values()) {
+        const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
+        const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
+        await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
+          id_proyecto: parseInt(projectId),
+          id_equipo: parseInt(eq.id_equipo),
+          rol_equipo: eq.rol || 'Equipo Asignado',
+          fecha_plan_ini: fIni,
+          fecha_plan_fin: fFin,
+          estado_real: 'PROGRAMADO',
+          id_user_creacion: currentUser.id_user || 1
+        }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
       }
     } catch (relEqErr) {
       console.warn('Advertencia en sincronización relacional de equipos:', relEqErr)
@@ -5099,6 +5733,124 @@ const normalizarTextoAcred = (txt) => {
     .trim()
 }
 
+// -------------------------------------------------------------
+// DICCIONARIOS CANÓNICOS DE TIPOS DE DOCUMENTO (SPEC-45)
+// Mapea exigencias en string (crm_v1.acreditacion_docs) a IDs canónicos de la BD
+// -------------------------------------------------------------
+const DICCIONARIO_TIPOS_PERSONA = {
+  'cedula': 1,
+  'cedula identidad': 1,
+  'cedula de identidad': 1,
+  'carnet': 1,
+  
+  'licencia': 2,
+  'licencia conducir': 2,
+  'licencia de conducir': 2,
+  'hoja vida conductor': 2,
+  
+  'contrato': 3,
+  'contrato de trabajo': 3,
+  'anexo de obra': 3,
+  'anexo pacto horas extraordinarias': 13,
+  
+  'psicotecnico': 4,
+  'psicosensotecnico': 4,
+  'examen psicosensotecnico': 4,
+  'pst': 4,
+  
+  'examen ocupacional': 5,
+  'ocupacional': 5,
+  'examen preocupacional': 6,
+  'preocupacional': 6,
+  'examen': 5,
+  'salud': 5,
+  'altura': 5,
+  'altura fisica': 5,
+  
+  'certificacion': 7,
+  'certificacion de competencias': 7,
+  'credencial': 8,
+  'credencial de operador/rigger': 8,
+  'rigger': 8,
+  'operador': 8,
+  
+  'riohs': 9,
+  'reglamento interno': 9,
+  'reglamento interno (riohs)': 9,
+  
+  'induccion y entrega de epp': 10,
+  'epp': 49,
+  'entrega de epp': 49,
+  'induccion': 52,
+  'induccion interna gsp': 52,
+  
+  'odi': 11,
+  'pts': 11,
+  'obligacion de informar': 11,
+  'obligacion de informar (odi) / pts': 11,
+  
+  'instructivos': 12,
+  'entrega de instructivos': 12,
+  'irl': 14,
+  'registro de capacitacion': 14,
+  'ficha de ingreso': 51
+}
+
+const DICCIONARIO_TIPOS_EQUIPO = {
+  'permiso': 1,
+  'permiso circulacion': 1,
+  'permiso de circulacion': 1,
+  'circulacion': 1,
+  
+  'revision tecnica': 2,
+  'revision': 2,
+  'prt': 2,
+  'gases': 2,
+  
+  'soap': 3,
+  'seguro': 3,
+  'seguro obligatorio': 3,
+  
+  'inspeccion gancho': 4,
+  'certificado de inspeccion de gancho': 4,
+  'gancho': 4,
+  
+  'certificacion anual izaje': [5, 6],
+  'certificacion': [5, 6],
+  'certificacion anual': [5, 6],
+  'inspeccion de equipo': 5,
+  'certificado de inspeccion de equipo': 5,
+  'prueba de carga': 6,
+  'certificado de prueba de carga': 6,
+  'carga': 6,
+  
+  'padron': 7,
+  'certificado de inscripcion': 7,
+  'anotaciones vigentes': 7
+}
+
+const resolverIdTipoPersona = (dName) => {
+  const norm = normalizarTextoAcred(dName)
+  if (DICCIONARIO_TIPOS_PERSONA[norm]) return DICCIONARIO_TIPOS_PERSONA[norm]
+  for (const [key, id] of Object.entries(DICCIONARIO_TIPOS_PERSONA)) {
+    if (key.length >= 4 && (norm === key || norm.startsWith(key + ' ') || norm.endsWith(' ' + key) || norm.includes(' ' + key + ' '))) {
+      return id
+    }
+  }
+  return null
+}
+
+const resolverIdTipoEquipo = (dName) => {
+  const norm = normalizarTextoAcred(dName)
+  if (DICCIONARIO_TIPOS_EQUIPO[norm]) return DICCIONARIO_TIPOS_EQUIPO[norm]
+  for (const [key, id] of Object.entries(DICCIONARIO_TIPOS_EQUIPO)) {
+    if (key.length >= 4 && (norm === key || norm.startsWith(key + ' ') || norm.endsWith(' ' + key) || norm.includes(' ' + key + ' '))) {
+      return id
+    }
+  }
+  return null
+}
+
 // Carga asíncrona y cache de certificados de personal
 const cargarExpedientePersonal = async (uId) => {
   if (!uId) return []
@@ -5280,40 +6032,24 @@ const mapaEstadoAcreditaciones = computed(() => {
       let matchedCert = null
       let conflictoEmpresa = null
 
+      const idTipoExigido = resolverIdTipoPersona(dName)
+
       for (const c of certs) {
-        const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || '')
         let match = false
 
-        if (dNameNorm.includes('contrato') || dNameNorm.includes('anexo') || dNameNorm.includes('laboral') || dNameNorm.includes('trabajo')) {
-          if (tipoNorm.includes('contrato') || tipoNorm.includes('anexo') || tipoNorm.includes('trabajo') || c.id_tipo_certificado_persona === 8 || c.id_tipo_certificado_persona === 6) {
+        if (idTipoExigido !== null) {
+          const certTipoId = Number(c.id_tipo_certificado_persona || c.id_tipo || 0)
+          if (Array.isArray(idTipoExigido)) {
+            match = idTipoExigido.includes(certTipoId)
+          } else {
+            match = certTipoId === idTipoExigido
+          }
+        } else {
+          // Fallback ultra-estricto solo si el requisito no está en el diccionario canónico
+          const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || '')
+          if (tipoNorm && dNameNorm && tipoNorm === dNameNorm) {
             match = true
           }
-        } else if (dNameNorm.includes('cedula') || dNameNorm.includes('identidad') || dNameNorm.includes('ci') || dNameNorm.includes('carnet')) {
-          if (tipoNorm.includes('cedula') || tipoNorm.includes('identidad') || tipoNorm.includes('ci') || c.id_tipo_certificado_persona === 1) {
-            match = true
-          }
-        } else if (dNameNorm.includes('licencia') || dNameNorm.includes('conducir') || dNameNorm.includes('municipal') || dNameNorm.includes('hoja vida')) {
-          if (tipoNorm.includes('licencia') || tipoNorm.includes('conducir') || c.id_tipo_certificado_persona === 2 || c.id_tipo_certificado_persona === 4) {
-            match = true
-          }
-        } else if (dNameNorm.includes('examen') || dNameNorm.includes('salud') || dNameNorm.includes('ocupacional') || dNameNorm.includes('preocupacional') || dNameNorm.includes('altura') || dNameNorm.includes('psicosensotecnico')) {
-          if (tipoNorm.includes('examen') || tipoNorm.includes('salud') || tipoNorm.includes('ocupacional') || c.id_tipo_certificado_persona === 5 || c.id_tipo_certificado_persona === 3) {
-            match = true
-          }
-        } else if (dNameNorm.includes('antecedente')) {
-          if (tipoNorm.includes('antecedente') || c.id_tipo_certificado_persona === 2) {
-            match = true
-          }
-        } else if (dNameNorm.includes('epp') || dNameNorm.includes('riohs') || dNameNorm.includes('odi') || dNameNorm.includes('pts') || dNameNorm.includes('induccion') || dNameNorm.includes('informar')) {
-          if (tipoNorm.includes('epp') || tipoNorm.includes('riohs') || tipoNorm.includes('odi') || tipoNorm.includes('pts') || tipoNorm.includes('induccion') || tipoNorm.includes('informar') || c.id_tipo_certificado_persona === 6 || c.id_tipo_certificado_persona === 7 || c.id_tipo_certificado_persona === 10) {
-            match = true
-          }
-        } else if (dNameNorm.includes('certificacion') || dNameNorm.includes('rigger') || dNameNorm.includes('operador') || dNameNorm.includes('credencial') || dNameNorm.includes('especialidad')) {
-          if (tipoNorm.includes('certificacion') || tipoNorm.includes('rigger') || tipoNorm.includes('operador') || tipoNorm.includes('credencial') || tipoNorm.includes('especialidad') || c.id_tipo_certificado_persona === 3 || c.id_tipo_certificado_persona === 4) {
-            match = true
-          }
-        } else if (tipoNorm && (tipoNorm.includes(dNameNorm) || dNameNorm.includes(tipoNorm))) {
-          match = true
         }
 
         if (match) {
@@ -5385,22 +6121,24 @@ const mapaEstadoAcreditaciones = computed(() => {
 
       let matchedCert = null
 
+      const idTipoExigido = resolverIdTipoEquipo(dName)
+
       for (const c of certs) {
-        const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || c.nombre || c.tipo_documento || '')
         let match = false
 
-        if (dNameNorm.includes('soap') || dNameNorm.includes('seguro')) {
-          if (tipoNorm.includes('soap') || tipoNorm.includes('seguro')) match = true
-        } else if (dNameNorm.includes('revision') || dNameNorm.includes('tecnica') || dNameNorm.includes('rt') || dNameNorm.includes('gases')) {
-          if (tipoNorm.includes('revision') || tipoNorm.includes('tecnica') || tipoNorm.includes('rt') || tipoNorm.includes('gases')) match = true
-        } else if (dNameNorm.includes('certificacion') || dNameNorm.includes('izaje') || dNameNorm.includes('anual') || dNameNorm.includes('carga') || dNameNorm.includes('bureau') || dNameNorm.includes('cesmec')) {
-          if (tipoNorm.includes('certificacion') || tipoNorm.includes('izaje') || tipoNorm.includes('anual') || tipoNorm.includes('carga') || tipoNorm.includes('bureau') || tipoNorm.includes('cesmec') || tipoNorm.includes('test')) match = true
-        } else if (dNameNorm.includes('permiso') || dNameNorm.includes('circulacion')) {
-          if (tipoNorm.includes('permiso') || tipoNorm.includes('circulacion')) match = true
-        } else if (dNameNorm.includes('poliza') || dNameNorm.includes('rc') || dNameNorm.includes('responsabilidad')) {
-          if (tipoNorm.includes('poliza') || tipoNorm.includes('rc') || tipoNorm.includes('responsabilidad')) match = true
-        } else if (tipoNorm && (tipoNorm.includes(dNameNorm) || dNameNorm.includes(tipoNorm))) {
-          match = true
+        if (idTipoExigido !== null) {
+          const certTipoId = Number(c.id_tipo_certificado || c.id_tipo || 0)
+          if (Array.isArray(idTipoExigido)) {
+            match = idTipoExigido.includes(certTipoId)
+          } else {
+            match = certTipoId === idTipoExigido
+          }
+        } else {
+          // Fallback ultra-estricto solo si el requisito no está en el diccionario canónico
+          const tipoNorm = normalizarTextoAcred(c.nombre_tipo || c.name_doc_orig || c.nombre || c.tipo_documento || '')
+          if (tipoNorm && dNameNorm && tipoNorm === dNameNorm) {
+            match = true
+          }
         }
 
         if (match) {
@@ -5941,6 +6679,14 @@ const vincularDocumentoSeleccionado = (docObj) => {
   
   acreditacionCacheVersion.value++
   modalVincularState.value.show = false
+}
+
+const activeKebabMenuKey = ref(null)
+const toggleKebabMenu = (key) => {
+  activeKebabMenuKey.value = activeKebabMenuKey.value === key ? null : key
+}
+const handleCloseKebab = () => {
+  activeKebabMenuKey.value = null
 }
 
 const verDocumentoDossier = (rawDoc, categoria, entityObj = null) => {
@@ -7942,8 +8688,59 @@ const nuevaInteraccion = ref({
   comentario: ''
 })
 
+const calcularSubtotalLinea = (line) => {
+  if (!line) return 0
+  const val = Number(line.valor_unitario !== undefined ? line.valor_unitario : line.valorUnitario) || 0
+  if (line.unidad === 'Horas Diarias Minimas') {
+    const dias = Number(line.cantidad_dias !== undefined ? line.cantidad_dias : line.cantidad) || 1
+    const horas = Number(line.cantidad_horas !== undefined ? line.cantidad_horas : line.pisoMinimo) || 8
+    return dias * horas * val
+  }
+  if (line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas') {
+    const meses = Number(line.cantidad_meses !== undefined ? line.cantidad_meses : line.cantidad) || 1
+    const horas = Number(line.cantidad_horas !== undefined ? line.cantidad_horas : line.pisoMinimo) || 180
+    return meses * horas * val
+  }
+  const cant = Number(line.cantidad) || 1
+  return cant * val
+}
+
+const onUnidadChange = (line) => {
+  if (!line) return
+  if (line.unidad === 'Horas Diarias Minimas') {
+    if (!line.cantidad_dias || line.cantidad_dias < 1) line.cantidad_dias = 1
+    if (!line.cantidad_horas || line.cantidad_horas < 1) line.cantidad_horas = 8
+    line.cantidad = line.cantidad_dias
+    line.pisoMinimo = line.cantidad_horas
+  } else if (line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas') {
+    line.unidad = 'Horas Mes Minimas'
+    if (!line.cantidad_meses || line.cantidad_meses < 1) line.cantidad_meses = 1
+    if (!line.cantidad_horas || line.cantidad_horas < 2) line.cantidad_horas = 180
+    line.cantidad = line.cantidad_meses
+    line.pisoMinimo = line.cantidad_horas
+  } else {
+    if (!line.cantidad || line.cantidad < 1) line.cantidad = 1
+    line.cantidad_dias = null
+    line.cantidad_meses = null
+    line.cantidad_horas = null
+    line.pisoMinimo = 0
+  }
+}
+
+const onTipoChange = (line) => {
+  if (!line) return
+  line.subcategoria = ''
+  if (line.tipo === 'TRASLADOS') {
+    line.unidad = 'Traslado'
+    onUnidadChange(line)
+  } else if (line.unidad === 'Traslado') {
+    line.unidad = 'Horas Diarias Minimas'
+    onUnidadChange(line)
+  }
+}
+
 const totalNeto = computed(() => {
-  return lines.value.reduce((acc, l) => acc + (l.cantidad * (l.valorUnitario || 0)), 0)
+  return lines.value.reduce((acc, l) => acc + calcularSubtotalLinea(l), 0)
 })
 
 const formatCurrency = (val) => {
@@ -7983,7 +8780,19 @@ const enviarCotizacionPorCorreo = async () => {
 }
 
 const agregarLinea = () => {
-  lines.value.push({ tipo: '', subcategoria: '', descripcion: '', cantidad: 1, unidad: 'Diario', valorUnitario: 0 })
+  lines.value.push({ 
+    tipo: '', 
+    subcategoria: '', 
+    descripcion: '', 
+    unidad: 'Horas Diarias Minimas', 
+    cantidad_dias: 1, 
+    cantidad_horas: 8, 
+    cantidad_meses: null, 
+    cantidad: 1, 
+    pisoMinimo: 8, 
+    valorUnitario: 0, 
+    valor_unitario: 0 
+  })
 }
 
 const eliminarLinea = (idx) => {
@@ -8222,9 +9031,7 @@ const cargarDatosCotizacion = async () => {
           if (crm.lineas_servicio?.length) {
             lines.value = crm.lineas_servicio.map(l => {
               let mappedUnidad = l.unidad
-              if (mappedUnidad === 'Global') mappedUnidad = 'Fijo'
-              if (mappedUnidad === 'Viaje') mappedUnidad = 'Flete'
-
+              let pisoMin = Number(l.pisoMinimo) || 0
               let mappedTipo = l.tipo || ''
               const norm = String(mappedTipo).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
               if (norm === 'EQUIPO (GRUA)' || norm === 'GRUA' || norm === 'GRUAS TELESCOPICAS' || norm === 'GRUA TELESCOPICA' || norm === 'GRÚAS TELESCÓPICAS' || norm === 'GRÚA TELESCÓPICA') {
@@ -8249,10 +9056,66 @@ const cargarDatosCotizacion = async () => {
                 mappedTipo = 'OTROS'
               }
 
-              return { 
-                ...l, 
-                tipo: mappedTipo,
-                unidad: mappedUnidad 
+              if (mappedUnidad === 'Horas' || mappedUnidad === 'Diario' || mappedUnidad === 'Jornada' || mappedUnidad === 'Horas Diarias Minimas') {
+                mappedUnidad = 'Horas Diarias Minimas'
+                let dias = Number(l.cantidad_dias || l.cantidad) || 1
+                let horas = Number(l.cantidad_horas || l.pisoMinimo) || 8
+                return {
+                  ...l,
+                  tipo: mappedTipo,
+                  unidad: mappedUnidad,
+                  cantidad_dias: dias,
+                  cantidad_horas: horas,
+                  cantidad: dias,
+                  pisoMinimo: horas,
+                  valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
+                  valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0
+                }
+              } else if (mappedUnidad === 'Mensual' || mappedUnidad === 'Horas Mensuales Minimas' || mappedUnidad === 'Horas Mes Minimas') {
+                mappedUnidad = 'Horas Mes Minimas'
+                let meses = Number(l.cantidad_meses || l.cantidad) || 1
+                let horas = Number(l.cantidad_horas || l.pisoMinimo) || 180
+                return {
+                  ...l,
+                  tipo: mappedTipo,
+                  unidad: mappedUnidad,
+                  cantidad_meses: meses,
+                  cantidad_horas: horas,
+                  cantidad: meses,
+                  pisoMinimo: horas,
+                  valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
+                  valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0
+                }
+              } else if (mappedUnidad === 'Flete' || mappedUnidad === 'Viaje' || mappedUnidad === 'Traslados' || mappedUnidad === 'Traslado') {
+                mappedUnidad = 'Traslado'
+                let cant = Number(l.cantidad) || 1
+                return {
+                  ...l,
+                  tipo: mappedTipo,
+                  unidad: mappedUnidad,
+                  cantidad: cant,
+                  cantidad_dias: null,
+                  cantidad_meses: null,
+                  cantidad_horas: null,
+                  pisoMinimo: 0,
+                  valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
+                  valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0
+                }
+              } else {
+                mappedUnidad = 'Valor Fijo'
+                let cant = Number(l.cantidad) || 1
+                return {
+                  ...l,
+                  tipo: mappedTipo,
+                  unidad: mappedUnidad,
+                  cantidad: cant,
+                  cantidad_dias: null,
+                  cantidad_meses: null,
+                  cantidad_horas: null,
+                  pisoMinimo: 0,
+                  valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
+                  valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0
+                }
               }
             })
           } else {
@@ -8260,6 +9123,7 @@ const cargarDatosCotizacion = async () => {
           }
           
           if (crm.cotizaciones_historicas) cotizaciones_historicas.value = [...crm.cotizaciones_historicas].sort((a, b) => b.version - a.version)
+          ordenesCompra.value = Array.isArray(crm.ordenes_compra) ? [...crm.ordenes_compra] : []
           
           siteVisit.value.obra_nombre = crm.obra_nombre || p.nombre_proyecto || ''
           siteVisit.value.obra_direccion = crm.obra_direccion || p.observacion_proyecto || ''
@@ -8642,6 +9506,7 @@ const cargarDatosCotizacion = async () => {
 
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('click', handleCloseKebab)
   fetchUsuarios()
   fetchCategories()
   cargarListaEquiposMaster()
@@ -8662,18 +9527,28 @@ watch(() => route?.query?.id_proyecto, (newId) => {
 
 watch(() => route?.query?.subtab, (newSubtab) => {
   if (newSubtab) {
-    topTab.value = 'operaciones'
-    operacionesSubTab.value = newSubtab
-    if (newSubtab === 'reports') {
-      cargarReportsProyecto()
-    } else if (newSubtab === 'liquidacion') {
-      cargarResumenEDP()
+    if (newSubtab === 'comercial') {
+      topTab.value = 'comercial'
+      return
+    }
+    const estado = parseInt(opportunity.value.id_proyecto_estado) || 1
+    if (estado >= 3) {
+      topTab.value = 'operaciones'
+      operacionesSubTab.value = newSubtab
+      if (newSubtab === 'reports') {
+        cargarReportsProyecto()
+      } else if (newSubtab === 'liquidacion') {
+        cargarResumenEDP()
+      }
+    } else {
+      topTab.value = 'comercial'
     }
   }
 })
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('click', handleCloseKebab)
 })
 
 const rawEjecucionJson = ref({})
@@ -8793,6 +9668,7 @@ const buildPayload = () => {
         archivos_licitacion:   antecedentes.value.archivos,
         lineas_servicio:       lines.value,
         cotizaciones_historicas: cotizaciones_historicas.value,
+        ordenes_compra:        ordenesCompra.value,
         coordenadas_mapa: {
           lat: siteVisit.value.lat,
           lng: siteVisit.value.lng
@@ -9862,42 +10738,59 @@ const confirmarAsignacionOT = async () => {
       const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
       const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
       
-      // Personal de Tripulación
-      const tripulacionLista = (tripulacionAsignada.value || []).concat([
+      // Personal de Tripulación (Deduplicación estricta por id_user)
+      const poolPersonas = [...(tripulacionAsignada.value || [])]
+      const rolesExtra = [
         { id_user: operacionesAssignment.value.operador_id, cargo: 'Operador Grúa' },
         { id_user: operacionesAssignment.value.rigger_id, cargo: 'Rigger' },
         { id_user: operacionesAssignment.value.chofer_id, cargo: 'Chofer Transporte' }
-      ])
-      
-      for (const p of tripulacionLista) {
-        if (p.id_user && !isNaN(parseInt(p.id_user))) {
-          const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
-          const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
-          
-          await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
-            id_proyecto: parseInt(projectId),
-            id_user: parseInt(p.id_user),
-            rol_asignado: p.cargo || 'Personal Asignado',
-            fecha_plan_ini: fIni,
-            fecha_plan_fin: fFin,
-            estado_real: 'PROGRAMADO',
-            id_user_creacion: currentUser.id_user || 1
-          }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.warn('Rel persona:', e))
+      ]
+      for (const re of rolesExtra) {
+        if (re.id_user && !poolPersonas.some(p => String(p.id_user) === String(re.id_user))) {
+          poolPersonas.push(re)
         }
       }
 
-      // Equipos
-      const equiposLista = (linesEquiposPrincipales.value || []).map(l => ({
-        id_equipo: l.equipo_asignado_id,
-        rol: l.tipo || 'Equipo Principal',
-        f_ini: l.fecha_plan_ini,
-        f_fin: l.fecha_plan_fin
-      }))
+      const mapPersonas = new Map()
+      poolPersonas.forEach(p => {
+        if (p.id_user && !isNaN(parseInt(p.id_user))) {
+          mapPersonas.set(parseInt(p.id_user), p)
+        }
+      })
+      const tripulacionLista = Array.from(mapPersonas.values())
+      
+      for (const p of tripulacionLista) {
+        const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
+        const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
+        
+        await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
+          id_proyecto: parseInt(projectId),
+          id_user: parseInt(p.id_user),
+          rol_asignado: p.cargo || 'Personal Asignado',
+          fecha_plan_ini: fIni,
+          fecha_plan_fin: fFin,
+          estado_real: 'PROGRAMADO',
+          id_user_creacion: currentUser.id_user || 1
+        }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.warn('Rel persona:', e))
+      }
+
+      // Equipos (Deduplicación estricta por id_equipo)
+      const mapEquipos = new Map()
+      ;(linesEquiposPrincipales.value || []).forEach(l => {
+        if (l.equipo_asignado_id && !isNaN(parseInt(l.equipo_asignado_id))) {
+          mapEquipos.set(parseInt(l.equipo_asignado_id), {
+            id_equipo: l.equipo_asignado_id,
+            rol: l.tipo || 'Equipo Principal',
+            f_ini: l.fecha_plan_ini,
+            f_fin: l.fecha_plan_fin
+          })
+        }
+      })
       
       if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
         operacionesAssignment.value.equipos_extra.forEach((ex, idx) => {
-          if (ex.id_equipo) {
-            equiposLista.push({
+          if (ex.id_equipo && !isNaN(parseInt(ex.id_equipo)) && !mapEquipos.has(parseInt(ex.id_equipo))) {
+            mapEquipos.set(parseInt(ex.id_equipo), {
               id_equipo: ex.id_equipo,
               rol: ex.descripcion || ex.subcategoria || ex.tipo || `Vehículo Traslado #${idx + 1}`,
               f_ini: ex.fecha_plan_ini,
@@ -9907,21 +10800,21 @@ const confirmarAsignacionOT = async () => {
         })
       }
 
+      const equiposLista = Array.from(mapEquipos.values())
+
       for (const eq of equiposLista) {
-        if (eq.id_equipo && !isNaN(parseInt(eq.id_equipo))) {
-          const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
-          const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
-          
-          await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
-            id_proyecto: parseInt(projectId),
-            id_equipo: parseInt(eq.id_equipo),
-            rol_equipo: eq.rol || 'Equipo Asignado',
-            fecha_plan_ini: fIni,
-            fecha_plan_fin: fFin,
-            estado_real: 'PROGRAMADO',
-            id_user_creacion: currentUser.id_user || 1
-          }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.warn('Rel equipo:', e))
-        }
+        const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
+        const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
+        
+        await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
+          id_proyecto: parseInt(projectId),
+          id_equipo: parseInt(eq.id_equipo),
+          rol_equipo: eq.rol || 'Equipo Asignado',
+          fecha_plan_ini: fIni,
+          fecha_plan_fin: fFin,
+          estado_real: 'PROGRAMADO',
+          id_user_creacion: currentUser.id_user || 1
+        }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.warn('Rel equipo:', e))
       }
     } catch (errRel) {
       console.warn('Error al guardar relaciones de asignación:', errRel)

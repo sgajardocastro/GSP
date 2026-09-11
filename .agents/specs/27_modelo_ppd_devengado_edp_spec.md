@@ -11,14 +11,17 @@
 
 Las **Unidades de Cobro** se definen de forma estricta durante la fase de **Preventa / Cotización Comercial** en el formulario web (`GestorOportunidades.vue`). Viajan inmutables a lo largo del proceso operativo y son consumidas (no editables) por la PWA en terreno.
 
-### 📊 Catálogo de Unidades de Cobro Oficiales:
+### 📊 Catálogo de Unidades de Cobro Oficiales (Canónicas GSP 2026):
 
-| Código Interno | Nombre Comercial | Definición y Regla de Negocio | Algoritmo de Devengado en Reporte Diario / EDP |
-| :--- | :--- | :--- | :--- |
-| `HRS_DIA` | **Hrs día** | Cobra al cliente por un piso mínimo de horas diarias garantizadas por jornada. | $\text{Devengado Día} = \max(\text{Horas Operadas Reales}_i, \text{Horas Mínimas Diarias}) \times \text{Tarifa Hora}$ |
-| `HRS_MENSUAL` | **Hrs Mensual** | Cobra al cliente por un piso mínimo acumulado durante el ciclo mensual. | En el corte del EDP: $\text{Devengado} = \max(\sum \text{Horas Reales Mes}, \text{Piso Mínimo Mensual}) \times \text{Tarifa Hora}$ |
-| `FIJO` | **Fijo** | Valor cerrado acordado por un servicio o maniobra puntual específica. | Se devenga por hito o al registrar el 100% del avance de la maniobra en terreno ($100\%$ del Valor Fijo). |
-| `FLETE` | **Flete** | Valor fijo por concepto de movilización y transporte de grúa, contrapesos y aparejos. | Cargo fijo devengado al registrar el hito de *"Llegada a Faena"* (Día 1) o retorno a base. |
+| Código / Identificador | Nombre Comercial | Piso Mínimo Obligatorio | Definición y Regla de Negocio | Algoritmo de Cálculo / Devengado en Cotización y EDP |
+| :--- | :--- | :--- | :--- | :--- |
+| `Horas Diarias Minimas` | **Horas Diarias Mínimas** | **8.0 hrs** (Editable según faena) | Cobra al cliente por un piso mínimo de horas diarias garantizadas por jornada operativa. | $\text{Subtotal} = \text{Días} \times \text{Piso Mínimo} \times \text{Tarifa Hora}$. En EDP: $\max(\text{Horas Reales}_i, \text{Piso Mínimo}) \times \text{Tarifa}$. |
+| `Horas Mensuales Minimas` | **Horas Mensuales Mínimas** | **180.0 hrs** (Editable según faena) | Cobra al cliente por un piso mínimo acumulado durante el ciclo mensual de arriendo de grúa. | $\text{Subtotal} = \text{Meses} \times \text{Piso Mínimo} \times \text{Tarifa Hora}$. En EDP: $\max(\sum \text{Horas Reales Mes}, \text{Piso Mínimo Mensual}) \times \text{Tarifa}$. |
+| `Traslado` | **Traslado** | $0$ (N/A) | Valor acordado por concepto de movilización, flete de transporte de grúa, cama baja, contrapesos y aparejos. | $\text{Subtotal} = \text{Cantidad} \times \text{Tarifa Traslado}$. Devengado al hito de llegada o retorno. |
+| `Valor Fijo` | **Valor Fijo** | $0$ (N/A) | Valor cerrado o global acordado por un servicio o maniobra puntual específica (ej. montaje completo). | $\text{Subtotal} = \text{Cantidad} \times \text{Tarifa Fija}$. Devengado al 100% del avance de la maniobra. |
+
+> [!IMPORTANT]
+> **Compatibilidad y Homologación Automática:** Toda cotización histórica que registre valores antiguos (`Horas`, `Diario`, `Jornada`, `Global`, `Viaje`) es homologada automáticamente en la carga del frontend hacia las 4 unidades canónicas precedentes.
 
 ---
 
@@ -161,3 +164,13 @@ CREATE TABLE IF NOT EXISTS sch_leangsp.tedp_costos_servicio (
 * `POST /api/estados-pago/:id/factura-erp`: Anexa el archivo PDF/XML de la Factura emitida por el ERP del cliente y cambia el estado a `FACTURADO`.
 * `POST /api/estados-pago/:id/costos`: Imputa gastos reales de combustible (litros/KM), viáticos y peajes.
 * `GET /api/proyectos/:id/visor-360`: Devuelve la matriz comparativa 360° ($\text{Cotizado} \text{ vs } \text{Devengado} \text{ vs } \text{Costos} \text{ vs } \text{Margen Real}$).
+
+---
+
+## 🔗 5. Vinculación con el Pipeline de Cierre (Spec 38)
+
+El modelo de datos especificado en este documento alimenta directamente la **Subpestaña 7: Valorización, ITS & Facturación** (regulada en detalle por la **[Spec 38](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/38_liquidacion_edp_y_facturacion_spec.md)**):
+1. **Paso 1 (ITS):** Los costos registrados en `tedp_costos_servicio` (combustible, viáticos, peajes) determinan el costo real del servicio y el margen de contribución.
+2. **Paso 2 (EDP):** Los reports de `tedp_reporte_avance` se consolidan automáticamente con los pisos mínimos pactados y sobretiempos, emitiendo la Carátula Oficial de EDP.
+3. **Paso 3 (OC):** Se valida el respaldo de Órdenes de Compra del mandante contra el total neto del EDP devengado.
+4. **Paso 4 (DTE):** Se registra la Factura del ERP Laudus y se concluye la OT (`id_proyecto_estado = 7`).

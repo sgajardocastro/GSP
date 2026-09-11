@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plano Maestro de Procesos & Linaje Operativo E2E | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:        #020611;
+      --bg-base:        #060c1c;
+      --bg-card:        #0a1326;
+      --bg-card-hover:  #101c38;
+      --bg-glass:       rgba(10, 19, 38, 0.85);
+
+      --c-blue:         #3b82f6;
+      --c-amber:        #f59e0b;
+      --c-indigo:       #6366f1;
+      --c-teal:         #14b8a6;
+      --c-purple:       #a855f7;
+      --c-emerald:      #10b981;
+
+      --t-primary:      #f8fafc;
+      --t-sec:          #94a3b8;
+      --t-muted:        #64748b;
+
+      --border-subtle:  rgba(255, 255, 255, 0.08);
+      --border-card:    rgba(255, 255, 255, 0.12);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-deep);
+      color: var(--t-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 85% 100%, rgba(139, 92, 246, 0.06), transparent);
+    }
+
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Topbar Fijo */
+    #top-nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(4, 9, 21, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 36px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 14px; text-decoration: none;
+    }
+    .brand-logo-box {
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      width: 38px; height: 38px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 15px; color: #fff;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: #fff;
+      letter-spacing: -0.01em; line-height: 1.1;
+    }
+    .brand-sub {
+      font-size: 11px; color: var(--t-sec); font-weight: 500; margin-top: 1px;
+    }
+
+    /* Contenedor General */
+    .page-container {
+      max-width: 1820px;
+      margin: 0 auto;
+      padding: 24px 32px 60px 32px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 18px;
+    }
+
+    /* ========================================================================= */
+    /* 🏛️ 1. MACRO STAGES SUPERIORES (ÚNICOS ENCABEZADOS CANÓNICOS)              */
+    /* ========================================================================= */
+    .macro-pipeline-track {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+    }
+
+    .stage-card-node {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    .stage-card-node::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-accent, #3b82f6);
+      opacity: 0.35; transition: opacity 0.2s, height 0.2s;
+    }
+    .stage-card-node:hover {
+      transform: translateY(-2px);
+      border-color: var(--card-accent, #3b82f6);
+      box-shadow: 0 10px 24px -6px var(--card-accent-glow, rgba(59,130,246,0.3));
+    }
+    .stage-card-node:hover::before { opacity: 1; height: 4px; }
+    .stage-card-node.active {
+      background: var(--bg-card-hover);
+      border-color: var(--card-accent, #3b82f6);
+      box-shadow: 0 12px 30px -6px var(--card-accent-glow, rgba(59,130,246,0.45));
+    }
+    .stage-card-node.active::before { height: 4px; opacity: 1; }
+
+    .node-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .node-pill {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+      color: var(--t-muted); background: rgba(255,255,255,0.05);
+      padding: 3px 7px; border-radius: 6px;
+    }
+    .stage-card-node.active .node-pill {
+      color: #fff; background: var(--card-accent, #3b82f6);
+    }
+    .node-icon-wrap {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: rgba(255,255,255,0.04);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--card-accent, #3b82f6);
+    }
+    .node-title {
+      font-family: 'Outfit', sans-serif; font-size: 13.5px; font-weight: 800; color: #fff; line-height: 1.25;
+    }
+    .node-desc {
+      font-size: 11px; color: var(--t-sec); line-height: 1.35; margin-top: 4px;
+    }
+    .node-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 2px;
+    }
+    .node-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: var(--t-muted);
+    }
+
+    /* ========================================================================= */
+    /* ⚡ 2. CIRCUITO UNILINEAL DE PROCESOS CON VÍNCULOS A 90° & AMPLIFICACIÓN   */
+    /* ========================================================================= */
+    .flow-pipeline-container {
+      position: relative;
+      margin-top: 4px;
+      padding: 16px 8px 40px 8px;
+      min-height: 540px;
+    }
+
+    /* Capa SVG de Vínculos Ortogonales a 90 Grados */
+    .flow-svg-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 1;
+    }
+    .flow-wire {
+      fill: none;
+      stroke: #475569;
+      stroke-width: 2px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.75;
+      transition: stroke 0.25s, stroke-width 0.25s, opacity 0.25s;
+    }
+    .flow-wire.active {
+      stroke: #38bdf8;
+      stroke-width: 2.8px;
+      opacity: 1;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
+      stroke-dasharray: 8 4;
+      animation: wireDash 1.2s linear infinite;
+    }
+    .flow-wire.loss-wire {
+      stroke: #ef4444; stroke-dasharray: 4 4; opacity: 0.65;
+    }
+    .flow-wire.loss-wire.active {
+      stroke: #ef4444; opacity: 1; filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.7));
+    }
+    @keyframes wireDash {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Contenedor Flex de Columnas con Acordeón Fluido */
+    .flow-tracks-flex {
+      display: flex;
+      gap: 46px; /* Espacio horizontal amplio para tránsito de líneas */
+      position: relative;
+      z-index: 2;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    /* Columna de Bahía Operacional */
+    .flow-column-bay {
+      flex: 1;
+      min-width: 155px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: flex 0.35s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    /* Cuando una etapa está amplificada */
+    .flow-column-bay.expanded {
+      flex: 3.2;
+      min-width: 450px;
+      background: rgba(8, 16, 34, 0.88);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 16px 40px -10px rgba(0,0,0,0.85), 0 0 24px rgba(56, 189, 248, 0.15);
+      backdrop-filter: blur(14px);
+    }
+
+    /* ── A. ESTADO COLAPSADO: NODOS ESQUEMÁTICOS DESNUDOS (CERO BORDES, CERO CAJAS) ── */
+    .schematic-nodes-list {
+      display: flex; flex-direction: column; gap: 14px;
+      padding: 4px 0;
+    }
+    .flow-column-bay.expanded .schematic-nodes-list {
+      display: none; /* Se oculta al amplificarse */
+    }
+
+    .schematic-node {
+      display: flex; align-items: center; gap: 8px;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 2px 0;
+      cursor: pointer;
+      color: #cbd5e1;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .schematic-node:hover {
+      color: #38bdf8;
+      transform: translateX(3px);
+    }
+    .schematic-node .node-glyph {
+      width: 16px; height: 16px; color: #94a3b8; flex-shrink: 0;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .schematic-node:hover .node-glyph {
+      color: #38bdf8; transform: scale(1.15);
+    }
+    .schematic-node.node-loss {
+      color: #94a3b8;
+    }
+    .schematic-node.node-loss:hover {
+      color: #f87171;
+    }
+    .schematic-node.node-loss .node-glyph { color: #ef4444; }
+    .schematic-node.node-trigger .node-glyph { color: #34d399; }
+    .schematic-node.node-bridge .node-glyph { color: #f59e0b; }
+
+    .schematic-node .node-label {
+      font-size: 11.5px; font-weight: 600; white-space: nowrap; line-height: 1.25;
+    }
+    .schematic-node .node-chip {
+      font-family: 'JetBrains Mono', monospace; font-size: 7.5px; font-weight: 700;
+      color: #64748b; background: rgba(255,255,255,0.06);
+      padding: 1px 4px; border-radius: 3px; margin-left: 2px;
+    }
+
+    /* ── B. ESTADO AMPLIFICADO: THUMBNAILS REALES DE ALTA FIDELIDAD IN-SITU ── */
+    .expanded-thumbnails-list {
+      display: none;
+      flex-direction: column; gap: 11px;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    .flow-column-bay.expanded .expanded-thumbnails-list {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .expanded-item-card {
+      background: #060d1d;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9px;
+      padding: 11px 13px;
+      display: flex; flex-direction: column; gap: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .expanded-item-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 14px rgba(56, 189, 248, 0.25);
+    }
+    .expanded-item-card.card-trigger {
+      border-color: rgba(52, 211, 153, 0.4);
+      background: linear-gradient(180deg, #051e16 0%, #030e0b 100%);
+    }
+    .expanded-item-card.card-bridge {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(180deg, #201503 0%, #0c0902 100%);
+    }
+    .expanded-item-card.card-loss {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: linear-gradient(180deg, #1f0707 0%, #0d0303 100%);
+    }
+
+    .card-top-row {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-title-text {
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-desc-text {
+      font-size: 11px; color: var(--t-sec); line-height: 1.35;
+    }
+
+    /* Mockups Visuales */
+    .mockup-container-box {
+      background: #020714;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 7px;
+      padding: 8px;
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    /* Phone Mockup */
+    .phone-mockup-mini {
+      width: 52px; height: 82px; background: #0f172a;
+      border: 3px solid #334155; border-radius: 9px;
+      padding: 3px; display: flex; flex-direction: column; justify-content: space-between;
+      flex-shrink: 0; box-shadow: 0 6px 16px rgba(0,0,0,0.8);
+    }
+    .phone-notch-mini {
+      width: 14px; height: 2px; background: #1e293b; border-radius: 99px; margin: 0 auto;
+    }
+    .phone-screen-mini {
+      background: linear-gradient(180deg, #0369a1 0%, #0c4a6e 100%);
+      border-radius: 5px; height: 100%; width: 100%;
+      padding: 3px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .phone-badge-text {
+      font-size: 6px; font-weight: 900; color: #fff; background: rgba(0,0,0,0.5);
+      padding: 1px 3px; border-radius: 2px; text-align: center;
+    }
+    .phone-photo-box {
+      background: #082f49; border: 1px dashed rgba(255,255,255,0.4); border-radius: 3px;
+      height: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 6px; color: #e0f2fe; text-align: center;
+    }
+    .phone-sig-bar {
+      height: 2px; width: 80%; background: #38bdf8; border-radius: 1px; margin-top: 1px;
+    }
+
+    /* PDF Mockup */
+    .pdf-sheet-mini {
+      width: 56px; height: 76px; background: #ffffff;
+      border-radius: 5px; padding: 4px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      flex-shrink: 0; color: #1e293b; box-shadow: 0 6px 14px rgba(0,0,0,0.7);
+      position: relative;
+    }
+    .pdf-sheet-mini::after {
+      content: ''; position: absolute; top: 0; right: 0;
+      border-width: 0 9px 9px 0; border-style: solid;
+      border-color: #cbd5e1 #060d1d #cbd5e1 #cbd5e1;
+    }
+    .pdf-header-red {
+      height: 4px; background: #dc2626; border-radius: 2px 2px 0 0;
+    }
+    .pdf-line-skeleton {
+      height: 2px; background: #e2e8f0; border-radius: 1px; margin: 2px 0;
+    }
+    .pdf-stamp-box {
+      border: 1px solid #16a34a; border-radius: 2px; padding: 1px 2px;
+      font-size: 5px; font-weight: 900; color: #16a34a; text-align: center;
+    }
+
+    /* DataGrid Mockup */
+    .datagrid-mini {
+      flex: 1; display: flex; flex-direction: column; gap: 3px;
+    }
+    .grid-row-item {
+      display: flex; justify-content: space-between; font-size: 9.5px;
+      background: rgba(255,255,255,0.04); padding: 2.5px 5px; border-radius: 4px;
+    }
+
+    .card-footer-note {
+      font-size: 9.5px; color: var(--c-amber); font-weight: 700;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ========================================================================= */
+    /* 📋 3. DETALLE COMPLETO Y REGLAS DE NEGOCIO AL FONDO                      */
+    /* ========================================================================= */
+    .detailed-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 10px;
+    }
+    .detailed-header {
+      border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .stage-main-title {
+      font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900;
+      color: #fff; text-transform: uppercase;
+    }
+    .stage-objective {
+      font-size: 13px; color: var(--t-sec); margin-top: 4px; line-height: 1.5;
+    }
+    .deliverables-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .deliverable-card {
+      background: #060d1f; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+    }
+    .deliv-title {
+      font-family: 'Outfit', sans-serif; font-size: 14.5px; font-weight: 800; color: #fff;
+    }
+    .deliv-desc {
+      font-size: 12px; color: var(--t-sec); line-height: 1.45; margin-top: 4px;
+    }
+    .deliv-impact-note {
+      font-size: 11px; color: var(--c-amber); font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR FIJO -->
+  <header id="top-nav">
+    <a href="#" class="nav-brand">
+      <div class="brand-logo-box">GSP</div>
+      <div>
+        <div class="brand-title">Grúas San Pablo</div>
+        <div class="brand-sub">Plano Maestro de Procesos & Linaje Operativo E2E</div>
+      </div>
+    </a>
+
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span class="mono" style="font-size: 11px; color: #93c5fd; background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.35); padding: 5px 12px; border-radius: 8px;">
+        🏛️ Arquitectura E2E: 6 Estaciones Industriales (40 Hitos Reales)
+      </span>
+      <span class="mono" style="font-size: 11px; color: var(--t-muted); background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+        Circuito Esquemático &bull; Cierre Libre &bull; In-Situ
+      </span>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main class="page-container">
+
+    <!-- HERO HEADER -->
+    <section class="hero-banner">
+      <div style="max-width: 980px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="git-branch" style="width: 15px; height: 15px;"></i> Diagrama Esquemático Unilineal de Procesos E2E
+        </div>
+        <h1 class="font-display" style="font-size: 24px; font-weight: 900; text-transform: uppercase; color: #fff; line-height: 1.15;">
+          Plano de Conexiones Operativas, Salidas Tangibles y Linaje de Datos
+        </h1>
+        <p style="font-size: 12.5px; color: var(--t-sec); line-height: 1.5;">
+          Recorrido de flujo continuo con <strong>conexiones en ángulo recto a 90°</strong>. Haz clic en cualquiera de las 6 etapas para <strong>amplificarla en el mismo plano</strong> y revelar sus thumbnails reales de alta fidelidad. Vuelve a hacer clic para cerrarla.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-collapse-all" onclick="contraerTodasLasEtapas()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #94a3b8; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+          <i data-lucide="minimize-2" style="width: 13px; height: 13px;"></i> Vista 100% Esquemática
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 🏛️ 1. MACRO STAGES SUPERIORES (ÚNICOS ENCABEZADOS CANÓNICOS)              -->
+    <!-- ========================================================================= -->
+    <section class="macro-pipeline-track" id="macro-pipeline">
+      
+      <!-- FASE 01 -->
+      <div class="stage-card-node" id="macro-card-1" style="--card-accent: var(--c-blue); --card-accent-glow: rgba(59,130,246,0.35);" onclick="toggleEtapa(1)">
+        <div class="node-header">
+          <span class="node-pill">01</span>
+          <div class="node-icon-wrap"><i data-lucide="file-text" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">1. Requerimiento Registrado</div>
+          <div class="node-desc">Oportunidad CRM, Visita Terreno Preventa, Matriz 4U, Cotización PDF y Adjudicación.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">PREVENTA & REQUERIMIENTO</span>
+        </div>
+      </div>
+
+      <!-- FASE 02 -->
+      <div class="stage-card-node" id="macro-card-2" style="--card-accent: var(--c-amber); --card-accent-glow: rgba(245,158,11,0.35);" onclick="toggleEtapa(2)">
+        <div class="node-header">
+          <span class="node-pill">02</span>
+          <div class="node-icon-wrap"><i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">2. En Verificación Operaciones</div>
+          <div class="node-desc">Auditoría Diff, Visita Técnica Operaciones (Spec 41), Memoria Maniobra y Gate.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">FACTIBILIDAD + DIFF</span>
+        </div>
+      </div>
+
+      <!-- FASE 03 -->
+      <div class="stage-card-node" id="macro-card-3" style="--card-accent: var(--c-indigo); --card-accent-glow: rgba(99,102,241,0.35);" onclick="toggleEtapa(3)">
+        <div class="node-header">
+          <span class="node-pill">03</span>
+          <div class="node-icon-wrap"><i data-lucide="layers" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">3. En Asignación Recursos</div>
+          <div class="node-desc">Grúa Principal, Tripulación Humana, Apoyo, Matriz Aparejos Master y OT Inmutable.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">CONVOY OT</span>
+        </div>
+      </div>
+
+      <!-- FASE 04 -->
+      <div class="stage-card-node" id="macro-card-4" style="--card-accent: var(--c-teal); --card-accent-glow: rgba(20,184,166,0.35);" onclick="toggleEtapa(4)">
+        <div class="node-header">
+          <span class="node-pill">04</span>
+          <div class="node-icon-wrap"><i data-lucide="shield-check" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">4. En Preparación Operaciones</div>
+          <div class="node-desc">Dossier Acreditación B2B, Checklist 360° Patio, Trincaje, Odómetro y Token PIN.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">ACREDITACIÓN + PATIO</span>
+        </div>
+      </div>
+
+      <!-- FASE 05 -->
+      <div class="stage-card-node" id="macro-card-5" style="--card-accent: var(--c-purple); --card-accent-glow: rgba(168,85,247,0.35);" onclick="toggleEtapa(5)">
+        <div class="node-header">
+          <span class="node-pill">05</span>
+          <div class="node-icon-wrap"><i data-lucide="smartphone" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">5. En Ejecución / Faena</div>
+          <div class="node-desc">GPS 10s, Copec Móvil, AST Digital, Plan de Izaje (Gate 85%) y Report FES Mandante.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">GPS + PLAN IZAJE + FES</span>
+        </div>
+      </div>
+
+      <!-- FASE 06 -->
+      <div class="stage-card-node" id="macro-card-6" style="--card-accent: var(--c-emerald); --card-accent-glow: rgba(16,185,129,0.35);" onclick="toggleEtapa(6)">
+        <div class="node-header">
+          <span class="node-pill">06</span>
+          <div class="node-icon-wrap"><i data-lucide="dollar-sign" style="width: 16px; height: 16px;"></i></div>
+        </div>
+        <div>
+          <div class="node-title">6. Finalizado / Devengado</div>
+          <div class="node-desc">Check-In Retorno, Manifiesto Inverso Aparejos, ITS Triple Firma FES, EDP y ERP.</div>
+        </div>
+        <div class="node-footer">
+          <span class="node-tag">ITS FES + EDP + LAUDUS</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- ⚡ 2. CIRCUITO UNILINEAL E2E: NODOS DESNUDOS & AMPLIFICACIÓN IN-SITU      -->
+    <!-- ========================================================================= -->
+    <section class="flow-pipeline-container" id="flow-canvas-section">
+      
+      <!-- CAPA SVG DE VÍNCULOS Y FLECHAS ORTOGONALES A 90 GRADOS -->
+      <svg class="flow-svg-overlay" id="flow-wires-svg"></svg>
+
+      <!-- PISTA FLEX DE LAS 6 BAHÍAS CON CANALES DE LÍNEAS HORIZONTALES AMPLIOS -->
+      <div class="flow-tracks-flex" id="flow-tracks-container">
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 01: PREVENTA & GENERACIÓN DE REQUERIMIENTO          -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-1">
+          <!-- MODO COMPACTO: NODOS ESQUEMÁTICOS DESNUDOS -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-1-1" onclick="toggleEtapa(1)">
+              <i data-lucide="plus-circle" class="node-glyph"></i>
+              <span class="node-label">Registrar Oportunidad</span>
+              <span class="node-chip">CRM</span>
+            </div>
+            <div class="schematic-node" id="snode-1-2" onclick="toggleEtapa(1)">
+              <i data-lucide="help-circle" class="node-glyph"></i>
+              <span class="node-label">Solicitud Visita Terreno</span>
+              <span class="node-chip">SOL</span>
+            </div>
+            <div class="schematic-node" id="snode-1-3" onclick="toggleEtapa(1)">
+              <i data-lucide="smartphone" class="node-glyph"></i>
+              <span class="node-label">Visita Terreno Preventa</span>
+              <span class="node-chip">PWA 80</span>
+            </div>
+            <div class="schematic-node" id="snode-1-4" onclick="toggleEtapa(1)">
+              <i data-lucide="table" class="node-glyph"></i>
+              <span class="node-label">Matriz Servicios 4U</span>
+              <span class="node-chip">4U</span>
+            </div>
+            <div class="schematic-node" id="snode-1-5" onclick="toggleEtapa(1)">
+              <i data-lucide="bed-double" class="node-glyph"></i>
+              <span class="node-label">Viáticos &amp; Pensiones</span>
+              <span class="node-chip">GASTOS</span>
+            </div>
+            <div class="schematic-node" id="snode-1-6" onclick="toggleEtapa(1)">
+              <i data-lucide="file-text" class="node-glyph"></i>
+              <span class="node-label">Cotización Formal</span>
+              <span class="node-chip">PDF</span>
+            </div>
+            <div class="schematic-node" id="snode-1-7" onclick="toggleEtapa(1)">
+              <i data-lucide="send" class="node-glyph"></i>
+              <span class="node-label">Despacho Email Cotización</span>
+              <span class="node-chip">B2B</span>
+            </div>
+            <div class="schematic-node node-trigger" id="snode-1-8" onclick="toggleEtapa(1)">
+              <i data-lucide="check-circle-2" class="node-glyph"></i>
+              <span class="node-label" style="color: #34d399; font-weight: 700;">Generar Requerimiento</span>
+              <span class="node-chip" style="color: #34d399; background: rgba(52,211,153,0.15);">GANADA</span>
+            </div>
+            <div class="schematic-node node-loss" id="snode-1-9" onclick="toggleEtapa(1)">
+              <i data-lucide="x-circle" class="node-glyph"></i>
+              <span class="node-label">Descarte Comercial</span>
+              <span class="node-chip">PÉRDIDA</span>
+            </div>
+            <div class="schematic-node node-bridge" id="snode-1-10" onclick="toggleEtapa(1)">
+              <i data-lucide="bell" class="node-glyph"></i>
+              <span class="node-label" style="color: #f59e0b; font-weight: 700;">Notificación a Operaciones</span>
+              <span class="node-chip" style="color: #f59e0b; background: rgba(245,158,11,0.15);">GATILLO</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO: THUMBNAILS REALES DE ALTA FIDELIDAD IN-SITU -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-1-1" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="plus-circle" style="color: #38bdf8;"></i> Registrar Oportunidad Comercial (CRM)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">PUNTO CERO</span>
+              </div>
+              <div class="card-desc-text">Ingreso de cliente, RUT, faena, contacto obra precargado y tonelaje preliminar.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-2" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="help-circle" style="color: #f59e0b;"></i> Solicitud Visita Terreno Preventa</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">SOLICITUD</span>
+              </div>
+              <div class="card-desc-text">Checkbox comercial con ventana horaria sugerida y contacto de faena.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-3" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="smartphone" style="color: #38bdf8;"></i> Visita a Terreno (photoChecks)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">PWA 80</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="phone-mockup-mini">
+                  <div class="phone-notch-mini"></div>
+                  <div class="phone-screen-mini">
+                    <div class="phone-badge-text">PWA GSP</div>
+                    <div class="phone-photo-box"><i data-lucide="camera" style="width: 10px; height: 10px; margin: 0 auto;"></i><span>RADIO 24m</span></div>
+                    <div class="phone-sig-bar"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="card-desc-text">Levantamiento con geocerca GPS, radio de izaje y firma mandante en pantalla.</div>
+                  <div class="card-footer-note" style="margin-top: 5px;">➔ Importa datos a la cotización</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-4" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="table" style="color: #10b981;"></i> Matriz de Servicios (4 Unidades Canónicas)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">TARIFAS PPD</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Horas Día Mínimas:</span> <span class="mono" style="color:#10b981;">8 hrs</span></div>
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Horas Mes Mínimas:</span> <span class="mono" style="color:#10b981;">180 hrs</span></div>
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Traslado / Valor Fijo:</span> <span class="mono" style="color:#38bdf8;">Pactado</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-5" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="bed-double" style="color: #a855f7;"></i> Viáticos, Pensiones &amp; Traslado</div>
+                <span class="mono" style="font-size: 9px; color: #a855f7; background: rgba(168,85,247,0.12); padding: 2px 6px; border-radius: 4px;">GASTOS</span>
+              </div>
+              <div class="card-desc-text">Cálculo de alojamiento, desayuno, almuerzo, cena y movilización para la tripulación.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-6" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="file-text" style="color: #ef4444;"></i> Cotización Formal Versionada</div>
+                <span class="mono" style="font-size: 9px; color: #ef4444; background: rgba(239,68,68,0.12); padding: 2px 6px; border-radius: 4px;">PDF OFICIAL</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="pdf-sheet-mini">
+                  <div class="pdf-header-red"></div>
+                  <div><div class="pdf-line-skeleton" style="width: 90%;"></div><div class="pdf-line-skeleton" style="width: 70%;"></div><div class="pdf-line-skeleton" style="width: 85%;"></div></div>
+                  <div class="pdf-stamp-box">COT-2026-042</div>
+                </div>
+                <div>
+                  <div class="card-desc-text">PDF formal con logos paramétricos, condiciones comerciales y hash SHA-256 inmutable.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-7" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="send" style="color: #6366f1;"></i> Despacho Email Cotización B2B</div>
+                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">EMAIL B2B</span>
+              </div>
+              <div class="card-desc-text">Correo HTML enriquecido al mandante con visor interactivo y botón de adjudicación.</div>
+            </div>
+
+            <div class="expanded-item-card card-trigger" id="ecard-1-8" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="check-circle-2" style="color: #34d399;"></i> Marcar "Generar Requerimiento"</div>
+                <span class="mono" style="font-size: 9px; color: #34d399; background: rgba(52,211,153,0.2); padding: 2px 6px; border-radius: 4px;">ADJUDICACIÓN</span>
+              </div>
+              <div class="card-desc-text">El Ejecutivo Comercial confirma la adjudicación. Activa checklist de exigencias de acreditación.</div>
+              <div class="card-footer-note" style="color: #34d399;">➔ Gatilla notificación formal a Operaciones</div>
+            </div>
+
+            <div class="expanded-item-card card-loss" id="ecard-1-9" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="x-circle" style="color: #f87171;"></i> Descarte Comercial (Pérdida)</div>
+                <span class="mono" style="font-size: 9px; color: #f87171; background: rgba(248,113,113,0.2); padding: 2px 6px; border-radius: 4px;">PÉRDIDA ARCHIVADA</span>
+              </div>
+              <div class="card-desc-text">Registro de causal de pérdida (precio, plazo o equipo no disponible) para métricas de ventas.</div>
+            </div>
+
+            <div class="expanded-item-card card-bridge" id="ecard-1-10" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="bell" style="color: #f59e0b;"></i> Correo Auto a Coordinador Operaciones</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px;">PUENTE KANBAN</span>
+              </div>
+              <div class="card-desc-text">Alerta con Magic Link directo para que Operaciones audite la factibilidad técnica en Etapa 2.</div>
+              <div class="card-footer-note">➔ Transiciona ticket a Columna 2 "En Verificación Operaciones"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 02: EN VERIFICACIÓN OPERACIONES                     -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-2">
+          <!-- MODO COMPACTO -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-2-1" onclick="toggleEtapa(2)">
+              <i data-lucide="inbox" class="node-glyph"></i>
+              <span class="node-label">Cola Auditoría Operacional</span>
+              <span class="node-chip">DIFF</span>
+            </div>
+            <div class="schematic-node" id="snode-2-2" onclick="toggleEtapa(2)">
+              <i data-lucide="git-compare" class="node-glyph"></i>
+              <span class="node-label">Auditoría Diff (Com vs Real)</span>
+              <span class="node-chip">DIFF</span>
+            </div>
+            <div class="schematic-node" id="snode-2-3" onclick="toggleEtapa(2)">
+              <i data-lucide="map-pin" class="node-glyph" style="color: #38bdf8;"></i>
+              <span class="node-label" style="color: #38bdf8; font-weight: 700;">Visita Técnica Operaciones</span>
+              <span class="node-chip" style="color: #38bdf8; background: rgba(56,189,248,0.15);">SPEC 41</span>
+            </div>
+            <div class="schematic-node" id="snode-2-4" onclick="toggleEtapa(2)">
+              <i data-lucide="shield-alert" class="node-glyph"></i>
+              <span class="node-label">Memoria Maniobra &amp; Radio</span>
+              <span class="node-chip">MEM</span>
+            </div>
+            <div class="schematic-node" id="snode-2-5" onclick="toggleEtapa(2)">
+              <i data-lucide="git-commit" class="node-glyph"></i>
+              <span class="node-label">Compuerta (APROBADO/OBS)</span>
+              <span class="node-chip">GATE</span>
+            </div>
+            <div class="schematic-node node-bridge" id="snode-2-6" onclick="toggleEtapa(2)">
+              <i data-lucide="arrow-right-circle" class="node-glyph"></i>
+              <span class="node-label" style="color: #f59e0b; font-weight: 700;">Alerta Pase Asignación</span>
+              <span class="node-chip" style="color: #f59e0b; background: rgba(245,158,11,0.15);">GATILLO</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-2-1" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="inbox" style="color: #f59e0b;"></i> Cola de Auditoría Operacional</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">PESTAÑA B</span>
+              </div>
+              <div class="card-desc-text">Ingreso a la consola del Coordinador de Operaciones para revisión de requerimientos.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-2-2" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="git-compare" style="color: #f59e0b;"></i> Comparador Diff Tarifario &amp; Equipos</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">CRM DIFF</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span style="color:#ef4444;">Cotizado:</span> <span class="mono">Liebherr 50T ($38.000/h)</span></div>
+                  <div class="grid-row-item"><span style="color:#10b981;">Operación:</span> <span class="mono">Liebherr 70T ($45.000/h)</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card card-trigger" id="ecard-2-3" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="map-pin" style="color: #38bdf8;"></i> Activación Autónoma Visita Terreno (Spec 41)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.2); padding: 2px 6px; border-radius: 4px;">OPERACIONES AUTÓNOMO</span>
+              </div>
+              <div class="card-desc-text">Operaciones activa inspección obligatoria si Comercial no la pidió o si la maniobra exige replanteo técnico (Visita #1 técnica o Visita #2 replanteo).</div>
+              <div class="card-footer-note" style="color: #38bdf8;">➔ Despacha técnico directamente desde Web sin depender de email</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-2-4" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="shield-alert" style="color: #38bdf8;"></i> Memoria de Maniobra &amp; Radio</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">INGENIERÍA</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>Radio de Giro:</span> <span class="mono" style="color:#38bdf8;">24.0 m</span></div>
+                  <div class="grid-row-item"><span>Utilización Grúa:</span> <span class="mono" style="color:#10b981;">82.5% [Óptimo]</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-2-5" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="git-commit" style="color: #10b981;"></i> Compuerta de Aprobación (Gate)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">GOBERNANZA</span>
+              </div>
+              <div class="card-desc-text">Visto Bueno formal del Jefe de Operaciones. Aprobado sin cambios o Aprobado con Observaciones (penalización en KPI comercial por subdimensionamiento).</div>
+            </div>
+
+            <div class="expanded-item-card card-bridge" id="ecard-2-6" onclick="abrirDetalleEtapa(2)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="arrow-right-circle" style="color: #f59e0b;"></i> Alerta Pase a Asignación de Recursos</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px;">PUENTE KANBAN</span>
+              </div>
+              <div class="card-desc-text">Desbloquea Pestaña C en CRM y notifica al asignador para conformar tripulación y apoyo.</div>
+              <div class="card-footer-note">➔ Transiciona ticket a Columna 3 "En Asignación Recursos"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 03: EN ASIGNACIÓN RECURSOS                          -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-3">
+          <!-- MODO COMPACTO -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-3-1" onclick="toggleEtapa(3)">
+              <i data-lucide="truck" class="node-glyph"></i>
+              <span class="node-label">Asignación Grúa Principal</span>
+              <span class="node-chip">EQUIPO</span>
+            </div>
+            <div class="schematic-node" id="snode-3-2" onclick="toggleEtapa(3)">
+              <i data-lucide="users" class="node-glyph"></i>
+              <span class="node-label">Tripulación (Operador + Rigger)</span>
+              <span class="node-chip">PERSONAL</span>
+            </div>
+            <div class="schematic-node" id="snode-3-3" onclick="toggleEtapa(3)">
+              <i data-lucide="truck" class="node-glyph"></i>
+              <span class="node-label">Equipos de Apoyo &amp; Escolta</span>
+              <span class="node-chip">CONVOY</span>
+            </div>
+            <div class="schematic-node" id="snode-3-4" onclick="toggleEtapa(3)">
+              <i data-lucide="package" class="node-glyph"></i>
+              <span class="node-label">Matriz Aparejos Master (N° Serie)</span>
+              <span class="node-chip">SPEC 29</span>
+            </div>
+            <div class="schematic-node" id="snode-3-5" onclick="toggleEtapa(3)">
+              <i data-lucide="file-check-2" class="node-glyph"></i>
+              <span class="node-label">Confirmación OT Inmutable</span>
+              <span class="node-chip">OT</span>
+            </div>
+            <div class="schematic-node node-bridge" id="snode-3-6" onclick="toggleEtapa(3)">
+              <i data-lucide="mail" class="node-glyph"></i>
+              <span class="node-label" style="color: #f59e0b; font-weight: 700;">Email Tripulación &amp; Patio</span>
+              <span class="node-chip" style="color: #f59e0b; background: rgba(245,158,11,0.15);">GATILLO</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-3-1" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Asignación Grúa Principal</div>
+                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">FLOTA</span>
+              </div>
+              <div class="card-desc-text">Liebherr LTM 1070 [GR-9921] asignada según tonelaje y disponibilidad en taller.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-3-2" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="users" style="color: #38bdf8;"></i> Tripulación Humana Calificada</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">TRIPULACIÓN</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>👷 Operador Grúa:</span> <span class="mono" style="color:#38bdf8;">Carlos Morales (RUT 15.4xx)</span></div>
+                  <div class="grid-row-item"><span>🦺 Rigger Calificado:</span> <span class="mono" style="color:#10b981;">Mauricio Alarcón (Nivel 5)</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-3-3" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="truck" style="color: #a855f7;"></i> Equipos de Apoyo &amp; Escolta</div>
+                <span class="mono" style="font-size: 9px; color: #a855f7; background: rgba(168,85,247,0.12); padding: 2px 6px; border-radius: 4px;">LOGÍSTICA</span>
+              </div>
+              <div class="card-desc-text">Camión pluma auxiliar de apoyo, cama baja para contrapesos y camioneta escolta de ruta.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-3-4" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="package" style="color: #38bdf8;"></i> Matriz Aparejos Master con N° Serie (Spec 29)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">BODEGA WMS</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>• 4x Eslingas Acero 2"x6m:</span> <span class="mono" style="color:#10b981;">SER-9941/44</span></div>
+                  <div class="grid-row-item"><span>• 4x Grilletes Corazón 1-1/2":</span> <span class="mono" style="color:#10b981;">GRL-25T-A/D</span></div>
+                  <div class="grid-row-item"><span>• 1x Balancín Tubular 25T:</span> <span class="mono" style="color:#10b981;">BAL-25T-01</span></div>
+                </div>
+              </div>
+              <div class="card-footer-note">➔ Base para el manifiesto inverso de bodega en Etapa 6</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-3-5" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="file-check-2" style="color: #fbbf24;"></i> Confirmación OT Inmutable</div>
+                <span class="mono" style="font-size: 9px; color: #fbbf24; background: rgba(251,191,36,0.12); padding: 2px 6px; border-radius: 4px;">DOC OT</span>
+              </div>
+              <div class="card-desc-text">Generación formal de la Orden de Trabajo en tabla topr_despacho_convoy y tpry_orden_trabajo.</div>
+            </div>
+
+            <div class="expanded-item-card card-bridge" id="ecard-3-6" onclick="abrirDetalleEtapa(3)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="mail" style="color: #f59e0b;"></i> Email Auto Tripulación &amp; Coordinador Patio</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px;">PUENTE KANBAN</span>
+              </div>
+              <div class="card-desc-text">Despacho simultáneo a conductores/riggers asignados y al Coordinador de Patio para armar el convoy.</div>
+              <div class="card-footer-note">➔ Desbloquea Sub-Tab 4 Dossier Acreditaciones B2B</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 04: EN PREPARACIÓN OPERACIONES                      -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-4">
+          <!-- MODO COMPACTO -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-4-1" onclick="toggleEtapa(4)">
+              <i data-lucide="shield-check" class="node-glyph"></i>
+              <span class="node-label">Auditoría 3 Columnas Dossier</span>
+              <span class="node-chip">SPEC 45</span>
+            </div>
+            <div class="schematic-node" id="snode-4-2" onclick="toggleEtapa(4)">
+              <i data-lucide="send" class="node-glyph"></i>
+              <span class="node-label">Despacho Dossier B2B</span>
+              <span class="node-chip">CLIENTE</span>
+            </div>
+            <div class="schematic-node" id="snode-4-3" onclick="toggleEtapa(4)">
+              <i data-lucide="smartphone" class="node-glyph"></i>
+              <span class="node-label">Inspección 360° Patio (PWA 76)</span>
+              <span class="node-chip">SPEC 29</span>
+            </div>
+            <div class="schematic-node" id="snode-4-4" onclick="toggleEtapa(4)">
+              <i data-lucide="package-check" class="node-glyph"></i>
+              <span class="node-label">Verificación Trincaje Aparejos</span>
+              <span class="node-chip">PATIO</span>
+            </div>
+            <div class="schematic-node" id="snode-4-5" onclick="toggleEtapa(4)">
+              <i data-lucide="camera" class="node-glyph"></i>
+              <span class="node-label">Odómetro / Horómetro con Foto</span>
+              <span class="node-chip">SPEC 39</span>
+            </div>
+            <div class="schematic-node node-bridge" id="snode-4-6" onclick="toggleEtapa(4)">
+              <i data-lucide="key" class="node-glyph"></i>
+              <span class="node-label" style="color: #f59e0b; font-weight: 700;">Web Token PIN Salida Patio</span>
+              <span class="node-chip" style="color: #f59e0b; background: rgba(245,158,11,0.15);">TOKEN</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-4-1" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="shield-check" style="color: #14b8a6;"></i> Auditoría 3 Columnas Dossier Acreditación (Spec 45)</div>
+                <span class="mono" style="font-size: 9px; color: #14b8a6; background: rgba(20,184,166,0.12); padding: 2px 6px; border-radius: 4px;">SEMÁFORO</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>1. Empresa:</span> <span class="mono" style="color:#10b981;">🟢 RUT, Mutual, F30-1 Vigente</span></div>
+                  <div class="grid-row-item"><span>2. Equipos:</span> <span class="mono" style="color:#10b981;">🟢 289 Certificaciones Vigentes</span></div>
+                  <div class="grid-row-item"><span>3. Personas:</span> <span class="mono" style="color:#10b981;">🟢 286 Exámenes Ocupacionales OK</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-4-2" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="send" style="color: #38bdf8;"></i> Despacho Expediente Acreditación B2B</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">DOSSIER MANDANTE</span>
+              </div>
+              <div class="card-desc-text">Envío oficial del expediente PDF consolidado con credenciales de la empresa, grúa y tripulación al mandante.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-4-3" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="smartphone" style="color: #38bdf8;"></i> Inspección 360° de Portón (PWA Survey 76)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">PWA PATIO</span>
+              </div>
+              <div class="card-desc-text">Auditoría física de neumáticos, luces, frenos, fugas y niveles antes de abrir la reja.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-4-4" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="package-check" style="color: #10b981;"></i> Verificación de Trincaje y Aparejos Embarcados</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">TRINCAJE OK</span>
+              </div>
+              <div class="card-desc-text">Confirmación física en plataforma de transporte (eslingas, grilletes, balancín) antes de abrir portón.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-4-5" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="camera" style="color: #f59e0b;"></i> Odómetro / Horómetro con Evidencia Fotográfica</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">FOTO TABLERO</span>
+              </div>
+              <div class="card-desc-text">Captura fotográfica del tablero del camión y horómetro de la grúa en patio.</div>
+            </div>
+
+            <div class="expanded-item-card card-bridge" id="ecard-4-6" onclick="abrirDetalleEtapa(4)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="key" style="color: #f59e0b;"></i> Web Token PIN Salida de Patio</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px;">PUENTE KANBAN</span>
+              </div>
+              <div class="card-desc-text">Firma electrónica FES con PIN del conductor en caseta. Marca la salida oficial hacia faena.</div>
+              <div class="card-footer-note">➔ Transiciona ticket a Columna 5 "En Ejecución / Faena"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 05: EN EJECUCIÓN / FAENA                            -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-5">
+          <!-- MODO COMPACTO -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-5-1" onclick="toggleEtapa(5)">
+              <i data-lucide="navigation" class="node-glyph"></i>
+              <span class="node-label">Telemetría GPS en Ruta</span>
+              <span class="node-chip">10s</span>
+            </div>
+            <div class="schematic-node" id="snode-5-2" onclick="toggleEtapa(5)">
+              <i data-lucide="fuel" class="node-glyph"></i>
+              <span class="node-label">Rendición Copec Móvil</span>
+              <span class="node-chip">COMB</span>
+            </div>
+            <div class="schematic-node" id="snode-5-3" onclick="toggleEtapa(5)">
+              <i data-lucide="clipboard-check" class="node-glyph"></i>
+              <span class="node-label">AST Digital en 60 Segundos</span>
+              <span class="node-chip">SPEC 36</span>
+            </div>
+            <div class="schematic-node" id="snode-5-4" onclick="toggleEtapa(5)">
+              <i data-lucide="activity" class="node-glyph" style="color: #38bdf8;"></i>
+              <span class="node-label" style="color: #38bdf8; font-weight: 700;">Plan de Izaje (Gate 85%)</span>
+              <span class="node-chip" style="color: #38bdf8; background: rgba(56,189,248,0.15);">SPEC 37</span>
+            </div>
+            <div class="schematic-node" id="snode-5-5" onclick="toggleEtapa(5)">
+              <i data-lucide="pen-tool" class="node-glyph"></i>
+              <span class="node-label">Report Diario FES</span>
+              <span class="node-chip">SPEC 34</span>
+            </div>
+            <div class="schematic-node node-bridge" id="snode-5-6" onclick="toggleEtapa(5)">
+              <i data-lucide="bell-ring" class="node-glyph"></i>
+              <span class="node-label" style="color: #f59e0b; font-weight: 700;">Alerta Cierre Faena</span>
+              <span class="node-chip" style="color: #f59e0b; background: rgba(245,158,11,0.15);">GATILLO</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-5-1" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="navigation" style="color: #a855f7;"></i> Telemetría GPS en Tiempo Real</div>
+                <span class="mono" style="font-size: 9px; color: #a855f7; background: rgba(168,85,247,0.12); padding: 2px 6px; border-radius: 4px;">PING 10s</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>Estado en Ruta:</span> <span class="mono" style="color:#10b981;">🟢 Desplazamiento 68 km/h</span></div>
+                  <div class="grid-row-item"><span>Geocerca Obra:</span> <span class="mono" style="color:#38bdf8;">Arribo Estimado 08:15</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-5-2" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="fuel" style="color: #f59e0b;"></i> Rendición Copec en Ruta (Multi-Estanque)</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">COPEC VOUCHER</span>
+              </div>
+              <div class="card-desc-text">Carga de combustible con foto del voucher, odómetro y litros ingresados en la app móvil.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-5-3" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="clipboard-check" style="color: #10b981;"></i> AST Digital en 60s (Spec 36)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">PWA SST</span>
+              </div>
+              <div class="card-desc-text">Chequeo en terreno de EPP, 5 controles críticos de izaje y firmas FES de la dupla operativa.</div>
+            </div>
+
+            <div class="expanded-item-card card-trigger" id="ecard-5-4" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="activity" style="color: #38bdf8;"></i> Plan de Izaje Digital &amp; Calculadora Reactiva (Spec 37)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.2); padding: 2px 6px; border-radius: 4px;">COMPUERTA DURA 85%</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>Peso Total Carga:</span> <span class="mono">P.neto + gancho + yugo + aparejos</span></div>
+                  <div class="grid-row-item"><span>% Capacidad Grúa:</span> <span class="mono" style="color:#10b981;">82.5% [Seguro &le; 85%]</span></div>
+                  <div class="grid-row-item"><span>Condición Viento:</span> <span class="mono" style="color:#10b981;">18 km/h [Permitido &lt; 32 km/h]</span></div>
+                </div>
+              </div>
+              <div class="card-footer-note" style="color: #ef4444;">➔ Bloqueo mandatorio si la utilización supera el 85%</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-5-5" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="pen-tool" style="color: #10b981;"></i> Report Diario Digital con Firma FES Mandante (Spec 34)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">FIRMA MANDANTE</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="phone-mockup-mini">
+                  <div class="phone-notch-mini"></div>
+                  <div class="phone-screen-mini" style="background: linear-gradient(180deg, #065f46 0%, #047857 100%);">
+                    <div class="phone-badge-text">REPORT DIGITAL</div>
+                    <div style="font-size: 7px; color: #fff; text-align: center; margin-top: 4px;">Horas: 9.5h</div>
+                    <div class="phone-sig-bar" style="background: #34d399;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="card-desc-text">Firma táctil en terreno del jefe mandante. Base legal incuestionable para liquidación y EDP.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card card-bridge" id="ecard-5-6" onclick="abrirDetalleEtapa(5)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="bell-ring" style="color: #f59e0b;"></i> Alerta Cierre Faena a Liquidación</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.2); padding: 2px 6px; border-radius: 4px;">PUENTE KANBAN</span>
+              </div>
+              <div class="card-desc-text">Notificación al Analista de Operaciones y Contabilidad para iniciar el Informe de Término de Servicio (ITS).</div>
+              <div class="card-footer-note">➔ Transiciona ticket a Columna 6 "Finalizado / Devengado"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- BAHÍA 06: FINALIZADO / DEVENGADO                          -->
+        <!-- ========================================================= -->
+        <div class="flow-column-bay" id="col-bay-6">
+          <!-- MODO COMPACTO -->
+          <div class="schematic-nodes-list">
+            <div class="schematic-node" id="snode-6-1" onclick="toggleEtapa(6)">
+              <i data-lucide="truck" class="node-glyph"></i>
+              <span class="node-label">Check-In Retorno Patio</span>
+              <span class="node-chip">PATIO</span>
+            </div>
+            <div class="schematic-node" id="snode-6-2" onclick="toggleEtapa(6)">
+              <i data-lucide="package-check" class="node-glyph"></i>
+              <span class="node-label">Manifiesto Inverso Aparejos</span>
+              <span class="node-chip">SPEC 29</span>
+            </div>
+            <div class="schematic-node" id="snode-6-3" onclick="toggleEtapa(6)">
+              <i data-lucide="calculator" class="node-glyph"></i>
+              <span class="node-label">Informe Término ITS (8 Costos)</span>
+              <span class="node-chip">SPEC 46</span>
+            </div>
+            <div class="schematic-node" id="snode-6-4" onclick="toggleEtapa(6)">
+              <i data-lucide="award" class="node-glyph" style="color: #38bdf8;"></i>
+              <span class="node-label" style="color: #38bdf8; font-weight: 700;">Triple Firma FES ITS</span>
+              <span class="node-chip" style="color: #38bdf8; background: rgba(56,189,248,0.15);">SPEC 47</span>
+            </div>
+            <div class="schematic-node" id="snode-6-5" onclick="toggleEtapa(6)">
+              <i data-lucide="file-spreadsheet" class="node-glyph"></i>
+              <span class="node-label">Carátula EDP Formal (HES/OC)</span>
+              <span class="node-chip">SPEC 38</span>
+            </div>
+            <div class="schematic-node" id="snode-6-6" onclick="toggleEtapa(6)">
+              <i data-lucide="receipt" class="node-glyph"></i>
+              <span class="node-label">Facturación DTE Laudus ERP</span>
+              <span class="node-chip">DTE</span>
+            </div>
+          </div>
+
+          <!-- MODO AMPLIFICADO -->
+          <div class="expanded-thumbnails-list">
+            <div class="expanded-item-card" id="ecard-6-1" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Check-In Retorno en Patio &amp; Horómetro Final</div>
+                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">RECEPCIÓN</span>
+              </div>
+              <div class="card-desc-text">Registro de fecha/hora de llegada, odómetro final con foto y estado general del convoy.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-6-2" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="package-check" style="color: #10b981;"></i> Manifiesto Inverso de Aparejos en Bodega (Spec 29)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">CERO MERMA</span>
+              </div>
+              <div class="card-desc-text">Confrontación estricta 1 a 1 de eslingas, grilletes y balancines que regresan a bodega vs lo despachado en la OT.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-6-3" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="calculator" style="color: #38bdf8;"></i> Informe de Término (ITS - 8 Costos Directos) (Spec 46)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">BALANCE MARGEN</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span>Ingresos Netos:</span> <span class="mono" style="color:#10b981;">$ 2.860.000</span></div>
+                  <div class="grid-row-item"><span>Costos Directos (8 cat):</span> <span class="mono" style="color:#ef4444;">- $ 945.200</span></div>
+                  <div class="grid-row-item"><span>Margen Operacional:</span> <span class="mono" style="color:#38bdf8; font-weight: bold;">66.95% [Óptimo]</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card card-trigger" id="ecard-6-4" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="award" style="color: #38bdf8;"></i> Circuito de Triple Firma FES del ITS (Spec 47)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.2); padding: 2px 6px; border-radius: 4px;">TSA RFC 3161</span>
+              </div>
+              <div class="card-desc-text">Firma electrónica FES secuencial: 1. Analista Elabora ➔ 2. Jefe Operaciones Aprueba ➔ 3. Contabilidad Cierra, con estampado visual y sellado de tiempo.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-6-5" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="file-spreadsheet" style="color: #f59e0b;"></i> Carátula Formal Estado de Pago (EDP) (Spec 38)</div>
+                <span class="mono" style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 4px;">EDP CLIENTE</span>
+              </div>
+              <div class="card-desc-text">Expediente formal para el mandante con número de HES/OC y copia de reports validados.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-6-6" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="receipt" style="color: #10b981;"></i> Facturación Electrónica Laudus ERP (Spec 38)</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">DTE FINAL</span>
+              </div>
+              <div class="card-desc-text">Emisión DTE vinculada a la OC. Transición final a Estado 7 (Facturado) en la Torre de Control.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 📋 3. DETALLE COMPLETO DE LA ETAPA SELECCIONADA                           -->
+    <!-- ========================================================================= -->
+    <section class="detailed-section" id="detailed-explanation">
+      <div class="detailed-header">
+        <div>
+          <div id="det-eyebrow" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="layers" style="width: 14px; height: 14px;"></i> Detalle Operacional de la Estación 01
+          </div>
+          <h2 id="det-title" class="stage-main-title">1. Requerimiento Registrado &amp; Preventa Comercial</h2>
+          <p id="det-objective" class="stage-objective">
+            Captura la oportunidad comercial, ejecuta visita a terreno con evidencia fotográfica obligatoria, estructura la cotización bajo 4 unidades canónicas con piso mínimo, y formaliza el pase a Operaciones.
+          </p>
+        </div>
+      </div>
+
+      <!-- GRILLA DE ENTREGABLES CATALOGADOS -->
+      <div class="deliverables-grid" id="detailed-deliverables-grid">
+        <!-- Generado dinámicamente por JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Conexiones determinísticas del linaje de procesos E2E (40 Hitos Reales)
+    const PROCESS_CONNECTIONS = [
+      // 1. Preventa interna
+      { from: '1-1', to: '1-2', stage: 1 },
+      { from: '1-2', to: '1-3', stage: 1 },
+      { from: '1-3', to: '1-4', stage: 1 },
+      { from: '1-4', to: '1-5', stage: 1 },
+      { from: '1-5', to: '1-6', stage: 1 },
+      { from: '1-6', to: '1-7', stage: 1 },
+      { from: '1-7', to: '1-8', stage: 1 },
+      { from: '1-7', to: '1-9', stage: 1, isLoss: true },
+      { from: '1-8', to: '1-10', stage: 1 },
+      // 1 ➔ 2
+      { from: '1-10', to: '2-1', stage: 1 },
+      // 2. Verificación interna
+      { from: '2-1', to: '2-2', stage: 2 },
+      { from: '2-2', to: '2-3', stage: 2 }, // Diff ➔ Visita Técnica Operaciones (Spec 41)
+      { from: '2-3', to: '2-4', stage: 2 }, // Visita Técnica ➔ Memoria de Maniobra
+      { from: '2-2', to: '2-4', stage: 2 }, // Diff directo a Memoria (si no requiere visita)
+      { from: '2-4', to: '2-5', stage: 2 },
+      { from: '2-5', to: '2-6', stage: 2 },
+      // 2 ➔ 3
+      { from: '2-6', to: '3-1', stage: 2 },
+      // 3. Asignación interna
+      { from: '3-1', to: '3-2', stage: 3 },
+      { from: '3-2', to: '3-3', stage: 3 },
+      { from: '3-3', to: '3-4', stage: 3 },
+      { from: '3-4', to: '3-5', stage: 3 },
+      { from: '3-5', to: '3-6', stage: 3 },
+      // 3 ➔ 4
+      { from: '3-6', to: '4-1', stage: 3 },
+      // 4. Preparación interna
+      { from: '4-1', to: '4-2', stage: 4 },
+      { from: '4-2', to: '4-3', stage: 4 },
+      { from: '4-3', to: '4-4', stage: 4 },
+      { from: '4-4', to: '4-5', stage: 4 },
+      { from: '4-5', to: '4-6', stage: 4 },
+      // 4 ➔ 5
+      { from: '4-6', to: '5-1', stage: 4 },
+      // 5. Faena interna
+      { from: '5-1', to: '5-2', stage: 5 },
+      { from: '5-2', to: '5-3', stage: 5 },
+      { from: '5-3', to: '5-4', stage: 5 }, // AST ➔ Plan de Izaje (Gate 85%)
+      { from: '5-4', to: '5-5', stage: 5 }, // Plan de Izaje ➔ Report Diario FES
+      { from: '5-5', to: '5-6', stage: 5 },
+      // 5 ➔ 6
+      { from: '5-6', to: '6-1', stage: 5 },
+      // 6. Cierre interno
+      { from: '6-1', to: '6-2', stage: 6 },
+      { from: '6-2', to: '6-3', stage: 6 },
+      { from: '6-3', to: '6-4', stage: 6 }, // ITS ➔ Triple Firma FES
+      { from: '6-4', to: '6-5', stage: 6 }, // Triple Firma ➔ Carátula EDP
+      { from: '6-5', to: '6-6', stage: 6 }  // EDP ➔ Facturación Laudus
+    ];
+
+    const STAGES_DATA = {
+      1: {
+        num: "01",
+        nombre: "1. Requerimiento Registrado & Preventa Comercial",
+        eyebrow: "Detalle Operacional de la Estación 01",
+        objetivo: "Captura la oportunidad comercial, ejecuta visita a terreno con evidencia fotográfica obligatoria, estructura la cotización bajo 4 unidades canónicas con piso mínimo, y formaliza el pase a Operaciones.",
+        deliverables: [
+          {
+            id: "deliv_1_1",
+            titulo: "Registrar Oportunidad Comercial (CRM)",
+            tipo: "Entrada Comercial",
+            tipoColor: "#38bdf8",
+            desc: "Punto de partida en GestorOportunidades.vue con antecedentes de obra, faena y requerimiento preliminar.",
+            impacto: "Asigna identificador único y abre el expediente comercial."
+          },
+          {
+            id: "deliv_1_2",
+            titulo: "Solicitud Visita Terreno Preventa",
+            tipo: "Solicitud Preventa",
+            tipoColor: "#f59e0b",
+            desc: "Checkbox comercial con ventana horaria sugerida y contacto de faena precargado.",
+            impacto: "Genera requerimiento de levantamiento de terreno."
+          },
+          {
+            id: "deliv_1_3",
+            titulo: "Visita a Terreno (photoChecks PWA)",
+            tipo: "Levantamiento PWA",
+            tipoColor: "#38bdf8",
+            desc: "Inspección previa en faena del cliente con captura fotográfica obligatoria, radio de giro y firma en pantalla.",
+            impacto: "Alimenta la memoria de maniobra y previene errores en tonelaje de grúa."
+          },
+          {
+            id: "deliv_1_4",
+            titulo: "Matriz de Servicios (4 Unidades Canónicas)",
+            tipo: "Estructura Tarifaria",
+            tipoColor: "#10b981",
+            desc: "Horas Día Mínimas (piso 8h), Horas Mes Mínimas (piso 180h), Traslado / Montaje y Valor Fijo pactado.",
+            impacto: "Define la regla matemática con la que se liquida la facturación real."
+          },
+          {
+            id: "deliv_1_5",
+            titulo: "Viáticos, Pensiones & Traslado",
+            tipo: "Costos Indirectos",
+            tipoColor: "#a855f7",
+            desc: "Cálculo de alojamiento, desayuno, almuerzo, cena y movilización para la tripulación.",
+            impacto: "Garantiza cobertura de costos de viaje del personal."
+          },
+          {
+            id: "deliv_1_6",
+            titulo: "Cotización Formal Versionada (PDF)",
+            tipo: "Documento Comercial",
+            tipoColor: "#ef4444",
+            desc: "Documento timbrado con logos paramétricos, condiciones de pago, desglose neto e IVA, inmutable.",
+            impacto: "Genera el vínculo contractual origen para toda la trazabilidad económica hasta el EDP."
+          },
+          {
+            id: "deliv_1_7",
+            titulo: "Despacho Email Cotización B2B",
+            tipo: "Notificación Cliente",
+            tipoColor: "#6366f1",
+            desc: "Despacho de correo HTML enriquecido al cliente con enlace web de aprobación y visor seguro.",
+            impacto: "Abre la ventana de negociación con trazabilidad de apertura."
+          },
+          {
+            id: "deliv_1_8",
+            titulo: "Marcar 'Generar Requerimiento' (Adjudicación)",
+            tipo: "Gatillo Comercial",
+            tipoColor: "#34d399",
+            desc: "Confirmación de cotización ganada y selección obligatoria del checklist de exigencias de acreditación.",
+            impacto: "Cierra la etapa comercial e inicia formalmente la fase operativa."
+          },
+          {
+            id: "deliv_1_9",
+            titulo: "Descarte Comercial (Pérdida)",
+            tipo: "Cierre Negativo",
+            tipoColor: "#f87171",
+            desc: "Registro formal de causal de rechazo (precio, plazo o equipo no disponible) para auditoría de ventas.",
+            impacto: "Archiva el expediente sin generar costos operativos."
+          },
+          {
+            id: "deliv_1_10",
+            titulo: "Correo Automático a Coordinador Operaciones",
+            tipo: "Gatillo Transaccional",
+            tipoColor: "#f59e0b",
+            desc: "Notificación por correo al Coordinador con Magic Link directo para auditoría de factibilidad.",
+            impacto: "Puente formal de entrada a la Columna 2 'En Verificación Operaciones' en el Kanban."
+          }
+        ]
+      },
+      2: {
+        num: "02",
+        nombre: "2. En Verificación Operaciones (Factibilidad)",
+        eyebrow: "Detalle Operacional de la Estación 02",
+        objetivo: "El Analista de Operaciones compara los requerimientos de la cotización vs los equipos reales disponibles, evalúa la memoria de maniobra y emite el Visto Bueno.",
+        deliverables: [
+          {
+            id: "deliv_2_1",
+            titulo: "Cola de Auditoría Operacional",
+            tipo: "Recepción Ticket",
+            tipoColor: "#f59e0b",
+            desc: "Ingreso a la consola del Coordinador de Operaciones para revisión de requerimientos.",
+            impacto: "Inicia el control de tiempos de respuesta de Operaciones."
+          },
+          {
+            id: "deliv_2_2",
+            titulo: "Comparador Diff Tarifario & Equipos",
+            tipo: "Herramienta CRM",
+            tipoColor: "#f59e0b",
+            desc: "Compara lado a lado lo cotizado comercialmente versus el equipo técnico que Operaciones propone enviar.",
+            impacto: "Exige justificación técnica obligatoria si hay brecha comercial."
+          },
+          {
+            id: "deliv_2_3",
+            titulo: "Activación Autónoma Visita Terreno (Spec 41)",
+            tipo: "Operaciones Autónomo",
+            tipoColor: "#38bdf8",
+            desc: "Operaciones activa inspección obligatoria si Comercial no la pidió o si la maniobra exige replanteo técnico (Visita #1 técnica o Visita #2 replanteo).",
+            impacto: "Despacha técnico directamente desde Web sin depender de email."
+          },
+          {
+            id: "deliv_2_4",
+            titulo: "Memoria de Maniobra & Radio de Izaje",
+            tipo: "Ingeniería de Maniobra",
+            tipoColor: "#60a5fa",
+            desc: "Cálculo técnico preliminar confirmando que el tonelaje, plumín y contrapesos cumplen los estándares de seguridad.",
+            impacto: "Alimenta el Plan de Izaje Digital en faena en Etapa 5."
+          },
+          {
+            id: "deliv_2_5",
+            titulo: "Compuerta de Aprobación (Gate)",
+            tipo: "Decisión Gobernanza",
+            tipoColor: "#10b981",
+            desc: "Visto Bueno formal del Jefe de Operaciones. Aprobado sin cambios o Aprobado con Observaciones.",
+            impacto: "Aprobado_con_obs genera penalización negativa en KPI comercial por subdimensionamiento."
+          },
+          {
+            id: "deliv_2_6",
+            titulo: "Alerta Pase a Asignación de Recursos",
+            tipo: "Gatillo Transaccional",
+            tipoColor: "#f59e0b",
+            desc: "Habilita la Pestaña C en el CRM y notifica al asignador para conformar la tripulación.",
+            impacto: "Transiciona el ticket a Columna 3 'En Asignación Recursos'."
+          }
+        ]
+      },
+      3: {
+        num: "03",
+        nombre: "3. En Asignación Recursos (Generación de OT)",
+        eyebrow: "Detalle Operacional de la Estación 03",
+        objetivo: "Asignación ordenada en DataGrid B2B separando Flota física (Grúas + Apoyo) de la Tripulación humana (Conductor + Rigger Nivel 5), emitiendo la Orden de Trabajo Oficial.",
+        deliverables: [
+          {
+            id: "deliv_3_1",
+            titulo: "Asignación Grúa Principal",
+            tipo: "Asignación Flota",
+            tipoColor: "#6366f1",
+            desc: "Liebherr LTM 1070 asignada según capacidad técnica y mantenimiento en taller.",
+            impacto: "Reserva física del equipo principal."
+          },
+          {
+            id: "deliv_3_2",
+            titulo: "Tripulación Humana Calificada",
+            tipo: "Asignación Personal",
+            tipoColor: "#38bdf8",
+            desc: "Conductor titular + Rigger Nivel 5 con credenciales vigentes.",
+            impacto: "Designa los responsables operativos en terreno."
+          },
+          {
+            id: "deliv_3_3",
+            titulo: "Equipos de Apoyo & Escolta",
+            tipo: "Logística Convoy",
+            tipoColor: "#a855f7",
+            desc: "Camiones pluma auxiliares, cama baja para contrapesos y camioneta escolta de ruta.",
+            impacto: "Conforma el convoy completo de desplazamiento."
+          },
+          {
+            id: "deliv_3_4",
+            titulo: "Matriz Aparejos Master con N° Serie (Spec 29)",
+            tipo: "Registro de Bodega",
+            tipoColor: "#38bdf8",
+            desc: "Asignación obligatoria de eslingas de acero, grilletes certificados y balancines con número de serie.",
+            impacto: "Viaja directamente a Etapa 6 para el Manifiesto Inverso de Aparejos al regresar a bodega."
+          },
+          {
+            id: "deliv_3_5",
+            titulo: "Confirmación OT Inmutable",
+            tipo: "Documento Maestro OT",
+            tipoColor: "#fbbf24",
+            desc: "Documento oficial inmutable que reúne los antecedentes de obra, la tripulación autorizada y la ventana de fechas.",
+            impacto: "Ampara legalmente la maniobra en terreno ante el cliente mandante."
+          },
+          {
+            id: "deliv_3_6",
+            titulo: "Email Automático a Tripulación y Coordinador de Patio",
+            tipo: "Notificación Despacho",
+            tipoColor: "#f59e0b",
+            desc: "Despacho simultáneo a conductores/riggers asignados y al Coordinador de Patio para alistar la grúa.",
+            impacto: "Desbloquea Sub-Tab 4 Dossier Acreditaciones B2B."
+          }
+        ]
+      },
+      4: {
+        num: "04",
+        nombre: "4. En Preparación Operaciones (Acreditación & Patio)",
+        eyebrow: "Detalle Operacional de la Estación 04",
+        objetivo: "Control de acceso a obra mandante (Acreditaciones 360°), checklist mecánico 360° en patio y liberación mediante Web Token PIN.",
+        deliverables: [
+          {
+            id: "deliv_4_1",
+            titulo: "Auditoría 3 Columnas Dossier (Spec 45)",
+            tipo: "Semáforo Documental",
+            tipoColor: "#14b8a6",
+            desc: "Auditoría en tiempo real de 1. Empresa, 2. Equipos (289 certs) y 3. Personas (286 certs).",
+            impacto: "Bloquea la salida de la grúa si algún documento crítico está vencido."
+          },
+          {
+            id: "deliv_4_2",
+            titulo: "Despacho Expediente Acreditación B2B",
+            tipo: "Dossier Mandante",
+            tipoColor: "#38bdf8",
+            desc: "Envío oficial del expediente PDF consolidado con credenciales de la empresa, grúa y tripulación al mandante.",
+            impacto: "Garantiza autorización de ingreso a la faena del mandante."
+          },
+          {
+            id: "deliv_4_3",
+            titulo: "Inspección 360° Pre-Salida Patio (PWA 76)",
+            tipo: "PWA Inspección 360°",
+            tipoColor: "#38bdf8",
+            desc: "Revisión física del equipo (luces, neumáticos, frenos, fugas y niveles) con fotos de evidencia.",
+            impacto: "Garantiza operatividad 100% segura antes de ingresar a la vía pública."
+          },
+          {
+            id: "deliv_4_4",
+            titulo: "Verificación Trincaje y Aparejos Embarcados",
+            tipo: "Control Patio",
+            tipoColor: "#10b981",
+            desc: "Confirmación física en plataforma de transporte (eslingas, grilletes, balancín) antes de abrir portón.",
+            impacto: "Asegura integridad de la carga durante el traslado."
+          },
+          {
+            id: "deliv_4_5",
+            titulo: "Odómetro / Horómetro con Evidencia Fotográfica",
+            tipo: "Control Desplazamiento",
+            tipoColor: "#f59e0b",
+            desc: "Captura fotográfica del tablero del camión y horómetro de la grúa en patio.",
+            impacto: "Línea base inmutable para el cálculo de flete y combustible."
+          },
+          {
+            id: "deliv_4_6",
+            titulo: "Web Token PIN de Salida de Patio",
+            tipo: "Token de Seguridad",
+            tipoColor: "#f59e0b",
+            desc: "Código dinámico de seguridad firmado en la caseta de portería por el chofer y el guardia.",
+            impacto: "Registra la fecha y hora oficial de despacho y habilita la telemetría en ruta hacia la Etapa 5."
+          }
+        ]
+      },
+      5: {
+        num: "05",
+        nombre: "5. En Ejecución / Faena (Monitoreo & Report)",
+        eyebrow: "Detalle Operacional de la Estación 05",
+        objetivo: "Seguimiento en ruta vía telemetría GPS, control de combustible Copec, AST de seguridad y Report Diario de izaje firmado electrónicamente.",
+        deliverables: [
+          {
+            id: "deliv_5_1",
+            titulo: "Telemetría GPS en Ruta (Cada 10s)",
+            tipo: "IoT / Telemetría",
+            tipoColor: "#a855f7",
+            desc: "Monitoreo continuo de velocidad, tiempos de traslado y geocercas automáticas de arribo a faena.",
+            impacto: "Alimenta el cálculo de horas efectivas de desplazamiento para el flete."
+          },
+          {
+            id: "deliv_5_2",
+            titulo: "Rendición Copec en Ruta (Multi-Estanque)",
+            tipo: "Control Combustible",
+            tipoColor: "#f59e0b",
+            desc: "Registro de cargas de diésel con fotografía del voucher, odómetro y horómetro.",
+            impacto: "Permite conciliar el consumo real versus el estándar de la máquina."
+          },
+          {
+            id: "deliv_5_3",
+            titulo: "AST Digital en 60 Segundos (Spec 36)",
+            tipo: "PWA Seguridad",
+            tipoColor: "#10b981",
+            desc: "Análisis Seguro de Trabajo con verificación 1-tap de EPP y 5 controles críticos de izaje.",
+            impacto: "Habilita la maniobra con resguardo legal y laboral."
+          },
+          {
+            id: "deliv_5_4",
+            titulo: "Plan de Izaje Digital & Calculadora Reactiva (Spec 37)",
+            tipo: "Seguridad Crítica",
+            tipoColor: "#38bdf8",
+            desc: "Cálculo de peso total, radio máx, viento < 32 km/h y compuerta dura de bloqueo si la capacidad supera el 85%.",
+            impacto: "Bloqueo mandatorio de firma si el izaje supera el límite de seguridad del 85%."
+          },
+          {
+            id: "deliv_5_5",
+            titulo: "Report Diario Digital con Firma FES Mandante (Spec 34)",
+            tipo: "Report Digital",
+            tipoColor: "#10b981",
+            desc: "Registro formal de horas inicio, término, colación y sobretiempo, firmado en terreno por el mandante.",
+            impacto: "Instrumento legal incuestionable que liquida las horas a facturar en el EDP."
+          },
+          {
+            id: "deliv_5_6",
+            titulo: "Alerta Cierre Faena a Liquidación",
+            tipo: "Gatillo Transaccional",
+            tipoColor: "#f59e0b",
+            desc: "Notificación al Analista de Operaciones y Contabilidad para iniciar el Informe de Término de Servicio (ITS).",
+            impacto: "Transiciona el ticket a Columna 6 'Finalizado / Devengado'."
+          }
+        ]
+      },
+      6: {
+        num: "06",
+        nombre: "6. Finalizado / Devengado (Liquidación & ERP)",
+        eyebrow: "Detalle Operacional de la Estación 06",
+        objetivo: "Control de inventario de aparejos devueltos, liquidación de costos directos (ITS), carátula EDP y facturación en Laudus ERP.",
+        deliverables: [
+          {
+            id: "deliv_6_1",
+            titulo: "Check-In Retorno en Patio & Horómetro Final",
+            tipo: "Recepción Flota",
+            tipoColor: "#6366f1",
+            desc: "Registro de fecha/hora de llegada, odómetro final con foto y estado general del convoy.",
+            impacto: "Cierra el desplazamiento en ruta de los equipos."
+          },
+          {
+            id: "deliv_6_2",
+            titulo: "Manifiesto Inverso de Aparejos (Spec 29)",
+            tipo: "Control de Mermas",
+            tipoColor: "#10b981",
+            desc: "Revisión física del retorno a bodega de todas las eslingas y grilletes despachados.",
+            impacto: "Cero pérdidas de aparejos entre servicios."
+          },
+          {
+            id: "deliv_6_3",
+            titulo: "Informe de Término de Servicio (ITS - 8 Costos) (Spec 46)",
+            tipo: "Balance de Rentabilidad",
+            tipoColor: "#38bdf8",
+            desc: "Consolidación de jornadas operadas y los 8 costos directos incurridos, determinando el margen real.",
+            impacto: "Base económica auditada para el cobro al cliente."
+          },
+          {
+            id: "deliv_6_4",
+            titulo: "Circuito Triple Firma FES del ITS (Spec 47)",
+            tipo: "Firma FES TSA",
+            tipoColor: "#38bdf8",
+            desc: "Firma electrónica secuencial: Analista Elabora ➔ Jefe Operaciones Aprueba ➔ Contabilidad Cierra con sello TSA.",
+            impacto: "Validación tributaria y legal inmutable con RFC 3161."
+          },
+          {
+            id: "deliv_6_5",
+            titulo: "Carátula Formal Estado de Pago (EDP) (Spec 38)",
+            tipo: "Expediente Financiero",
+            tipoColor: "#f59e0b",
+            desc: "Carátula consolidada que cruza cotización vs reports validados con adjunto de HES y OC.",
+            impacto: "Permite al cliente mandante liberar el pago sin objeciones."
+          },
+          {
+            id: "deliv_6_6",
+            titulo: "Facturación Electrónica Laudus ERP (Spec 38)",
+            tipo: "DTE Fiscal",
+            tipoColor: "#10b981",
+            desc: "Emisión formal de la factura en el ERP sincronizada con la Torre de Control.",
+            impacto: "Concluye el ciclo de vida del servicio en Estado 7 (Facturado)."
+          }
+        ]
+      }
+    };
+
+    let etapaAmplificada = null; // Inicia 100% esquemático y cerrado
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderizarDetalle(1);
+      aplicarEstadoAmplificado(null);
+      lucide.createIcons();
+
+      window.addEventListener('resize', () => {
+        calcularConexiones();
+      });
+    });
+
+    function toggleEtapa(stepNum) {
+      if (etapaAmplificada === stepNum) {
+        // Cierre libre: si ya está abierta, se contrae a null
+        etapaAmplificada = null;
+      } else {
+        etapaAmplificada = stepNum;
+      }
+      aplicarEstadoAmplificado(etapaAmplificada);
+    }
+
+    function contraerTodasLasEtapas() {
+      etapaAmplificada = null;
+      aplicarEstadoAmplificado(null);
+    }
+
+    function aplicarEstadoAmplificado(stepNum) {
+      // 1. Tarjetas Superiores
+      document.querySelectorAll('.stage-card-node').forEach((node, idx) => {
+        const isCurrent = (idx + 1 === stepNum);
+        node.classList.toggle('active', isCurrent);
+      });
+
+      // 2. Columnas en la pista flex
+      for (let i = 1; i <= 6; i++) {
+        const bay = document.getElementById(`col-bay-${i}`);
+        if (!bay) continue;
+
+        const isExpanded = (i === stepNum);
+        bay.classList.toggle('expanded', isExpanded);
+      }
+
+      // 3. Renderizar la explicación detallada inferior
+      if (stepNum) {
+        renderizarDetalle(stepNum);
+      }
+
+      lucide.createIcons();
+
+      // 4. Animar y recalcular los cables en ángulo recto durante la transición CSS (350ms)
+      animarCablesTransicion();
+    }
+
+    function animarCablesTransicion() {
+      const start = performance.now();
+      function loop() {
+        calcularConexiones();
+        if (performance.now() - start < 400) {
+          requestAnimationFrame(loop);
+        } else {
+          calcularConexiones();
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+
+    function calcularConexiones() {
+      const container = document.getElementById('flow-canvas-section');
+      const svg = document.getElementById('flow-wires-svg');
+      if (!container || !svg) return;
+
+      const containerRect = container.getBoundingClientRect();
+      if (containerRect.width === 0 || containerRect.height === 0) return;
+
+      svg.setAttribute('viewBox', `0 0 ${containerRect.width} ${containerRect.height}`);
+
+      let pathsHtml = `
+        <defs>
+          <marker id="arrow-wire" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
+          </marker>
+          <marker id="arrow-wire-active" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-wire-loss" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ef4444" />
+          </marker>
+        </defs>
+      `;
+
+      PROCESS_CONNECTIONS.forEach((conn) => {
+        const fromStage = parseInt(conn.from.split('-')[0]);
+        const toStage = parseInt(conn.to.split('-')[0]);
+
+        // Si la etapa de origen está amplificada, conectamos desde su ecard; si no, desde su snode
+        const isFromExpanded = (fromStage === etapaAmplificada);
+        const fromId = isFromExpanded ? `ecard-${conn.from}` : `snode-${conn.from}`;
+
+        // Si la etapa de destino está amplificada, conectamos hacia su ecard; si no, hacia su snode
+        const isToExpanded = (toStage === etapaAmplificada);
+        const toId = isToExpanded ? `ecard-${conn.to}` : `snode-${conn.to}`;
+
+        const elFrom = document.getElementById(fromId);
+        const elTo = document.getElementById(toId);
+        if (!elFrom || !elTo) return;
+
+        const rFrom = elFrom.getBoundingClientRect();
+        const rTo = elTo.getBoundingClientRect();
+
+        // Coordenadas relativas al contenedor SVG
+        const x1 = rFrom.right - containerRect.left;
+        const y1 = (rFrom.top + rFrom.height / 2) - containerRect.top;
+        const x2 = rTo.left - containerRect.left;
+        const y2 = (rTo.top + rTo.height / 2) - containerRect.top;
+
+        // Vínculo Ortogonal a 90 grados
+        let d = '';
+        if (fromStage !== toStage) {
+          // Conexión entre columnas distintas: avance horizontal ➔ quiebre vertical ➔ entrada horizontal
+          const xMid = x1 + (x2 - x1) * 0.5;
+          d = `M ${x1} ${y1} L ${xMid} ${y1} L ${xMid} ${y2} L ${x2} ${y2}`;
+        } else {
+          // Conexión interna de la misma columna: salida por la derecha ➔ quiebre vertical ➔ reingreso
+          const xLoop = x1 + 14;
+          d = `M ${x1} ${y1} L ${xLoop} ${y1} L ${xLoop} ${y2} L ${x2} ${y2}`;
+        }
+
+        const isActive = (conn.stage === etapaAmplificada);
+        let marker = isActive ? 'url(#arrow-wire-active)' : 'url(#arrow-wire)';
+        let wireClass = 'flow-wire';
+        if (conn.isLoss) {
+          wireClass += ' loss-wire';
+          marker = 'url(#arrow-wire-loss)';
+        }
+        if (isActive) wireClass += ' active';
+
+        pathsHtml += `<path class="${wireClass}" marker-end="${marker}" d="${d}" />`;
+      });
+
+      svg.innerHTML = pathsHtml;
+    }
+
+    function abrirDetalleEtapa(stepNum) {
+      const detEl = document.getElementById('detailed-explanation');
+      if (detEl) detEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderizarDetalle(stepNum) {
+      const data = STAGES_DATA[stepNum];
+      if (!data) return;
+
+      const eyebrow = document.getElementById('det-eyebrow');
+      const title = document.getElementById('det-title');
+      const obj = document.getElementById('det-objective');
+      if (eyebrow) eyebrow.innerHTML = `<i data-lucide="layers" style="width: 14px; height: 14px;"></i> ${data.eyebrow}`;
+      if (title) title.innerText = data.nombre;
+      if (obj) obj.innerText = data.objetivo;
+
+      const container = document.getElementById('detailed-deliverables-grid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      data.deliverables.forEach(deliv => {
+        const card = document.createElement('div');
+        card.className = 'deliverable-card';
+
+        card.innerHTML = `
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: ${deliv.tipoColor}; background: ${deliv.tipoColor}18; border: 1px solid ${deliv.tipoColor}44; padding: 2px 7px; border-radius: 4px;">
+                ${deliv.tipo}
+              </span>
+              <span class="mono" style="font-size: 10px; color: var(--t-muted);">ID: ${deliv.id}</span>
+            </div>
+            <div class="deliv-title" style="margin-top: 10px;">${deliv.titulo}</div>
+            <div class="deliv-desc">${deliv.desc}</div>
+          </div>
+
+          <div class="deliv-impact-note" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            ➔ ${deliv.impacto}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

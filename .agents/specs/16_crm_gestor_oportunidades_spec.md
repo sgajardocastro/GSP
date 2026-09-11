@@ -43,7 +43,7 @@ El objeto de oportunidad no es solo una tarifa por horas, sino un expediente int
     volumen_carga: "Medio"
   },
 
-  // 3. Estructurador de Servicios (Líneas Comerciales Base)
+  // 3. Estructurador de Servicios (Líneas Comerciales Base Canónicas)
   lines: [
     {
       _uid: "line-base-101",
@@ -51,9 +51,10 @@ El objeto de oportunidad no es solo una tarifa por horas, sino un expediente int
       tipo: "GRUAS TELESCOPICAS",
       subcategoria: "220 TON",
       descripcion: "Grúa Telescópica 220 Ton",
-      unidad: "Diario",
-      cantidad: 2,
-      valorUnitario: 3500000,
+      unidad: "Horas Diarias Minimas",
+      pisoMinimo: 8.0,
+      cantidad: 2, // 2 jornadas / días
+      valorUnitario: 120000, // $/hora (Subtotal = 2 * 8 * 120.000 = $1.920.000)
       equipo_asignado_id: "HW-8842",
       operador_asignado_id: 101,
       fecha_plan_ini: "2026-09-01",
@@ -66,7 +67,8 @@ El objeto de oportunidad no es solo una tarifa por horas, sino un expediente int
       tipo: "TRASLADOS",
       subcategoria: "CAMA BAJA",
       descripcion: "Servicio de Traslado / Flete",
-      unidad: "Fijo",
+      unidad: "Traslado",
+      pisoMinimo: 0,
       cantidad: 1,
       valorUnitario: 500000,
       is_linea_base: true
@@ -174,10 +176,96 @@ Permite al Coordinador de Operaciones auditar la cotización enviada por Comerci
 
 ---
 
-### 💰 3.3. Estructurador de Servicios (`lines`)
-- Cada línea requiere obligatoriamente **Categoría (`tipo`)** y **Subcategoría (`subcategoria`)**.
-- Unidades estándar: `Horas`, `Diario`, `Semanal`, `Mensual`, `Fijo`.
-- Reactividad determinística: cada ítem posee un `_uid` único que asegura el renderizado sin colisiones de claves en Vue.
+### 💰 3.3. Estructurador de Servicios Contextual (`lines`)
+El estructurador de servicios opera en dos modalidades idénticas y sincronizadas: en Pestaña 1 (Preventa Comercial) y en Pestaña 2 (Validación Técnica Operaciones). Su diseño obedece al principio de **Inputs Contextuales por Tipo de Cobro**, garantizando que el usuario solo ingrese las magnitudes físicas requeridas por la modalidad de contratación pactada.
+
+#### 1. Cabecera Oficial de la Grilla (Frontend CRM):
+| Unidad de Cobro | Cantidad(es) | Valor Unitario | Subtotal |
+| :--- | :--- | :---: | :---: |
+
+#### 2. Catálogo de 4 Unidades Canónicas Oficiales y Reglas de Captura:
+1. **`Horas Diarias Minimas` (Operación Diaria por Jornada):**
+   - **Campos Requeridos:**
+     * `Días` (`cantidad_dias`): Número entero entre $1$ y $30$. Default: $1$.
+     * `Horas` (`cantidad_horas` / `pisoMinimo`): Horas mínimas diarias garantizadas por jornada, entre $1$ y $24$. Default: $8$.
+     * `Valor Unitario` (`valor_unitario`): Tarifa pactada en pesos chilenos por hora de servicio ($\$/\text{hora}$ neto).
+   - **Fórmula Matemática Determinística:**
+     $$\text{Subtotal} = \text{cantidad\_dias} \times \text{cantidad\_horas} \times \text{valor\_unitario}$$
+   - **Restricción de Etiquetas:** Queda estrictamente prohibido abreviar o inventar etiquetas de unidad ("Gl", "Serv"). Se mantiene literal: `Horas Diarias Minimas`.
+
+2. **`Horas Mes Minimas` (Arriendo Mensual de Largo Plazo):**
+   - **Campos Requeridos:**
+     * `Meses` (`cantidad_meses`): Número entero $\ge 1$. Default: $1$.
+     * `Horas` (`cantidad_horas` / `pisoMinimo`): Horas mínimas mensuales pactadas, $> 1$. Default: $180$.
+     * `Valor Unitario` (`valor_unitario`): Tarifa pactada por hora de servicio ($\$/\text{hora}$ neto).
+   - **Fórmula Matemática Determinística:**
+     $$\text{Subtotal} = \text{cantidad\_meses} \times \text{cantidad\_horas} \times \text{valor\_unitario}$$
+   - **Restricción de Etiquetas:** Denominación canónica: `Horas Mes Minimas`.
+
+3. **`Traslado` (Transporte, Flete y Movilización):**
+   - **Campos Requeridos:**
+     * `Cantidad` (`cantidad`): Número de viajes o traslados $\ge 1$. Default: $1$.
+     * `Valor Unitario` (`valor_unitario`): Tarifa pactada por viaje completo ($\$$ neto). Piso mínimo: $0$.
+   - **Fórmula Matemática Determinística:**
+     $$\text{Subtotal} = \text{cantidad} \times \text{valor\_unitario}$$
+
+4. **`Valor Fijo` (Servicio Global Cerrado o Maniobra Específica):**
+   - **Campos Requeridos:**
+     * `Cantidad` (`cantidad`): Unidades de servicio $\ge 1$. Default: $1$.
+     * `Valor Unitario` (`valor_unitario`): Tarifa pactada por el servicio global ($\$$ neto). Piso mínimo: $0$.
+   - **Fórmula Matemática Determinística:**
+     $$\text{Subtotal} = \text{cantidad} \times \text{valor\_unitario}$$
+
+#### 4. Regla de Asociación Estricta por Categoría:
+- **Categoría TRASLADOS:** Si `line.tipo === 'TRASLADOS'`, la unidad de cobro se restringe de forma mandatoria a `Traslado`.
+- **Comportamiento Reactivo UI:** Al seleccionar `TRASLADOS`, el sistema fuerza automáticamente `line.unidad = 'Traslado'`, limpia variables de días/horas/meses y deshabilita (`disabled`) el selector de unidad tanto en Pestaña 1 como en Pestaña 2.
+- **Desbloqueo:** Si la categoría se cambia a cualquier otra distinta de `TRASLADOS`, el selector de unidad vuelve a habilitarse con las 4 opciones canónicas (inicializándose en `Horas Diarias Minimas`).
+
+#### 3. Estructura y Renderizado en el Documento Oficial PDF (`proyectoModel.js`):
+La tabla de servicios del PDF de cotización debe reflejar idéntica consistencia visual y matemática con la grilla del CRM:
+- **Cabecera Oficial PDF:**
+  `Item | Descripción del Servicio | Unidad de Cobro | Cantidad(es) / Base | Tarifa Unitario | Subtotal (Neto)`
+- **Orden Canónico de Columnas (Espejo de la Web):**
+  1. `Item`: Correlativo numérico (1, 2, 3...).
+  2. `Descripción del Servicio`: Título destacado con `Categoría — Subcategoría` en negrita, seguido de la `Descripción` comercial limpia. Queda estrictamente prohibido imprimir variables de depuración interna o campos vacíos (`FECHA PLAN INI`, `OPERADOR ASIGNADO ID`, etc.).
+  3. `Unidad de Cobro`: Nombre formal de la modalidad pactada (`Horas Diarias Mínimas`, `Horas Mes Mínimas`, `Traslado`, `Valor Fijo`).
+  4. `Cantidad(es) / Base`:
+     * Para `Horas Diarias Minimas`: Imprime exactamente `${dias} ${dias === 1 ? 'Día' : 'Días'} × ${horas} hrs/día`.
+     * Para `Horas Mes Minimas`: Imprime exactamente `${meses} ${meses === 1 ? 'Mes' : 'Meses'} × ${horas} hrs/mes`.
+     * Para `Traslado`: Imprime `${cant} ${cant === 1 ? 'Viaje' : 'Viajes'}`.
+     * Para `Valor Fijo`: Imprime `${cant} ${cant === 1 ? 'Servicio' : 'Servicios'}`.
+  5. `Tarifa Unitario`:
+     * Para modalidades por hora (`Horas Diarias Minimas` y `Horas Mes Minimas`): Imprime explícitamente el sufijo de tiempo: `$ Tarifa / hr`.
+     * Para modalidades fijas (`Traslado` y `Valor Fijo`): Imprime `$ Tarifa`.
+  6. `Subtotal (Neto)`: Monto neto final de la fila.
+- **Consistencia de Sumatorias:** La suma de los subtotales calculados por línea coincide al $100\%$ con el `Total Neto` del documento, erradicando divergencias entre la grilla del CRM y el PDF impreso.
+
+---
+
+### 🛡️ 3.9. Guardián de Navegación por Estado (Routing Guard) y Normalización Resiliente
+
+#### 1. Regla de Inmutabilidad de Navegación por Estado (State-Based Routing Guard):
+- Si el proyecto se encuentra en `id_proyecto_estado < 3` (Estado 1: Oportunidad / Preventa Comercial):
+  * El Gestor de Oportunidades se inicializa SIEMPRE y de forma obligatoria en `topTab = 'comercial'`.
+  * Queda estrictamente prohibido abrir o renderizar vistas operacionales (`validacion`, `asignacion`, `acreditaciones`, `preparacion_salida`, `reports`, `liquidacion`), aun cuando vengan forzadas por parámetros de consulta en la URL (`?subtab=reports`).
+  * El watcher reactivo de la ruta (`route.query.subtab`) evalúa `id_proyecto_estado`: si es menor a $3$, fuerza determinísticamente `topTab.value = 'comercial'` y aborta cualquier redirección operacional.
+
+#### 2. Fallback Determinístico en Torre de Control (`Torre.vue`):
+- Al hacer clic sobre cualquier tarjeta de la **Columna 1 (Preventa Comercial / Requerimiento Registrado)**, la llamada a navegación debe ser explícita: `abrirProyecto(p.id_proyecto, 'comercial')`.
+- En la función global `abrirProyecto(id, subtab = null)`, el fallback por defecto ante la ausencia de parámetro `subtab` debe ser obligatoriamente `'comercial'`, **quedando terminantemente prohibido usar fallbacks operacionales como `'reports'`**.
+
+#### 3. Protocolo de Carga Resiliente y Normalización de Flota (`cargarDatosCotizacion`):
+- Al parsear el array `crm.lineas_servicio` almacenado en `json_field`:
+  1. Se debe garantizar la declaración obligatoria en el scope de la variable `let mappedTipo = l.tipo || ''`.
+  2. Dicha variable debe normalizarse contra el catálogo maestro de equipos (`GRUAS TELESCOPICAS`, `CAMIONES`, `GRUA HORQUILLA`, `MANIPULADOR TELESCOPICO`, `VEHICULOS LIVIANOS`, `PLATAFORMAS`, `TRASLADOS`, `ACCESORIOS`, `PERSONAL CERTIFICADO`, `OTROS`).
+  3. Mapeo transparente de datos legados:
+     * Unidades legacy `Horas`, `Diario`, `Jornada` se transforman a `Horas Diarias Minimas` poblando `cantidad_dias` y `cantidad_horas`.
+     * Unidades legacy `Mensual`, `Horas Mensuales Minimas` se transforman a `Horas Mes Minimas` poblando `cantidad_meses` y `cantidad_horas`.
+     * Unidades legacy `Flete`, `Viaje`, `Traslados` se transforman a `Traslado`.
+     * Cualquier otra unidad desconocida se transforma a `Valor Fijo`.
+  4. Ninguna inconsistencia de datos legados en la base de datos puede provocar un `ReferenceError` ni abortar la inicialización de la pantalla.
+
+---
 
 ---
 
@@ -421,7 +509,41 @@ Feature: Gestor de Oportunidades y Pipeline Operacional OT (Spec 16)
     And el botón "[ 🔄 Reasignar ]" se oculta completamente
     And el botón legacy "[ Cargar ]" no se renderiza en ninguna vista
     When la visita se encuentra en estado "PLANIFICADO" o "Creado"
-    Then se muestra únicamente el botón "[ 🔄 Reasignar ]" y se ocultan Web y PDF
+  Scenario: Estructurador de Servicios con cálculo contextual por tipo de cobro
+    Given que el usuario está en la Pestaña "1. Preventa Comercial" o "2. Validación & Diff"
+    When selecciona la unidad "Horas Diarias Minimas" e ingresa Días "3", Horas "8" y Valor Unitario "120000"
+    Then el subtotal de la fila se calcula reactivamente como "2880000" (3 * 8 * 120.000)
+    When selecciona la unidad "Horas Mes Minimas" e ingresa Meses "2", Horas "180" y Valor Unitario "95000"
+    Then el subtotal de la fila se calcula reactivamente como "34200000" (2 * 180 * 95.000)
+    When selecciona la unidad "Traslado" e ingresa Cantidad "2" y Valor Unitario "500000"
+    Then el subtotal de la fila se calcula reactivamente como "1000000" (2 * 500.000)
+    When selecciona la unidad "Valor Fijo" e ingresa Cantidad "1" y Valor Unitario "1500000"
+    Then el subtotal de la fila se calcula reactivamente como "1500000" (1 * 1.500.000)
+
+  Scenario: Consistencia matemática determinística en PDF de Cotización
+    Given una cotización con líneas de servicio configuradas
+    When el usuario presiona "Generar Cotización PDF"
+    Then el backend compila la tabla con columnas "Item | Descripción del Servicio | Unidad de Cobro | Cantidad(es) / Base | Tarifa Unitario | Subtotal (Neto)"
+    And para líneas diarias imprime la unidad, "X Día(s) × Y hrs/día" y tarifa con sufijo "/ hr"
+    And para líneas mensuales imprime la unidad, "X Mes(es) × Y hrs/mes" y tarifa con sufijo "/ hr"
+    And la sumatoria de subtotales coincide al 100% con el Total Neto de la cotización
+
+  Scenario: Guardián de Estado y Protección de Pestaña Preventa Comercial
+    Given una oportunidad con id_proyecto_estado = 1 ("Requerimiento Registrado")
+    When el usuario abre la oportunidad desde el Kanban de la Torre de Control
+    Then el Gestor de Oportunidades se inicializa en topTab = "comercial" (Pestaña 1. Preventa Comercial)
+    And no se renderiza ninguna vista de faena u operaciones aunque la URL contenga subtab="reports"
+    And las pestañas 2 a 7 permanecen bloqueadas con candado de solo lectura o inaccesibles
+
+  Scenario: Restricción estricta de Unidad de Cobro para categoría TRASLADOS
+    Given que el usuario está en la Pestaña "1. Preventa Comercial" o "2. Validación & Diff"
+    When el usuario selecciona la Categoría "TRASLADOS" en una línea de servicio
+    Then la Unidad de Cobro se fija automáticamente en "Traslado"
+    And el selector de Unidad de Cobro queda bloqueado para edición
+    And la columna de Cantidad(es) despliega únicamente el campo numérico de "Cantidad" (>= 1)
+    When el usuario cambia la Categoría a "GRUAS TELESCOPICAS"
+    Then el selector de Unidad de Cobro se desbloquea
+    And se restablece por defecto a "Horas Diarias Minimas" habilitando Días y Horas
 
 ---
 
@@ -446,3 +568,16 @@ Esta vista centraliza la auditoría técnica y financiera de la faena en tiempo 
 4. **Navegación Reactiva e Integración con Torre de Control:**
    - La vista responde automáticamente a parámetros de URL (`/crm?id_proyecto=XX&subtab=reports`).
    - El tablero Kanban de la Torre de Control (`Torre.vue`) redirige directamente a la subpestaña correspondiente mediante Vue Router.
+
+---
+
+## 9. Subpestaña 7: Valorización, ITS & Facturación (Pipeline de Cierre 4 Pasos)
+
+### 9.1. Propósito y Arquitectura
+Regulado formalmente por la **[Spec 38 (Subpestaña 7)](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/38_liquidacion_edp_y_facturacion_spec.md)**. Se activa en el Gestor de Oportunidades (`operacionesSubTab === 'liquidacion'`) para proyectos con `id_proyecto_estado >= 5`.
+
+Conecta de punta a punta la conciliación de faena con la facturación final mediante un **Pipeline Secuencial de 4 Pasos**:
+1. **Paso 1 - ITS (Informe Término de Servicio):** Control de costos directos (combustible, viáticos, peajes) y cálculo de margen de contribución real post-faena.
+2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas de reports validados contra las tarifas pactadas y cálculo de sobretiempos. Emisión de Carátula Oficial (`ModalCaratulaEDP.vue`).
+3. **Paso 3 - Respaldo OC Mandante:** Repositorio documental persistente de Órdenes de Compra (`json_field.crm_v1.ordenes_compra`) con subida de archivo PDF y validación de cobertura financiera ($\sum \text{Monto OCs} \ge \text{Total Neto EDP}$).
+4. **Paso 4 - Factura DTE:** Integración con ERP Laudus, selector de OC en 1 clic (chips del Paso 3), registro de Folio DTE y transición automática a `id_proyecto_estado = 7` (Facturado y Concluido).

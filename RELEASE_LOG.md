@@ -4,6 +4,26 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.36
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-09 16:21:38 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/UX] Stepper de Cierre Económico en 4 Pasos Nativos (Sub-Tab 7):** Sustitución del modal superpuesto por una experiencia secuencial fluida a pantalla completa dividida en 4 fases (`① ITS ➔ ② EDP ➔ ③ Respaldo OC ➔ ④ Factura DTE`) con botones contextuales de avance y retroceso.
+  - **[FIX] Estructura y Balanceo DOM en CRM:** Corrección de etiquetas de cierre en `GestorOportunidades.vue`, garantizando 0 errores en compilación de producción con Vite.
+  - **[DOCS] Arquitectura FES & Generación PDF para ITS:** Formalización del diseño técnico en `bosquejo_firma.md` bajo los estándares `leanglobal_approval_flow_standard` y `generar_pdf_fes_sin_survey`.
+
+## [Backend GSP] - Versión 1.0.36
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-09 16:21:38 (-03:00)
+- **Proceso PM2:** `lean-services-gsp` (ID 10)
+- **Ruta Remota:** `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT] Sincronización de Servicios & PDFs:** Actualización de `proyectoModel.js` con cálculo contextual determinista por tipo de unidad (`Horas Diarias Minimas`, `Horas Mes Minimas`, `Traslado`, `Valor Fijo`) y normalización idempotente en `asignacionRecursosController.js`.
+  - **[PERF] Reinicio en Caliente PM2:** Proceso ID 10 reiniciado con verificación empírica HTTP 200 en endpoints públicos de la API.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.29
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-08-18 16:12:02 (-04:00)

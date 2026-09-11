@@ -396,6 +396,58 @@ router.get('/ot/:id_proyecto/descargar-zip', acreditacionController.descargarDos
 
 ### 4.2 Componente: `GestorOportunidades.vue` (Pestaña 4 — Acreditaciones & Dossier)
 
+#### 4.2.0 Erradicación del "Árbol Navideño" y Principio de Sobriedad Visual (B2B Industrial)
+* **Problema Identificado:** Cada fila de documento repetía simultáneamente hasta 4 botones con colores discordantes (verde neón, púrpura, celeste/azul y cruz roja), generando saturación visual ("árbol navideño") y fatiga cognitiva.
+* **Solución de Alta Densidad B2B:**
+  1. **Documentos Vigentes (`checkDocVigente === true`):**
+     - Indicador: Semáforo `✅` verde sutil.
+     - Nombre del documento en texto claro con truncado seguro.
+     - Acción primaria directa: Botón minimalista de previsualización `[ 👁️ ]` (gris slate, hover blanco/esmeralda).
+     - Menú kebab `[ ••• ]`: Botón compacto de 3 puntos que despliega popover flotante oscuro:
+       * `🔗 Re-vincular desde Biblioteca Central`
+       * `📤 Reemplazar archivo (Subir nuevo)`
+       * `────────────────────────────────`
+       * `🗑️ Quitar exigencia`
+  2. **Documentos Pendientes / Faltantes (`checkDocVigente === false`):**
+     - Indicador: Cruz roja `❌` (o advertencia `⚠️` si hay incompatibilidad de empresa contratista).
+     - Nombre del documento en texto atenuado o de advertencia.
+     - Acción rápida directa: Botón sobrio unificado `[ 📤 Subir ]` en dark mode grafito (`bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-[10px] px-2.5 py-1 rounded-lg font-bold`).
+     - Menú kebab `[ ••• ]`: Botón contiguo para acciones alternativas:
+       * `🔗 Vincular desde Biblioteca Central`
+       * `🗑️ Quitar exigencia`
+  3. **Comportamiento del Menú Popover Kebab:**
+     - Estado reactivo único `activeKebabMenuKey = ref(null)` (clave compuesta `tipo-entidad-idx`).
+     - Auto-cierre al seleccionar cualquier opción o al hacer clic fuera del menú (*click outside*).
+     - Posicionamiento `absolute right-0 top-full mt-1 z-30` con sombra profunda `shadow-2xl` y fondo `bg-[#0f172a] border border-white/10 rounded-lg`.
+
+#### 4.2.1 Arquitectura Canónica de Pareo Determinístico por Tipo (`id_tipo === id_tipo`)
+* **Prohibición de Comparación Heurística por Texto:** Queda terminantemente prohibido el uso de métodos basados en búsqueda de subcadenas sueltas (`.includes('ci')`, `.includes('rt')`, `.includes('rc')`) para determinar la correspondencia entre una exigencia de la OT y un certificado.
+* **Modelo Canónico de Contraste:**
+  1. Cada requisito documental exigido en la OT debe resolverse a un identificador numérico canónico (`id_tipo_certificado_persona` para personal o `id_tipo_certificado` para equipos) o conjunto acotado de IDs equivalentes.
+  2. Para proyectos preexistentes donde las exigencias fueron guardadas como cadenas de texto (`crm_v1.acreditacion_docs`), el sistema aplica un Diccionario Canónico de Homologación de Tipos:
+     - **Personal (`tsec_tipos_certificado_persona`):**
+       - `"Cédula identidad"`, `"Cédula de Identidad"` ➡️ `id_tipo = 1`
+       - `"Licencia conducir"`, `"Licencia de Conducir"` ➡️ `id_tipo = 2`
+       - `"Contrato de trabajo"`, `"Contrato"` ➡️ `id_tipo = 3`
+       - `"Examen psicosensotécnico"`, `"Examen Psicotécnico PST"` ➡️ `id_tipo = 4`
+       - `"Examen ocupacional"` ➡️ `id_tipo = 5`
+       - `"Examen preocupacional"` ➡️ `id_tipo = 6`
+       - `"Certificación de Competencias"`, `"Certificación"` ➡️ `id_tipo = 7`
+       - `"Credencial de Operador/Rigger"` ➡️ `id_tipo = 8`
+       - `"Reglamento Interno (RIOHS)"`, `"RIOHS"` ➡️ `id_tipo = 9`
+       - `"Inducción y Entrega de EPP"`, `"EPP"` ➡️ `id_tipo = [10, 49]`
+       - `"Obligación de Informar (ODI) / PTS"`, `"ODI"`, `"PTS"` ➡️ `id_tipo = 11`
+     - **Equipos (`tequ_tipos_certificado`):**
+       - `"Permiso de circulación"`, `"Permiso"` ➡️ `id_tipo = 1`
+       - `"Revisión técnica"`, `"Revisión Técnica"` ➡️ `id_tipo = 2`
+       - `"SOAP"` ➡️ `id_tipo = 3`
+       - `"Certificado de Inspección de Gancho"` ➡️ `id_tipo = 4`
+       - `"Certificación Anual Izaje"`, `"Inspección de Equipo"`, `"Prueba de Carga"`, `"Certificación"` ➡️ `id_tipo = [5, 6]` (Inspección o Prueba de Carga)
+  3. La condición de coincidencia (*match*) en tiempo de ejecución se evalúa estrictamente como:
+     - En Personal: `c.id_tipo_certificado_persona === idTipoExigido || (Array.isArray(idTipoExigido) && idTipoExigido.includes(c.id_tipo_certificado_persona))`
+     - En Equipos: `c.id_tipo_certificado === idTipoExigido || (Array.isArray(idTipoExigido) && idTipoExigido.includes(c.id_tipo_certificado))`
+  4. Ningún certificado podrá vincularse si no coincide su clave foránea de tipo, garantizando inmunidad a colisiones lingüísticas y falsos positivos.
+
 #### 1. Identificación Automática de la Empresa de la OT:
 * Lee `id_empresa` ejecutora desde `opportunity.id_empresa` o `antecedentes.id_empresa_cotizante` (por defecto `9` si no está especificada).
 * Muestra en la cabecera:
@@ -476,3 +528,89 @@ router.get('/ot/:id_proyecto/descargar-zip', acreditacionController.descargarDos
    - Compilación con `npm run build` en `ejecucion/frontend` asegurando **0 errores de Vite**.
    - Navegación visual en `/documentos` verificando el despliegue del árbol institucional de empresas.
    - Apertura de Pestaña 4 en `GestorOportunidades.vue` verificando el bloqueo/desbloqueo del botón según vigencias reales.
+
+---
+
+## 🧪 7. BDD Gherkin Test Scenarios (QA Determinístico)
+
+### Característica: Renderizado Sobrio de Filas de Acreditación y Menú Kebab en Pestaña 4
+
+#### Escenario 1: Despliegue sobrio de documento vigente (Sin botones redundantes de Vincular/Subir)
+  Dado que el usuario se encuentra en la Pestaña 4 (Acreditaciones & Dossier) de una OT
+  Y el documento "Revisión Técnica" del equipo "STDD.68-4" se encuentra cargado y vigente
+  Cuando se renderiza la fila del documento
+  Entonces debe mostrarse el indicador verde "✅"
+  Y debe mostrarse el nombre del documento "Revisión Técnica"
+  Y debe mostrarse un único botón minimalista de visualización "👁️"
+  Y debe mostrarse un botón discreto de tres puntos "•••"
+  Y NO deben mostrarse botones explícitos de "Vincular" ni "Subir" en la fila.
+
+#### Escenario 2: Despliegue de opciones contextuales al presionar el menú Kebab en documento vigente
+  Dado que el documento "SOAP" se encuentra en estado vigente
+  Cuando el usuario hace clic en el botón de tres puntos "•••" de dicha fila
+  Entonces se debe desplegar el menú flotante contextual
+  Y el menú debe contener las opciones:
+    | Opción | Acción |
+    | 🔗 Re-vincular de Biblioteca | Abre el modal de vinculación desde la biblioteca central |
+    | 📤 Reemplazar archivo        | Abre el selector de archivos local para subir nueva versión |
+    | 🗑️ Quitar exigencia         | Elimina el documento de la lista de exigencias de esta OT |
+
+#### Escenario 3: Despliegue sobrio de documento faltante o pendiente
+  Dado que el documento "Examen de Altura Física" del operador está pendiente o no cargado
+  Cuando se renderiza la fila del documento
+  Entonces debe mostrarse el indicador rojo "❌"
+  Y debe mostrarse el nombre del documento
+  Y debe mostrarse un botón sobrio "📤 Subir" con estilo grafito oscuro
+  Y debe mostrarse el botón discreto de tres puntos "•••"
+  Y NO debe mostrarse ningún botón en colores neón chillones (morado o cyan brillante).
+
+#### Escenario 4: Auto-cierre del menú Kebab al hacer clic fuera (Click Outside)
+  Dado que el menú contextual Kebab de una fila de documento se encuentra abierto
+  Cuando el usuario hace clic en cualquier otra área de la pantalla o fuera del menú
+  Entonces el menú contextual debe cerrarse inmediatamente
+  Y la variable `activeKebabMenuKey` debe volver a ser `null`.
+
+#### Escenario 5: Cierre del menú Kebab tras seleccionar una acción
+  Dado que el menú contextual Kebab de una fila se encuentra abierto
+  Cuando el usuario hace clic en "🔗 Re-vincular de Biblioteca" o "🗑️ Quitar exigencia"
+  Entonces se debe ejecutar la acción correspondiente
+  Y el menú contextual debe cerrarse automáticamente.
+
+#### Escenario 6: Apertura del visor de documento al presionar el botón de ojo
+  Dado que un documento se encuentra vigente
+  Cuando el usuario hace clic en el botón minimalista "👁️"
+  Entonces se debe disparar la función `verDocumentoDossier` abriendo el archivo PDF o modal de visualización.
+
+#### Escenario 7: Validación cruzada empresa-persona con advertencia sobria
+  Dado que el operador asignado tiene contrato con "Grúas San Pablo SpA"
+  Pero la OT es ejecutada y facturada por "Bestmaq Arriendos SpA"
+  Cuando se evalúa el documento "Contrato de Trabajo" en la Columna 3
+  Entonces debe mostrarse el indicador de advertencia "⚠️"
+  Y debe desplegarse el texto monoespaciado indicando la incompatibilidad de razón social
+  Y debe mostrarse el botón sobrio "📤 Subir" junto al menú "•••" para adjuntar el anexo o contrato correspondiente.
+
+#### Escenario 8: Bloqueo inmutable del botón de despacho B2B si existen documentos pendientes
+  Dado que existen 1 o más documentos con estado "❌" o "⚠️" en cualquiera de las 3 columnas
+  Cuando se evalúa la computada `tieneDocumentosVencidosOPendientes`
+  Entonces su valor debe ser `true`
+  Y el botón "Despachar Dossier al Cliente (Email B2B)" debe estar deshabilitado (`:disabled="true"`)
+  Y debe desplegarse el banner de alerta de bloqueo.
+
+#### Escenario 9: Pareo determinístico estricto por ID de tipo en Personal (Inmunidad a colisión ODI/Licencia/Cédula)
+  Dado que el operador asignado tiene cargado en su expediente un documento de tipo "Obligación de Informar (ODI) / PTS" con id_tipo_certificado_persona = 11
+  Y el operador NO tiene cargada su "Cédula de Identidad" (id_tipo = 1) ni su "Licencia de Conducir" (id_tipo = 2)
+  Cuando el sistema evalúa la exigencia de "Cédula identidad" y "Licencia conducir" para dicho trabajador
+  Entonces el sistema compara id_tipo_certificado_persona contra 1 y 2 respectivamente
+  Y el documento de tipo ODI (id_tipo = 11) NO coincide con ninguna de las dos exigencias
+  Y ambas exigencias deben mostrarse con indicador "❌" y estado PENDIENTE
+  Y debe mostrarse el botón sobrio "📤 Subir" para permitir la carga de los documentos faltantes
+  Y bajo ninguna circunstancia debe enlazarse el archivo del ODI (Doc 1016) a la Cédula o a la Licencia.
+
+#### Escenario 10: Pareo determinístico estricto por ID de tipo en Equipos (Inmunidad a colisión Revisión Técnica / Certificación Izaje)
+  Dado que la grúa asignada tiene registrada una "Revisión Técnica" con id_tipo_certificado = 2
+  Y tiene registrado un "Certificado de Inspección de Equipo" con id_tipo_certificado = 5
+  Y la OT exige tanto "Revisión Técnica" como "Certificación Anual Izaje"
+  Cuando el sistema evalúa la coincidencia de certificados
+  Entonces la exigencia "Revisión Técnica" (id_tipo = 2) vincula exclusivamente al certificado con id_tipo = 2
+  Y la exigencia "Certificación Anual Izaje" (id_tipo in [5, 6]) vincula exclusivamente al certificado con id_tipo = 5
+  Y bajo ninguna circunstancia la "Certificación Anual Izaje" debe vincularse al archivo de la Revisión Técnica.
