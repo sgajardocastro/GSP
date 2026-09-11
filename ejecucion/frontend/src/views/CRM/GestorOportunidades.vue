@@ -3458,36 +3458,135 @@
               </button>
             </div>
 
-            <!-- BANNER REACTIVO DE EVALUACIÓN DE FLETE / TRASLADO -->
+            <!-- BANNER REACTIVO DE EVALUACIÓN DE FLETE / TRASLADO SEGÚN LOS 4 CASOS CANÓNICOS -->
+            <!-- CASO 4: RURAL CON CONTRAPESOS (>= 90T) -->
             <div 
-              v-if="(parseFloat(opportunity.distancia_km) || 0) > 30 && !tieneFleteEnLineas" 
-              class="bg-rose-950/40 border border-rose-500/60 rounded-xl p-3 text-xs flex items-center justify-between gap-3 text-rose-200"
+              v-if="casoCobroActual === 4" 
+              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
+              :class="(!tieneFleteGrua || !tieneFleteContrapeso) ? 'bg-rose-950/40 border-rose-500/60 text-rose-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
             >
               <div class="flex items-center gap-2">
-                <span class="text-xl">⚠️</span>
+                <span class="text-xl">{{ (!tieneFleteGrua || !tieneFleteContrapeso) ? '🚨' : '✅' }}</span>
                 <div>
-                  <strong class="font-mono uppercase font-bold text-rose-300 block">Alerta Anti-Fuga: Servicio Rural ({{ opportunity.distancia_km }} km)</strong>
-                  <span>La distancia supera el umbral urbano (30 km) y <strong>no hay línea de flete/traslado</strong>. Esto genera fuga comercial para GSP.</span>
+                  <div class="flex items-center gap-2">
+                    <strong class="font-mono uppercase font-bold text-xs" :class="(!tieneFleteGrua || !tieneFleteContrapeso) ? 'text-rose-300' : 'text-emerald-300'">
+                      Caso 4: Rural con Grúa Pesada ({{ opportunity.distancia_km }} km ida)
+                    </strong>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      3 Líneas Obligatorias
+                    </span>
+                  </div>
+                  <span v-if="!tieneFleteGrua || !tieneFleteContrapeso">
+                    Exige 3 líneas separadas: <strong>1. Horas Grúa</strong> + <strong>2. Flete Grúa</strong> + <strong>3. Traslado Contrapesos</strong>. Faltan partidas de movilización.
+                  </span>
+                  <span v-else>
+                    Estructura canónica completa: Horas en faena + Flete de grúa + Cama baja de contrapesos debidamente desglosados.
+                  </span>
                 </div>
               </div>
               <button 
+                v-if="!tieneFleteGrua || !tieneFleteContrapeso"
                 type="button" 
-                @click="inyectarFleteRecomendado"
-                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow"
+                @click="inyectarFleteRecomendado('auto')"
+                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
               >
-                + Inyectar Flete Recomendado
+                <span>⚡</span> Inyectar Fletes Caso 4
               </button>
             </div>
 
+            <!-- CASO 3: RURAL SIN CONTRAPESOS (< 90T) -->
             <div 
-              v-else-if="(parseFloat(opportunity.distancia_km) || 0) > 0 && (parseFloat(opportunity.distancia_km) || 0) <= 30 && tieneFleteEnLineas" 
-              class="bg-blue-950/30 border border-blue-500/40 rounded-xl p-3 text-xs flex items-center justify-between gap-3 text-blue-200"
+              v-else-if="casoCobroActual === 3" 
+              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
+              :class="!tieneFleteGrua ? 'bg-rose-950/40 border-rose-500/60 text-rose-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
             >
               <div class="flex items-center gap-2">
-                <span class="text-lg">ℹ️</span>
+                <span class="text-xl">{{ !tieneFleteGrua ? '⚠️' : '✅' }}</span>
                 <div>
-                  <strong class="font-mono uppercase font-bold text-blue-300 block">Servicio Urbano (≤ 30 km):</strong>
-                  <span>El traslado de la grúa va dentro de las horas de arriendo desde Casa Matriz, salvo transporte de contrapesos para grúas pesadas (≥ 90T).</span>
+                  <div class="flex items-center gap-2">
+                    <strong class="font-mono uppercase font-bold text-xs" :class="!tieneFleteGrua ? 'text-rose-300' : 'text-emerald-300'">
+                      Caso 3: Rural sin Contrapeso ({{ opportunity.distancia_km }} km ida)
+                    </strong>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      2 Líneas
+                    </span>
+                  </div>
+                  <span v-if="!tieneFleteGrua">
+                    La distancia supera el umbral urbano (30 km) y <strong>falta la línea de Flete / Traslado de Grúa</strong>. Horas corren en faena.
+                  </span>
+                  <span v-else>
+                    Estructura correcta: Horas en faena + Flete carretero ida y vuelta.
+                  </span>
+                </div>
+              </div>
+              <button 
+                v-if="!tieneFleteGrua"
+                type="button" 
+                @click="inyectarFleteRecomendado('grua')"
+                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
+              >
+                <span>+</span> Inyectar Flete Grúa
+              </button>
+            </div>
+
+            <!-- CASO 2: URBANO CON CONTRAPESOS (>= 90T) -->
+            <div 
+              v-else-if="casoCobroActual === 2" 
+              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
+              :class="!tieneFleteContrapeso ? 'bg-amber-950/40 border-amber-500/60 text-amber-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-xl">{{ !tieneFleteContrapeso ? '⚠️' : '✅' }}</span>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <strong class="font-mono uppercase font-bold text-xs" :class="!tieneFleteContrapeso ? 'text-amber-300' : 'text-emerald-300'">
+                      Caso 2: Urbano con Grúa Pesada ({{ opportunity.distancia_km }} km)
+                    </strong>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      2 Líneas
+                    </span>
+                  </div>
+                  <span v-if="!tieneFleteContrapeso">
+                    Grúa pesada (≥ 90T) requiere cama baja para contrapesos. <strong>Falta la partida fija 'Traslado Contrapesos' ($500.000)</strong>.
+                  </span>
+                  <span v-else>
+                    Estructura correcta: Horas desde Casa Matriz + Traslado Contrapesos ($500.000 plano).
+                  </span>
+                </div>
+              </div>
+              <button 
+                v-if="!tieneFleteContrapeso"
+                type="button" 
+                @click="inyectarFleteRecomendado('contrapeso')"
+                class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
+              >
+                <span>+</span> Inyectar Traslado Contrapesos ($500.000)
+              </button>
+            </div>
+
+            <!-- CASO 1: URBANO SIN CONTRAPESOS (< 90T) -->
+            <div 
+              v-else-if="casoCobroActual === 1" 
+              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
+              :class="(tieneFleteGrua || tieneFleteContrapeso) ? 'bg-blue-950/30 border-blue-500/40 text-blue-200' : 'bg-slate-900/40 border-white/10 text-slate-300'"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🏙️</span>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <strong class="font-mono uppercase font-bold text-xs text-blue-300">
+                      Caso 1: Urbano sin Contrapeso ({{ opportunity.distancia_km }} km)
+                    </strong>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      1 Sola Línea
+                    </span>
+                  </div>
+                  <span v-if="tieneFleteGrua || tieneFleteContrapeso" class="text-amber-200">
+                    ℹ️ En radio urbano (≤ 30 km) las horas corren desde salida de Casa Matriz. La línea de flete no es requerida ($0).
+                  </span>
+                  <span v-else>
+                    Régimen urbano estándar: El tiempo corre desde salida de Casa Matriz (Km 678) hasta el término de maniobra. Sin flete ($0).
+                  </span>
                 </div>
               </div>
             </div>
@@ -7358,6 +7457,23 @@ const validarDatosPreventaParaCotizar = () => {
     }
   }
 
+  // 8. Validación Anti-Fuga de Fletes según los 4 Casos Canónicos (Spec 16 §4.4)
+  if (casoCobroActual.value === 4 && (!tieneFleteGrua.value || !tieneFleteContrapeso.value)) {
+    alert('⚠️ Alerta Anti-Fuga (Caso 4: Rural con Grúa Pesada):\n\nEste servicio requiere 3 LÍNEAS OBLIGATORIAS en el Estructurador:\n1. Horas de Arriendo Grúa\n2. Flete / Traslado Grúa\n3. Traslado de Contrapesos\n\nPor favor, presione "+ Inyectar Fletes Caso 4" en la pestaña de Servicios.')
+    activeTab.value = 'servicios'
+    return false
+  }
+  if (casoCobroActual.value === 3 && !tieneFleteGrua.value) {
+    alert('⚠️ Alerta Anti-Fuga (Caso 3: Rural sin Contrapeso):\n\nLa faena supera los 30 km y no contiene la partida obligatoria de Flete / Traslado de Grúa.\n\nPor favor, presione "+ Inyectar Flete Grúa" en la pestaña de Servicios.')
+    activeTab.value = 'servicios'
+    return false
+  }
+  if (casoCobroActual.value === 2 && !tieneFleteContrapeso.value) {
+    alert('⚠️ Requerimiento Operativo (Caso 2: Urbano con Grúa Pesada):\n\nLas grúas pesadas (≥ 90T) requieren transporte de contrapesos en cama baja.\n\nPor favor, presione "+ Inyectar Traslado Contrapesos ($500.000)" en la pestaña de Servicios.')
+    activeTab.value = 'servicios'
+    return false
+  }
+
   return true
 }
 
@@ -8864,24 +8980,122 @@ const fetchClientes = async (query = '') => {
 }
 
 // ==========================================
-// PREVENCIÓN DE PÉRDIDA DE DATOS
+// PREVENCIÓN DE PÉRDIDA DE DATOS & GOBIERNO DE 4 CASOS DE COBRO (SPEC 16 §4.4)
 // ==========================================
+const esGruaPesada = (line) => {
+  if (!line) return false
+  const cat = (line.tipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const sub = (line.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const desc = (line.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+  const isGrua = cat.includes('GRUA') || sub.includes('GRUA') || desc.includes('GRUA') || sub.includes('TON') || desc.includes('TON')
+  if (!isGrua) return false
+
+  const heavyTonnages = ['90 TON', '100 TON', '130 TON', '160 TON', '220 TON', '250 TON', '400 TON', '90TON', '100TON', '130TON', '160TON', '220TON', '250TON', '400TON']
+  if (heavyTonnages.some(ht => sub.includes(ht) || desc.includes(ht))) return true
+
+  const matchTon = (sub + ' ' + desc).match(/(\d{2,3})\s*(?:TON|T\b|TONS|TONELADAS)/i)
+  if (matchTon && parseInt(matchTon[1], 10) >= 90) return true
+
+  if (/LTM\s*1(090|[1-9]\d{2})/i.test(sub + ' ' + desc) || /AC\s*(?:400|500)/i.test(sub + ' ' + desc)) return true
+
+  return false
+}
+
+const tieneGruaPesada = computed(() => {
+  return (lines.value || []).some(l => esGruaPesada(l))
+})
+
+const tieneFleteGrua = computed(() => {
+  return (lines.value || []).some(l => {
+    const cat = (l.tipo || '').toUpperCase()
+    const sub = (l.subcategoria || '').toUpperCase()
+    const desc = (l.descripcion || '').toLowerCase()
+    const isTraslado = cat === 'TRASLADOS' || desc.includes('flete') || desc.includes('traslado')
+    const isContrapeso = desc.includes('contrapeso') || sub.includes('contrapeso')
+    return isTraslado && !isContrapeso
+  })
+})
+
+const tieneFleteContrapeso = computed(() => {
+  return (lines.value || []).some(l => {
+    const cat = (l.tipo || '').toUpperCase()
+    const sub = (l.subcategoria || '').toUpperCase()
+    const desc = (l.descripcion || '').toLowerCase()
+    return (cat === 'TRASLADOS' || sub.includes('CAMA BAJA')) && (desc.includes('contrapeso') || sub.includes('contrapeso'))
+  })
+})
+
 const tieneFleteEnLineas = computed(() => {
   return (lines.value || []).some(l => l.tipo === 'TRASLADOS' || (l.descripcion && l.descripcion.toLowerCase().includes('flete')))
 })
 
-const inyectarFleteRecomendado = () => {
-  const km = parseFloat(opportunity.value.distancia_km) || 0
-  const valorSugerido = km > 70 ? 600000 : 400000
-  lines.value.push({
-    tipo: 'TRASLADOS',
-    subcategoria: 'CAMA BAJA',
-    descripcion: `Flete / Traslado Vial (${km} km ida)`,
-    unidad: 'Traslado',
-    cantidad: 1,
-    valorUnitario: valorSugerido,
-    subtotal: valorSugerido
-  })
+const casoCobroActual = computed(() => {
+  const km = parseFloat(opportunity.value?.distancia_km) || 0
+  if (km <= 0) return null
+  const esRural = km > 30
+  const heavy = tieneGruaPesada.value
+  if (!esRural) {
+    return heavy ? 2 : 1
+  } else {
+    return heavy ? 4 : 3
+  }
+})
+
+const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
+  const km = parseFloat(opportunity.value?.distancia_km) || 0
+  const caso = casoCobroActual.value
+  const valorFleteGruaSugerido = km > 70 ? 600000 : 400000
+  const valorContrapesoFijo = 500000
+
+  if (caso === 2 || tipoFlete === 'contrapeso') {
+    if (!tieneFleteContrapeso.value) {
+      lines.value.push({
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        descripcion: 'Traslado Contrapesos (Tarifa plana urbana)',
+        unidad: 'Traslado',
+        cantidad: 1,
+        valorUnitario: valorContrapesoFijo,
+        subtotal: valorContrapesoFijo
+      })
+    }
+  } else if (caso === 3 || tipoFlete === 'grua') {
+    if (!tieneFleteGrua.value) {
+      lines.value.push({
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        descripcion: `Flete / Traslado Grúa (${km} km ida)`,
+        unidad: 'Traslado',
+        cantidad: 1,
+        valorUnitario: valorFleteGruaSugerido,
+        subtotal: valorFleteGruaSugerido
+      })
+    }
+  } else if (caso === 4 || tipoFlete === 'auto') {
+    if (!tieneFleteGrua.value) {
+      lines.value.push({
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        descripcion: `Flete / Traslado Grúa (${km} km ida)`,
+        unidad: 'Traslado',
+        cantidad: 1,
+        valorUnitario: valorFleteGruaSugerido,
+        subtotal: valorFleteGruaSugerido
+      })
+    }
+    if (!tieneFleteContrapeso.value) {
+      lines.value.push({
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        descripcion: `Traslado de Contrapesos Cama Baja (${km} km ida)`,
+        unidad: 'Traslado',
+        cantidad: 1,
+        valorUnitario: valorContrapesoFijo,
+        subtotal: valorContrapesoFijo
+      })
+    }
+  }
 }
 
 watch(() => opportunity.value.requiere_rigger, (newVal) => {
