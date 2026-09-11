@@ -256,3 +256,19 @@ WHERE id_template = 76;
 3. **Fase 3 (Backend REST API):** Implementar el controlador `despachoConvoyController.js` y sus rutas en Express.
 4. **Fase 4 (Frontend Asignación):** Conectar la selección de camión de transporte en la Matriz de Aparejos (`GestorOportunidades.vue`).
 5. **Fase 5 (Frontend Despacho y Retorno):** Construir los paneles de despacho de salida y manifiesto inverso de llegada.
+
+---
+
+## 8. Depuración de Subpestaña 5: Preparación de Salida en Torre de Control (Acuerdo Jorge Ponce - 11-Sep-2026)
+
+A partir de los acuerdos operativos del 11 de septiembre de 2026, se elimina formalmente la fricción de "Control de Calidad" como etapa bloqueante previa a la inspección de patio. La labor de revisión de salida se unifica bajo un flujo directo y simétrico de **2 Pasos Operativos**:
+
+1. **Paso 1: 🚜 Inspección de Patio & Flota:**
+   - Asignación y ejecución del Checklist FES en PWA por equipo (Template 76).
+   - Verificación de contrapesos y aparejos cargados directamente por el Jefe de Patio / Operador.
+   - Cero alertas bloqueantes o dependencias secuenciales de notificación a Calidad (`cc_notificado`).
+2. **Paso 2: 💻 Despacho Conductor & GPS:**
+   - Análisis 360 rápido y activación de geocerca GPS por el Analista Operativo.
+   - Despacho del enlace web móvil al conductor (`/viaje/:token`).
+3. **Liberación a Terreno (Pase Liberado):**
+   - Requiere cumplimiento estricto del 2/2 (Inspección Patio Conforme 🟢 y Despacho GPS Habilitado 🟢) para habilitar el botón final de liberación de flota hacia faena.
