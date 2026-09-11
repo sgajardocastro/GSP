@@ -204,3 +204,16 @@ En cumplimiento estricto de la Regla 6 (Prohibición de Servicios Paralelos), el
 3. **Fase 3 (Instanciación de Flujo):** Al solicitar emisión del ITS en `itsController.js`, instanciar `tflw_flows` (Template 90) asociando `id_flow` a `tits_informe_termino`, conectando directamente con el motor `/api/signature`.
 4. **Fase 4 (Frontend UI & Diálogo 2 Columnas):** Componente `<FirmaDialogFES>` en `ModalITS.vue` con previsualizador PDF y panel PIN.
 5. **Fase 5 (QA & Certificación):** Pruebas end-to-end de las 3 firmas consecutivas, rechazo inducido en Paso 2 y retorno reactivo al Analista.
+
+---
+
+## 8. 🔒 Candado Criptográfico FES en Estado de Pago (EDP) Mandante (Spec 47 & Spec 38)
+
+Para garantizar que ningún servicio sea facturado al mandante sin auditoría previa de márgenes y costos por Operaciones:
+1. **Regla de Bloqueo Inviolable:**
+   - La Carátula Oficial de Estado de Pago (`ModalCaratulaEDP.vue`) permanece **CERRADA Y BLOQUEADA** en Subpestaña 7 mientras `itsEstadoActual` sea `BORRADOR`, `EN_CORRECCION` o `EN_REVISION_OPERACIONES`.
+2. **Condición Criptográfica de Desbloqueo:**
+   - Requiere obligatoriamente que el Paso 2 del Flujo FES haya sido aprobado con PIN por Jefatura de Operaciones (Richard), elevando el ITS al estado `EN_REVISION_CONTABILIDAD` o `CONCLUIDO`.
+3. **UI Reactiva en Subpestaña 7:**
+   - **Banner Dorado Informativo:** Si el candado está activo, se despliega alerta visual de candado FES indicando el estado del ITS y proveyendo un botón de acceso directo `[ 🔏 Ir a Visar ITS con PIN FES ]`.
+   - **Botón Protegido:** El botón `[ Ver Carátula Oficial de EDP ]` se inhabilita con icono de candado (`🔒`) y opacidad 50%, imposibilitando la emisión de documentos de cobro sin firma de operaciones.
