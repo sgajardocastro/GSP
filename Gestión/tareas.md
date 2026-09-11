@@ -305,8 +305,8 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Migración Cotizador Distancia a CRM - GestorOportunidades.vue]:** Reemplazar flag manual `incluye_flete` ($500.000) por input numérico estimado de `distancia_km` (ida desde Casa Matriz, sin selector de comunas), inyectando las 3 líneas canónicas en Caso 4 (Horas Grúa, Flete Grúa, Traslado Contrapesos). `COMPILADO 0 ERRORES Y VERIFICADO`.
 * [x] **[Cálculo Interno Duplicado de Distancia - Backend & PDF]:** Multiplicar distancia de ida por 2 internamente ($D \times 2$) para costos operacionales e inyectar cláusula contractual dinámica de faena en el PDF de cotización (`proyectoModel.js`). `COMPLETADO`.
 * [ ] **[Simplificación PWA Chofer - ViajeConductor.vue]:** Erradicar el log maestro y elementos técnicos; reducir a 5 estados gigantes (Salida Patio, En Ruta, Llegada Faena, Término, Sellar Report).
-* [ ] **[Depuración Torre de Control - Torre.vue]:** Eliminar la pestaña redundante "Calidad de Gestión" y consolidar en "Inspección de Patio".
-* [ ] **[Candado FES en Estado de Pago (EDP)]:** Bloquear generación de EDP hasta que el Coordinador Richard apruebe el ITS con su PIN FES de 4 dígitos.
+* [x] **[Depuración Preparación de Salida - GestorOportunidades.vue]:** Eliminar la columna y bloqueos de "Control de Calidad" en Subpestaña 5 Preparación de Salida, consolidando el flujo en 2 pasos operativos directos (1. Inspección de Patio & Flota, 2. Despacho Conductor & GPS) con pase a terreno automático al cumplir ambos. `COMPILADO 0 ERRORES Y VERIFICADO`.
+* [x] **[Candado Criptográfico FES en Estado de Pago (EDP) - GestorOportunidades.vue]:** Bloquear la Carátula Oficial de EDP hasta que el Coordinador Richard apruebe el ITS con su PIN FES de 4 dígitos (Spec 47), desplegando banner dorado con acceso directo a visación. `COMPILADO 0 ERRORES Y VERIFICADO`.
 * [ ] **[Mapa Didáctico de Entregables por Etapa]:** Confeccionar documento guía para Jorge Ponce y equipo comercial/operativo.
 * [ ] **[Hito Pruebas en Paralelo - 21 de Septiembre]:** Inicio de marcha blanca con vendedores cotizando en vivo en Casa Matriz.
 
