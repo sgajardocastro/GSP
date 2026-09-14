@@ -47,8 +47,8 @@
 
       <!-- Left Footer -->
       <div class="relative z-10 text-xs text-slate-400 font-medium flex items-center justify-between">
-        <span>&copy; 2026 Grúas San Pablo &bull; Todos los derechos reservados</span>
-        <span class="text-slate-500 font-mono text-[10px]">LeanGlobal Platform</span>
+        <span>Powered by <span class="text-slate-200 font-semibold">LeanGlobal</span></span>
+        <span class="text-slate-500 font-mono text-[10px]">Consola de Operaciones</span>
       </div>
     </div>
 
