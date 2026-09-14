@@ -600,3 +600,32 @@ Conecta de punta a punta la conciliación de faena con la facturación final med
 2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas de reports validados contra las tarifas pactadas y cálculo de sobretiempos. Emisión de Carátula Oficial (`ModalCaratulaEDP.vue`).
 3. **Paso 3 - Respaldo OC Mandante:** Repositorio documental persistente de Órdenes de Compra (`json_field.crm_v1.ordenes_compra`) con subida de archivo PDF y validación de cobertura financiera ($\sum \text{Monto OCs} \ge \text{Total Neto EDP}$).
 4. **Paso 4 - Factura DTE:** Integración con ERP Laudus, selector de OC en 1 clic (chips del Paso 3), registro de Folio DTE y transición automática a `id_proyecto_estado = 7` (Facturado y Concluido).
+
+---
+
+## 10. Estructurador de Servicios & Matriz Canónica de los 4 Casos (Urbano vs. Rural)
+
+### 10.1. Propósito y Diagnóstico de UX
+El estructurador de cotizaciones en `GestorOportunidades.vue` (`activeTab === 'servicios'`) sustituye las alertas punitivas pos-mortem ("CASO X: falta flete...") por un **Asistente Visual Guiado** que detecta automáticamente el caso canónico aplicable según la distancia de traslado ($\le 30\text{ km}$ vs $> 30\text{ km}$) y el tonelaje de la grúa ($< 90\text{T}$ vs $\ge 90\text{T}$), permitiendo auto-estructurar las líneas de servicio en 1 solo clic.
+
+### 10.2. Matriz Canónica Oficial de los 4 Casos
+
+| Caso | Régimen & Configuración | ¿QUÉ SE COBRA? | ¿DESDE CUÁNDO se cobra? | ¿HASTA CUÁNDO se cobra? | Representación en Estructurador, ITS y EDP |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **CASO 1** | **$\le 30\text{ km}$ (URBANO)**<br>Grúa Normal ($< 90\text{T}$)<br>*(Sin camiones de contrapeso)* | 1. Horas Arriendo Grúa (no hay mín).<br>2. Rigger adicional (si aplica). | Desde la **SALIDA de Casa Matriz GSP** (`hora_salida`). | Hasta el **TÉRMINO de la maniobra** en obra (`hora_termino`). | **\$0 (Sin Flete).**<br>El viaje por la ciudad se paga 100% como horas de arriendo de la grúa.<br>*(1 línea en estructurador)*. |
+| **CASO 2** | **$\le 30\text{ km}$ (URBANO)**<br>Grúa con Contrapesos ($\ge 90\text{T}$)<br>*(Grúa pesada + Camas Bajas)* | 1. Horas Arriendo Grúa.<br>2. Flete Tracto Camión (por cada camión de contrapesos).<br>3. Escolta (si aplica). | • Grúa: Desde la **SALIDA de Casa Matriz** (`hora_salida`).<br>• Camión Contrapeso: **Flete fijo de ida y vuelta**. | • Grúa: Hasta el **desmontaje final** en obra (`hora_termino`).<br>• Camas: **Retorno y descarga en patio GSP**. | • Grúa: **\$0 de flete** (viaje en horas).<br>• Camas de Contrapeso: **Línea de Flete OBLIGATORIA** por camión cama baja.<br>Ítem canónico: *"Traslado Contrapesos"*. *(2 líneas)*. |
+| **CASO 3** | **$> 30\text{ km}$ (RURAL)**<br>Grúa Normal ($< 90\text{T}$)<br>*(Sin camiones de contrapeso)* | 1. Horas Arriendo Grúa (no hay hor mín).<br>2. Flete de la Grúa (**OBLIGATORIO**). | • Grúa: Desde la **LLEGADA a la faena** (`hora_llegada`).<br>• Flete: **Valor cerrado pactado**. | • Grúa: Hasta el **TÉRMINO de la maniobra en faena** (`hora_termino`). | **Línea de Flete OBLIGATORIA.** El viaje por carretera NO corre en las horas de arriendo; se paga como Flete.<br>Al cliente se le presentan **dos líneas**: 1) Horas Grúa, 2) *"Traslado de Grúa"*. |
+| **CASO 4** | **$> 30\text{ km}$ (RURAL)**<br>Grúa con Contrapesos ($\ge 90\text{T}$)<br>*(Grúa pesada + Camas Bajas)* | 1. Horas Arriendo Grúa (**Piso mín. 8 hrs**).<br>2. Flete de la Grúa (**OBLIGATORIO**).<br>3. Flete Contrapesos (**OBLIGATORIO**). | • Grúa: Desde la **LLEGADA a la faena** (`hora_llegada`).<br>• Fletes: **Valores cerrados pactados**. | • Grúa: Hasta el **desmontaje final en faena** (`hora_termino`). | **Líneas de Flete OBLIGATORIAS para todo el convoy:**<br>• Flete Grúa.<br>• Flete Camión Contrapesos #1, #2...<br>Al cliente se le presentan **tres líneas**: 1) Horas Grúa (mín. 8 hrs), 2) *"Traslado de Grúa desde $origen a $destino con retorno"*, 3) *"Traslado de Contrapesos desde $origen a $destino con retorno"*. |
+
+### 10.3. Reglas Deterministas de Taxímetro y Desacoplamiento de Traslados
+1. **Régimen Urbano ($\le 30\text{ km}$):** El taxímetro de la grúa corre desde el portón de salida de Casa Matriz GSP hasta el término de la maniobra. El tiempo de viaje en ciudad se devenga en la tarifa horaria de la máquina.
+2. **Régimen Rural ($> 30\text{ km}$):** El taxímetro de la grúa corre **estrictamente en faena** (desde `hora_llegada` hasta `hora_termino`). El viaje de carretera se factura de forma separada como **Flete cerrado de ida y vuelta**, no en las horas de arriendo.
+3. **Piso Mínimo en Grúa Pesada Rural (Caso 4):** Exige un piso contractual mínimo de **8 horas por jornada** en arriendo de grúa.
+
+### 10.4. Componente Asistente Visual y Auto-Estructuración en 1 Clic
+1. **Cuadrícula de 4 Tarjetas Interactivas:** Ubicada sobre la tabla de servicios, destaca en borde ámbar (`border-amber-500 bg-amber-500/10`) y badge `★ RECOMENDADO` el caso coincidente con los datos del proyecto.
+2. **Botón Proactivo `[ ⚡ Auto-Estructurar Líneas Caso N ]`:**
+   - Inyecta o alinea las líneas de servicio canónicas (grúa y fletes correspondientes) sin borrar tarifas unitarias ya digitadas.
+3. **Guía Canónica Desplegable (`[ 👁️ Guía Canónica de Cobro ]`):**
+   - Modal o acordeón con la tabla comparativa oficial de los 4 casos para consulta inmediata del usuario.
+

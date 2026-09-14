@@ -3458,136 +3458,181 @@
               </button>
             </div>
 
-            <!-- BANNER REACTIVO DE EVALUACIÓN DE FLETE / TRASLADO SEGÚN LOS 4 CASOS CANÓNICOS -->
-            <!-- CASO 4: RURAL CON CONTRAPESOS (>= 90T) -->
-            <div 
-              v-if="casoCobroActual === 4" 
-              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
-              :class="(!tieneFleteGrua || !tieneFleteContrapeso) ? 'bg-rose-950/40 border-rose-500/60 text-rose-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-xl">{{ (!tieneFleteGrua || !tieneFleteContrapeso) ? '🚨' : '✅' }}</span>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <strong class="font-mono uppercase font-bold text-xs" :class="(!tieneFleteGrua || !tieneFleteContrapeso) ? 'text-rose-300' : 'text-emerald-300'">
-                      Caso 4: Rural con Grúa Pesada ({{ opportunity.distancia_km }} km ida)
-                    </strong>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      3 Líneas Obligatorias
-                    </span>
+            <!-- ASISTENTE VISUAL: MATRIZ DE COBRO Y ESTRUCTURACIÓN GSP -->
+            <div class="rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-3">
+              <!-- Encabezado del Asistente -->
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">🧭</span>
+                  <span class="text-xs font-bold text-white uppercase tracking-wider">Asistente de Estructuración (Matriz Canónica GSP)</span>
+                  <span v-if="opportunity.distancia_km" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    {{ opportunity.distancia_km }} km ({{ (parseFloat(opportunity.distancia_km) || 0) > 30 ? 'Régimen Rural' : 'Régimen Urbano' }})
+                  </span>
+                  <span v-if="tieneGruaPesada" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Grúa Pesada (≥ 90T)
+                  </span>
+                </div>
+                <button 
+                  type="button"
+                  @click="mostrarMatrizOficial = !mostrarMatrizOficial"
+                  class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors border"
+                  :class="mostrarMatrizOficial ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'"
+                >
+                  {{ mostrarMatrizOficial ? '▲ Ocultar Matriz Canónica' : '📋 Ver Tabla Canónica Oficial' }}
+                </button>
+              </div>
+
+              <!-- Cuadrícula de las 4 Tarjetas de Caso -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <!-- Tarjeta Caso 1 -->
+                <div 
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="casoCobroActual === 1 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : 'text-slate-300'">CASO 1: URBANO LIVIANO</span>
+                    <span v-if="casoCobroActual === 1" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
                   </div>
-                  <span v-if="!tieneFleteGrua || !tieneFleteContrapeso">
-                    Exige 3 líneas separadas: <strong>1. Horas Grúa</strong> + <strong>2. Flete Grúa</strong> + <strong>3. Traslado Contrapesos</strong>. Faltan partidas de movilización.
-                  </span>
-                  <span v-else>
-                    Estructura canónica completa: Horas en faena + Flete de grúa + Cama baja de contrapesos debidamente desglosados.
-                  </span>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: ≤ 30 km</div>
+                    <div>• Sin contrapesos (&lt; 90T)</div>
+                    <div>• Taxímetro: Salida de Matriz</div>
+                    <div class="font-bold text-slate-200">• 1 Línea ($0 Flete)</div>
+                  </div>
+                </div>
+
+                <!-- Tarjeta Caso 2 -->
+                <div 
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="casoCobroActual === 2 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : 'text-slate-300'">CASO 2: URBANO PESADO</span>
+                    <span v-if="casoCobroActual === 2" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: ≤ 30 km</div>
+                    <div>• Con contrapesos (≥ 90T)</div>
+                    <div>• Taxímetro: Salida de Matriz</div>
+                    <div class="font-bold text-slate-200">• 2 Líneas (Flete Contrap.)</div>
+                  </div>
+                </div>
+
+                <!-- Tarjeta Caso 3 -->
+                <div 
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="casoCobroActual === 3 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : 'text-slate-300'">CASO 3: RURAL LIVIANO</span>
+                    <span v-if="casoCobroActual === 3" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: &gt; 30 km</div>
+                    <div>• Sin contrapesos (&lt; 90T)</div>
+                    <div>• Taxímetro: Llegada Faena</div>
+                    <div class="font-bold text-slate-200">• 2 Líneas (Flete Grúa Obl.)</div>
+                  </div>
+                </div>
+
+                <!-- Tarjeta Caso 4 -->
+                <div 
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="casoCobroActual === 4 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : 'text-slate-300'">CASO 4: RURAL PESADO</span>
+                    <span v-if="casoCobroActual === 4" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: &gt; 30 km</div>
+                    <div>• Con contrapesos (≥ 90T)</div>
+                    <div>• Taxímetro: Llegada Faena</div>
+                    <div class="font-bold text-slate-200">• 3 Líneas (Piso 8h + Fletes)</div>
+                  </div>
                 </div>
               </div>
-              <button 
-                v-if="!tieneFleteGrua || !tieneFleteContrapeso"
-                type="button" 
-                @click="inyectarFleteRecomendado('auto')"
-                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
-              >
-                <span>⚡</span> Inyectar Fletes Caso 4
-              </button>
-            </div>
 
-            <!-- CASO 3: RURAL SIN CONTRAPESOS (< 90T) -->
-            <div 
-              v-else-if="casoCobroActual === 3" 
-              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
-              :class="!tieneFleteGrua ? 'bg-rose-950/40 border-rose-500/60 text-rose-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-xl">{{ !tieneFleteGrua ? '⚠️' : '✅' }}</span>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <strong class="font-mono uppercase font-bold text-xs" :class="!tieneFleteGrua ? 'text-rose-300' : 'text-emerald-300'">
-                      Caso 3: Rural sin Contrapeso ({{ opportunity.distancia_km }} km ida)
-                    </strong>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      2 Líneas
+              <!-- Banner de Acción Proactiva (1 Clic) -->
+              <div class="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-black/40 border border-white/5 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">{{ esEstructuraValidaParaCaso ? '✅' : '⚡' }}</span>
+                  <div class="text-slate-300 text-[11px]">
+                    <span v-if="casoCobroActual === 1">
+                      <strong>Régimen Urbano Estándar:</strong> El viaje está cubierto en las horas de arriendo desde salida de Casa Matriz ($0 Flete).
+                    </span>
+                    <span v-else-if="casoCobroActual === 2">
+                      <strong>Régimen Urbano con Grúa Pesada:</strong> Requiere línea de <em>Traslado Contrapesos</em> ($500.000) por cama baja.
+                    </span>
+                    <span v-else-if="casoCobroActual === 3">
+                      <strong>Régimen Rural Grúa Liviana:</strong> El viaje carretero NO corre en horas de arriendo; exige línea de <em>Flete de Grúa</em>.
+                    </span>
+                    <span v-else-if="casoCobroActual === 4">
+                      <strong>Régimen Rural Grúa Pesada:</strong> Exige piso mín. 8 hrs + <em>Flete de Grúa</em> + <em>Traslado Contrapesos</em>.
+                    </span>
+                    <span v-else>
+                      Ingresa la distancia en km para que el asistente identifique el caso automáticamente.
                     </span>
                   </div>
-                  <span v-if="!tieneFleteGrua">
-                    La distancia supera el umbral urbano (30 km) y <strong>falta la línea de Flete / Traslado de Grúa</strong>. Horas corren en faena.
-                  </span>
-                  <span v-else>
-                    Estructura correcta: Horas en faena + Flete carretero ida y vuelta.
-                  </span>
                 </div>
+                <button 
+                  v-if="!esEstructuraValidaParaCaso && casoCobroActual"
+                  type="button" 
+                  @click="inyectarFleteRecomendado('auto')"
+                  class="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold font-mono text-[11px] transition-colors shadow flex items-center gap-1 cursor-pointer"
+                >
+                  <span>⚡</span> Auto-Estructurar Líneas Caso {{ casoCobroActual }}
+                </button>
               </div>
-              <button 
-                v-if="!tieneFleteGrua"
-                type="button" 
-                @click="inyectarFleteRecomendado('grua')"
-                class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
-              >
-                <span>+</span> Inyectar Flete Grúa
-              </button>
-            </div>
 
-            <!-- CASO 2: URBANO CON CONTRAPESOS (>= 90T) -->
-            <div 
-              v-else-if="casoCobroActual === 2" 
-              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
-              :class="!tieneFleteContrapeso ? 'bg-amber-950/40 border-amber-500/60 text-amber-200' : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-xl">{{ !tieneFleteContrapeso ? '⚠️' : '✅' }}</span>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <strong class="font-mono uppercase font-bold text-xs" :class="!tieneFleteContrapeso ? 'text-amber-300' : 'text-emerald-300'">
-                      Caso 2: Urbano con Grúa Pesada ({{ opportunity.distancia_km }} km)
-                    </strong>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      2 Líneas
-                    </span>
-                  </div>
-                  <span v-if="!tieneFleteContrapeso">
-                    Grúa pesada (≥ 90T) requiere cama baja para contrapesos. <strong>Falta la partida fija 'Traslado Contrapesos' ($500.000)</strong>.
-                  </span>
-                  <span v-else>
-                    Estructura correcta: Horas desde Casa Matriz + Traslado Contrapesos ($500.000 plano).
-                  </span>
-                </div>
-              </div>
-              <button 
-                v-if="!tieneFleteContrapeso"
-                type="button" 
-                @click="inyectarFleteRecomendado('contrapeso')"
-                class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold font-mono text-[11px] whitespace-nowrap cursor-pointer transition-colors shadow flex items-center gap-1.5"
-              >
-                <span>+</span> Inyectar Traslado Contrapesos ($500.000)
-              </button>
-            </div>
-
-            <!-- CASO 1: URBANO SIN CONTRAPESOS (< 90T) -->
-            <div 
-              v-else-if="casoCobroActual === 1" 
-              class="rounded-xl p-3 text-xs border flex items-center justify-between gap-3 transition-all"
-              :class="(tieneFleteGrua || tieneFleteContrapeso) ? 'bg-blue-950/30 border-blue-500/40 text-blue-200' : 'bg-slate-900/40 border-white/10 text-slate-300'"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🏙️</span>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <strong class="font-mono uppercase font-bold text-xs text-blue-300">
-                      Caso 1: Urbano sin Contrapeso ({{ opportunity.distancia_km }} km)
-                    </strong>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                      1 Sola Línea
-                    </span>
-                  </div>
-                  <span v-if="tieneFleteGrua || tieneFleteContrapeso" class="text-amber-200">
-                    ℹ️ En radio urbano (≤ 30 km) las horas corren desde salida de Casa Matriz. La línea de flete no es requerida ($0).
-                  </span>
-                  <span v-else>
-                    Régimen urbano estándar: El tiempo corre desde salida de Casa Matriz (Km 678) hasta el término de maniobra. Sin flete ($0).
-                  </span>
-                </div>
+              <!-- Tabla Canónica Oficial Desplegable (Imagen 2 de la Planilla) -->
+              <div v-if="mostrarMatrizOficial" class="mt-2 rounded-lg border border-white/10 bg-slate-950/80 p-3 overflow-x-auto text-xs">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-white/10 text-[10px] text-slate-400 uppercase font-mono">
+                      <th class="p-2">Caso</th>
+                      <th class="p-2">Régimen &amp; Configuración</th>
+                      <th class="p-2">¿Qué se cobra?</th>
+                      <th class="p-2">¿Desde cuándo?</th>
+                      <th class="p-2">¿Hasta cuándo?</th>
+                      <th class="p-2">Representación en Estructurador, ITS y EDP</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5 text-[11px]">
+                    <tr :class="casoCobroActual === 1 ? 'bg-amber-500/10' : ''">
+                      <td class="p-2 font-bold text-amber-400">CASO 1</td>
+                      <td class="p-2">≤ 30 km (URBANO)<br><span class="text-slate-400 text-[10px]">Grúa normal (&lt; 90T)</span></td>
+                      <td class="p-2">1. Horas Arriendo Grúa (no hay mín)<br>2. Rigger adicional si aplica</td>
+                      <td class="p-2">Salida Casa Matriz GSP</td>
+                      <td class="p-2">Término maniobra en obra</td>
+                      <td class="p-2 text-slate-300"><strong>$0 (Sin Flete).</strong> El viaje por la ciudad se paga 100% como horas de arriendo. (1 línea).</td>
+                    </tr>
+                    <tr :class="casoCobroActual === 2 ? 'bg-amber-500/10' : ''">
+                      <td class="p-2 font-bold text-amber-400">CASO 2</td>
+                      <td class="p-2">≤ 30 km (URBANO)<br><span class="text-slate-400 text-[10px]">Grúa con contrapesos (≥ 90T)</span></td>
+                      <td class="p-2">1. Horas Arriendo Grúa<br>2. Flete Tracto Camión (por cama baja)<br>3. Escolta si aplica</td>
+                      <td class="p-2">Grúa: Salida Casa Matriz<br>Tracto: Flete fijo ida/vuelta</td>
+                      <td class="p-2">Grúa: Desmontaje en obra<br>Camas: Retorno a patio GSP</td>
+                      <td class="p-2 text-slate-300">Grúa: $0 flete. Camas: <strong>Línea obligatoria "Traslado Contrapesos"</strong> ($500.000). (2 líneas).</td>
+                    </tr>
+                    <tr :class="casoCobroActual === 3 ? 'bg-amber-500/10' : ''">
+                      <td class="p-2 font-bold text-amber-400">CASO 3</td>
+                      <td class="p-2">&gt; 30 km (RURAL)<br><span class="text-slate-400 text-[10px]">Grúa normal (&lt; 90T)</span></td>
+                      <td class="p-2">1. Horas Arriendo Grúa<br>2. Flete Grúa (OBLIGATORIO)</td>
+                      <td class="p-2">Grúa: <strong>Llegada a faena</strong><br>Flete: Valor cerrado pactado</td>
+                      <td class="p-2">Término maniobra en faena</td>
+                      <td class="p-2 text-slate-300"><strong>Línea de Flete OBLIGATORIA.</strong> El viaje por carretera no corre en horas de arriendo. (2 líneas: Horas Grúa + "Traslado de Grúa").</td>
+                    </tr>
+                    <tr :class="casoCobroActual === 4 ? 'bg-amber-500/10' : ''">
+                      <td class="p-2 font-bold text-amber-400">CASO 4</td>
+                      <td class="p-2">&gt; 30 km (RURAL)<br><span class="text-slate-400 text-[10px]">Grúa con contrapesos (≥ 90T)</span></td>
+                      <td class="p-2">1. Horas Grúa (Piso mín. 8 hrs)<br>2. Flete Grúa (OBLIGATORIO)<br>3. Flete Contrapesos (OBLIGATORIO)</td>
+                      <td class="p-2">Grúa: <strong>Llegada a faena</strong><br>Fletes: Valores cerrados</td>
+                      <td class="p-2">Desmontaje final en faena</td>
+                      <td class="p-2 text-slate-300"><strong>Líneas obligatorias para todo el convoy:</strong> 1. Horas Grúa (mín. 8h) + 2. "Traslado de Grúa" + 3. "Traslado de Contrapesos". (3 líneas).</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
             
@@ -9040,6 +9085,14 @@ const casoCobroActual = computed(() => {
   } else {
     return heavy ? 4 : 3
   }
+})
+
+const mostrarMatrizOficial = ref(false)
+const esEstructuraValidaParaCaso = computed(() => {
+  if (casoCobroActual.value === 4) return tieneFleteGrua.value && tieneFleteContrapeso.value
+  if (casoCobroActual.value === 3) return tieneFleteGrua.value
+  if (casoCobroActual.value === 2) return tieneFleteContrapeso.value
+  return true
 })
 
 const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
