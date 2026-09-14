@@ -8,11 +8,11 @@
         <img 
           src="/img/hero_crane_dark.jpg" 
           alt="Blueprint Técnico Grúa Telescópica GSP" 
-          class="w-full h-full object-cover object-center filter brightness-90 contrast-110"
+          class="w-full h-full object-cover object-center filter brightness-110 contrast-125"
         />
-        <!-- Dark Professional Blueprint Overlays -->
-        <div class="absolute inset-0 bg-gradient-to-r from-[#030609]/90 via-[#030609]/50 to-[#030609]/80"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#030609]/90 via-transparent to-[#030609]/60"></div>
+        <!-- Vignette suave que mantiene el plano brillante y nítido -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#030609]/70 via-transparent to-[#030609]/70"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-[#030609]/50 via-transparent to-[#030609]/60"></div>
       </div>
 
       <!-- Background Ambient Glows & Technical Grid -->
@@ -20,10 +20,10 @@
       <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-500/15 blur-[140px] rounded-full animate-pulse z-0" style="animation-delay: 2s;"></div>
       <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3rem_3rem] z-0 opacity-40"></div>
       
-      <!-- Single Clean Statement -->
-      <div class="relative z-10 max-w-lg my-auto py-8">
-        <p class="text-slate-200 text-lg sm:text-xl font-normal leading-relaxed border-l-2 border-amber-500 pl-4">
-          Sistema integral para la gestión de proyectos, cubicación de izaje, control de flota y acreditaciones de faena.
+      <!-- Statement Superior Izquierdo -->
+      <div class="relative z-10 max-w-lg pt-2">
+        <p class="text-slate-100 text-lg sm:text-xl font-medium leading-relaxed border-l-2 border-amber-500 pl-4 drop-shadow-lg">
+          Gestión integral de servicios de izaje y arriendo de maquinaria de alto tonelaje, control de flota, acreditación y procesos operativos E2E.
         </p>
       </div>
 
