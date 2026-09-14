@@ -623,9 +623,13 @@ El estructurador de cotizaciones en `GestorOportunidades.vue` (`activeTab === 's
 3. **Piso Mínimo en Grúa Pesada Rural (Caso 4):** Exige un piso contractual mínimo de **8 horas por jornada** en arriendo de grúa.
 
 ### 10.4. Componente Asistente Visual y Auto-Estructuración en 1 Clic
-1. **Cuadrícula de 4 Tarjetas Interactivas:** Ubicada sobre la tabla de servicios, destaca en borde ámbar (`border-amber-500 bg-amber-500/10`) y badge `★ RECOMENDADO` el caso coincidente con los datos del proyecto.
+1. **Cuadrícula de 4 Tarjetas Interactivas:** Ubicada sobre la tabla de servicios, destaca en borde ámbar (`border-amber-500 bg-amber-500/10`) y badge `★ RECOMENDADO` el caso coincidente con la planilla oficial:
+   - **CASO 1: URBANO (SIN FLETE)**: $\le 30\text{ km}$, Grúa Normal, taxímetro desde salida Casa Matriz, 1 línea ($0 flete).
+   - **CASO 2: URBANO (CON FLETE CONTRAPESOS)**: $\le 30\text{ km}$, Grúa con contrapesos ($\ge 90\text{T}$), 2 líneas (Grúa en horas + "Traslado Contrapesos" fijo).
+   - **CASO 3: RURAL (CON FLETE GRÚA)**: $> 30\text{ km}$, Grúa Normal, taxímetro en faena, 2 líneas (Horas en faena + "Traslado de Grúa" obligatorio).
+   - **CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)**: $> 30\text{ km}$, Grúa con contrapesos ($\ge 90\text{T}$), piso mín. 8 hrs, 3 líneas obligatorias (Horas Grúa + "Traslado de Grúa" + "Traslado Contrapesos").
 2. **Botón Proactivo `[ ⚡ Auto-Estructurar Líneas Caso N ]`:**
    - Inyecta o alinea las líneas de servicio canónicas (grúa y fletes correspondientes) sin borrar tarifas unitarias ya digitadas.
-3. **Guía Canónica Desplegable (`[ 👁️ Guía Canónica de Cobro ]`):**
-   - Modal o acordeón con la tabla comparativa oficial de los 4 casos para consulta inmediata del usuario.
+3. **Guía Canónica Desplegable (`[ 📋 Ver Tabla Canónica Oficial ]`):**
+   - Modal o acordeón con la tabla comparativa oficial de los 4 casos (idéntica a la planilla física de GSP) para consulta inmediata del usuario.
 
