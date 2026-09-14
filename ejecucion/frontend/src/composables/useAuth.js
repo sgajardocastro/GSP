@@ -91,7 +91,7 @@ export function useAuth() {
     if (isEnrolPending) {
       router.push({ name: 'enrolamiento' })
     } else {
-      router.push('/')
+      router.push({ name: 'dashboard' })
     }
   }
 
