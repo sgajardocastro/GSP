@@ -9999,6 +9999,12 @@ const guardarEnPreventa = async () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       responseData = data
+      if (responseData.proyecto?.id_proyecto) {
+        currentProyectoId.value = responseData.proyecto.id_proyecto
+      }
+      if (responseData.proyecto?.codi_proyecto) {
+        antecedentes.value.identificador_formal = responseData.proyecto.codi_proyecto
+      }
     }
     
     isDirty.value = false // Reseteamos el flag de cambios sin guardar
@@ -10018,6 +10024,9 @@ const guardarEnPreventa = async () => {
       detalle: lines.value[0]?.descripcion || 'Línea de servicio'
     })
     emit('close')
+    if (router && !props.proyectoId) {
+      router.push({ name: 'torre' })
+    }
   } catch (error) {
     console.error(error)
     alert('Error al guardar en preventa.')
