@@ -23,7 +23,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/dashboard'
+      redirect: '/login'
     },
     {
       path: '/versurveyprint',
