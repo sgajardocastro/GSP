@@ -160,6 +160,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { 
   BarChart3, 
   Users, 
@@ -180,6 +181,7 @@ import {
 import { navStore } from '../stores/navStore'
 import apiAxios from '../services/api'
 
+const router = useRouter()
 const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.0.0'
 
 const activeProjectsCount = ref(0)
@@ -265,6 +267,9 @@ const fetchRealData = async () => {
 const logout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.disableAutoSelect()
+  }
   router.push({ name: 'login' })
 }
 
