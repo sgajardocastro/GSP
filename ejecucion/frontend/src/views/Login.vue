@@ -38,11 +38,13 @@
           </p>
         </div>
 
-        <!-- Chips Técnicos de Faena -->
+        <!-- 5 Pilares Operativos Oficiales -->
         <div class="flex flex-wrap items-center gap-2 pt-1">
-          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/25 rounded-lg">Flota Alto Tonelaje</span>
-          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-slate-300 bg-white/5 border border-white/10 rounded-lg">Control de Acreditación</span>
-          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg">Operación E2E Digital</span>
+          <span class="px-2.5 py-1 text-[11px] font-semibold tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-lg">CRM</span>
+          <span class="px-2.5 py-1 text-[11px] font-semibold tracking-wider text-slate-200 bg-white/5 border border-white/10 rounded-lg">Gestión de Flota</span>
+          <span class="px-2.5 py-1 text-[11px] font-semibold tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-lg">Mantenimiento y Gestión de Activos</span>
+          <span class="px-2.5 py-1 text-[11px] font-semibold tracking-wider text-slate-200 bg-white/5 border border-white/10 rounded-lg">Acreditación Transversal</span>
+          <span class="px-2.5 py-1 text-[11px] font-semibold tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg">Operación E2E Digital</span>
         </div>
       </div>
 
