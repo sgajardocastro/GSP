@@ -20,11 +20,30 @@
       <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-500/15 blur-[140px] rounded-full animate-pulse z-0" style="animation-delay: 2s;"></div>
       <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3rem_3rem] z-0 opacity-40"></div>
       
-      <!-- Statement Superior Izquierdo -->
-      <div class="relative z-10 max-w-lg pt-2">
-        <p class="text-slate-100 text-lg sm:text-xl font-medium leading-relaxed border-l-2 border-amber-500 pl-4 drop-shadow-lg">
-          Gestión integral de servicios de izaje y arriendo de maquinaria de alto tonelaje, control de flota, acreditación y procesos operativos E2E.
-        </p>
+      <!-- Placa Técnica Corporativa San Pablo (Arriba Izquierda) -->
+      <div class="relative z-10 max-w-xl pt-2 space-y-4">
+        <div class="flex items-center gap-3">
+          <img src="/logo-sanpablo.png" alt="San Pablo Arriendo de Maquinarias" class="h-10 w-auto object-contain brightness-110 drop-shadow-md" />
+        </div>
+
+        <div class="space-y-1.5">
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tight text-white font-display leading-tight">
+            Servicios de Izaje <br />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400">
+              &amp; Maquinaria de Alto Tonelaje
+            </span>
+          </h1>
+          <p class="text-slate-300 text-sm sm:text-base font-normal leading-relaxed max-w-lg pt-1">
+            Plataforma integral para la gestión de flota, control de acreditaciones y procesos operativos E2E de transformación digital.
+          </p>
+        </div>
+
+        <!-- Chips Técnicos de Faena -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/25 rounded-lg">Flota Alto Tonelaje</span>
+          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-slate-300 bg-white/5 border border-white/10 rounded-lg">Control de Acreditación</span>
+          <span class="px-3 py-1 text-[11px] font-semibold tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg">Operación E2E Digital</span>
+        </div>
       </div>
 
       <!-- Left Footer -->
