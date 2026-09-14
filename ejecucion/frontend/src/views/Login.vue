@@ -3,17 +3,16 @@
     
     <!-- LEFT SIDE: Industrial Hero & Telemetry (60% on desktop) -->
     <div class="relative hidden lg:flex lg:col-span-7 flex-col justify-between p-12 overflow-hidden border-r border-white/5">
-      <!-- High Impact Industrial Crane Background Photography & Overlays -->
-      <div class="absolute inset-0 z-0">
+      <!-- Blueprint CAD Técnico de Izaje Industrial -->
+      <div class="absolute inset-0 z-0 overflow-hidden">
         <img 
           src="/img/hero_crane_dark.jpg" 
-          alt="Grúas industriales San Pablo" 
-          class="w-full h-full object-cover object-center scale-105 transform filter brightness-[0.65] contrast-125"
+          alt="Blueprint Técnico Grúa Telescópica GSP" 
+          class="w-full h-full object-cover object-center filter brightness-90 contrast-110"
         />
-        <!-- Dark Professional Overlay Gradients -->
-        <div class="absolute inset-0 bg-gradient-to-r from-[#030609]/95 via-[#030609]/75 to-[#030609]"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#030609] via-transparent to-[#030609]/70"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent opacity-60"></div>
+        <!-- Dark Professional Blueprint Overlays -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#030609]/90 via-[#030609]/50 to-[#030609]/80"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#030609]/90 via-transparent to-[#030609]/60"></div>
       </div>
 
       <!-- Background Ambient Glows & Technical Grid -->
