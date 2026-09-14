@@ -25,9 +25,9 @@
       <div class="relative z-10 flex items-center gap-3">
         <span class="px-3.5 py-1.5 text-[11px] font-bold tracking-widest text-[#f5a623] bg-[#f5a623]/10 border border-[#f5a623]/20 rounded-full font-mono uppercase shadow-[0_0_15px_rgba(245,166,35,0.2)] flex items-center gap-2">
           <Zap class="w-3.5 h-3.5 text-[#f5a623] fill-[#f5a623]" />
-          GSP OPERACIONES v2.5
+          GSP OPERACIONES v{{ appVersion }}
         </span>
-        <span class="text-xs text-slate-400 font-medium">&bull; LeanGlobal Platform</span>
+        <span class="text-xs text-slate-400 font-medium">&bull; Consola de Operaciones</span>
       </div>
 
       <!-- Main Slogan & Industrial Hero Statement -->
@@ -40,41 +40,15 @@
             </span>
           </h1>
           <p class="text-slate-300 text-sm leading-relaxed font-normal drop-shadow">
-            Plataforma inteligente de gestión de faena, telemetría IoT en tiempo real y estándar de seguridad de clase mundial.
+            Sistema integral para la gestión de proyectos, cubicación de izaje, control de flota y acreditaciones de faena.
           </p>
-        </div>
-
-        <!-- Telemetry Live Badges (KPIs) -->
-        <div class="grid grid-cols-2 gap-4 pt-4">
-          <div class="p-4 bg-[#0c1220]/80 border border-white/10 rounded-2xl backdrop-blur-md hover:border-[#22d3ee]/40 transition-all group shadow-lg">
-            <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
-              <span>Disponibilidad Flota</span>
-              <Activity class="w-4 h-4 text-[#22d3ee] group-hover:scale-110 transition-transform" />
-            </div>
-            <div class="text-2xl font-black text-[#22d3ee] font-mono tracking-tight">99.8%</div>
-            <div class="text-[10px] text-emerald-400 flex items-center gap-1 mt-1 font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              En tiempo real
-            </div>
-          </div>
-
-          <div class="p-4 bg-[#0c1220]/80 border border-white/10 rounded-2xl backdrop-blur-md hover:border-[#f5a623]/40 transition-all group shadow-lg">
-            <div class="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
-              <span>Estándar Seguridad</span>
-              <ShieldCheck class="w-4 h-4 text-[#f5a623] group-hover:scale-110 transition-transform" />
-            </div>
-            <div class="text-2xl font-black text-[#f5a623] font-mono tracking-tight">ISO 45001</div>
-            <div class="text-[10px] text-amber-400/80 mt-1 font-medium">Rigging Level 5 Certificado</div>
-          </div>
         </div>
       </div>
 
       <!-- Left Footer -->
       <div class="relative z-10 text-xs text-slate-400 font-medium flex items-center justify-between">
         <span>&copy; 2026 Grúas San Pablo &bull; Todos los derechos reservados</span>
-        <span class="flex items-center gap-1.5 text-slate-300">
-          <Cpu class="w-3.5 h-3.5 text-[#22d3ee]" /> Telemetría IoT Conectada
-        </span>
+        <span class="text-slate-500 font-mono text-[10px]">LeanGlobal Platform</span>
       </div>
     </div>
 
@@ -126,7 +100,7 @@
         <!-- Footer Footer Info -->
         <div class="text-center border-t border-white/5 pt-6 text-[10px] text-slate-500 font-medium space-y-1">
           <p>¿Problemas para acceder? Contacta a la Mesa de Ayuda</p>
-          <p class="text-[9px] font-bold uppercase tracking-widest text-slate-600">LeanGlobal Product &bull; GSP v2.5</p>
+          <p class="text-[9px] font-bold uppercase tracking-widest text-slate-600">LeanGlobal Product &bull; GSP v{{ appVersion }}</p>
         </div>
 
       </div>
@@ -136,8 +110,9 @@
 </template>
 
 <script setup>
-import { ShieldCheck, Zap, Lock, Activity, Cpu } from 'lucide-vue-next'
+import { Zap, Lock } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 
+const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.36'
 const { error, googleBtnRef } = useAuth()
 </script>
