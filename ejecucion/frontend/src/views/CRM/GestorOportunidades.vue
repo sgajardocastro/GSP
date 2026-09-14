@@ -3589,12 +3589,18 @@
                   </div>
                 </div>
                 <button 
-                  v-if="!esEstructuraValidaParaCaso && casoCobroActual"
+                  v-if="casoCobroActual"
                   type="button" 
-                  @click="inyectarFleteRecomendado('auto')"
-                  class="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-bold font-mono text-[11px] transition-colors shadow flex items-center gap-1 cursor-pointer"
+                  @click="aplicarConfiguracionCaso(casoCobroActual)"
+                  class="px-3 py-1.5 rounded font-bold font-mono text-[11px] transition-all shadow flex items-center gap-1.5 cursor-pointer"
+                  :class="!esEstructuraValidaParaCaso 
+                    ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-500/20 shadow-md' 
+                    : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'"
                 >
-                  <span>⚡</span> Auto-Estructurar Líneas Caso {{ casoCobroActual }}
+                  <span>⚡</span>
+                  {{ !esEstructuraValidaParaCaso 
+                    ? `Aplicar Configuración Canónica Caso ${casoCobroActual}` 
+                    : `Re-Aplicar Configuración Caso ${casoCobroActual}` }}
                 </button>
               </div>
 
@@ -9078,20 +9084,58 @@ const casoCobroActual = computed(() => {
 })
 
 const mostrarMatrizOficial = ref(false)
+const tieneLineaGrua = computed(() => {
+  return (lines.value || []).some(l => {
+    const cat = (l.tipo || '').toUpperCase()
+    const desc = (l.descripcion || '').toLowerCase()
+    return cat.includes('GRUA') || cat === 'GRUAS TELESCOPICAS' || cat === 'CAMIONES PLUMA' || desc.includes('grúa') || desc.includes('grua')
+  })
+})
+
 const esEstructuraValidaParaCaso = computed(() => {
+  if (!casoCobroActual.value) return true
+  // Todos los casos canónicos exigen al menos 1 grúa
+  if (!tieneLineaGrua.value) return false
+
   if (casoCobroActual.value === 4) return tieneFleteGrua.value && tieneFleteContrapeso.value
-  if (casoCobroActual.value === 3) return tieneFleteGrua.value
-  if (casoCobroActual.value === 2) return tieneFleteContrapeso.value
+  if (casoCobroActual.value === 3) return tieneFleteGrua.value && !tieneFleteContrapeso.value
+  if (casoCobroActual.value === 2) return tieneFleteContrapeso.value && !tieneFleteGrua.value
+  if (casoCobroActual.value === 1) return !tieneFleteGrua.value && !tieneFleteContrapeso.value
   return true
 })
 
-const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
+const asegurarLineaGruaBase = () => {
+  if (!tieneLineaGrua.value) {
+    lines.value.unshift({
+      tipo: 'GRUAS TELESCOPICAS',
+      subcategoria: 'GRUA 75 TON',
+      descripcion: 'Servicio Grúa Telescópica en Faena',
+      unidad: 'Horas Diarias Minimas',
+      dias: 1,
+      horas: 8,
+      cantidad: 1,
+      valorUnitario: 0,
+      subtotal: 0
+    })
+  }
+}
+
+const aplicarConfiguracionCaso = (casoParam = null) => {
+  const caso = casoParam || casoCobroActual.value || 1
   const km = parseFloat(opportunity.value?.distancia_km) || 0
-  const caso = casoCobroActual.value
   const valorFleteGruaSugerido = km > 70 ? 600000 : 400000
   const valorContrapesoFijo = 500000
 
-  if (caso === 2 || tipoFlete === 'contrapeso') {
+  // 1. Asegurar siempre la línea principal de la Grúa
+  asegurarLineaGruaBase()
+
+  // 2. Configurar fletes según el Caso Canónico
+  if (caso === 1) {
+    // Caso 1: $0 flete. Remover fletes si existían
+    lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
+  } else if (caso === 2) {
+    // Caso 2: Grúa + Flete Contrapesos (eliminar flete de grúa si existía)
+    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' && !((l.descripcion || '').toLowerCase().includes('contrapeso') || (l.subcategoria || '').toLowerCase().includes('contrapeso'))))
     if (!tieneFleteContrapeso.value) {
       lines.value.push({
         tipo: 'TRASLADOS',
@@ -9103,7 +9147,9 @@ const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
         subtotal: valorContrapesoFijo
       })
     }
-  } else if (caso === 3 || tipoFlete === 'grua') {
+  } else if (caso === 3) {
+    // Caso 3: Grúa + Flete Grúa (eliminar flete de contrapeso si existía)
+    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' && ((l.descripcion || '').toLowerCase().includes('contrapeso') || (l.subcategoria || '').toLowerCase().includes('contrapeso'))))
     if (!tieneFleteGrua.value) {
       lines.value.push({
         tipo: 'TRASLADOS',
@@ -9115,7 +9161,8 @@ const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
         subtotal: valorFleteGruaSugerido
       })
     }
-  } else if (caso === 4 || tipoFlete === 'auto') {
+  } else if (caso === 4) {
+    // Caso 4: Grúa + Flete Grúa + Flete Contrapesos
     if (!tieneFleteGrua.value) {
       lines.value.push({
         tipo: 'TRASLADOS',
@@ -9131,7 +9178,7 @@ const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
       lines.value.push({
         tipo: 'TRASLADOS',
         subcategoria: 'CAMA BAJA',
-        descripcion: `Traslado de Contrapesos Cama Baja (${km} km ida)`,
+        descripcion: `Traslado Contrapesos Cama Baja (${km} km ida)`,
         unidad: 'Traslado',
         cantidad: 1,
         valorUnitario: valorContrapesoFijo,
@@ -9140,6 +9187,8 @@ const inyectarFleteRecomendado = (tipoFlete = 'auto') => {
     }
   }
 }
+
+const inyectarFleteRecomendado = aplicarConfiguracionCaso
 
 watch(() => opportunity.value.requiere_rigger, (newVal) => {
   if (newVal) {
