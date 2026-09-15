@@ -3495,15 +3495,19 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <!-- Tarjeta Caso 1 -->
                 <div 
-                  @click="opportunity.lleva_contrapeso = false"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
-                  :class="casoCobroActual === 1 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                  @click="!esRuralActual && (opportunity.lleva_contrapeso = false)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="[
+                    esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
+                    casoCobroActual === 1 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
+                  ]"
                 >
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : 'text-slate-300'">CASO 1: URBANO (SIN FLETE)</span>
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 1: URBANO (SIN FLETE)</span>
                     <span v-if="casoCobroActual === 1" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                    <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
                     <div>• Distancia: ≤ 30 km</div>
                     <div>• Grúa Normal (Sin contrapesos)</div>
                     <div>• Taxímetro: Salida de Matriz</div>
@@ -3513,15 +3517,19 @@
 
                 <!-- Tarjeta Caso 2 -->
                 <div 
-                  @click="opportunity.lleva_contrapeso = true"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
-                  :class="casoCobroActual === 2 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                  @click="!esRuralActual && (opportunity.lleva_contrapeso = true)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="[
+                    esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
+                    casoCobroActual === 2 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
+                  ]"
                 >
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : 'text-slate-300'">CASO 2: URBANO (CON FLETE CONTRAPESOS)</span>
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 2: URBANO (CON FLETE CONTRAPESOS)</span>
                     <span v-if="casoCobroActual === 2" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                    <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
                     <div>• Distancia: ≤ 30 km</div>
                     <div>• Grúa con Contrapesos (Cama baja)</div>
                     <div>• Taxímetro: Salida de Matriz</div>
@@ -3531,15 +3539,19 @@
 
                 <!-- Tarjeta Caso 3 -->
                 <div 
-                  @click="opportunity.lleva_contrapeso = false"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
-                  :class="casoCobroActual === 3 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                  @click="esRuralActual && (opportunity.lleva_contrapeso = false)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="[
+                    !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
+                    casoCobroActual === 3 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
+                  ]"
                 >
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : 'text-slate-300'">CASO 3: RURAL (CON FLETE GRÚA)</span>
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 3: RURAL (CON FLETE GRÚA)</span>
                     <span v-if="casoCobroActual === 3" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                    <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
                     <div>• Distancia: &gt; 30 km</div>
                     <div>• Grúa Normal (Sin contrapesos)</div>
                     <div>• Taxímetro: Llegada Faena</div>
@@ -3549,15 +3561,19 @@
 
                 <!-- Tarjeta Caso 4 -->
                 <div 
-                  @click="opportunity.lleva_contrapeso = true"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
-                  :class="casoCobroActual === 4 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : 'border-white/5 bg-black/20 opacity-70 hover:opacity-100'"
+                  @click="esRuralActual && (opportunity.lleva_contrapeso = true)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  :class="[
+                    !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
+                    casoCobroActual === 4 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
+                  ]"
                 >
                   <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : 'text-slate-300'">CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)</span>
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)</span>
                     <span v-if="casoCobroActual === 4" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                    <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
                     <div>• Distancia: &gt; 30 km</div>
                     <div>• Grúa con Contrapesos (Cama baja)</div>
                     <div>• Taxímetro: Llegada Faena</div>
@@ -9083,6 +9099,7 @@ const casoCobroActual = computed(() => {
   }
 })
 
+const esRuralActual = computed(() => (parseFloat(opportunity.value?.distancia_km) || 0) > 30)
 const mostrarMatrizOficial = ref(false)
 const tieneLineaGrua = computed(() => {
   return (lines.value || []).some(l => {
