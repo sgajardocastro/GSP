@@ -1,13 +1,44 @@
 <template>
   <div class="space-y-6 text-left">
     <!-- Header -->
-    <div class="bg-[#0a0f1e]/40 p-4 border border-white/5 rounded-xl">
-      <h2 class="text-lg font-black text-white uppercase tracking-wider font-display">Torre de Control Operativa</h2>
-      <p class="text-xs text-slate-400 mt-1">Planificación y seguimiento de maniobras de izaje, logística de contrapesos y telemetría de ruta.</p>
+    <div class="bg-[#0a0f1e]/40 p-4 border border-white/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-black text-white uppercase tracking-wider font-display">Torre de Control Operativa</h2>
+        <p class="text-xs text-slate-400 mt-1">Planificación y seguimiento de maniobras de izaje, logística de contrapesos y telemetría de ruta.</p>
+      </div>
+
+      <!-- Selector Tri-Modal de Vistas -->
+      <div class="flex items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0">
+        <button 
+          @click="activeView = 'kanban'" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          :class="activeView === 'kanban' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+        >
+          <span>🗂️</span>
+          <span>Tablero Kanban</span>
+        </button>
+        <button 
+          @click="activeView = 'pmo'" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all relative"
+          :class="activeView === 'pmo' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+        >
+          <span>📊</span>
+          <span>Matriz PMO (Control Gestión)</span>
+          <span v-if="alertasCriticasTotales > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        </button>
+        <button 
+          @click="activeView = 'gantt'" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          :class="activeView === 'gantt' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+        >
+          <span>📅</span>
+          <span>Perspectiva Temporal (Flota Gantt)</span>
+        </button>
+      </div>
     </div>
 
     <!-- Kanban Columns (6 Columnas Operativas) -->
-    <div class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
+    <div v-if="activeView === 'kanban'" class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
       <!-- Columna 1: Requerimiento Registrado -->
       <div class="bg-[#0f1629] border-t-4 border-[#6366f1] border border-white/5 rounded-xl p-3 flex flex-col">
         <div class="flex justify-between items-center mb-4">
@@ -382,6 +413,304 @@
       </div>
     </div>
 
+    <!-- Vista 2: Matriz PMO de Control de Gestión & Excepciones Temporales -->
+    <div v-else-if="activeView === 'pmo'" class="space-y-4">
+      <!-- KPIs PMO -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-[#0f1629] border border-white/5 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total OTs en Gestión</p>
+            <p class="text-xl font-black text-white mt-1">{{ proyectosActivosPMO.length }}</p>
+          </div>
+          <span class="text-2xl">📋</span>
+        </div>
+        <div class="bg-[#0f1629] border border-red-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Alertas Críticas</p>
+            <p class="text-xl font-black text-red-400 mt-1">{{ alertasCriticasTotales }}</p>
+          </div>
+          <span class="text-2xl">🚨</span>
+        </div>
+        <div class="bg-[#0f1629] border border-amber-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Sin OC Mandante</p>
+            <p class="text-xl font-black text-amber-400 mt-1">{{ otsSinOC }}</p>
+          </div>
+          <span class="text-2xl">📄</span>
+        </div>
+        <div class="bg-[#0f1629] border border-cyan-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Salida Retrasada</p>
+            <p class="text-xl font-black text-cyan-400 mt-1">{{ salidasRetrasadas }}</p>
+          </div>
+          <span class="text-2xl">⏱️</span>
+        </div>
+        <div class="bg-[#0f1629] border border-purple-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Pend. Facturación</p>
+            <p class="text-xl font-black text-purple-400 mt-1">{{ pendientesFacturacion }}</p>
+          </div>
+          <span class="text-2xl">💰</span>
+        </div>
+      </div>
+
+      <!-- DataGrid PMO (7 Hitos) -->
+      <div class="bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-xl">
+        <div class="p-3 border-b border-white/5 flex flex-col md:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/60">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-black uppercase text-white tracking-wider">Matriz de Hitos & Auditoría de Ocurrencias</span>
+            <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5 font-mono">Reloj en Tiempo Real</span>
+          </div>
+          <input 
+            v-model="filtroPMO" 
+            type="text" 
+            placeholder="Buscar por OT, cliente o faena..." 
+            class="bg-[#070b14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 w-full md:w-80 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+        <div class="overflow-x-auto max-h-[calc(100vh-270px)]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-[#070b14] text-slate-400 uppercase text-[10px] tracking-wider font-bold border-b border-white/10 sticky top-0 z-10 select-none">
+              <tr>
+                <th class="py-2.5 px-3">OT / Negocio</th>
+                <th class="py-2.5 px-3">Programación</th>
+                <th class="py-2.5 px-3 text-center">1. OC Mandante</th>
+                <th class="py-2.5 px-3 text-center">2. Validación Op.</th>
+                <th class="py-2.5 px-3 text-center">3. Asignación</th>
+                <th class="py-2.5 px-3 text-center">4. Acreditación</th>
+                <th class="py-2.5 px-3 text-center">5. Salida Patio</th>
+                <th class="py-2.5 px-3 text-center">6. Report PWA</th>
+                <th class="py-2.5 px-3 text-center">7. Facturación</th>
+                <th class="py-2.5 px-3 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-slate-300">
+              <tr v-for="p in proyectosFiltradosPMO" :key="p.id_proyecto" class="hover:bg-white/5 transition-colors">
+                <!-- OT / Negocio -->
+                <td class="py-2.5 px-3">
+                  <div class="font-mono font-bold text-blue-400 text-xs">{{ p.codi_proyecto || '—' }}</div>
+                  <div class="font-bold text-white text-xs truncate max-w-[190px]" :title="p.nombre_cliente">{{ p.nombre_cliente || '—' }}</div>
+                  <div class="text-[10px] text-slate-400 truncate max-w-[190px]">{{ p.nombre_proyecto }}</div>
+                </td>
+                <!-- Programación -->
+                <td class="py-2.5 px-3 whitespace-nowrap text-[11px]">
+                  <div class="text-white">{{ formatFecha(p.fecha_plan_ini) }}</div>
+                  <div class="text-slate-400 text-[10px]">al {{ formatFecha(p.fecha_plan_fin) }}</div>
+                </td>
+                <!-- 1. OC Mandante -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span v-if="getHitoOC(p).status === 'OK'" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    ✓ {{ getHitoOC(p).label }}
+                  </span>
+                  <span v-else-if="getHitoOC(p).status === 'CRITICAL'" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 animate-pulse" :title="getHitoOC(p).tooltip">
+                    🔴 {{ getHitoOC(p).label }}
+                  </span>
+                  <span v-else class="text-[10px] text-slate-500">No Requerida</span>
+                </td>
+                <!-- 2. Validación Op. -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span v-if="getHitoValidacion(p).status === 'OK'" class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    ✓ Validado
+                  </span>
+                  <span v-else-if="getHitoValidacion(p).status === 'PENDING'" class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    🟡 Pendiente
+                  </span>
+                  <span v-else class="text-[10px] text-slate-500">Preventa</span>
+                </td>
+                <!-- 3. Asignación -->
+                <td class="py-2.5 px-3 text-center">
+                  <div v-if="getHitoAsignacion(p).status === 'OK'">
+                    <span class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">
+                      {{ getHitoAsignacion(p).equipo }}
+                    </span>
+                    <div class="text-[9px] text-slate-400 mt-0.5 truncate max-w-[120px] mx-auto">{{ getHitoAsignacion(p).operador }}</div>
+                  </div>
+                  <span v-else class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    Por Asignar
+                  </span>
+                </td>
+                <!-- 4. Acreditación -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span 
+                    class="text-[10px] font-bold px-2 py-0.5 rounded"
+                    :class="getHitoAcreditacion(p).classes"
+                    :title="getHitoAcreditacion(p).tooltip"
+                  >
+                    {{ getHitoAcreditacion(p).label }}
+                  </span>
+                </td>
+                <!-- 5. Salida Patio -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span 
+                    class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded"
+                    :class="getHitoSalidaPatio(p).classes"
+                    :title="getHitoSalidaPatio(p).tooltip"
+                  >
+                    {{ getHitoSalidaPatio(p).label }}
+                  </span>
+                </td>
+                <!-- 6. Report PWA -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span 
+                    class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded"
+                    :class="getHitoReport(p).classes"
+                    :title="getHitoReport(p).tooltip"
+                  >
+                    {{ getHitoReport(p).label }}
+                  </span>
+                </td>
+                <!-- 7. Facturación -->
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                  <span 
+                    class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded"
+                    :class="getHitoFacturacion(p).classes"
+                  >
+                    {{ getHitoFacturacion(p).label }}
+                  </span>
+                </td>
+                <!-- Acción -->
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                  <button 
+                    @click="abrirProyecto(p.id_proyecto, getSubTabSugeridaPMO(p))"
+                    class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white rounded border border-blue-500/30 text-[10px] font-bold transition-all flex items-center gap-1 ml-auto"
+                  >
+                    <span>Auditar OT</span>
+                    <span>➔</span>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="proyectosFiltradosPMO.length === 0">
+                <td colspan="10" class="text-center py-12 text-slate-500 italic">
+                  No se encontraron proyectos activos que coincidan con el filtro.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista 3: Perspectiva Temporal de Flota (Gantt Operacional & Productividad) -->
+    <div v-else-if="activeView === 'gantt'" class="space-y-4">
+      <!-- Controles del Gantt -->
+      <div class="bg-[#0f1629] border border-white/5 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-400">Ventana Temporal:</span>
+          <div class="flex items-center bg-[#070b14] p-0.5 rounded-lg border border-white/10">
+            <button 
+              v-for="dias in [7, 15, 30]" 
+              :key="dias"
+              @click="rangoDiasGantt = dias" 
+              class="px-2.5 py-1 rounded text-xs font-bold transition-all"
+              :class="rangoDiasGantt === dias ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+            >
+              {{ dias }} Días
+            </button>
+          </div>
+          <!-- Leyenda compacta -->
+          <div class="hidden lg:flex items-center gap-3 ml-4 text-[10px] text-slate-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-600"></span> OT Asignada</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-600"></span> En Faena / Ruta</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-600"></span> Mantención</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-yellow-500"></span> Inspección</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Filtro Categoría -->
+          <select 
+            v-model="filtroCategoriaGantt" 
+            class="bg-[#070b14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="TODOS">Todas las Categorías</option>
+            <option value="GRUA">Grúas Telescópicas</option>
+            <option value="CAMION_PLUMA">Camiones Pluma</option>
+            <option value="TRANSPORTE">Camas Bajas / Fletes</option>
+            <option value="ESCOLTA">Escoltas y Apoyo</option>
+          </select>
+          <!-- Buscador -->
+          <input 
+            v-model="busquedaGantt" 
+            type="text" 
+            placeholder="Buscar patente o modelo..." 
+            class="bg-[#070b14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 w-56 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+      </div>
+
+      <!-- Tabla Gantt -->
+      <div class="bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto max-h-[calc(100vh-270px)]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-[#070b14] text-slate-400 text-[10px] tracking-wider uppercase font-bold border-b border-white/10 sticky top-0 z-20 select-none">
+              <tr>
+                <th class="py-2.5 px-3 w-56 sticky left-0 bg-[#070b14] z-30 border-r border-white/10">Equipo / Flota</th>
+                <th class="py-2.5 px-2 w-28 text-center sticky left-56 bg-[#070b14] z-30 border-r border-white/10">Productividad</th>
+                <!-- Días del Cronograma -->
+                <th 
+                  v-for="dia in diasGantt" 
+                  :key="dia.fechaStr" 
+                  class="py-2 px-1 text-center font-mono border-r border-white/5 min-w-[54px]"
+                  :class="dia.esHoy ? 'bg-blue-900/30 text-blue-400 font-black' : (dia.esFDS ? 'bg-white/[0.02] text-slate-600' : '')"
+                >
+                  <div class="text-[9px]">{{ dia.diaSemana }}</div>
+                  <div class="text-[11px]">{{ dia.diaNumero }}</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-slate-300">
+              <tr v-for="eq in flotaFiltradaGantt" :key="eq.id_equipo" class="hover:bg-white/5 transition-colors">
+                <!-- Equipo Info (Sticky Left) -->
+                <td class="py-2 px-3 sticky left-0 bg-[#0f1629] z-10 border-r border-white/10">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full" :class="eq.estado === 'MANTENCION' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+                    <span class="font-mono font-bold text-white text-xs">{{ eq.patente || 'S/P' }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 truncate max-w-[200px]">{{ eq.nombre_equipo || eq.modelo }}</div>
+                  <div class="text-[9px] text-slate-500">{{ eq.nombre_categoria || 'Maquinaria' }}</div>
+                </td>
+                <!-- Columna Productividad (% OEE) -->
+                <td class="py-2 px-2 text-center sticky left-56 bg-[#0f1629] z-10 border-r border-white/10">
+                  <div class="text-[11px] font-black font-mono" :class="getProductividadColor(eq.productividadPct)">
+                    {{ eq.productividadPct }}%
+                  </div>
+                  <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div 
+                      class="h-full rounded-full transition-all"
+                      :class="getProductividadBarClass(eq.productividadPct)"
+                      :style="{ width: `${eq.productividadPct}%` }"
+                    ></div>
+                  </div>
+                </td>
+                <!-- Celdas de Días -->
+                <td 
+                  v-for="dia in diasGantt" 
+                  :key="dia.fechaStr" 
+                  class="p-0.5 text-center border-r border-white/5 relative"
+                  :class="dia.esHoy ? 'bg-blue-950/20' : (dia.esFDS ? 'bg-white/[0.01]' : '')"
+                >
+                  <div 
+                    v-if="getEventoEquipoEnDia(eq, dia.fechaStr)"
+                    @click="onClicEventoGantt(getEventoEquipoEnDia(eq, dia.fechaStr))"
+                    class="h-9 w-full rounded flex flex-col items-center justify-center text-[9px] font-bold p-0.5 cursor-pointer hover:scale-105 transition-transform"
+                    :class="getEventoEquipoEnDia(eq, dia.fechaStr).classes"
+                    :title="getEventoEquipoEnDia(eq, dia.fechaStr).tooltip"
+                  >
+                    <span class="truncate max-w-[48px]">{{ getEventoEquipoEnDia(eq, dia.fechaStr).label }}</span>
+                    <span v-if="getEventoEquipoEnDia(eq, dia.fechaStr).esColision" class="text-[8px] animate-pulse">⚠️ Colisión</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="flotaFiltradaGantt.length === 0">
+                <td :colspan="diasGantt.length + 2" class="text-center py-12 text-slate-500 italic">
+                  No se encontraron equipos para el filtro seleccionado.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Botón flotante Biblioteca de Cotizaciones No Ganadas -->
     <div class="fixed bottom-6 right-6 z-40">
       <button 
@@ -486,7 +815,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import GestorOportunidades from './CRM/GestorOportunidades.vue'
 import AcreditacionDrawer from '../components/acreditacion/AcreditacionDrawer.vue'
@@ -494,6 +823,9 @@ import apiAxios from '../services/api'
 import { navStore } from '../stores/navStore'
 
 const router = useRouter()
+
+// Vista activa tri-modal
+const activeView = ref('kanban') // 'kanban' | 'pmo' | 'gantt'
 
 const mostrarModalCotizacion = ref(false)
 const proyectoSeleccionadoId  = ref(null)
@@ -516,6 +848,10 @@ const mostrarModalBiblioteca = ref(false)
 const hoveredProyectoId = ref(null)
 const noAsignadas = ref([])
 
+// Todos los proyectos para PMO y Gantt
+const todosLosProyectos = ref([])
+const flotaEquiposMaster = ref([])
+
 // Proyectos agrupados por estado
 const preventa       = ref([])
 const verificacion   = ref([])
@@ -528,6 +864,7 @@ const cargarProyectos = async () => {
   try {
     const { data } = await apiAxios.get('/proyectos')
     const proyectos = data.proyectos || []
+    todosLosProyectos.value = proyectos
 
     // Columna 1: Requerimiento Registrado / Preventa Comercial
     preventa.value       = proyectos.filter(p => [1, 2].includes(Number(p.id_proyecto_estado)))
@@ -577,9 +914,410 @@ const cargarProyectos = async () => {
     } catch(errAcr) {
       console.warn("No se cargaron acreditaciones:", errAcr.message)
     }
+
+    await cargarFlotaMaster()
   } catch (e) {
     console.error('Error cargando proyectos:', e)
   }
+}
+
+const cargarFlotaMaster = async () => {
+  try {
+    const { data: res } = await apiAxios.get('/tequ-equipos')
+    const raw = res?.data || res || []
+    if (Array.isArray(raw) && raw.length > 0) {
+      flotaEquiposMaster.value = raw.map(e => ({
+        ...e,
+        id_equipo: e.id_equipo || e.id,
+        patente: e.patente || e.ppu || 'S/P',
+        nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
+        modelo: e.modelo || '',
+        nombre_categoria: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
+        estado: e.estado || 'DISPONIBLE'
+      }))
+    }
+  } catch (err) {
+    console.warn('Error cargando flota de equipos:', err)
+  }
+}
+
+// -------------------------------------------------------------
+// LÓGICA DE LA MATRIZ PMO DE CONTROL DE GESTIÓN & EXCEPCIONES
+// -------------------------------------------------------------
+const filtroPMO = ref('')
+
+const proyectosActivosPMO = computed(() => {
+  return todosLosProyectos.value.filter(p => {
+    const st = Number(p.id_proyecto_estado)
+    return st < 99 && st !== 6 && st > 0
+  })
+})
+
+const proyectosFiltradosPMO = computed(() => {
+  const query = (filtroPMO.value || '').trim().toLowerCase()
+  if (!query) return proyectosActivosPMO.value
+
+  return proyectosActivosPMO.value.filter(p => {
+    const cod = (p.codi_proyecto || '').toLowerCase()
+    const clt = (p.nombre_cliente || '').toLowerCase()
+    const proy = (p.nombre_proyecto || '').toLowerCase()
+    const eq = (p.json_field?.ejecucion_v1?.patente_grua || '').toLowerCase()
+    return cod.includes(query) || clt.includes(query) || proy.includes(query) || eq.includes(query)
+  })
+})
+
+const getHitoOC = (p) => {
+  const crm = p.json_field?.crm_v1 || {}
+  const reqOC = crm.requiere_oc_hes === true || crm.requiere_oc === true
+  const nroOC = crm.orden_compra || crm.nro_oc || crm.ordenes_compra?.[0]?.nro_oc || crm.ordenes_compra?.[0]?.numero_oc
+  
+  if (nroOC) {
+    return { status: 'OK', label: `OC ${nroOC}`, tooltip: `OC Mandante Registrada: ${nroOC}` }
+  }
+  if (!reqOC) {
+    return { status: 'NONE', label: 'No Requerida', tooltip: 'El mandante no exige OC/HES previa' }
+  }
+
+  const fechaIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini) : null
+  const ahora = new Date()
+  const st = Number(p.id_proyecto_estado)
+  const horasFaltantes = fechaIni ? (fechaIni - ahora) / (1000 * 60 * 60) : 999
+
+  if (st >= 5 || horasFaltantes <= 48) {
+    return { 
+      status: 'CRITICAL', 
+      label: 'Falta OC', 
+      tooltip: '¡Alerta! Servicio a menos de 48h (o en curso) sin OC Mandante cargada.' 
+    }
+  }
+  return { status: 'PENDING', label: 'Pendiente', tooltip: 'Esperando OC de mandante' }
+}
+
+const getHitoValidacion = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  const ej = p.json_field?.ejecucion_v1 || {}
+  if (st >= 4 || ej.validacion_completada) {
+    return { status: 'OK' }
+  }
+  if (st === 3) {
+    return { status: 'PENDING' }
+  }
+  return { status: 'PREVENTA' }
+}
+
+const getHitoAsignacion = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  const ej = p.json_field?.ejecucion_v1 || {}
+  const crm = p.json_field?.crm_v1 || {}
+  const primeraLinea = crm.lineas_servicio?.find(l => l.patente || l.id_equipo)
+  const grua = ej.patente_grua || primeraLinea?.patente || ej.recursos_asignados?.equipos?.[0]?.patente || null
+  const operador = ej.operador_nombre || ej.recursos_asignados?.personas?.[0]?.nombre_persona || null
+
+  if (st >= 4 && (grua || operador)) {
+    return { status: 'OK', equipo: grua || 'Asignado', operador: operador || 'Operador Asignado' }
+  }
+  return { status: 'PENDING', equipo: 'S/P', operador: 'Sin Asignar' }
+}
+
+const getHitoAcreditacion = (p) => {
+  const pct = calcularPorcentajeAcreditacion(p)
+  const st = Number(p.id_proyecto_estado)
+  if (pct === 100) {
+    return { label: '100% OK', classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', tooltip: 'Dossier Acreditado 100%' }
+  }
+  if (st >= 5) {
+    return { 
+      label: `${pct}% Crítico`, 
+      classes: 'bg-red-500/15 text-red-400 border border-red-500/30 animate-pulse', 
+      tooltip: `Acreditación incompleta (${pct}%) para equipo en patio/faena` 
+    }
+  }
+  if (st >= 3) {
+    return { label: `${pct}% En Proceso`, classes: 'bg-amber-500/10 text-amber-400 border border-amber-500/20', tooltip: 'Acreditación en curso' }
+  }
+  return { label: 'Preventa', classes: 'bg-white/5 text-slate-500 border border-white/5', tooltip: 'No iniciada aún' }
+}
+
+const getHitoSalidaPatio = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  const ej = p.json_field?.ejecucion_v1 || {}
+  const viajeIniciado = ej.viaje_iniciado || ej.subtab_activa === 'reports' || ej.subtab_activa === 'despacho'
+  if (st >= 6 || viajeIniciado) {
+    return { label: 'En Ruta / Obra', classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', tooltip: 'Convoy en trayecto o faena activa' }
+  }
+  if (st === 5) {
+    const ahora = new Date()
+    const iniPlan = p.fecha_plan_ini ? new Date(p.fecha_plan_ini) : null
+    if (iniPlan && ahora > iniPlan) {
+      const desfaseHoras = Math.round((ahora - iniPlan) / (1000 * 60 * 60))
+      return { 
+        label: `Retraso (+${desfaseHoras}h)`, 
+        classes: 'bg-red-500/15 text-red-400 border border-red-500/30 animate-pulse', 
+        tooltip: `Hora programada superada hace ${desfaseHoras} horas sin salida registrada` 
+      }
+    }
+    return { label: 'En Preparación', classes: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20', tooltip: 'Preparación de patio y checklist' }
+  }
+  return { label: 'Programado', classes: 'bg-white/5 text-slate-500 border border-white/5', tooltip: 'Esperando fecha de inicio' }
+}
+
+const getHitoReport = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  const ej = p.json_field?.ejecucion_v1 || {}
+  const reportsCount = ej.reports?.length || 0
+  if (st === 8) {
+    return { label: `Concluido (${reportsCount})`, classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', tooltip: 'Reports validados y servicio cerrado' }
+  }
+  if (st >= 6 || st === 5) {
+    const horaActual = new Date().getHours()
+    if (horaActual >= 19 && reportsCount === 0) {
+      return { 
+        label: 'Hoy Pendiente', 
+        classes: 'bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse', 
+        tooltip: 'Son más de las 19:00 hrs y no se ha transmitido el Report Diario de hoy' 
+      }
+    }
+    if (reportsCount > 0) {
+      return { label: `Al Día (${reportsCount})`, classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', tooltip: `${reportsCount} reports transmitidos` }
+    }
+    return { label: 'En Faena', classes: 'bg-purple-500/10 text-purple-400 border border-purple-500/20', tooltip: 'Faena activa' }
+  }
+  return { label: '—', classes: 'text-slate-600', tooltip: 'No aplica aún' }
+}
+
+const getHitoFacturacion = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  const crm = p.json_field?.crm_v1 || {}
+  const fact = p.json_field?.facturacion_v1 || {}
+  const dte = fact.nro_dte || crm.dte || fact.folio_factura
+  if (st === 8) {
+    if (dte) {
+      return { label: `DTE #${dte}`, classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' }
+    }
+    return { label: 'Pend. Facturar', classes: 'bg-purple-500/15 text-purple-400 border border-purple-500/30 animate-pulse' }
+  }
+  return { label: 'En Curso', classes: 'text-slate-600' }
+}
+
+const getSubTabSugeridaPMO = (p) => {
+  const st = Number(p.id_proyecto_estado)
+  if (st <= 2) return 'comercial'
+  if (st === 3) return 'validacion'
+  if (st === 4) return 'asignacion'
+  if (st === 5) return 'preparacion_salida'
+  if (st >= 6) return 'reports'
+  return 'comercial'
+}
+
+// Métricas de KPIs PMO
+const alertasCriticasTotales = computed(() => {
+  return proyectosActivosPMO.value.filter(p => {
+    const oc = getHitoOC(p).status === 'CRITICAL'
+    const salida = getHitoSalidaPatio(p).label.includes('Retraso')
+    const acr = getHitoAcreditacion(p).label.includes('Crítico')
+    return oc || salida || acr
+  }).length
+})
+
+const otsSinOC = computed(() => {
+  return proyectosActivosPMO.value.filter(p => {
+    const oc = getHitoOC(p)
+    return oc.status === 'CRITICAL' || oc.status === 'PENDING'
+  }).length
+})
+
+const salidasRetrasadas = computed(() => {
+  return proyectosActivosPMO.value.filter(p => {
+    return getHitoSalidaPatio(p).label.includes('Retraso')
+  }).length
+})
+
+const pendientesFacturacion = computed(() => {
+  return todosLosProyectos.value.filter(p => {
+    return Number(p.id_proyecto_estado) === 8 && !p.json_field?.facturacion_v1?.nro_dte && !p.json_field?.crm_v1?.dte
+  }).length
+})
+
+// -------------------------------------------------------------
+// LÓGICA DE LA PERSPECTIVA TEMPORAL DE FLOTA (GANTT & PRODUCTIVIDAD)
+// -------------------------------------------------------------
+const rangoDiasGantt = ref(15)
+const filtroCategoriaGantt = ref('TODOS')
+const busquedaGantt = ref('')
+
+const diasGantt = computed(() => {
+  const total = rangoDiasGantt.value
+  const dias = []
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  
+  const inicio = new Date(hoy)
+  inicio.setDate(hoy.getDate() - 2)
+
+  const diasSemanaNombres = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
+
+  for (let i = 0; i < total; i++) {
+    const d = new Date(inicio)
+    d.setDate(inicio.getDate() + i)
+    
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const fechaStr = `${yyyy}-${mm}-${dd}`
+
+    const esHoy = d.getTime() === hoy.getTime()
+    const diaNumSemana = d.getDay()
+    const esFDS = diaNumSemana === 0 || diaNumSemana === 6
+
+    dias.push({
+      fechaStr,
+      diaNumero: d.getDate(),
+      diaSemana: diasSemanaNombres[diaNumSemana],
+      esHoy,
+      esFDS
+    })
+  }
+  return dias
+})
+
+const calcularProductividadEquipo = (eq, diasVentana) => {
+  if (!diasVentana || diasVentana.length === 0) return 0
+  let diasOcupados = 0
+  for (const d of diasVentana) {
+    const ev = getEventoEquipoEnDia(eq, d.fechaStr)
+    if (ev) diasOcupados++
+  }
+  return Math.min(100, Math.round((diasOcupados / diasVentana.length) * 100))
+}
+
+const flotaFiltradaGantt = computed(() => {
+  let list = [...flotaEquiposMaster.value]
+  const cat = filtroCategoriaGantt.value
+  const q = (busquedaGantt.value || '').trim().toLowerCase()
+
+  if (cat !== 'TODOS') {
+    list = list.filter(e => {
+      const c = (e.nombre_categoria || '').toUpperCase()
+      if (cat === 'GRUA') return c.includes('GRÚA') || c.includes('GRUA') || c.includes('TELESCOPICA')
+      if (cat === 'CAMION_PLUMA') return c.includes('PLUMA') || c.includes('CAMIÓN') || c.includes('CAMION')
+      if (cat === 'TRANSPORTE') return c.includes('CAMA') || c.includes('BAJA') || c.includes('FLETE') || c.includes('TRASLADO')
+      if (cat === 'ESCOLTA') return c.includes('ESCOLTA') || c.includes('VEHÍCULO') || c.includes('VEHICULO') || c.includes('APOYO')
+      return true
+    })
+  }
+
+  if (q) {
+    list = list.filter(e => {
+      const pat = (e.patente || '').toLowerCase()
+      const nom = (e.nombre_equipo || '').toLowerCase()
+      const mod = (e.modelo || '').toLowerCase()
+      return pat.includes(q) || nom.includes(q) || mod.includes(q)
+    })
+  }
+
+  const dias = diasGantt.value
+  return list.map(e => ({
+    ...e,
+    productividadPct: calcularProductividadEquipo(e, dias)
+  }))
+})
+
+const getEventoEquipoEnDia = (eq, fechaStr) => {
+  const targetDate = new Date(fechaStr + 'T00:00:00')
+  const patEq = (eq.patente || '').toUpperCase().trim()
+  const idEq = Number(eq.id_equipo)
+
+  const proyectosCoincidentes = []
+
+  for (const p of todosLosProyectos.value) {
+    if (Number(p.id_proyecto_estado) >= 99 || Number(p.id_proyecto_estado) === 6) continue
+
+    const ini = p.fecha_plan_ini ? new Date(p.fecha_plan_ini.split('T')[0] + 'T00:00:00') : null
+    const fin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin.split('T')[0] + 'T23:59:59') : ini
+
+    if (!ini) continue
+    if (targetDate >= ini && targetDate <= (fin || ini)) {
+      const ej = p.json_field?.ejecucion_v1 || {}
+      const crm = p.json_field?.crm_v1 || {}
+      
+      const esGrua = (ej.patente_grua || '').toUpperCase().trim() === patEq
+      const enLineas = crm.lineas_servicio?.some(l => {
+        const lp = (l.patente || '').toUpperCase().trim()
+        const lid = Number(l.id_equipo || l.equipo_asignado_id)
+        return (lp && lp === patEq) || (lid && lid === idEq)
+      })
+      const enRecursos = ej.recursos_asignados?.equipos?.some(re => {
+        const rp = (re.patente || '').toUpperCase().trim()
+        const rid = Number(re.id_equipo)
+        return (rp && rp === patEq) || (rid && rid === idEq)
+      })
+
+      if (esGrua || enLineas || enRecursos) {
+        proyectosCoincidentes.push(p)
+      }
+    }
+  }
+
+  if (proyectosCoincidentes.length > 1) {
+    const otsConfig = proyectosCoincidentes.map(p => p.codi_proyecto).join(' y ')
+    return {
+      esColision: true,
+      classes: 'bg-red-600/90 text-white border border-red-400 shadow-md ring-2 ring-red-400',
+      label: 'Colisión',
+      tooltip: `⚠️ COLISIÓN HORARIA: Equipo asignado simultáneamente a ${otsConfig}`,
+      proyectoId: proyectosCoincidentes[0].id_proyecto
+    }
+  }
+
+  if (proyectosCoincidentes.length === 1) {
+    const p = proyectosCoincidentes[0]
+    const st = Number(p.id_proyecto_estado)
+    let colorClasses = 'bg-blue-600/90 text-white border border-blue-400/60 shadow-sm'
+    
+    if (st >= 6) {
+      colorClasses = 'bg-emerald-600/90 text-white border border-emerald-400/60 shadow-sm'
+    } else if (st === 3) {
+      colorClasses = 'bg-amber-600/90 text-white border border-amber-400/60 shadow-sm'
+    }
+
+    return {
+      esColision: false,
+      classes: colorClasses,
+      label: p.codi_proyecto || 'OT',
+      tooltip: `${p.codi_proyecto} - ${p.nombre_cliente} (${p.nombre_proyecto})`,
+      proyectoId: p.id_proyecto
+    }
+  }
+
+  if (eq.estado === 'MANTENCION') {
+    return {
+      esColision: false,
+      classes: 'bg-amber-600/90 text-white border border-amber-400 shadow-sm',
+      label: 'Taller',
+      tooltip: 'Equipo en mantención de taller programada',
+      proyectoId: null
+    }
+  }
+
+  return null
+}
+
+const onClicEventoGantt = (evento) => {
+  if (evento?.proyectoId) {
+    abrirProyecto(evento.proyectoId)
+  }
+}
+
+const getProductividadColor = (pct) => {
+  if (pct >= 70) return 'text-emerald-400'
+  if (pct >= 30) return 'text-blue-400'
+  return 'text-slate-400'
+}
+
+const getProductividadBarClass = (pct) => {
+  if (pct >= 70) return 'bg-emerald-500'
+  if (pct >= 30) return 'bg-blue-500'
+  return 'bg-slate-500'
 }
 
 const abrirCotizacion = () => {
