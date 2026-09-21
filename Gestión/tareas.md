@@ -197,7 +197,7 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Conversar con Prevencionista:** Validar con Dayana la periodicidad y alcance del AST simple por equipo.
 
 **Reunión 21-Sep-2026 (Seguimiento Operacional, Roles Comerciales & Estrategia Mantenimiento):**
-*   [ ] **[Sergio Gajardo] Documentos de Empresa (Opción A):** Integrar interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas.
+*   [x] **[Sergio Gajardo] Documentos de Empresa (Opción A):** Integrar interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas.
 *   [ ] **[Sergio Gajardo] Enrolamiento de Usuarios en Marcha Blanca:** Enrolar y configurar permisos de Wilson, Yara, Marita y Dayana con credenciales y roles canónicos LeanGlobal.
 *   [ ] **[Sergio Gajardo] Restricción Comercial de Edición:** Restringir visibilidad/edición de cotizaciones en Gestor de Oportunidades para que cada vendedor solo modifique sus propias cotizaciones.
 *   [ ] **[Sergio Gajardo] Mantenimiento OTs Primero (Spec 48):** Implementar flujo operacional de Órdenes de Trabajo para flota existente (`tequ_equipo`), HH, servicios de terceros y cierre con PIN de supervisor.
@@ -316,4 +316,4 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [ ] **[Mapa Didáctico de Entregables por Etapa]:** Confeccionar documento guía para Jorge Ponce y equipo comercial/operativo.
 * [ ] **[Hito Pruebas en Paralelo - 21 de Septiembre]:** Inicio de marcha blanca con vendedores cotizando en vivo en Casa Matriz.
 * [x] **[Torre de Control Tri-Modal - Spec 20]:** Implementación de navegación tri-modal (`[ 🗂️ Kanban ] [ 📊 Matriz PMO ] [ 📅 Perspectiva Temporal Gantt ]`), Matriz PMO con auditoría de 7 hitos y alertas en tiempo real, Gantt de 110 equipos con código cromático, detección de colisiones horarias y columna de productividad (% OEE). `VERIFICADO EN PRODUCCIÓN Y COMPILADO 0 ERRORES`.
-* [ ] **[Documentos de Empresa - Opción A]:** Interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas.
+* [x] **[Documentos de Empresa - Opción A]:** Interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas. `VERIFICADO Y COMPILADO 0 ERRORES`.
