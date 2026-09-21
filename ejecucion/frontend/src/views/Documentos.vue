@@ -316,18 +316,36 @@
                       </div>
                     </div>
 
-                    <!-- Lado Derecho: Conteo de Documentos Reales -->
-                    <span class="text-[10px] text-slate-500 font-mono shrink-0">
-                      {{ countTotalArchivos(itemNode) }} docs
-                    </span>
+                    <!-- Lado Derecho: Conteo de Documentos Reales y Botón de Subida para Empresa -->
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button
+                        v-if="String(itemNode.id).startsWith('emp-')"
+                        @click.stop="abrirModalSubirDocEmpresa(itemNode.id_empresa)"
+                        class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold transition-all cursor-pointer flex items-center gap-1"
+                        title="Subir nuevo documento institucional para esta empresa"
+                      >
+                        <span>+ 📤</span>
+                        <span>Subir Doc</span>
+                      </button>
+                      <span class="text-[10px] text-slate-500 font-mono shrink-0">
+                        {{ countTotalArchivos(itemNode) }} docs
+                      </span>
+                    </div>
                   </div>
 
                   <!-- CONTENIDO DE ELEMENTO: ARCHIVOS REALES ALMACENADOS EN BD -->
                   <div v-if="isNodeExpanded(itemNode.id)" class="pl-4 pr-2 pb-2 pt-1 border-l border-white/5 ml-3 space-y-1">
                     
                     <!-- Sin documentos reales -->
-                    <div v-if="!itemNode.files || itemNode.files.length === 0" class="p-3 text-slate-500 italic text-xs">
-                      Sin documentos cargados en el expediente de este registro (0 archivos en BD).
+                    <div v-if="!itemNode.files || itemNode.files.length === 0" class="p-3 text-slate-500 italic text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-black/20 rounded-lg">
+                      <span>Sin documentos cargados en el expediente de este registro (0 archivos en BD).</span>
+                      <button
+                        v-if="String(itemNode.id).startsWith('emp-')"
+                        @click.stop="abrirModalSubirDocEmpresa(itemNode.id_empresa)"
+                        class="text-[11px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg font-bold transition-all self-start sm:self-auto cursor-pointer"
+                      >
+                        + 📤 Subir Primer Documento
+                      </button>
                     </div>
 
                     <!-- CASO A: EXPEDIENTE DE PERSONA -> DOCUMENTOS UNIVERSALES + MATRIZ MULTI-EMPRESA (SPEC 45) -->
@@ -525,6 +543,17 @@
                           <span>Abrir</span>
                           <span class="text-[10px]">↗</span>
                         </button>
+
+                        <!-- Botón de dar de baja para documentos de empresa -->
+                        <button
+                          v-if="String(itemNode.id).startsWith('emp-')"
+                          @click.stop="darDeBajaDocumentoEmpresa(file, itemNode.id_empresa)"
+                          type="button"
+                          class="cursor-pointer text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1"
+                          title="Dar de baja este documento institucional de la empresa"
+                        >
+                          <span>🗑️</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -542,6 +571,162 @@
       :report="reportSeleccionadoParaVisor"
       @close="modalVisorReportAbierto = false"
     />
+
+    <!-- MODAL SUBIR DOCUMENTO DE EMPRESA (OPCIÓN A) -->
+    <div
+      v-if="modalSubirDocEmpresaAbierto"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+    >
+      <div class="bg-[#0e1628] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <!-- Cabecera del Modal -->
+        <div class="flex items-center justify-between p-4 border-b border-white/10 bg-[#131e36]">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🏛️</span>
+            <div>
+              <h3 class="text-sm font-black text-white uppercase tracking-wider font-display">
+                Cargar Documentación de Empresa
+              </h3>
+              <p class="text-[11px] text-slate-400">
+                Acreditación institucional para el holding Grúas San Pablo
+              </p>
+            </div>
+          </div>
+          <button
+            @click="cerrarModalSubirDocEmpresa"
+            class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Cuerpo del Formulario -->
+        <div class="p-5 space-y-4 text-xs">
+          <!-- 1. Selector de Empresa -->
+          <div>
+            <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+              Empresa del Holding *
+            </label>
+            <select
+              v-model="nuevoDocEmpresa.id_empresa"
+              class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500/50"
+            >
+              <option :value="null" disabled>Seleccionar empresa...</option>
+              <option v-for="emp in empresasList" :key="emp.id_empresa" :value="emp.id_empresa">
+                {{ emp.logo }} {{ emp.name }} (RUT: {{ emp.rut }})
+              </option>
+            </select>
+          </div>
+
+          <!-- 2. Tipo de Documento Institucional -->
+          <div>
+            <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+              Tipo de Documento *
+            </label>
+            <select
+              v-model="nuevoDocEmpresa.tipo_doc_id"
+              @change="onTipoDocEmpresaChange"
+              class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500/50"
+            >
+              <option v-for="t in catalogoTiposDocEmpresa" :key="t.id" :value="t.id">
+                {{ t.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 3. Nombre / Glosa Descriptiva -->
+          <div>
+            <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+              Nombre o Glosa Descriptiva
+            </label>
+            <input
+              v-model="nuevoDocEmpresa.nombre_glosa"
+              type="text"
+              placeholder="Ej: F30-1 Septiembre 2026"
+              class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500/50"
+            />
+          </div>
+
+          <!-- 4. Vigencia: Permanente vs Fecha -->
+          <div class="bg-black/30 p-3 rounded-xl border border-white/5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300 font-bold text-[10px] uppercase tracking-wider">Régimen de Vigencia</span>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="nuevoDocEmpresa.es_permanente"
+                  class="rounded bg-black/40 border-white/20 text-amber-500 focus:ring-0"
+                />
+                <span class="text-[11px] text-slate-300 font-semibold">Vigencia Permanente</span>
+              </label>
+            </div>
+
+            <div v-if="!nuevoDocEmpresa.es_permanente">
+              <label class="block text-slate-400 text-[10px] mb-1">
+                Fecha de Vencimiento *
+              </label>
+              <input
+                v-model="nuevoDocEmpresa.fecha_vencimiento"
+                type="date"
+                class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500/50 [color-scheme:dark]"
+              />
+              <p class="text-[10px] text-amber-400/80 mt-1">
+                💡 Nota: Los F30-1 suelen vencer el 15 del mes subsiguiente.
+              </p>
+            </div>
+            <div v-else class="text-[10px] text-emerald-400 flex items-center gap-1.5">
+              <span>🟢</span>
+              <span>El documento se registrará con vigencia permanente e inmutable.</span>
+            </div>
+          </div>
+
+          <!-- 5. Selector de Archivo PDF -->
+          <div>
+            <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+              Archivo PDF Oficial *
+            </label>
+            <div class="border-2 border-dashed border-white/10 hover:border-amber-500/50 rounded-xl p-4 text-center transition-colors bg-black/20">
+              <input
+                type="file"
+                accept=".pdf"
+                id="fileInputDocEmpresa"
+                class="hidden"
+                @change="onFileChangeDocEmpresa"
+              />
+              <label for="fileInputDocEmpresa" class="cursor-pointer flex flex-col items-center gap-1.5">
+                <span class="text-2xl">📄</span>
+                <span v-if="!archivoDocEmpresa" class="text-xs text-amber-400 hover:underline font-bold">
+                  Haga clic para seleccionar archivo PDF
+                </span>
+                <span v-else class="text-xs text-emerald-400 font-bold truncate max-w-xs">
+                  ✅ {{ archivoDocEmpresa.name }} ({{ (archivoDocEmpresa.size / 1024).toFixed(1) }} KB)
+                </span>
+                <span class="text-[10px] text-slate-500">Solo archivos en formato PDF (máx. 20MB)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer / Acciones -->
+        <div class="flex items-center justify-end gap-2.5 p-4 border-t border-white/10 bg-[#070b14]">
+          <button
+            @click="cerrarModalSubirDocEmpresa"
+            type="button"
+            class="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="subirDocumentoEmpresaModal"
+            type="button"
+            :disabled="subiendoDocEmpresa"
+            class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl text-xs transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="subiendoDocEmpresa" class="animate-spin">⏳</span>
+            <span>{{ subiendoDocEmpresa ? 'Subiendo y Vinculando...' : '📤 Guardar y Vincular' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -553,10 +738,37 @@ import ModalVisorReport from '../components/Operaciones/ModalVisorReport.vue'
 // --- ESTADO GENERAL ---
 const activeDimension = ref('todas')
 const cargandoDatos = ref(false)
-const expandedNodes = ref(new Set(['dim-equipos', 'dim-personas']))
+const expandedNodes = ref(new Set(['dim-empresa', 'grupo-sociedades-holding', 'dim-equipos', 'dim-personas']))
 
 const filtroGlobal = ref('')
 const filtroEstadoVigencia = ref('TODOS')
+
+// --- ESTADO PARA MODAL SUBIR DOCUMENTO DE EMPRESA (OPCIÓN A) ---
+const modalSubirDocEmpresaAbierto = ref(false)
+const subiendoDocEmpresa = ref(false)
+const archivoDocEmpresa = ref(null)
+
+const catalogoTiposDocEmpresa = [
+  { id: 'F30-1', codigo: 'F30-1', nombre: 'Certificado F30-1 (Obligaciones Laborales y Previsionales)', permanente: false, diasSugeridosVenc: 45 },
+  { id: 'SINIESTRALIDAD_DS67', codigo: 'SINIESTRALIDAD', nombre: 'Certificado de Siniestralidad Mutual (DS 67)', permanente: false, diasSugeridosVenc: 180 },
+  { id: 'CARPETA_TRIBUTARIA', codigo: 'CARPETA_TRIBUTARIA', nombre: 'Carpeta Tributaria Electrónica (SII)', permanente: true },
+  { id: 'RIOHS_POLITICAS', codigo: 'RIOHS', nombre: 'Reglamento Interno RIOHS & Políticas HSEC', permanente: false, diasSugeridosVenc: 365 },
+  { id: 'CERT_MUTUALIDAD', codigo: 'AFILIACION_MUTUAL', nombre: 'Certificado de Afiliación a Mutualidad (ACHS / Mutual / IST)', permanente: false, diasSugeridosVenc: 365 },
+  { id: 'E_RUT', codigo: 'E_RUT', nombre: 'Iniciación de Actividades / E-RUT Institucional', permanente: true },
+  { id: 'ESCRITURA_PODERES', codigo: 'ESCRITURA', nombre: 'Escritura de Constitución y Poderes Notariales', permanente: true },
+  { id: 'CERT_BANCARIO', codigo: 'CERT_BANCARIO', nombre: 'Certificado Bancario / Cuentas Corrientes', permanente: true },
+  { id: 'OTRO_DOC_EMPRESA', codigo: 'DOC_INSTITUCIONAL', nombre: 'Otro Documento Institucional de Empresa', permanente: false, diasSugeridosVenc: 90 }
+]
+
+const nuevoDocEmpresa = ref({
+  id_empresa: null,
+  tipo_doc_id: 'F30-1',
+  tipo_codigo: 'F30-1',
+  tipo_nombre: 'Certificado F30-1 (Obligaciones Laborales y Previsionales)',
+  nombre_glosa: '',
+  es_permanente: false,
+  fecha_vencimiento: ''
+})
 
 // --- DATOS MAESTROS PROVENIENTES DE BD ---
 const empresasList = ref([
@@ -670,23 +882,43 @@ const cargarCertificadosPersonaDirecto = async (idUser) => {
   }
 }
 
-const cargarDocumentosEmpresaDirecto = async (idEmpresa) => {
-  if (certsEmpresasCache.value.has(idEmpresa)) return
+const cargarDocumentosEmpresaDirecto = async (idEmpresa, forceReload = false) => {
+  if (!forceReload && certsEmpresasCache.value.has(idEmpresa)) return
   try {
     const { data } = await apiAxios.get(`/acreditacion/empresa/${idEmpresa}/documentos`)
     const docs = Array.isArray(data?.data) ? data.data : []
-    certsEmpresasCache.value.set(idEmpresa, docs.map(d => ({
-      id_doc: d.id_doc,
-      id_certificado: d.id_doc,
-      name: d.name_doc_orig || `${d.name_doc_interno || 'Documento_Empresa'}.pdf`,
-      tipo: 'Documento Institucional',
-      emisor: d.name_empresa || 'Holding GSP',
-      id_empresa: d.id_empresa,
-      empresa_emisora: d.name_empresa,
-      fecha_emision: d.fecha_creacion ? d.fecha_creacion.split('T')[0] : 'S/I',
-      fecha_vencimiento: 'Permanente',
-      size: 'PDF Oficial'
-    })))
+    certsEmpresasCache.value.set(idEmpresa, docs.map(d => {
+      let rawName = d.name_doc_orig || d.name_doc_interno || 'Documento_Empresa.pdf'
+      let fechaVenc = 'Permanente'
+      let tipoDoc = 'Documento Institucional'
+      let nombreLimpio = rawName
+
+      const vencMatch = rawName.match(/\[VENC:\s*(\d{4}-\d{2}-\d{2})\]/i) || rawName.match(/\(Vence\s*(\d{4}-\d{2}-\d{2})\)/i)
+      if (vencMatch) {
+        fechaVenc = vencMatch[1]
+        nombreLimpio = nombreLimpio.replace(vencMatch[0], '').trim()
+      }
+
+      const tipoMatch = rawName.match(/^\[([^\]]+)\]\s*(.*)$/)
+      if (tipoMatch) {
+        tipoDoc = tipoMatch[1].replace(/_/g, ' ')
+        nombreLimpio = tipoMatch[2].replace(/\[VENC:[^\]]+\]/gi, '').trim()
+      }
+
+      return {
+        id_doc: d.id_doc,
+        id_certificado: d.id_doc,
+        name: nombreLimpio || rawName,
+        raw_name: rawName,
+        tipo: tipoDoc,
+        emisor: d.name_empresa || 'Holding GSP',
+        id_empresa: d.id_empresa,
+        empresa_emisora: d.name_empresa,
+        fecha_emision: d.fecha_creacion ? d.fecha_creacion.split('T')[0] : 'S/I',
+        fecha_vencimiento: fechaVenc,
+        size: 'PDF Oficial'
+      }
+    }))
   } catch (err) {
     certsEmpresasCache.value.set(idEmpresa, [])
   }
@@ -704,15 +936,23 @@ const allTreeRoots = computed(() => {
     subtitle: 'Sociedades operativas del grupo San Pablo registradas en base de datos',
     icon: '🏛️',
     badge: `${empresasList.value.length} Empresas`,
-    children: empresasList.value.map(emp => ({
-      id: `emp-${emp.id_empresa}`,
-      id_empresa: emp.id_empresa,
-      label: `${emp.name} • RUT: ${emp.rut}`,
-      icon: '🏢',
-      get files() {
-        return certsEmpresasCache.value.get(emp.id_empresa) || []
+    children: [
+      {
+        id: 'grupo-sociedades-holding',
+        label: 'Sociedades Operativas del Holding San Pablo',
+        icon: '🏛️',
+        detail: '4 empresas con personería jurídica y RUT independiente',
+        children: empresasList.value.map(emp => ({
+          id: `emp-${emp.id_empresa}`,
+          id_empresa: emp.id_empresa,
+          label: `${emp.name} • RUT: ${emp.rut}`,
+          icon: emp.logo || '🏢',
+          get files() {
+            return certsEmpresasCache.value.get(emp.id_empresa) || []
+          }
+        }))
       }
-    }))
+    ]
   })
 
   // 2. DIMENSIÓN FLOTA Y EQUIPOS (110 EQUIPOS REALES + 289 CERTIFICADOS REALES)
@@ -984,6 +1224,8 @@ const toggleNode = (id) => {
     } else if (strId.startsWith('emp-')) {
       const empId = strId.replace('emp-', '')
       cargarDocumentosEmpresaDirecto(empId)
+    } else if (strId === 'grupo-sociedades-holding' || strId === 'dim-empresa') {
+      empresasList.value.forEach(emp => cargarDocumentosEmpresaDirecto(emp.id_empresa))
     } else if (strId.startsWith('cat-')) {
       const catName = strId.replace('cat-', '')
       const eqsEnCat = equiposList.value.filter(e => (e.nombre_categoria || e.tipo_equipo || 'OTROS EQUIPOS') === catName)
@@ -1018,6 +1260,10 @@ const cambiarDimension = (dimId) => {
   activeDimension.value = dimId
   if (dimId !== 'todas') {
     expandedNodes.value.add(`dim-${dimId}`)
+    if (dimId === 'empresa') {
+      expandedNodes.value.add('grupo-sociedades-holding')
+      empresasList.value.forEach(emp => cargarDocumentosEmpresaDirecto(emp.id_empresa))
+    }
   }
 }
 
@@ -1181,6 +1427,151 @@ const abrirDocumentoNuevaPestana = (file) => {
   const idDoc = file.id_doc || (file.url ? file.url.replace('/api/archivo/ver/', '').replace(/^\//, '') : '')
   const url = `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${idDoc}`
   window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+// --- FUNCIONES PARA GESTIÓN DE DOCUMENTOS DE EMPRESA (OPCIÓN A) ---
+const abrirModalSubirDocEmpresa = (idEmpresa = null) => {
+  nuevoDocEmpresa.value.id_empresa = idEmpresa || (empresasList.value[0]?.id_empresa ?? 9)
+  nuevoDocEmpresa.value.tipo_doc_id = 'F30-1'
+  nuevoDocEmpresa.value.tipo_codigo = 'F30-1'
+  nuevoDocEmpresa.value.tipo_nombre = 'Certificado F30-1 (Obligaciones Laborales y Previsionales)'
+  nuevoDocEmpresa.value.nombre_glosa = ''
+  nuevoDocEmpresa.value.es_permanente = false
+  
+  // Sugerir vencimiento automático al día 15 del mes subsiguiente
+  const fechaSugerida = new Date()
+  fechaSugerida.setMonth(fechaSugerida.getMonth() + 1)
+  fechaSugerida.setDate(15)
+  nuevoDocEmpresa.value.fecha_vencimiento = fechaSugerida.toISOString().split('T')[0]
+  
+  archivoDocEmpresa.value = null
+  modalSubirDocEmpresaAbierto.value = true
+}
+
+const cerrarModalSubirDocEmpresa = () => {
+  modalSubirDocEmpresaAbierto.value = false
+  archivoDocEmpresa.value = null
+}
+
+const onTipoDocEmpresaChange = () => {
+  const sel = catalogoTiposDocEmpresa.find(t => t.id === nuevoDocEmpresa.value.tipo_doc_id)
+  if (!sel) return
+  nuevoDocEmpresa.value.tipo_codigo = sel.codigo
+  nuevoDocEmpresa.value.tipo_nombre = sel.nombre
+  nuevoDocEmpresa.value.es_permanente = sel.permanente
+  
+  if (sel.permanente) {
+    nuevoDocEmpresa.value.fecha_vencimiento = ''
+  } else if (sel.diasSugeridosVenc) {
+    const f = new Date()
+    f.setDate(f.getDate() + sel.diasSugeridosVenc)
+    nuevoDocEmpresa.value.fecha_vencimiento = f.toISOString().split('T')[0]
+  }
+}
+
+const onFileChangeDocEmpresa = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    alert('Solo se admiten documentos en formato PDF.')
+    event.target.value = ''
+    return
+  }
+  archivoDocEmpresa.value = file
+  if (!nuevoDocEmpresa.value.nombre_glosa) {
+    nuevoDocEmpresa.value.nombre_glosa = file.name.replace(/\.pdf$/i, '')
+  }
+}
+
+const subirDocumentoEmpresaModal = async () => {
+  if (!nuevoDocEmpresa.value.id_empresa) {
+    alert('Por favor selecciona la empresa destinataria.')
+    return
+  }
+  if (!archivoDocEmpresa.value) {
+    alert('Por favor selecciona el archivo PDF a subir.')
+    return
+  }
+  if (!nuevoDocEmpresa.value.es_permanente && !nuevoDocEmpresa.value.fecha_vencimiento) {
+    alert('Por favor ingresa la fecha de vencimiento o marca la casilla de vigencia permanente.')
+    return
+  }
+
+  subiendoDocEmpresa.value = true
+  try {
+    const idEmpresa = nuevoDocEmpresa.value.id_empresa
+    const tagVenc = nuevoDocEmpresa.value.es_permanente ? '' : ` [VENC: ${nuevoDocEmpresa.value.fecha_vencimiento}]`
+    const glosa = nuevoDocEmpresa.value.nombre_glosa || nuevoDocEmpresa.value.tipo_nombre
+    const finalFileName = `[${nuevoDocEmpresa.value.tipo_codigo}] ${glosa}${tagVenc}.pdf`
+
+    // 1. Subir archivo a almacenamiento físico
+    const formData = new FormData()
+    formData.append('archivo', archivoDocEmpresa.value, finalFileName)
+    formData.append('tipo_doc', 'DOC_EMPRESA')
+    formData.append('tenant_code', 'gsp')
+    formData.append('modulo', 'empresa')
+    formData.append('id_proceso', idEmpresa)
+
+    let idDoc = null
+    try {
+      const res = await apiAxios.post('/v1/storage/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      idDoc = res.data?.data?.id_doc || res.data?.id_doc
+    } catch (eStorage) {
+      console.warn('Fallback a /archivo/upload:', eStorage)
+      const resFallback = await apiAxios.post('/archivo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      idDoc = resFallback.data?.id_doc || resFallback.data?.id
+    }
+
+    if (!idDoc) {
+      throw new Error('No se pudo obtener el identificador único (id_doc) del archivo.')
+    }
+
+    // 2. Asociar el documento institucional en la base de datos
+    const userRaw = localStorage.getItem('user')
+    let idUser = null
+    try { idUser = JSON.parse(userRaw)?.id_user } catch (e) {}
+
+    await apiAxios.post(`/acreditacion/empresa/${idEmpresa}/documentos`, {
+      id_doc: idDoc,
+      id_user: idUser
+    })
+
+    // 3. Forzar refresco reactivo de los documentos de la empresa
+    certsEmpresasCache.value.delete(Number(idEmpresa))
+    certsEmpresasCache.value.delete(String(idEmpresa))
+    await cargarDocumentosEmpresaDirecto(idEmpresa, true)
+
+    // Expandir nodos para visualizarlo
+    expandedNodes.value.add('dim-empresa')
+    expandedNodes.value.add('grupo-sociedades-holding')
+    expandedNodes.value.add(`emp-${idEmpresa}`)
+
+    cerrarModalSubirDocEmpresa()
+    alert('Documento institucional vinculado y acreditado correctamente.')
+  } catch (err) {
+    console.error('Error al subir documento de empresa:', err)
+    alert(`Error al registrar el documento: ${err.response?.data?.message || err.message}`)
+  } finally {
+    subiendoDocEmpresa.value = false
+  }
+}
+
+const darDeBajaDocumentoEmpresa = async (file, idEmpresa) => {
+  if (!confirm(`¿Está seguro de dar de baja el documento "${file.name}" de esta empresa?`)) return
+  try {
+    await apiAxios.delete(`/acreditacion/empresa/${idEmpresa}/documentos/${file.id_doc}`)
+    certsEmpresasCache.value.delete(Number(idEmpresa))
+    certsEmpresasCache.value.delete(String(idEmpresa))
+    await cargarDocumentosEmpresaDirecto(idEmpresa, true)
+    alert('Documento dado de baja correctamente.')
+  } catch (err) {
+    console.error('Error al eliminar documento:', err)
+    alert(`Error al dar de baja el documento: ${err.response?.data?.message || err.message}`)
+  }
 }
 
 onMounted(fetchDatosDimensiones)
