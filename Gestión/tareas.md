@@ -196,19 +196,25 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Jorge Ponce] Agendar Sesiones Individuales:** Coordinar reuniones breves de la tarde con Secretaría, Contabilidad, Operador y Coordinador.
 *   [ ] **[Jorge Ponce] Conversar con Prevencionista:** Validar con Dayana la periodicidad y alcance del AST simple por equipo.
 
+**Reunión 21-Sep-2026 (Seguimiento Operacional, Roles Comerciales & Estrategia Mantenimiento):**
+*   [ ] **[Sergio Gajardo] Documentos de Empresa (Opción A):** Integrar interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas.
+*   [ ] **[Sergio Gajardo] Enrolamiento de Usuarios en Marcha Blanca:** Enrolar y configurar permisos de Wilson, Yara, Marita y Dayana con credenciales y roles canónicos LeanGlobal.
+*   [ ] **[Sergio Gajardo] Restricción Comercial de Edición:** Restringir visibilidad/edición de cotizaciones en Gestor de Oportunidades para que cada vendedor solo modifique sus propias cotizaciones.
+*   [ ] **[Sergio Gajardo] Mantenimiento OTs Primero (Spec 48):** Implementar flujo operacional de Órdenes de Trabajo para flota existente (`tequ_equipo`), HH, servicios de terceros y cierre con PIN de supervisor.
+*   [ ] **[Jorge Ponce] Enviar Datos para Enrolamiento:** Remitir nombres, RUT, correos y cargos de Wilson, Yara, Marita y Dayana.
+*   [ ] **[Jorge Ponce & Dayana] Carga de Documentación Empresa:** Cargar los F30-1 y carpetas tributarias de las 4 empresas hermanas durante la semana.
+*   [ ] **[Jorge Ponce] Inicio Marcha Blanca en Paralelo:** Coordinar con Wilson y Natalia para cotizar en paralelo en la nueva plataforma web y en Geralsoft.
+
 ---
 
-### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Herencia Global Manager - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c`)
-*(Vinculado a la referencia funcional de Global Manager en `presentaciones/index.html` y especificaciones Spec-Driven `17_wms_inventario_spec.md` y `18_mantenimiento_ots_spec.md`)*
+### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Evolucionado a Spec 48 - Conv. `841d80bf-22f4-45cc-b03c-e1cf54b1019c` / IDE)
+*(Reemplaza Specs 17 y 18 por `.agents/specs/48_inventario_mantenimiento_v2_spec.md`. Estrategia aprobada 21-Sep: Mantenimiento OTs primero sobre flota existente `tequ_equipo`, desacoplando WMS-Lite para una segunda etapa).*
 *   [x] **[Análisis Funcional Legacy]:** Recuperar blueprint funcional de Global Manager (`index.html`), estructurando campos, reglas de negocio duras (OC requerida, costo > 0, PIN de cierre) y roles de ejecutor.
 *   [x] **[Integración Maestro de Flota]:** Confirmar reutilización y consumo directo del módulo de Flota/Equipos (`tequ_equipo`) ya implementado y activo en GSP (sin re-diseño redundante).
-*   [x] **[Especificaciones Spec-Driven]:** Formalizar las especificaciones `.agents/specs/17_wms_inventario_spec.md` (RF-WMS-01 a 07) y `.agents/specs/18_mantenimiento_ots_spec.md` (RF-MNT-01 a 06).
-*   [ ] **[RF-WMS-01/02] Backend WMS-Lite:** Implementar modelos de datos PostgreSQL `tinv_bodega`, `tinv_producto`, `tinv_existencia` y restricciones duras HTTP 422 (`COSTO_CERO_NO_PERMITIDO`, `OC_REQUERIDA`).
-*   [ ] **[RF-WMS-03/04] Endpoints REST & Traspasos:** Desarrollar controladores Node.js para movimientos de stock, estados `EN_TRANSITO` y despacho por escaneo de código de barras a OTs.
-*   [ ] **[RF-WMS-05/06] UI WMS-Lite Consola GSP:** Construir vistas Vue 3 de Bodegas, Catálogo de Productos, Registro de Existencias y Alertas de Stock Mínimo.
-*   [ ] **[RF-MNT-01/02] Backend Mantenimiento OTs:** Implementar tablas `tmnt_ot`, `tmnt_ot_actividad`, `tmnt_ot_hh`, `tmnt_ot_cierre` y triggers de BD/API (`EQUIPO_CON_OT_ACTIVA`, `OT_CON_ACTIVIDADES_PENDIENTES`).
-*   [ ] **[RF-MNT-03/04] Cierre OT con PIN 4 Dígitos:** Implementar flujo seguro de firma digital de cierre de OT mediante hash de PIN de supervisor e imputación automática de repuestos, HH y servicios externos.
-*   [ ] **[RF-MNT-05/06] UI Mantenimiento Consola GSP:** Construir panel Kanban y Ficha de OT con checklist reactivo, imputaciones de HH/repuestos y modal de cierre con PIN.
+*   [x] **[Consolidación Spec 48]:** Especificación formal `.agents/specs/48_inventario_mantenimiento_v2_spec.md` (Catálogo SKU `{FAM}-{MAR}-{ID:04d}`, Existencia unitaria por lote con QR térmico $50 \times 30$ mm, Matriz de criticidad combinada, Ciclo OTs con costeo cuatripartito y cierre PIN supervisor).
+*   [x] **[Primer Approach UI Frontend]:** Estructuración de 6 vistas Vue 3 (`MantenimientoView.vue`, `ProductosView.vue`, `BodegasView.vue`, `AlertasQuiebresView.vue`, `DespachoConsumoView.vue`, `RecepcionMaterialesView.vue`).
+*   [ ] **[Etapa 1 - Mantenimiento OTs]:** Backend y UI para gestión de OTs de Flota GSP (`tmnt_ot`, `tmnt_ot_actividad`, `tmnt_ot_hh`, `tmnt_ot_cierre`), costos HH, servicios externos y cierre seguro con PIN.
+*   [ ] **[Etapa 2 - WMS-Lite e Inventario]:** Modelos `tinv_bodega`, `tinv_producto`, `tinv_existencia`, trazabilidad QR térmico y alertas de reposición.
 
 ### Fase 11: Sprint 5 (Plan de Trabajo Antigravity 2.0 - Refinamiento Operativo)
 *(Ver especificaciones detalladas en [plan_de_trabajo_ag2.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/Gestión/plan_de_trabajo_ag2.md))*
@@ -309,7 +315,5 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Candado Criptográfico FES en Estado de Pago (EDP) - GestorOportunidades.vue]:** Bloquear la Carátula Oficial de EDP hasta que el Coordinador Richard apruebe el ITS con su PIN FES de 4 dígitos (Spec 47), desplegando banner dorado con acceso directo a visación. `COMPILADO 0 ERRORES Y VERIFICADO`.
 * [ ] **[Mapa Didáctico de Entregables por Etapa]:** Confeccionar documento guía para Jorge Ponce y equipo comercial/operativo.
 * [ ] **[Hito Pruebas en Paralelo - 21 de Septiembre]:** Inicio de marcha blanca con vendedores cotizando en vivo en Casa Matriz.
-
-
-
-
+* [x] **[Torre de Control Tri-Modal - Spec 20]:** Implementación de navegación tri-modal (`[ 🗂️ Kanban ] [ 📊 Matriz PMO ] [ 📅 Perspectiva Temporal Gantt ]`), Matriz PMO con auditoría de 7 hitos y alertas en tiempo real, Gantt de 110 equipos con código cromático, detección de colisiones horarias y columna de productividad (% OEE). `VERIFICADO EN PRODUCCIÓN Y COMPILADO 0 ERRORES`.
+* [ ] **[Documentos de Empresa - Opción A]:** Interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas.
