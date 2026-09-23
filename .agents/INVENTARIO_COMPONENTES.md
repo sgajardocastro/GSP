@@ -128,7 +128,6 @@
 * **Última Modificación:** `2026-09-10`
 * **Dominio / Alcance:** Informes Técnicos de Servicio (ITS), firmas de conformidad de cliente y horas de operación.
 * **Endpoints Expuestos (`/api/its`, `/api/operaciones/its`):**
-  * `GET /api/its/proyecto/:id_proyecto` — Informes técnicos del proyecto.
   * `POST /api/its/crear` — Emisión de nuevo ITS.
 
 ---
@@ -142,15 +141,17 @@
 
 ### 1. `GestorOportunidades.vue`
 * **Ruta Física:** `src/views/CRM/GestorOportunidades.vue`
-* **Versión Actual:** `1.0.46`
-* **Última Modificación:** `2026-09-22`
+* **Versión Actual:** `1.0.47`
+* **Última Modificación:** `2026-09-23`
 * **Dominio / Alcance:** Componente central del CRM comercial. Gestiona:
   1. Pipeline de etapas de cotización (Ingreso, Preventa, Verificación, Oferta, Cierre).
   2. Solicitud de Visita a Terreno en Preventa (`POST /api/visitas/solicitar/:id` - Límite línea 12084).
   3. Asignación y Reasignación de Visita Técnica en Verificación (`POST /api/survey` y `PUT /api/survey/UpdPlan/:id` - Líneas 8572-8740).
   4. Cierre económico, órdenes de compra y facturación.
-* **Servicios que Consume:** `/api/proyectos`, `/api/visitas`, `/api/survey`, `/api/viajes`, `/api/its`
+  5. Trazabilidad e identificación del Ejecutivo Comercial creador (`tpry_proyecto.id_usuario_creacion`).
+* **Servicios que Consume:** `/api/proyectos`, `/api/visitas`, `/api/survey`, `/api/viajes`, `/api/its`, `/api/usuarios`
 * **Historial de Cambios (Changelog):**
+  * `v1.0.47 (2026-09-23)`: Visibilidad Universal del Ejecutivo Comercial (Spec 16 - Sección 12). Badge fijo `👤 [Ejecutivo: Nombre]` en la cabecera del requerimiento, campo informativo en Sección 1 Datos de la Oportunidad, hidratación canónica de `tpry_proyecto.id_usuario_creacion`, resolución de nombres contra `tsec_users` (`name_frst` + `apellido_pat`) y persistencia inmutable obligatoria (jamás `null`).
   * `v1.0.46 (2026-09-22)`: Integración del Despacho Dual (Correo + WhatsApp Oficial) en botón "Autorizar Salida & Notificar Viaje" (`autorizarSalidaEquipo`). Resuelve teléfono móvil del operador asignado (`+56936483259` para Sergio Gajardo), formatea el payload de Hoja de Ruta para Baileys y despacha a `https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar` en simultáneo con el correo SMTP, registrando traza en auditoría.
   * `v1.0.45 (2026-09-22)`: Homologación y pre-población de fechas planificadas en Asignación de Recursos OT: `obtenerFechasComercialesDefecto` extrae por defecto `siteVisit.fecha_hora_inicio` y `siteVisit.fecha_hora_termino` hacia `Salida Base` y `Término Faena` (`operacionesAssignment`), con propagación automática a líneas de equipos, traslados y especialistas de terreno.
   * `v1.0.44 (2026-09-22)`: Blindaje del valor cotizado en Verificación Operaciones: anclaje de `totalNetoComercial` y subtotales de líneas originales a `snapshotComercial`, forzado a $0 de líneas nuevas añadidas por Operaciones (`calcularSubtotalOperaciones`), y resaltado visual en rojo de filas y campos para nuevos elementos operativos (`!isOriginalLine`).
@@ -169,7 +170,7 @@
 * **Servicios que Consume:** `/api/usuarios/enrolamiento/listar`, `/api/usuarios/enrolamiento/masivo`
 * **Historial de Cambios (Changelog):**
   * `v1.1.0 (2026-09-22)`: [En implementación] Incorporación de botón `[ ✉️ Reenviar ]` para usuarios con `flag_proc_enrol: true`.
-  * `v1.0.0 (2026-09-08)`: Creación de interfaz con soporte para carga Excel drag & drop.
+  * `v1.0.0 (2026-08-08)`: Creación de interfaz con soporte para carga Excel drag & drop.
 
 ---
 
@@ -191,13 +192,13 @@
 * **Dominio / Alcance:** Renderizador y generador de reportes imprimibles / PDF para inspecciones técnicas, Template 80 y visitas a terreno.
 ### 5. `Torre.vue`
 * **Ruta Física:** `src/views/Torre.vue`
-* **Versión Actual:** `1.2.0`
+* **Versión Actual:** `1.2.1`
 * **Última Modificación:** `2026-09-23`
 * **Dominio / Alcance:** Tablero Kanban principal de la Torre de Control Operativa y Comercial. Renderiza las tarjetas de proyectos en sus 6 columnas canónicas (Preventa, Verificación, Asignación, Preparación, Ejecución, Completados), cálculo dinámico de montos por tarjeta, semáforos de acreditación y accesos rápidos al CRM.
 * **Servicios que Consume:** `/api/proyectos`, `/api/usuarios`
 * **Historial de Cambios (Changelog):**
+  * `v1.2.1 (2026-09-23)`: Visibilidad Universal del Ejecutivo en las 6 Columnas Kanban (Spec 16 - Sección 12). Despliegue de `👤 [Nombre Ejecutivo]` en todas las tarjetas operativas, soporte para `id_usuario_creacion` canónico de PostgreSQL y resolución de nombres vía concatenación `name_frst` + `apellido_pat`.
   * `v1.2.0 (2026-09-23)`: Implementación del Buscador Omnibox Reactivo en la cabecera del Tablero Kanban (Spec 16 - Sección 11). Filtrado concurrente multi-criterio en tiempo real por N° Cotización/Código, Cliente, Vendedor (resuelto vía `/api/usuarios`), Obra/Faena y Recursos asignados (patente/operador). Badge reactivo de totalización de coincidencias, botón de reseteo rápido (`Esc`) y micro-badge de Vendedor en tarjetas de Preventa.
-  * `v1.1.0 (2026-09-22)`: Corrección y homologación del cálculo de monto en tarjetas (`formatMonto` con `calcularSubtotalLinea`). Resuelve desfase matemático incorporando horas y días mínimos (`dias * horas * valorUnitario` en Horas Diarias/Mensuales).
   * `v1.0.0 (2026-08-15)`: Implementación de tablero Kanban de Torre de Control.
 
 ---

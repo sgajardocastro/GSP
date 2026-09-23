@@ -3,9 +3,14 @@
     <!-- Header -->
     <div class="flex justify-between items-end flex-shrink-0">
       <div>
-        <h2 class="text-2xl font-black text-white">
-          {{ isModoOperaciones ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}
-          <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-xl ml-2 font-black">[{{ antecedentes.identificador_formal }}]</span>
+        <h2 class="text-2xl font-black text-white flex items-center flex-wrap gap-2">
+          <span>{{ isModoOperaciones ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}</span>
+          <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-xl font-black">[{{ antecedentes.identificador_formal }}]</span>
+          <span v-if="nombreEjecutivoComercial" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+            <span>👤</span>
+            <span class="text-[10px] uppercase text-indigo-400 font-bold">Ejecutivo:</span>
+            <span class="text-white font-bold">{{ nombreEjecutivoComercial }}</span>
+          </span>
         </h2>
         <p class="text-sm text-slate-300 mt-1">
           {{ isModoOperaciones ? 'Revisión técnica de antecedentes, auditoría de modificaciones y asignación de flota.' : 'Estructuración B2B de requerimientos de izaje y logística.' }}
@@ -220,7 +225,7 @@
               <div class="text-[11px] text-slate-400 mt-0.5 flex gap-4">
                 <span>Cotización: <strong class="text-amber-500 font-mono">{{ antecedentes.identificador_formal || 'COT-2026-042' }}</strong></span>
                 <span>Moneda: <strong class="text-white font-mono">{{ comercial.moneda }}</strong></span>
-                <span>Total Net Cotizado: <strong class="text-amber-400 font-mono">{{ formatCurrency(totalNeto) }}</strong></span>
+                <span>Total Net Cotizado: <strong class="text-amber-400 font-mono">{{ formatCurrency(totalNetoComercial) }}</strong></span>
               </div>
             </div>
           </div>
@@ -356,18 +361,18 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
-                    <tr v-for="(line, idx) in lines" :key="idx" class="hover:bg-white/[0.02] transition-colors">
+                    <tr v-for="(line, idx) in lines" :key="idx" class="transition-colors" :class="!isOriginalLine(idx) ? 'bg-red-500/[0.04] border-l-2 border-l-red-500' : 'hover:bg-white/[0.02]'">
                       <td class="p-2">
                         <div v-if="!isOriginalLine(idx)" class="mb-1">
-                          <span class="inline-block px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded text-[9px] font-bold uppercase tracking-wider">
-                            + Nueva Línea
+                          <span class="inline-block px-1.5 py-0.5 bg-red-500/20 text-red-300 border border-red-500/40 rounded text-[9px] font-bold uppercase tracking-wider">
+                            ⚠️ + Nueva Línea Operativa
                           </span>
                         </div>
                         <select 
                           v-model="line.tipo" 
                           @change="onTipoChange(line)" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
-                          :class="hasDiff('equipo_tipo', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
+                          :class="(hasDiff('equipo_tipo', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
                           <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
@@ -382,7 +387,7 @@
                         <select 
                           v-model="line.subcategoria" 
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="hasDiff('equipo_subcategoria', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
+                          :class="(hasDiff('equipo_subcategoria', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         >
                           <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
                           <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
@@ -399,7 +404,7 @@
                           v-model="line.descripcion" 
                           placeholder="Ej: Liebherr LTM 1220..." 
                           class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
-                          :class="hasDiff('equipo_descripcion', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
+                          :class="(hasDiff('equipo_descripcion', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
                         />
                         <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through truncate max-w-[200px]" :title="getOriginalValue('equipo_descripcion', idx)">
                           Orig: {{ getOriginalValue('equipo_descripcion', idx) || '(Vacío)' }}
@@ -414,7 +419,7 @@
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
                           :class="[
                             line.tipo === 'TRASLADOS' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-white/5' : '',
-                            hasDiff('equipo_unidad', idx) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'
+                            (hasDiff('equipo_unidad', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'
                           ]" 
                         >
                           <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
@@ -429,7 +434,7 @@
                       <td class="p-2">
                         <!-- Horas Diarias Minimas: Días (1..30) y Horas (1..24) -->
                         <template v-if="line.unidad === 'Horas Diarias Minimas'">
-                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
                             <div class="flex items-center gap-1">
                               <span class="text-[10px] text-slate-400 font-mono">Días:</span>
                               <input 
@@ -461,7 +466,7 @@
                         </template>
                         <!-- Horas Mes Minimas: Meses (>= 1) y Horas (> 1) -->
                         <template v-else-if="line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas'">
-                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
                             <div class="flex items-center gap-1">
                               <span class="text-[10px] text-slate-400 font-mono">Meses:</span>
                               <input 
@@ -490,7 +495,7 @@
                         </template>
                         <!-- Traslado o Valor Fijo: Cantidad (>= 1) -->
                         <template v-else>
-                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border border-white/5">
+                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
                             <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
                             <input 
                               type="number" 
@@ -510,12 +515,12 @@
                           v-model.number="line.valorUnitario" 
                           min="0" 
                           class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
-                          :class="hasDiff('equipo_valor', idx) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
+                          :class="(!isOriginalLine(idx) || hasDiff('equipo_valor', idx)) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
                           :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
                         />
                       </td>
                       <td class="p-2 text-right font-bold text-amber-400 font-mono">
-                        {{ formatCurrency(calcularSubtotalLinea(line)) }}
+                        {{ formatCurrency(calcularSubtotalOperaciones(line, idx)) }}
                       </td>
                       <td class="p-2 text-center">
                         <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
@@ -2128,23 +2133,35 @@
 
               <div class="flex items-center gap-2 pt-1">
                 <button 
+                  @click="abrirModalDespachoWhatsApp('VIAJE', vj)" 
+                  type="button" 
+                  :class="getTelefonoConductor(vj) ? 'bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 animate-pulse'"
+                  class="flex-1 py-1.5 border rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  :title="getTelefonoConductor(vj) ? `Despachar WhatsApp a ${getTelefonoConductor(vj)}` : 'Operador sin teléfono registrado - Clic para ingresar número'"
+                >
+                  <span>📲</span>
+                  <span>{{ getTelefonoConductor(vj) ? 'WhatsApp Viaje' : '⚠️ Sin Fono (Ingresar)' }}</span>
+                </button>
+                <button 
                   v-if="vj.viaje_real"
                   @click="abrirMapaViaje(vj.viaje_real)" 
                   type="button" 
-                  class="flex-1 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer"
+                  class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer"
+                  title="Ver mapa satelital y telemetría"
                 >
-                  <span>🗺️</span> Ver Mapa & Telemetría
+                  <span>🗺️</span>
                 </button>
                 <button 
                   v-else
                   @click="copiarEnlaceViaje(vj.token)" 
                   type="button" 
-                  class="flex-1 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Copiar link al portapapeles"
                 >
-                  <span>📋</span> Copiar Link Conductor
+                  <span>📋</span>
                 </button>
                 <button @click="abrirWebViaje(vj.token)" type="button" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="Abrir Web App Móvil en nueva pestaña">
-                  <span>👁️ Abrir</span>
+                  <span>👁️</span>
                 </button>
               </div>
 
@@ -2259,6 +2276,14 @@
           </div>
 
           <div class="flex items-center gap-2">
+            <button
+              @click="abrirModalDespachoWhatsApp('REPORTE')"
+              class="px-3.5 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold font-mono flex items-center gap-2 transition-colors cursor-pointer"
+              title="Recordar a los operadores completar y firmar el Report Diario de hoy vía WhatsApp"
+            >
+              <span>📲</span>
+              <span>Recordar Report WhatsApp</span>
+            </button>
             <button
               @click="cargarReportsProyecto()"
               class="px-4 py-2 bg-[#0b1021] hover:bg-slate-800 border border-white/20 text-slate-200 rounded-xl text-sm font-bold font-mono flex items-center gap-2 transition-colors cursor-pointer"
@@ -3012,6 +3037,16 @@
             1. Datos de la Oportunidad
           </div>
           
+          <!-- Ejecutivo Comercial Responsable -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Ejecutivo Comercial Responsable:</label>
+            <div class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-indigo-300 font-medium flex items-center gap-2">
+              <span>👤</span>
+              <span class="font-bold text-white">{{ nombreEjecutivoComercial || 'No asignado' }}</span>
+              <span class="text-[10px] text-slate-400 ml-auto font-mono">(Creador del Requerimiento)</span>
+            </div>
+          </div>
+          
           <div>
             <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Empresa Emisora (Cotizar a nombre de):</label>
             <select v-model="opportunity.id_empresa_emisora" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white transition-colors">
@@ -3495,7 +3530,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <!-- Tarjeta Caso 1 -->
                 <div 
-                  @click="!esRuralActual && (opportunity.lleva_contrapeso = false)"
+                  @click="seleccionarYAplicarCaso(1)"
                   class="rounded-lg p-2.5 border text-xs transition-all relative"
                   :class="[
                     esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
@@ -3517,7 +3552,7 @@
 
                 <!-- Tarjeta Caso 2 -->
                 <div 
-                  @click="!esRuralActual && (opportunity.lleva_contrapeso = true)"
+                  @click="seleccionarYAplicarCaso(2)"
                   class="rounded-lg p-2.5 border text-xs transition-all relative"
                   :class="[
                     esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
@@ -3539,7 +3574,7 @@
 
                 <!-- Tarjeta Caso 3 -->
                 <div 
-                  @click="esRuralActual && (opportunity.lleva_contrapeso = false)"
+                  @click="seleccionarYAplicarCaso(3)"
                   class="rounded-lg p-2.5 border text-xs transition-all relative"
                   :class="[
                     !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
@@ -3561,7 +3596,7 @@
 
                 <!-- Tarjeta Caso 4 -->
                 <div 
-                  @click="esRuralActual && (opportunity.lleva_contrapeso = true)"
+                  @click="seleccionarYAplicarCaso(4)"
                   class="rounded-lg p-2.5 border text-xs transition-all relative"
                   :class="[
                     !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
@@ -4968,6 +5003,14 @@
     @close="modalCaratulaEDPAbierto = false"
   />
 
+  <!-- MODAL DESPACHO WHATSAPP (Spec 50) -->
+  <ModalDespachoWhatsApp
+    :visible="modalWhatsAppVisible"
+    :datos="datosWhatsAppModal"
+    @cerrar="modalWhatsAppVisible = false"
+    @enviado="onWhatsAppDespachado"
+  />
+
   <!-- NOTA: ModalITS ahora se renderiza de forma nativa e inline dentro del Paso 1 de Sub-tab 7 (Liquidación) -->
 
   <!-- MODAL ADJUNTAR ORDEN DE COMPRA (OC / HES MANDANTE) -->
@@ -5047,11 +5090,16 @@ import ModalNuevoCliente from '../../components/CRM/ModalNuevoCliente.vue'
 import ModalEnviarCotizacion from '../../components/CRM/ModalEnviarCotizacion.vue'
 import MapSelector from '../../components/CRM/MapSelector.vue'
 import apiAxios from '../../services/api'
+import axios from 'axios'
 import VerSurveyModal from '../../components/VerSurveyModal.vue'
 import ModalMapaViaje from '../../components/Operaciones/ModalMapaViaje.vue'
 import ModalVisorReport from '../../components/Operaciones/ModalVisorReport.vue'
 import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
 import ModalITS from '../../components/Operaciones/ModalITS.vue'
+import ModalDespachoWhatsApp from '../../components/Operaciones/ModalDespachoWhatsApp.vue'
+
+const modalWhatsAppVisible = ref(false)
+const datosWhatsAppModal = ref(null)
 
 const viajesProyecto = ref([])
 const cargandoViajes = ref(false)
@@ -5389,11 +5437,36 @@ const opportunity = ref({
   requiere_prevencionista: null,
   cliente_pone_combustible: null,
   acreditacion_docs: { empresa: [], equipos: [], personas: [] },
-  id_proyecto_estado: null
+  id_proyecto_estado: null,
+  id_usuario_creacion: (() => {
+    const u = JSON.parse(localStorage.getItem('user') || '{}')
+    return u.id_user || u.id || null
+  })(),
+  vendedor_nombre: '',
+  vendedor_email: ''
 })
 
 const lines = ref([])
 const usuarios = ref([])
+
+const nombreEjecutivoComercial = computed(() => {
+  if (opportunity.value.vendedor_nombre) return opportunity.value.vendedor_nombre
+  const crm = opportunity.value.json_field?.crm_v1
+  if (crm?.vendedor_nombre) return crm.vendedor_nombre
+  if (crm?.vendedor) return crm.vendedor
+  if (crm?.usuario_creacion) return crm.usuario_creacion
+  const idUser = Number(opportunity.value.id_usuario_creacion || opportunity.value.id_user_creacion)
+  if (idUser && usuarios.value?.length) {
+    const u = usuarios.value.find(user => Number(user.id_user || user.id) === idUser)
+    if (u) {
+      const completo = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim()
+      return completo || u.nombre_user || u.name_user || u.nombre || u.email || u.username
+    }
+  }
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const currentCompleto = [currentUser.name_frst, currentUser.apellido_pat].filter(Boolean).join(' ').trim()
+  return currentCompleto || currentUser.nombre || currentUser.name || currentUser.username || currentUser.email || 'Ejecutivo Comercial'
+})
 
 const CATALOGO_MAESTRO_APAREJOS = [
   { id: 'estrobos', label: 'Estrobos de Acero', match: (l) => l.includes('ESTROBO') },
@@ -5422,14 +5495,14 @@ const operacionesAssignment = ref({
   equipos_extra: [],
   operador_id: 'OP-101',
   rigger_id: 'RIG-201',
-  fecha_salida_plan: new Date().toISOString().substring(0, 10),
+  fecha_salida_plan: '',
   hora_salida_plan: '08:00',
   tonelaje_operaciones: '',
   equipo_sugerido_operaciones: '',
   observaciones_operaciones: '',
   aparejos: {},
   fecha_fin_plan: '',
-  hora_fin_plan: '',
+  hora_fin_plan: '18:00',
   cumplimiento_acreditaciones: {},
   implementos_survey: getInitialImplementos()
 })
@@ -8305,6 +8378,48 @@ const volumenCalculado = computed(() => {
   return 0
 })
 
+const obtenerFechasComercialesDefecto = () => {
+  const comIniRaw = siteVisit.value?.fecha_hora_inicio || opportunity.value?.fecha_tentativa || ''
+  let iniFecha = ''
+  let iniHora = '08:00'
+  if (comIniRaw) {
+    if (comIniRaw.includes('T')) {
+      const parts = comIniRaw.split('T')
+      iniFecha = parts[0] || ''
+      iniHora = parts[1]?.substring(0, 5) || '08:00'
+    } else if (comIniRaw.includes(' ')) {
+      const parts = comIniRaw.split(' ')
+      iniFecha = parts[0] || ''
+      iniHora = parts[1]?.substring(0, 5) || '08:00'
+    } else {
+      iniFecha = comIniRaw.substring(0, 10)
+    }
+  }
+
+  const comFinRaw = siteVisit.value?.fecha_hora_termino || ''
+  let finFecha = ''
+  let finHora = '18:00'
+  if (comFinRaw) {
+    if (comFinRaw.includes('T')) {
+      const parts = comFinRaw.split('T')
+      finFecha = parts[0] || ''
+      finHora = parts[1]?.substring(0, 5) || '18:00'
+    } else if (comFinRaw.includes(' ')) {
+      const parts = comFinRaw.split(' ')
+      finFecha = parts[0] || ''
+      finHora = parts[1]?.substring(0, 5) || '18:00'
+    } else {
+      finFecha = comFinRaw.substring(0, 10)
+    }
+  }
+
+  if (!finFecha && iniFecha) {
+    finFecha = iniFecha
+  }
+
+  return { iniFecha, iniHora, finFecha, finHora }
+}
+
 const onToggleRequiereVisita = () => {
   if (siteVisit.value.visita_terreno) {
     const cNom = opportunity.value.contacto_nombre || ''
@@ -8950,6 +9065,21 @@ const totalNeto = computed(() => {
   return lines.value.reduce((acc, l) => acc + calcularSubtotalLinea(l), 0)
 })
 
+const totalNetoComercial = computed(() => {
+  if (snapshotComercial.value?.lines?.length) {
+    return snapshotComercial.value.lines.reduce((acc, l) => acc + calcularSubtotalLinea(l), 0)
+  }
+  return totalNeto.value
+})
+
+const calcularSubtotalOperaciones = (line, idx) => {
+  if (!isOriginalLine(idx)) return 0
+  if (snapshotComercial.value?.lines?.[idx]) {
+    return calcularSubtotalLinea(snapshotComercial.value.lines[idx])
+  }
+  return calcularSubtotalLinea(line)
+}
+
 const formatCurrency = (val) => {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(val || 0)
 }
@@ -9137,6 +9267,22 @@ const asegurarLineaGruaBase = () => {
   }
 }
 
+const seleccionarYAplicarCaso = (caso) => {
+  if (caso === 1 && !esRuralActual.value) {
+    opportunity.value.lleva_contrapeso = false
+    aplicarConfiguracionCaso(1)
+  } else if (caso === 2 && !esRuralActual.value) {
+    opportunity.value.lleva_contrapeso = true
+    aplicarConfiguracionCaso(2)
+  } else if (caso === 3 && esRuralActual.value) {
+    opportunity.value.lleva_contrapeso = false
+    aplicarConfiguracionCaso(3)
+  } else if (caso === 4 && esRuralActual.value) {
+    opportunity.value.lleva_contrapeso = true
+    aplicarConfiguracionCaso(4)
+  }
+}
+
 const aplicarConfiguracionCaso = (casoParam = null) => {
   const caso = casoParam || casoCobroActual.value || 1
   const km = parseFloat(opportunity.value?.distancia_km) || 0
@@ -9311,6 +9457,10 @@ const cargarDatosCotizacion = async () => {
         opportunity.value.fecha_tentativa       = p.fecha_plan_ini ? p.fecha_plan_ini.split('T')[0] : ''
         opportunity.value.id_empresa_emisora    = String(p.id_empresa || '9')
         opportunity.value.id_proyecto_estado    = p.id_proyecto_estado
+        opportunity.value.id_usuario_creacion   = p.id_usuario_creacion || p.id_user_creacion || (() => {
+          const u = JSON.parse(localStorage.getItem('user') || '{}')
+          return u.id_user || u.id || 1
+        })()
         if (parseInt(p.id_proyecto_estado) >= 3) {
           topTab.value = 'operaciones'
         } else {
@@ -9341,6 +9491,8 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.contacto_nombre       = crm.contacto_nombre || ''
           opportunity.value.contacto_telefono     = crm.contacto_telefono || ''
           opportunity.value.contacto_correo       = crm.contacto_correo || crm.contacto_email || ''
+          opportunity.value.vendedor_nombre       = crm.vendedor_nombre || crm.vendedor || crm.usuario_creacion || p.creador_nombre || ''
+          opportunity.value.vendedor_email        = crm.vendedor_email || ''
           opportunity.value.contacto_obj          = crm.contacto_obj || null
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
           opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes !== undefined ? crm.requiere_oc_hes : null
@@ -9575,6 +9727,13 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.operador_id) operacionesAssignment.value.operador_id = ejecucion.operador_id
           if (ejecucion.rigger_id) operacionesAssignment.value.rigger_id = ejecucion.rigger_id
           if (ejecucion.chofer_id) operacionesAssignment.value.chofer_id = ejecucion.chofer_id
+
+          // Sincronizar fechas planificadas desde ejecucion_v1 con fallback directo a Comercial
+          const { iniFecha: comIniFecha, iniHora: comIniHora, finFecha: comFinFecha, finHora: comFinHora } = obtenerFechasComercialesDefecto()
+          operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan || comIniFecha || new Date().toISOString().substring(0, 10)
+          operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan || comIniHora || '08:00'
+          operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan || comFinFecha || operacionesAssignment.value.fecha_salida_plan
+          operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan || comFinHora || '18:00'
           // 1. Asignar operadores a líneas de equipos principales
           if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
@@ -9677,10 +9836,13 @@ const cargarDatosCotizacion = async () => {
             })
           }
           sincronizarTrasladosComerciales()
-          if (ejecucion.fecha_salida_plan) operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan
-          if (ejecucion.hora_salida_plan) operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan
-          if (ejecucion.fecha_fin_plan) operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan
-          if (ejecucion.hora_fin_plan) operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan
+          propagarFechasPlanificadas()
+          if (linesEquiposPrincipales.value && linesEquiposPrincipales.value.length > 0) {
+            linesEquiposPrincipales.value.forEach(l => {
+              if (!l.fecha_plan_ini) l.fecha_plan_ini = operacionesAssignment.value.fecha_salida_plan
+              if (!l.fecha_plan_fin) l.fecha_plan_fin = operacionesAssignment.value.fecha_fin_plan
+            })
+          }
           const apData = ejecucion.implementos_survey || ejecucion.aparejos_asignados_json || ejecucion.aparejos
           if (apData && Array.isArray(apData) && apData.length > 0) {
             const tieneDatosReales = apData.some(p => p.requerido || (p.detalle && p.detalle.trim() !== ''))
@@ -9808,6 +9970,15 @@ const cargarDatosCotizacion = async () => {
 
         // 4. Pre-cargar expedientes de los recursos asignados
         cargarExpedientesAsignados()
+      }
+
+      if (!ejecucion) {
+        const { iniFecha, iniHora, finFecha, finHora } = obtenerFechasComercialesDefecto()
+        operacionesAssignment.value.fecha_salida_plan = iniFecha || new Date().toISOString().substring(0, 10)
+        operacionesAssignment.value.hora_salida_plan = iniHora || '08:00'
+        operacionesAssignment.value.fecha_fin_plan = finFecha || operacionesAssignment.value.fecha_salida_plan
+        operacionesAssignment.value.hora_fin_plan = finHora || '18:00'
+        propagarFechasPlanificadas()
       }
     } catch (e) {
       console.error('Error al cargar proyecto:', e)
@@ -9972,11 +10143,14 @@ const buildPayload = () => {
     observacion_proyecto: siteVisit.value.detalle_servicio || null,
     fecha_plan_ini:       opportunity.value.fecha_tentativa || null,
     id_proyecto_estado:   opportunity.value.id_proyecto_estado || 1,
-    id_user_creacion:     currentUser.id_user || null,
+    id_usuario_creacion:  opportunity.value.id_usuario_creacion || currentUser.id_user || 1,
+    id_user_creacion:     opportunity.value.id_usuario_creacion || currentUser.id_user || 1,
 
     // json_field: solo datos sin columna propia, convencion crm_v1
     json_field: {
       crm_v1: {
+        vendedor_nombre:       opportunity.value.vendedor_nombre || nombreEjecutivoComercial.value || currentUser.nombre || 'Ejecutivo Comercial',
+        vendedor_email:        opportunity.value.vendedor_email || currentUser.correo || currentUser.email || '',
         prioridad:             opportunity.value.prioridad,
         familia_servicio:      opportunity.value.familia_servicio,
         contacto_nombre:       siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || '',
@@ -10199,11 +10373,17 @@ const aprobarYGenerarOT = async () => {
     operacionesSubTab.value = 'asignacion'
     sincronizarTrasladosComerciales()
     
-    // Asignar "DESDE" por defecto desde la Pestaña B (Fecha Tentativa)
-    if (!operacionesAssignment.value.fecha_salida_plan && opportunity.value?.fecha_tentativa) {
-      operacionesAssignment.value.fecha_salida_plan = opportunity.value.fecha_tentativa
-      operacionesAssignment.value.fecha_fin_plan = opportunity.value.fecha_tentativa
+    // Asignar fechas por defecto desde Comercial si no están definidas
+    const { iniFecha: comIniFecha, iniHora: comIniHora, finFecha: comFinFecha, finHora: comFinHora } = obtenerFechasComercialesDefecto()
+    if (!operacionesAssignment.value.fecha_salida_plan && comIniFecha) {
+      operacionesAssignment.value.fecha_salida_plan = comIniFecha
+      operacionesAssignment.value.hora_salida_plan = comIniHora
     }
+    if (!operacionesAssignment.value.fecha_fin_plan && comFinFecha) {
+      operacionesAssignment.value.fecha_fin_plan = comFinFecha
+      operacionesAssignment.value.hora_fin_plan = comFinHora
+    }
+    propagarFechasPlanificadas()
     
     // Guardar avance en borrador
     const payload = buildPayload()
@@ -10933,7 +11113,9 @@ const viajesConvoyLista = computed(() => {
       patente: vjReal?.patente || eq.patente || 'S/P',
       nombre_equipo: eq.nombre_equipo || vjReal?.modelo || eq.tipo,
       modelo: eq.tipo || vjReal?.tipo_equipo,
+      chofer_id: chofer?.id_user || choferUser?.id_user || null,
       chofer_nombre: choferNombre,
+      chofer_telefono: choferUser?.movil || choferUser?.telefono || choferUser?.celular || '',
       estado: (vjReal?.estado_trayecto === 'LLEGADO' || vjReal?.estado_viaje === 'ARRIBADO_FAENA') 
         ? 'ARRIBADO_FAENA' 
         : (vjReal ? 'EN_RUTA' : 'ASIGNADO'),
@@ -10950,7 +11132,9 @@ const viajesConvoyLista = computed(() => {
         patente: vj.patente || 'S/P',
         nombre_equipo: `${vj.marca || ''} ${vj.modelo || ''}`.trim() || 'Equipo de Flota',
         modelo: vj.tipo_equipo || 'Izaje',
+        chofer_id: vj.chofer_id || null,
         chofer_nombre: vj.chofer_nombre || 'Conductor Asignado',
+        chofer_telefono: vj.chofer_telefono || '',
         estado: (vj.estado_trayecto === 'LLEGADO' || vj.estado_viaje === 'ARRIBADO_FAENA') ? 'ARRIBADO_FAENA' : 'EN_RUTA',
         viaje_real: vj
       })
@@ -10959,6 +11143,52 @@ const viajesConvoyLista = computed(() => {
 
   return result
 })
+
+const getTelefonoConductor = (vj) => {
+  if (!vj) return ''
+  if (vj.chofer_telefono || vj.operador_telefono) return vj.chofer_telefono || vj.operador_telefono
+  const choferId = vj.chofer_id || vj.operador_id
+  if (choferId && usuarios.value) {
+    const u = usuarios.value.find(user => String(user.id_user) === String(choferId) || String(user.id) === String(choferId))
+    if (u && (u.movil || u.telefono || u.celular)) return u.movil || u.telefono || u.celular
+  }
+  if (vj.chofer_nombre && usuarios.value) {
+    const nombreNorm = vj.chofer_nombre.toLowerCase().trim()
+    const u = usuarios.value.find(user => {
+      const un = (user.nombre_user || user.name_user || user.name || '').toLowerCase()
+      return un && (un.includes(nombreNorm) || nombreNorm.includes(un))
+    })
+    if (u && (u.movil || u.telefono || u.celular)) return u.movil || u.telefono || u.celular
+  }
+  return ''
+}
+
+const abrirModalDespachoWhatsApp = (tipo, vehiculo = null) => {
+  const p = opportunity.value || {}
+  const targetVehiculo = vehiculo || (viajesConvoyLista.value?.length ? viajesConvoyLista.value[0] : null) || {}
+  const fono = getTelefonoConductor(targetVehiculo)
+
+  datosWhatsAppModal.value = {
+    tipo: tipo,
+    operador_nombre: targetVehiculo.chofer_nombre || 'Operador Asignado',
+    operador_id: targetVehiculo.chofer_id || null,
+    cargo: targetVehiculo.modelo || 'Operador de Maquinaria',
+    telefono: fono,
+    patente: targetVehiculo.patente || 'S/P',
+    modelo: targetVehiculo.nombre_equipo || targetVehiculo.modelo || 'Grúa San Pablo',
+    codi_proyecto: p.codi_proyecto || 'OT-GSP',
+    nombre_cliente: p.nombre_cliente || 'Mandante',
+    token: targetVehiculo.token || `vj-${p.id_proyecto || 'ot'}-${targetVehiculo.id_equipo || '1'}`,
+    url: tipo === 'REPORTE'
+      ? `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${targetVehiculo.token || 'vj-demo-1234'}?fase=reporte`
+      : `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${targetVehiculo.token || 'vj-demo-1234'}`
+  }
+  modalWhatsAppVisible.value = true
+}
+
+const onWhatsAppDespachado = (evento) => {
+  console.log('WhatsApp despachado con éxito:', evento)
+}
 
 const copiarEnlaceViaje = (token) => {
   const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
@@ -10978,6 +11208,18 @@ const abrirWebViaje = (token) => {
 let autoPollTimer = null
 watch(() => operacionesSubTab.value, (newTab) => {
   if (newTab === 'asignacion') {
+    if (!operacionesAssignment.value.fecha_salida_plan || !operacionesAssignment.value.fecha_fin_plan) {
+      const { iniFecha, iniHora, finFecha, finHora } = obtenerFechasComercialesDefecto()
+      if (!operacionesAssignment.value.fecha_salida_plan && iniFecha) {
+        operacionesAssignment.value.fecha_salida_plan = iniFecha
+        operacionesAssignment.value.hora_salida_plan = iniHora
+      }
+      if (!operacionesAssignment.value.fecha_fin_plan && finFecha) {
+        operacionesAssignment.value.fecha_fin_plan = finFecha
+        operacionesAssignment.value.hora_fin_plan = finHora
+      }
+      propagarFechasPlanificadas()
+    }
     sincronizarTrasladosComerciales()
     cargarExpedientesAsignados()
   } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') {
@@ -11567,6 +11809,23 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
     opEmail = 'lguser@arriendosanpablo.cl'
   }
 
+  // 5. Resolver teléfono móvil para WhatsApp (Spec 50)
+  let rawFono = fullUser.movil || fullUser.telefono || fullUser.celular || fullUser.cel_personal || opTrip?.telefono || ins?.operador_telefono || ''
+  if (!rawFono && opNombre && usuarios.value) {
+    const nLower = opNombre.toLowerCase().trim()
+    const matchU = usuarios.value.find(u => {
+      const un = (u.nombre_user || u.name_user || (u.name_frst ? `${u.name_frst} ${u.apellido_pat || ''}` : '') || '').toLowerCase()
+      return un && (un.includes(nLower) || nLower.includes(un))
+    })
+    if (matchU) rawFono = matchU.movil || matchU.telefono || matchU.celular
+  }
+  let fonoLimpio = String(rawFono || '').replace(/\D/g, '')
+  if (fonoLimpio.startsWith('56') && fonoLimpio.length > 9) {
+    // ya contiene prefijo país 56
+  } else if (fonoLimpio.length === 9 && fonoLimpio.startsWith('9')) {
+    fonoLimpio = '56' + fonoLimpio
+  }
+
   autorizandoSalidaId.value = eqId
   try {
     const token = localStorage.getItem('token') || ''
@@ -11577,6 +11836,20 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
     const targetProjId = String(props.proyectoId || currentProyectoId.value || '74')
     if (!ins.token_viaje) {
       ins.token_viaje = 'vj-' + targetProjId + '-' + eqId + '-' + Math.random().toString(36).substring(2, 7)
+    }
+
+    // Pre-sembrar y asegurar persistencia del viaje en PostgreSQL
+    try {
+      await apiAxios.post('/operaciones/viaje/asignar', {
+        id_proyecto: parseInt(targetProjId, 10),
+        id_equipo: parseInt(eqId, 10) || null,
+        id_user_chofer: targetUserId || 55,
+        patente: eqPatente,
+        token_viaje: ins.token_viaje,
+        tipo_trayecto: 'IDA'
+      })
+    } catch (dbTripErr) {
+      console.warn('Advertencia al registrar viaje previo en BD:', dbTripErr)
     }
 
     const tripUrl = getLinkViajeOperador(eqId)
@@ -11660,6 +11933,35 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
       })
     ))
 
+    // Despacho dual: WhatsApp Oficial LeanGlobal GSP (Spec 50)
+    let wspOk = false
+    let wspErrorMsg = ''
+    if (fonoLimpio && fonoLimpio.length >= 11) {
+      const otTexto = antecedentes.value.identificador_formal || opportunity.value.codi_proyecto || 'GSP-OT'
+      const cliTexto = clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente || 'Cliente Mandante'
+      const obraTexto = `${siteVisit.value.obra_nombre || 'Faena Terreno'} (${siteVisit.value.obra_ciudad || ''})`
+
+      const wspTexto = `🚛 *GRÚAS SAN PABLO - HOJA DE RUTA OPERACIONAL*\n\nEstimado(a) *${opNombre}*:\nSe ha autorizado la salida de patio y generado su Hoja de Ruta para el servicio:\n\n📋 *OT:* ${otTexto}\n🏗️ *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n👉 *Inicie su viaje y registre odómetro inicial aquí:*\n${tripUrl}\n\n_Buen viaje y conduzca con precaución._`
+
+      try {
+        const wspResp = await axios.post('https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar', {
+          numero: fonoLimpio,
+          mensaje: wspTexto
+        }, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 15000
+        })
+        if (wspResp.data?.ok) {
+          wspOk = true
+        } else {
+          wspErrorMsg = wspResp.data?.error || 'Respuesta no exitosa de WhatsApp'
+        }
+      } catch (errWsp) {
+        console.warn('Advertencia al enviar WhatsApp:', errWsp)
+        wspErrorMsg = errWsp.response?.data?.error || errWsp.message
+      }
+    }
+
     // Actualizar estado de autorización
     ins.salida_autorizada = true
     ins.fecha_autorizacion_salida = new Date().toISOString()
@@ -11681,7 +11983,24 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
       `Salida de patio autorizada para equipo ${eqNombre} (${eqPatente}). Notificación con link de viaje enviada a ${opNombre} (${opEmail})`
     )
 
-    alert(`🚀 Salida autorizada exitosamente.\n\nSe ha despachado la notificación por correo al operador ${opNombre} (${opEmail}) con el enlace a su registro de viaje.`)
+    if (wspOk) {
+      registrarTrazaCorreo(
+        'OPERADOR_WSP_VIAJE',
+        `+${fonoLimpio}`,
+        `📲 WhatsApp Salida Autorizada — OT ${antecedentes.value.identificador_formal || 'GSP'}`,
+        `Hoja de ruta despachada por WhatsApp a ${opNombre} (+${fonoLimpio})`
+      )
+    }
+
+    let alertMsg = `🚀 Salida autorizada exitosamente.\n\n✉️ Notificación por correo despachada a: ${opNombre} (${opEmail})`
+    if (wspOk) {
+      alertMsg += `\n📲 Notificación por WhatsApp despachada a: +${fonoLimpio}`
+    } else if (fonoLimpio && wspErrorMsg) {
+      alertMsg += `\n⚠️ No se pudo enviar WhatsApp (+${fonoLimpio}): ${wspErrorMsg}`
+    } else if (!fonoLimpio) {
+      alertMsg += `\nℹ️ El operador no tiene teléfono registrado para WhatsApp.`
+    }
+    alert(alertMsg)
   } catch (error) {
     console.error('Error al autorizar salida de equipo:', error)
     alert(`Error al procesar la autorización de salida: ${error.response?.data?.error || error.message}`)

@@ -656,4 +656,22 @@ El motor de filtrado evalúa concurrentemente los siguientes atributos normaliza
 2. **Limpieza Inmediata:** Botón `✕` visible al escribir y atajo de teclado mediante tecla `Escape`.
 3. **Micro-Etiqueta en Tarjeta:** Despliegue de `👤 [Nombre Vendedor]` en las tarjetas de la Columna 1 (Preventa) para confirmar la asignación comercial del negocio.
 
+---
+
+## 12. Trazabilidad y Visibilidad Universal del Ejecutivo Comercial
+
+### 12.1. Regla de Negocio
+Todo requerimiento u oportunidad comercial debe identificar de manera inequívoca y permanente al Ejecutivo Comercial (creador del proceso). Esta identidad debe ser visible en todas las etapas del ciclo de vida del negocio, tanto para el equipo comercial como para Operaciones y Contabilidad.
+
+### 12.2. Presencia en UI
+1. **Tarjetas Kanban (Torre.vue):** Las 6 columnas del tablero despliegan obligatoriamente `👤 [Nombre Ejecutivo]` en el cuerpo de cada tarjeta (debajo de la descripción o información de cliente/operación).
+2. **Cabecera de Detalle (GestorOportunidades.vue):** La barra superior fija muestra permanentemente un badge identificador con el nombre del ejecutivo y la fecha de creación.
+3. **Formulario de Preventa (GestorOportunidades.vue):** Sección 1 incluye el campo visual "Ejecutivo Comercial Responsable", pre-poblado con el usuario conectado en proyectos nuevos o con el creador original en proyectos guardados.
+
+### 12.3. Persistencia
+* `tpry_proyecto.id_user_creacion`: ID canónico en PostgreSQL.
+* `json_field.crm_v1.vendedor_nombre`: Snapshot textual inmutable del nombre del ejecutivo comercial.
+* `json_field.crm_v1.vendedor_email`: Correo electrónico del ejecutivo comercial.
+
+
 

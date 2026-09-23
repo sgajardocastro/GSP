@@ -171,6 +171,9 @@
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
               <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
             </div>
@@ -236,6 +239,9 @@
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
               <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_ini" class="text-blue-400/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
             </div>
@@ -305,6 +311,9 @@
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
               <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_ini" class="text-cyan-400/70"><span class="font-semibold">Inicio:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
             </div>
@@ -368,6 +377,9 @@
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
               <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_fin" class="text-purple-400/70"><span class="font-semibold">Término Est.:</span> {{ new Date(p.fecha_plan_fin).toLocaleDateString() }}</p>
             </div>
@@ -432,6 +444,9 @@
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p>Estado: {{ p.id_proyecto_estado === 5 ? 'Cerrado' : 'Perdido' }}</p>
               <p v-if="p.fecha_plan_fin" class="text-emerald-400/70"><span class="font-semibold">Finalizado:</span> {{ new Date(p.fecha_plan_fin).toLocaleDateString() }}</p>
@@ -954,7 +969,10 @@ const cargarProyectos = async () => {
       if (Array.isArray(uList)) {
         const m = new Map()
         uList.forEach(u => {
-          if (u.id_user) m.set(Number(u.id_user), u.nombre || u.correo || `Usuario ${u.id_user}`)
+          if (u.id_user) {
+            const nombre = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim() || u.nombre || u.email || `Usuario ${u.id_user}`
+            m.set(Number(u.id_user), nombre)
+          }
         })
         mapaUsuarios.value = m
       }
@@ -993,11 +1011,12 @@ const cargarFlotaMaster = async () => {
 // -------------------------------------------------------------
 const getNombreVendedor = (p) => {
   if (!p) return null
-  const idUser = Number(p.id_user_creacion)
+  const idUser = Number(p.id_usuario_creacion || p.id_user_creacion)
   if (idUser && mapaUsuarios.value.has(idUser)) {
     return mapaUsuarios.value.get(idUser)
   }
   const crm = p.json_field?.crm_v1 || {}
+  if (crm.vendedor_nombre) return crm.vendedor_nombre
   if (crm.vendedor) return crm.vendedor
   if (crm.usuario_creacion) return crm.usuario_creacion
   if (p.creador_nombre) return p.creador_nombre
