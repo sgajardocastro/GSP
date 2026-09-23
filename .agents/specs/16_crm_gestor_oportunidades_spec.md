@@ -636,3 +636,24 @@ El estructurador de cotizaciones en `GestorOportunidades.vue` (`activeTab === 's
 4. **Guía Canónica Desplegable (`[ 📋 Ver Tabla Canónica Oficial ]`):**
    - Modal o acordeón con la tabla comparativa oficial de los 4 casos (idéntica a la planilla física de GSP) para consulta inmediata del usuario.
 
+---
+
+## 11. Buscador Omnibox Reactivo en Tablero Kanban de Torre de Control
+
+### 11.1. Propósito y Justificación Operacional
+Para optimizar la localización de negocios durante la marcha blanca comercial y operativa, la Torre de Control (`Torre.vue`) incorpora en su cabecera un Buscador Omnibox Reactivo para el Tablero Kanban. Permite a vendedores y coordinadores filtrar en tiempo real las 6 columnas del tablero sin realizar desplazamientos manuales.
+
+### 11.2. Criterios de Búsqueda Concurrente (Multi-Criterio)
+El motor de filtrado evalúa concurrentemente los siguientes atributos normalizados (en minúsculas y sin distinción de tildes):
+1. **N° de Cotización / Código de Proyecto:** `codi_proyecto` (ej: `GSP-2609-001`), `id_proyecto` numérico, `codigo_maestro` o `n_licitacion`.
+2. **Cliente:** `nombre_cliente` (Razón Social), `contacto_nombre`, `contacto_email`.
+3. **Vendedor / Ejecutivo Creador:** Identificación del usuario creador mediante el mapeo reactivo de `id_user_creacion` contra el catálogo `tsec_users` (`GET /api/usuarios`), `vendedor`, o `usuario_creacion`.
+4. **Obra / Faena / Ubicación:** `nombre_proyecto`, `obra_nombre`, `obra_ciudad`.
+5. **Recursos Asignados:** Patente de grúa (`patente_grua`) u operador (`operador_nombre`).
+
+### 11.3. Comportamiento UI y Feedback
+1. **Contador Dinámico:** Badge en la cabecera indicando `X de Y proyectos` coincidentes.
+2. **Limpieza Inmediata:** Botón `✕` visible al escribir y atajo de teclado mediante tecla `Escape`.
+3. **Micro-Etiqueta en Tarjeta:** Despliegue de `👤 [Nombre Vendedor]` en las tarjetas de la Columna 1 (Preventa) para confirmar la asignación comercial del negocio.
+
+

@@ -7,6 +7,34 @@
         <p class="text-xs text-slate-400 mt-1">Planificación y seguimiento de maniobras de izaje, logística de contrapesos y telemetría de ruta.</p>
       </div>
 
+      <!-- Buscador Omnibox Reactivo (Spec 16 - Sección 11) -->
+      <div v-if="activeView === 'kanban'" class="flex-1 max-w-md relative w-full md:w-auto">
+        <div class="relative flex items-center">
+          <span class="absolute left-3 text-slate-400 pointer-events-none text-xs">🔍</span>
+          <input 
+            v-model="busquedaKanban"
+            type="text" 
+            placeholder="Buscar por N° Cotización, Cliente o Vendedor..." 
+            @keydown.esc="busquedaKanban = ''"
+            class="w-full bg-[#070b14] border border-white/10 rounded-xl pl-8 pr-16 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+          />
+          <div class="absolute right-2 flex items-center gap-1.5">
+            <span v-if="busquedaKanban" class="text-[9px] text-blue-400 font-mono font-bold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+              {{ totalCoincidenciasKanban }}
+            </span>
+            <button 
+              v-if="busquedaKanban"
+              @click="busquedaKanban = ''"
+              type="button"
+              class="text-slate-400 hover:text-white p-0.5 transition-colors"
+              title="Limpiar búsqueda (Esc)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Selector Tri-Modal de Vistas -->
       <div class="flex items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0">
         <button 
@@ -47,7 +75,7 @@
             <span class="text-xs font-black uppercase text-white">Requerimiento Registrado</span>
           </div>
           <span class="bg-black/20 text-[10px] text-slate-400 font-bold px-2 py-0.5 rounded border border-white/5">
-            {{ preventa.length }}
+            {{ preventaFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
@@ -56,7 +84,7 @@
           </button>
           
           <div 
-            v-for="p in preventa" 
+            v-for="p in preventaFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'comercial')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-[#6366f1]/5 transition-all cursor-pointer text-left"
@@ -72,6 +100,9 @@
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
               <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+                <span>👤</span> {{ getNombreVendedor(p) }}
+              </p>
               <p v-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
               <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Tentativa:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
             </div>
@@ -92,12 +123,12 @@
             <span class="text-xs font-black uppercase text-white">En Verificación Operaciones</span>
           </div>
           <span class="bg-black/20 text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded border border-amber-500/20">
-            {{ verificacion.length }}
+            {{ verificacionFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in verificacion" 
+            v-for="p in verificacionFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'validacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-amber-500/5 transition-all cursor-pointer text-left"
@@ -157,12 +188,12 @@
         <div class="flex justify-between items-center mb-4">
           <span class="text-xs font-black uppercase text-white">En Asignación Recursos</span>
           <span class="bg-black/20 text-[10px] text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/20">
-            {{ asignados.length }}
+            {{ asignadosFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in asignados" 
+            v-for="p in asignadosFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'asignacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-blue-500/5 transition-all cursor-pointer text-left"
@@ -220,12 +251,12 @@
         <div class="flex justify-between items-center mb-4">
           <span class="text-xs font-black uppercase text-white">En Preparación Operaciones</span>
           <span class="bg-black/20 text-[10px] text-cyan-400 font-bold px-2 py-0.5 rounded border border-cyan-500/20">
-            {{ desplazamiento.length }}
+            {{ desplazamientoFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in desplazamiento" 
+            v-for="p in desplazamientoFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'preparacion_salida')"
             @mouseenter="hoveredProyectoId = p.id_proyecto"
@@ -290,12 +321,12 @@
         <div class="flex justify-between items-center mb-4">
           <span class="text-xs font-black uppercase text-white">En Ejecución / Faena</span>
           <span class="bg-black/20 text-[10px] text-purple-400 font-bold px-2 py-0.5 rounded border border-purple-500/20">
-            {{ maniobra.length }}
+            {{ maniobraFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in maniobra" 
+            v-for="p in maniobraFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'reports')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-purple-400/5 transition-all cursor-pointer text-left"
@@ -356,12 +387,12 @@
         <div class="flex justify-between items-center mb-4">
           <span class="text-xs font-black uppercase text-white">Finalizado / Devengado</span>
           <span class="bg-black/20 text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">
-            {{ completados.length }}
+            {{ completadosFiltrados.length }}
           </span>
         </div>
         <div class="space-y-3 flex-1 overflow-y-auto">
           <div 
-            v-for="p in completados" 
+            v-for="p in completadosFiltrados" 
             :key="p.id_proyecto" 
             @click="abrirProyecto(p.id_proyecto, 'dossier_acreditacion')"
             class="bg-[#151d35] border rounded-lg p-3 hover:bg-emerald-500/5 transition-all cursor-pointer text-left"
@@ -826,6 +857,8 @@ const router = useRouter()
 
 // Vista activa tri-modal
 const activeView = ref('kanban') // 'kanban' | 'pmo' | 'gantt'
+const busquedaKanban = ref('')
+const mapaUsuarios = ref(new Map())
 
 const mostrarModalCotizacion = ref(false)
 const proyectoSeleccionadoId  = ref(null)
@@ -915,6 +948,20 @@ const cargarProyectos = async () => {
       console.warn("No se cargaron acreditaciones:", errAcr.message)
     }
 
+    try {
+      const { data: resUsers } = await apiAxios.get('/usuarios')
+      const uList = resUsers?.data || resUsers || []
+      if (Array.isArray(uList)) {
+        const m = new Map()
+        uList.forEach(u => {
+          if (u.id_user) m.set(Number(u.id_user), u.nombre || u.correo || `Usuario ${u.id_user}`)
+        })
+        mapaUsuarios.value = m
+      }
+    } catch (errU) {
+      console.warn("No se cargó catálogo de usuarios:", errU.message)
+    }
+
     await cargarFlotaMaster()
   } catch (e) {
     console.error('Error cargando proyectos:', e)
@@ -940,6 +987,66 @@ const cargarFlotaMaster = async () => {
     console.warn('Error cargando flota de equipos:', err)
   }
 }
+
+// -------------------------------------------------------------
+// LÓGICA DE FILTRADO REACTIVO OMNIBOX KANBAN (SPEC 16 - SEC 11)
+// -------------------------------------------------------------
+const getNombreVendedor = (p) => {
+  if (!p) return null
+  const idUser = Number(p.id_user_creacion)
+  if (idUser && mapaUsuarios.value.has(idUser)) {
+    return mapaUsuarios.value.get(idUser)
+  }
+  const crm = p.json_field?.crm_v1 || {}
+  if (crm.vendedor) return crm.vendedor
+  if (crm.usuario_creacion) return crm.usuario_creacion
+  if (p.creador_nombre) return p.creador_nombre
+  return null
+}
+
+const coincideBusqueda = (p, query) => {
+  if (!query) return true
+  const q = query.trim().toLowerCase()
+  
+  const cod = (p.codi_proyecto || '').toLowerCase()
+  const idPry = String(p.id_proyecto || '')
+  const codMaestro = (p.codigo_maestro || '').toLowerCase()
+  const nLic = (p.json_field?.crm_v1?.n_licitacion || '').toLowerCase()
+  
+  const clt = (p.nombre_cliente || '').toLowerCase()
+  const contacto = (p.json_field?.crm_v1?.contacto_nombre || '').toLowerCase()
+  
+  const vendedor = (getNombreVendedor(p) || '').toLowerCase()
+  
+  const proy = (p.nombre_proyecto || '').toLowerCase()
+  const obra = (p.json_field?.crm_v1?.obra_nombre || '').toLowerCase()
+  const ciudad = (p.json_field?.crm_v1?.obra_ciudad || '').toLowerCase()
+  
+  const grua = (p.json_field?.ejecucion_v1?.patente_grua || '').toLowerCase()
+  const operador = (p.json_field?.ejecucion_v1?.operador_nombre || '').toLowerCase()
+
+  return cod.includes(q) || idPry.includes(q) || codMaestro.includes(q) || nLic.includes(q) ||
+         clt.includes(q) || contacto.includes(q) ||
+         vendedor.includes(q) ||
+         proy.includes(q) || obra.includes(q) || ciudad.includes(q) ||
+         grua.includes(q) || operador.includes(q)
+}
+
+const preventaFiltrados       = computed(() => preventa.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+const verificacionFiltrados   = computed(() => verificacion.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+const asignadosFiltrados      = computed(() => asignados.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+const desplazamientoFiltrados = computed(() => desplazamiento.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+const maniobraFiltrados       = computed(() => maniobra.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+const completadosFiltrados    = computed(() => completados.value.filter(p => coincideBusqueda(p, busquedaKanban.value)))
+
+const totalCoincidenciasKanban = computed(() => {
+  return preventaFiltrados.value.length +
+         verificacionFiltrados.value.length +
+         asignadosFiltrados.value.length +
+         desplazamientoFiltrados.value.length +
+         maniobraFiltrados.value.length +
+         completadosFiltrados.value.length
+})
 
 // -------------------------------------------------------------
 // LÓGICA DE LA MATRIZ PMO DE CONTROL DE GESTIÓN & EXCEPCIONES
@@ -1388,11 +1495,34 @@ const formatFecha = (fStr) => {
   return new Date(fStr).toLocaleDateString()
 }
 
+const calcularSubtotalLinea = (l) => {
+  if (!l) return 0
+  if (l.subtotal !== undefined && l.subtotal !== null && Number(l.subtotal) > 0) {
+    return Number(l.subtotal)
+  }
+  const vu = Number(l.valor_unitario !== undefined ? l.valor_unitario : (l.valorUnitario || 0))
+  if (l.unidad === 'Horas Diarias Minimas' || l.unidad === 'Horas Diarias' || l.unidad === 'Diario' || l.unidad === 'Jornada') {
+    const dias = Number(l.cantidad_dias !== undefined ? l.cantidad_dias : l.cantidad) || 1
+    const horas = Number(l.cantidad_horas !== undefined ? l.cantidad_horas : (l.pisoMinimo || 8))
+    return dias * horas * vu
+  }
+  if (l.unidad === 'Horas Mes Minimas' || l.unidad === 'Horas Mensuales Minimas' || l.unidad === 'Mensual') {
+    const meses = Number(l.cantidad_meses !== undefined ? l.cantidad_meses : l.cantidad) || 1
+    const horas = Number(l.cantidad_horas !== undefined ? l.cantidad_horas : (l.pisoMinimo || 180))
+    return meses * horas * vu
+  }
+  const cant = Number(l.cantidad) || 1
+  return cant * vu
+}
+
 const formatMonto = (p) => {
-  const lineas = p.json_field?.crm_v1?.lineas_servicio
-  if (!lineas?.length) return null
-  const total = lineas.reduce((s, l) => s + (l.cantidad * l.valorUnitario), 0)
-  return total > 0 ? '$' + total.toLocaleString('es-CL') : null
+  const lineas = p.json_field?.crm_v1?.lineas_servicio || p.json_field?.ejecucion_v1?.snapshot_comercial?.lines
+  if (lineas && lineas.length > 0) {
+    const total = lineas.reduce((s, l) => s + calcularSubtotalLinea(l), 0)
+    if (total > 0) return '$' + total.toLocaleString('es-CL')
+  }
+  const mDirecto = Number(p.monto_neto || p.monto || 0)
+  return mDirecto > 0 ? '$' + mDirecto.toLocaleString('es-CL') : null
 }
 
 onMounted(cargarProyectos)
