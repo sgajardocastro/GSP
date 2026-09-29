@@ -1,7 +1,7 @@
 {
   "name": "gsp-frontend",
   "private": true,
-  "version": "1.0.36",
+  "version": "1.0.59",
   "type": "module",
   "scripts": {
     "dev": "vite",

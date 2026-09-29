@@ -4,10 +4,11 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
-## [Portal Web GSP] - Versión 1.0.58
+## [Portal Web GSP] - Versión 1.0.59
 - **Ambiente:** `dev`
-- **Fecha de Despliegue:** 2026-09-28 21:46:00 (-03:00)
+- **Fecha de Despliegue:** 2026-09-28 22:45:00 (-03:00)
 - **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-014`
 - **Detalle de Mejoras y Cambios:**
   - **[FEAT/AUTH] Redirección Directa de Login al Kanban Operativo (`useAuth.js`):**
     - Redirección automática de usuarios autenticados hacia la Torre de Control (`torre`), eliminando la pantalla intermedia del dashboard.
@@ -18,9 +19,11 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
   - **[FEAT/UI] Jerarquía Visual y Rediseño de Asignación de Recursos (`GestorOportunidades.vue`):**
     - **Títulos Unificados:** Estandarización a azul técnico corporativo (`text-blue-400 font-bold uppercase`) en todas las secciones, sub-bloques y matriz de aparejos.
     - **Indentación y Árbol de Recursos:** Desplazamiento `pl-8` y guía visual vertical `border-l-2 border-slate-700/60` en las filas hijas para diferenciar inmediatamente el agrupador de sus recursos asignados.
-    - **Depuración Visual:** Erradicación de candados (`🔒`) y guiones huérfanos (`—`) en columnas de acción y celdas no aplicables, dejando la interfaz 100% limpia.
+    - **Depuración Visual:** Erradicación de candados (`🔒`), guiones huérfanos (`—`) y emojis distractores (`🚜`, `📋`, `💬`, `⛓️`, `⚡`, `📄`) en columnas de acción y celdas no aplicables, dejando la interfaz 100% limpia.
     - **Cromatismo Unificado:** Homologación estricta de categorías a azul corporativo (`text-blue-400 font-mono`) eliminando amarillos disonantes en flota principal.
     - **Consistencia Semántica:** Corrección del título de aparejos a `Matriz de Aparejos & Implementos de Izaje` (eliminación del prefijo erróneo `3.`) y etiqueta de `Requerimientos de Izaje`.
+  - **[GOVERNANCE/DEV] Candado Determinista de Despliegue (Hard Gate):**
+    - Implementación de compuerta obligatoria en `deploy_web_now.js` que impide físicamente la conexión SSH si no se ha incrementado `package.json`, si falta el registro en `RELEASE_LOG.md` o si el `REQ` no está completado en `Gestión/tareas.md`.
 
 ---
 

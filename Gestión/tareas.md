@@ -317,9 +317,48 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **[Mapa Didáctico de Entregables por Etapa]:** Pipeline interactivo HTML completado y activo en producción (`https://servidor.leanglobal.cl/pptas/GSP/GSP-core/presentaciones/proceso/index.html`), fuente local en `antecedentes_reuniones/presentaciones/presentacion_pipeline_interactivo.html`. `DISPONIBLE Y EN PRODUCCIÓN`.
 * [ ] **[Hito Pruebas en Paralelo - 21 de Septiembre]:** Inicio de marcha blanca con vendedores cotizando en vivo en Casa Matriz.
 * [x] **[Documentos de Empresa - Opción A]:** Interfaz de carga y actualización de documentación de empresa (F30-1, Siniestralidad, Carpeta Tributaria, RIOHS) en Dimensión 1 de `Documentos.vue` para las 4 empresas. `VERIFICADO Y COMPILADO 0 ERRORES`.
-* [ ] **[Reenvío de Correo de Enrolamiento Web - MantenedorEnrolamiento.vue]:** Incorporar acción de 1-clic `[ ✉️ Reenviar Enlace ]` en la tabla de Estado General de Usuarios de Mantenedores para todo usuario con enrolamiento pendiente (`flag_proc_enrol: true` / `pass_hash_fes: null`), consumiendo endpoint que despacha la plantilla corporativa con enlace parametrizado `?email=...&rut=...` y feedback visual en pantalla.
+* [x] **[Reenvío de Correo de Enrolamiento Web - MantenedorEnrolamiento.vue]:** Incorporar acción de 1-clic `[ ✉️ Reenviar Enlace ]` en la tabla de Estado General de Usuarios de Mantenedores para todo usuario con enrolamiento pendiente (`flag_proc_enrol: true` / `pass_hash_fes: null`), consumiendo endpoint que despacha la plantilla corporativa con enlace parametrizado `?email=...&rut=...` y feedback visual en pantalla. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
 * [x] **[Buscador Omnibox Reactivo en Torre Kanban - Spec 16 Sec 11]:** Implementación de buscador unificado en la cabecera de `Torre.vue` para filtrar en tiempo real las 6 columnas por N° Cotización, Cliente, Vendedor (`/api/usuarios`), Obra/Faena y Flota/Tripulación, con badge de conteo de coincidencias y reseteo rápido (`Esc`). `VERIFICADO Y COMPILADO 0 ERRORES`.
 * [x] **[Visibilidad Universal del Ejecutivo Comercial - Spec 16 Sec 12]:** Implementación de trazabilidad e identificación permanente del ejecutivo comercial creador en todas las tarjetas de las 6 columnas del tablero Kanban (`Torre.vue`), badge fijo en cabecera de detalle y campo informativo en Sección 1 Datos de la Oportunidad (`GestorOportunidades.vue`), con hidratación canónica de `tpry_proyecto.id_usuario_creacion`, resolución de nombres contra `tsec_users` (`name_frst` + `apellido_pat`) y persistencia inmutable obligatoria (jamás `null`). `VERIFICADO Y COMPILADO 0 ERRORES`.
-
+* [x] **[Sistema de Notificaciones Omnicanal (Email + WhatsApp) con Deep Linking Contextual - Spec 52]:**
+  - Implementación del estándar canónico de notificaciones omnicanal LeanGlobal (`leanglobal_notification_standard`).
+  - Resolución de la "Doble Falla de la Web" en `router/index.js` y `useAuth.js` (Web y PWA) preservando query params post-login.
+  - Aterrizaje contextual en `GestorOportunidades.vue` (`id_proyecto`, `subtab=liquidacion`, `paso=its` con botón FES directo), `Torre.vue` e `Inspeccion.vue` (`id_survey`).
+  - Creación del servicio unificado backend `notificacionService.js` (resolución canónica de URLs, sanitización E.164, microservicio WhatsApp 3085 y SMTP).
+  - Refactorización de `visitaTerrenoController.js`, `itsController.js` y purga de URLs residuales en `signatureModel.js`.
+  - Despliegue en DEV, verificación E2E de despacho WhatsApp a Sergio Gajardo (+56936483259) y registro en `tcfg_backlog` (REQ-006 / Release v1.0.50). `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Desacoplamiento Despacho de Viaje e Inspección de Salida de Patio - Spec 16 Sec 13.6 / v1.0.52]:** Liberación de la restricción de salida en Subpestaña 5 de `GestorOportunidades.vue`. Botón directo `[ 🚀 Despachar Viaje ]` en cabecera de equipos, selector de operador/conductor desbloqueado incondicionalmente, hito Stepper Pase a Terreno liberado y compuerta de cierre flexibilizada para faena asíncrona. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Corrección Autofill Navegador y Desbloqueo Teléfono Contacto - GestorOportunidades.vue]:** Remoción de atributo `:readonly` que bloqueaba la edición de teléfono y correo al seleccionar un contacto registrado que no poseía fono previo, sincronización automática en `autoGuardarContactoManual`, incorporación de `autocomplete="off"` en campos de contacto y obra (Nombre, Dirección, Ciudad), y regla CSS anti-autofill en `<style scoped>` para evitar que Chrome pinte los inputs de color blanco en modo oscuro. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Visor de Mapa Telemetría OSM & Pantalla Completa - Spec 16 Sec 13 / Spec 53]:**
+  - **RF-53.1:** Erradicación de CartoDB y su marca de agua de API Key requerida en `ModalMapaViaje.vue`. Configuración de OpenStreetMap (`tile.openstreetmap.org`) como capa base por defecto, más capas satelital (`World_Imagery`) y topográfica (`World_Topo_Map`) de Esri 100% gratuitas con switcher flotante de 3 estados.
+  - **RF-53.2:** Modo Pantalla Completa inmersivo (`100vw × 100vh`) con redibujado forzado de canvas Leaflet (`map.invalidateSize()`) tras transición.
+  - **RF-53.3:** Panel de bitácora cronológica colapsible (`[ 📋 Ocultar/Ver Bitácora ]`) que amplía el mapa al 100% del contenedor (`col-span-12`).
+  - **RF-53.4:** Navegación interactiva por hitos con animación `flyTo` a zoom 17 y apertura automática de popups descriptivos, más botón `[ 🎯 Centrar Ruta ]` (`fitBounds`).
+  - **RF-53.5:** Regla de redirección permanente 301 en Nginx (`/viaje/*` ➔ `/lg-gsp-dev/viaje/*`) y normalización del deep link en PWA (`Surveys.vue`) resolviendo el error 404 en móviles.
+  - **Microservicio WhatsApp:** Incorporación de endpoint `/desvincular` y botón de reinicio en `/admin` de `gsp-whatsapp-service` (puerto 3085) para desvincular sesiones trabadas y regenerar QR al instante.
+  - Compilación limpia de Frontend (Vite) y PWA (Vue CLI), despliegue a DEV y verificación en vivo (`HTTP 200 OK`). `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Optimización Full-Width y Sincronización de Backlog & Release Log - REQ-010 / v1.0.53]:**
+  - Rediseño de `BacklogView.vue` a ancho completo (`w-full`), eliminando restricción `max-w-7xl` y pérdida lateral de espacio en pantallas de escritorio.
+  - Ensanchamiento de columnas de la tabla de requerimientos y remoción del clamping `max-w-lg` en descripciones para lectura cómoda.
+  - Sincronización persistente en base de datos PostgreSQL (`sch_leangsp.tcfg_backlog` y `sch_leangsp.tcfg_releases`) de los 10 requerimientos (`REQ-001` a `REQ-010`) y los 7 releases (`v1.0.47` a `v1.0.53`).
+  - Actualización preventiva de semillas en `backlogController.js` y despliegue a servidor remoto con reinicio de PM2 10. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Consolidación de Viajes, Fletes y Report Diario - REQ-011 / v1.0.55]:**
+  - Control de combustible multi-estanque con captura fotográfica obligatoria de tablero en `ViajeConductor.vue`.
+  - Vinculación estricta de piso mínimo comercial en `lineas_servicio` de la OT.
+  - Handoff automático de hito de traslado a estructurador y generación de Report Diario (`tedp_reporte_avance`) e ITS (`tits_jornada_detalle`) como `Flete Solo Ida`.
+  - Desacoplamiento de horas de carretera vs faena de izaje. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Desacoplamiento de Viaje y Report Diario / Rediseño Home PWA - REQ-012 / v1.0.56 / PWA v1.0.28]:**
+  - Finalización de ciclo de transporte al llegar a faena en `ViajeConductor.vue`, redireccionando a PWA para reports diarios.
+  - Carga directa de combustible en ruta sin autorización previa obligatoria.
+  - Rediseño estructurado de la Home PWA (`Surveys.vue`) en 3 tarjetas unificadas: Portón/Patio, Hoja de Ruta y Report Diario con animaciones parpadeantes de estado. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Verificación Inteligente de Horómetro Motor en Report Diario - REQ-013 / v1.0.57 / PWA v1.0.29]:**
+  - Propuesta reactiva de horómetro motor sugerido ($\text{inicial} + \text{horas efectivas}$) en `ReportDiarioIzaje.vue`.
+  - Alerta bloqueante ante horómetro final menor al inicial y detección de outliers/odómetros disparados con reemplazo en 1 clic.
+  - Extracción dinámica de piso contractual desde `crm_v1.lineas_servicio` en `reportDiarioController.js` y desglose transparente en `ModalVisorReport.vue`. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Estandarización Kanban, Blindaje Dirty en Etapas 3+ e Higiene Visual de Asignación - REQ-014 / v1.0.59]:**
+  - Redirección directa de login hacia la Torre de Control (`torre`), omitiendo la pantalla intermedia del dashboard.
+  - Blindaje anti-dirty: detección reactiva de hidratación (`isHydrating`) e inmutabilidad en etapas operativas (>= 3), eliminando alertas falsas de cambios sin guardar.
+  - Estandarización de tarjetas del Kanban (`Torre.vue`): formato comercial homogéneo (Cliente, Proyecto, Familia de Servicio / Objetivo, Vendedor, Monto, Fecha).
+  - Rediseño técnico de Asignación de Recursos (`GestorOportunidades.vue`): títulos y categorías unificados en azul corporativo (`text-blue-400`), indentación `pl-8` y guía `border-l-2` en filas hijas para distinguir agrupadores de recursos, erradicación de candados y guiones `—` en celdas de acciones, y corrección semántica de la tarjeta como `Matriz de Aparejos & Implementos de Izaje`. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
 
 
