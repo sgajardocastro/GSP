@@ -169,8 +169,7 @@
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
                 <span>👤</span> {{ getNombreVendedor(p) }}
               </p>
@@ -237,8 +236,7 @@
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
                 <span>👤</span> {{ getNombreVendedor(p) }}
               </p>
@@ -309,8 +307,7 @@
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
 
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Equipo: {{ p.json_field?.ejecucion_v1?.patente_grua || '—' }}</p>
+              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
                 <span>👤</span> {{ getNombreVendedor(p) }}
               </p>
@@ -375,8 +372,7 @@
             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>Operador: {{ p.json_field?.ejecucion_v1?.operador_nombre || '—' }}</p>
-              <p>Rigger: {{ p.json_field?.ejecucion_v1?.rigger_nombre || '—' }}</p>
+              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
                 <span>👤</span> {{ getNombreVendedor(p) }}
               </p>
@@ -862,13 +858,14 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import GestorOportunidades from './CRM/GestorOportunidades.vue'
 import AcreditacionDrawer from '../components/acreditacion/AcreditacionDrawer.vue'
 import apiAxios from '../services/api'
 import { navStore } from '../stores/navStore'
 
 const router = useRouter()
+const route = useRoute()
 
 // Vista activa tri-modal
 const activeView = ref('kanban') // 'kanban' | 'pmo' | 'gantt'
@@ -1544,5 +1541,10 @@ const formatMonto = (p) => {
   return mDirecto > 0 ? '$' + mDirecto.toLocaleString('es-CL') : null
 }
 
-onMounted(cargarProyectos)
+onMounted(async () => {
+  await cargarProyectos()
+  if (route.query.id_proyecto) {
+    abrirProyecto(route.query.id_proyecto, route.query.subtab)
+  }
+})
 </script>

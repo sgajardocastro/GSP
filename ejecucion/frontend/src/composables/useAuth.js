@@ -1,12 +1,15 @@
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '961053663096-s2a3uhics25fg1h0b20ocmqlqi3tvvdu.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || (import.meta.env.PROD 
+  ? '900336188439-v2jr120b65dcvbi5j26kst05ldl73uou.apps.googleusercontent.com' 
+  : '377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com')
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8086/api'
 
 export function useAuth() {
   const router = useRouter()
+  const route = useRoute()
   const loading = ref(false)
   const error = ref('')
   const googleBtnRef = ref(null)
@@ -91,7 +94,16 @@ export function useAuth() {
     if (isEnrolPending) {
       router.push({ name: 'enrolamiento' })
     } else {
-      router.push({ name: 'dashboard' })
+      let redirectUrl = route?.query?.redirect
+      if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('/')) {
+        const base = import.meta.env.BASE_URL || '/'
+        if (base !== '/' && redirectUrl.startsWith(base)) {
+          redirectUrl = redirectUrl.slice(base.length - 1)
+        }
+        router.push(redirectUrl)
+      } else {
+        router.push({ name: 'torre' })
+      }
     }
   }
 

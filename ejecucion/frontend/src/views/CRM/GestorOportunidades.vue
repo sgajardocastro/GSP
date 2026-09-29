@@ -782,7 +782,7 @@
       <div v-if="operacionesSubTab === 'asignacion'" class="space-y-3">
         <div v-if="isAsignacionConfirmada" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 flex justify-between items-center text-xs text-amber-300 font-bold mb-2">
           <span class="flex items-center gap-2">
-            <span>🔒</span> Etapa Concluida y Aprobada (Solo Lectura) — Las asignaciones de la OT fueron confirmadas.
+            Etapa Concluida y Aprobada (Solo Lectura) — Las asignaciones de la OT fueron confirmadas.
           </span>
           <span class="text-[10px] text-slate-400 font-normal">Para sustituciones por falla o adiciones de flota, utiliza el Panel de Excepciones en Sub-tab 5 Preparación de Salida.</span>
         </div>
@@ -792,10 +792,10 @@
           <!-- TOOLBAR SUPERIOR COMPACTA (TÍTULO + TIEMPOS GLOBALES + ESTADO EN 1 SOLA LÍNEA) -->
           <div class="bg-[#0a0f1e] p-2.5 rounded-lg border border-white/10 flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                🚜 Asignación de Recursos OT
+              <span class="text-xs font-black text-blue-400 uppercase tracking-wider">
+                Asignación de Recursos OT
               </span>
-              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase">
+              <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-mono font-bold uppercase">
                 Aprobado
               </span>
             </div>
@@ -814,17 +814,15 @@
                 <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
               <button @click="propagarFechasPlanificadas" type="button" class="text-xs bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Propagar estas fechas a todos los equipos y personal">
-                <span>⚡ Propagar</span>
+                <span>Propagar</span>
               </button>
               <button 
                 @click="generarPDFOT" 
                 :disabled="generandoPDFOT" 
                 type="button" 
-                class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-1 rounded font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50 pointer-events-auto" 
+                class="text-xs bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/30 px-3 py-1 rounded font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50 pointer-events-auto" 
                 title="Generar y versionar documento PDF oficial de la Orden de Trabajo"
               >
-                <span v-if="generandoPDFOT" class="animate-spin">⏳</span>
-                <span v-else>📄</span>
                 <span>{{ generandoPDFOT ? 'Generando OT...' : 'Generar PDF OT' }}</span>
               </button>
             </div>
@@ -846,14 +844,14 @@
                 <tbody class="font-mono">
                   
                   <!-- SECCIÓN 1: FLOTA PRINCIPAL & OPERADORES -->
-                  <tr class="bg-amber-500/10 border-t border-b border-amber-500/20">
-                    <td colspan="5" class="py-1.5 px-3">
+                  <tr class="bg-slate-900 border-y border-white/15">
+                    <td colspan="5" class="py-2 px-3">
                       <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                          🚜 1. Flota Principal & Operadores de Servicio
-                          <span class="text-[10px] font-mono text-amber-400/80 font-normal">({{ linesEquiposPrincipales.length }} {{ linesEquiposPrincipales.length === 1 ? 'equipo' : 'equipos' }})</span>
+                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                          1. Flota Principal & Operadores de Servicio
+                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ linesEquiposPrincipales.length }} {{ linesEquiposPrincipales.length === 1 ? 'equipo' : 'equipos' }})</span>
                         </span>
-                        <button @click="agregarEquipoPrincipal" type="button" class="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                        <button @click="agregarEquipoPrincipal" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
                           + Agregar Equipo
                         </button>
                       </div>
@@ -861,10 +859,9 @@
                   </tr>
 
                   <!-- FILAS FLOTA PRINCIPAL -->
-                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+(line._uid||line.id_item||('base-'+idx))" class="hover:bg-white/[0.02] transition-colors">
-                    <td class="py-2 pr-3 pl-7 font-sans">
-                      <div class="flex items-start gap-2">
-                        <span class="text-amber-500/70 text-xs font-mono select-none mt-0.5">↳</span>
+                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+(line._uid||line.id_item||('base-'+idx))" class="hover:bg-white/[0.02] transition-colors border-b border-white/5">
+                    <td class="py-2.5 pr-3 pl-8 font-sans">
+                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
                         <div class="min-w-0 flex-1">
                           <!-- Línea base cotizada comercialmente -->
                           <template v-if="line.is_linea_base !== false">
@@ -938,7 +935,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="line.is_linea_base !== false" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
+                      <span v-if="line.is_linea_base !== false" class="text-slate-600 text-xs select-none">—</span>
                       <button v-else @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -946,14 +943,14 @@
                   </tr>
 
                   <!-- SECCIÓN 2: TRASLADOS Y LOGÍSTICA -->
-                  <tr class="bg-blue-950/40 border-t border-b border-blue-500/20">
-                    <td colspan="5" class="py-1.5 px-3">
+                  <tr class="bg-slate-900 border-y border-white/15">
+                    <td colspan="5" class="py-2 px-3">
                       <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
-                          🚚 2. Segmento Equipos Traslado & Choferes (Logística)
-                          <span class="text-[10px] font-mono text-blue-400/80 font-normal">({{ operacionesAssignment.equipos_extra?.length || 0 }} {{ (operacionesAssignment.equipos_extra?.length || 0) === 1 ? 'vehículo' : 'vehículos' }})</span>
+                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                          2. Equipos de Traslado & Choferes (Logística)
+                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ operacionesAssignment.equipos_extra?.length || 0 }} {{ (operacionesAssignment.equipos_extra?.length || 0) === 1 ? 'vehículo' : 'vehículos' }})</span>
                         </span>
-                        <button @click="agregarEquipoTraslado" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                        <button @click="agregarEquipoTraslado" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
                           + Equipo Traslado
                         </button>
                       </div>
@@ -961,15 +958,14 @@
                   </tr>
 
                   <!-- FILAS TRASLADOS -->
-                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="font-sans">
+                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="font-sans border-b border-white/5">
                     <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
                     </td>
                   </tr>
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] transition-colors font-mono">
-                    <td class="py-2 pr-3 pl-7 font-sans">
-                      <div class="flex items-start gap-2">
-                        <span class="text-blue-400/70 text-xs font-mono select-none mt-0.5">↳</span>
+                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] transition-colors font-mono border-b border-white/5">
+                    <td class="py-2.5 pr-3 pl-8 font-sans">
+                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
                         <div class="min-w-0 flex-1">
                           <!-- Línea base cotizada comercialmente -->
                           <template v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base">
@@ -1044,7 +1040,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base cotizada comercialmente">🔒</span>
+                      <span v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base" class="text-slate-600 text-xs select-none">—</span>
                       <button v-else @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -1052,14 +1048,14 @@
                   </tr>
 
                   <!-- SECCIÓN 3: ESPECIALISTAS EN TERRENO -->
-                  <tr class="bg-emerald-950/40 border-t border-b border-emerald-500/20">
-                    <td colspan="5" class="py-1.5 px-3">
+                  <tr class="bg-slate-900 border-y border-white/15">
+                    <td colspan="5" class="py-2 px-3">
                       <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                          👷 3. Especialistas & Personal Técnico en Terreno (Sin Vehículo)
-                          <span class="text-[10px] font-mono text-emerald-400/80 font-normal">({{ especialistasTerreno?.length || 0 }} {{ (especialistasTerreno?.length || 0) === 1 ? 'persona' : 'personas' }})</span>
+                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                          3. Especialistas & Personal Técnico en Terreno
+                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ especialistasTerreno?.length || 0 }} {{ (especialistasTerreno?.length || 0) === 1 ? 'persona' : 'personas' }})</span>
                         </span>
-                        <button @click="agregarEspecialista" type="button" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer flex items-center gap-1">
+                        <button @click="agregarEspecialista" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
                           + Añadir Especialista
                         </button>
                       </div>
@@ -1067,24 +1063,23 @@
                   </tr>
 
                   <!-- FILAS ESPECIALISTAS -->
-                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="font-sans">
+                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="font-sans border-b border-white/5">
                     <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
                       Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
                     </td>
                   </tr>
-                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] font-mono">
-                    <td class="py-2 pr-3 pl-7 font-sans">
-                      <div class="flex items-start gap-2">
-                        <span class="text-emerald-400/70 text-xs font-mono select-none mt-1">↳</span>
+                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] font-mono border-b border-white/5">
+                    <td class="py-2.5 pr-3 pl-8 font-sans">
+                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
                         <div class="min-w-0 flex-1">
                           <div class="grid grid-cols-2 gap-1.5">
-                            <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-emerald-500/30 rounded px-1.5 py-1 text-[11px] text-white font-sans outline-none focus:border-emerald-400 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }" title="Cargo / Especialidad">
+                            <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white font-sans outline-none focus:border-amber-500/50 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }" title="Cargo / Especialidad">
                               <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista</option>
                               <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
                               <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
                               <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
                             </select>
-                            <div class="bg-[#0a0f1e] border border-emerald-500/20 rounded px-1.5 py-1 text-[10px] text-emerald-400 font-mono truncate flex items-center" :title="esp.requerimiento || 'Personal en tierra'">
+                            <div class="bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-[10px] text-slate-300 font-mono truncate flex items-center" :title="esp.requerimiento || 'Personal en tierra'">
                               {{ esp.requerimiento ? 'Req: ' + esp.requerimiento : 'Personal Faena' }}
                             </div>
                           </div>
@@ -1096,7 +1091,7 @@
                     </td>
                     <td class="py-2 px-3 font-sans">
                       <div class="flex items-center gap-1.5">
-                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-emerald-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-emerald-400 truncate">
+                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
                           <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                             <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
@@ -1124,7 +1119,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="esp.is_linea_base" class="text-slate-600 text-xs select-none" title="Línea base requerida comercialmente">🔒</span>
+                      <span v-if="esp.is_linea_base" class="text-slate-600 text-xs select-none">—</span>
                       <button v-else @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -1145,14 +1140,14 @@
               <div class="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg pointer-events-auto">
                 <div class="flex justify-between items-center border-b border-blue-500/20 pb-1.5 mb-2">
                   <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>📋 Referencia: Levantamiento Visita a Terreno</span>
+                    <span>Referencia: Levantamiento Visita a Terreno</span>
                   </h4>
                   <div class="flex items-center gap-1.5">
                     <span class="text-[10px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded font-mono font-bold">
                       {{ visitasDelProyecto.length }} Inspección(es)
                     </span>
                     <button v-if="visitasDelProyecto.length > 1" @click="mostrarHistorialVisitasModal = !mostrarHistorialVisitasModal" type="button" class="text-[10px] bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-bold transition-colors cursor-pointer pointer-events-auto">
-                      📜 {{ mostrarHistorialVisitasModal ? 'Ocultar Historial' : 'Historial (' + (visitasDelProyecto.length - 1) + ')' }}
+                      {{ mostrarHistorialVisitasModal ? 'Ocultar Historial' : 'Historial (' + (visitasDelProyecto.length - 1) + ')' }}
                     </button>
                   </div>
                 </div>
@@ -1169,13 +1164,13 @@
 
                     <div class="flex items-center gap-2 ml-auto">
                       <span class="text-xs text-slate-200 font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 font-bold">
-                        📅 {{ visitasDelProyecto[0].fecha_plan_ini ? new Date(visitasDelProyecto[0].fecha_plan_ini).toLocaleDateString() : 'S/F' }}
+                        {{ visitasDelProyecto[0].fecha_plan_ini ? new Date(visitasDelProyecto[0].fecha_plan_ini).toLocaleDateString() : 'S/F' }}
                       </span>
                       <a :href="getSurveyReportUrl(visitasDelProyecto[0].id_survey)" target="_blank" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/30 font-bold px-2.5 py-1 text-xs rounded transition-colors no-underline cursor-pointer pointer-events-auto">
-                        👁️ Ver Web
+                        Ver Web
                       </a>
                       <a :href="getArchivoUrl(visitasDelProyecto[0].id_doc || visitasDelProyecto[0].id_survey)" target="_blank" class="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 border border-blue-500/30 font-bold px-2.5 py-1 text-xs rounded transition-colors no-underline cursor-pointer pointer-events-auto">
-                        📄 Reporte PDF
+                        Reporte PDF
                       </a>
                     </div>
                   </div>
@@ -1199,38 +1194,38 @@
 
               <!-- Observaciones Operativas Compactas -->
               <div class="bg-[#080d1a] border border-white/10 p-2.5 rounded-lg space-y-1">
-                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">
-                  💬 Instrucciones / Observaciones Operativas de Faena
+                <label class="block text-xs font-bold text-blue-400 uppercase tracking-wider">
+                  Instrucciones / Observaciones Operativas de Faena
                 </label>
                 <textarea 
                   v-model="operacionesAssignment.observaciones_operaciones" 
                   @input="marcarDirtyAsignacion"
                   rows="2" 
                   placeholder="Instrucciones operativas del coordinador para la preparación y despacho..."
-                  class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-amber-400 resize-none transition-colors"
+                  class="w-full bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-400 resize-none transition-colors"
                 ></textarea>
               </div>
             </div>
 
-            <!-- COLUMNA DERECHA: 3. MATRIZ DE APAREJOS (CHECKLIST COMPACTO) -->
+            <!-- COLUMNA DERECHA: MATRIZ DE APAREJOS (CHECKLIST COMPACTO) -->
             <div class="bg-[#080d1a] border border-white/10 rounded-lg p-2.5 space-y-2 flex flex-col justify-between">
               <div class="flex justify-between items-center border-b border-white/5 pb-1.5">
-                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  ⛓️ 3. Matriz de Aparejos & Implementos de Izaje
+                <span class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                  Matriz de Aparejos & Implementos de Izaje
                 </span>
-                <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono font-bold">aparejos_solicitados_json</span>
+                <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono font-bold">Requerimientos de Izaje</span>
               </div>
 
               <div class="grid grid-cols-2 xl:grid-cols-4 gap-2 flex-1">
-                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2 bg-[#0a0f1e] rounded-lg border transition-all flex flex-col justify-between" :class="item.requerido ? 'border-amber-500/50 bg-amber-500/[0.05] shadow-sm' : 'border-white/5 opacity-70 hover:opacity-100'">
+                <div v-for="item in operacionesAssignment.implementos_survey" :key="item.id" class="p-2 bg-[#0a0f1e] rounded-lg border transition-all flex flex-col justify-between" :class="item.requerido ? 'border-blue-500/50 bg-blue-500/[0.05] shadow-sm' : 'border-white/5 opacity-70 hover:opacity-100'">
                   <div class="flex items-center justify-between gap-1 mb-1">
-                    <label class="flex items-center gap-1.5 text-xs font-bold cursor-pointer select-none truncate" :class="item.requerido ? 'text-amber-300' : 'text-slate-300'">
-                      <input type="checkbox" v-model="item.requerido" @change="marcarDirtyAsignacion" class="accent-amber-500 w-3.5 h-3.5 rounded cursor-pointer" />
+                    <label class="flex items-center gap-1.5 text-xs font-bold cursor-pointer select-none truncate" :class="item.requerido ? 'text-blue-300' : 'text-slate-300'">
+                      <input type="checkbox" v-model="item.requerido" @change="marcarDirtyAsignacion" class="accent-blue-500 w-3.5 h-3.5 rounded cursor-pointer" />
                       <span class="truncate" :title="item.label">{{ item.label }}</span>
                     </label>
-                    <span v-if="item.requerido" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.2 rounded font-bold font-mono">REQ</span>
+                    <span v-if="item.requerido" class="text-[9px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1 py-0.2 rounded font-bold font-mono">REQ</span>
                   </div>
-                  <input type="text" v-model="item.detalle" @input="marcarDirtyAsignacion" placeholder="Cap / Cant / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/60 font-mono transition-colors" />
+                  <input type="text" v-model="item.detalle" @input="marcarDirtyAsignacion" placeholder="Cap / Cant / Largo..." class="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/60 font-mono transition-colors" />
                 </div>
               </div>
             </div>
@@ -1238,12 +1233,11 @@
         </div>
 
         <!-- PANEL HISTORIAL Y CONTROL DE VERSIONES DE ORDEN DE TRABAJO (OT) -->
-        <div class="bg-[#080d1a] border border-amber-500/30 rounded-xl p-3.5 space-y-3 shadow-xl">
+        <div class="bg-[#080d1a] border border-blue-500/30 rounded-xl p-3.5 space-y-3 shadow-xl">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
             <div class="flex items-center gap-2.5">
-              <span class="text-base">📋</span>
               <div>
-                <h4 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <h4 class="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
                   Historial de Versiones — Orden de Trabajo (OT)
                   <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     {{ sortedOtVersiones.length }} {{ sortedOtVersiones.length === 1 ? 'Versión' : 'Versiones' }}
@@ -1670,12 +1664,12 @@
             <div class="flex-shrink-0 bg-[#0a0f1e] p-3 rounded-xl border border-white/10 flex items-center gap-3">
               <div class="text-right">
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estado Pase Terreno</span>
-                <span :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'text-emerald-400 font-black' : 'text-amber-400 font-bold'" class="text-xs font-mono block">
-                  {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '🟢 PASE LIBERADO' : '🔒 PENDIENTE' }}
+                <span :class="statusSegmento3 === 'GREEN' || statusSegmento2 === 'GREEN' ? 'text-emerald-400 font-black' : 'text-amber-400 font-bold'" class="text-xs font-mono block">
+                  {{ statusSegmento3 === 'GREEN' || statusSegmento2 === 'GREEN' ? '🟢 PASE LIBERADO' : '🟡 LISTO PARA SALIDA' }}
                 </span>
               </div>
-              <div :class="(statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'" class="p-2 rounded-lg font-bold text-xs">
-                {{ (statusSegmento2 === 'GREEN' && statusSegmento3 === 'GREEN') ? '2/2' : ((statusSegmento2 === 'GREEN' || statusSegmento3 === 'GREEN') ? '1/2' : '0/2') }}
+              <div :class="statusSegmento3 === 'GREEN' || statusSegmento2 === 'GREEN' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'" class="p-2 rounded-lg font-bold text-xs">
+                {{ statusSegmento3 === 'GREEN' ? '2/2' : '1/2' }}
               </div>
             </div>
 
@@ -1796,6 +1790,27 @@
                     </div>
 
                     <div class="flex items-center gap-2 flex-shrink-0">
+                      <!-- Acción Rápida: Despacho de Viaje Directo en Cabecera -->
+                      <button 
+                        v-if="!getViajeDeEquipo(eqId) && !getInspeccionEquipo(eqId)?.salida_autorizada"
+                        @click.stop="autorizarSalidaEquipo(eqId, false)" 
+                        :disabled="autorizandoSalidaId === eqId"
+                        type="button" 
+                        class="text-[10px] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow disabled:opacity-50"
+                        title="Asignar y Notificar Viaje inmediatamente al Conductor"
+                      >
+                        <span>🚀</span> Despachar Viaje
+                      </button>
+                      <button 
+                        v-else-if="getViajeDeEquipo(eqId)"
+                        @click.stop="abrirMapaViaje(getViajeDeEquipo(eqId))" 
+                        type="button" 
+                        class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-1 rounded font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Ver Telemetría GPS en Vivo"
+                      >
+                        <span>🗺️</span> Telemetría
+                      </button>
+
                       <!-- Botón Ver PDF si está ejecutada -->
                       <button 
                         v-if="getInspeccionEquipo(eqId)?.patio_checklist_completado || getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK'"
@@ -1836,7 +1851,6 @@
                       <select 
                         :value="getInspeccionEquipo(eqId).operador_id || getInspeccionEquipo(eqId).jefe_patio_id || getOperadorAsignadoAEquipo(eqId)?.id_user || ''" 
                         @change="onOperadorInspeccionCambiado(eqId, $event.target.value)" 
-                        :disabled="getInspeccionEquipo(eqId).patio_programado" 
                         class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="">-- Seleccionar Operador Asignado --</option>
@@ -1864,31 +1878,43 @@
                       </div>
                     </div>
 
-                    <!-- Estado del Survey / Asignar Inspección -->
-                    <div v-if="!getInspeccionEquipo(eqId)?.id_survey" class="space-y-2 pt-1">
-                      <div class="bg-[#050810] p-2 rounded text-center border border-white/5 text-[11px] text-slate-400">
-                        🔴 Inspección pendiente de agendamiento
-                      </div>
-                      <button 
-                        @click="programarInspeccionPatioEquipo(eqId)" 
-                        class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow cursor-pointer"
-                      >
-                        🚀 Asignar Inspección al Operador
-                      </button>
-                    </div>
-
-                    <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado && getEstadoInspeccionEquipo(eqId) !== 'EJECUTADA_OK'" class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/30 space-y-2 text-xs">
+                    <!-- SECCIÓN 1: INSPECCIÓN DE PRE-USO / PATIO -->
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-white/10 space-y-2 text-xs">
                       <div class="flex justify-between items-center">
-                        <div>
-                          <span v-if="getEstadoInspeccionEquipo(eqId) === 'EN_VERIFICACION'" class="font-bold text-purple-300 block">🟣 Inspección en Verificación FES</span>
-                          <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION'" class="font-bold text-blue-300 block">🔵 Inspección en Ejecución</span>
-                          <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'RECHAZADA'" class="font-bold text-red-400 block">🔴 Inspección Rechazada / Taller</span>
-                          <span v-else class="font-bold text-amber-400 block">🟡 Inspección Asignada en Terreno</span>
-                          <span class="text-[10px] text-slate-300 font-mono font-bold">Survey ID: #{{ getInspeccionEquipo(eqId).id_survey }}</span>
-                        </div>
-                        <span class="text-[10px] text-slate-300">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <span>📋</span> Inspección de Pre-Uso
+                        </span>
+                        <span v-if="getInspeccionEquipo(eqId)?.patio_checklist_completado || getEstadoInspeccionEquipo(eqId) === 'EJECUTADA_OK'" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                          🟢 Conforme
+                        </span>
+                        <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_VERIFICACION'" class="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30 animate-pulse">
+                          🟣 En Verificación FES
+                        </span>
+                        <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'EN_EJECUCION'" class="text-[10px] font-bold text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30 animate-pulse">
+                          🔵 En Ejecución
+                        </span>
+                        <span v-else-if="getEstadoInspeccionEquipo(eqId) === 'RECHAZADA'" class="text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30">
+                          🔴 Rechazada / Taller
+                        </span>
+                        <span v-else-if="getInspeccionEquipo(eqId)?.id_survey" class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                          🟡 Programada (#{{ getInspeccionEquipo(eqId).id_survey }})
+                        </span>
+                        <span v-else class="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                          ⚪ Sin Asignar
+                        </span>
                       </div>
-                      <div class="flex gap-2">
+
+                      <!-- Acciones de inspección -->
+                      <div v-if="!getInspeccionEquipo(eqId)?.id_survey" class="flex gap-2 pt-1">
+                        <button 
+                          @click="programarInspeccionPatioEquipo(eqId)" 
+                          class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase transition-all shadow cursor-pointer"
+                        >
+                          🚀 Asignar Inspección al Operador
+                        </button>
+                      </div>
+
+                      <div v-else-if="!getInspeccionEquipo(eqId)?.patio_checklist_completado && getEstadoInspeccionEquipo(eqId) !== 'EJECUTADA_OK'" class="flex gap-2 pt-1">
                         <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
                           👁️ Ver en Pantalla
                         </button>
@@ -1896,122 +1922,115 @@
                           🗑️ Reasignar
                         </button>
                       </div>
+
+                      <div v-else class="flex gap-2 pt-1">
+                        <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="flex-1 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
+                          📄 Ver PDF Firmado
+                        </button>
+                        <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Ver Vista HTML en Pantalla">
+                          👁️ Web
+                        </button>
+                      </div>
                     </div>
 
-                    <div v-else class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/30 space-y-2.5 text-xs">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <span class="font-bold text-emerald-300 flex items-center gap-1.5">
-                            <span>🟢</span> Inspección Conforme (OK)
-                          </span>
-                          <span class="text-[10px] text-slate-400 block">Checklist Aprobado FES • Survey #{{ getInspeccionEquipo(eqId).id_survey }}</span>
-                          <span class="text-[10px] text-emerald-400/90 block font-semibold">Operador: {{ getNombreOperadorAsignado(eqId) }}</span>
+                    <!-- SECCIÓN 2: DESPACHO & HOJA DE RUTA DE VIAJE (SIEMPRE DISPONIBLE E INDEPENDIENTE) -->
+                    <div class="p-3 bg-blue-950/20 border border-blue-500/30 rounded-xl space-y-2.5 text-xs">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                          <span>🚛</span> Despacho & Hoja de Ruta
+                        </span>
+                        <span v-if="getViajeDeEquipo(eqId)" :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'" class="text-[9px] px-2 py-0.5 rounded border font-bold">
+                          {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO' : '🔵 EN RUTA' }}
+                        </span>
+                        <span v-else-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                          ✅ Salida Autorizada
+                        </span>
+                        <span v-else class="text-[9px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
+                          🟡 Listo para Despachar
+                        </span>
+                      </div>
+
+                      <!-- CASO 1: SI YA EXISTE VIAJE REGISTRADO EN BD (EN RUTA O ARRIBADO A FAENA) -->
+                      <div v-if="getViajeDeEquipo(eqId)" class="p-2.5 bg-black/60 border border-blue-500/30 rounded-lg space-y-2 font-mono text-[10.5px]">
+                        <div class="grid grid-cols-2 gap-2 text-slate-300 bg-white/[0.02] p-2 rounded border border-white/5">
+                          <div>Odóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
+                          <div>Horóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                          <button @click="abrirPDFInspeccion(getInspeccionEquipo(eqId).id_survey, eqId)" class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Documento PDF Oficial Firmado">
-                            📄 PDF
+                        
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-0.5">
+                          <span class="text-blue-300">🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} waypoints GPS</span>
+                          <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0" class="text-amber-300">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L</span>
+                          <span class="text-emerald-400">🔐 PIN Validado ✅</span>
+                        </div>
+                        
+                        <div class="flex gap-2 pt-1 font-sans">
+                          <button 
+                            @click.stop="abrirMapaViaje(getViajeDeEquipo(eqId))" 
+                            type="button" 
+                            class="flex-1 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer uppercase tracking-wider"
+                          >
+                            <span>🗺️</span> Telemetría
                           </button>
-                          <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="px-2 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded font-bold text-xs flex items-center gap-1 cursor-pointer" title="Ver Vista HTML en Pantalla">
-                            👁️ Web
+                          <a 
+                            :href="`https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${getViajeDeEquipo(eqId).token_viaje}`" 
+                            target="_blank" 
+                            class="px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg font-bold text-xs flex items-center justify-center gap-1 no-underline cursor-pointer"
+                            title="Abrir vista del conductor"
+                          >
+                            <span>📱</span> Hoja
+                          </a>
+                          <button 
+                            @click="autorizarSalidaEquipo(eqId, true)" 
+                            :disabled="autorizandoSalidaId === eqId"
+                            type="button" 
+                            class="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg font-bold text-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                            title="Reenviar correo y WhatsApp"
+                          >
+                            <span>🔁</span>
                           </button>
                         </div>
                       </div>
 
-                      <!-- Bloque de Autorización de Salida, Telemetría y Mapa de Viaje -->
-                      <div class="pt-2 border-t border-emerald-500/20 space-y-2">
-                        
-                        <!-- CASO 1: SI YA EXISTE VIAJE REGISTRADO EN BD (EN RUTA O ARRIBADO A FAENA) -->
-                        <div v-if="getViajeDeEquipo(eqId)" class="p-3 bg-black/70 border border-blue-500/40 rounded-xl space-y-2 font-mono text-[11px] shadow-lg">
-                          <div class="flex justify-between items-center">
-                            <span class="text-blue-400 font-bold flex items-center gap-1.5">
-                              <span class="text-base">🛰️</span> Hoja de Ruta & Telemetría GPS
-                            </span>
-                            <span :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'" class="text-[9.5px] px-2 py-0.5 rounded border font-bold">
-                              {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO A FAENA' : '🔵 EN RUTA' }}
-                            </span>
-                          </div>
-                          
-                          <div class="grid grid-cols-2 gap-2 text-[10.5px] text-slate-300 bg-white/[0.03] p-2 rounded-lg border border-white/5">
-                            <div>Odóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
-                            <div>Horóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
-                          </div>
-                          
-                          <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1">
-                            <span class="text-blue-300">🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} waypoints GPS</span>
-                            <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0" class="text-amber-300">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L (Copec)</span>
-                            <span class="text-emerald-400">🔐 PIN Validado ✅</span>
-                          </div>
-                          
-                          <div class="flex gap-2 pt-1">
-                            <button 
-                              @click.stop="abrirMapaViaje(getViajeDeEquipo(eqId))" 
-                              type="button" 
-                              class="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer font-sans uppercase tracking-wider"
-                            >
-                              <span>🗺️</span> Ver Mapa & Telemetría
-                            </button>
-                            <a 
-                              :href="`https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${getViajeDeEquipo(eqId).token_viaje}`" 
-                              target="_blank" 
-                              class="px-3 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg font-bold text-xs flex items-center justify-center gap-1 no-underline cursor-pointer font-sans"
-                              title="Abrir vista del conductor"
-                            >
-                              <span>📱</span> Ver Hoja
-                            </a>
-                            <button 
-                              @click="autorizarSalidaEquipo(eqId, true)" 
-                              :disabled="autorizandoSalidaId === eqId"
-                              type="button" 
-                              class="px-2.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-lg font-bold text-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 font-sans"
-                              title="Reenviar correo"
-                            >
-                              <span>🔁</span>
-                            </button>
-                          </div>
+                      <!-- CASO 2: SI ESTÁ AUTORIZADA LA SALIDA PERO AÚN NO INICIA DESPLAZAMIENTO -->
+                      <div v-else-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="space-y-1.5">
+                        <div class="flex items-center justify-between bg-emerald-950/40 p-2 rounded border border-emerald-500/40 text-[11px]">
+                          <span class="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <span>✅</span> Notificado • {{ new Date(getInspeccionEquipo(eqId).fecha_autorizacion_salida || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                          </span>
+                          <span class="text-[9.5px] text-slate-400 font-mono">Esperando Odómetro</span>
                         </div>
-
-                        <!-- CASO 2: SI ESTÁ AUTORIZADA LA SALIDA PERO AÚN NO INICIA DESPLAZAMIENTO -->
-                        <div v-else-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="space-y-1.5">
-                          <div class="flex items-center justify-between bg-emerald-950/40 p-2 rounded border border-emerald-500/40">
-                            <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
-                              <span>✅</span> Salida Autorizada • {{ new Date(getInspeccionEquipo(eqId).fecha_autorizacion_salida || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
-                            </span>
-                            <span class="text-[9.5px] text-slate-400 font-mono">Notificado a Operador</span>
-                          </div>
-                          <div class="flex gap-2">
-                            <a 
-                              :href="getLinkViajeOperador(eqId)" 
-                              target="_blank" 
-                              class="flex-1 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded font-bold text-[11px] flex items-center justify-center gap-1 no-underline cursor-pointer"
-                            >
-                              <span>📲</span> Ver Registro de Viaje
-                            </a>
-                            <button 
-                              @click="autorizarSalidaEquipo(eqId, true)" 
-                              :disabled="autorizandoSalidaId === eqId"
-                              type="button" 
-                              class="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                              title="Reenviar correo de notificación al operador"
-                            >
-                              <span>🔁</span> Reenviar
-                            </button>
-                          </div>
-                        </div>
-
-                        <!-- CASO 3: INSPECCIÓN CONFORME, ESPERANDO AUTORIZACIÓN DEL COORDINADOR -->
-                        <div v-else>
+                        <div class="flex gap-2">
+                          <a 
+                            :href="getLinkViajeOperador(eqId)" 
+                            target="_blank" 
+                            class="flex-1 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded font-bold text-[11px] flex items-center justify-center gap-1 no-underline cursor-pointer"
+                          >
+                            <span>📲</span> Ver Registro de Viaje
+                          </a>
                           <button 
-                            @click="autorizarSalidaEquipo(eqId, false)" 
+                            @click="autorizarSalidaEquipo(eqId, true)" 
                             :disabled="autorizandoSalidaId === eqId"
                             type="button" 
-                            class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            class="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                            title="Reenviar enlace de viaje por correo y WhatsApp"
                           >
-                            <span v-if="autorizandoSalidaId === eqId" class="animate-spin">⏳</span>
-                            <span v-else>🚀</span>
-                            <span>{{ autorizandoSalidaId === eqId ? 'Autorizando y Notificando...' : 'Autorizar Salida & Notificar Viaje' }}</span>
+                            <span>🔁</span> Reenviar
                           </button>
                         </div>
+                      </div>
 
+                      <!-- CASO 3: VIAJE NO DESPACHADO AÚN (DISPONIBLE DIRECTAMENTE, CON O SIN INSPECCIÓN) -->
+                      <div v-else class="space-y-2">
+                        <button 
+                          @click="autorizarSalidaEquipo(eqId, false)" 
+                          :disabled="autorizandoSalidaId === eqId"
+                          type="button" 
+                          class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <span v-if="autorizandoSalidaId === eqId" class="animate-spin">⏳</span>
+                          <span v-else>🚀</span>
+                          <span>{{ autorizandoSalidaId === eqId ? 'Despachando Viaje...' : 'Despachar Viaje & Notificar Conductor' }}</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2347,6 +2366,79 @@
           </div>
         </div>
 
+        <!-- 🚛 ESTADO OPERACIONAL DE TRASLADO / DESPLAZAMIENTO A FAENA (SERVICIO DE TRANSPORTE) -->
+        <div v-if="equiposParaStatusTraslado.length > 0" class="space-y-3">
+          <div 
+            v-for="eq in equiposParaStatusTraslado" 
+            :key="'traslado-st-' + eq.id_equipo"
+            class="rounded-xl p-3.5 border transition-all"
+            :class="tieneViajeCompletado(eq.id_equipo) 
+              ? 'bg-emerald-950/30 border-emerald-500/40 shadow-sm' 
+              : 'bg-[#0a0f1e] border-white/10'"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">{{ tieneViajeCompletado(eq.id_equipo) ? '✅' : '🚚' }}</span>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-slate-300 uppercase">
+                      🚜 {{ eq.patente }} ({{ eq.modelo }})
+                    </span>
+                    <span 
+                      v-if="tieneViajeCompletado(eq.id_equipo)"
+                      class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 tracking-wider"
+                    >
+                      ✓ Traslado Realizado (Servicio Ejecutado)
+                    </span>
+                    <span 
+                      v-else-if="getEstadoTrasladoEquipo(eq.id_equipo).estado === 'EN_RUTA'"
+                      class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 animate-pulse tracking-wider"
+                    >
+                      🚚 En Desplazamiento a Faena
+                    </span>
+                    <span 
+                      v-else
+                      class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10"
+                    >
+                      ⏳ Traslado Pendiente de Salida
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span v-if="getEstadoTrasladoEquipo(eq.id_equipo).chofer_nombre">
+                      👤 Chofer: <strong class="text-slate-200">{{ getEstadoTrasladoEquipo(eq.id_equipo).chofer_nombre }}</strong>
+                    </span>
+                    <span v-if="getEstadoTrasladoEquipo(eq.id_equipo).odometro_inicial">
+                      🛣️ Odómetro Inicial: <strong class="text-slate-200">{{ getEstadoTrasladoEquipo(eq.id_equipo).odometro_inicial }} km</strong>
+                    </span>
+                    <span v-if="getEstadoTrasladoEquipo(eq.id_equipo).odometro_llegada">
+                      🏁 Odómetro Arribo: <strong class="text-emerald-300">{{ getEstadoTrasladoEquipo(eq.id_equipo).odometro_llegada }} km</strong>
+                    </span>
+                    <span v-if="getEstadoTrasladoEquipo(eq.id_equipo).km_total">
+                      📏 Distancia Recorrida: <strong class="text-amber-300">{{ getEstadoTrasladoEquipo(eq.id_equipo).km_total }} km</strong>
+                    </span>
+                    <span v-if="getEstadoTrasladoEquipo(eq.id_equipo).fecha_llegada">
+                      ⏱️ Llegada a Faena: <strong class="text-slate-200">{{ formatHoraCorta(getEstadoTrasladoEquipo(eq.id_equipo).fecha_llegada) }}</strong>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acciones rápidas del viaje -->
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="abrirMapaViaje(eq.id_equipo)"
+                  class="px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Ver telemetría y mapa de desplazamiento"
+                >
+                  <span>🗺️</span>
+                  <span>Ver Mapa / GPS</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- TABLA MULTI-DÍA DE REPORTS -->
         <div class="bg-[#050810] border border-white/15 rounded-xl overflow-hidden shadow-lg">
           <div class="px-5 py-3.5 border-b border-white/10 flex justify-between items-center bg-[#080d1a]">
@@ -2378,6 +2470,14 @@
             >
               <span>🚜 {{ eq.patente }}</span>
               <span class="opacity-75">({{ eq.modelo }})</span>
+              <span 
+                v-if="tieneViajeCompletado(eq.id_equipo)"
+                class="ml-1 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider"
+                :class="filtroEquipoReports === eq.id_equipo ? 'bg-slate-950 text-emerald-400' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'"
+                title="Traslado a faena completado por el chofer"
+              >
+                ✓ Traslado OK
+              </span>
             </button>
           </div>
 
@@ -3121,9 +3221,9 @@
                   v-model="opportunity.contacto_nombre" 
                   @change="autoGuardarContactoManual"
                   placeholder="Nombre solicitante..." 
+                  autocomplete="off"
                   class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  :readonly="!!opportunity.contacto_obj" 
                 />
               </div>
               <div>
@@ -3135,9 +3235,9 @@
                   v-model="opportunity.contacto_telefono" 
                   @change="autoGuardarContactoManual"
                   placeholder="Ej: +569..." 
+                  autocomplete="off"
                   class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_telefono ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  :readonly="!!opportunity.contacto_obj" 
                 />
               </div>
               <div>
@@ -3149,8 +3249,8 @@
                   v-model="opportunity.contacto_correo" 
                   @change="autoGuardarContactoManual"
                   placeholder="contacto@empresa.cl" 
+                  autocomplete="off"
                   class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
-                  :readonly="!!opportunity.contacto_obj" 
                 />
               </div>
             </div>
@@ -3738,11 +3838,12 @@
                     <td class="p-2">
                       <select 
                         v-model="line.subcategoria" 
+                        @change="onSubcategoriaChange(line)"
                         class="bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none w-full transition-colors"
                         :class="!line.subcategoria ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                       >
                         <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar Subcategoría * --</option>
-                        <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
+                        <option v-for="sub in getSubcategoriesForType(line.tipo, line)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
                           {{ sub.nombre_subcategoria }}
                         </option>
                       </select>
@@ -3881,6 +3982,7 @@
                       type="text" 
                       v-model="siteVisit.obra_nombre" 
                       placeholder="Ej: Celulosa Laja Reactor" 
+                      autocomplete="off"
                       class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                       :class="!siteVisit.obra_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                     />
@@ -3893,6 +3995,7 @@
                       type="text" 
                       v-model="siteVisit.obra_direccion" 
                       placeholder="Ej: Av. Industrial 450"
+                      autocomplete="off"
                       class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                       :class="!siteVisit.obra_direccion ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                     />
@@ -3905,6 +4008,7 @@
                       type="text" 
                       v-model="siteVisit.obra_ciudad" 
                       placeholder="Ej: Concepción"
+                      autocomplete="off"
                       class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                       :class="!siteVisit.obra_ciudad ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                     />
@@ -5086,6 +5190,10 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
+const props = defineProps({
+  proyectoId: [String, Number, Object],
+  initialSubTab: String
+})
 import ModalNuevoCliente from '../../components/CRM/ModalNuevoCliente.vue'
 import ModalEnviarCotizacion from '../../components/CRM/ModalEnviarCotizacion.vue'
 import MapSelector from '../../components/CRM/MapSelector.vue'
@@ -5253,18 +5361,6 @@ const eliminarOC = async (idx) => {
 const seleccionarOCParaFactura = (oc) => {
   formFacturacion.hes_oc_numero = oc.numero_oc
 }
-
-
-const props = defineProps({
-  proyectoId: {
-    type: [Number, String, Object],
-    default: null
-  },
-  initialSubTab: {
-    type: String,
-    default: null
-  }
-})
 
 const modalHomologacion = ref({
   show: false,
@@ -5509,14 +5605,35 @@ const operacionesAssignment = ref({
 
 const dbCategories = ref([])
 
-const getSubcategoriesForType = (type) => {
+const getSubcategoriaGruaActual = () => {
+  const l = (lines.value || []).find(it => {
+    const t = (it.tipo || '').toUpperCase()
+    return t.includes('GRUA') || t === 'GRUAS TELESCOPICAS' || t === 'CAMIONES PLUMA'
+  })
+  return l?.subcategoria || 'GRUA 75 TON'
+}
+
+const getSubcategoriesForType = (type, line = null) => {
   if (!type) return []
   const normType = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
   const category = dbCategories.value.find(c => {
     const normCat = String(c.nombre_categoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
     return normCat === normType || c.nombre_categoria === type
   })
-  return category ? category.subcategories : []
+  let subs = category ? [...(category.subcategories || [])] : []
+
+  // Si es TRASLADOS, asegurar que la subcategoría de grúa esté disponible como opción seleccionable
+  if (normType === 'TRASLADOS') {
+    const subGrua = getSubcategoriaGruaActual()
+    if (subGrua && !subs.some(s => s.nombre_subcategoria === subGrua)) {
+      subs.unshift({ id_subcategoria: 9999, nombre_subcategoria: subGrua })
+    }
+    if (line?.subcategoria && !subs.some(s => s.nombre_subcategoria === line.subcategoria)) {
+      subs.unshift({ id_subcategoria: 9998, nombre_subcategoria: line.subcategoria })
+    }
+  }
+
+  return subs
 }
 
 const ESTADOS_DB = {
@@ -7421,6 +7538,17 @@ const eliminarEquipoTraslado = (idx) => {
 
 const onEquipoPrincipalCambiado = (line) => {
   marcarDirtyAsignacion();
+  if (line) {
+    const norm = (line.tipo || '').toUpperCase()
+    if (norm.includes('GRUA') || norm === 'GRUAS TELESCOPICAS' || norm === 'CAMIONES PLUMA') {
+      const eqId = line.equipo_asignado_id
+      lines.value.forEach(l => {
+        if (l.tipo === 'TRASLADOS' && (l.es_traslado_grua || (l.descripcion || '').toLowerCase().includes('grúa') || (l.descripcion || '').toLowerCase().includes('grua'))) {
+          l.equipo_asignado_id = eqId
+        }
+      })
+    }
+  }
 };
 
 const onEquipoExtraCambiado = (idx) => {
@@ -8202,7 +8330,16 @@ const alCambiarContacto = () => {
 const guardandoContactoManual = ref(false)
 
 const autoGuardarContactoManual = async () => {
-  if (opportunity.value.contacto_obj) return
+  if (opportunity.value.contacto_obj) {
+    if (opportunity.value.contacto_telefono) {
+      opportunity.value.contacto_obj.telefono = String(opportunity.value.contacto_telefono).trim()
+    }
+    if (opportunity.value.contacto_correo) {
+      opportunity.value.contacto_obj.correo = String(opportunity.value.contacto_correo).trim()
+      opportunity.value.contacto_obj.email = String(opportunity.value.contacto_correo).trim()
+    }
+    return
+  }
   if (!clienteSeleccionado.value || !clienteSeleccionado.value.id_empresa) return
 
   const nombre = String(opportunity.value.contacto_nombre || '').trim()
@@ -9292,60 +9429,84 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
   // 1. Asegurar siempre la línea principal de la Grúa
   asegurarLineaGruaBase()
 
+  // 1.1 Obtener la subcategoría de la Grúa actual
+  const subcategoriaGrua = getSubcategoriaGruaActual()
+
   // 2. Configurar fletes según el Caso Canónico
   if (caso === 1) {
     // Caso 1: $0 flete. Remover fletes si existían
     lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
   } else if (caso === 2) {
-    // Caso 2: Grúa + Flete Contrapesos (eliminar flete de grúa si existía)
-    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' && !((l.descripcion || '').toLowerCase().includes('contrapeso') || (l.subcategoria || '').toLowerCase().includes('contrapeso'))))
-    if (!tieneFleteContrapeso.value) {
-      lines.value.push({
-        tipo: 'TRASLADOS',
-        subcategoria: 'CAMA BAJA',
-        descripcion: 'Traslado Contrapesos (Tarifa plana urbana)',
-        unidad: 'Traslado',
-        cantidad: 1,
-        valorUnitario: valorContrapesoFijo,
-        subtotal: valorContrapesoFijo
-      })
-    }
+    // Caso 2: Grúa + Traslado Grúa (subcategoría de la grúa seleccionada, ej: GRUA 75 TON)
+    lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
+    lines.value.push({
+      tipo: 'TRASLADOS',
+      subcategoria: subcategoriaGrua,
+      descripcion: `Traslado Grúa ${subcategoriaGrua} (Tarifa plana urbana)`,
+      unidad: 'Traslado',
+      cantidad: 1,
+      pisoMinimo: 0,
+      valorUnitario: valorContrapesoFijo,
+      subtotal: valorContrapesoFijo,
+      es_traslado_grua: true
+    })
   } else if (caso === 3) {
-    // Caso 3: Grúa + Flete Grúa (eliminar flete de contrapeso si existía)
-    lines.value = lines.value.filter(l => !(l.tipo === 'TRASLADOS' && ((l.descripcion || '').toLowerCase().includes('contrapeso') || (l.subcategoria || '').toLowerCase().includes('contrapeso'))))
-    if (!tieneFleteGrua.value) {
-      lines.value.push({
-        tipo: 'TRASLADOS',
-        subcategoria: 'CAMA BAJA',
-        descripcion: `Flete / Traslado Grúa (${km} km ida)`,
-        unidad: 'Traslado',
-        cantidad: 1,
-        valorUnitario: valorFleteGruaSugerido,
-        subtotal: valorFleteGruaSugerido
-      })
-    }
+    // Caso 3: Grúa + Flete Grúa (subcategoría de la grúa seleccionada, ej: GRUA 75 TON)
+    lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
+    lines.value.push({
+      tipo: 'TRASLADOS',
+      subcategoria: subcategoriaGrua,
+      descripcion: `Flete / Traslado Grúa ${subcategoriaGrua} (${km} km ida)`,
+      unidad: 'Traslado',
+      cantidad: 1,
+      pisoMinimo: 0,
+      valorUnitario: valorFleteGruaSugerido,
+      subtotal: valorFleteGruaSugerido,
+      es_traslado_grua: true
+    })
   } else if (caso === 4) {
-    // Caso 4: Grúa + Flete Grúa + Flete Contrapesos
-    if (!tieneFleteGrua.value) {
-      lines.value.push({
-        tipo: 'TRASLADOS',
-        subcategoria: 'CAMA BAJA',
-        descripcion: `Flete / Traslado Grúa (${km} km ida)`,
-        unidad: 'Traslado',
-        cantidad: 1,
-        valorUnitario: valorFleteGruaSugerido,
-        subtotal: valorFleteGruaSugerido
-      })
-    }
-    if (!tieneFleteContrapeso.value) {
-      lines.value.push({
-        tipo: 'TRASLADOS',
-        subcategoria: 'CAMA BAJA',
-        descripcion: `Traslado Contrapesos Cama Baja (${km} km ida)`,
-        unidad: 'Traslado',
-        cantidad: 1,
-        valorUnitario: valorContrapesoFijo,
-        subtotal: valorContrapesoFijo
+    // Caso 4: Grúa + Flete Grúa (subcategoría de la grúa) + Flete Contrapesos (CAMA BAJA libre)
+    lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
+    // 1er Traslado: Grúa asociada
+    lines.value.push({
+      tipo: 'TRASLADOS',
+      subcategoria: subcategoriaGrua,
+      descripcion: `Flete / Traslado Grúa ${subcategoriaGrua} (${km} km ida)`,
+      unidad: 'Traslado',
+      cantidad: 1,
+      pisoMinimo: 0,
+      valorUnitario: valorFleteGruaSugerido,
+      subtotal: valorFleteGruaSugerido,
+      es_traslado_grua: true
+    })
+    // 2do Traslado: Contrapesos (forma actual, libre para seleccionar cama baja, tracto, etc.)
+    lines.value.push({
+      tipo: 'TRASLADOS',
+      subcategoria: 'CAMA BAJA',
+      descripcion: `Traslado Contrapesos Cama Baja (${km} km ida)`,
+      unidad: 'Traslado',
+      cantidad: 1,
+      pisoMinimo: 0,
+      valorUnitario: valorContrapesoFijo,
+      subtotal: valorContrapesoFijo,
+      es_traslado_grua: false
+    })
+  }
+}
+
+const onSubcategoriaChange = (line) => {
+  if (!line) return
+  const normTipo = (line.tipo || '').toUpperCase()
+  if (normTipo.includes('GRUA') || normTipo === 'GRUAS TELESCOPICAS' || normTipo === 'CAMIONES PLUMA') {
+    const nuevaSub = line.subcategoria
+    if (nuevaSub) {
+      lines.value.forEach(l => {
+        if (l.tipo === 'TRASLADOS' && (l.es_traslado_grua || (l.descripcion || '').toLowerCase().includes('grúa') || (l.descripcion || '').toLowerCase().includes('grua'))) {
+          l.subcategoria = nuevaSub
+          if (l.descripcion && (l.descripcion.includes('Grúa') || l.descripcion.includes('Grua') || l.descripcion.includes('GRUA'))) {
+            l.descripcion = l.descripcion.replace(/Grúa\s+[A-Za-z0-9\s]+(\(|$)/i, `Grúa ${nuevaSub} $1`)
+          }
+        }
       })
     }
   }
@@ -9395,20 +9556,34 @@ watch(lines, (newLines) => {
 watch(
   [opportunity, antecedentes, lines, siteVisit, comercial],
   () => {
+    if (isHydrating.value) return
+    // Si el proyecto ya superó preventa (estado >= 3), la cotización es de solo lectura y no debe marcar dirty
+    if (Number(estadoDbActual.value || 1) >= 3) return
     isDirty.value = true
   },
   { deep: true }
 )
 
+const hayCambiosSinGuardar = computed(() => {
+  if (isHydrating.value) return false
+  const st = Number(estadoDbActual.value || 1)
+  // En preventa comercial (estados 1 y 2): manda isDirty comercial
+  if (st < 3) return isDirty.value
+  // En asignación y patio (estados 4 y 5): solo manda si se modificaron recursos de asignación
+  if (st === 4 || st === 5) return isDirtyAsignacion.value
+  // En validación (3) o ejecución / faena / reports (6, 7, 8): nunca bloquea salida
+  return false
+})
+
 const handleBeforeUnload = (e) => {
-  if (isDirty.value) {
+  if (hayCambiosSinGuardar.value) {
     e.preventDefault()
     e.returnValue = '' // Requerido por Chrome para mostrar el diálogo estándar
   }
 }
 
 onBeforeRouteLeave((to, from, next) => {
-  if (isDirty.value) {
+  if (hayCambiosSinGuardar.value) {
     const answer = window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas salir y perder tu progreso?')
     if (answer) {
       next()
@@ -9428,7 +9603,7 @@ const handleCancelar = () => {
     }
   }
 
-  if (isDirty.value) {
+  if (hayCambiosSinGuardar.value) {
     if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas volver al Kanban y perder tu progreso?')) {
       volver()
     }
@@ -9438,6 +9613,8 @@ const handleCancelar = () => {
 }
 
 const cargarDatosCotizacion = async () => {
+  isHydrating.value = true
+  isDirty.value = false
   let targetId = props.proyectoId || route?.query?.id_proyecto || route?.query?.id
   if (typeof targetId === 'object' && targetId !== null) {
     targetId = targetId.id_proyecto || targetId.id || targetId.id_cotizacion
@@ -9466,9 +9643,12 @@ const cargarDatosCotizacion = async () => {
         } else {
           topTab.value = 'comercial'
         }
-        if (route?.query?.subtab) {
+        if (route?.query?.subtab || props?.initialSubTab) {
           topTab.value = 'operaciones'
-          operacionesSubTab.value = route.query.subtab
+          operacionesSubTab.value = route?.query?.subtab || props?.initialSubTab
+        }
+        if (route?.query?.paso) {
+          pasoCierreActivo.value = route.query.paso
         }
 
         if (p.codi_proyecto) {
@@ -10926,8 +11106,13 @@ const cargarReportsProyecto = async (projId) => {
   if (!id) return
   cargandoReports.value = true
   try {
-    const { data } = await apiAxios.get(`/operaciones/report/proyecto/${id}`)
-    reportsProyecto.value = Array.isArray(data?.data) ? data.data : []
+    const [repRes] = await Promise.allSettled([
+      apiAxios.get(`/operaciones/report/proyecto/${id}`),
+      cargarViajesProyecto(id)
+    ])
+    if (repRes.status === 'fulfilled') {
+      reportsProyecto.value = Array.isArray(repRes.value?.data?.data) ? repRes.value.data.data : []
+    }
   } catch (err) {
     console.warn('Error al cargar reports del proyecto:', err)
     reportsProyecto.value = []
@@ -10935,6 +11120,53 @@ const cargarReportsProyecto = async (projId) => {
     cargandoReports.value = false
   }
 }
+
+const getEstadoTrasladoEquipo = (eqId) => {
+  const vj = getViajeDeEquipo(eqId)
+  if (!vj) return { realizado: false, estado: 'SIN_REGISTRO', label: 'Sin Registro de Viaje' }
+  const arribado = vj.estado_trayecto === 'LLEGADO' || vj.estado_viaje === 'ARRIBADO_FAENA'
+  if (arribado) {
+    const odoIni = vj.odometro_inicial !== undefined && vj.odometro_inicial !== null ? Number(vj.odometro_inicial) : (vj.odometro_salida ? Number(vj.odometro_salida) : null)
+    const odoFin = vj.odometro_llegada !== undefined && vj.odometro_llegada !== null ? Number(vj.odometro_llegada) : (vj.odometro_termino ? Number(vj.odometro_termino) : null)
+    let kmTot = vj.km_total || vj.km_recorridos
+    if (!kmTot && odoIni !== null && odoFin !== null && odoFin >= odoIni) {
+      kmTot = Number((odoFin - odoIni).toFixed(1))
+    }
+    return {
+      realizado: true,
+      estado: 'REALIZADO',
+      label: 'Traslado Realizado',
+      odometro_inicial: odoIni,
+      odometro_llegada: odoFin,
+      km_total: kmTot,
+      chofer_nombre: vj.chofer_nombre || vj.nombre_operador || vj.operador_nombre,
+      fecha_llegada: vj.fecha_llegada || vj.updated_at
+    }
+  }
+  const enRuta = vj.estado_trayecto === 'EN_RUTA' || vj.estado_viaje === 'EN_RUTA' || vj.fecha_salida
+  if (enRuta) {
+    return {
+      realizado: false,
+      estado: 'EN_RUTA',
+      label: 'Traslado en Trayecto',
+      odometro_inicial: vj.odometro_inicial || vj.odometro_salida,
+      chofer_nombre: vj.chofer_nombre || vj.nombre_operador || vj.operador_nombre
+    }
+  }
+  return { realizado: false, estado: 'PENDIENTE', label: 'Traslado Pendiente de Salida' }
+}
+
+const tieneViajeCompletado = (eqId) => {
+  return getEstadoTrasladoEquipo(eqId).realizado
+}
+
+const equiposParaStatusTraslado = computed(() => {
+  if (filtroEquipoReports.value !== 'TODOS') {
+    const eq = listaEquiposUnicosReports.value.find(e => Number(e.id_equipo) === Number(filtroEquipoReports.value))
+    return eq ? [eq] : []
+  }
+  return listaEquiposUnicosReports.value
+})
 
 const abrirVisorReport = (report) => {
   reportSeleccionadoParaVisor.value = report
@@ -11866,10 +12098,10 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
 
         <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
           <p style="color: #34d399; margin: 0; font-size: 14px; font-weight: bold;">
-            ✅ Inspección de Patio Aprobada — Salida Autorizada
+            🚦 Hoja de Ruta Asignada — Salida Autorizada
           </p>
           <p style="color: #cbd5e1; margin: 6px 0 0 0; font-size: 12px; line-height: 1.5;">
-            Estimado <strong>${opNombre}</strong>, la inspección técnica de pre-uso para su máquina ha sido verificada conforme por la Coordinación de Operaciones. Se autoriza la salida de base hacia faena.
+            Estimado <strong>${opNombre}</strong>, se ha autorizado la salida y generado su Hoja de Ruta oficial para el desplazamiento hacia faena.
           </p>
         </div>
 
@@ -12074,10 +12306,6 @@ const notificarAnalistaOperaciones = async () => {
 }
 
 const finalizarPreparacionSalida = async () => {
-  if (statusSegmento2.value !== 'GREEN') {
-    alert('⚠️ La etapa de Preparación de Salida exige que la Inspección de Patio (Paso 2) esté CONFORME (🟢) antes de cerrar la etapa.')
-    return
-  }
   preparacionSalidaState.value.analista_revision_360 = true
   preparacionSalidaState.value.analista_geocerca_activa = true
   preparacionSalidaState.value.preparacion_finalizada = true
@@ -12092,7 +12320,7 @@ const finalizarPreparacionSalida = async () => {
     headers: { Authorization: `Bearer ${token}` }
   })
   
-  alert('🎉 Preparación de Salida Completada Exitosamente (Paso 2 Patio 🟢 Y Paso 3 Analista 🟢). El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
+  alert('🎉 Preparación de Salida Completada Exitosamente. El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
 }
 
 const generarPDF = async () => {
@@ -12484,5 +12712,15 @@ fieldset[disabled] textarea {
   -webkit-text-fill-color: #f8fafc !important;
   background-color: #0a0f1e !important;
   cursor: not-allowed;
+}
+
+/* Anti autofill blanco de navegadores (Chrome / Edge) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #0a0f1e inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 </style>
