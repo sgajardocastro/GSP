@@ -18,7 +18,8 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
   - **[FEAT/UI] Jerarquía Visual y Rediseño de Asignación de Recursos (`GestorOportunidades.vue`):**
     - **Títulos Unificados:** Estandarización a azul técnico corporativo (`text-blue-400 font-bold uppercase`) en todas las secciones, sub-bloques y matriz de aparejos.
     - **Indentación y Árbol de Recursos:** Desplazamiento `pl-8` y guía visual vertical `border-l-2 border-slate-700/60` en las filas hijas para diferenciar inmediatamente el agrupador de sus recursos asignados.
-    - **Depuración Visual:** Erradicación de candados (`🔒`) en columnas de acción y eliminación de emojis distractores (`🚜`, `📋`, `💬`, `⛓️`, `⚡`, `📄`).
+    - **Depuración Visual:** Erradicación de candados (`🔒`) y guiones huérfanos (`—`) en columnas de acción y celdas no aplicables, dejando la interfaz 100% limpia.
+    - **Cromatismo Unificado:** Homologación estricta de categorías a azul corporativo (`text-blue-400 font-mono`) eliminando amarillos disonantes en flota principal.
     - **Consistencia Semántica:** Corrección del título de aparejos a `Matriz de Aparejos & Implementos de Izaje` (eliminación del prefijo erróneo `3.`) y etiqueta de `Requerimientos de Izaje`.
 
 ---
