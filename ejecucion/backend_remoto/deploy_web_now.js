@@ -180,8 +180,12 @@ async function run() {
     console.error("❌ Error en despliegue Frontend:", err);
     process.exit(1);
   } finally {
-    ssh.dispose();
+    try { ssh.dispose(); } catch (e) {}
+    try { await client.end(); } catch (e) {}
+    process.exit(0);
   }
 }
+
+client.on('error', () => {});
 
 run();
