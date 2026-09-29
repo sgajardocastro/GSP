@@ -4,6 +4,217 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.58
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-28 21:46:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/AUTH] Redirección Directa de Login al Kanban Operativo (`useAuth.js`):**
+    - Redirección automática de usuarios autenticados hacia la Torre de Control (`torre`), eliminando la pantalla intermedia del dashboard.
+  - **[FEAT/UX] Erradicación de Falsa Alerta de Cambios Sin Guardar (`GestorOportunidades.vue`):**
+    - Detección reactiva de modo hidratación (`isHydrating`) e inmutabilidad en etapas operativas (>= 3). En Validación, Patio y Faena no se dispara advertencia errónea al volver a la Torre.
+  - **[FEAT/UI] Estandarización de Tarjetas del Kanban (`Torre.vue`):**
+    - Formato comercial uniforme en todas las etapas operativas: Cliente, Proyecto, Familia de Servicio / Objetivo del Proyecto, Vendedor, Monto y Fecha, eliminando asignaciones rígidas de una sola persona.
+  - **[FEAT/UI] Jerarquía Visual y Rediseño de Asignación de Recursos (`GestorOportunidades.vue`):**
+    - **Títulos Unificados:** Estandarización a azul técnico corporativo (`text-blue-400 font-bold uppercase`) en todas las secciones, sub-bloques y matriz de aparejos.
+    - **Indentación y Árbol de Recursos:** Desplazamiento `pl-8` y guía visual vertical `border-l-2 border-slate-700/60` en las filas hijas para diferenciar inmediatamente el agrupador de sus recursos asignados.
+    - **Depuración Visual:** Erradicación de candados (`🔒`) en columnas de acción y eliminación de emojis distractores (`🚜`, `📋`, `💬`, `⛓️`, `⚡`, `📄`).
+    - **Consistencia Semántica:** Corrección del título de aparejos a `Matriz de Aparejos & Implementos de Izaje` (eliminación del prefijo erróneo `3.`) y etiqueta de `Requerimientos de Izaje`.
+
+---
+
+## [PWA GSP - Grúas San Pablo] - Versión 1.0.29
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-26 20:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-013`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/VALIDATION] Verificación Inteligente de Horómetro Motor (`ReportDiarioIzaje.vue`):**
+    - **Cálculo y Propuesta Automática:** Al definir la hora de término y colación, el sistema calcula de forma reactiva el `horometroPropuesto` ($\text{horómetro inicial} + \text{horas efectivas}$) y lo sugiere con un chip interactivo *"💡 Usar Sugerido"*, autocompletándolo si el campo está vacío.
+    - **Alerta de Horómetro Inferior:** Si se digita un valor menor al inicial, el input se torna rojo con pulsación de error y bloquea el botón para pasar a la firma del mandante.
+    - **Alerta de Horómetro Disparado / Outlier:** Si la diferencia excede significativamente el tiempo de faena (posible digitación accidental del odómetro del chasis), se despliega una advertencia visual prominente con botón para *"Reemplazar por Sugerido"* en un solo clic y cuadro de confirmación de seguridad.
+  - **[FEAT/CORE] Corrección de Base Mínima y Sobretiempo en Report:**
+    - Ajuste de base contractual a 8.0 hrs estándar (o la estipulada en la OT), garantizando que las 9.0 horas efectivas generen exactamente **+1.0 hr** de sobretiempo y **9.0 hrs** a facturar con desglose transparente.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.57
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-26 20:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-013`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/BACKEND] Extracción Dinámica de Piso Mínimo Contractual (`reportDiarioController.js`):**
+    - Lectura contractual fidedigna desde `crm_v1.lineas_servicio` de la OT vinculada al equipo/grúa asignado (ej: 8 hrs para Grúa 75 Ton), con fallback general a 8.0 hrs en vez del valor de 4.0 hrs.
+    - Recálculo forzado y asegurado de `horas_sobretiempo` y `horas_facturables` en el endpoint de guardado ante cualquier desfase de clientes antiguos.
+  - **[FEAT/UX] Desglose Transparente y Alerta de Horómetro en Visor Web (`ModalVisorReport.vue`):**
+    - Enriquecimiento de las tarjetas de resumen: *A Facturar* desglosa explícitamente `Base 8.0h + ST +1.0h`, y *Sobretiempo* clarifica `Excedente sobre base 8.0h`.
+    - Detección reactiva de anomalías en el horómetro del motor en la web con badge `⚠️ Posible Odómetro` para el analista revisor.
+  - **[DATA/FIX] Saneamiento del Report Día 1 (OT 98 / Equipo 43):**
+    - Ajuste en base de datos para Report ID 14: `horas_minimas: 8.00`, `horas_sobretiempo: 1.00`, `horas_facturables: 9.00` y horómetro final corregido a `4185.00`.
+
+---
+
+## [PWA GSP - Grúas San Pablo] - Versión 1.0.28
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-26 19:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Especificación Técnica:** `Spec 55` (`.agents/specs/55_desacoplamiento_viaje_report_y_rediseño_home_pwa_spec.md`)
+- **Requerimiento Backlog:** `REQ-012`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/UX] Rediseño Integral de Vista Principal PWA (`Surveys.vue`):**
+    - Organización canónica estructurada en tres tarjetas de identidad visual unificada (fondo gradiente oscuro `#0b1426` a `#17264a`, bordes sutiles y tipografía clara):
+      1. **Control de Portón & Patio:** Mantenido intacto como primera prioridad operativa de acceso a instalaciones.
+      2. **Registro de Viaje:** Acceso directo a la Hoja de Ruta del Conductor con indicador y animación parpadeante (`animate-pulse`) en rojo o ámbar cuando el conductor tiene un viaje asignado pendiente por iniciar (`ASIGNADO`) o en trayecto (`EN_RUTA`).
+      3. **Ingreso de Report Diario:** Acceso directo a la gestión de faena con alerta parpadeante cuando existe actividad pendiente o maquinaria arribada a obra.
+    - **Ocultamiento de Ruido Visual:** Se ocultó de la vista principal la sección *"Registrar Inspección/Checklist"*, selects de filtros redundantes y buscador de protocolos, focalizando al operador 100% en sus tareas operativas críticas.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.56
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-26 19:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Especificación Técnica:** `Spec 55` (`.agents/specs/55_desacoplamiento_viaje_report_y_rediseño_home_pwa_spec.md`)
+- **Requerimiento Backlog:** `REQ-012`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/OPERACIONES] Desacoplamiento de Viaje y Report Diario (`ViajeConductor.vue`):**
+    - La vista de viaje del conductor concluye su ciclo de transporte al registrar la llegada a faena (odómetro final, horómetro final, combustible y foto de tablero), mostrando un banner de viaje completado y enlace directo a la PWA (`/pwa-gsp-dev/`) para la gestión de reportes diarios, sin incrustar el formulario multi-día dentro del viaje carretero.
+  - **[FEAT/OPERACIONES] Carga Directa de Combustible en Ruta (Cero Validación de Tarjeta):**
+    - Se transformó el modal de combustible (`modalCombustible`) de un flujo de 3 pasos (solicitar tarjeta, esperar aprobación de torre, rendir) a un formulario directo de 1 solo paso: Estanque Abastecido (Chasis, Grúa, Reserva), Odómetro, Horómetro, Litros Cargados, Monto y Foto del Voucher.
+    - Registro inmediato con `id_autorizacion_copec: 'DIRECTO'` tanto en local/IndexedDB como en backend PostgreSQL.
+
+---
+
+## [PWA GSP - Grúas San Pablo] - Versión 1.0.26
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-24 13:10:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/MOBILE] Empaquetado APK Nativo Android (GSP TWA):**
+    - Saneamiento completo de residuos heredados de otros tenants y configuración del envoltorio nativo `gsp-twa`.
+    - Homologación de `twa-manifest.json` y `app/build.gradle` con la identidad oficial de GSP (`cl.leanglobal.pwa_lg_gsp_dev.twa`, nombre *GSP - Grúas San Pablo*, launcher *GSP Operaciones*, URLs `/pwa-gsp-dev/` y paleta dark theme `#18181b` / `#09090b`).
+    - Automatización del script de preparación `scripts/prepare-apk.ps1` (`npm run apk:prepare`), versionando y empaquetando `app-release-signed.apk` y `app-release-signed-1.0.26.apk`.
+  - **[FEAT/UX] Botón de Descarga APK en Pantalla de Acceso (`Login.vue`):**
+    - Habilitación del bloque y botón corporativo *"Descargar App GSP (APK)"* para operadores y conductores en terreno desde dispositivos móviles.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.55
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-25 19:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Especificación Técnica:** `Spec 54` (`.agents/specs/54_consolidacion_viajes_fletes_y_report_diario_spec.md`)
+- **Requerimiento Backlog:** `REQ-011`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/MOBILE] Control de Combustible Multi-Estanque y Captura Fotográfica de Marcador (`ViajeConductor.vue`):**
+    - Despliegue dinámico y explícito de campos de combustible según la configuración técnica del equipo (`esGruaBimotor`: Estanque Chasis y Estanque Grúa/Superestructura). Erradicación de combos y botones de fracciones.
+    - Captura fotográfica obligatoria del marcador de combustible tanto en Salida de Patio como en Llegada a Faena.
+  - **[FEAT/OPERACIONES] Vinculación Estricta a Base Mínima Comercial del Estructurador:**
+    - Lectura contractual directa de `pisoMinimo` desde `lineas_servicio` de la OT en `viajeModel.js`. Erradicación de pisos ficticios hardcodeados.
+  - **[FEAT/BACKEND] Handoff Automático de Hito de Traslado a Estructurador y Report Diario (`viajeController.js`):**
+    - Al confirmar la llegada a faena, la línea de servicio `TRASLADO` en el estructurador comercial de la OT se transiciona automáticamente a estado `CUMPLIDO`.
+    - Inyección desatendida del registro de viaje en el Report Diario (`tedp_reporte_avance`) y en la liquidación ITS (`tits_jornada_detalle`) como `Flete Solo Ida` con sus horas y odómetros reales.
+  - **[FEAT/OPERACIONES] Desacoplamiento de Horas en Report Diario e ITS (`ModalITS.vue` y PWA):**
+    - El Report Diario inicia su cómputo de faena a partir de la hora de llegada a la obra (`fecha_llegada_faena`), desacoplando estrictamente el tramo de carretera del servicio de izaje.
+    - Motor de cálculo de horas condicional en ITS: liquidación exacta de fletes carreteros según tramos (`Flete Solo Ida`, `Flete Solo Retorno`, `Flete Ida y Retorno`) sin aplicarles el piso mínimo de 8 horas contractuales de faena.
+  - **[CLEANUP/UI] Depuración de Telemetría Teórica en Hoja de Ruta (`ModalMapaViaje.vue`):**
+    - Remoción de tarjeta de velocidades teóricas promedio y máxima, focalizando la vista en bitácora, odómetros, combustible y traza cartográfica limpia.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.54
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-25 11:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[BUGFIX/TELEMETRÍA] Erradicación de Coordenadas Fallback Espurias en Registro de Viaje (`viajeOfflineSync.js`):**
+    - Eliminación de la coordenada por defecto de Chillán (`-36.6172, -72.1148`) en `currentGpsState` que se inyectaba espuriamente al reabrir la app antes de que el GPS satelital obtuviera su primer fix.
+    - Inicialización estricta en `null` y validación mandatoria de `fuente === 'GPS_REAL'` antes de emitir cualquier ping automático a la API.
+    - Higienización y purga de coordenadas contaminadas en el log histórico de la máquina `TYGC.45-1` (id_log 12) en base de datos PostgreSQL, restaurando el trazado directo y fidedigno Temuco ➔ Valdivia por Ruta 5 Sur.
+    - Corrección de fallback de inicialización cartográfica en `ModalMapaViaje.vue`.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.53
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-24 21:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-010`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/UX] Optimización Full-Width y Ampliación de Vista Backlog & Marcha Blanca (`BacklogView.vue`):**
+    - Erradicación de la restricción rígida `max-w-7xl`, permitiendo el aprovechamiento íntegro del ancho de la pantalla en monitores amplios.
+    - Ensanchamiento de las columnas de la tabla de requerimientos y remoción del clamping `max-w-lg` en las descripciones técnicas.
+    - Adaptación responsiva de tarjetas de release y rediseño de alta amplitud visual.
+  - **[DATA/DB] Sincronización Automática de Catálogo de Releases y Backlog en PostgreSQL:**
+    - Registro persistente de los 10 requerimientos (`REQ-001` a `REQ-010`) y los 7 releases (`v1.0.47` a `v1.0.53`) en las tablas `sch_leangsp.tcfg_backlog` y `sch_leangsp.tcfg_releases`.
+    - Actualización preventiva de semillas en `backlogController.js` para blindar la inicialización ante reinicios de servidor.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.52
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-24 20:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Especificación Gobernadora:** `Spec 16: Sección 13.6 - Desacoplamiento Total entre Despacho de Viaje e Inspección de Pre-Uso`
+- **Requerimiento Backlog:** `REQ-009`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/OPERACIONES] Desacoplamiento Total de Salida de Patio (`GestorOportunidades.vue`):**
+    - Botón de acción rápida directo `[ 🚀 Despachar Viaje ]` en la cabecera de cada equipo asignado en Subpestaña 5 "Control de Flota & Despacho", permitiendo el despacho inmediato e independiente del convoy sin requerir la apertura previa del checklist de pre-uso (Template 81).
+    - Desbloqueo incondicional del selector de conductor/operador (`:disabled` removido).
+    - Flexibilización del Stepper "Estado Pase Terreno" (`🟢 PASE LIBERADO 2/2`) gobernado por el despacho del convoy.
+    - Remoción de alertas y compuertas bloqueantes en `finalizarPreparacionSalida()`, permitiendo que el proyecto avance a faena mientras la documentación técnica avanza asíncronamente.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.51
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-24 19:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Especificación Gobernadora:** `Spec 16: Sección 13 / Spec 53: Visor de Mapa de Telemetría GPS con OpenStreetMap y Pantalla Completa`
+- **Requerimientos Backlog:** `REQ-007`, `REQ-008`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/CARTOGRAFÍA] Visor de Telemetría GPS Cero API Key (`ModalMapaViaje.vue`):**
+    - Erradicación definitiva de CartoDB y su marca de agua restrictiva. Adopción de Leaflet con OpenStreetMap (calles por defecto), Esri Satélite HD y Esri Topográfico 100% gratuitos con switcher flotante de 3 estados.
+    - Modo Pantalla Completa inmersivo (`100vw × 100vh`) con redibujado forzado (`map.invalidateSize()`).
+    - Panel de bitácora cronológica colapsible (`[ 📋 Ocultar/Ver Bitácora ]`) que amplía el mapa al 100% del modal.
+    - Navegación interactiva por hitos con animación `flyTo` a zoom 17 y popups descriptivos de odómetro, horómetro y velocidad.
+  - **[FIX/CRM] Corrección Autofill y Desbloqueo de Teléfono en Contactos (`GestorOportunidades.vue`):**
+    - Desbloqueo de edición de teléfono y correo para contactos preexistentes (`:readonly` eliminado), persistencia reactiva en `autoGuardarContactoManual` y directivas CSS anti-autofill en modo oscuro.
+  - **[FEAT/WHATSAPP] Módulo de Desvinculación de Sesión Baileys:**
+    - Incorporación de endpoint `/desvincular` en microservicio WhatsApp (puerto 3085) y botón de purga en panel `/admin` para regeneración instantánea de QR.
+
+---
+
+## [Ecosistema GSP - Web, PWA & Backend] - Versión 1.0.50
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-24 12:40:00 (-03:00)
+- **Rutas de Despliegue:**
+  - Frontend Web: `/var/www/html/lg-gsp-dev` (`https://servidor.leanglobal.cl/lg-gsp-dev/`)
+  - Frontend PWA: `/var/www/html/pwa-gsp-dev` (`https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+  - Backend PM2: `lean-services-gsp` (ID 10, `/home/nodeadmin/proyectos/lean-services-gsp`)
+- **Especificación Gobernadora:** `Spec 52: Sistema de Notificaciones Omnicanal (Email + WhatsApp) con Deep Linking Contextual`
+- **Requerimiento Backlog:** `REQ-006`
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/OMNICANAL] Servicio Unificado de Notificaciones (`notificacionService.js`):** Despacho concurrente por Correo Transaccional SMTP y WhatsApp (Microservicio Baileys en puerto 3085) para transiciones operativas críticas (Asignación/Reasignación de Visita a Terreno, V°B° Jefatura de ITS, Recepción Contable y Observaciones de Rechazo).
+  - **[FEAT/UX] Deep Linking Contextual con Cero Pérdida de Intención:** Preservación de query parameters en Vue Router (`router.beforeEach`) ante sesiones expiradas y restauración automática post-login (`useAuth.js`), navegando directamente al proyecto, sub-pestaña y paso activo (`/crm?id_proyecto=XX&subtab=YY&paso=ZZ`).
+  - **[FEAT/PWA] Deep Linking de Terreno en Hash Routing:** Enrutamiento directo a inspecciones de terreno (`/#/inspeccion?id_survey=XX`) con carga reactiva autónoma y encadenamiento de firmas FES.
+  - **[AUDIT/DATA] Tabla de Auditoría Transaccional:** Registro persistente en `sch_leangsp.tnot_notification_log` para trazabilidad completa de cada notificación enviada (Email y WhatsApp con E.164 sanitizado).
+  - **[CLEANUP] Purga de Tenant Residual:** Eliminación del 100% de referencias cruzadas a otros tenants en modelos y controladores del backend.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.47
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-23 13:48:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Detalle de Mejoras y Cambios:**
+  - **[FEAT/UX] Buscador Omnibox Reactivo en Tablero Kanban (Spec 16 - Sec 11):** Incorporación de barra de búsqueda multi-criterio en tiempo real en la cabecera de `Torre.vue` (N° Cotización, Cliente, Vendedor, Obra/Faena, Recursos), con contador reactivo de coincidencias, tecla de escape rápida (`Esc`) y filtros computados concurrentes.
+  - **[FEAT/UX] Visibilidad Universal del Ejecutivo Comercial (Spec 16 - Sec 12):** Micro-etiqueta reactiva `👤 [Ejecutivo]` desplegada en las 6 columnas del Kanban (`Torre.vue`), badge fijo en la barra superior del proceso y campo informativo en Sección 1 Datos de la Oportunidad (`GestorOportunidades.vue`).
+  - **[DATA/FIX] Saneamiento Canónico a `tpry_proyecto.id_usuario_creacion`:** Corrección del modelo de datos para alinear la clave foránea real de PostgreSQL, asegurando que jamás viaje `null` desde el frontend y resolviendo los nombres completos concatenando `name_frst` + `apellido_pat` desde `tsec_users`.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.36
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-09-09 16:21:38 (-03:00)
