@@ -867,7 +867,7 @@
                           <template v-if="line.is_linea_base !== false">
                             <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
                             <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <span class="text-amber-400 font-mono font-bold">{{ line.tipo }}</span>
+                              <span class="text-blue-400 font-mono font-bold">{{ line.tipo }}</span>
                               <span>•</span>
                               <span>{{ line.cantidad }} {{ line.unidad }}</span>
                             </div>
@@ -935,8 +935,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="line.is_linea_base !== false" class="text-slate-600 text-xs select-none">—</span>
-                      <button v-else @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
+                      <button v-if="line.is_linea_base === false" @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
@@ -1040,8 +1039,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base" class="text-slate-600 text-xs select-none">—</span>
-                      <button v-else @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
+                      <button v-if="!eqEx.is_linea_base" @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
@@ -1086,8 +1084,7 @@
                         </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans text-center text-slate-600 text-xs select-none">
-                      —
+                    <td class="py-2 px-3 font-sans text-center">
                     </td>
                     <td class="py-2 px-3 font-sans">
                       <div class="flex items-center gap-1.5">
@@ -1119,8 +1116,7 @@
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
-                      <span v-if="esp.is_linea_base" class="text-slate-600 text-xs select-none">—</span>
-                      <button v-else @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
+                      <button v-if="!esp.is_linea_base" @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
