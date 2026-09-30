@@ -1916,7 +1916,7 @@
                       </div>
                       <div class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white flex items-center justify-between">
                         <span class="font-medium text-slate-200 truncate">
-                          {{ getOperadorAsignadoAEquipo(eqId)?.nombre_user || getOperadorAsignadoAEquipo(eqId)?.name_user || 'Sin Operador Asignado' }}
+                          {{ getNombreOperadorAsignado(eqId) }}
                           <span v-if="getOperadorAsignadoAEquipo(eqId)?.cargo" class="text-slate-400 text-[10px]">({{ getOperadorAsignadoAEquipo(eqId)?.cargo }})</span>
                         </span>
                         <template v-if="getOperadorAsignadoAEquipo(eqId)?.id_user">
@@ -10400,20 +10400,25 @@ const cargarDatosCotizacion = async () => {
 
           // 2. Restaurar Especialistas de Terreno (priorizando ejecucion.especialistas_terreno)
           especialistasTerreno.value = []
+          const reqPrev = opportunity.value.requiere_prevencionista === true ||
+            (linesPersonalValidas.value || []).some(lp => {
+              const d = (lp.descripcion || lp.subcategoria || '').toLowerCase()
+              return d.includes('prevencion') || d.includes('apr') || d.includes('seguridad')
+            })
+
           if (Array.isArray(ejecucion.especialistas_terreno) && ejecucion.especialistas_terreno.length > 0) {
             especialistasTerreno.value = ejecucion.especialistas_terreno
               .filter(esp => {
-                // Filtro anti-fantasma: No admitir prevencionistas sin usuario si la oportunidad NO requiere prevencionista
-                if (esp.cargo === 'Prevencionista de Riesgos' && !esp.id_user) {
-                  const reqPrev = opportunity.value.requiere_prevencionista === true ||
-                    (linesPersonalValidas.value || []).some(lp => (lp.descripcion || lp.subcategoria || '').toLowerCase().includes('prevencion'))
-                  if (!reqPrev) return false
-                }
+                const c = (esp.cargo || '').toLowerCase()
+                // El Rigger se gestiona exclusivamente arriba en la grúa principal, NO en Sección 3
+                if (c.includes('rigger')) return false
+                // Prevencionista solo si la cotización lo exige formalmente (con o sin usuario previo)
+                if (c.includes('prevencion') || c.includes('apr') || c.includes('seguridad')) return reqPrev
                 return true
               })
               .map(esp => ({
                 id_user: esp.id_user || '',
-                cargo: esp.cargo || 'Rigger',
+                cargo: esp.cargo || 'Especialista',
                 requerimiento: esp.requerimiento || '',
                 is_linea_base: esp.is_linea_base === true,
                 semaforo: esp.semaforo || 'GREEN',
@@ -10422,14 +10427,16 @@ const cargarDatosCotizacion = async () => {
               }))
           } else if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
-            const espList = trip.filter(t => 
-              !t.cargo?.includes('Operador') && !t.cargo?.includes('Chofer') && !t.cargo?.includes('Escolta') &&
-              !(t.cargo?.includes('Rigger') && linesEquiposPrincipales.value.some(l => l.rigger_asignado_id === t.id_user))
-            )
+            const espList = trip.filter(t => {
+              const c = (t.cargo || '').toLowerCase()
+              if (c.includes('operador') || c.includes('chofer') || c.includes('escolta') || c.includes('rigger')) return false
+              if (c.includes('prevencion') || c.includes('apr') || c.includes('seguridad')) return reqPrev
+              return true
+            })
             if (espList.length > 0) {
               especialistasTerreno.value = espList.map(esp => ({
                 id_user: esp.id_user || '',
-                cargo: esp.cargo || 'Rigger',
+                cargo: esp.cargo || 'Especialista',
                 requerimiento: esp.requerimiento || '',
                 is_linea_base: esp.is_linea_base === true,
                 semaforo: esp.semaforo || 'GREEN',
@@ -10439,23 +10446,26 @@ const cargarDatosCotizacion = async () => {
             }
           }
 
-          // Sincronizar requerimientos de personal cotizados comercialmente (Rigger, Prevencionista, etc.)
+          // Sincronizar requerimientos de personal cotizados comercialmente (SOLO si no son Rigger ni Operadores)
           if (linesPersonalValidas.value && linesPersonalValidas.value.length > 0) {
             linesPersonalValidas.value.forEach(lp => {
               const desc = (lp.descripcion || lp.subcategoria || '').toLowerCase()
               let cargoDetectado = ''
-              if (desc.includes('prevencion') || desc.includes('apr') || desc.includes('seguridad')) cargoDetectado = 'Prevencionista de Riesgos'
-              else if (desc.includes('rigger')) cargoDetectado = 'Rigger'
-              else if (desc.includes('supervisor')) cargoDetectado = 'Supervisor Faena'
-              else if (desc.includes('maniobrista')) cargoDetectado = 'Maniobrista'
+              if ((desc.includes('prevencion') || desc.includes('apr') || desc.includes('seguridad')) && reqPrev) {
+                cargoDetectado = 'Prevencionista de Riesgos'
+              } else if (desc.includes('supervisor')) {
+                cargoDetectado = 'Supervisor Faena'
+              } else if (desc.includes('maniobrista')) {
+                cargoDetectado = 'Maniobrista'
+              }
+              // NOTA: 'rigger' NO se agrega aquí porque se gestiona arriba en la grúa
 
               if (!cargoDetectado) return
-              if (cargoDetectado === 'Prevencionista de Riesgos' && opportunity.value.requiere_prevencionista === false) return
 
               const matchReq = especialistasTerreno.value.find(t => t.cargo === cargoDetectado || t.requerimiento === (lp.descripcion || lp.subcategoria))
               if (!matchReq) {
                 especialistasTerreno.value.push({
-                  id_user: (cargoDetectado === 'Rigger' && linesEquiposPrincipales.value[0]?.rigger_asignado_id) ? linesEquiposPrincipales.value[0].rigger_asignado_id : '',
+                  id_user: '',
                   cargo: cargoDetectado,
                   requerimiento: lp.descripcion || lp.subcategoria || cargoDetectado,
                   semaforo: 'GREEN',
@@ -10468,9 +10478,6 @@ const cargarDatosCotizacion = async () => {
                   matchReq.requerimiento = lp.descripcion || lp.subcategoria
                 }
                 matchReq.is_linea_base = true
-                if (cargoDetectado === 'Rigger' && linesEquiposPrincipales.value[0]?.rigger_asignado_id && !matchReq.id_user) {
-                  matchReq.id_user = linesEquiposPrincipales.value[0].rigger_asignado_id
-                }
               }
             })
           }
@@ -11194,18 +11201,75 @@ const equiposAsignadosLista = computed(() => {
 
 const getOperadorAsignadoAEquipo = (eqId) => {
   if (!eqId) return null
-  const trip = tripulacionAsignada.value || []
   const eqObj = getEquipoObj(eqId)
   const idStr = String(eqId).trim().toUpperCase()
   const patStr = eqObj?.patente ? String(eqObj.patente).trim().toUpperCase() : ''
   const idEqStr = eqObj?.id_equipo ? String(eqObj.id_equipo).trim().toUpperCase() : ''
 
-  const found = trip.find(t => {
-    if (!t.id_user || !t.equipo_asignado_id) return false
-    const tEqStr = String(t.equipo_asignado_id).trim().toUpperCase()
-    return tEqStr === idStr || (patStr && tEqStr === patStr) || (idEqStr && tEqStr === idEqStr)
+  // 1. Buscar directamente en líneas de Flota Principal (Sub-tab 2)
+  const lPrincipal = linesEquiposPrincipales.value || []
+  const matchLine = lPrincipal.find(l => {
+    const lEqStr = String(l.equipo_asignado_id || l.equipo_id || '').trim().toUpperCase()
+    return lEqStr === idStr || (patStr && lEqStr === patStr) || (idEqStr && lEqStr === idEqStr)
   })
-  return found || null
+
+  let targetUserId = matchLine?.operador_asignado_id || null
+  let targetCargo = (matchLine?.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'
+
+  // 2. Si no está en flota principal, buscar en equipos extra (logística/traslados)
+  if (!targetUserId) {
+    const extraList = Array.isArray(operacionesAssignment.value?.equipos_extra) ? operacionesAssignment.value.equipos_extra : []
+    const matchExtra = extraList.find(eqEx => {
+      const exEqId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.id_equipo : eqEx
+      const exEqStr = String(exEqId || '').trim().toUpperCase()
+      return exEqStr === idStr || (patStr && exEqStr === patStr) || (idEqStr && exEqStr === idEqStr)
+    })
+    if (matchExtra && typeof matchExtra === 'object' && matchExtra.chofer_id) {
+      targetUserId = matchExtra.chofer_id
+      targetCargo = 'Chofer Cama Baja'
+    }
+  }
+
+  // 3. Si no está, buscar en tripulacionAsignada
+  if (!targetUserId) {
+    const trip = tripulacionAsignada.value || []
+    const foundTrip = trip.find(t => {
+      if (!t.id_user || !t.equipo_asignado_id) return false
+      const tEqStr = String(t.equipo_asignado_id).trim().toUpperCase()
+      return tEqStr === idStr || (patStr && tEqStr === patStr) || (idEqStr && tEqStr === idEqStr)
+    })
+    if (foundTrip) {
+      targetUserId = foundTrip.id_user
+      targetCargo = foundTrip.cargo || targetCargo
+    }
+  }
+
+  // 4. Fallback a inspeccion de patio
+  if (!targetUserId) {
+    const ins = getInspeccionEquipo(eqId)
+    if (ins && (ins.operador_id || ins.jefe_patio_id)) {
+      targetUserId = ins.operador_id || ins.jefe_patio_id
+    }
+  }
+
+  // 5. Fallback a operacionesAssignment.operador_id si es el único equipo principal
+  if (!targetUserId && lPrincipal.length === 1 && operacionesAssignment.value?.operador_id) {
+    targetUserId = operacionesAssignment.value.operador_id
+  }
+
+  if (!targetUserId) return null
+
+  // Buscar usuario en el catálogo cargado para obtener su nombre real
+  const u = (usuarios.value || []).find(user => Number(user.id_user) === Number(targetUserId))
+  const nombreReal = u?.nombre_user || u?.name_user || (u?.name_frst ? `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() : null) || ''
+
+  return {
+    id_user: targetUserId,
+    cargo: targetCargo,
+    equipo_asignado_id: eqId,
+    nombre_user: nombreReal,
+    name_user: nombreReal
+  }
 }
 
 const getNombreOperadorAsignado = (eqId) => {

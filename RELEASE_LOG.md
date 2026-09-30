@@ -4,6 +4,22 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.63
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-30 15:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-018`
+- **Especificación Técnica:** `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
+- **Detalle de Mejoras y Cambios (Hotfix Operacional Marcha Blanca):**
+  - **[BUGFIX/OPS] Purga Total de Prevencionista Fantasma (Caso GSP-2609-3707-013):**
+    - Exclusión incondicional de cualquier prevencionista (incluso con `id_user` histórico en BD) si la cotización no demanda prevencionista (`requiere_prevencionista !== true`).
+  - **[BUGFIX/UX] Erradicación de Rigger Duplicado en Sección 3 Especialistas:**
+    - Exclusión total de Riggers en la Sección 3 (*Especialistas & Personal Técnico en Terreno*); el Rigger vive única y exclusivamente en la Grúa Principal bajo el Operador.
+  - **[BUGFIX/DESPACHO] Resolución de Nombre Real del Operador en Sub-tab 5:**
+    - Conexión determinista de `getOperadorAsignadoAEquipo` con `linesEquiposPrincipales` y cruce con el catálogo maestro de `usuarios.value`, corrigiendo la etiqueta que mostraba *"Sin Operador Asignado"* pese a tener semáforo verde.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.62
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-09-30 14:35:00 (-03:00)

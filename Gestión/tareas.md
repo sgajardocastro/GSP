@@ -394,6 +394,12 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Rigger Anidado Bajo Operador:** Presentación de selector y semáforo de Rigger como sub-registro integrado en la celda del Operador de la Grúa Principal (Línea 0), extensible a grúas secundarias solo si se vendieron múltiples riggers comercialmente.
   - **Filtro Inclusivo con Separador y Aviso de Mayor Capacidad:** Selector de grúas estructurado en `<optgroup>` doble (`🎯 Equipos Sugeridos (Compromiso Comercial)` vs `🚜 Flota Alternativa / Mayores Prestaciones`) con alerta informativa tipo badge ante selección de mayor tonelaje respaldando la tarifa pactada.
 
+* [x] **[Hotfix Operacional Marcha Blanca - Depuración Especialistas y Resolución Operador Despacho - REQ-018 / v1.0.63 / Spec 56]:**
+  - **Purga Implacable de Prevencionista:** Descarte absoluto de cualquier registro de Prevencionista de Riesgos en `especialistasTerreno` (incluso con `id_user` histórico en BD) si la oportunidad no exige prevención (`requiere_prevencionista !== true`).
+  - **Eliminación de Rigger Redundante en Sección 3:** Exclusión total del cargo Rigger de la Sección 3 (*Especialistas & Personal Técnico en Terreno*); el Rigger vive única y exclusivamente en la Grúa Principal bajo el Operador.
+  - **Resolución de Nombre del Operador en Despacho:** Vinculación directa de `getOperadorAsignadoAEquipo` con `linesEquiposPrincipales` y cruce con el catálogo `usuarios.value`, corrigiendo la etiqueta que mostraba *"Sin Operador Asignado"* pese a tener semáforo verde.
+
+
 
 
 
