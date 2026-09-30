@@ -399,6 +399,11 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Eliminación de Rigger Redundante en Sección 3:** Exclusión total del cargo Rigger de la Sección 3 (*Especialistas & Personal Técnico en Terreno*); el Rigger vive única y exclusivamente en la Grúa Principal bajo el Operador.
   - **Resolución de Nombre del Operador en Despacho:** Vinculación directa de `getOperadorAsignadoAEquipo` con `linesEquiposPrincipales` y cruce con el catálogo `usuarios.value`, corrigiendo la etiqueta que mostraba *"Sin Operador Asignado"* pese a tener semáforo verde.
 
+* [x] **[Compactación Dimensional Layout y Erradicación Scroll Horizontal - REQ-019 / v1.0.64 / Spec 56]:**
+  - **Layout de Tabla Fija (`table-fixed`):** Forzado de ancho estricto al 100% del contenedor sin desbordes horizontales innecesarios en la matriz de Asignación de Recursos (`GestorOportunidades.vue`).
+  - **Rebalanceo Canónico de Columnas:** Recurso (22%), Equipo (25%), Operador & Rigger (28%), Ventana (21%), Acciones (4%) = 100%.
+  - **Blindaje Dimensional (`min-w-0` y `truncate`):** Truncamiento elástico con elipsis en selectores largos y badge de mayor capacidad para evitar ensanchamiento de columnas en pantallas de 13" o superiores. `VERIFICADO Y COMPILADO 0 ERRORES`.
+
 
 
 

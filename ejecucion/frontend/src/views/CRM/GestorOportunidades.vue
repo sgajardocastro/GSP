@@ -850,13 +850,13 @@
           <!-- TABLA ÚNICA DE ALTA DENSIDAD LINEAL (UNA SOLA CABECERA GLOBAL) -->
           <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden shadow-xl shadow-black/50">
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs border-collapse">
+              <table class="w-full text-left text-xs border-collapse table-fixed">
                 <thead>
                   <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
-                    <th class="py-2.5 px-3 w-[20%]">Recurso / Requerimiento</th>
-                    <th class="py-2.5 px-3 w-[28%]">Equipo / Vehículo Asignado</th>
-                    <th class="py-2.5 px-3 w-[30%]">Operador & Rigger Asignado</th>
-                    <th class="py-2.5 px-3 w-[18%]">Ventana Planificada</th>
+                    <th class="py-2.5 px-3 w-[22%]">Recurso / Requerimiento</th>
+                    <th class="py-2.5 px-3 w-[25%]">Equipo / Vehículo Asignado</th>
+                    <th class="py-2.5 px-3 w-[28%]">Operador & Rigger Asignado</th>
+                    <th class="py-2.5 px-3 w-[21%]">Ventana Planificada</th>
                     <th class="py-2.5 px-2 w-[4%] text-center">Acc</th>
                   </tr>
                 </thead>
@@ -911,16 +911,16 @@
                         </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                    <td class="py-2 px-3 min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.subcategoria || line.tipo || 'Todos' }}) --</option>
-                          <optgroup v-if="getEquiposAgrupados(line).sugeridos.length > 0" label="🎯 Equipos Sugeridos (Compromiso Comercial)" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                          <optgroup v-if="getEquiposAgrupados(line).sugeridos.length > 0" label="🎯 Equipos Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                             <option v-for="eq in getEquiposAgrupados(line).sugeridos" :key="'eq-sug-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
                               {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                             </option>
                           </optgroup>
-                          <optgroup v-if="getEquiposAgrupados(line).otros.length > 0" label="🚜 Toda la Flota Disponible (Mayores Prestaciones / Alternativas)" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                          <optgroup v-if="getEquiposAgrupados(line).otros.length > 0" label="🚜 Toda la Flota (Mayor Capacidad)" class="bg-[#0a0f1e] text-slate-400 font-bold">
                             <option v-for="eq in getEquiposAgrupados(line).otros" :key="'eq-otr-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-slate-200">
                               {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
                             </option>
@@ -930,19 +930,19 @@
                         <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
                         <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                       </div>
-                      <div v-if="esEquipoMayorPrestacion(line)" class="mt-1 flex items-center gap-1.5 text-[9.5px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-sans font-bold leading-tight">
-                        <span>⚠️</span>
-                        <span>Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)</span>
+                      <div v-if="esEquipoMayorPrestacion(line)" class="mt-1 flex items-center gap-1.5 text-[9px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded font-sans font-bold leading-tight min-w-0" title="Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)">
+                        <span class="flex-shrink-0">⚠️</span>
+                        <span class="truncate">Equipo Mayor Capacidad (Tarifa Respaldada)</span>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="space-y-1.5">
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="space-y-1.5 min-w-0">
                         <!-- Fila 1: Operador -->
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
                           <span class="text-[10px] text-amber-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador del Equipo">
                             👷 Op:
                           </span>
-                          <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                          <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                             <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
                             <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                               <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
@@ -963,11 +963,11 @@
                         </div>
 
                         <!-- Fila 2: Rigger Vinculado al Equipo (Asociado a Grúa Principal a menos que se hayan vendido más riggers) -->
-                        <div v-if="opportunity.requiere_rigger && (idx === 0 || idx < cantidadRiggersVendidos)" class="flex items-center gap-1.5 pt-1 border-t border-white/5">
+                        <div v-if="opportunity.requiere_rigger && (idx === 0 || idx < cantidadRiggersVendidos)" class="flex items-center gap-1.5 pt-1 border-t border-white/5 min-w-0">
                           <span class="text-[10px] text-cyan-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Rigger asociado al Equipo">
                             🦺 Rig:
                           </span>
-                          <select v-model="line.rigger_asignado_id" @change="onRiggerEquipoCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': line.rigger_asignado_id }">
+                          <select v-model="line.rigger_asignado_id" @change="onRiggerEquipoCambiado(line)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': line.rigger_asignado_id }">
                             <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Rigger (Opcional) --</option>
                             <optgroup v-if="getUsuariosAgrupados('Rigger').sugeridos.length > 0" label="🎯 Riggers Sugeridos" class="bg-[#0a0f1e] text-cyan-400 font-bold">
                               <option v-for="u in getUsuariosAgrupados('Rigger').sugeridos" :key="'rig-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
@@ -988,11 +988,11 @@
                         </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-2 py-1">
-                        <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                        <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
+                        <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
+                        <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
@@ -1057,9 +1057,9 @@
                         </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
+                    <td class="py-2 px-3 min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ eqEx.subcategoria || eqEx.tipo || 'Todos' }}) --</option>
                           <optgroup v-if="getEquiposAgrupados(eqEx).sugeridos.length > 0" label="🎯 Vehículos Sugeridos (Logística)" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                             <option v-for="eq in getEquiposAgrupados(eqEx).sugeridos" :key="'exeq-sug-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
@@ -1077,9 +1077,9 @@
                         <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
                           <optgroup v-if="getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
                             <option v-for="u in getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
@@ -1099,11 +1099,11 @@
                         </template>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-2 py-1">
-                        <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                        <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
+                        <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
+                        <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
@@ -1152,11 +1152,12 @@
                         </div>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans text-center">
+                    <td class="py-2 px-3 font-sans text-center min-w-0 overflow-hidden">
+                      <span class="text-slate-600 text-xs">—</span>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
                           <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                             <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
@@ -1176,11 +1177,11 @@
                         </template>
                       </div>
                     </td>
-                    <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-emerald-500/20 rounded px-2 py-1">
-                        <input type="date" v-model="esp.fecha_plan_ini" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5">➔</span>
-                        <input type="date" v-model="esp.fecha_plan_fin" @change="marcarDirtyAsignacion" class="flex-1 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
+                      <div class="flex items-center gap-1 bg-[#050810] border border-emerald-500/20 rounded px-1.5 py-1 min-w-0">
+                        <input type="date" v-model="esp.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
+                        <input type="date" v-model="esp.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">

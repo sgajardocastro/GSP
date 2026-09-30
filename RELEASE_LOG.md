@@ -2,6 +2,20 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.64
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-30 18:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-019`
+- **Especificación Técnica:** `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
+- **Detalle de Mejoras y Cambios (Ajuste Dimensional Layout y Scroll Horizontal):**
+  - **[UI/UX] Erradicación de Scroll Horizontal Innecesario en Asignación:**
+    - Incorporación de `table-fixed` a la tabla matriz de Asignación en `GestorOportunidades.vue`, forzando el ajuste estricto al 100% del ancho del viewport sin desbordes.
+    - Rebalanceo canónico de columnas de cabecera: `Recurso (22%)`, `Equipo (25%)`, `Operador & Rigger (28%)`, `Ventana (21%)`, `Acciones (4%)` sumando 100%.
+  - **[CSS/LAYOUT] Blindaje de Anchos y Truncamiento de Texto:**
+    - Inyección de clases `min-w-0`, `w-full` y `truncate` en selectores y celdas de las tres secciones (Flota Principal, Traslados y Especialistas).
+    - Compactación semántica del badge de mayor prestación: `Equipo Mayor Capacidad (Tarifa Respaldada)` con tooltip explicativo completo en `title="..."`.
+
 ---
 
 ## [Portal Web GSP] - Versión 1.0.63
