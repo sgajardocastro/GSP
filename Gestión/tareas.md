@@ -360,5 +360,40 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - Blindaje anti-dirty: detección reactiva de hidratación (`isHydrating`) e inmutabilidad en etapas operativas (>= 3), eliminando alertas falsas de cambios sin guardar.
   - Estandarización de tarjetas del Kanban (`Torre.vue`): formato comercial homogéneo (Cliente, Proyecto, Familia de Servicio / Objetivo, Vendedor, Monto, Fecha).
   - Rediseño técnico de Asignación de Recursos (`GestorOportunidades.vue`): títulos y categorías unificados en azul corporativo (`text-blue-400`), indentación `pl-8` y guía `border-l-2` en filas hijas para distinguir agrupadores de recursos, erradicación de candados y guiones `—` en celdas de acciones, y corrección semántica de la tarjeta como `Matriz de Aparejos & Implementos de Izaje`. `VERIFICADO Y DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Idempotencia de Tokens de Visita y Adaptabilidad del Estructurador en 13" - REQ-015 / v1.0.60]:**
+  - **Idempotencia de Tokens (`visitaTerrenoController.js`):** Reutilización determinista de `token_visita` activo cuando el proyecto está en estado `PENDIENTE_ASIGNACION`, y soporte multi-token histórico en `json_field->'crm_v1'->'tokens_historicos'`. Erradicación de enlaces inválidos o huérfanos por reenvíos de notificación en email y WhatsApp.
+  - **Ergonomía en Pantallas de 13" (`GestorOportunidades.vue`):** Incorporación de botón toggle `[◀ Maximizar Ancho (13")]` / `[▶ Mostrar Datos Cliente]` que expande el Estructurador al 100% del viewport útil (+1000px en notebooks compactos).
+  - **Habilitación de Desplazamiento Horizontal:** Remoción de `.scrollbar-hide` y `overflow-hidden` en Preventa y Operaciones Pestaña B, habilitando `overflow-x-auto` visible y fluido.
+  - **Optimización Dimensional:** Eliminación de `w-full` en la columna descripción que inflaba artificialmente la tabla, y ajuste de anchos mínimos base a 850px. `VERIFICADO Y COMPILADO 0 ERRORES`.
+
+* [x] **[Sprint Marcha Blanca Comercial Temuco - REQ-016 / v1.0.61]:**
+*(Derivado de la sesión en vivo de cotizaciones y operación con el equipo comercial de GSP)*
+* [x] **[Incidente #0 - Enlace de Visita a Terreno Expirado por Re-solicitud]:** Resuelto en REQ-015 / v1.0.60 mediante idempotencia de UUID y soporte de tokens históricos en `tpry_proyecto`. `DESPLEGADO EN DEV`.
+* [x] **[Observación #1 - Visualización y Desplazamiento Horizontal del Estructurador en 13"]:** Resuelto en REQ-015 / v1.0.60 mediante toggle de maximización, desbloqueo de `overflow-x-auto` y retiro de `w-full`. `DESPLEGADO EN DEV`.
+* [x] **[Observación #2 - Diferenciación Explícita de "Ida" e "Ida/Vuelta" en Traslados]:** Desbloqueo del `<select>` de unidad en categoría `TRASLADOS` en `GestorOportunidades.vue` (`TRASLADO IDA` / `TRASLADO IDA/VUELTA`), imputación de devengado proporcional al 50% al completar viaje a faena y 50% remanente al retorno a base. `DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Observación #3 - Deshabilitación Automática de Pensiones en Servicios de 1 Día]:** Detección computada `esServicioUnDia` en `GestorOportunidades.vue`, seteo forzado a `'NA'` en todos los conceptos de pensión y viáticos, bloqueo visual con banner informativo en el panel de base para EDP. `DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Observación #4 - Restricción RBAC de Scope Comercial y Depuración de Roles]:**
+  - **Base de Datos PostgreSQL (`sch_leangsp`):** Purga de 24 roles legacy y 43 asignaciones obsoletas; consolidación de 9 roles oficiales (`Admin`, `USR-CONSENT`, `GSP_PROG`, `GSP_APROB`, `GSP_CONTA`, `GSP_EJEC`, `ADM_COM`, `COMERCIAL`, `COORD`).
+  - **Backend Local (`authController.js`, `authMiddleware.js`, `proyectosController.js`, `proyectoModel.js`):** Inyección de roles en JWT, protección de endpoints y cláusula determinista `WHERE p.id_usuario_creacion = $id_user` para rol `COMERCIAL`.
+  - **Frontend (`Torre.vue`):** Refresco dinámico de roles desde BD (`cargarRolesFrescos()`), filtrado de tarjetas en cliente y badges semánticos de Scope (`Mis Cotizaciones`, `Global`, `Coordinación`).
+  - **Mantenedor de Usuarios (`EditUsuarioDialog.vue` y `RbacMatrixTable.vue`):** Erradicación de módulos de Transmac/Codelco, rediseño a Layout Split 2 columnas a pantalla completa (`max-w-[1380px]`) con tarjetas de 1 línea sin barras de scroll. `DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Observación #5 - Persistencia de Fecha, Hora y Reasignación en Visita a Terreno / Viajes]:**
+  - **Base de Datos & Backend Modelo (`viajeModel.js`):** Incorporación de columna `fecha_programada` en `tequ_log_desplazamiento` y persistencia en `crearOObtenerViaje`.
+  - **Backend Controlador (`viajeController.js`):** Extracción de `fecha_programada` y ensamble determinista de `fecha_inspeccion_plan` + `hora_inspeccion_plan`.
+  - **Frontend CRM (`GestorOportunidades.vue`):** Transmisión de fecha/hora de salida en `autorizarSalidaEquipo`, hidratación reactiva al cargar viajes de la OT en `cargarViajesProyecto`, y reprogramación completa de fecha y hora en el modal de reasignación técnica (`/survey/UpdPlan`).
+  - **Frontend Asignación Externa (`AsignacionVisita.vue`):** Input de hora programada (`hora_visita`) y ensamble de timestamp local explícito, erradicando el desfase UTC a las 21:00 hrs del día previo. `DESPLEGADO EN DEV 0 ERRORES`.
+* [x] **[Observación #6 - Notificaciones y Distribución Canónica de Cotizaciones por Correo]:**
+  - **Backend (`messageModel.js`, `messageController.js`):** Soporte y paso de cabecera `cc` en `nodemailer`.
+  - **Frontend (`ModalEnviarCotizacion.vue`):** Parametrización estricta de destinatarios: `Para:` Cliente; `CC:` Comercial Emisor (`currentUser.email`) + Coordinadores de Operaciones (`COORD` / `logistica@arriendosanpablo.cl`) + Administradores (`Admin` / Sergio, Jorge, Omar). Trazabilidad de `usuario_envio` activo. `DESPLEGADO EN DEV 0 ERRORES`.
+* [ ] **[Observación #7 - Captura Rápida de Oportunidad Comercial (Light)]:** Formulario simplificado de prospecto comercial para registro rápido de llamadas y solicitudes preliminares sin obligatoriedad de estructuración técnica inmediata. `PENDIENTE ESPECIFICACIÓN Y DESARROLLO`.
+
+* [x] **[Ajustes Operacionales Segunda Sesión Marcha Blanca - REQ-017 / v1.0.62 / Spec 56]:**
+  - **Erradicación de Prevencionista Fantasma:** Purga de inicialización estática en `especialistasTerreno`. Despliegue de slot APR únicamente si `requiere_prevencionista === true` o existe línea comercial cotizada. Caso GSP-2609-3707-013 resuelto.
+  - **Reasignación Centralizada en Sub-tab 2 (Asignación):** Desbloqueo de interactividad tras confirmación (`estado_ot >= 5`) con botón `[🔄 Reasignar Recursos / Actualizar OT]` y recálculo automático de acreditaciones.
+  - **Restricción de Recursos en Sub-tab 5 (Despacho):** Inhabilitación de edición de personal y equipos en Despacho (modo lectura/informativo), protegiendo la integridad del flujo operativo.
+  - **Rigger Anidado Bajo Operador:** Presentación de selector y semáforo de Rigger como sub-registro integrado en la celda del Operador de la Grúa Principal (Línea 0), extensible a grúas secundarias solo si se vendieron múltiples riggers comercialmente.
+  - **Filtro Inclusivo con Separador y Aviso de Mayor Capacidad:** Selector de grúas estructurado en `<optgroup>` doble (`🎯 Equipos Sugeridos (Compromiso Comercial)` vs `🚜 Flota Alternativa / Mayores Prestaciones`) con alerta informativa tipo badge ante selección de mayor tonelaje respaldando la tarifa pactada.
+
+
 
 

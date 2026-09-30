@@ -4,6 +4,69 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 ---
 
+## [Portal Web GSP] - Versión 1.0.62
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-30 14:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-017`
+- **Especificación Técnica:** `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
+- **Detalle de Mejoras y Cambios (Ajustes Operacionales Segunda Sesión Marcha Blanca):**
+  - **[BUGFIX/OPS] Erradicación de Prevencionista Fantasma (Caso GSP-2609-3707-013):**
+    - Purga de inicialización estática de `especialistasTerreno` en `GestorOportunidades.vue`.
+    - Despliegue condicional de especialistas APR única y exclusivamente si `requiere_prevencionista === true` o si la cotización incluye líneas de prevención, eliminando slots vacíos.
+  - **[FEAT/WORKFLOW] Reasignación Centralizada en Sub-tab 2 (Asignación) y Bloqueo en Despacho:**
+    - Desbloqueo de interactividad en Sub-tab 2 tras confirmación de OT (`isAsignacionConfirmada`) mediante botón explícito `[🔄 Reasignar Recursos / Actualizar OT]`, recalculando acreditaciones en tiempo real.
+    - Bloqueo en modo solo lectura de selectores de recursos en Sub-tab 5 (Despacho), preservando la integridad del proceso operativo.
+  - **[FEAT/UX] Vinculación Rigger Anidado Bajo Operador/Conductor:**
+    - Integración de selector y semáforo de Rigger como sub-registro en la celda del Operador de la Grúa Principal (`linesEquiposPrincipales[0]`) sin saturar la tabla con columnas adicionales.
+    - Soporte multi-grúa: el rigger se asocia a la grúa principal, salvo que comercialmente se hayan vendido 2 o más riggers.
+  - **[FEAT/OPS] Filtro Inclusivo con Separador y Aviso de Mayor Prestación:**
+    - Agrupación del selector de grúas en dos niveles `<optgroup>`: `🎯 Equipos Sugeridos (Compromiso Comercial)` y `🚜 Flota Alternativa / Mayores Prestaciones`.
+    - Despliegue de banner/badge de advertencia `[⚠️ Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)]` ante selección de grúas de mayor tonelaje.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.61
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-29 22:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-016`
+- **Detalle de Mejoras y Cambios (Marcha Blanca Comercial Temuco):**
+  - **[SECURITY/RBAC] Restricción de Scope Comercial y Depuración de Roles (Obs #4):**
+    - **PostgreSQL (`sch_leangsp`):** Purga de 24 roles legacy de Transmac/Codelco y consolidación de los 9 roles oficiales GSP (`Admin`, `USR-CONSENT`, `GSP_PROG`, `GSP_APROB`, `GSP_CONTA`, `GSP_EJEC`, `ADM_COM`, `COMERCIAL`, `COORD`).
+    - **Backend (`authController.js`, `authMiddleware.js`, `proyectosController.js`, `proyectoModel.js`):** Inyección de roles en JWT/sesión y cláusula determinista `WHERE p.id_usuario_creacion = $id_user` para el rol `COMERCIAL`. Los roles `Admin`, `ADM_COM` y `COORD` acceden al tablero global.
+    - **Frontend (`Torre.vue`):** Refresco dinámico de roles desde BD (`cargarRolesFrescos()`), filtrado reactivo de tarjetas y badges semánticos de Scope (`[👤 Scope: Mis Cotizaciones]`, `[🌐 Scope: Global]`, `[🏗️ Scope: Coordinación]`).
+    - **Mantenedor de Usuarios (`EditUsuarioDialog.vue` y `RbacMatrixTable.vue`):** Layout Split de 2 columnas fijas (`max-w-[1380px]`) a pantalla completa, eliminando scrollbars externos y presentando los 9 roles GSP en tarjetas de una línea.
+  - **[FEAT/NOTIFICATIONS] Notificaciones y Distribución Parametrizada de Cotizaciones (Obs #6):**
+    - **Backend (`messageModel.js`, `messageController.js`):** Soporte y paso de cabecera `cc` en `nodemailer`.
+    - **Frontend (`ModalEnviarCotizacion.vue`):** Distribución estricta: `Para:` Cliente; `CC:` Comercial Emisor (`currentUser.email`) + Coordinadores de Operaciones (`COORD` / `logistica@arriendosanpablo.cl`) + Administradores (`Admin` / Sergio, Jorge, Omar). Trazabilidad de `usuario_envio` activo.
+  - **[FEAT/COMMERCIAL] Diferenciación "Ida" e "Ida/Vuelta" en Traslados y Regla Devengado 50/50 (Obs #2):**
+    - Desbloqueo del `<select>` de unidad en categoría `TRASLADOS` (`TRASLADO IDA` / `TRASLADO IDA/VUELTA`) en `GestorOportunidades.vue`.
+    - Motor de imputación en *Sub-tab 6 Reports*: 50% devengado al completar viaje a faena y 50% remanente retenido hasta el viaje de retorno a base.
+  - **[FEAT/COMMERCIAL] Deshabilitación Automática de Pensiones en 1 Día (Obs #3):**
+    - Detección reactiva `esServicioUnDia` en `GestorOportunidades.vue`, forzando automáticamente `'NA'` en conceptos de pensiones y viáticos con banner informativo.
+  - **[FEAT/OPERATIONS] Persistencia de Fecha, Hora y Reasignación en Viajes y Visitas (Obs #5):**
+    - Persistencia de fecha y hora programada en `tequ_log_desplazamiento` y `tsrv_survey`, evitando desfases UTC y habilitando reprogramación de recursos sin pérdida de trazabilidad.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.60
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-09-29 15:55:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-015`
+- **Detalle de Mejoras y Cambios:**
+  - **[BUGFIX/BACKEND] Idempotencia y Resiliencia de Tokens de Asignación de Visita a Terreno (`visitaTerrenoController.js`):**
+    - Preservación y reutilización determinista del token activo cuando el proyecto se encuentra en estado `PENDIENTE_ASIGNACION`, impidiendo que reenvíos de notificación o correcciones de dirección invaliden enlaces previos en correos y WhatsApp.
+    - Soporte multi-token histórico en `json_field->'crm_v1'->'tokens_historicos'` consultado transparentemente en `getDatosVisita` y `asignarVisita`. Los enlaces antiguos conservan su validez mientras la solicitud no haya sido asignada o firmada (un solo uso garantizado tras el cierre).
+  - **[FEAT/UX] Adaptabilidad Ergonómica del Estructurador en Pantallas de 13" (`GestorOportunidades.vue`):**
+    - **Modo Expandido 1-Clic:** Incorporación de botón toggle `[◀ Maximizar Ancho (13")]` / `[▶ Mostrar Datos Cliente]` en la barra de pestañas, permitiendo colapsar el panel lateral izquierdo para que el Estructurador ocupe el 100% del viewport útil (+1000px en notebooks de 13").
+    - **Activación de Desplazamiento Horizontal:** Remoción de `.scrollbar-hide` y `overflow-hidden` que bloqueaban visualmente la barra de desplazamiento en Windows/Chrome, habilitando `overflow-x-auto` nativo con riel fluido.
+    - **Optimización Dimensional de Columnas:** Eliminación del atributo `w-full` en la cabecera de *Descripción / Equipo* que inflaba desmedidamente el ancho de la tabla, y compactación de anchos mínimos de columnas a 850px base.
+    - **Homologación Operativa:** Aplicación de scroll horizontal y anchos compactos en la Pestaña B de Operaciones para coherencia en todo el ciclo de vida de la cotización.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.59
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-09-28 22:45:00 (-03:00)

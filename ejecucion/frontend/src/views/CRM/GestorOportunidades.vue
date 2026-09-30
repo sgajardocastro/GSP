@@ -346,18 +346,18 @@
                 </button>
               </div>
 
-              <div class="border border-white/5 rounded-lg overflow-hidden bg-black/20 overflow-y-auto scrollbar-hide">
-                <table class="w-full text-left text-xs">
+              <div class="border border-white/5 rounded-lg bg-black/20 overflow-x-auto overflow-y-auto">
+                <table class="w-full text-left text-xs min-w-[760px]">
                   <thead>
                     <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                      <th class="p-2.5">Categoría</th>
-                      <th class="p-2.5 w-32">Subcategoría</th>
-                      <th class="p-2.5">Descripción / Equipo</th>
-                      <th class="p-2.5 w-36">Unidad</th>
-                      <th class="p-2.5 text-center min-w-[150px]">Cantidad(es)</th>
-                      <th class="p-2.5 text-right w-24">Valor Unit.</th>
-                      <th class="p-2.5 text-right w-24">Subtotal</th>
-                      <th class="p-2 text-center w-8"></th>
+                      <th class="p-2 min-w-[120px]">Categoría</th>
+                      <th class="p-2 min-w-[120px]">Subcategoría</th>
+                      <th class="p-2 min-w-[140px]">Descripción / Equipo</th>
+                      <th class="p-2 min-w-[110px]">Unidad</th>
+                      <th class="p-2 text-center min-w-[130px]">Cantidad(es)</th>
+                      <th class="p-2 text-right min-w-[85px]">Valor Unit.</th>
+                      <th class="p-2 text-right min-w-[95px]">Subtotal</th>
+                      <th class="p-2 text-center min-w-[28px]"></th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-white/5">
@@ -414,18 +414,22 @@
                         <select 
                           v-model="line.unidad" 
                           @change="onUnidadChange(line)"
-                          :disabled="line.tipo === 'TRASLADOS'"
-                          :title="line.tipo === 'TRASLADOS' ? 'Para la categoría TRASLADOS, la unidad de cobro es exclusivamente Traslado.' : ''"
                           class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
                           :class="[
-                            line.tipo === 'TRASLADOS' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-white/5' : '',
                             (hasDiff('equipo_unidad', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'
                           ]" 
                         >
-                          <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
-                          <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
-                          <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
-                          <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
+                          <template v-if="line.tipo === 'TRASLADOS'">
+                            <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
+                            <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
+                            <option v-if="line.unidad === 'Traslado'" value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
+                          </template>
+                          <template v-else>
+                            <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
+                            <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
+                            <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
+                            <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
+                          </template>
                         </select>
                         <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
                           Orig: {{ getOriginalValue('equipo_unidad', idx) }}
@@ -685,6 +689,13 @@
                       <label class="block text-[10px] text-slate-300 font-bold mb-0.5">Motivo de Reasignación *:</label>
                       <input type="text" v-model="panelReasignarForm.motivo_reasignacion" placeholder="Ej: Imprevisto en faena, licencia..." class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none" />
                     </div>
+                    <div class="sm:col-span-2">
+                      <label class="block text-[10px] text-slate-300 font-bold mb-0.5">Fecha y Hora Programada (Reprogramación):</label>
+                      <div class="grid grid-cols-2 gap-2">
+                        <input type="date" v-model="panelReasignarForm.nueva_fecha_plan" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none [color-scheme:dark]" />
+                        <input type="time" v-model="panelReasignarForm.nueva_hora_plan" class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none [color-scheme:dark]" />
+                      </div>
+                    </div>
                   </div>
                   <div class="flex justify-end gap-2 pt-1 border-t border-white/10">
                     <button @click="mostrarModalReasignar = false" type="button" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded cursor-pointer">Cancelar</button>
@@ -780,14 +791,22 @@
 
       <!-- SUB-TAB 2: PESTAÑA C - ASIGNACIÓN DE RECURSOS (OT) (HABILITADA CONDICIONALMENTE TRAS APROBACIÓN) -->
       <div v-if="operacionesSubTab === 'asignacion'" class="space-y-3">
-        <div v-if="isAsignacionConfirmada" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 flex justify-between items-center text-xs text-amber-300 font-bold mb-2">
+        <div v-if="isAsignacionConfirmada" class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2.5 flex flex-wrap justify-between items-center gap-2 text-xs text-emerald-300 font-bold mb-2">
           <span class="flex items-center gap-2">
-            Etapa Concluida y Aprobada (Solo Lectura) — Las asignaciones de la OT fueron confirmadas.
+            <span>✅ Asignación Confirmada (Editable)</span>
+            <span class="text-slate-400 font-normal">— La reasignación de equipos o tripulación se gestiona directamente aquí. Guarda los cambios para actualizar la OT y acreditaciones.</span>
           </span>
-          <span class="text-[10px] text-slate-400 font-normal">Para sustituciones por falla o adiciones de flota, utiliza el Panel de Excepciones en Sub-tab 5 Preparación de Salida.</span>
+          <div class="flex items-center gap-2">
+            <span v-if="isDirtyAsignacion" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[11px] font-bold animate-pulse">
+              🟡 Modificaciones Pendientes
+            </span>
+            <button @click="guardarCambiosAsignacion" type="button" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded text-xs uppercase tracking-wider transition-all shadow cursor-pointer">
+              💾 Guardar Modificaciones
+            </button>
+          </div>
         </div>
 
-        <div :class="{ 'pointer-events-none opacity-80': isAsignacionConfirmada }" class="bg-[#050810] border border-white/10 rounded-xl p-3 space-y-3">
+        <div class="bg-[#050810] border border-white/10 rounded-xl p-3 space-y-3">
           
           <!-- TOOLBAR SUPERIOR COMPACTA (TÍTULO + TIEMPOS GLOBALES + ESTADO EN 1 SOLA LÍNEA) -->
           <div class="bg-[#0a0f1e] p-2.5 rounded-lg border border-white/10 flex flex-wrap items-center justify-between gap-2.5">
@@ -834,9 +853,9 @@
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
-                    <th class="py-2.5 px-3 w-[22%]">Recurso / Requerimiento</th>
-                    <th class="py-2.5 px-3 w-[30%]">Equipo / Vehículo Asignado</th>
-                    <th class="py-2.5 px-3 w-[26%]">Operador / Personal Asignado</th>
+                    <th class="py-2.5 px-3 w-[20%]">Recurso / Requerimiento</th>
+                    <th class="py-2.5 px-3 w-[28%]">Equipo / Vehículo Asignado</th>
+                    <th class="py-2.5 px-3 w-[30%]">Operador & Rigger Asignado</th>
                     <th class="py-2.5 px-3 w-[18%]">Ventana Planificada</th>
                     <th class="py-2.5 px-2 w-[4%] text-center">Acc</th>
                   </tr>
@@ -896,35 +915,77 @@
                       <div class="flex items-center gap-1.5">
                         <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.subcategoria || line.tipo || 'Todos' }}) --</option>
-                          <option v-for="eq in getEquiposFiltradosPorLinea(line)" :key="eq.id_equipo || eq.patente" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                            {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                          </option>
+                          <optgroup v-if="getEquiposAgrupados(line).sugeridos.length > 0" label="🎯 Equipos Sugeridos (Compromiso Comercial)" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                            <option v-for="eq in getEquiposAgrupados(line).sugeridos" :key="'eq-sug-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                            </option>
+                          </optgroup>
+                          <optgroup v-if="getEquiposAgrupados(line).otros.length > 0" label="🚜 Toda la Flota Disponible (Mayores Prestaciones / Alternativas)" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                            <option v-for="eq in getEquiposAgrupados(line).otros" :key="'eq-otr-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-slate-200">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                            </option>
+                          </optgroup>
                         </select>
                         <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
                         <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
                         <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                       </div>
+                      <div v-if="esEquipoMayorPrestacion(line)" class="mt-1 flex items-center gap-1.5 text-[9.5px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded font-sans font-bold leading-tight">
+                        <span>⚠️</span>
+                        <span>Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)</span>
+                      </div>
                     </td>
                     <td class="py-2 px-3 font-sans">
-                      <div class="flex items-center gap-1.5">
-                        <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
-                          <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                            </option>
-                          </optgroup>
-                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                            </option>
-                          </optgroup>
-                        </select>
-                        <template v-if="line.operador_asignado_id">
-                          <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                          <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                        </template>
+                      <div class="space-y-1.5">
+                        <!-- Fila 1: Operador -->
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-[10px] text-amber-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador del Equipo">
+                            👷 Op:
+                          </span>
+                          <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
+                            <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                              </option>
+                            </optgroup>
+                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                              </option>
+                            </optgroup>
+                          </select>
+                          <template v-if="line.operador_asignado_id">
+                            <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                            <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                          </template>
+                        </div>
+
+                        <!-- Fila 2: Rigger Vinculado al Equipo (Asociado a Grúa Principal a menos que se hayan vendido más riggers) -->
+                        <div v-if="opportunity.requiere_rigger && (idx === 0 || idx < cantidadRiggersVendidos)" class="flex items-center gap-1.5 pt-1 border-t border-white/5">
+                          <span class="text-[10px] text-cyan-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Rigger asociado al Equipo">
+                            🦺 Rig:
+                          </span>
+                          <select v-model="line.rigger_asignado_id" @change="onRiggerEquipoCambiado(line)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': line.rigger_asignado_id }">
+                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Rigger (Opcional) --</option>
+                            <optgroup v-if="getUsuariosAgrupados('Rigger').sugeridos.length > 0" label="🎯 Riggers Sugeridos" class="bg-[#0a0f1e] text-cyan-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados('Rigger').sugeridos" :key="'rig-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                              </option>
+                            </optgroup>
+                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                              <option v-for="u in getUsuariosAgrupados('Rigger').otros" :key="'rig-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                              </option>
+                            </optgroup>
+                          </select>
+                          <template v-if="line.rigger_asignado_id">
+                            <button type="button" v-if="getSemaforoTripulante(line.rigger_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                            <button type="button" v-else-if="getSemaforoTripulante(line.rigger_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                          </template>
+                        </div>
                       </div>
                     </td>
                     <td class="py-2 px-3 font-sans">
@@ -1000,9 +1061,16 @@
                       <div class="flex items-center gap-1.5">
                         <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="flex-1 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ eqEx.subcategoria || eqEx.tipo || 'Todos' }}) --</option>
-                          <option v-for="eq in getEquiposFiltradosPorLinea(eqEx)" :key="'exeq-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                            {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                          </option>
+                          <optgroup v-if="getEquiposAgrupados(eqEx).sugeridos.length > 0" label="🎯 Vehículos Sugeridos (Logística)" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                            <option v-for="eq in getEquiposAgrupados(eqEx).sugeridos" :key="'exeq-sug-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                            </option>
+                          </optgroup>
+                          <optgroup v-if="getEquiposAgrupados(eqEx).otros.length > 0" label="🚜 Toda la Flota Disponible" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                            <option v-for="eq in getEquiposAgrupados(eqEx).otros" :key="'exeq-otr-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-slate-200">
+                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
+                            </option>
+                          </optgroup>
                         </select>
                         <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
                         <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
@@ -1835,34 +1903,30 @@
                     <div>
                       <div class="flex items-center justify-between mb-1">
                         <label class="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5">
-                          <span>👷</span> Operador Asignado a la Máquina *
+                          <span>👷</span> Operador / Conductor Asignado
                         </label>
-                        <span v-if="getOperadorAsignadoAEquipo(eqId)" class="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">
-                          Desde Asignación OT
-                        </span>
-                        <span v-else class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 animate-pulse">
-                          Sin Operador en OT
-                        </span>
+                        <button 
+                          type="button" 
+                          @click="operacionesSubTab = 'asignacion'" 
+                          class="text-[9px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 transition-colors"
+                          title="Cambiar asignación de operador o equipo en la etapa de Asignación"
+                        >
+                          ✏️ Modificar en Asignación
+                        </button>
                       </div>
-                      <select 
-                        :value="getInspeccionEquipo(eqId).operador_id || getInspeccionEquipo(eqId).jefe_patio_id || getOperadorAsignadoAEquipo(eqId)?.id_user || ''" 
-                        @change="onOperadorInspeccionCambiado(eqId, $event.target.value)" 
-                        class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-500/50 disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        <option value="">-- Seleccionar Operador Asignado --</option>
-                        <optgroup v-if="getUsuariosAgrupados('Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes / Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                          <option v-for="u in getUsuariosAgrupados('Chofer Cama Baja').sugeridos" :key="'pat-op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                            {{ u.nombre_user || u.name_user || u.name_frst }} ({{ u.cargo || 'Operador / Chofer' }})
-                          </option>
-                        </optgroup>
-                        <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                          <option v-for="u in getUsuariosAgrupados('Chofer Cama Baja').otros" :key="'pat-op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                            {{ u.nombre_user || u.name_user || u.name_frst }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                          </option>
-                        </optgroup>
-                      </select>
+                      <div class="w-full bg-[#050810] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white flex items-center justify-between">
+                        <span class="font-medium text-slate-200 truncate">
+                          {{ getOperadorAsignadoAEquipo(eqId)?.nombre_user || getOperadorAsignadoAEquipo(eqId)?.name_user || 'Sin Operador Asignado' }}
+                          <span v-if="getOperadorAsignadoAEquipo(eqId)?.cargo" class="text-slate-400 text-[10px]">({{ getOperadorAsignadoAEquipo(eqId)?.cargo }})</span>
+                        </span>
+                        <template v-if="getOperadorAsignadoAEquipo(eqId)?.id_user">
+                          <span v-if="getSemaforoTripulante(getOperadorAsignadoAEquipo(eqId)?.id_user) === 'GREEN'" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded text-[9px] font-bold">🟢 VIG</span>
+                          <span v-else-if="getSemaforoTripulante(getOperadorAsignadoAEquipo(eqId)?.id_user) === 'YELLOW'" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded text-[9px] font-bold">🟡 VNC</span>
+                          <span v-else class="bg-red-500/20 text-red-300 border border-red-500/30 px-1.5 py-0.2 rounded text-[9px] font-bold">🔴 VNC</span>
+                        </template>
+                      </div>
                       <p class="text-[9.5px] text-slate-400 mt-1 leading-tight">
-                        ℹ️ La inspección de patio es ejecutada por el operador asignado antes de salir a ruta. Al modificar el operador, se actualiza automáticamente la asignación de OT y el dossier de acreditación.
+                        ℹ️ Por protocolo operacional, los cambios de operador o equipo se gestionan exclusivamente en la <strong>etapa de Asignación (Sub-tab 2)</strong> para mantener la trazabilidad formal del proceso.
                       </p>
                     </div>
 
@@ -1914,8 +1978,8 @@
                         <button @click="abrirVisorWeb(getInspeccionEquipo(eqId).id_survey || 76)" class="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer">
                           👁️ Ver en Pantalla
                         </button>
-                        <button @click="eliminarInspeccionEquipo(eqId)" class="py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Eliminar survey de la BD y reasignar">
-                          🗑️ Reasignar
+                        <button @click="eliminarInspeccionEquipo(eqId)" class="py-1.5 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded font-bold text-xs flex items-center justify-center gap-1 cursor-pointer" title="Reiniciar inspección de patio para volver a programarla">
+                          🔄 Reiniciar
                         </button>
                       </div>
 
@@ -2430,6 +2494,85 @@
                   <span>🗺️</span>
                   <span>Ver Mapa / GPS</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 💰 DEVENGADO OPERACIONAL DE TRASLADOS Y FLETES (50% IDA / 50% RETORNO) -->
+        <div v-if="lineasTraslado.length > 0" class="bg-[#050810] border border-white/15 rounded-xl overflow-hidden shadow-lg space-y-0">
+          <div class="px-5 py-3 border-b border-white/10 flex flex-wrap justify-between items-center gap-2 bg-[#080d1a]">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🚚</span>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">
+                Control de Devengado: Traslados y Fletes (Regla 50% Ida / 50% Retorno)
+              </h4>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-slate-400">Total Devengado:</span>
+              <span class="text-xs sm:text-sm font-black font-mono text-emerald-400">
+                {{ formatCurrency(resumenDevengadoTraslados.totalDevengado) }}
+              </span>
+              <span class="text-xs font-mono text-slate-500">/ {{ formatCurrency(resumenDevengadoTraslados.totalPactado) }}</span>
+              <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {{ resumenDevengadoTraslados.porcentajeGlobal }}%
+              </span>
+            </div>
+          </div>
+
+          <div class="divide-y divide-white/5">
+            <div 
+              v-for="(trLine, trIdx) in lineasTraslado" 
+              :key="'tr-dev-' + trIdx"
+              class="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors"
+            >
+              <div class="space-y-1 min-w-[240px] flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-white font-mono">
+                    {{ trLine.descripcion || trLine.subcategoria || 'Traslado de Maquinaria' }}
+                  </span>
+                  <span 
+                    class="text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider"
+                    :class="(trLine.unidad || '').toUpperCase().includes('VUELTA') 
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+                  >
+                    {{ trLine.unidad || 'TRASLADO IDA/VUELTA' }}
+                  </span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono flex items-center gap-3">
+                  <span>Monto Total Pactado: <strong class="text-slate-200">{{ formatCurrency(calcularSubtotalLinea(trLine)) }}</strong></span>
+                  <span>•</span>
+                  <span>Cantidad: <strong class="text-slate-200">{{ trLine.cantidad || 1 }}</strong></span>
+                </div>
+              </div>
+
+              <!-- Estado de devengado del ítem -->
+              <div class="flex flex-wrap items-center gap-4">
+                <div class="text-right font-mono">
+                  <div class="text-xs font-bold text-emerald-400">
+                    Devengado: {{ formatCurrency(calcularDevengadoTraslado(trLine).devengado) }}
+                  </div>
+                  <div class="text-[10px] text-slate-400" v-if="calcularDevengadoTraslado(trLine).pendiente > 0">
+                    Pendiente Retorno: {{ formatCurrency(calcularDevengadoTraslado(trLine).pendiente) }}
+                  </div>
+                </div>
+
+                <div class="min-w-[180px]">
+                  <span 
+                    class="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded inline-block text-center w-full"
+                    :class="calcularDevengadoTraslado(trLine).badgeClass"
+                  >
+                    {{ calcularDevengadoTraslado(trLine).label }}
+                  </span>
+                  <div class="w-full bg-white/10 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                    <div 
+                      class="h-full rounded-full transition-all duration-500"
+                      :class="calcularDevengadoTraslado(trLine).porcentaje === 100 ? 'bg-emerald-400' : 'bg-blue-400'"
+                      :style="{ width: calcularDevengadoTraslado(trLine).porcentaje + '%' }"
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -3123,10 +3266,12 @@
     </div>
 
     <!-- Main Grid (Comercial / Preventa) -->
-    <div v-if="topTab === 'comercial'" class="grid grid-cols-1 lg:grid-cols-[1.5fr_3.5fr] gap-6 flex-1 min-h-0 w-full overflow-hidden">
+    <div v-if="topTab === 'comercial'" 
+         class="grid grid-cols-1 gap-6 flex-1 min-h-0 w-full overflow-hidden transition-all duration-300"
+         :class="panelClienteMinimizado ? 'lg:grid-cols-1' : 'lg:grid-cols-[1.5fr_3.5fr]'">
       
       <!-- LEFT: CLIENTE & VERSION -->
-      <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
+      <div v-show="!panelClienteMinimizado" class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
         <fieldset :disabled="isModoOperaciones" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
         <div class="space-y-4">
           <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
@@ -3508,21 +3653,34 @@
       <!-- RIGHT: TABBED CONTAINER -->
       <div class="bg-[#050810] border border-white/10 rounded-xl flex flex-col min-h-0 overflow-hidden">
         <!-- Tabs -->
-        <div class="flex border-b border-white/5 bg-black/20 px-4 flex-shrink-0 gap-4 overflow-x-auto scrollbar-hide">
-          <button @click="activeTab = 'terreno'" :class="activeTab === 'terreno' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
-            Datos Servicio & Visita
-          </button>
-          <button @click="activeTab = 'servicios'" :class="activeTab === 'servicios' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
-            Estructurador de Servicios
-          </button>
-          <button @click="activeTab = 'comercial'" :class="activeTab === 'comercial' || activeTab === 'condiciones' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
-            Condiciones Comerciales
-          </button>
-          <button @click="activeTab = 'antecedentes'" :class="activeTab === 'antecedentes' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
-            Antecedentes Licitación
-          </button>
-          <button @click="activeTab = 'bitacora'" :class="activeTab === 'bitacora' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all flex items-center gap-1 whitespace-nowrap">
-            <span>Bitácora & Alertas</span>
+        <div class="flex border-b border-white/5 bg-black/20 px-4 flex-shrink-0 gap-4 overflow-x-auto scrollbar-hide items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button @click="activeTab = 'terreno'" :class="activeTab === 'terreno' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
+              Datos Servicio & Visita
+            </button>
+            <button @click="activeTab = 'servicios'" :class="activeTab === 'servicios' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
+              Estructurador de Servicios
+            </button>
+            <button @click="activeTab = 'comercial'" :class="activeTab === 'comercial' || activeTab === 'condiciones' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
+              Condiciones Comerciales
+            </button>
+            <button @click="activeTab = 'antecedentes'" :class="activeTab === 'antecedentes' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
+              Antecedentes Licitación
+            </button>
+            <button @click="activeTab = 'bitacora'" :class="activeTab === 'bitacora' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all flex items-center gap-1 whitespace-nowrap">
+              <span>Bitácora & Alertas</span>
+            </button>
+          </div>
+
+          <!-- Botón Toggle Ergonomía Pantalla (Optimizado para 13" / Vista Completa) -->
+          <button 
+            type="button" 
+            @click="panelClienteMinimizado = !panelClienteMinimizado"
+            class="text-[10px] px-2.5 py-1 rounded border border-white/10 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ml-auto my-1.5"
+            :title="panelClienteMinimizado ? 'Mostrar panel lateral de cliente' : 'Maximizar estructurador a pantalla completa (Ideal 13\')'"
+          >
+            <span class="text-amber-400 font-bold">{{ panelClienteMinimizado ? '▶' : '◀' }}</span>
+            <span class="font-bold">{{ panelClienteMinimizado ? 'Mostrar Datos Cliente' : 'Maximizar Ancho (13")' }}</span>
           </button>
         </div>
 
@@ -3622,8 +3780,8 @@
                 </button>
               </div>
 
-              <!-- Cuadrícula de las 4 Tarjetas de Caso -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <!-- Cuadrícula de las 5 Tarjetas de Caso -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                 <!-- Tarjeta Caso 1 -->
                 <div 
                   @click="seleccionarYAplicarCaso(1)"
@@ -3711,6 +3869,29 @@
                     <div class="font-bold text-slate-200">• 3 Líneas (Piso 8h + Fletes)</div>
                   </div>
                 </div>
+
+                <!-- Tarjeta Caso 5 (Especial / Mixto Libre / Flete Puro) -->
+                <div 
+                  @click="seleccionarYAplicarCaso(5)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
+                  :class="[
+                    casoCobroActual === 5 
+                      ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-1 ring-cyan-500/30' 
+                      : 'border-white/5 bg-black/20 hover:border-cyan-500/40'
+                  ]"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px]" :class="casoCobroActual === 5 ? 'text-cyan-300' : 'text-slate-300'">CASO 5: ESPECIAL / MIXTO LIBRE</span>
+                    <span v-if="casoCobroActual === 5" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-400 text-black">Activo</span>
+                    <span v-else class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-cyan-950/40 text-cyan-400/80 border border-cyan-500/20">Personalizado</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: Libre (Urbana / Rural)</div>
+                    <div>• Flete Puro / Carga de Terceros</div>
+                    <div>• Canasta Abierta (Sin grúa oblig.)</div>
+                    <div class="font-bold text-cyan-200">• Metadato: Auditoría &amp; Control</div>
+                  </div>
+                </div>
               </div>
 
               <!-- Banner de Acción Proactiva (1 Clic) -->
@@ -3730,6 +3911,9 @@
                     <span v-else-if="casoCobroActual === 4">
                       <strong>Régimen Rural con Fletes Grúa y Contrapesos:</strong> Exige piso mín. 8 hrs + <em>Flete de Grúa</em> + <em>Traslado Contrapesos</em>.
                     </span>
+                    <span v-else-if="casoCobroActual === 5">
+                      <strong>Régimen Especial / Mixto Libre:</strong> Canasta abierta y personalizada para fletes de terceros, cuadrillas o servicios no estándar. Registrado en metadatos para Control de Gestión.
+                    </span>
                     <span v-else>
                       Ingresa la distancia en km para que el asistente identifique el caso automáticamente.
                     </span>
@@ -3742,12 +3926,12 @@
                   class="px-3 py-1.5 rounded font-bold font-mono text-[11px] transition-all shadow flex items-center gap-1.5 cursor-pointer"
                   :class="!esEstructuraValidaParaCaso 
                     ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-500/20 shadow-md' 
-                    : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'"
+                    : (casoCobroActual === 5 ? 'bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/30' : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10')"
                 >
                   <span>⚡</span>
                   {{ !esEstructuraValidaParaCaso 
-                    ? `Aplicar Configuración Canónica Caso ${casoCobroActual}` 
-                    : `Re-Aplicar Configuración Caso ${casoCobroActual}` }}
+                    ? `Aplicar Configuración Caso ${casoCobroActual}` 
+                    : (casoCobroActual === 5 ? 'Mantener Régimen Caso 5 Libre' : `Re-Aplicar Configuración Caso ${casoCobroActual}`) }}
                 </button>
               </div>
 
@@ -3797,23 +3981,31 @@
                       <td class="p-2">Desmontaje final en faena</td>
                       <td class="p-2 text-slate-300"><strong>Líneas obligatorias para todo el convoy:</strong> 1. Horas Grúa (mín. 8h) + 2. "Traslado de Grúa" + 3. "Traslado de Contrapesos". (3 líneas).</td>
                     </tr>
+                    <tr :class="casoCobroActual === 5 ? 'bg-cyan-500/10' : ''">
+                      <td class="p-2 font-bold text-cyan-400">CASO 5</td>
+                      <td class="p-2">Cualquier distancia (Libre)<br><span class="text-slate-400 text-[10px]">Fletes de Terceros / Mixto Libre</span></td>
+                      <td class="p-2">1. Flete Cama Baja / Tracto directo<br>2. Partidas abiertas según necesidad</td>
+                      <td class="p-2">Según convenio (Alzado / Por km)</td>
+                      <td class="p-2">Término de traslado o servicio</td>
+                      <td class="p-2 text-cyan-200"><strong>Régimen abierto:</strong> Permite operar sin grúa GSP. Tipificado en metadatos para Control de Gestión y Yiara.</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </div>
             
-            <div class="flex-1 border border-white/5 rounded-lg bg-black/20 overflow-auto scrollbar-hide">
-              <table class="w-full text-left text-xs">
+            <div class="flex-1 border border-white/5 rounded-lg bg-black/20 overflow-x-auto overflow-y-auto">
+              <table class="w-full text-left text-xs min-w-[850px]">
                 <thead>
                   <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                    <th class="p-3 min-w-[210px]">Categoría</th>
-                    <th class="p-3 min-w-[170px]">Subcategoría</th>
-                    <th class="p-3 min-w-[150px] w-full">Descripción / Equipo</th>
-                    <th class="p-3 min-w-[150px]">Unidad de Cobro</th>
-                    <th class="p-3 text-center min-w-[170px]">Cantidad(es)</th>
-                    <th class="p-3 text-right min-w-[110px]">Valor Unitario</th>
-                    <th class="p-3 text-right min-w-[120px]">Subtotal</th>
-                    <th class="p-3 text-center min-w-[40px]"></th>
+                    <th class="p-2.5 min-w-[170px]">Categoría</th>
+                    <th class="p-2.5 min-w-[140px]">Subcategoría</th>
+                    <th class="p-2.5 min-w-[160px]">Descripción / Equipo</th>
+                    <th class="p-2.5 min-w-[130px]">Unidad de Cobro</th>
+                    <th class="p-2.5 text-center min-w-[140px]">Cantidad(es)</th>
+                    <th class="p-2.5 text-right min-w-[100px]">Valor Unitario</th>
+                    <th class="p-2.5 text-right min-w-[110px]">Subtotal</th>
+                    <th class="p-2.5 text-center min-w-[36px]"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
@@ -3851,15 +4043,19 @@
                       <select 
                         v-model="line.unidad" 
                         @change="onUnidadChange(line)" 
-                        :disabled="line.tipo === 'TRASLADOS'"
-                        :class="line.tipo === 'TRASLADOS' ? 'opacity-60 cursor-not-allowed bg-slate-900 border-white/5' : 'border-white/10'"
-                        :title="line.tipo === 'TRASLADOS' ? 'Para la categoría TRASLADOS, la unidad de cobro es exclusivamente Traslado.' : ''"
-                        class="bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none w-full transition-colors"
+                        class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none w-full transition-colors"
                       >
-                        <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
-                        <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
-                        <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
-                        <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
+                        <template v-if="line.tipo === 'TRASLADOS'">
+                          <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
+                          <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
+                          <option v-if="line.unidad === 'Traslado'" value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
+                        </template>
+                        <template v-else>
+                          <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
+                          <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
+                          <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
+                          <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
+                        </template>
                       </select>
                     </td>
                     <td class="p-2">
@@ -4186,6 +4382,30 @@
                       />
                     </div>
                   </div>
+
+                  <!-- Fecha y Hora Planificada / Sugerida de la Visita -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                      <label class="block text-[10px] text-amber-400 font-semibold mb-1 flex items-center gap-1">
+                        <span>📅 Fecha Sugerida de Visita</span>
+                      </label>
+                      <input 
+                        v-model="siteVisit.fecha_visita_plan" 
+                        type="date" 
+                        class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-amber-400 font-semibold mb-1 flex items-center gap-1">
+                        <span>⏰ Hora Sugerida de Visita</span>
+                      </label>
+                      <input 
+                        v-model="siteVisit.hora_visita_plan" 
+                        type="time" 
+                        class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                  </div>
                   <div class="flex justify-start pt-2">
                     <button 
                       type="button"
@@ -4284,15 +4504,38 @@
               </div>
 
               <!-- PROYECCIÓN DE COSTOS DE PENSIONES (ALOJAMIENTO, DESAYUNO, ALMUERZO, CENA, TRASLADO) -->
-              <div class="col-span-2 mt-2 bg-white/[0.02] border border-white/10 rounded-lg p-3.5 space-y-3">
-                <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">
-                    🏠 Proyección de Costos de Pensiones (Base para EDP)
-                  </span>
+              <div 
+                class="col-span-2 mt-2 bg-white/[0.02] border rounded-lg p-3.5 space-y-3 transition-all"
+                :class="esServicioUnDia ? 'border-amber-500/30 bg-amber-500/[0.02]' : 'border-white/10'"
+              >
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b border-white/5 pb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">
+                      🏠 Proyección de Costos de Pensiones (Base para EDP)
+                    </span>
+                    <span 
+                      v-if="esServicioUnDia" 
+                      class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider"
+                    >
+                      ⚠️ NO APLICA (Servicio de 1 Día)
+                    </span>
+                  </div>
                   <span class="text-[9px] text-slate-400">Relevante para devengado y estados de pago</span>
                 </div>
+
+                <!-- Banner explicativo en servicios de 1 día -->
+                <div 
+                  v-if="esServicioUnDia" 
+                  class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2"
+                >
+                  <span class="text-base">ℹ️</span>
+                  <span>En servicios de <strong>1 solo día</strong>, los costos de pensión y viáticos no aplican para la base de EDP. Panel deshabilitado automáticamente con conceptos fijados en <strong>NA (No Aplica)</strong>.</span>
+                </div>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                <div 
+                  class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 transition-all"
+                  :class="esServicioUnDia ? 'opacity-50 pointer-events-none select-none' : ''"
+                >
                   <!-- Alojamiento -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
                     <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento</label>
@@ -5202,6 +5445,7 @@ import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
 import ModalITS from '../../components/Operaciones/ModalITS.vue'
 import ModalDespachoWhatsApp from '../../components/Operaciones/ModalDespachoWhatsApp.vue'
 
+const panelClienteMinimizado = ref(false)
 const modalWhatsAppVisible = ref(false)
 const datosWhatsAppModal = ref(null)
 
@@ -5525,6 +5769,7 @@ const opportunity = ref({
   requiere_acreditacion: null,
   distancia_km: null,
   lleva_contrapeso: false,
+  tipo_caso: null,
   requiere_rigger: null,
   requiere_prevencionista: null,
   cliente_pone_combustible: null,
@@ -5912,6 +6157,69 @@ const getEquiposFiltradosPorLinea = (line) => {
   return resultado
 }
 
+const getEquiposSugeridosPuros = (line) => {
+  const master = listaEquiposMaster.value || []
+  if (!line) return master
+
+  let catTarget = (line.tipo || line.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  let subTarget = (line.subcategoria || line.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+  if (catTarget === 'GRUA' || catTarget === 'GRUAS') catTarget = 'GRUA TELESCOPICA'
+
+  let porCat = master
+  if (catTarget) {
+    porCat = master.filter(eq => {
+      const eqCat = (eq.nombre_categoria || eq.tipo || eq.tipo_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      return eqCat === catTarget || eqCat.includes(catTarget) || catTarget.includes(eqCat)
+    })
+  }
+
+  let sugeridos = porCat
+  if (subTarget) {
+    const porSub = porCat.filter(eq => {
+      const eqSub = (eq.nombre_subcategoria || eq.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqModelo = (eq.modelo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqMarca = (eq.marca || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      const eqNombre = (eq.nombre_equipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      return eqSub === subTarget || eqSub.includes(subTarget) || subTarget.includes(eqSub) || eqModelo.includes(subTarget) || eqNombre.includes(subTarget) || eqMarca.includes(subTarget)
+    })
+    if (porSub.length > 0) {
+      sugeridos = porSub
+    }
+  }
+
+  if (sugeridos.length === 0 && !catTarget) {
+    sugeridos = master
+  }
+  return sugeridos
+}
+
+const getEquiposAgrupados = (line) => {
+  const master = listaEquiposMaster.value || []
+  if (!line) return { sugeridos: master, otros: [] }
+
+  const sugeridos = getEquiposSugeridosPuros(line) || []
+  const sugeridosIds = new Set(sugeridos.map(eq => String(eq.id_equipo || eq.patente)))
+
+  const otros = master.filter(eq => {
+    const idKey = String(eq.id_equipo || eq.patente)
+    return !sugeridosIds.has(idKey)
+  })
+
+  return { sugeridos, otros }
+}
+
+const esEquipoMayorPrestacion = (line) => {
+  const targetId = line?.equipo_asignado_id || line?.id_equipo
+  if (!targetId) return false
+  const master = listaEquiposMaster.value || []
+  if (master.length === 0) return false
+  const { sugeridos, otros } = getEquiposAgrupados(line)
+  if (sugeridos.length === master.length || otros.length === 0) return false
+  const otrosIds = new Set(otros.map(eq => String(eq.id_equipo || eq.patente)))
+  return otrosIds.has(String(targetId))
+}
+
 const isCertExpired = (dateString) => {
   if (!dateString) return false;
   const daysLeft = (new Date(dateString) - new Date()) / (1000 * 3600 * 24);
@@ -6033,6 +6341,21 @@ const linesPersonalValidas = computed(() => {
     const hasData = (l.descripcion && l.descripcion.trim() !== '') || (l.subcategoria && l.subcategoria.trim() !== '') || (l.valorUnitario > 0)
     return hasData && isPersonalLine(l)
   })
+})
+
+const cantidadRiggersVendidos = computed(() => {
+  let count = 0
+  const personal = linesPersonalValidas.value || []
+  personal.forEach(l => {
+    const desc = (l.descripcion || l.subcategoria || '').toLowerCase()
+    if (desc.includes('rigger')) {
+      count += Number(l.cantidad) || 1
+    }
+  })
+  if (count === 0 && opportunity.value?.requiere_rigger) {
+    count = 1
+  }
+  return count
 })
 
 const getNombreEquipoAsignado = (eqId) => {
@@ -7189,10 +7512,27 @@ const catalogoAparejos = ref([
 ])
 const aparejosMasterList = catalogoAparejos
 
-const especialistasTerreno = ref([
-  { id_user: '', cargo: 'Prevencionista de Riesgos', requerimiento: '', is_linea_base: true, semaforo: 'GREEN', fecha_plan_ini: '', fecha_plan_fin: '' },
-  { id_user: '', cargo: 'Rigger', requerimiento: '', is_linea_base: true, semaforo: 'GREEN', fecha_plan_ini: '', fecha_plan_fin: '' }
-])
+const especialistasTerreno = ref([])
+
+const onRiggerEquipoCambiado = (line) => {
+  marcarDirtyAsignacion()
+  if (line?.rigger_asignado_id) {
+    operacionesAssignment.value.rigger_id = line.rigger_asignado_id
+    if (Array.isArray(especialistasTerreno.value)) {
+      const rMatch = especialistasTerreno.value.find(e => e.cargo === 'Rigger')
+      if (rMatch) {
+        rMatch.id_user = line.rigger_asignado_id
+      }
+    }
+  }
+}
+
+const onEspecialistaCambiado = (esp) => {
+  marcarDirtyAsignacion()
+  if (esp?.cargo === 'Rigger' && esp.id_user && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
+    linesEquiposPrincipales.value[0].rigger_asignado_id = esp.id_user
+  }
+}
 
 const agregarEspecialista = () => {
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || ''
@@ -7332,7 +7672,7 @@ const tripulacionAsignada = computed(() => {
   const list = [];
   const lPrincipal = linesEquiposPrincipales.value || [];
   
-  // 1. Operadores de líneas de equipos principales (Segmento 1)
+    // 1. Operadores de líneas de equipos principales (Segmento 1)
   lPrincipal.forEach(line => {
     const cargo = (line.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa';
     list.push({
@@ -7345,6 +7685,20 @@ const tripulacionAsignada = computed(() => {
       fecha_plan_ini: line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
       fecha_plan_fin: line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
     });
+
+    // Rigger vinculado al equipo principal si está seleccionado
+    if (line.rigger_asignado_id) {
+      list.push({
+        id_user: line.rigger_asignado_id,
+        cargo: 'Rigger',
+        requerimiento: `Rigger - ${line.descripcion || line.subcategoria || 'Grúa'}`,
+        equipo_asignado_id: line.equipo_asignado_id || '',
+        semaforo: getSemaforoTripulante(line.rigger_asignado_id),
+        is_linea_base: true,
+        fecha_plan_ini: line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
+        fecha_plan_fin: line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
+      });
+    }
   });
   
   // 2. Choferes de equipos de traslado (Segmento 2)
@@ -7373,6 +7727,10 @@ const tripulacionAsignada = computed(() => {
   // 3. Especialistas en terreno (Segmento 3)
   if (Array.isArray(especialistasTerreno.value)) {
     especialistasTerreno.value.forEach(esp => {
+      // Evitar duplicar rigger si ya fue vinculado directamente a una grúa principal
+      if (esp.cargo === 'Rigger' && esp.id_user && list.some(t => t.id_user === esp.id_user && t.cargo === 'Rigger')) {
+        return
+      }
       list.push({
         id_user: esp.id_user || null,
         cargo: esp.cargo || 'Especialista',
@@ -7404,6 +7762,7 @@ const agregarEquipoPrincipal = () => {
     valorUnitario: 0,
     equipo_asignado_id: '',
     operador_asignado_id: '',
+    rigger_asignado_id: '',
     fecha_plan_ini: defaultIni,
     fecha_plan_fin: defaultFin,
     is_linea_base: false
@@ -7735,7 +8094,17 @@ const validarDatosPreventaParaCotizar = () => {
     }
   }
 
-  // 8. Validación Anti-Fuga de Fletes según los 4 Casos Canónicos (Spec 16 §4.4)
+  // 8. Validación Anti-Fuga de Fletes según los Casos (Spec 16 §4.4)
+  // Caso 5: Régimen Especial / Mixto Libre (Permite fletes de terceros, cuadrillas o convoy libre sin grúa obligatoria)
+  if (casoCobroActual.value === 5) {
+    if (!lines.value || lines.value.length === 0) {
+      alert('⚠️ El Caso 5 (Especial / Mixto Libre) requiere estructurar al menos 1 partida de servicio o flete.')
+      activeTab.value = 'servicios'
+      return false
+    }
+    return true
+  }
+
   if (casoCobroActual.value === 4 && (!tieneFleteGrua.value || !tieneFleteContrapeso.value)) {
     alert('⚠️ Alerta Anti-Fuga (Caso 4: Rural con Grúa Pesada):\n\nEste servicio requiere 3 LÍNEAS OBLIGATORIAS en el Estructurador:\n1. Horas de Arriendo Grúa\n2. Flete / Traslado Grúa\n3. Traslado de Contrapesos\n\nPor favor, presione "+ Inyectar Fletes Caso 4" en la pestaña de Servicios.')
     activeTab.value = 'servicios'
@@ -8490,7 +8859,9 @@ const siteVisit = ref({
   contacto_terreno_email: '',
   contacto_visita: '',
   telefono_contacto_visita: '',
-  correo_contacto_visita: ''
+  correo_contacto_visita: '',
+  fecha_visita_plan: '',
+  hora_visita_plan: ''
 })
 
 const volumenCalculado = computed(() => {
@@ -8730,6 +9101,8 @@ const panelVisitaForm = ref({
 const panelReasignarForm = ref({
   id_survey: null,
   nuevo_id_tecnico: '',
+  nueva_fecha_plan: '',
+  nueva_hora_plan: '',
   motivo_reasignacion: ''
 })
 
@@ -8921,9 +9294,21 @@ const asignarInspectorWeb = async () => {
 }
 
 const abrirModalReasignacion = (visita) => {
+  let fPlan = ''
+  let hPlan = ''
+  const rawFecha = visita.fecha_plan || visita.fecha_plan_ini
+  if (rawFecha) {
+    const dt = new Date(rawFecha)
+    if (!isNaN(dt.getTime())) {
+      fPlan = rawFecha.substring(0, 10)
+      hPlan = dt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+    }
+  }
   panelReasignarForm.value = {
     id_survey: visita.id_survey,
     nuevo_id_tecnico: visita.id_user || '',
+    nueva_fecha_plan: fPlan,
+    nueva_hora_plan: hPlan,
     motivo_reasignacion: ''
   }
   mostrarModalReasignar.value = true
@@ -8939,14 +9324,22 @@ const confirmarReasignacionTecnico = async () => {
     ejecutandoAccionVisita.value = true
     const sid = panelReasignarForm.value.id_survey
 
-    // Endpoint oficial del producto para reasignar plan
-    await apiAxios.put(`/survey/UpdPlan/${sid}`, {
+    const payload = {
       id_user: Number(panelReasignarForm.value.nuevo_id_tecnico)
-    })
+    }
+    if (panelReasignarForm.value.nueva_fecha_plan) {
+      const hora = (panelReasignarForm.value.nueva_hora_plan && panelReasignarForm.value.nueva_hora_plan.trim()) ? panelReasignarForm.value.nueva_hora_plan.trim() : '09:00'
+      const isoStr = `${panelReasignarForm.value.nueva_fecha_plan}T${hora.length === 5 ? hora + ':00' : hora}`
+      payload.fecha_plan_ini = isoStr
+      payload.fecha_plan_fin = isoStr
+    }
+
+    // Endpoint oficial del producto para reasignar plan
+    await apiAxios.put(`/survey/UpdPlan/${sid}`, payload)
 
     mostrarModalReasignar.value = false
     await fetchVisitasTerreno()
-    alert('✔ Técnico reasignado exitosamente.')
+    alert('✔ Visita técnica reasignada y reprogramada exitosamente.')
   } catch (err) {
     console.error('Error al reasignar técnico:', err)
     alert('Error al reasignar técnico: ' + (err.response?.data?.error || err.response?.data?.message || err.message))
@@ -9042,6 +9435,34 @@ const comercial = ref({
     traslado_monto: 0
   }
 })
+
+// Detección reactiva de servicios de 1 solo día (Spec Reglas Marcha Blanca)
+const esServicioUnDia = computed(() => {
+  if (!lines.value || lines.value.length === 0) return false
+  const tieneMeses = lines.value.some(l => 
+    (l.unidad === 'Horas Mes Minimas' || l.unidad === 'Horas Mensuales Minimas') && 
+    (Number(l.cantidad_meses || l.cantidad) >= 1)
+  )
+  if (tieneMeses) return false
+
+  const lineasDiarias = lines.value.filter(l => l.unidad === 'Horas Diarias Minimas')
+  if (lineasDiarias.length > 0) {
+    const maxDias = Math.max(...lineasDiarias.map(l => Number(l.cantidad_dias || l.cantidad || 1)))
+    return maxDias <= 1
+  }
+  return true
+})
+
+// Si es servicio de 1 día, deshabilitar y forzar automáticamente conceptos de pensiones a 'NA'
+watch(esServicioUnDia, (isOneDay) => {
+  if (isOneDay && comercial.value?.pensiones) {
+    comercial.value.pensiones.alojamiento_costeado = 'NA'
+    comercial.value.pensiones.desayuno_costeado = 'NA'
+    comercial.value.pensiones.almuerzo_costeado = 'NA'
+    comercial.value.pensiones.cena_costeado = 'NA'
+    comercial.value.pensiones.traslado_costeado = 'NA'
+  }
+}, { immediate: true })
 
 // ACUERDOS COMERCIALES BASE CANÓNICOS POR CATEGORÍA
 const ACUERDOS_COMERCIALES_BASE = {
@@ -9186,9 +9607,9 @@ const onTipoChange = (line) => {
   if (!line) return
   line.subcategoria = ''
   if (line.tipo === 'TRASLADOS') {
-    line.unidad = 'Traslado'
+    line.unidad = 'TRASLADO IDA/VUELTA'
     onUnidadChange(line)
-  } else if (line.unidad === 'Traslado') {
+  } else if (line.unidad === 'TRASLADO IDA' || line.unidad === 'TRASLADO IDA/VUELTA' || line.unidad === 'Traslado') {
     line.unidad = 'Horas Diarias Minimas'
     onUnidadChange(line)
   }
@@ -9351,6 +9772,9 @@ const tieneFleteEnLineas = computed(() => {
 })
 
 const casoCobroActual = computed(() => {
+  if (opportunity.value?.tipo_caso) {
+    return Number(opportunity.value.tipo_caso)
+  }
   const km = parseFloat(opportunity.value?.distancia_km) || 0
   if (km <= 0) return null
   const esRural = km > 30
@@ -9374,7 +9798,11 @@ const tieneLineaGrua = computed(() => {
 
 const esEstructuraValidaParaCaso = computed(() => {
   if (!casoCobroActual.value) return true
-  // Todos los casos canónicos exigen al menos 1 grúa
+  // Caso 5: Régimen Libre / Especial. Es válido si tiene al menos 1 línea de servicio
+  if (casoCobroActual.value === 5) {
+    return (lines.value || []).length > 0
+  }
+  // Todos los casos canónicos (1 al 4) exigen al menos 1 grúa
   if (!tieneLineaGrua.value) return false
 
   if (casoCobroActual.value === 4) return tieneFleteGrua.value && tieneFleteContrapeso.value
@@ -9401,34 +9829,40 @@ const asegurarLineaGruaBase = () => {
 }
 
 const seleccionarYAplicarCaso = (caso) => {
-  if (caso === 1 && !esRuralActual.value) {
+  opportunity.value.tipo_caso = caso
+  if (caso === 1) {
     opportunity.value.lleva_contrapeso = false
     aplicarConfiguracionCaso(1)
-  } else if (caso === 2 && !esRuralActual.value) {
+  } else if (caso === 2) {
     opportunity.value.lleva_contrapeso = true
     aplicarConfiguracionCaso(2)
-  } else if (caso === 3 && esRuralActual.value) {
+  } else if (caso === 3) {
     opportunity.value.lleva_contrapeso = false
     aplicarConfiguracionCaso(3)
-  } else if (caso === 4 && esRuralActual.value) {
+  } else if (caso === 4) {
     opportunity.value.lleva_contrapeso = true
     aplicarConfiguracionCaso(4)
+  } else if (caso === 5) {
+    aplicarConfiguracionCaso(5)
   }
 }
 
 const aplicarConfiguracionCaso = (casoParam = null) => {
   const caso = casoParam || casoCobroActual.value || 1
+  opportunity.value.tipo_caso = caso
   const km = parseFloat(opportunity.value?.distancia_km) || 0
   const valorFleteGruaSugerido = km > 70 ? 600000 : 400000
   const valorContrapesoFijo = 500000
 
-  // 1. Asegurar siempre la línea principal de la Grúa
-  asegurarLineaGruaBase()
+  // 1. En casos canónicos (1 al 4) asegura la línea de Grúa base; en Caso 5 (Libre/Flete) no la fuerza
+  if (caso !== 5) {
+    asegurarLineaGruaBase()
+  }
 
   // 1.1 Obtener la subcategoría de la Grúa actual
   const subcategoriaGrua = getSubcategoriaGruaActual()
 
-  // 2. Configurar fletes según el Caso Canónico
+  // 2. Configurar fletes según el Caso
   if (caso === 1) {
     // Caso 1: $0 flete. Remover fletes si existían
     lines.value = lines.value.filter(l => l.tipo !== 'TRASLADOS')
@@ -9439,7 +9873,7 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
       tipo: 'TRASLADOS',
       subcategoria: subcategoriaGrua,
       descripcion: `Traslado Grúa ${subcategoriaGrua} (Tarifa plana urbana)`,
-      unidad: 'Traslado',
+      unidad: 'TRASLADO IDA/VUELTA',
       cantidad: 1,
       pisoMinimo: 0,
       valorUnitario: valorContrapesoFijo,
@@ -9453,7 +9887,7 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
       tipo: 'TRASLADOS',
       subcategoria: subcategoriaGrua,
       descripcion: `Flete / Traslado Grúa ${subcategoriaGrua} (${km} km ida)`,
-      unidad: 'Traslado',
+      unidad: 'TRASLADO IDA/VUELTA',
       cantidad: 1,
       pisoMinimo: 0,
       valorUnitario: valorFleteGruaSugerido,
@@ -9468,7 +9902,7 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
       tipo: 'TRASLADOS',
       subcategoria: subcategoriaGrua,
       descripcion: `Flete / Traslado Grúa ${subcategoriaGrua} (${km} km ida)`,
-      unidad: 'Traslado',
+      unidad: 'TRASLADO IDA/VUELTA',
       cantidad: 1,
       pisoMinimo: 0,
       valorUnitario: valorFleteGruaSugerido,
@@ -9480,13 +9914,29 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
       tipo: 'TRASLADOS',
       subcategoria: 'CAMA BAJA',
       descripcion: `Traslado Contrapesos Cama Baja (${km} km ida)`,
-      unidad: 'Traslado',
+      unidad: 'TRASLADO IDA/VUELTA',
       cantidad: 1,
       pisoMinimo: 0,
       valorUnitario: valorContrapesoFijo,
       subtotal: valorContrapesoFijo,
       es_traslado_grua: false
     })
+  } else if (caso === 5) {
+    // Caso 5: Especial / Mixto Libre / Flete Puro
+    // Si la canasta está vacía, propone una línea de flete base; si ya tiene líneas, las respeta
+    if (!lines.value || lines.value.length === 0) {
+      lines.value.push({
+        tipo: 'TRASLADOS',
+        subcategoria: 'CAMA BAJA',
+        descripcion: `Flete / Traslado Especial (${km > 0 ? km + ' km' : 'Tarifa convenida'})`,
+        unidad: 'TRASLADO IDA/VUELTA',
+        cantidad: 1,
+        pisoMinimo: 0,
+        valorUnitario: km > 70 ? 600000 : (km > 0 ? 400000 : 350000),
+        subtotal: km > 70 ? 600000 : (km > 0 ? 400000 : 350000),
+        es_traslado_grua: false
+      })
+    }
   }
 }
 
@@ -9521,6 +9971,12 @@ watch(() => opportunity.value.requiere_rigger, (newVal) => {
     }
   } else {
     lines.value = lines.value.filter(l => !(l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger'))))
+    if (linesEquiposPrincipales.value[0]) {
+      linesEquiposPrincipales.value[0].rigger_asignado_id = ''
+    }
+    if (Array.isArray(especialistasTerreno.value)) {
+      especialistasTerreno.value = especialistasTerreno.value.filter(e => e.cargo !== 'Rigger' || e.id_user)
+    }
   }
 })
 
@@ -9535,6 +9991,9 @@ watch(() => opportunity.value.requiere_prevencionista, (newVal) => {
     }
   } else {
     lines.value = lines.value.filter(l => !(l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista'))))
+    if (Array.isArray(especialistasTerreno.value)) {
+      especialistasTerreno.value = especialistasTerreno.value.filter(e => e.cargo !== 'Prevencionista de Riesgos' || e.id_user)
+    }
   }
 })
 
@@ -9675,6 +10134,7 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.requiere_acreditacion = crm.requiere_acreditacion !== undefined ? crm.requiere_acreditacion : null
           opportunity.value.distancia_km          = crm.distancia_km !== undefined ? crm.distancia_km : (crm.incluye_flete ? 35 : null)
           opportunity.value.lleva_contrapeso      = crm.lleva_contrapeso !== undefined ? !!crm.lleva_contrapeso : false
+          opportunity.value.tipo_caso             = (crm.tipo_caso !== undefined && crm.tipo_caso !== null) ? Number(crm.tipo_caso) : null
           opportunity.value.requiere_rigger       = crm.requiere_rigger !== undefined ? crm.requiere_rigger : null
           opportunity.value.requiere_prevencionista = crm.requiere_prevencionista !== undefined ? crm.requiere_prevencionista : null
           opportunity.value.cliente_pone_combustible = crm.cliente_pone_combustible !== undefined ? crm.cliente_pone_combustible : null
@@ -9817,6 +10277,8 @@ const cargarDatosCotizacion = async () => {
           siteVisit.value.contacto_visita = siteVisit.value.contacto_terreno_nombre
           siteVisit.value.telefono_contacto_visita = siteVisit.value.contacto_terreno_telefono
           siteVisit.value.correo_contacto_visita = siteVisit.value.contacto_terreno_email
+          siteVisit.value.fecha_visita_plan = crm.fecha_visita_plan || crm.fecha_visita || (crm.fecha_programada ? crm.fecha_programada.split('T')[0] : '') || ''
+          siteVisit.value.hora_visita_plan = crm.hora_visita_plan || crm.hora_visita || (crm.fecha_programada && crm.fecha_programada.includes('T') ? crm.fecha_programada.split('T')[1].substring(0, 5) : '') || ''
           
           if (crm.coordenadas_mapa) {
             siteVisit.value.lat = crm.coordenadas_mapa.lat
@@ -9831,15 +10293,15 @@ const cargarDatosCotizacion = async () => {
 
           if (crm.pensiones) {
             comercial.value.pensiones = {
-              alojamiento_costeado: crm.pensiones.alojamiento_costeado || 'CLIENTE',
+              alojamiento_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.alojamiento_costeado || 'CLIENTE'),
               alojamiento_monto: crm.pensiones.alojamiento_monto || 0,
-              desayuno_costeado: crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
+              desayuno_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE'),
               desayuno_monto: crm.pensiones.desayuno_monto || 0,
-              almuerzo_costeado: crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO',
+              almuerzo_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO'),
               almuerzo_monto: crm.pensiones.almuerzo_monto || crm.pensiones.alimentacion_monto || 0,
-              cena_costeado: crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
+              cena_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE'),
               cena_monto: crm.pensiones.cena_monto || 0,
-              traslado_costeado: crm.pensiones.traslado_costeado || 'CLIENTE',
+              traslado_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.traslado_costeado || 'CLIENTE'),
               traslado_monto: crm.pensiones.traslado_monto || 0
             }
           }
@@ -9910,7 +10372,7 @@ const cargarDatosCotizacion = async () => {
           operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan || comIniHora || '08:00'
           operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan || comFinFecha || operacionesAssignment.value.fecha_salida_plan
           operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan || comFinHora || '18:00'
-          // 1. Asignar operadores a líneas de equipos principales
+          // 1. Asignar operadores y riggers a líneas de equipos principales
           if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
             linesEquiposPrincipales.value.forEach(l => {
@@ -9921,24 +10383,48 @@ const cargarDatosCotizacion = async () => {
               if (opMatch) {
                 l.operador_asignado_id = opMatch.id_user || ''
               }
+
+              const rigMatch = trip.find(t => 
+                t.equipo_asignado_id && t.equipo_asignado_id === l.equipo_asignado_id &&
+                t.cargo?.includes('Rigger')
+              ) || trip.find(t => t.cargo?.includes('Rigger') && !l.rigger_asignado_id)
+              if (rigMatch) {
+                l.rigger_asignado_id = rigMatch.id_user || ''
+              }
             })
           }
 
+          if (ejecucion.rigger_id && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
+            linesEquiposPrincipales.value[0].rigger_asignado_id = ejecucion.rigger_id
+          }
+
           // 2. Restaurar Especialistas de Terreno (priorizando ejecucion.especialistas_terreno)
+          especialistasTerreno.value = []
           if (Array.isArray(ejecucion.especialistas_terreno) && ejecucion.especialistas_terreno.length > 0) {
-            especialistasTerreno.value = ejecucion.especialistas_terreno.map(esp => ({
-              id_user: esp.id_user || '',
-              cargo: esp.cargo || 'Rigger',
-              requerimiento: esp.requerimiento || '',
-              is_linea_base: esp.is_linea_base === true,
-              semaforo: esp.semaforo || 'GREEN',
-              fecha_plan_ini: esp.fecha_plan_ini || ejecucion.fecha_salida_plan || '',
-              fecha_plan_fin: esp.fecha_plan_fin || ejecucion.fecha_fin_plan || ''
-            }))
+            especialistasTerreno.value = ejecucion.especialistas_terreno
+              .filter(esp => {
+                // Filtro anti-fantasma: No admitir prevencionistas sin usuario si la oportunidad NO requiere prevencionista
+                if (esp.cargo === 'Prevencionista de Riesgos' && !esp.id_user) {
+                  const reqPrev = opportunity.value.requiere_prevencionista === true ||
+                    (linesPersonalValidas.value || []).some(lp => (lp.descripcion || lp.subcategoria || '').toLowerCase().includes('prevencion'))
+                  if (!reqPrev) return false
+                }
+                return true
+              })
+              .map(esp => ({
+                id_user: esp.id_user || '',
+                cargo: esp.cargo || 'Rigger',
+                requerimiento: esp.requerimiento || '',
+                is_linea_base: esp.is_linea_base === true,
+                semaforo: esp.semaforo || 'GREEN',
+                fecha_plan_ini: esp.fecha_plan_ini || ejecucion.fecha_salida_plan || '',
+                fecha_plan_fin: esp.fecha_plan_fin || ejecucion.fecha_fin_plan || ''
+              }))
           } else if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
             const espList = trip.filter(t => 
-              !t.cargo?.includes('Operador') && !t.cargo?.includes('Chofer') && !t.cargo?.includes('Escolta')
+              !t.cargo?.includes('Operador') && !t.cargo?.includes('Chofer') && !t.cargo?.includes('Escolta') &&
+              !(t.cargo?.includes('Rigger') && linesEquiposPrincipales.value.some(l => l.rigger_asignado_id === t.id_user))
             )
             if (espList.length > 0) {
               especialistasTerreno.value = espList.map(esp => ({
@@ -9957,16 +10443,19 @@ const cargarDatosCotizacion = async () => {
           if (linesPersonalValidas.value && linesPersonalValidas.value.length > 0) {
             linesPersonalValidas.value.forEach(lp => {
               const desc = (lp.descripcion || lp.subcategoria || '').toLowerCase()
-              let cargoDetectado = 'Rigger'
+              let cargoDetectado = ''
               if (desc.includes('prevencion') || desc.includes('apr') || desc.includes('seguridad')) cargoDetectado = 'Prevencionista de Riesgos'
               else if (desc.includes('rigger')) cargoDetectado = 'Rigger'
               else if (desc.includes('supervisor')) cargoDetectado = 'Supervisor Faena'
               else if (desc.includes('maniobrista')) cargoDetectado = 'Maniobrista'
 
+              if (!cargoDetectado) return
+              if (cargoDetectado === 'Prevencionista de Riesgos' && opportunity.value.requiere_prevencionista === false) return
+
               const matchReq = especialistasTerreno.value.find(t => t.cargo === cargoDetectado || t.requerimiento === (lp.descripcion || lp.subcategoria))
               if (!matchReq) {
                 especialistasTerreno.value.push({
-                  id_user: '',
+                  id_user: (cargoDetectado === 'Rigger' && linesEquiposPrincipales.value[0]?.rigger_asignado_id) ? linesEquiposPrincipales.value[0].rigger_asignado_id : '',
                   cargo: cargoDetectado,
                   requerimiento: lp.descripcion || lp.subcategoria || cargoDetectado,
                   semaforo: 'GREEN',
@@ -9979,6 +10468,9 @@ const cargarDatosCotizacion = async () => {
                   matchReq.requerimiento = lp.descripcion || lp.subcategoria
                 }
                 matchReq.is_linea_base = true
+                if (cargoDetectado === 'Rigger' && linesEquiposPrincipales.value[0]?.rigger_asignado_id && !matchReq.id_user) {
+                  matchReq.id_user = linesEquiposPrincipales.value[0].rigger_asignado_id
+                }
               }
             })
           }
@@ -10348,6 +10840,8 @@ const buildPayload = () => {
         requiere_acreditacion: opportunity.value.requiere_acreditacion,
         distancia_km:          opportunity.value.distancia_km,
         lleva_contrapeso:      opportunity.value.lleva_contrapeso,
+        tipo_caso:             casoCobroActual.value || 1,
+        tipo_caso_glosa:       casoCobroActual.value === 5 ? 'ESPECIAL_MIXTO_LIBRE' : `CASO_${casoCobroActual.value || 1}`,
         requiere_rigger:       opportunity.value.requiere_rigger,
         requiere_prevencionista: opportunity.value.requiere_prevencionista,
         cliente_pone_combustible: opportunity.value.cliente_pone_combustible,
@@ -10375,6 +10869,9 @@ const buildPayload = () => {
         radios_trabajo: siteVisit.value.radios_trabajo,
         alturas_trabajo: siteVisit.value.alturas_trabajo,
         visita_terreno: siteVisit.value.visita_terreno,
+        fecha_visita_plan: siteVisit.value.fecha_visita_plan || '',
+        hora_visita_plan: siteVisit.value.hora_visita_plan || '',
+        fecha_programada: (siteVisit.value.fecha_visita_plan && siteVisit.value.hora_visita_plan) ? `${siteVisit.value.fecha_visita_plan}T${siteVisit.value.hora_visita_plan}:00` : (siteVisit.value.fecha_visita_plan || ''),
         validez_dias: comercial.value.validez_dias,
         moneda: comercial.value.moneda,
         condicion_servicio: comercial.value.condicion_servicio,
@@ -10404,11 +10901,11 @@ const buildPayload = () => {
         subtab_activa: rawEjecucionJson.value?.subtab_activa || opportunity.value.json_field?.ejecucion_v1?.subtab_activa || operacionesSubTab.value,
         traza_correos: trazaCorreosList.value,
         preparacion_salida: preparacionSalidaState.value,
-        equipo_id: operacionesAssignment.value.equipo_id,
+        equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipo_id || null,
         equipos_extra: operacionesAssignment.value.equipos_extra || [],
         especialistas_terreno: especialistasTerreno.value || [],
-        operador_id: operacionesAssignment.value.operador_id,
-        rigger_id: operacionesAssignment.value.rigger_id,
+        operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.operador_id || null,
+        rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || operacionesAssignment.value.rigger_id || null,
         chofer_id: operacionesAssignment.value.chofer_id,
         tripulacion_asignada: tripulacionAsignada.value || [],
         fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
@@ -11016,7 +11513,23 @@ const cargarViajesProyecto = async (projId) => {
   cargandoViajes.value = true
   try {
     const { data } = await apiAxios.get(`/viajes/proyecto/${id}`)
-    viajesProyecto.value = Array.isArray(data) ? data : []
+    if (Array.isArray(data)) {
+      viajesProyecto.value = data
+      data.forEach(v => {
+        if (v.id_equipo && v.fecha_programada) {
+          const ins = getInspeccionEquipo(v.id_equipo)
+          if (ins) {
+            const dt = new Date(v.fecha_programada)
+            if (!isNaN(dt.getTime())) {
+              ins.fecha_inspeccion_plan = v.fecha_programada.substring(0, 10)
+              ins.hora_inspeccion_plan = dt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+            }
+          }
+        }
+      })
+    } else {
+      viajesProyecto.value = []
+    }
   } catch (err) {
     console.warn('Error al cargar viajes del proyecto:', err)
     viajesProyecto.value = []
@@ -11162,6 +11675,100 @@ const equiposParaStatusTraslado = computed(() => {
     return eq ? [eq] : []
   }
   return listaEquiposUnicosReports.value
+})
+
+// Líneas de traslado del proyecto para control de devengado (Regla 50% Ida / 50% Vuelta)
+const lineasTraslado = computed(() => {
+  return (lines.value || []).filter(l => l.tipo === 'TRASLADOS' || (l.unidad || '').toUpperCase().startsWith('TRASLADO'))
+})
+
+const calcularDevengadoTraslado = (line) => {
+  const montoTotal = Number(calcularSubtotalLinea(line)) || 0
+  const unidadNorm = String(line.unidad || '').trim().toUpperCase()
+  const esIdaYVuelta = unidadNorm.includes('VUELTA') || unidadNorm === 'TRASLADO'
+
+  const viajes = viajesProyecto.value || []
+  
+  // Viaje de Ida realizado hacia faena
+  const idaRealizada = viajes.some(v => 
+    (v.tipo_trayecto === 'IDA' || !v.tipo_trayecto) && 
+    (v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_faena || v.estado_viaje === 'ARRIBADO_FAENA' || v.fecha_llegada)
+  ) || (equiposParaStatusTraslado.value || []).some(eq => tieneViajeCompletado(eq.id_equipo))
+
+  // Viaje de Retorno realizado a base/patio
+  const retornoRealizado = viajes.some(v => 
+    (v.tipo_trayecto === 'RETORNO') && 
+    (v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_patio || v.estado_viaje === 'ARRIBADO_BASE' || v.estado_viaje === 'CONCLUIDO')
+  )
+
+  if (!idaRealizada) {
+    return {
+      porcentaje: 0,
+      devengado: 0,
+      pendiente: montoTotal,
+      estado: 'PENDIENTE_SALIDA',
+      label: '⏳ 0% Devengado (Salida a Faena Pendiente)',
+      badgeClass: 'bg-white/5 text-slate-400 border border-white/10'
+    }
+  }
+
+  if (esIdaYVuelta) {
+    if (retornoRealizado) {
+      return {
+        porcentaje: 100,
+        devengado: montoTotal,
+        pendiente: 0,
+        estado: 'COMPLETO',
+        label: '✓ 100% Devengado (Ida y Retorno Concluidos)',
+        badgeClass: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+      }
+    } else {
+      const dev50 = Math.round(montoTotal * 0.5)
+      return {
+        porcentaje: 50,
+        devengado: dev50,
+        pendiente: montoTotal - dev50,
+        estado: 'PARCIAL_IDA',
+        label: '🟢 50% Devengado (Ida Concluida) — ⏳ 50% Pendiente (Retorno)',
+        badgeClass: 'bg-blue-500/20 text-blue-300 border border-blue-500/40 font-bold'
+      }
+    }
+  }
+
+  // TRASLADO IDA
+  return {
+    porcentaje: 100,
+    devengado: montoTotal,
+    pendiente: 0,
+    estado: 'COMPLETO',
+    label: '✓ 100% Devengado (Traslado Ida Realizado)',
+    badgeClass: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+  }
+}
+
+const resumenDevengadoTraslados = computed(() => {
+  const traslados = lineasTraslado.value || []
+  let totalPactado = 0
+  let totalDevengado = 0
+  let totalPendiente = 0
+
+  traslados.forEach(l => {
+    const res = calcularDevengadoTraslado(l)
+    const pactado = Number(calcularSubtotalLinea(l)) || 0
+    totalPactado += pactado
+    totalDevengado += res.devengado
+    totalPendiente += res.pendiente
+  })
+
+  const porcentajeGlobal = totalPactado > 0 ? Math.round((totalDevengado / totalPactado) * 100) : 0
+
+  return {
+    cantidadItems: traslados.length,
+    totalPactado,
+    totalDevengado,
+    totalPendiente,
+    porcentajeGlobal
+  }
 })
 
 const abrirVisorReport = (report) => {
@@ -11491,7 +12098,9 @@ const aprobarSolicitudCopec = (sol) => {
 const confirmarAsignacionOT = async () => {
   // VALIDACIÓN STRICTA DE RIGGER
   if (opportunity.value.requiere_rigger) {
-    const tieneRigger = tripulacionAsignada.value.some(t => t.id_user && t.cargo === 'Rigger') || operacionesAssignment.value.rigger_id
+    const tieneRigger = tripulacionAsignada.value.some(t => t.id_user && t.cargo === 'Rigger') || 
+                        linesEquiposPrincipales.value.some(l => l.rigger_asignado_id) || 
+                        operacionesAssignment.value.rigger_id
     if (!tieneRigger) {
       alert('⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar un Rigger en la Tripulación.')
       return
@@ -11543,8 +12152,8 @@ const confirmarAsignacionOT = async () => {
       asignacion_confirmada: true,
       equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipo_id || null,
       equipos_extra: operacionesAssignment.value.equipos_extra,
-      operador_id: operacionesAssignment.value.operador_id,
-      rigger_id: operacionesAssignment.value.rigger_id,
+      operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.operador_id,
+      rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || operacionesAssignment.value.rigger_id,
       chofer_id: operacionesAssignment.value.chofer_id,
       fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
       hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
@@ -12074,7 +12683,9 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
         id_user_chofer: targetUserId || 55,
         patente: eqPatente,
         token_viaje: ins.token_viaje,
-        tipo_trayecto: 'IDA'
+        tipo_trayecto: 'IDA',
+        fecha_inspeccion_plan: ins.fecha_inspeccion_plan || null,
+        hora_inspeccion_plan: ins.hora_inspeccion_plan || null
       })
     } catch (dbTripErr) {
       console.warn('Advertencia al registrar viaje previo en BD:', dbTripErr)
@@ -12548,6 +13159,11 @@ const solicitarAsignacionVisita = async () => {
       contacto_nombre: siteVisit.value.contacto_terreno_nombre || opportunity.value.contacto_nombre || '',
       contacto_telefono: siteVisit.value.contacto_terreno_telefono || opportunity.value.contacto_telefono || '',
       contacto_email: siteVisit.value.contacto_terreno_email || opportunity.value.contacto_obj?.email || '',
+      fecha_visita_plan: siteVisit.value.fecha_visita_plan || '',
+      hora_visita_plan: siteVisit.value.hora_visita_plan || '',
+      fecha_programada: (siteVisit.value.fecha_visita_plan && siteVisit.value.hora_visita_plan) 
+        ? `${siteVisit.value.fecha_visita_plan}T${siteVisit.value.hora_visita_plan}:00` 
+        : siteVisit.value.fecha_visita_plan || null,
       obra_nombre: siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || '',
       obra_direccion: siteVisit.value.obra_direccion || '',
       obra_ciudad: siteVisit.value.obra_ciudad || '',
