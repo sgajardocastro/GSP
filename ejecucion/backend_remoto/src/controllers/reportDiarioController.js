@@ -628,7 +628,38 @@ const reportDiarioController = {
         LEFT JOIN sch_leangsp.tequ_log_desplazamiento v ON p.id_proyecto = v.id_proyecto AND v.id_user_chofer = $1
         WHERE (
           v.id_user_chofer = $1
-          OR p.json_field::text LIKE '%' || $1::text || '%'
+          OR (p.json_field->'ejecucion_v1'->>'operador_id')::text = $1::text
+          OR (p.json_field->'ejecucion_v1'->>'rigger_id')::text = $1::text
+          OR EXISTS (
+            SELECT 1 
+            FROM jsonb_array_elements(
+              CASE 
+                WHEN jsonb_typeof(p.json_field->'ejecucion_v1'->'tripulacion_asignada') = 'array' 
+                THEN p.json_field->'ejecucion_v1'->'tripulacion_asignada' 
+                ELSE '[]'::jsonb 
+              END
+            ) elem 
+            WHERE (elem->>'id_user')::text = $1::text
+          )
+          OR EXISTS (
+            SELECT 1 
+            FROM jsonb_array_elements(
+              CASE 
+                WHEN jsonb_typeof(p.json_field->'crm_v1'->'lineas_servicio') = 'array' 
+                THEN p.json_field->'crm_v1'->'lineas_servicio' 
+                ELSE '[]'::jsonb 
+              END
+            ) l 
+            WHERE (l->>'operador_asignado_id')::text = $1::text
+               OR (l->>'rigger_asignado_id')::text = $1::text
+               OR (l->>'chofer_asignado_id')::text = $1::text
+          )
+          OR EXISTS (
+            SELECT 1 
+            FROM sch_leangsp.tedp_reporte_avance ra 
+            WHERE ra.id_proyecto = p.id_proyecto 
+              AND (ra.id_user_operador = $1 OR ra.id_user_rigger = $1)
+          )
         )
         AND p.id_proyecto_estado IN (4, 5, 6)
         ORDER BY p.id_proyecto DESC;

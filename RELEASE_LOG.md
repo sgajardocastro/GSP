@@ -2,6 +2,19 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Backend API GSP] - Parche Crítico Filtrado PWA (REQ-032)
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-01 18:50:00 (-03:00)
+- **Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-032`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Filtrado Estricto de Reports Pendientes por Tripulante):**
+  - **[BUGFIX/OPS] Erradicación de Fuga de OTs por Búsqueda Difusa LIKE:**
+    - Se reemplazó la condición `p.json_field::text LIKE '%' || $1::text || '%'` en `reportDiarioController.js` por consulta determinista JSONB sobre `operador_id`, `rigger_id`, array `tripulacion_asignada`, `lineas_servicio` de cotización y `tedp_reporte_avance`.
+    - Resuelve la fuga que provocaba que operadores como Robert (ID 50) visualizaran OTs ajenas asignadas a Jorge (como la OT 103) debido a coincidencias de texto como "50 TON" o cifras numéricas en el cuerpo del JSON.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.68
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-01 18:25:00 (-03:00)
