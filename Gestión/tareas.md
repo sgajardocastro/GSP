@@ -392,7 +392,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Reasignación Centralizada en Sub-tab 2 (Asignación):** Desbloqueo de interactividad tras confirmación (`estado_ot >= 5`) con botón `[🔄 Reasignar Recursos / Actualizar OT]` y recálculo automático de acreditaciones.
   - **Restricción de Recursos en Sub-tab 5 (Despacho):** Inhabilitación de edición de personal y equipos en Despacho (modo lectura/informativo), protegiendo la integridad del flujo operativo.
   - **Rigger Anidado Bajo Operador:** Presentación de selector y semáforo de Rigger como sub-registro integrado en la celda del Operador de la Grúa Principal (Línea 0), extensible a grúas secundarias solo si se vendieron múltiples riggers comercialmente.
-  - **Filtro Inclusivo con Separador y Aviso de Mayor Capacidad:** Selector de grúas estructurado en `<optgroup>` doble (`🎯 Equipos Sugeridos (Compromiso Comercial)` vs `🚜 Flota Alternativa / Mayores Prestaciones`) con alerta informativa tipo badge ante selección de mayor tonelaje respaldando la tarifa pactada.
+  - **Filtro Inclusivo con Separador y Aviso de Mayor Capacidad:** Selector de grúas estructurado en `<optgroup>` doble (`🎯 Equipos Sugeridos (Compromiso Comercial)` vs `🚚 Flota Alternativa / Mayores Prestaciones`) con alerta informativa tipo badge ante selección de mayor tonelaje respaldando la tarifa pactada.
 
 * [x] **[Hotfix Operacional Marcha Blanca - Depuración Especialistas y Resolución Operador Despacho - REQ-018 / v1.0.63 / Spec 56]:**
   - **Purga Implacable de Prevencionista:** Descarte absoluto de cualquier registro de Prevencionista de Riesgos en `especialistasTerreno` (incluso con `id_user` histórico en BD) si la oportunidad no exige prevención (`requiere_prevencionista !== true`).
@@ -404,7 +404,66 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Rebalanceo Canónico de Columnas:** Recurso (22%), Equipo (25%), Operador & Rigger (28%), Ventana (21%), Acciones (4%) = 100%.
   - **Blindaje Dimensional (`min-w-0` y `truncate`):** Truncamiento elástico con elipsis en selectores largos y badge de mayor capacidad para evitar ensanchamiento de columnas en pantallas de 13" o superiores. `VERIFICADO Y COMPILADO 0 ERRORES`.
 
+* [x] **[Reimplementación y Certificación de Ambiente de Producción (PROD) - Estándares LeanGlobal BCH/GSP]:**
+  - **Fase 1 (Base de Datos Aislada `sch_leangsp_prod`):** DDL idempotente exportado y ejecutado. Esquema recreado con `search_path` corregido en `usr_leangsp_prod`. Purga transaccional total (0 proyectos/0 surveys) y siembra íntegra de maestros (110 equipos, 45 usuarios, 4850 empresas, 9 roles RBAC, templates).
+  - **Fase 2 (Backend Microservicio Node.js en Puerto 3016):** Clonación limpia de `lean-services-gsp` hacia `/home/nodeadmin/proyectos/lean-services-gsp-prod/`. Configuración canónica de `.env` (`PORT=3016`, `DB_SCHEMA=sch_leangsp_prod`, `STORAGE_PATH=/u05/LeanDocs/GSP/prod`). Purga de esquemas relacionales hardcodeados en código. Daemon PM2 registrado (`lean-services-gsp-prod` ID 13) en estado `online`.
+  - **Fase 3 (Ruteo Determinista NGINX):** Bloques `/lg-gsp-prod/`, `/lg-gsp-prod/api/` (proxy :3016) y `/pwa-gsp-prod/` inyectados en `/etc/nginx/default.d/base.conf`. Recarga limpia de NGINX con `nginx -t` verificado.
+  - **Fase 4 (Gestor Documental y Storage Modular):** Árbol de carpetas físico creado en `/u05/LeanDocs/GSP/prod/` (`cotizaciones/`, `ots/`, `edp/`, `surveys/`, `firmas/`, `acreditacion/`, etc.) con permisos `nodeadmin:nodeadmin (775)` y prueba de escritura validada.
+  - **Fase 5 (Compilación y Despliegue de Frontends Web y PWA):** Build de Web Console (`base: /lg-gsp-prod/`) y PWA Móvil (`base: /pwa-gsp-prod/`) con sus respectivos `.env.prod`. Despliegue a `/var/www/html/lg-gsp-prod` y `/var/www/html/pwa-gsp-prod`.
+  - **Fase 6 (Certificación E2E Gates A-F & Desplegador Oficial):** Verificación integral superada (Gates A, B, C, D, E, F aprobados). Creación y prueba de `deploy_prod_now.js` con Hard Gate determinista de gobernanza (`tcfg_backlog` y `tcfg_releases`). `PRODUCCIÓN 100% OPERATIVA Y AISLADA`.
 
+* [x] **[Sincronización Reactiva de Operador Reasignado en Despacho e Inspecciones - REQ-020 / v1.0.65 / Spec 56]:**
+  - **Prioridad Canónica de Asignación en Despacho (`getNombreOperadorAsignado`):** Resolución directa del operador asignado en la OT (`opTrip?.id_user`) con prioridad sobre valores estáticos en `ins.operador_id`, resolviendo el desfase del caso GSP-2609-4855-008.
+  - **Sincronización Automática en Guardado de Asignación (`guardarCambiosAsignacion`):** Actualización de `preparacionSalidaState.inspecciones_patio` con reasignación en vivo del survey en base de datos mediante `PUT /survey/UpdPlan/:id_survey`.
+  - **Reconciliación en Entrada a Despacho (`sincronizarInspeccionesPWA`):** Sincronización continua y recálculo determinista de operadores y surveys ante discrepancias con la OT. `VERIFICADO Y COMPILADO 0 ERRORES`.
 
+* [x] **[Validación de Report Diario Digital con PIN FES, PDF Oficial y Dossier - REQ-021 / v1.0.66 / Spec 57]:**
+  - **Firma Electrónica Simple (FES) con PIN de 4 Dígitos:** Submodal interactivo en `ModalVisorReport.vue` con 4 casillas numéricas, navegación por teclado y validación SHA-256 contra `tsec_users.pass_hash_fes` (rechazo 401 si es erróneo).
+  - **Generación de PDF Oficial con Doble Firma (`reportDiarioPdfService.js`):** Compilación automática con Puppeteer incorporando la firma manual del mandante con georreferenciación GPS y sello FES del analista con código único `FES-REP-...`.
+  - **Integración Automática con Dossier del Proyecto:** Registro en `sch_leangsp.tfmg_file` e inyección determinista en `tpry_proyecto.json_field.ejecucion_v1.dossier_documentos`.
+  - **Notificaciones Omnicanal:** Despacho de correo formal con banner del código FES y enlace directo para visualización y descarga (`/api/v1/storage/view/:id_doc`).
+  - **Acceso Directo en Cockpit Torre de Control:** Botón `📄 PDF` en la bandeja del Analista PMO en `Torre.vue` para consulta inmediata.
 
+* [ ] **[Firma Digital Avanzada & Código QR de Validación Pública del Documento PDF - REQ-022 / Spec 57]:**
+  - **Código QR Dinámico en PDF Oficial:** Incorporación de QR bidimensional en el pie/sello del PDF oficial emitido (`reportDiarioPdfService.js`) que enlace a la URL pública de validación y verificación del documento (`https://servidor.leanglobal.cl/lg-gsp/validar/:codigo_fes` o endpoint público equivalente).
+  - **Landing / Vista Pública de Validación de Certificado:** Creación de endpoint/página liviana de consulta pública donde cualquier mandante o auditor externo pueda escanear el QR o ingresar el código FES (`FES-REP-...`) para verificar la autenticidad del documento, emisor (Sergio Gajardo / Analista), RUT, fecha/hora exacta de firma, geolocalización de terreno y hash SHA-256 de integridad.
+  - **Firma Digital Avanzada (FDA) / Estampado Criptográfico:** Evaluar e integrar soporte para firma digital con certificado digital y timestamp token oficial (TSA) complementando la Firma Electrónica Simple (FES) bajo estándar Ley 19.799.
 
+* [x] **[Corrección Definitiva Timezone America/Santiago y Auditoría Visual de Horarios - REQ-024 / Spec 57]:**
+  - **Erradicación de Desfase +3 Horas:** Normalización de visualización en `ModalVisorReport.vue` con `toLocaleTimeString('es-CL', { timeZone: 'America/Santiago' })` eliminando `split('T')` en crudo sobre marcas UTC.
+  - **Auditoría Visual de Ajustes:** Tarjeta de Horario de Faena exhibe horario original reportado tachado en rojo suave (`08:30 ➔ 18:00`) y horario ajustado vigente en verde esmeralda con badge `[AJUSTADO]`. Trazabilidad inferior sincronizada. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Separación Estricta de Roles: Edición Cockpit PMO vs Solo Lectura en Kanban - REQ-023 / Spec 57]:**
+  - **Modo Solo Lectura en `GestorOportunidades.vue`:** Desactivación de botones de mutación para Reports (`ModalVisorReport.vue` con `readonly: true`), e ITS (`ModalITS.vue` con `readonly: true`) en el Kanban general de Oportunidades (solo badges informativos y visualización).
+  - **Centralización en Cockpit PMO:** Confinamiento exclusivo de validación de horas, horas extras, descuentos de colación y formulación técnica en la interfaz del Analista (`Torre.vue`). `COMPLETADO Y VERIFICADO`.
+
+* [x] **[PWA Terreno: Bloqueo de Emisión Post-Término y Filtro Dinámico de Pendientes - REQ-025 / Spec 57]:**
+  - **Filtrado Reactivo en Home PWA (`Surveys.vue`):** Endpoint `GET /api/reports/usuario/pendientes` evalúa OTs del operador; si la OT es de 1 día (o completó sus días pactados) y ya cuenta con report emitido, la OT se oculta de la lista de pendientes y se inhabilita el acceso.
+  - **Hard Gate Backend en `reportDiarioController.js`:** Rechazo determinista con HTTP 403 ante intentos de emitir reports sobre OTs concluidas o con cuota de días agotada. Sustitución de emoji `🚜` por `🚚`. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[ITS Incremental, SLA 13:00 hrs y Alerta Automática WhatsApp - REQ-026 / Spec 57]:**
+  - **Autosave Diario Incremental:** Formulación progresiva del ITS por el Analista con estado `BORRADOR_INCREMENTAL` para servicios multi-día.
+  - **Monitoreo de SLA con Bot WhatsApp (Puerto 3085):** Servicio `slaAuditorService.js` y worker periódico en `index.js` (intervalo 15 min) que audita diariamente a las 13:00 hrs las OTs terminadas el día anterior sin ITS cerrado por el Analista, disparando alerta inmediata a Yiara Mendoza (+56968320225) y Jorge Ponce (+56977501322) con copia por correo. Endpoints `GET /api/reports/sla/auditar` y `POST /api/reports/sla/ejecutar-alertas`. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Doble Firma FES en ITS, Anexo de Reports y Despacho Multicanal - REQ-027 / Spec 57]:**
+  - **Flujo de Firma de 2 Pasos:** Firma 1 (Analista con PIN FES) transiciona a `EN_REVISION_OPERACIONES`; Firma 2 (Jorge Ponce con PIN FES como 2do validador técnico) transiciona a `APROBADO_OPS` / `EN_REVISION_CONTABILIDAD`.
+  - **Compilación PDF con Anexo Documental:** `itsPdfService.js` genera PDF oficial e incorpora como **Sección 7 (Anexo Técnico Vinculante)** todos los Reports Diarios aprobados de la faena con firmas canvas y georreferenciación GPS. Reemplazado `🚜` por `🌲`.
+  - **Despacho Automático:** Notificación con PDF adjunto a Gerencia General, Contabilidad, Operaciones, Comercial y Facturación. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Gobernanza de EDP: Hard Gate ITS, Edición Exclusiva Pamela y Despacho Condicional - REQ-028 / Spec 57]:**
+  - **Hard Gate Determinista:** Bloqueo de carátula de EDP si el ITS no cuenta con visto bueno de Operaciones (`itsAprobadoPorOperaciones`).
+  - **Edición Exclusiva de Tarifas / Valores:** Restricción estricta en `ModalCaratulaEDP.vue` y endpoint `POST /api/operaciones/edp/ajustes-tesoreria`: solo **Pamela (Gerente de Tesorería)** / `GSP_CONTA` / Admin puede desbloquear y modificar tarifas o aplicar notas de descuento.
+  - **Emisión Comercial y Firma FES:** Submodal de PIN FES comercial (4 dígitos SHA-256) y endpoint `POST /api/operaciones/edp/firmar-comercial`.
+  - **Bifurcación Condicional de Envío:** Si el cliente ya pagó (Contado / Pago Previo), el EDP se procesa como expediente interno sin enviar cobro al mandante, avanzando directamente a Facturación DTE. Si es crédito, se envía formalmente al cliente con copia obligatoria (CC) a Gerencia General, Contabilidad y Operaciones. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Integración de OC y Facturación sin Bloqueo - REQ-029 / Spec 57]:**
+  - **Regla ante Ausencia de OC:** Botón `[ 📄 Cliente Sin OC (Asumir EDP) ]` en Paso 3 de Cierre (`GestorOportunidades.vue`) que auto-registra la condición `S/OC - ASUME EDP` con el valor total devengado del EDP, auto-completando `hes_oc_numero` y avanzando a Facturación DTE sin trabas.
+  - **Acceso Directo en Facturación:** Botón `[ 📄 Sin OC (Asumir EDP) ]` junto al campo de HES/OC en Paso 4 para auto-completar en 1 clic. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Erradicación de Rigger por Defecto y Ocultamiento Limpio en Report Diario - REQ-031 / Spec 57]:**
+  - **PWA Móvil (`ReportDiarioIzaje.vue`):** Eliminación definitiva de fallbacks fijos ('JOSE ARRIAGADA') en `riggerNombre`. Si la OT no incluye especialista con rol Rigger asignado, retorna `null` y oculta limpiamente las etiquetas `Rig: {{ riggerNombre }}` en los 3 pasos del formulario.
+  - **Visor Web de Operaciones (`ModalVisorReport.vue`):** Inclusión de computed `tieneRigger` que valida la presencia real de Rigger asignado. Oculta al 100% la tarjeta `🦺 Rigger / Asistente` y conmuta la grilla automáticamente a 3 columnas.
+  - **Backend y PDF (`reportDiarioController.js` y `reportDiarioPdfService.js`):** Sustitución de `COALESCE(..., 'Rigger')` por `CASE WHEN r.id_user_rigger IS NOT NULL ... ELSE NULL END`. El generador de PDF expande la celda de Piso Mínimo a `colspan="3"` y omite por completo la fila de Rigger cuando no exista personal asignado. `COMPLETADO Y VERIFICADO`.
+
+* [ ] **[Backlog: Modelo de Servicios Recurrentes y Modo Arriendo Mensual - REQ-030 / Spec 57]:**
+  - Arquitectura para gestionar servicios de largo aliento bajo el mismo negocio/proyecto con cortes de facturación periódicos (EDP mensual) sin duplicar OTs.

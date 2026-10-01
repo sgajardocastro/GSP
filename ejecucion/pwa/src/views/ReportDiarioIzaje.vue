@@ -12,12 +12,22 @@
             GSP OPERACIONES FAENA
           </div>
           <div class="text-xl sm:text-2xl font-black text-white">
-            🚜 Control de Flota
+            🚚 Control de Flota
           </div>
         </div>
         <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-3 py-1.5 rounded-xl shadow-md">
           DÍA {{ diaCorrelativo }}
         </v-chip>
+      </div>
+
+      <!-- ALERTA DE SERVICIO CONCLUIDO (Spec 57 / REQ-025) -->
+      <div v-if="servicioConcluido" class="bg-red-950/60 border border-red-500/60 rounded-2xl p-4 text-center text-white mb-4">
+        <div class="text-2xl mb-1">🛑</div>
+        <div class="text-sm font-black uppercase text-red-300">Faena Concluida</div>
+        <div class="text-xs text-slate-200 mt-1">{{ mensajeConcluido }}</div>
+        <v-btn color="grey-darken-3" class="mt-3 font-bold text-xs" prepend-icon="mdi-arrow-left" @click="volver">
+          Volver a Mis Faenas
+        </v-btn>
       </div>
 
       <!-- SELECTOR DE MOMENTOS (BOTONERA TÁCTIL) -->
@@ -140,7 +150,7 @@
               <div class="text-base font-black text-white d-block mt-0.5">
                 Op: {{ operadorNombre }}
               </div>
-              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+              <div v-if="riggerNombre" class="text-sm font-bold text-slate-200 d-block mt-0.5">
                 Rig: {{ riggerNombre }}
               </div>
             </div>
@@ -341,7 +351,7 @@
               <div class="text-base font-black text-white d-block">
                 Op: {{ operadorNombre }}
               </div>
-              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+              <div v-if="riggerNombre" class="text-sm font-bold text-slate-200 d-block mt-0.5">
                 Rig: {{ riggerNombre }}
               </div>
             </div>
@@ -453,24 +463,61 @@
             <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm font-black text-amber-200 bg-amber-950/90 py-2 px-3 rounded-xl border border-amber-500/50">
               ⚡ <strong>Sobretiempo Devengado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Total a Facturar: {{ calculoHoras.facturables }} hrs).
             </div>
+            <div v-else class="mt-3 text-center text-xs font-bold text-emerald-300/90 bg-emerald-950/60 py-1.5 px-3 rounded-xl border border-emerald-500/30">
+              ✔️ Sin sobretiempo devengado (Facturación base contractual: {{ calculoHoras.facturables }} hrs).
+            </div>
           </div>
 
           <!-- Horómetro y Odómetro Término -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div>
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
-                ⚙️ HORÓMETRO TÉRMINO *
-              </label>
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
+                  ⚙️ HORÓMETRO TÉRMINO *
+                </label>
+                <button
+                  v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
+                  type="button"
+                  @click="aplicarHorometroSugerido"
+                  class="text-[11px] font-bold text-amber-400 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
+                >
+                  💡 Usar Sugerido: {{ horometroPropuesto }}
+                </button>
+              </div>
               <input
                 v-model.number="form.horometro_termino"
                 type="number"
                 step="0.1"
                 placeholder="Ej: 3459.0"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+                class="w-full bg-slate-950 border-2 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:outline-none text-center h-16 shadow-inner"
+                :class="estadoHorometroTermino.tipo === 'ERROR_MENOR' ? 'border-red-500 text-red-400 animate-pulse' : (estadoHorometroTermino.tipo === 'WARNING_DISPARADO' ? 'border-yellow-500 text-yellow-300' : 'border-slate-700 focus:border-amber-400')"
               />
-              <span v-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold">
-                Δ Motor: {{ deltaHorometro }} hrs
-              </span>
+
+              <!-- ALERTA: HOROMETRO MENOR -->
+              <div v-if="estadoHorometroTermino.tipo === 'ERROR_MENOR'" class="mt-2 p-2 bg-red-950/80 border border-red-500/80 rounded-xl text-xs text-red-200 font-bold flex items-center justify-between">
+                <span>{{ estadoHorometroTermino.mensaje }}</span>
+                <button @click="aplicarHorometroSugerido" type="button" class="underline text-white text-[11px] ml-2 cursor-pointer">
+                  Corregir
+                </button>
+              </div>
+
+              <!-- ALERTA: HOROMETRO DISPARADO -->
+              <div v-else-if="estadoHorometroTermino.tipo === 'WARNING_DISPARADO'" class="mt-2 p-2.5 bg-yellow-950/90 border-2 border-yellow-500 rounded-xl text-xs text-yellow-200 font-bold space-y-1.5">
+                <div class="flex items-start gap-1.5">
+                  <span>{{ estadoHorometroTermino.mensaje }}</span>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-yellow-500/30">
+                  <span class="text-[11px] text-yellow-400">Sugerido estimado: {{ horometroPropuesto }} hrs</span>
+                  <button @click="aplicarHorometroSugerido" type="button" class="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-2.5 py-1 rounded-lg text-xs cursor-pointer shadow">
+                    Reemplazar por Sugerido
+                  </button>
+                </div>
+              </div>
+
+              <div v-else-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold flex items-center justify-space-between">
+                <span>Δ Motor: {{ deltaHorometro }} hrs</span>
+                <span v-if="horometroPropuesto" class="text-slate-400 text-[11px]">Sugerido: {{ horometroPropuesto }} hrs</span>
+              </div>
             </div>
             <div>
               <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
@@ -642,7 +689,7 @@
               <div class="text-base font-black text-white d-block">
                 Op: {{ operadorNombre }}
               </div>
-              <div class="text-sm font-bold text-slate-200 d-block mt-0.5">
+              <div v-if="riggerNombre" class="text-sm font-bold text-slate-200 d-block mt-0.5">
                 Rig: {{ riggerNombre }}
               </div>
             </div>
@@ -784,7 +831,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import SignatureField from '@/components/SignatureField.vue'
@@ -801,13 +848,15 @@ const enviando = ref(false)
 const idProyecto = ref(route.query.id_proyecto || null)
 const idEquipoSeleccionado = ref(route.query.id_equipo ? Number(route.query.id_equipo) : null)
 const idReporteAvanceActivo = ref(null)
+const servicioConcluido = ref(false)
+const mensajeConcluido = ref('')
 
 const proyecto = ref({})
 const equipos = ref([])
 const personas = ref([])
 const reportsPrevios = ref([])
 const diaCorrelativo = ref(1)
-const horasMinimas = ref(4.0)
+const horasMinimas = ref(8.0)
 
 const inputFotoInicio = ref(null)
 const inputFotoTermino = ref(null)
@@ -849,13 +898,16 @@ const equipoSeleccionado = computed(() => {
 const operadorNombre = computed(() => {
   const op = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))
   if (op) return `${op.name_frst || ''} ${op.apellido_pat || ''}`.trim()
-  return 'ANDRES URRA'
+  return 'Operador Asignado'
 })
 
 const riggerNombre = computed(() => {
   const rig = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))
-  if (rig) return `${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
-  return 'JOSE ARRIAGADA'
+  if (rig) {
+    const nom = `${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
+    return nom || null
+  }
+  return null
 })
 
 const horasColacionFormateadas = computed(() => {
@@ -954,7 +1006,59 @@ const calculoHoras = computed(() => {
   return { efectivas, facturables, sobretiempo }
 })
 
+// Horómetro Propuesto y Diagnóstico de Consistencia
+const horometroPropuesto = computed(() => {
+  if (form.horometro_inicio !== null && form.horometro_inicio !== undefined && Number(form.horometro_inicio) > 0) {
+    const ef = Number(calculoHoras.value.efectivas || 0)
+    return Number((Number(form.horometro_inicio) + ef).toFixed(1))
+  }
+  return null
+})
+
+const aplicarHorometroSugerido = () => {
+  if (horometroPropuesto.value !== null) {
+    form.horometro_termino = horometroPropuesto.value
+  }
+}
+
+const estadoHorometroTermino = computed(() => {
+  if (form.horometro_termino === null || form.horometro_termino === undefined || form.horometro_termino === '') {
+    return { tipo: 'VACIO', mensaje: '' }
+  }
+  const inicio = Number(form.horometro_inicio || 0)
+  const termino = Number(form.horometro_termino)
+  const diff = termino - inicio
+
+  if (termino < inicio) {
+    return {
+      tipo: 'ERROR_MENOR',
+      diff: diff.toFixed(1),
+      mensaje: `🚨 Error: El horómetro final (${termino}) no puede ser menor al inicial (${inicio}).`
+    }
+  }
+
+  const ef = Number(calculoHoras.value.efectivas || 0)
+  // Alerta si el incremento supera por mucho el tiempo de faena o supera 20 horas en un día
+  if (diff > Math.max(20, ef + 4) || (termino - inicio) > 100) {
+    return {
+      tipo: 'WARNING_DISPARADO',
+      diff: diff.toFixed(1),
+      mensaje: `⚠️ Advertencia: El horómetro ingresado genera un incremento de +${diff.toFixed(1)} hrs (anómalo para una jornada de ${ef} hrs de faena). ¿Ingresaste el odómetro por error?`
+    }
+  }
+
+  return { tipo: 'OK', diff: diff.toFixed(1) }
+})
+
+// Auto-proponer horómetro cuando se calculan las horas efectivas si está vacío
+watch(() => calculoHoras.value.efectivas, (newEf) => {
+  if (newEf > 0 && form.horometro_inicio && (!form.horometro_termino || form.horometro_termino === null)) {
+    form.horometro_termino = horometroPropuesto.value
+  }
+})
+
 const puedeGuardarInicio = computed(() => {
+  if (servicioConcluido.value) return false
   return (
     form.fecha_reporte &&
     form.hora_inicio &&
@@ -966,15 +1070,18 @@ const puedeGuardarInicio = computed(() => {
 })
 
 const puedeAvanzarAReport = computed(() => {
+  if (servicioConcluido.value) return false
   return (
     form.hora_termino &&
     form.horometro_termino !== null &&
     Number(form.horometro_termino) >= Number(form.horometro_inicio || 0) &&
+    estadoHorometroTermino.value.tipo !== 'ERROR_MENOR' &&
     form.foto_tablero_termino
   )
 })
 
 const puedeEnviarReport = computed(() => {
+  if (servicioConcluido.value) return false
   return (
     form.cliente_nombre.trim().length >= 3 &&
     form.cliente_rut.trim().length >= 8 &&
@@ -1013,11 +1120,15 @@ const irAReportMandante = () => {
     snackbar.show = true
     return
   }
-  if (form.horometro_inicio && Number(form.horometro_termino) < Number(form.horometro_inicio)) {
-    snackbar.text = '⚠️ El Horómetro de Término no puede ser menor al inicial'
+  if (estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
+    snackbar.text = estadoHorometroTermino.value.mensaje
     snackbar.color = 'error'
     snackbar.show = true
     return
+  }
+  if (estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
+    const confirma = window.confirm(`⚠️ Advertencia de Horómetro Motor:\n\nEl horómetro final (${form.horometro_termino}) genera un incremento de +${estadoHorometroTermino.value.diff} hrs de motor en una jornada de ${calculoHoras.value.efectivas} hrs.\n\n¿Estás seguro de que este valor es correcto y no corresponde al kilometraje/odómetro?`)
+    if (!confirma) return
   }
   if (!form.foto_tablero_termino) {
     snackbar.text = '⚠️ La Foto del Tablero al Término es OBLIGATORIA'
@@ -1074,7 +1185,17 @@ const cargarContexto = async (idEqParam = null) => {
 
       reportsPrevios.value = d.reports || []
       diaCorrelativo.value = d.dia_sugerido || 1
-      horasMinimas.value = Number(d.horas_minimas) || 4.0
+      if (d.horas_minimas !== undefined && d.horas_minimas !== null) {
+        horasMinimas.value = Number(d.horas_minimas)
+      }
+
+      if (d.servicio_concluido) {
+        servicioConcluido.value = true
+        mensajeConcluido.value = `Esta orden de trabajo ya completó sus ${d.total_dias || 1} jornada(s) autorizadas (${d.dias_reportados || 1} reportes finalizados). No es posible emitir nuevos reportes.`
+      } else {
+        servicioConcluido.value = false
+        mensajeConcluido.value = ''
+      }
 
       if (d.id_equipo_seleccionado && !idEquipoSeleccionado.value) {
         idEquipoSeleccionado.value = Number(d.id_equipo_seleccionado)
@@ -1086,15 +1207,36 @@ const cargarContexto = async (idEqParam = null) => {
       if (d.jornada_activa) {
         const j = d.jornada_activa
         idReporteAvanceActivo.value = j.id_reporte_avance
+        if (j.horas_minimas !== undefined && j.horas_minimas !== null) {
+          horasMinimas.value = Number(j.horas_minimas)
+        }
         form.horometro_inicio = j.horometro_inicio ? Number(j.horometro_inicio) : null
         form.odometro_inicio = j.odometro_inicio ? Number(j.odometro_inicio) : null
         form.foto_tablero_inicio = j.foto_tablero_inicio || null
         if (j.fecha_inicio_servicio) {
-          const t = j.fecha_inicio_servicio.split('T')[1] || ''
-          if (t.length >= 5) form.hora_inicio = t.substring(0, 5)
+          try {
+            const d = new Date(j.fecha_inicio_servicio)
+            if (!isNaN(d.getTime())) {
+              const hh = String(d.getHours()).padStart(2, '0')
+              const mm = String(d.getMinutes()).padStart(2, '0')
+              form.hora_inicio = `${hh}:${mm}`
+            } else {
+              const t = j.fecha_inicio_servicio.split('T')[1] || ''
+              if (t.length >= 5) form.hora_inicio = t.substring(0, 5)
+            }
+          } catch (e) {
+            const t = j.fecha_inicio_servicio.split('T')[1] || ''
+            if (t.length >= 5) form.hora_inicio = t.substring(0, 5)
+          }
         }
         diaCorrelativo.value = j.dia_correlativo || diaCorrelativo.value
         faseVisual.value = 2 // Pasar directo al Momento 2 (Fin de jornada)
+
+        // Preproponer horómetro de término si está disponible
+        if (form.horometro_inicio && (!form.horometro_termino || form.horometro_termino === null)) {
+          const ef = Number(calculoHoras.value.efectivas || 0)
+          form.horometro_termino = Number((Number(form.horometro_inicio) + ef).toFixed(1))
+        }
       } else {
         if (d.horometro_sugerido && form.horometro_inicio === null) {
           form.horometro_inicio = Number(d.horometro_sugerido)

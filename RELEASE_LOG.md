@@ -2,10 +2,104 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
-## [Portal Web GSP] - Versión 1.0.64
+## [Portal Web GSP] - Versión 1.0.68
 - **Ambiente:** `dev`
-- **Fecha de Despliegue:** 2026-09-30 18:35:00 (-03:00)
+- **Fecha de Despliegue:** 2026-10-01 18:25:00 (-03:00)
 - **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-031`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Ocultamiento Condicional de Rigger en Visor Web de Reports):**
+  - **[FEAT/UI] Ocultamiento Total de Tarjeta Rigger:**
+    - La tarjeta `🦺 Rigger / Asistente` en `ModalVisorReport.vue` se condiciona con `tieneRigger`. Si la OT o report no cuenta con Rigger asignado (`id_user_rigger` nulo o 'S/R'), la tarjeta se remueve al 100% y la grilla se ajusta fluidamente a 3 columnas.
+
+---
+
+## [PWA GSP - Grúas San Pablo] - Versión 1.0.33
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-01 18:25:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-031`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Erradicación de Rigger por Defecto en PWA Terreno):**
+  - **[FEAT/OPS] Eliminación de Fallback Hardcodeado de Rigger:**
+    - Se eliminó el retorno forzado `'JOSE ARRIAGADA'` de la propiedad reactiva `riggerNombre`. Si la OT no incluye un especialista con rol Rigger asignado, retorna `null`.
+  - **[FEAT/UI] Ocultamiento de Etiqueta Rigger en los 3 Pasos del Formulario:**
+    - Las etiquetas `Rig: {{ riggerNombre }}` en el encabezado, en la confirmación de inicio y en la certificación final de jornada se condicionan con `v-if="riggerNombre"`, ocultándose limpiamente.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.67
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-01 18:05:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-023`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Cockpit PMO Unificado con Accesos Directos a Reports, ITS, EDP y Matriz de Hitos):**
+  - **[FEAT/PMO] Barra de Navegación de 4 Sub-vistas en Torre de Control PMO:**
+    - `1. Reports Diarios Inbox`: Bandeja de entrada unificada de reports diarios de terreno con filtros (Pendientes, Con Ajustes, Validados), badges de SLA y botón directo `[Auditar y Validar ➔]` con apertura del visor interactivo.
+    - `2. Informes de Término (ITS)`: Bandeja de OTs en curso con conteo de reports validados vs pendientes, estado del circuito de firmas FES y botón `[Gestionar ITS ➔]`.
+    - `3. Pipeline EDP & Facturación`: Reconciliación de OTs concluidas con acceso directo a Carátula EDP mandante y facturación CRM.
+    - `4. Matriz Hitos Global OT`: Matriz de 7 hitos operativos con trazabilidad en tiempo real.
+  - **[FEAT/PMO] KPIs Ejecutivos del Analista de Operaciones:**
+    - Indicadores interactivos de Reports por Validar, Reports con Ajustes, OTs sin ITS, ITS en Firmas FES y EDPs Listos para Facturación con redirección contextual inmediata.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.66
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-01 16:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-021`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Ciclo Integral Reports, ITS, EDP y Facturación - Spec 57):**
+  - **[FEAT/FES] Validación de Report Diario con PIN FES y Auditoría Horaria:**
+    - Submodal interactivo de 4 casillas para firma PIN FES en `ModalVisorReport.vue` con validación SHA-256; normalización horaria `America/Santiago` y visualización de horario original vs ajustado con badge `[AJUSTADO]`.
+  - **[FEAT/ITS] Doble Firma FES en ITS y Anexo Vinculante:**
+    - Doble validación técnica FES (Paso 1 Analista, Paso 2 Jorge Ponce) y compilación automática de reportes diarios aprobados en Sección 7.
+  - **[FEAT/EDP] Hard Gate Determinista y Restricción de Tarifas Exclusiva de Tesorería:**
+    - Bloqueo de carátula EDP si no cuenta con visto bueno técnico; modificación de tarifas y descuentos reservada exclusivamente a Pamela / Tesorería.
+  - **[FEAT/FACTURACIÓN] Botón Cliente Sin OC para Cierre Continuo:**
+    - Opción directa para avanzar a Facturación DTE asumiendo el valor liquidado del EDP ante ausencia de orden de compra formal.
+
+---
+
+## [PWA GSP - Grúas San Pablo] - Versión 1.0.32
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-01 16:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-025`
+- **Especificación Técnica:** `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (PWA Terreno: Regla de Cómputo de Inicio y Filtrado de Pendientes):**
+  - **[FEAT/OPS] Regla de Cómputo de Inicio de Servicio (Momento 1 Urbano vs Rural):**
+    - Cómputo base a base para servicios urbanos (≤ 30 km) y portón a portón para faenas rurales (> 30 km), con cobro de flete según cotización comercial.
+  - **[FEAT/UX] Filtrado Reactivo de OTs Pendientes en Home PWA (`Surveys.vue`):**
+    - Ocultamiento automático de OTs concluidas o con jornadas completadas para evitar doble reporte en terreno.
+  - **[FEAT/SECURITY] Hard Gate Backend HTTP 403:**
+    - Bloqueo determinista ante intentos de generar reports sobre OTs concluidas.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.65
+- **Ambiente:** `dev` / `prod`
+- **Fecha de Despliegue:** 2026-09-30 21:15:00 (-03:00) [Dev] / 2026-09-30 21:17:00 (-03:00) [Prod]
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`) & `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimiento Backlog:** `REQ-020`
+- **Especificación Técnica:** `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
+- **Detalle de Mejoras y Cambios (Sincronización Reactiva de Operador Reasignado en Despacho e Inspecciones de Patio):**
+  - **[BUGFIX/DESPACHO] Prioridad Canónica de Asignación en Despacho (`getNombreOperadorAsignado`):**
+    - Se invirtió la prioridad de resolución de operador en Sub-tab 5: el operador asignado a la grúa en la OT (`opTrip?.id_user` de Sub-tab 2) es ahora la autoridad primaria sobre cualquier dato histórico en `ins.operador_id`, eliminando el desfase visual reportado en el caso GSP-2609-4855-008.
+  - **[FEAT/REASIGNACIÓN] Sincronización Automática en Guardado de Asignación (`guardarCambiosAsignacion`):**
+    - Al pulsar `[💾 Guardar Modificaciones]` en Sub-tab 2, el sistema sincroniza automáticamente `preparacionSalidaState.inspecciones_patio` con los operadores actualizados de la OT antes de persistir el payload.
+    - Si la inspección ya contaba con un Survey creado (`id_survey`), el sistema invoca de forma reactiva `PUT /survey/UpdPlan/:id_survey` reasignando el responsable en `tsrv_survey` de la base de datos para que la PWA móvil del nuevo operador reciba la tarea de inmediato.
+  - **[REACTIVIDAD] Sincronización en Entrada a Despacho (`sincronizarInspeccionesPWA`):**
+    - Verificación y actualización automática de operador en `sincronizarInspeccionesPWA` ante discrepancias entre la asignación de la OT y la inspección de patio, garantizando consistencia bidireccional continua.
+
+---
+
+## [Portal Web GSP] - Versión 1.0.64
+- **Ambiente:** `dev` / `prod`
+- **Fecha de Despliegue:** 2026-09-30 18:35:00 (-03:00) [Dev] / 2026-09-30 20:07:00 (-03:00) [Prod]
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`) & `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
 - **Requerimiento Backlog:** `REQ-019`
 - **Especificación Técnica:** `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
 - **Detalle de Mejoras y Cambios (Ajuste Dimensional Layout y Scroll Horizontal):**
