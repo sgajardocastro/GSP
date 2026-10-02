@@ -9,18 +9,25 @@ function buildStoragePath(tenant_code = 'GSP', modulo = 'general', app_env = 'de
   const date = new Date();
   const yyyy = date.getFullYear().toString();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return path.join(tCode, env, modulo, yyyy, mm);
+  // Siempre usar formato POSIX para almacenamiento en BD
+  return path.posix.join(tCode, env, modulo, yyyy, mm);
 }
 
 function resolveStoragePath(path_relativo = '', filename = '') {
   if (!path_relativo && !filename) return STORAGE_ROOT;
 
+  // Normalizar separadores de ruta a formato del SO
+  const normRel = String(path_relativo || '').replace(/[\\/]+/g, path.sep);
+
   // 1. Direct path check
-  let target = path.join(STORAGE_ROOT, path_relativo || '', filename || '');
+  let target = path.join(STORAGE_ROOT, normRel, filename || '');
   if (filename && fs.existsSync(target)) return target;
 
   const candidateDirs = [
-    path.join(STORAGE_ROOT, path_relativo || ''),
+    path.join(STORAGE_ROOT, normRel),
+    path.join(STORAGE_ROOT, 'GSP', 'dev', 'reports'),
+    path.join(STORAGE_ROOT, 'GSP', 'prod', 'reports'),
+    path.join(STORAGE_ROOT, 'GSP', 'dev', 'reports', '2026', '10'),
     path.join(STORAGE_ROOT, 'GSP', 'surveys'),
     path.join(STORAGE_ROOT, 'GSP', 'dev', 'surveys'),
     path.join(STORAGE_ROOT, 'GSP', 'prod', 'surveys'),
@@ -28,6 +35,8 @@ function resolveStoragePath(path_relativo = '', filename = '') {
     path.join(STORAGE_ROOT, 'gsp', 'surveys'),
     path.join(STORAGE_ROOT, 'transmac'),
     path.join(STORAGE_ROOT, 'surveys'),
+    path.join(__dirname, '../../uploads'),
+    path.join(__dirname, '../../uploads', normRel),
     STORAGE_ROOT,
     '/home/nodeadmin/proyectos/lean-services-gsp/public',
     '/home/nodeadmin/proyectos/lean-services-gsp/public/archivo/transmac'

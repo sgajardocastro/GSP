@@ -339,7 +339,7 @@
             <fieldset :disabled="isRequerimientoAprobado" class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
               <div class="flex justify-between items-center border-b border-white/5 pb-2">
                 <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                  🏗️ Pestaña B: Estructurador de Servicios (Idéntico a Preventa)
+                  📋 Pestaña B: Estructurador de Servicios (Idéntico a Preventa)
                 </span>
                 <button @click="agregarLinea" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
                   + Agregar Línea
@@ -1411,7 +1411,7 @@
                     class="bg-transparent text-amber-300 font-bold border-none outline-none cursor-pointer text-xs"
                     title="Razón social contratista para validar compatibilidad laboral de la tripulación"
                   >
-                    <option value="9" class="bg-slate-900 text-white">🏗️ Grúas San Pablo SpA</option>
+                    <option value="9" class="bg-slate-900 text-white">🏢 Grúas San Pablo SpA</option>
                     <option value="7" class="bg-slate-900 text-white">🚜 Bestmaq Arriendos SpA</option>
                     <option value="8" class="bg-slate-900 text-white">🚛 Logística del Sur SpA</option>
                     <option value="11" class="bg-slate-900 text-white">🏢 Royal Rental SpA</option>
@@ -2629,7 +2629,7 @@
 
           <!-- Empty State -->
           <div v-else-if="reportsFiltrados.length === 0" class="p-12 text-center space-y-3">
-            <span class="text-4xl block">🏗️</span>
+            <span class="text-4xl block">📋</span>
             <div class="text-base font-bold text-white">No hay reports registrados para este criterio</div>
             <p class="text-sm text-slate-400 max-w-lg mx-auto">
               El operador de la grúa puede generar el Report Diario desde la PWA en terreno al concluir la jornada de izaje.
@@ -2828,12 +2828,13 @@
           </div>
         </div>
 
-        <!-- PASO 1: INFORME DE TÉRMINO DE SERVICIO (ITS INTEGRADO INLINE) -->
+        <!-- PASO 1: INFORME DE TÉRMINO DE SERVICIO (ITS INTEGRADO INLINE — SOLO LECTURA EN KANBAN) -->
         <div v-if="pasoCierreActivo === 'its'">
           <ModalITS
             :visible="true"
             :embedded="true"
             :id-proyecto="activeProjectId"
+            :readonly="true"
             @avanzar-edp="pasoCierreActivo = 'edp'"
             @actualizado="cargarResumenEDP"
           />
@@ -3083,13 +3084,23 @@
                   {{ totalMontoOCs >= (edpData?.resumen_financiero?.total_neto || 0) ? '✔ 100% Cubierto' : '⚠️ Saldo pendiente: ' + formatCurrency((edpData?.resumen_financiero?.total_neto || 0) - totalMontoOCs) }}
                 </div>
               </div>
-              <button
-                type="button"
-                @click="abrirModalNuevaOC"
-                class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>+ Adjuntar OC (PDF)</span>
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="asumirSinOC"
+                  class="px-3.5 py-2 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
+                  title="El cliente no emite OC formal: Asumir valor neto del Estado de Pago para Facturación"
+                >
+                  <span>📄 Cliente Sin OC (Asumir EDP)</span>
+                </button>
+                <button
+                  type="button"
+                  @click="abrirModalNuevaOC"
+                  class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>+ Adjuntar OC (PDF)</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3098,9 +3109,15 @@
             <div v-for="(oc, ocIdx) in ordenesCompra" :key="ocIdx" class="bg-black/30 border border-white/5 rounded-lg p-3 flex flex-wrap justify-between items-center gap-3 text-xs">
               <div>
                 <div class="flex items-center gap-3 font-mono">
-                  <span class="font-black text-amber-400 text-sm">{{ oc.numero_oc }}</span>
+                  <span class="font-black text-amber-400 text-sm flex items-center gap-1.5">
+                    <span v-if="oc.es_sin_oc">📄</span>
+                    <span>{{ oc.numero_oc }}</span>
+                  </span>
                   <span class="text-slate-400">Fecha: {{ oc.fecha_emision }}</span>
                   <span class="text-emerald-400 font-bold font-mono">Neto: {{ formatCurrency(oc.monto_neto) }}</span>
+                  <span v-if="oc.es_sin_oc" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                    ASUME VALOR EDP
+                  </span>
                 </div>
                 <div v-if="oc.centro_costo" class="text-[11px] text-slate-400 mt-1">
                   Faena / Centro Costo: <span class="text-slate-200">{{ oc.centro_costo }}</span>
@@ -3114,8 +3131,25 @@
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-4 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-500 text-xs">
-            Sin Órdenes de Compra adjuntas. Haz clic en "+ Adjuntar OC (PDF)" para registrar la del cliente.
+          <div v-else class="text-center py-6 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-400 text-xs space-y-3">
+            <p>Sin Órdenes de Compra adjuntas del mandante.</p>
+            <div class="flex items-center justify-center gap-3 flex-wrap">
+              <button
+                type="button"
+                @click="abrirModalNuevaOC"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs transition-colors"
+              >
+                + Adjuntar OC (PDF)
+              </button>
+              <span class="text-slate-600 text-xs font-mono">o si el cliente no emite OC:</span>
+              <button
+                type="button"
+                @click="asumirSinOC"
+                class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded text-xs transition-colors"
+              >
+                📄 Cliente Sin OC (Asumir Valor Factura del EDP)
+              </button>
+            </div>
           </div>
         </div>
 
@@ -3170,6 +3204,18 @@
 
             <!-- N° HES / OC -->
             <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Orden Compra / HES</label>
+                <button
+                  v-if="estadoDbActual !== 7"
+                  type="button"
+                  @click="formFacturacion.hes_oc_numero = 'S/OC - ASUME EDP'"
+                  class="text-[9px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 font-mono cursor-pointer transition-colors"
+                  title="Cliente no emite OC: Asumir valor del Estado de Pago"
+                >
+                  📄 Sin OC (Asume EDP)
+                </button>
+              </div>
               <div v-if="ordenesCompra.length > 0" class="flex flex-wrap gap-1 mb-1">
                 <span class="text-[10px] text-amber-400 font-mono font-bold">OCs del Paso 3:</span>
                 <button
@@ -3183,11 +3229,10 @@
                   + {{ oc.numero_oc }}
                 </button>
               </div>
-              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Orden Compra / HES Mandante</label>
               <input
                 v-model="formFacturacion.hes_oc_numero"
                 type="text"
-                placeholder="ej. HES-2026-9941"
+                placeholder="ej. HES-2026-9941 o S/OC - ASUME EDP"
                 :disabled="estadoDbActual === 7"
                 class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
               />
@@ -4798,13 +4843,13 @@
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2">Seleccionar Destinatarios para Notificación Interna de Requerimiento (Usuarios Enrolados FES):</label>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios para Notificación Interna a Operaciones (Coordinación y Gestión):</label>
         <div class="max-h-48 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
-          <label v-for="u in usuariosEnroladosFes" :key="'req-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+          <label v-for="u in usuariosNotificablesGestion" :key="'req-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
             <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosRequerimiento" class="accent-amber-500 rounded" />
-            <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
+            <span class="font-bold">{{ u.nombre_user || (u.name_frst ? `${u.name_frst} ${u.apellido_pat || ''}` : u.name_user) }}</span>
             <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
-            <span v-if="u.flag_proc_enrol" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">FES PIN</span>
+            <span v-if="u.json_data?.cargo" class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono font-bold">{{ u.json_data.cargo }}</span>
           </label>
         </div>
       </div>
@@ -4857,17 +4902,17 @@
       </div>
 
       <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300">
-        ✉️ <strong>Notificación al Comercial:</strong> Se enviará una notificación por correo al ejecutivo comercial de preventa y a los integrantes enrolados FES seleccionados.
+        ✉️ <strong>Notificación por Correo:</strong> Se enviará una notificación por correo al ejecutivo comercial creador y a los integrantes de coordinación seleccionados.
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios a Notificar (Usuarios Enrolados FES):</label>
+        <label class="block text-xs font-bold text-slate-300 mb-2">Destinatarios a Notificar (Gestión Operaciones y Comercial):</label>
         <div class="max-h-36 overflow-y-auto space-y-1.5 bg-[#020617] border border-white/10 p-3 rounded-xl scrollbar-hide">
-          <label v-for="u in usuariosEnroladosFes" :key="'aprob-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
+          <label v-for="u in usuariosNotificablesGestion" :key="'aprob-u-'+u.id_user" class="flex items-center gap-2.5 text-xs text-slate-200 hover:bg-white/5 p-1.5 rounded cursor-pointer">
             <input type="checkbox" :value="u.id_user" v-model="selectedUsuariosAprobacion" class="accent-amber-500 rounded" />
-            <span class="font-bold">{{ u.nombre_user || u.name_user }}</span>
+            <span class="font-bold">{{ u.nombre_user || (u.name_frst ? `${u.name_frst} ${u.apellido_pat || ''}` : u.name_user) }}</span>
             <span class="text-[10px] text-slate-400 font-mono">({{ u.email || 'Sin email' }})</span>
-            <span v-if="u.flag_proc_enrol" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">FES PIN</span>
+            <span v-if="u.json_data?.cargo" class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono font-bold">{{ u.json_data.cargo }}</span>
           </label>
         </div>
       </div>
@@ -5044,7 +5089,7 @@
                 <span class="text-emerald-400 font-bold">100% Vigente</span>
               </div>
               <div class="bg-white/5 p-2 rounded">
-                <strong class="block text-amber-300">🏗️ Equipos</strong>
+                <strong class="block text-amber-300">🚚 Equipos</strong>
                 <span class="text-emerald-400 font-bold">100% Vigente</span>
               </div>
               <div class="bg-white/5 p-2 rounded">
@@ -5332,10 +5377,11 @@
     @close="modalMapaViajeAbierto = false" 
   />
 
-  <!-- MODAL VISOR DE REPORT DIARIO & FIRMA MANDANTE -->
+  <!-- MODAL VISOR DE REPORT DIARIO & FIRMA MANDANTE (SOLO LECTURA EN KANBAN) -->
   <ModalVisorReport
     :visible="modalVisorReportAbierto"
     :report="reportSeleccionadoParaVisor"
+    :readonly="true"
     @close="modalVisorReportAbierto = false"
     @report-validado="onReportValidado"
   />
@@ -5345,6 +5391,7 @@
     :visible="modalCaratulaEDPAbierto"
     :edp-data="edpData"
     @close="modalCaratulaEDPAbierto = false"
+    @edp-actualizado="cargarResumenEDP"
   />
 
   <!-- MODAL DESPACHO WHATSAPP (Spec 50) -->
@@ -5601,6 +5648,50 @@ const eliminarOC = async (idx) => {
 
 const seleccionarOCParaFactura = (oc) => {
   formFacturacion.hes_oc_numero = oc.numero_oc
+}
+
+const asumirSinOC = async () => {
+  const montoNetoEDP = Number(edpData.value?.resumen_financiero?.total_neto) || 0
+  const montoFormat = formatCurrency(montoNetoEDP)
+  if (!confirm(`¿Confirmas declarar que este mandante NO emite Orden de Compra formal (OC / HES)?\n\nSe asumirá el valor liquidado en el Estado de Pago (${montoFormat}) como base legal y tributaria para emitir la Factura DTE sin bloquear el flujo.`)) {
+    return
+  }
+
+  const yaExiste = ordenesCompra.value.find(o => o.numero_oc === 'S/OC - ASUME EDP')
+  if (!yaExiste) {
+    const ocAsumida = {
+      id: 'oc-' + Date.now(),
+      numero_oc: 'S/OC - ASUME EDP',
+      fecha_emision: new Date().toISOString().split('T')[0],
+      monto_neto: montoNetoEDP,
+      centro_costo: 'Faena / Sin OC Mandante',
+      archivo: null,
+      observaciones: 'Cliente no emite Orden de Compra formal. Se asume monto valorizado en Estado de Pago (EDP) para emisión de Factura DTE.',
+      es_sin_oc: true
+    }
+    ordenesCompra.value.push(ocAsumida)
+  }
+
+  // Auto-completar en el formulario de facturación
+  formFacturacion.hes_oc_numero = 'S/OC - ASUME EDP'
+
+  // Auto-guardado en PostgreSQL
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (projectId) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      alert(`✅ Se registró condición "Sin OC (Asume EDP)" por ${montoFormat}. Avanzando a Facturación DTE...`)
+    } catch (e) {
+      console.warn('Error al auto-guardar Sin OC:', e)
+    }
+  }
+
+  // Avanzar directamente al paso de facturación
+  pasoCierreActivo.value = 'factura'
 }
 
 const modalHomologacion = ref({
@@ -5946,6 +6037,30 @@ const guardarCambiosAsignacion = async () => {
   try {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+
+    // 0. Sincronizar automáticamente inspecciones de patio con los operadores asignados en la OT
+    if (preparacionSalidaState.value?.inspecciones_patio) {
+      for (const [eqIdKey, ins] of Object.entries(preparacionSalidaState.value.inspecciones_patio)) {
+        const opActual = getOperadorAsignadoAEquipo(eqIdKey)
+        if (opActual?.id_user && ins) {
+          const oldUserId = ins.operador_id
+          ins.operador_id = opActual.id_user
+          ins.jefe_patio_id = opActual.id_user
+          if (ins.id_survey && Number(oldUserId) !== Number(opActual.id_user)) {
+            try {
+              await apiAxios.put(`/survey/UpdPlan/${ins.id_survey}`, {
+                id_user: opActual.id_user
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              console.log(`✔ Survey #${ins.id_survey} reasignado en BD a usuario ${opActual.id_user}`)
+            } catch (errSurvey) {
+              console.warn(`No se pudo actualizar survey #${ins.id_survey}:`, errSurvey)
+            }
+          }
+        }
+      }
+      preparacionSalidaState.value.inspecciones_patio = { ...preparacionSalidaState.value.inspecciones_patio }
+    }
+
     const payload = buildPayload()
     const projectId = props.proyectoId || currentProyectoId.value
     await apiAxios.put(`/proyectos/${projectId}`, payload, {
@@ -7094,7 +7209,7 @@ const checkDocVigente = (docNombre, categoria, entityObj = null) => {
 
 // --- HELPERS PARA MULTI-EMPRESA EN DOSSIER DE ACREDITACIONES (SPEC 45) ---
 const empresasGrupoGSP = [
-  { id_empresa: 9, nombre: 'Grúas San Pablo SpA', sigla: 'GSP SpA', rut: '76.123.456-7', icon: '🏗️' },
+  { id_empresa: 9, nombre: 'Grúas San Pablo SpA', sigla: 'GSP SpA', rut: '76.123.456-7', icon: '🏢' },
   { id_empresa: 7, nombre: 'Bestmaq Arriendos SpA', sigla: 'Bestmaq', rut: '76.209.534-3', icon: '🚜' },
   { id_empresa: 8, nombre: 'Logística del Sur SpA', sigla: 'Logística del Sur', rut: '76.890.123-4', icon: '🚛' },
   { id_empresa: 11, nombre: 'Royal Rental SpA', sigla: 'Royal Rental', rut: '76.345.678-9', icon: '🏢' }
@@ -7102,7 +7217,7 @@ const empresasGrupoGSP = [
 
 const getNombreEmpresaContratista = (idEmpresa) => {
   const found = empresasGrupoGSP.find(e => Number(e.id_empresa) === Number(idEmpresa))
-  return found ? `${found.icon} ${found.nombre}` : '🏗️ Grúas San Pablo SpA'
+  return found ? `${found.icon} ${found.nombre}` : '🏢 Grúas San Pablo SpA'
 }
 
 const getRutEmpresaContratista = (idEmpresa) => {
@@ -8160,7 +8275,16 @@ const abrirModalGenerarRequerimiento = () => {
     return
   }
 
-  selectedUsuariosRequerimiento.value = usuarios.value.map(u => u.id_user)
+  // Pre-seleccionar por defecto únicamente: Coordinador de Operaciones y Comercial creador
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const idComercial = Number(opportunity.value.id_usuario_creacion || opportunity.value.id_user_creacion || currentUser.id_user)
+  const coords = usuariosNotificablesGestion.value
+    .filter(u => u.email === 'logistica@arriendosanpablo.cl' || (u.json_data?.cargo || '').toLowerCase() === 'coordinador')
+    .map(u => u.id_user)
+
+  const defaults = new Set([...coords])
+  if (idComercial) defaults.add(idComercial)
+  selectedUsuariosRequerimiento.value = Array.from(defaults)
   showModalGenerarRequerimiento.value = true
 }
 
@@ -8199,7 +8323,7 @@ const confirmarGenerarRequerimiento = async () => {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
       <div style="border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;">
-        <h2 style="color: #f59e0b; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+        <h2 style="color: #f59e0b; margin: 0; font-size: 22px;">GRÚAS SAN PABLO</h2>
         <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Notificación Interna de Nuevo Requerimiento de Operaciones</p>
       </div>
       <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid #f59e0b; padding: 18px; border-radius: 10px;">
@@ -8235,7 +8359,16 @@ const confirmarGenerarRequerimiento = async () => {
 }
 
 const abrirModalAprobarRequerimiento = () => {
-  selectedUsuariosAprobacion.value = usuarios.value.map(u => u.id_user)
+  // Pre-seleccionar por defecto: Comercial creador de la OT y Coordinador de Operaciones
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const idComercial = Number(opportunity.value.id_usuario_creacion || opportunity.value.id_user_creacion || currentUser.id_user)
+  const coords = usuariosNotificablesGestion.value
+    .filter(u => u.email === 'logistica@arriendosanpablo.cl' || (u.json_data?.cargo || '').toLowerCase() === 'coordinador')
+    .map(u => u.id_user)
+
+  const defaults = new Set([...coords])
+  if (idComercial) defaults.add(idComercial)
+  selectedUsuariosAprobacion.value = Array.from(defaults)
   showModalAprobarRequerimiento.value = true
 }
 
@@ -8260,7 +8393,7 @@ const confirmarAprobacionRequerimiento = async () => {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
       <div style="border-bottom: 2px solid #10b981; padding-bottom: 15px; margin-bottom: 20px;">
-        <h2 style="color: #10b981; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+        <h2 style="color: #10b981; margin: 0; font-size: 22px;">GRÚAS SAN PABLO</h2>
         <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Notificación de Requerimiento Aprobado por Operaciones</p>
       </div>
       <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid ${isConObs ? '#f59e0b' : '#10b981'}; padding: 18px; border-radius: 10px;">
@@ -8292,6 +8425,26 @@ const confirmarAprobacionRequerimiento = async () => {
   operacionesSubTab.value = 'asignacion'
   alert(`✅ Requerimiento Aprobado (${isConObs ? 'Con Observaciones' : 'Sin Observaciones'}).\n\nNotificación enviada al comercial. La Pestaña C: Asignación de Recursos ha sido activada y el formulario quedó bloqueado en Modo Lectura.`)
 }
+
+const usuariosNotificablesGestion = computed(() => {
+  if (!Array.isArray(usuarios.value)) return []
+  return usuarios.value.filter(u => {
+    if (!u || u.flag_activo === false || u.activo === false) return false
+    if (!u.email || !u.email.includes('@')) return false
+    if (!u.nombre_user && !u.name_frst) return false
+
+    // Excluir terminantemente personal de faena (operadores, choferes y riggers)
+    const cargo = (u.json_data?.cargo || u.cargo || '').toLowerCase()
+    if (cargo.includes('operador') || cargo.includes('rigger') || cargo.includes('chofer')) {
+      return false
+    }
+
+    const nombre = (u.nombre_user || `${u.name_frst || ''} ${u.apellido_pat || ''}`).toLowerCase()
+    if (nombre.includes('isis') && nombre.includes('oses')) return false
+
+    return true
+  })
+})
 
 const usuariosEnroladosFes = computed(() => {
   if (!Array.isArray(usuarios.value)) return []
@@ -11274,9 +11427,9 @@ const getOperadorAsignadoAEquipo = (eqId) => {
 }
 
 const getNombreOperadorAsignado = (eqId) => {
-  const ins = getInspeccionEquipo(eqId)
   const opTrip = getOperadorAsignadoAEquipo(eqId)
-  const targetUserId = ins?.operador_id || ins?.jefe_patio_id || opTrip?.id_user
+  const ins = getInspeccionEquipo(eqId)
+  const targetUserId = opTrip?.id_user || ins?.operador_id || ins?.jefe_patio_id
   if (!targetUserId) return 'Sin Operador Asignado'
   const u = (usuarios.value || []).find(user => Number(user.id_user) === Number(targetUserId))
   return u?.nombre_user || u?.name_user || (u?.name_frst ? `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() : null) || opTrip?.cargo || 'Operador Asignado'
@@ -11335,14 +11488,12 @@ const getInspeccionEquipo = (eqId) => {
       id_doc_pdf: null
     }
   } else {
-    // Si la inspección aún no está programada, mantener sincronizado el operador con la OT
+    // Sincronizar operador con la asignación vigente de la OT (Sub-tab 2)
     const ins = preparacionSalidaState.value.inspecciones_patio[eqId]
-    if (!ins.patio_programado && !ins.id_survey) {
-      const op = getOperadorAsignadoAEquipo(eqId)
-      if (op?.id_user && (!ins.operador_id || ins.operador_id !== op.id_user)) {
-        ins.operador_id = op.id_user
-        ins.jefe_patio_id = op.id_user
-      }
+    const op = getOperadorAsignadoAEquipo(eqId)
+    if (op?.id_user && Number(ins.operador_id) !== Number(op.id_user)) {
+      ins.operador_id = op.id_user
+      ins.jefe_patio_id = op.id_user
     }
   }
   return preparacionSalidaState.value.inspecciones_patio[eqId]
@@ -11481,6 +11632,17 @@ const sincronizarInspeccionesPWA = async () => {
     for (const eqId of Object.keys(inspMap)) {
       const ins = inspMap[eqId]
       if (ins) {
+        // Sincronizar operador con la asignación vigente de la OT (Sub-tab 2)
+        const opActual = getOperadorAsignadoAEquipo(eqId)
+        if (opActual?.id_user && Number(ins.operador_id) !== Number(opActual.id_user)) {
+          ins.operador_id = opActual.id_user
+          ins.jefe_patio_id = opActual.id_user
+          huboCambios = true
+          if (ins.id_survey && !ins.patio_checklist_completado) {
+            apiAxios.put(`/survey/UpdPlan/${ins.id_survey}`, { id_user: opActual.id_user }).catch(e => console.warn(e))
+          }
+        }
+
         // Si no tiene id_survey, forzar patio_programado a false
         if (!ins.id_survey && ins.patio_programado) {
           ins.patio_programado = false
@@ -12351,7 +12513,7 @@ const confirmarAsignacionOT = async () => {
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; color: #ffffff; padding: 25px; border-radius: 16px; border: 1px solid #1e293b;">
         <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
-          <h2 style="color: #3b82f6; margin: 0; font-size: 22px;">🏗️ GRÚAS SAN PABLO</h2>
+          <h2 style="color: #3b82f6; margin: 0; font-size: 22px;">GRÚAS SAN PABLO</h2>
           <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Asignación de Recursos para Servicio Operacional</p>
         </div>
         <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 25px; background-color: #020617; border-left: 4px solid #3b82f6; padding: 18px; border-radius: 10px;">
@@ -12487,7 +12649,7 @@ const eliminarInspeccionEquipo = async (eqId) => {
 const programarInspeccionPatioEquipo = async (eqId) => {
   const ins = getInspeccionEquipo(eqId)
   const opAsignado = getOperadorAsignadoAEquipo(eqId)
-  const operadorId = ins.operador_id || ins.jefe_patio_id || opAsignado?.id_user
+  const operadorId = opAsignado?.id_user || ins.operador_id || ins.jefe_patio_id
   if (!operadorId) {
     alert('⚠️ Por favor asigne primero el Operador/Conductor para este equipo en la Asignación de Recursos (Pestaña C) o selecciónelo en el desplegable.')
     return
@@ -12687,8 +12849,8 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
   const ins = getInspeccionEquipo(eqId)
   const opTrip = getOperadorAsignadoAEquipo(eqId)
   
-  // 1. Obtener ID del operador asignado (priorizando selector de inspección de patio, luego asignación de OT)
-  const targetUserId = ins?.operador_id || ins?.jefe_patio_id || opTrip?.id_user
+  // 1. Obtener ID del operador asignado (priorizando asignación de OT de la máquina)
+  const targetUserId = opTrip?.id_user || ins?.operador_id || ins?.jefe_patio_id
   
   if (!targetUserId) {
     alert('⚠️ No se ha identificado al operador/chofer asignado a este equipo. Por favor verifique la asignación antes de autorizar la salida.')
@@ -12762,7 +12924,7 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
     const htmlEmail = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0b1021; color: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
         <div style="border-bottom: 2px solid #10b981; padding-bottom: 16px; margin-bottom: 20px; text-align: center;">
-          <h2 style="color: #10b981; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px;">🏗️ GRÚAS SAN PABLO</h2>
+          <h2 style="color: #10b981; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: 1px;">GRÚAS SAN PABLO</h2>
           <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px; font-weight: bold; text-transform: uppercase;">
             AUTORIZACIÓN DE SALIDA DE BASE & INICIO DE HOJA DE RUTA
           </p>
@@ -12845,7 +13007,7 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
       const cliTexto = clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente || 'Cliente Mandante'
       const obraTexto = `${siteVisit.value.obra_nombre || 'Faena Terreno'} (${siteVisit.value.obra_ciudad || ''})`
 
-      const wspTexto = `🚛 *GRÚAS SAN PABLO - HOJA DE RUTA OPERACIONAL*\n\nEstimado(a) *${opNombre}*:\nSe ha autorizado la salida de patio y generado su Hoja de Ruta para el servicio:\n\n📋 *OT:* ${otTexto}\n🏗️ *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n👉 *Inicie su viaje y registre odómetro inicial aquí:*\n${tripUrl}\n\n_Buen viaje y conduzca con precaución._`
+      const wspTexto = `🚛 *GRÚAS SAN PABLO - HOJA DE RUTA OPERACIONAL*\n\nEstimado(a) *${opNombre}*:\nSe ha autorizado la salida de patio y generado su Hoja de Ruta para el servicio:\n\n📋 *OT:* ${otTexto}\n🚚 *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n👉 *Inicie su viaje y registre odómetro inicial aquí:*\n${tripUrl}\n\n_Buen viaje y conduzca con precaución._`
 
       try {
         const wspResp = await axios.post('https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar', {
@@ -13114,7 +13276,7 @@ const abrirModalEnviarOT = (otVer) => {
   formDespachoOT.value = {
     destinatarios: Array.from(recipients),
     nuevoEmail: '',
-    asunto: `🏗️ Orden de Trabajo OT-${antecedentes.value.identificador_formal || 'GSP'}V${otVer.version} - ${siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || 'Servicio de Izaje'}`,
+    asunto: `📋 Orden de Trabajo OT-${antecedentes.value.identificador_formal || 'GSP'}V${otVer.version} - ${siteVisit.value.obra_nombre || opportunity.value.nombre_proyecto || 'Servicio de Izaje'}`,
     cuerpo_adicional: `Estimado equipo,\n\nAdjuntamos la Orden de Trabajo Oficial Versión ${otVer.version} para el servicio operacional en ${siteVisit.value.obra_nombre || 'faena'}.\n\nSaludos cordiales,\nCoordinación de Operaciones - Grúas San Pablo S.A.`
   }
   

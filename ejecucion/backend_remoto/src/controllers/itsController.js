@@ -1,6 +1,7 @@
 const pool = require('../config/postgresPool');
 const itsPdfService = require('../services/itsPdfService');
 const MessageModel = require('../models/messageModel');
+const notificacionService = require('../services/notificacionService');
 const messageModel = new MessageModel();
 
 /**
@@ -76,11 +77,27 @@ const itsController = {
         // ITS YA EXISTE EN BASE DE DATOS
         its = itsRes.rows[0];
 
-        // Cargar jornadas relacionales
+        // Cargar jornadas relacionales con respaldos de firma de terreno y GPS
         const jorRes = await pool.query(`
-          SELECT * FROM sch_leangsp.tits_jornada_detalle
-          WHERE id_its = $1
-          ORDER BY orden ASC, fecha ASC, id_jornada ASC;
+          SELECT 
+            jd.*,
+            ra.cliente_firma_canvas_base64,
+            ra.cliente_nombre,
+            ra.cliente_cargo,
+            ra.codigo_validacion_fes,
+            ra.accuracy_firma,
+            ra.latitud_inicio_servicio,
+            ra.longitud_inicio_servicio,
+            ra.horometro_inicio,
+            ra.horometro_termino,
+            ra.odometro_inicio,
+            ra.odometro_termino,
+            COALESCE(e.modelo, '') AS equipo_modelo
+          FROM sch_leangsp.tits_jornada_detalle jd
+          LEFT JOIN sch_leangsp.tedp_reporte_avance ra ON jd.id_reporte_avance = ra.id_reporte_avance
+          LEFT JOIN sch_leangsp.tequ_equipo e ON jd.id_equipo = e.id_equipo
+          WHERE jd.id_its = $1
+          ORDER BY jd.orden ASC, jd.fecha ASC, jd.id_jornada ASC;
         `, [its.id_its]);
         jornadas = jorRes.rows;
 
@@ -127,6 +144,8 @@ const itsController = {
           }
         });
 
+        const tipoContexto = (crmV1.regimen_operacional || (parseFloat(crmV1.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
+
         const folioSugerido = `ITS-${proyecto.codi_proyecto || proyecto.id_proyecto}-001`;
 
         its = {
@@ -134,7 +153,7 @@ const itsController = {
           id_proyecto: proyecto.id_proyecto,
           folio_its: folioSugerido,
           version: 1,
-          tipo_contexto: 'URBANO',
+          tipo_contexto: tipoContexto,
           horas_minimas_pactadas: horasMinimas,
           valor_hora_pactado: valorHoraPactado,
           valor_flete_pactado: valorFletePactado,
@@ -145,13 +164,13 @@ const itsController = {
           total_costos_operacionales: 0,
           utilidad_bruta: valorFletePactado,
           margen_porcentaje: valorFletePactado > 0 ? 100 : 0,
-          plantilla_tipo: 'URBANO',
+          plantilla_tipo: tipoContexto,
           observaciones: '',
           categorias_sin_costo: {},
           estado_its: 'BORRADOR'
         };
 
-        // Extraer reports diarios de terreno desde sch_leangsp.tedp_reporte_avance
+        // Extraer reports diarios de terreno desde sch_leangsp.tedp_reporte_avance con respaldos
         const repRes = await pool.query(`
           SELECT 
             ra.id_reporte_avance,
@@ -161,7 +180,19 @@ const itsController = {
             ra.horas_colacion,
             ra.token_report,
             ra.estado_reporte,
+            ra.cliente_nombre,
+            ra.cliente_cargo,
+            ra.cliente_firma_canvas_base64,
+            ra.codigo_validacion_fes,
+            ra.accuracy_firma,
+            ra.latitud_inicio_servicio,
+            ra.longitud_inicio_servicio,
+            ra.horometro_inicio,
+            ra.horometro_termino,
+            ra.odometro_inicio,
+            ra.odometro_termino,
             COALESCE(e.patente, 'S/P') AS patente,
+            COALESCE(e.modelo, '') AS equipo_modelo,
             COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
             TO_CHAR(ra.fecha_inicio_servicio, 'HH24:MI') AS hora_inicio,
             TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
@@ -184,6 +215,7 @@ const itsController = {
             numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
             id_equipo: r.id_equipo,
             patente: r.patente,
+            equipo_modelo: r.equipo_modelo,
             tipo_servicio: 'Hora',
             hora_salida: r.hora_inicio || '08:00',
             hora_llegada: '08:30',
@@ -195,6 +227,15 @@ const itsController = {
             numero_report: r.token_report ? r.token_report.slice(0, 12) : `REP-${r.id_reporte_avance}`,
             es_oculta: false,
             vb_conciliado: r.estado_reporte === 'VALIDADO_ANALISTA',
+            cliente_firma_canvas_base64: r.cliente_firma_canvas_base64,
+            cliente_nombre: r.cliente_nombre,
+            cliente_cargo: r.cliente_cargo,
+            codigo_validacion_fes: r.codigo_validacion_fes,
+            accuracy_firma: r.accuracy_firma,
+            latitud_inicio_servicio: r.latitud_inicio_servicio,
+            longitud_inicio_servicio: r.longitud_inicio_servicio,
+            horometro_inicio: r.horometro_inicio,
+            horometro_termino: r.horometro_termino,
             orden: ordenIdx++
           });
         });
@@ -367,7 +408,8 @@ const itsController = {
   async guardarITS(req, res) {
     const client = await pool.connect();
     try {
-      const { id_proyecto, cabecera, jornadas, costos } = req.body;
+      const { cabecera, jornadas, costos } = req.body;
+      const id_proyecto = req.body.id_proyecto || cabecera?.id_proyecto;
 
       if (!id_proyecto || !cabecera) {
         return res.status(400).json({ success: false, message: 'id_proyecto y cabecera son obligatorios' });
@@ -601,7 +643,7 @@ const itsController = {
             st.flow_tmpl_step_orden,
             st.estado AS estado_paso,
             st.flow_step_obs,
-            st.fecha_creacion,
+            st.fecha_event AS fecha_creacion,
             u.id_user,
             COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Usuario') AS nombre_usuario,
             u.rut,
@@ -672,10 +714,10 @@ const itsController = {
       // Si el ITS existe pero aún no tiene flujo instanciado, instanciar Template 90
       if (its && !idFlow) {
         const flowIns = await pool.query(`
-          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, id_empresa, estado, fecha_inicio, id_proyecto)
-          VALUES (90, 1, 'EN PROCESO', CURRENT_TIMESTAMP, $1)
+          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
+          VALUES (90, 'EN PROCESO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           RETURNING id_flow;
-        `, [id_proyecto]);
+        `);
         idFlow = flowIns.rows[0].id_flow;
 
         const tmplSteps = await pool.query(`
@@ -688,9 +730,9 @@ const itsController = {
           const stEstado = ts.flow_tmpl_step_orden === 1 ? 'PENDIENTE' : 'EN ESPERA';
           await pool.query(`
             INSERT INTO sch_leangsp.tflw_flow_steps (
-              id_flow, flow_tmpl_step_orden, flow_tmpl_step_name, estado, id_rol, flag_flow_fin, flag_equipo
-            ) VALUES ($1, $2, $3, $4, $5, $6, false);
-          `, [idFlow, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_name, stEstado, ts.id_rol, ts.flow_tmpl_step_orden === 3]);
+              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, flag_flow_fin, flag_equipo
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, false);
+          `, [idFlow, ts.id_flow_tmpl_step, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_fase, stEstado, ts.id_rol, ts.flag_flow_fin]);
         }
 
         await pool.query(`
@@ -708,7 +750,7 @@ const itsController = {
             st.id_flow_stp,
             st.id_flow,
             st.flow_tmpl_step_orden AS orden,
-            st.flow_tmpl_step_name AS nombre_paso,
+            COALESCE(ts.flow_tmpl_step_name, st.flow_tmpl_step_fase) AS nombre_paso,
             st.estado,
             st.flow_step_obs AS observaciones,
             st.id_user,
@@ -721,6 +763,7 @@ const itsController = {
             f.aprueba_rechaza,
             m.motivo_rechazo
           FROM sch_leangsp.tflw_flow_steps st
+          LEFT JOIN sch_leangsp.tflw_template_steps ts ON st.id_flow_tmpl_step = ts.id_flow_tmpl_step
           LEFT JOIN sch_leangsp.tfes_signatures f ON st.id_fes = f.id_fes
           LEFT JOIN sch_leangsp.tsec_users u ON COALESCE(f.id_user, st.id_user) = u.id_user
           LEFT JOIN sch_leangsp.tsec_roles r ON st.id_rol = r.id_rol
@@ -827,10 +870,10 @@ const itsController = {
       let idFlow = its.id_flow;
       if (!idFlow) {
         const flowIns = await client.query(`
-          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, id_empresa, estado, fecha_inicio, id_proyecto)
-          VALUES (90, 1, 'EN PROCESO', CURRENT_TIMESTAMP, $1)
+          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
+          VALUES (90, 'EN PROCESO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           RETURNING id_flow;
-        `, [id_proyecto]);
+        `);
         idFlow = flowIns.rows[0].id_flow;
 
         const tmplSteps = await client.query(`
@@ -844,9 +887,9 @@ const itsController = {
           const stUser = ts.flow_tmpl_step_orden === 1 ? id_user : null;
           await client.query(`
             INSERT INTO sch_leangsp.tflw_flow_steps (
-              id_flow, flow_tmpl_step_orden, flow_tmpl_step_name, estado, id_rol, id_user, flag_flow_fin, flag_equipo
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, false);
-          `, [idFlow, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_name, stEstado, ts.id_rol, stUser]);
+              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, id_user, flag_flow_fin, flag_equipo
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false);
+          `, [idFlow, ts.id_flow_tmpl_step, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_fase, stEstado, ts.id_rol, stUser, ts.flag_flow_fin]);
         }
 
         await client.query(`
@@ -912,33 +955,68 @@ const itsController = {
             WHERE id_its = $4;
           `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
 
+          // Notificar a Jefatura de Operaciones + Analista + Gerencia
           try {
             const destRes = await client.query(`
-              SELECT u.email, u.name_frst, u.apellido_pat 
+              SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
               FROM sch_leangsp.tsec_users u
-              JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
-              WHERE ur.id_rol = 32 AND u.activo = true 
-              LIMIT 3;
+              LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
+              WHERE (ur.id_rol = 32 OR u.id_user IN (57, 19)) AND COALESCE(u.activo, true) = true;
             `);
+
             for (const d of destRes.rows) {
-              if (d.email) {
-                const htmlMail = messageModel.obtenerPlantillaHTML({
+              const nombreJefe = `${d.name_frst || ''} ${d.apellido_pat || ''}`.trim() || 'Jefatura de Operaciones';
+              const wspMsg = `📋 *Grúas San Pablo — V°B° de ITS Requerido*\n\n¡Hola ${nombreJefe}! El Analista ${usuario.name_frst} ${usuario.apellido_pat || ''} ha completado la liquidación del servicio:\n\n📄 *Folio ITS:* ${its.folio_its}\n🏢 *Proyecto:* N° ${id_proyecto}\n💰 *Venta Neta:* $${Number(its.total_ingresos_facturables || 0).toLocaleString('es-CL')}\n📊 *Margen:* ${its.margen_porcentaje || 0}%\n\n📲 *Revisa y visa con tu PIN FES aquí:*`;
+
+              await notificacionService.despacharNotificacion({
+                evento: 'ITS_ELABORADO_VB_JEFATURA',
+                canales: d.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+                destinatario: {
+                  nombre: nombreJefe,
+                  email: d.email,
+                  telefono: d.fono
+                },
+                deepLink: {
+                  tipoApp: 'WEB',
+                  ruta: 'crm',
+                  params: { id_proyecto, subtab: 'liquidacion', paso: 'its' }
+                },
+                emailData: {
+                  asunto: `[GSP] V°B° Requerido: ${its.folio_its} (Proyecto #${id_proyecto})`,
                   titulo: `ITS Elaborado y Listo para V°B°: ${its.folio_its}`,
-                  subtitulo: `El Analista ${usuario.name_frst} ${usuario.apellido_pat} ha completado la liquidación`,
-                  contenido: `<p>El Informe de Término de Servicio <strong>${its.folio_its}</strong> para el proyecto <strong>${id_proyecto}</strong> ha sido liquidado y firmado. Requiere tu revisión y V°B° para avanzar a Contabilidad.</p>`,
-                  botonTexto: 'Ver y Revisar ITS',
-                  botonUrl: `https://servidor.leanglobal.cl/lg-gsp-dev/`
-                });
-                await messageModel.enviarYRegistrarCorreo({
-                  para: d.email,
-                  asunto: `[GSP] V°B° Requerido: ${its.folio_its}`,
-                  cuerpo: htmlMail,
-                  esHtml: true
-                });
-              }
+                  subtitulo: `El Analista ${usuario.name_frst} ${usuario.apellido_pat || ''} ha completado la liquidación`,
+                  contenido: `<p>El Informe de Término de Servicio <strong>${its.folio_its}</strong> para el proyecto <strong>#${id_proyecto}</strong> ha sido liquidado y firmado. Requiere la revisión técnica y V°B° de Operaciones con PIN FES para avanzar a Contabilidad.</p>
+                  <ul>
+                    <li><strong>Venta Neta Facturable:</strong> $${Number(its.total_ingresos_facturables || 0).toLocaleString('es-CL')} CLP</li>
+                    <li><strong>Costos Directos:</strong> $${Number(its.total_costos_operacionales || 0).toLocaleString('es-CL')} CLP</li>
+                    <li><strong>Margen Operacional:</strong> ${its.margen_porcentaje || 0}%</li>
+                  </ul>`,
+                  botonTexto: 'VER Y REVISAR ITS'
+                },
+                wspData: {
+                  mensaje: wspMsg
+                }
+              });
+            }
+
+            // Confirmación al Analista
+            if (usuario.email && !destRes.rows.some(r => r.email === usuario.email)) {
+              notificacionService.despacharEmailSmtp({
+                para: usuario.email,
+                asunto: `[GSP] Confirmación: Has elaborado el ITS ${its.folio_its}`,
+                titulo: `ITS ${its.folio_its} Enviado a Revisión`,
+                subtitulo: `Tu liquidación fue firmada y enviada a Jefatura de Operaciones`,
+                contenido: `<p>Has firmado exitosamente el ITS <strong>${its.folio_its}</strong>. Jefatura de Operaciones ha sido notificada para su aprobación.</p>`,
+                botonTexto: 'VER ESTADO',
+                botonUrl: notificacionService.construirDeepLink({
+                  tipoApp: 'WEB',
+                  ruta: 'crm',
+                  params: { id_proyecto, subtab: 'liquidacion', paso: 'its' }
+                })
+              }).catch(e => console.warn('[ITS Mail] Error confirmando analista:', e.message));
             }
           } catch (eMail) {
-            console.warn('[ITS Mail] Error notificando paso 2:', eMail.message);
+            console.warn('[ITS Mail] Error notificando paso 1:', eMail.message);
           }
 
         } else if (orden === 2) {
@@ -958,39 +1036,76 @@ const itsController = {
             WHERE id_its = $4;
           `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
 
+          // Notificar a Contabilidad (Maritza) + Analista + Gerencia
           try {
             const destRes = await client.query(`
-              SELECT u.email, u.name_frst, u.apellido_pat 
+              SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
               FROM sch_leangsp.tsec_users u
-              JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
-              WHERE ur.id_rol = 33 AND u.activo = true 
-              LIMIT 3;
+              LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
+              WHERE (ur.id_rol = 33 OR u.id_user IN (61, 19)) AND COALESCE(u.activo, true) = true;
             `);
+
             for (const d of destRes.rows) {
-              if (d.email) {
-                const htmlMail = messageModel.obtenerPlantillaHTML({
-                  titulo: `ITS Aprobado por Jefatura: ${its.folio_its}`,
-                  subtitulo: `Listo para recepción contable y facturación`,
-                  contenido: `<p>El Informe <strong>${its.folio_its}</strong> cuenta con V°B° de Operaciones. Por favor confirma la recepción contable para autorizar el Estado de Pago.</p>`,
-                  botonTexto: 'Revisar Contabilidad',
-                  botonUrl: `https://servidor.leanglobal.cl/lg-gsp-dev/`
-                });
-                await messageModel.enviarYRegistrarCorreo({
-                  para: d.email,
+              const nombreContable = `${d.name_frst || ''} ${d.apellido_pat || ''}`.trim() || 'Contabilidad';
+              const wspMsg = `💼 *Grúas San Pablo — Recepción Contable Requerida*\n\n¡Hola ${nombreContable}! El Informe de Término de Servicio cuenta con V°B° de Operaciones (${usuario.name_frst} ${usuario.apellido_pat || ''}):\n\n📄 *Folio ITS:* ${its.folio_its}\n🏢 *Proyecto:* N° ${id_proyecto}\n\n📲 *Confirma la recepción contable aquí:*`;
+
+              await notificacionService.despacharNotificacion({
+                evento: 'ITS_APROBADO_CONTABILIDAD',
+                canales: d.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+                destinatario: {
+                  nombre: nombreContable,
+                  email: d.email,
+                  telefono: d.fono
+                },
+                deepLink: {
+                  tipoApp: 'WEB',
+                  ruta: 'crm',
+                  params: { id_proyecto, subtab: 'liquidacion', paso: 'factura' }
+                },
+                emailData: {
                   asunto: `[GSP] Recepción Contable Requerida: ${its.folio_its}`,
-                  cuerpo: htmlMail,
-                  esHtml: true
-                });
+                  titulo: `ITS Aprobado por Jefatura: ${its.folio_its}`,
+                  subtitulo: `Visado por ${usuario.name_frst} ${usuario.apellido_pat || ''} — Listo para recepción contable`,
+                  contenido: `<p>El Informe <strong>${its.folio_its}</strong> cuenta con V°B° conforme de Operaciones. Por favor confirma la recepción contable para autorizar el Estado de Pago y Facturación.</p>
+                  <ul>
+                    <li><strong>Monto a Facturar:</strong> $${Number(its.total_ingresos_facturables || 0).toLocaleString('es-CL')} CLP</li>
+                    <li><strong>Margen Final:</strong> ${its.margen_porcentaje || 0}%</li>
+                  </ul>`,
+                  botonTexto: 'REVISAR CONTABILIDAD'
+                },
+                wspData: {
+                  mensaje: wspMsg
+                }
+              });
+            }
+
+            // Notificar al Analista que elaboró
+            if (its.id_user_elaborado && its.id_user_elaborado !== id_user) {
+              const analistaUser = await client.query('SELECT email, name_frst FROM sch_leangsp.tsec_users WHERE id_user = $1', [its.id_user_elaborado]);
+              if (analistaUser.rows.length > 0 && analistaUser.rows[0].email) {
+                notificacionService.despacharEmailSmtp({
+                  para: analistaUser.rows[0].email,
+                  asunto: `[GSP] ✅ ITS ${its.folio_its} Aprobado por Operaciones`,
+                  titulo: `ITS ${its.folio_its} Aprobado`,
+                  subtitulo: `Visado conforme por Jefatura de Operaciones`,
+                  contenido: `<p>El ITS que elaboraste para el proyecto #${id_proyecto} ha sido aprobado por Jefatura y pasó a Contabilidad.</p>`,
+                  botonTexto: 'VER ESTADO',
+                  botonUrl: notificacionService.construirDeepLink({
+                    tipoApp: 'WEB',
+                    ruta: 'crm',
+                    params: { id_proyecto, subtab: 'liquidacion', paso: 'edp' }
+                  })
+                }).catch(e => console.warn('[ITS Mail] Error notificando analista paso 2:', e.message));
               }
             }
           } catch (eMail) {
-            console.warn('[ITS Mail] Error notificando paso 3:', eMail.message);
+            console.warn('[ITS Mail] Error notificando paso 2:', eMail.message);
           }
 
         } else if (orden === 3) {
           nuevoEstadoIts = 'CONCLUIDO';
           await client.query(`
-            UPDATE sch_leangsp.tflw_flows SET estado = 'FINALIZADO', fecha_cierre = CURRENT_TIMESTAMP WHERE id_flow = $1;
+            UPDATE sch_leangsp.tflw_flows SET flow_tmpl_fase = 'FINALIZADO', fecha_cierre = CURRENT_TIMESTAMP WHERE id_flow = $1;
           `, [idFlow]);
 
           await client.query(`
@@ -1002,6 +1117,71 @@ const itsController = {
               fecha_actualizacion = CURRENT_TIMESTAMP
             WHERE id_its = $4;
           `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
+
+          // Notificar únicamente a los 4 roles canónicos definidos:
+          // 1. Analista elaborador (its.id_user_elaborado)
+          // 2. Jefatura que visó (its.id_user_aprobado / logistica@arriendosanpablo.cl)
+          // 3. Contabilidad (usuario firmante / mseguel@arriendosanpablo.cl)
+          // 4. Comercial dueño de la OT (proyecto.id_usuario_creacion)
+          try {
+            const destRes = await client.query(`
+              SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
+              FROM sch_leangsp.tsec_users u
+              WHERE (
+                u.id_user IN (
+                  SELECT UNNEST(ARRAY[
+                    $1::integer,
+                    $2::integer,
+                    $3::integer,
+                    (SELECT id_usuario_creacion FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $4)
+                  ])
+                )
+                OR u.email IN ('mseguel@arriendosanpablo.cl', 'logistica@arriendosanpablo.cl')
+              )
+              AND COALESCE(u.activo, true) = true
+              AND u.email IS NOT NULL;
+            `, [its.id_user_elaborado || null, its.id_user_aprobado || null, id_user || null, id_proyecto]);
+
+            for (const d of destRes.rows) {
+              const nombreDest = `${d.name_frst || ''} ${d.apellido_pat || ''}`.trim() || 'Equipo GSP';
+              const wspMsg = `🎉 *Grúas San Pablo — ITS Concluido y EDP Autorizado*\n\n¡Hola ${nombreDest}! El Informe de Término de Servicio ha sido recibido conforme por Contabilidad (${usuario.name_frst} ${usuario.apellido_pat || ''}):\n\n📄 *Folio ITS:* ${its.folio_its}\n🏢 *Proyecto:* N° ${id_proyecto}\n💰 *Monto Autorizado:* $${Number(its.total_ingresos_facturables || 0).toLocaleString('es-CL')} CLP\n\n🔓 *El Estado de Pago (EDP) ha sido liberado para cobro y facturación:*`;
+
+              await notificacionService.despacharNotificacion({
+                evento: 'ITS_CONCLUIDO_EDP_AUTORIZADO',
+                canales: d.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+                destinatario: {
+                  nombre: nombreDest,
+                  email: d.email,
+                  telefono: d.fono
+                },
+                deepLink: {
+                  tipoApp: 'WEB',
+                  ruta: 'crm',
+                  params: { id_proyecto, subtab: 'liquidacion', paso: 'edp' }
+                },
+                emailData: {
+                  asunto: `[GSP] 🎉 ITS Concluido y EDP Desbloqueado: ${its.folio_its}`,
+                  titulo: `Liquidación Concluida Conforme: ${its.folio_its}`,
+                  subtitulo: `Recibido por Contabilidad (${usuario.name_frst} ${usuario.apellido_pat || ''}) — Listo para Facturar`,
+                  contenido: `<p>El circuito de firmas del Informe de Término de Servicio <strong>${its.folio_its}</strong> ha concluido exitosamente.</p>
+                  <div style="background: #064e3b15; border: 1px solid #05966940; border-radius: 8px; padding: 12px; margin: 12px 0; color: #a7f3d0;">
+                    🔓 <strong>Candado Criptográfico Liberado:</strong> La Carátula Oficial de Estado de Pago (EDP) ha sido desbloqueada para envío al cliente y emisión de Factura DTE.
+                  </div>
+                  <ul>
+                    <li><strong>Venta Neta:</strong> $${Number(its.total_ingresos_facturables || 0).toLocaleString('es-CL')} CLP</li>
+                    <li><strong>Utilidad Bruta:</strong> $${Number(its.utilidad_bruta || 0).toLocaleString('es-CL')} CLP</li>
+                    <li><strong>Margen Operacional:</strong> ${its.margen_porcentaje || 0}%</li>
+                  </ul>`,
+                  botonTexto: 'VER EDP Y FACTURAR'
+                },
+                wspData: {
+                  mensaje: wspMsg
+                }
+              });
+            }
+          } catch (eMail) {
+            console.warn('[ITS Mail] Error notificando conclusión paso 3:', eMail.message);
+          }
         }
 
         await client.query('COMMIT');
@@ -1059,38 +1239,52 @@ const itsController = {
           WHERE id_flow = $1 AND flow_tmpl_step_orden > 1 AND id_flow_stp <> $2;
         `, [idFlow, pasoActual.id_flow_stp]);
 
-        // Despachar correo de alerta al Analista
+        // Despachar alerta omnicanal al Analista para corrección
         try {
           const analistaRes = await client.query(`
-            SELECT u.email, u.name_frst, u.apellido_pat, m.motivo_rechazo
+            SELECT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat, m.motivo_rechazo
             FROM sch_leangsp.tits_informe_termino its
             JOIN sch_leangsp.tsec_users u ON its.id_user_elaborado = u.id_user
             LEFT JOIN sch_leangsp.tflw_motivo_rechazo m ON m.id_motivo_rechazo = $1
             WHERE its.id_its = $2;
           `, [id_motivo_rechazo, id_its]);
 
-          if (analistaRes.rows.length > 0 && analistaRes.rows[0].email) {
+          if (analistaRes.rows.length > 0) {
             const an = analistaRes.rows[0];
-            const htmlMail = messageModel.obtenerPlantillaHTML({
-              titulo: `⚠️ ITS Rechazado: ${its.folio_its}`,
-              subtitulo: `Rechazado por ${usuario.name_frst} ${usuario.apellido_pat}`,
-              contenido: `
-                <p>El Informe de Término de Servicio <strong>${its.folio_its}</strong> ha sido devuelto para corrección.</p>
-                <div style="background: rgba(225, 29, 72, 0.1); border-left: 4px solid #e11d48; padding: 12px; margin: 15px 0;">
-                  <strong>Causal:</strong> ${an.motivo_rechazo || 'Inconsistencia detectada'}<br>
-                  <strong>Observaciones:</strong> ${observaciones}
-                </div>
-                <p>Por favor ingresa a la plataforma para ajustar las jornadas o costos directos y reemitir el documento.</p>
-              `,
-              botonTexto: 'Subsanar ITS en Plataforma',
-              botonUrl: `https://servidor.leanglobal.cl/lg-gsp-dev/`
-            });
+            const nombreAnalista = `${an.name_frst || ''} ${an.apellido_pat || ''}`.trim() || 'Analista Operativo';
+            const causalRechazo = an.motivo_rechazo || 'Inconsistencia detectada';
+            const wspMsg = `⚠️ *Grúas San Pablo — ITS Devuelto para Corrección*\n\n¡Hola ${nombreAnalista}! El Informe de Término de Servicio fue rechazado por ${usuario.name_frst} ${usuario.apellido_pat || ''}:\n\n📄 *Folio ITS:* ${its.folio_its}\n🚫 *Causal:* ${causalRechazo}\n💬 *Observaciones:* ${observaciones}\n\n📲 *Ingresa a corregir el ITS aquí:*`;
 
-            await messageModel.enviarYRegistrarCorreo({
-              para: an.email,
-              asunto: `[GSP ALERTA] ITS Devuelto para Corrección: ${its.folio_its}`,
-              cuerpo: htmlMail,
-              esHtml: true
+            await notificacionService.despacharNotificacion({
+              evento: 'ITS_RECHAZADO_CORRECCION',
+              canales: an.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+              destinatario: {
+                nombre: nombreAnalista,
+                email: an.email,
+                telefono: an.fono
+              },
+              deepLink: {
+                tipoApp: 'WEB',
+                ruta: 'crm',
+                params: { id_proyecto, subtab: 'liquidacion', paso: 'its' }
+              },
+              emailData: {
+                asunto: `[GSP ALERTA] ITS Devuelto para Corrección: ${its.folio_its}`,
+                titulo: `⚠️ ITS Rechazado: ${its.folio_its}`,
+                subtitulo: `Rechazado por ${usuario.name_frst} ${usuario.apellido_pat || ''}`,
+                contenido: `
+                  <p>El Informe de Término de Servicio <strong>${its.folio_its}</strong> ha sido devuelto para corrección.</p>
+                  <div style="background: rgba(225, 29, 72, 0.1); border-left: 4px solid #e11d48; padding: 12px; margin: 15px 0;">
+                    <strong>Causal:</strong> ${causalRechazo}<br>
+                    <strong>Observaciones:</strong> ${observaciones}
+                  </div>
+                  <p>Por favor ingresa a la plataforma para ajustar las jornadas o costos directos y reemitir el documento.</p>
+                `,
+                botonTexto: 'SUBSANAR ITS EN PLATAFORMA'
+              },
+              wspData: {
+                mensaje: wspMsg
+              }
             });
           }
         } catch (eMail) {

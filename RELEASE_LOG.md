@@ -2,6 +2,28 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.69
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 10:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-033`
+- **Especificación Técnica:** `.agents/specs/52_notificaciones_omnichannel_deep_linking_spec.md` y `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Acotamiento de Destinatarios y Gobernanza de Notificaciones):**
+  - **[FEAT/CRM] Modal Generar Requerimiento Acotado a Gestión (Flujo 1):**
+    - Se reemplazó la iteración sobre `usuariosEnroladosFes` por `usuariosNotificablesGestion`, excluyendo del listado a los más de 30 operarios y riggers de faena.
+    - Pre-selección por defecto acotada al Coordinador de Operaciones (`logistica@arriendosanpablo.cl`) y Comercial creador de la preventa (`id_usuario_creacion`).
+  - **[FEAT/CRM] Modal Aprobar Requerimiento con Despacho Estricto a Seleccionados (Flujo 2):**
+    - Listado en modal confinado a personal de gestión y comercial.
+    - Pre-selección por defecto acotada al Comercial creador y Coordinador de Operaciones.
+    - Despacho de notificaciones vía correo electrónico restringido única y exclusivamente a los destinatarios con casillas activas seleccionadas en el modal.
+  - **[BACKEND/ITS] Restricción Canónica en Paso 3 de ITS (Flujo 3):**
+    - Erradicación de la consulta amplia por roles `(31, 32, 33, 35, 36)`.
+    - Envío acotado deterministamente a 4 destinatarios canónicos: Analista elaborador (`its.id_user_elaborado`), Jefatura que visó (`its.id_user_aprobado` / `logistica@arriendosanpablo.cl`), Contabilidad (`mseguel@arriendosanpablo.cl` / `id_user`) y Comercial dueño de la OT (`tpry_proyecto.id_usuario_creacion`).
+  - **[BACKEND/OPS] Validación de Report Diario (Flujo 4):**
+    - Mantenimiento expreso de la copia de notificación al correo del operador asignado (`rep.op_email`) junto con Analista y Logística.
+
+---
+
 ## [Backend API GSP] - Parche Crítico Filtrado PWA (REQ-032)
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-01 18:50:00 (-03:00)
