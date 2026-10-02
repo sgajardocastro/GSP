@@ -2,6 +2,28 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.70
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 12:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-034`
+- **Especificación Técnica:** `.agents/specs/46_informe_termino_servicio_its_spec.md` y `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Conciliación Reactiva ITS, Reparación de Fechas, Flete y Valorización por Ítem):**
+  - **[FEAT/BACKEND] Conciliación Reactiva Automática de Jornadas (`getITS`):**
+    - Se resolvió la causa raíz por la cual un ITS guardado en borrador preliminar mantenía congelada la jornada inicial ignorando los nuevos reportes validados de terreno.
+    - `getITS` consulta deterministamente todos los reportes de `sch_leangsp.tedp_reporte_avance` del proyecto y, si el ITS está en estado editable (`BORRADOR` o `BORRADOR_INCREMENTAL`), incorpora automáticamente los días pendientes (Día 2 y Día 3 de OT 103), actualiza las horas validadas y FES, y sincroniza las 28 horas totales.
+  - **[BUGFIX/FORMAT] Formateo Estricto de Fecha HTML5 (`YYYY-MM-DD`):**
+    - Se corrigió la máscara vacía `dd-mm-aaaa` en los `<input type="date">`. En base de datos se formatea con `TO_CHAR(jd.fecha, 'YYYY-MM-DD')` y en frontend se sanitiza con `.split('T')[0]`.
+  - **[FEAT/FINANZAS] Valorización por Fila y Columnas de Tarifa y Subtotal:**
+    - Se agregaron las columnas `Tarifa $/hr` y `Subtotal ($)` en la tabla de jornadas tanto en el frontend web (`ModalITS.vue`) como en el documento PDF oficial (`itsPdfService.js`).
+    - Cada jornada exhibe su tarifa individual (por defecto `$85.000`) y su subtotal calculado (ej: 9h = `$765.000`, 10h = `$850.000`, 9h = `$765.000`).
+    - Se agregaron las columnas `tarifa_hora` y `subtotal` a la tabla relacional `sch_leangsp.tits_jornada_detalle` para persistencia idempotente en `guardarITS`.
+  - **[BUGFIX/COMERCIAL] Corrección de Flete Pactado ($400.000 Ida + Retorno):**
+    - Se ajustó el parser de líneas CRM para considerar el subtotal de la línea de traslado ($400.000) en lugar de truncar por cantidad unitaria ($200.000). El ITS concilia el flete completo pactado (Ida + Retorno faena, 41 km Pitrufquén).
+    - Venta Neta Facturable Total consolidada: Horas ($2.380.000) + Flete ($400.000) = **$2.780.000**.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.69
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-02 10:15:00 (-03:00)

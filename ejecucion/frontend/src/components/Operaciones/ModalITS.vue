@@ -43,44 +43,61 @@
             <button 
               type="button"
               @click="cambiarContexto('RURAL')" 
+              :disabled="readonly"
               :class="its.tipo_contexto === 'RURAL' ? 'bg-amber-600 text-white shadow font-bold' : 'text-slate-400 hover:text-slate-200'"
               class="px-2.5 py-1 rounded transition-colors"
             >
-              🚜 Rural
+              🌲 Rural
             </button>
           </div>
 
-          <button 
-            type="button"
-            @click="guardar(false)" 
-            :disabled="guardando"
-            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-white/15 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <span>💾</span>
-            <span>{{ guardando ? 'Guardando...' : 'Guardar Avances' }}</span>
-          </button>
+          <!-- Si NO es readonly (Cockpit PMO) -->
+          <template v-if="!readonly">
+            <button 
+              type="button"
+              @click="guardar(false)" 
+              :disabled="guardando"
+              class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-white/15 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <span>💾</span>
+              <span>{{ guardando ? 'Guardando...' : 'Guardar Avances' }}</span>
+            </button>
 
-          <button 
-            v-if="embedded"
-            type="button"
-            @click="guardarYPasarEDP" 
-            :disabled="guardando"
-            class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <span>➔</span>
-            <span>Guardar y Pasar a EDP</span>
-          </button>
+            <button 
+              v-if="embedded"
+              type="button"
+              @click="guardarYPasarEDP" 
+              :disabled="guardando"
+              class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <span>➔</span>
+              <span>Guardar y Pasar a EDP</span>
+            </button>
 
-          <button 
-            v-else
-            type="button"
-            @click="guardar(true)" 
-            :disabled="guardando"
-            class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <span>✅</span>
-            <span>Guardar y Salir</span>
-          </button>
+            <button 
+              v-else
+              type="button"
+              @click="guardar(true)" 
+              :disabled="guardando"
+              class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <span>✅</span>
+              <span>Guardar y Salir</span>
+            </button>
+          </template>
+
+          <!-- Si ES readonly (Kanban de Operaciones) -->
+          <template v-else>
+            <button 
+              v-if="embedded"
+              type="button"
+              @click="$emit('avanzar-edp')" 
+              class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>➔</span>
+              <span>Ver EDP Mandante</span>
+            </button>
+          </template>
 
           <button 
             type="button"
@@ -93,7 +110,7 @@
           </button>
 
           <button 
-            v-if="puedeFirmarPasoActual"
+            v-if="puedeFirmarPasoActual && !readonly"
             type="button"
             @click="abrirModalFes('APRUEBA')"
             class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-900/40 flex items-center gap-1.5 transition-all cursor-pointer animate-pulse"
@@ -113,6 +130,17 @@
           </button>
         </div>
       </header>
+
+      <!-- BANNER READONLY EN KANBAN (Spec 57 / REQ-023) -->
+      <div v-if="readonly" class="bg-blue-950/40 border-b border-blue-500/30 px-5 py-2.5 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-blue-300 font-mono font-bold">
+          <span>👁️</span>
+          <span>MODO CONSULTA EN KANBAN</span>
+        </div>
+        <span class="text-slate-300 text-[11px]">
+          La formulación, edición de costos y firma del ITS se realiza exclusivamente por el Analista de Control de Gestión en el <strong>Cockpit PMO (Torre de Control)</strong>.
+        </span>
+      </div>
 
       <!-- BANNER STEPPER DE FLUJO FES (SPEC 47) -->
       <div class="bg-[#070b16] border-b border-white/10 px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono flex-shrink-0">
@@ -232,6 +260,7 @@
                 @input="recalcularTotales"
                 class="w-full bg-slate-950 border border-cyan-500/40 rounded px-2 py-1 font-mono font-bold text-cyan-300 text-xs mt-0.5"
               />
+              <span class="text-[9px] text-cyan-400/80 block mt-0.5 font-mono">Pactado (Ida + Retorno faena)</span>
             </div>
 
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-white/10">
@@ -304,6 +333,8 @@
                   <th class="p-2.5">Colación</th>
                   <th class="p-2.5">Hrs Reales</th>
                   <th class="p-2.5 text-amber-300">Hrs Report</th>
+                  <th class="p-2.5 text-blue-300 text-right">Tarifa $/hr</th>
+                  <th class="p-2.5 text-emerald-300 text-right">Subtotal</th>
                   <th class="p-2.5">N° Report</th>
                   <th class="p-2.5 text-center">V°B°</th>
                   <th class="p-2.5 text-center">Acciones</th>
@@ -321,7 +352,7 @@
                   </td>
 
                   <td class="p-2">
-                    <select v-model="j.tipo_servicio" class="bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-white">
+                    <select v-model="j.tipo_servicio" @change="calcularHorasReales(j)" class="bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-white">
                       <option value="Hora">Hora</option>
                       <option value="Mensual">Mensual</option>
                       <option value="Fijo">Fijo</option>
@@ -338,7 +369,7 @@
                   </td>
 
                   <td class="p-2">
-                    <input type="time" v-model="j.hora_salida" class="bg-slate-950 border border-white/10 rounded px-1 py-1 text-xs text-white" />
+                    <input type="time" v-model="j.hora_salida" @change="calcularHorasReales(j)" class="bg-slate-950 border border-white/10 rounded px-1 py-1 text-xs text-white" />
                   </td>
 
                   <td class="p-2">
@@ -350,7 +381,7 @@
                   </td>
 
                   <td class="p-2">
-                    <input type="time" v-model="j.hora_retorno" class="bg-slate-950 border border-white/10 rounded px-1 py-1 text-xs text-white" />
+                    <input type="time" v-model="j.hora_retorno" @change="calcularHorasReales(j)" class="bg-slate-950 border border-white/10 rounded px-1 py-1 text-xs text-white" />
                   </td>
 
                   <td class="p-2">
@@ -377,6 +408,20 @@
                       @input="recalcularTotales" 
                       class="w-16 bg-slate-950 border border-amber-500/50 rounded px-2 py-1 font-mono font-bold text-amber-300 text-xs text-right"
                     />
+                  </td>
+
+                  <td class="p-2 text-right">
+                    <input 
+                      type="number" 
+                      step="1000" 
+                      v-model.number="j.tarifa_hora" 
+                      @input="recalcularTotales" 
+                      class="w-20 bg-slate-950 border border-blue-500/40 rounded px-1.5 py-1 font-mono font-bold text-blue-300 text-xs text-right"
+                    />
+                  </td>
+
+                  <td class="p-2 font-mono font-bold text-emerald-400 text-right">
+                    {{ formatMoneda(j.subtotal) }}
                   </td>
 
                   <td class="p-2">
@@ -410,7 +455,7 @@
                 </tr>
 
                 <tr v-if="jornadas.length === 0">
-                  <td colspan="13" class="p-6 text-center text-slate-500 font-sans text-xs">
+                  <td colspan="15" class="p-6 text-center text-slate-500 font-sans text-xs">
                     No hay jornadas registradas. Presione "+ Agregar Jornada" para incorporar días de faena.
                   </td>
                 </tr>
@@ -428,8 +473,14 @@
                   <td class="p-2.5 font-black text-amber-300 text-sm">
                     {{ its.total_horas_report.toFixed(1) }} hrs
                   </td>
-                  <td colspan="3" class="p-2.5 text-emerald-400 font-bold">
-                    Subtotal Horas: {{ formatMoneda(its.total_ingresos_horas) }}
+                  <td class="p-2.5 text-slate-400 text-right text-[11px]">
+                    Tarifa Base: {{ formatMoneda(its.valor_hora_pactado) }}
+                  </td>
+                  <td class="p-2.5 font-black text-emerald-400 text-right text-sm">
+                    {{ formatMoneda(its.total_ingresos_horas) }}
+                  </td>
+                  <td colspan="3" class="p-2.5 text-slate-400 text-[11px]">
+                    + Flete: <strong class="text-cyan-300">{{ formatMoneda(its.total_ingresos_fletes) }}</strong> = Total: <strong class="text-emerald-300">{{ formatMoneda(its.total_ingresos_facturables) }}</strong>
                   </td>
                 </tr>
               </tfoot>
@@ -1204,6 +1255,10 @@ const props = defineProps({
   idProyecto: {
     type: [Number, String],
     required: true
+  },
+  readonly: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -1485,7 +1540,24 @@ const cargarITS = async () => {
       its.value = { ...its.value, ...res.data.data.its };
       crmPensiones.value = res.data.data.crm_pensiones || res.data.data.proyecto?.json_field?.crm_v1?.pensiones || {};
       categoriasSinCosto.value = res.data.data.its?.categorias_sin_costo || {};
-      jornadas.value = res.data.data.jornadas || [];
+      jornadas.value = (res.data.data.jornadas || []).map(j => {
+        let f = j.fecha;
+        if (f) {
+          if (typeof f === 'string') {
+            f = f.split('T')[0];
+          } else if (f instanceof Date) {
+            f = f.toISOString().split('T')[0];
+          }
+        }
+        const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (res.data.data.its?.valor_hora_pactado || 0));
+        const hrs = parseFloat(j.horas_report || 0);
+        return {
+          ...j,
+          fecha: f || '',
+          tarifa_hora: tarifa,
+          subtotal: parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (hrs * tarifa))
+        };
+      });
       costos.value = {
         combustible: res.data.data.costos?.combustible || [],
         movilizacion: res.data.data.costos?.movilizacion || [],
@@ -1698,23 +1770,34 @@ const confirmarFirmaFes = async () => {
 
 // Motor Reactivo de Cálculos
 const recalcularTotales = () => {
-  // 1. Horas facturables
+  // 1. Horas facturables y Subtotal por Jornada
   let totalHrs = 0;
+  let totalIngHoras = 0;
+  const vHoraDefault = parseFloat(its.value.valor_hora_pactado || 0);
+
   jornadas.value.forEach(j => {
+    if (j.tarifa_hora === undefined || j.tarifa_hora === null || isNaN(j.tarifa_hora)) {
+      j.tarifa_hora = vHoraDefault;
+    }
+    const hrs = parseFloat(j.horas_report || 0);
+    const tarifa = parseFloat(j.tarifa_hora || 0);
+    j.subtotal = hrs * tarifa;
+
     if (!j.es_oculta) {
-      totalHrs += parseFloat(j.horas_report || 0);
+      totalHrs += hrs;
+      totalIngHoras += j.subtotal;
     }
   });
+
   its.value.total_horas_report = totalHrs;
+  its.value.total_ingresos_horas = totalIngHoras;
 
   // 2. Ingresos
-  const vHora = parseFloat(its.value.valor_hora_pactado || 0);
   const vFlete = parseFloat(its.value.valor_flete_pactado || 0);
-  its.value.total_ingresos_horas = totalHrs * vHora;
   its.value.total_ingresos_fletes = vFlete;
   its.value.total_ingresos_facturables = its.value.total_ingresos_horas + vFlete;
 
-  // 3. Costos (suma de las 8 categorías)
+  // 3. Costos (suma de las 9 categorías)
   let totalCostos = 0;
   Object.keys(costos.value).forEach(cat => {
     (costos.value[cat] || []).forEach(item => {
@@ -1732,17 +1815,53 @@ const recalcularTotales = () => {
   }
 };
 
+const calcularDiferenciaMinutos = (hInicio, hFin) => {
+  if (!hInicio || !hFin) return 0;
+  const [h1, m1] = hInicio.split(':').map(Number);
+  const [h2, m2] = hFin.split(':').map(Number);
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+  let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (diff < 0) diff += 24 * 60; // soporte cruce de medianoche
+  return diff;
+};
+
 const calcularHorasReales = (j) => {
-  if (!j.hora_llegada || !j.hora_termino) return;
-  const [h1, m1] = j.hora_llegada.split(':').map(Number);
-  const [h2, m2] = j.hora_termino.split(':').map(Number);
-  let minDiff = (h2 * 60 + m2) - (h1 * 60 + m1);
-  if (minDiff < 0) minDiff += 24 * 60;
-  minDiff -= (j.colacion_minutos || 0);
-  j.horas_reales = Math.max(0, parseFloat((minDiff / 60).toFixed(1)));
-  if (!j.horas_report || j.horas_report === 0) {
-    j.horas_report = Math.max(j.horas_reales, its.value.horas_minimas_pactadas || 8.0);
+  let minTotales = 0;
+  const tipo = j.tipo_servicio || 'Hora';
+
+  if (tipo === 'Flete Solo Ida') {
+    // Tramo de carretera de ida: Salida de Patio a Llegada a Faena
+    minTotales = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    // Desacople de mínimos de faena: flete cobra horas efectivas o tarifa plana
+    if (!j.horas_report || j.horas_report === 0) {
+      j.horas_report = j.horas_reales;
+    }
+  } else if (tipo === 'Flete Solo Retorno') {
+    // Tramo de carretera de regreso: Término de Faena a Retorno a Patio
+    minTotales = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    if (!j.horas_report || j.horas_report === 0) {
+      j.horas_report = j.horas_reales;
+    }
+  } else if (tipo === 'Flete Ida y Retorno') {
+    // Ambos tramos carreteros
+    const minIda = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
+    const minRetorno = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
+    minTotales = minIda + minRetorno;
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    if (!j.horas_report || j.horas_report === 0) {
+      j.horas_report = j.horas_reales;
+    }
+  } else {
+    // Faena normal (Hora, Mensual, Fijo): Llegada a Término descontando colación
+    minTotales = Math.max(0, calcularDiferenciaMinutos(j.hora_llegada, j.hora_termino) - (j.colacion_minutos || 0));
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    if (!j.horas_report || j.horas_report === 0) {
+      j.horas_report = Math.max(j.horas_reales, its.value.horas_minimas_pactadas || 4.0);
+    }
   }
+
   recalcularTotales();
 };
 
@@ -1753,6 +1872,8 @@ const toggleOcultarFila = (j) => {
 
 const agregarJornada = () => {
   const hoy = new Date().toISOString().split('T')[0];
+  const tarifa = parseFloat(its.value.valor_hora_pactado || 0);
+  const hrs = parseFloat(its.value.horas_minimas_pactadas || 8.0);
   jornadas.value.push({
     id_jornada: null,
     id_its: its.value.id_its,
@@ -1766,7 +1887,9 @@ const agregarJornada = () => {
     hora_retorno: '19:00',
     colacion_minutos: 60,
     horas_reales: 8.5,
-    horas_report: its.value.horas_minimas_pactadas || 8.0,
+    horas_report: hrs,
+    tarifa_hora: tarifa,
+    subtotal: hrs * tarifa,
     numero_report: '',
     es_oculta: false,
     vb_conciliado: false,

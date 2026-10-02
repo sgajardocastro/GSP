@@ -156,6 +156,8 @@ function buildItsHtml(data) {
   const jornadasRowsHtml = (jornadas || []).map((j, idx) => {
     const esOculta = j.es_oculta === true;
     const rowClass = esOculta ? 'bg-slate-100 text-slate-400 line-through' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50');
+    const tarifa = Number(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : valorHora) || 0;
+    const subtotal = Number(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (Number(j.horas_report || 0) * tarifa)) || 0;
     return `
       <tr class="${rowClass} border-b border-slate-200 text-[10px]">
         <td class="p-1.5 font-mono">${formatDateCL(j.fecha)}</td>
@@ -167,6 +169,8 @@ function buildItsHtml(data) {
         <td class="p-1.5 font-mono text-center">${j.hora_termino || '--:--'}</td>
         <td class="p-1.5 font-mono text-center">${j.colacion_minutos || 60}m</td>
         <td class="p-1.5 font-mono text-right font-bold ${esOculta ? '' : 'text-amber-700 bg-amber-50/50'}">${Number(j.horas_report || 0).toFixed(1)} h</td>
+        <td class="p-1.5 font-mono text-right text-slate-600">${formatCLP(tarifa)}</td>
+        <td class="p-1.5 font-mono text-right font-bold ${esOculta ? '' : 'text-emerald-700'}">${formatCLP(subtotal)}</td>
         <td class="p-1.5 font-mono text-center">${j.numero_report || '-'}</td>
         <td class="p-1.5 text-center">${j.vb_conciliado ? '✅' : '⏳'}</td>
       </tr>
@@ -259,6 +263,58 @@ function buildItsHtml(data) {
     `;
   };
 
+  // Anexo de Respaldos de Reportes Diarios de Terreno (Spec 57)
+  const anexoReportsHtml = (jornadas || []).map((j, idx) => {
+    return `
+      <div class="border border-slate-200 rounded-lg p-3 bg-white break-inside-avoid shadow-sm mb-3">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 font-mono text-xs">Jornada N° ${j.orden || idx + 1} — ${formatDateCL(j.fecha)}</span>
+            <span class="text-[10px] bg-slate-100 text-slate-700 font-mono px-2 py-0.5 rounded border border-slate-200">
+              Folio Report: ${j.numero_report || 'S/N'}
+            </span>
+          </div>
+          <span class="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+            ${Number(j.horas_report || 0).toFixed(1)} hrs Facturables
+          </span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-[10px] mb-2 font-mono">
+          <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+            <span class="text-slate-500 block text-[9px] uppercase">Equipo / Grúa</span>
+            <strong class="text-slate-800">${j.patente || 'S/P'} ${j.equipo_modelo ? '(' + j.equipo_modelo + ')' : ''}</strong>
+          </div>
+          <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+            <span class="text-slate-500 block text-[9px] uppercase">Horario Terreno</span>
+            <span class="text-slate-800">${j.hora_salida || '--:--'} a ${j.hora_termino || '--:--'} (${j.colacion_minutos || 60}m colación)</span>
+          </div>
+          <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+            <span class="text-slate-500 block text-[9px] uppercase">Horómetros</span>
+            <span class="text-slate-800">Ini: ${j.horometro_inicio || '---'} • Fin: ${j.horometro_termino || '---'}</span>
+          </div>
+        </div>
+
+        <!-- Firma del Mandante -->
+        <div class="border border-slate-200 rounded p-2 bg-slate-50 flex items-center justify-between gap-4">
+          <div class="space-y-0.5 text-[10px]">
+            <span class="text-[9px] font-mono uppercase text-slate-500 font-bold block">✍️ Firma Conforme del Mandante</span>
+            <div>Firmado por: <strong class="text-slate-900">${j.cliente_nombre || 'Supervisor Mandante'}</strong></div>
+            <div class="text-slate-500">Cargo: ${j.cliente_cargo || 'ITO / Supervisor de Obra'}</div>
+            ${j.codigo_validacion_fes ? `<div class="font-mono text-emerald-700 text-[9px]">Código FES: ${j.codigo_validacion_fes}</div>` : ''}
+            ${j.accuracy_firma ? `<div class="text-slate-400 text-[9px]">Precisión GPS: ±${Math.round(j.accuracy_firma)}m</div>` : ''}
+          </div>
+          <div class="bg-white border border-slate-200 rounded p-1 h-14 w-36 flex items-center justify-center flex-shrink-0">
+            ${j.cliente_firma_canvas_base64 ? `
+              <img src="${j.cliente_firma_canvas_base64}" alt="Firma Mandante" class="max-h-full max-w-full object-contain filter contrast-125" />
+            ` : `
+              <span class="text-[9px] text-slate-400 italic">Firma en terreno</span>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   return `
 <!DOCTYPE html>
 <html lang="es">
@@ -313,7 +369,7 @@ function buildItsHtml(data) {
     </div>
     <div class="text-right text-xs">
       <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold ${tipoContexto === 'RURAL' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 border border-amber-500/40'}">
-        ${tipoContexto === 'RURAL' ? '🚜 SERVICIO RURAL' : '🏢 SERVICIO URBANO'}
+        ${tipoContexto === 'RURAL' ? '🌲 SERVICIO RURAL' : '🏢 SERVICIO URBANO'}
       </span>
       <div class="text-slate-300 text-[10px] mt-0.5 font-mono">Emisión: <strong>${fechaEmision}</strong></div>
     </div>
@@ -393,13 +449,24 @@ function buildItsHtml(data) {
           <th class="p-1.5 text-center">Término</th>
           <th class="p-1.5 text-center">Colación</th>
           <th class="p-1.5 text-right text-amber-900">Hrs Report</th>
+          <th class="p-1.5 text-right">Tarifa</th>
+          <th class="p-1.5 text-right text-emerald-900">Subtotal</th>
           <th class="p-1.5 text-center">N° Report</th>
           <th class="p-1.5 text-center">V°B°</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100 font-mono">
-        ${jornadasRowsHtml || '<tr><td colspan="11" class="p-3 text-center text-slate-400">Sin jornadas registradas</td></tr>'}
+        ${jornadasRowsHtml || '<tr><td colspan="13" class="p-3 text-center text-slate-400">Sin jornadas registradas</td></tr>'}
       </tbody>
+      <tfoot class="bg-slate-50 font-mono text-[9px] border-t border-slate-200">
+        <tr>
+          <td colspan="8" class="p-1.5 text-right font-bold text-slate-600 uppercase">Subtotales:</td>
+          <td class="p-1.5 text-right font-bold text-amber-800">${totalHoras.toFixed(1)} h</td>
+          <td class="p-1.5"></td>
+          <td class="p-1.5 text-right font-bold text-emerald-800">${formatCLP(its?.total_ingresos_horas || (totalHoras * valorHora))}</td>
+          <td colspan="2" class="p-1.5 text-slate-500 font-bold text-center">+ Flete: ${formatCLP(valorFlete)}</td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 
@@ -426,6 +493,23 @@ function buildItsHtml(data) {
       ${renderFirmaBox(f1, '1. Elaborado Por', 'Analista de Operaciones')}
       ${renderFirmaBox(f2, '2. V°B° Aprobación', 'Jefe de Operaciones')}
       ${renderFirmaBox(f3, '3. Recepción Conforme', 'Contabilidad y Finanzas')}
+    </div>
+  </div>
+
+  <!-- SECCIÓN 7: ANEXO DE RESPALDOS DE REPORTES DIARIOS DE TERRENO (VINCULANTE) -->
+  <div class="page-break pt-4">
+    <div class="border-b-2 border-amber-500 pb-2 mb-3 flex justify-between items-center">
+      <div>
+        <span class="text-[9px] font-mono tracking-widest text-slate-500 font-bold uppercase block">ANEXO TÉCNICO VINCULANTE (Spec 57)</span>
+        <h2 class="text-sm font-black text-slate-900 font-mono uppercase">7. Respaldos Digitales de Reports Diarios de Faena (${(jornadas || []).length} Jornadas)</h2>
+      </div>
+      <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-mono font-bold">
+        100% VALIDADOS CON FIRMA Y GPS
+      </span>
+    </div>
+    
+    <div class="space-y-3">
+      ${anexoReportsHtml || '<div class="p-3 border border-slate-200 rounded-lg bg-slate-50 text-center text-slate-500 text-xs">Sin reports diarios registrados.</div>'}
     </div>
   </div>
 

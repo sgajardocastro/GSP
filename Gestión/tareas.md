@@ -475,6 +475,12 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Flujo 3 (ITS Paso 3 - Conclusión y Liberación EDP):** Erradicación de la consulta masiva por roles `(31, 32, 33, 35, 36)` en `itsController.js`. Restricción determinista a los 4 roles canónicos del proceso: Analista elaborador (`its.id_user_elaborado`), Jefatura que visó (`its.id_user_aprobado` / `logistica@arriendosanpablo.cl`), Contabilidad firmante (`id_user` / `mseguel@arriendosanpablo.cl`) y Comercial dueño de la OT (`tpry_proyecto.id_usuario_creacion`).
   - **Flujo 4 (Validación de Report Diario por Analista):** Mantenimiento explícito del correo al operador (`rep.op_email`) junto con Analista validador y Logística/Jefatura.
 
+* [x] **[Conciliación Reactiva ITS, Reparación de Fechas, Flete y Valorización por Ítem - REQ-034 / v1.0.70 / Spec 46 & 57]:**
+  - **Conciliación Reactiva en `getITS` (`itsController.js`):** Auto-sincronización de todos los reportes diarios de terreno (`tedp_reporte_avance`) para ITS en estado editable (`BORRADOR`), incorporando en memoria e insertando las jornadas de días posteriores (Día 2 de 10h y Día 3 de 9h de OT 103) totalizando las 28 horas facturables.
+  - **Reparación de Fechas Vacías en `<input type="date">`:** Formateo estricto `TO_CHAR(jd.fecha, 'YYYY-MM-DD')` en SQL y sanitización `.split('T')[0]` en `ModalITS.vue`, erradicando el placeholder vacío `dd-mm-aaaa`.
+  - **Valorización por Fila y Columnas de Tarifa y Subtotal:** Inclusión de `Tarifa $/hr` y `Subtotal ($)` en la tabla de jornadas del modal y en el PDF oficial (`itsPdfService.js`), con nuevas columnas relacionales en `tits_jornada_detalle`.
+  - **Flete Comercial Completo ($400.000):** Parser de CRM corregido para tomar el subtotal del traslado cotizado (Ida + Retorno faena, 41 km Pitrufquén), cuadrando la venta neta total en `$2.780.000`. `COMPLETADO Y VERIFICADO`.
+
 * [ ] **[Backlog: Modelo de Servicios Recurrentes y Modo Arriendo Mensual - REQ-030 / Spec 57]:**
   - Arquitectura para gestionar servicios de largo aliento bajo el mismo negocio/proyecto con cortes de facturación periódicos (EDP mensual) sin duplicar OTs.
 

@@ -51,7 +51,66 @@ const itsController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 1.2 Buscar si ya existe cabecera de ITS relacional
+      // 1.2 Parámetros comerciales de CRM
+      const crmV1 = proyecto.json_field?.crm_v1 || {};
+      const lineas = crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
+      let valorHoraPactado = 0;
+      let valorFletePactado = 0;
+      let horasMinimas = 8.0;
+
+      lineas.forEach(l => {
+        const desc = (l.descripcion || l.concepto || l.tipo || '').toUpperCase();
+        const unid = (l.unidad || l.unidad_cobro || '').toUpperCase();
+        const subcat = (l.subcategoria || '').toUpperCase();
+        const precio = parseFloat(l.valorUnitario || l.precio_unitario || l.valor_unitario || l.tarifa || 0);
+        const sub = parseFloat(l.subtotal || 0);
+
+        if (l.tipo === 'TRASLADOS' || unid.includes('FLETE') || unid.includes('TRASLADO') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE') || subcat.includes('CAMA BAJA')) {
+          valorFletePactado += (sub > 0 ? sub : (precio * parseFloat(l.cantidad || 1)));
+        } else if (precio > 0 && valorHoraPactado === 0) {
+          valorHoraPactado = precio;
+          if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas) > 0) {
+            horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas);
+          }
+        }
+      });
+
+      const tipoContexto = (crmV1.regimen_operacional || (parseFloat(crmV1.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
+
+      // Consultar todos los reports diarios de terreno desde sch_leangsp.tedp_reporte_avance con respaldos
+      const repRes = await pool.query(`
+        SELECT 
+          ra.id_reporte_avance,
+          TO_CHAR(ra.fecha_reporte, 'YYYY-MM-DD') AS fecha_reporte_fmt,
+          ra.fecha_reporte,
+          ra.horas_operadas,
+          ra.horas_facturables,
+          ra.horas_colacion,
+          ra.token_report,
+          ra.estado_reporte,
+          ra.cliente_nombre,
+          ra.cliente_cargo,
+          ra.cliente_firma_canvas_base64,
+          ra.codigo_validacion_fes,
+          ra.accuracy_firma,
+          ra.latitud_inicio_servicio,
+          ra.longitud_inicio_servicio,
+          ra.horometro_inicio,
+          ra.horometro_termino,
+          ra.odometro_inicio,
+          ra.odometro_termino,
+          COALESCE(e.patente, 'S/P') AS patente,
+          COALESCE(e.modelo, '') AS equipo_modelo,
+          COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
+          TO_CHAR(ra.fecha_inicio_servicio, 'HH24:MI') AS hora_inicio,
+          TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
+        FROM sch_leangsp.tedp_reporte_avance ra
+        LEFT JOIN sch_leangsp.tequ_equipo e ON ra.id_equipo = e.id_equipo
+        WHERE ra.id_proyecto = $1
+        ORDER BY ra.fecha_reporte ASC, ra.id_reporte_avance ASC;
+      `, [id_proyecto]);
+
+      // 1.3 Buscar si ya existe cabecera de ITS relacional
       const itsRes = await pool.query(`
         SELECT * FROM sch_leangsp.tits_informe_termino
         WHERE id_proyecto = $1
@@ -80,7 +139,27 @@ const itsController = {
         // Cargar jornadas relacionales con respaldos de firma de terreno y GPS
         const jorRes = await pool.query(`
           SELECT 
-            jd.*,
+            jd.id_jornada,
+            jd.id_its,
+            jd.id_reporte_avance,
+            TO_CHAR(jd.fecha, 'YYYY-MM-DD') AS fecha,
+            jd.numero_ot,
+            jd.id_equipo,
+            jd.patente,
+            jd.tipo_servicio,
+            jd.hora_salida,
+            jd.hora_llegada,
+            jd.hora_termino,
+            jd.hora_retorno,
+            jd.colacion_minutos,
+            jd.horas_reales,
+            jd.horas_report,
+            COALESCE(jd.tarifa_hora, $2) AS tarifa_hora,
+            COALESCE(jd.subtotal, (jd.horas_report * COALESCE(jd.tarifa_hora, $2))) AS subtotal,
+            jd.numero_report,
+            jd.es_oculta,
+            jd.vb_conciliado,
+            jd.orden,
             ra.cliente_firma_canvas_base64,
             ra.cliente_nombre,
             ra.cliente_cargo,
@@ -98,7 +177,7 @@ const itsController = {
           LEFT JOIN sch_leangsp.tequ_equipo e ON jd.id_equipo = e.id_equipo
           WHERE jd.id_its = $1
           ORDER BY jd.orden ASC, jd.fecha ASC, jd.id_jornada ASC;
-        `, [its.id_its]);
+        `, [its.id_its, its.valor_hora_pactado || valorHoraPactado]);
         jornadas = jorRes.rows;
 
         // Cargar costos relacionales
@@ -120,32 +199,91 @@ const itsController = {
           else if (catKey === 'combustible') costos.combustible.push(c);
           else if (catKey === 'movilizacion') costos.movilizacion.push(c);
         });
+
+        // Conciliación reactiva para ITS editable (BORRADOR o BORRADOR_INCREMENTAL)
+        if (its.estado_its === 'BORRADOR' || its.estado_its === 'BORRADOR_INCREMENTAL') {
+          // 1. Asegurar flete pactado desde propuesta comercial CRM ($400.000 para OT 014 con ida y regreso)
+          if (valorFletePactado > 0 && (parseFloat(its.valor_flete_pactado || 0) < valorFletePactado || parseFloat(its.valor_flete_pactado || 0) === 200000)) {
+            its.valor_flete_pactado = valorFletePactado;
+            its.total_ingresos_fletes = valorFletePactado;
+          }
+          if (valorHoraPactado > 0 && (!its.valor_hora_pactado || parseFloat(its.valor_hora_pactado) === 0)) {
+            its.valor_hora_pactado = valorHoraPactado;
+          }
+
+          // 2. Conciliar reportes diarios de terreno
+          repRes.rows.forEach(r => {
+            const existing = jornadas.find(j => j.id_reporte_avance && parseInt(j.id_reporte_avance) === parseInt(r.id_reporte_avance));
+            if (existing) {
+              if (r.estado_reporte === 'VALIDADO_ANALISTA') {
+                existing.vb_conciliado = true;
+                const hrs = parseFloat(r.horas_facturables || r.horas_operadas || 0);
+                if (hrs > 0) existing.horas_report = hrs;
+              }
+              if (!existing.tarifa_hora) existing.tarifa_hora = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
+              existing.subtotal = parseFloat(existing.horas_report || 0) * parseFloat(existing.tarifa_hora || 0);
+              if (!existing.cliente_firma_canvas_base64 && r.cliente_firma_canvas_base64) existing.cliente_firma_canvas_base64 = r.cliente_firma_canvas_base64;
+              if (r.codigo_validacion_fes) existing.codigo_validacion_fes = r.codigo_validacion_fes;
+              if (r.cliente_nombre) existing.cliente_nombre = r.cliente_nombre;
+              if (r.cliente_cargo) existing.cliente_cargo = r.cliente_cargo;
+              if (!existing.patente || existing.patente === 'S/P') existing.patente = r.patente;
+              if (!existing.equipo_modelo) existing.equipo_modelo = r.equipo_modelo;
+              if (existing.fecha && typeof existing.fecha === 'string' && existing.fecha.includes('T')) {
+                existing.fecha = existing.fecha.split('T')[0];
+              }
+            } else {
+              // Incorporar reporte que ingresó a terreno posteriormente
+              const hrsFact = parseFloat(r.horas_facturables || r.horas_operadas || its.horas_minimas_pactadas || horasMinimas || 8.0);
+              const tarifa = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
+              jornadas.push({
+                id_jornada: null,
+                id_its: its.id_its,
+                id_reporte_avance: r.id_reporte_avance,
+                fecha: r.fecha_reporte_fmt || (r.fecha_reporte ? new Date(r.fecha_reporte).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+                id_equipo: r.id_equipo,
+                patente: r.patente,
+                equipo_modelo: r.equipo_modelo,
+                tipo_servicio: 'Hora',
+                hora_salida: r.hora_inicio || '08:00',
+                hora_llegada: '08:30',
+                hora_termino: r.hora_termino || '18:00',
+                hora_retorno: '19:00',
+                colacion_minutos: r.horas_colacion ? Math.round(parseFloat(r.horas_colacion) * 60) : 60,
+                horas_reales: parseFloat(r.horas_operadas || 0),
+                horas_report: hrsFact,
+                tarifa_hora: tarifa,
+                subtotal: hrsFact * tarifa,
+                numero_report: r.token_report ? r.token_report.slice(0, 12) : `REP-${r.id_reporte_avance}`,
+                es_oculta: false,
+                vb_conciliado: r.estado_reporte === 'VALIDADO_ANALISTA',
+                cliente_firma_canvas_base64: r.cliente_firma_canvas_base64,
+                cliente_nombre: r.cliente_nombre,
+                cliente_cargo: r.cliente_cargo,
+                codigo_validacion_fes: r.codigo_validacion_fes,
+                accuracy_firma: r.accuracy_firma,
+                latitud_inicio_servicio: r.latitud_inicio_servicio,
+                longitud_inicio_servicio: r.longitud_inicio_servicio,
+                horometro_inicio: r.horometro_inicio,
+                horometro_termino: r.horometro_termino,
+                orden: jornadas.length + 1
+              });
+            }
+          });
+
+          // Recalcular totales reactivos en cabecera
+          const sumHrs = jornadas.filter(j => !j.es_oculta).reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+          const sumIngresos = jornadas.filter(j => !j.es_oculta).reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
+          its.total_horas_report = sumHrs;
+          its.total_ingresos_horas = sumIngresos;
+          its.total_ingresos_facturables = sumIngresos + (parseFloat(its.total_ingresos_fletes) || 0);
+          its.utilidad_bruta = its.total_ingresos_facturables - (parseFloat(its.total_costos_operacionales) || 0);
+          if (its.total_ingresos_facturables > 0) {
+            its.margen_porcentaje = (its.utilidad_bruta / its.total_ingresos_facturables) * 100;
+          }
+        }
       } else {
         // AUTO-INICIALIZAR ITS CANDIDATO (Borrador inicial relacional)
-        const crmV1 = proyecto.json_field?.crm_v1 || {};
-        const lineas = crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
-        let valorHoraPactado = 0;
-        let valorFletePactado = 0;
-        let horasMinimas = 8.0;
-
-        lineas.forEach(l => {
-          const desc = (l.descripcion || l.concepto || l.tipo || '').toUpperCase();
-          const unid = (l.unidad || l.unidad_cobro || '').toUpperCase();
-          const subcat = (l.subcategoria || '').toUpperCase();
-          const precio = parseFloat(l.valorUnitario || l.precio_unitario || l.valor_unitario || l.tarifa || 0);
-
-          if (l.tipo === 'TRASLADOS' || unid.includes('FLETE') || unid.includes('TRASLADO') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE') || subcat.includes('CAMA BAJA')) {
-            valorFletePactado += precio * parseFloat(l.cantidad || 1);
-          } else if (precio > 0 && valorHoraPactado === 0) {
-            valorHoraPactado = precio;
-            if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas) > 0) {
-              horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas);
-            }
-          }
-        });
-
-        const tipoContexto = (crmV1.regimen_operacional || (parseFloat(crmV1.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
-
         const folioSugerido = `ITS-${proyecto.codi_proyecto || proyecto.id_proyecto}-001`;
 
         its = {
@@ -170,48 +308,19 @@ const itsController = {
           estado_its: 'BORRADOR'
         };
 
-        // Extraer reports diarios de terreno desde sch_leangsp.tedp_reporte_avance con respaldos
-        const repRes = await pool.query(`
-          SELECT 
-            ra.id_reporte_avance,
-            ra.fecha_reporte,
-            ra.horas_operadas,
-            ra.horas_facturables,
-            ra.horas_colacion,
-            ra.token_report,
-            ra.estado_reporte,
-            ra.cliente_nombre,
-            ra.cliente_cargo,
-            ra.cliente_firma_canvas_base64,
-            ra.codigo_validacion_fes,
-            ra.accuracy_firma,
-            ra.latitud_inicio_servicio,
-            ra.longitud_inicio_servicio,
-            ra.horometro_inicio,
-            ra.horometro_termino,
-            ra.odometro_inicio,
-            ra.odometro_termino,
-            COALESCE(e.patente, 'S/P') AS patente,
-            COALESCE(e.modelo, '') AS equipo_modelo,
-            COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
-            TO_CHAR(ra.fecha_inicio_servicio, 'HH24:MI') AS hora_inicio,
-            TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
-          FROM sch_leangsp.tedp_reporte_avance ra
-          LEFT JOIN sch_leangsp.tequ_equipo e ON ra.id_equipo = e.id_equipo
-          WHERE ra.id_proyecto = $1
-          ORDER BY ra.fecha_reporte ASC, ra.id_reporte_avance ASC;
-        `, [id_proyecto]);
-
         let ordenIdx = 1;
         let sumHrs = 0;
+        let sumIngresos = 0;
         repRes.rows.forEach(r => {
           const hrsFact = parseFloat(r.horas_facturables || r.horas_operadas || horasMinimas);
+          const subtotalFila = hrsFact * valorHoraPactado;
           sumHrs += hrsFact;
+          sumIngresos += subtotalFila;
           jornadas.push({
             id_jornada: null,
             id_its: null,
             id_reporte_avance: r.id_reporte_avance,
-            fecha: r.fecha_reporte,
+            fecha: r.fecha_reporte_fmt || (r.fecha_reporte ? new Date(r.fecha_reporte).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
             numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
             id_equipo: r.id_equipo,
             patente: r.patente,
@@ -224,6 +333,8 @@ const itsController = {
             colacion_minutos: r.horas_colacion ? Math.round(parseFloat(r.horas_colacion) * 60) : 60,
             horas_reales: parseFloat(r.horas_operadas || 0),
             horas_report: hrsFact,
+            tarifa_hora: valorHoraPactado,
+            subtotal: subtotalFila,
             numero_report: r.token_report ? r.token_report.slice(0, 12) : `REP-${r.id_reporte_avance}`,
             es_oculta: false,
             vb_conciliado: r.estado_reporte === 'VALIDADO_ANALISTA',
@@ -242,7 +353,7 @@ const itsController = {
 
         // Actualizar totales calculados iniciales
         its.total_horas_report = sumHrs;
-        its.total_ingresos_horas = sumHrs * valorHoraPactado;
+        its.total_ingresos_horas = sumIngresos;
         its.total_ingresos_facturables = its.total_ingresos_horas + its.total_ingresos_fletes;
         its.utilidad_bruta = its.total_ingresos_facturables;
         its.margen_porcentaje = its.total_ingresos_facturables > 0 ? 100 : 0;
@@ -498,17 +609,19 @@ const itsController = {
       if (Array.isArray(jornadas) && jornadas.length > 0) {
         let oIdx = 1;
         for (const j of jornadas) {
+          const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (cabecera.valor_hora_pactado || 0));
+          const subtotal = parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : ((j.horas_report || 0) * tarifa));
           await client.query(`
             INSERT INTO sch_leangsp.tits_jornada_detalle (
               id_its, id_reporte_avance, fecha, numero_ot, id_equipo, patente,
               tipo_servicio, hora_salida, hora_llegada, hora_termino, hora_retorno,
-              colacion_minutos, horas_reales, horas_report, numero_report,
+              colacion_minutos, horas_reales, horas_report, tarifa_hora, subtotal, numero_report,
               es_oculta, vb_conciliado, orden
             ) VALUES (
               $1, $2, $3, $4, $5, $6,
               $7, $8, $9, $10, $11,
-              $12, $13, $14, $15,
-              $16, $17, $18
+              $12, $13, $14, $15, $16, $17,
+              $18, $19, $20
             );
           `, [
             idIts,
@@ -525,6 +638,8 @@ const itsController = {
             j.colacion_minutos || 60,
             j.horas_reales || 0,
             j.horas_report || 0,
+            tarifa,
+            subtotal,
             j.numero_report || null,
             j.es_oculta === true,
             j.vb_conciliado === true,
