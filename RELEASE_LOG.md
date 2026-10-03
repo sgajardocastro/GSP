@@ -2,6 +2,146 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP y Backend API] - Versión 1.0.76
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-03 12:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-040`
+- **Especificación Técnica:** `.agents/specs/62_edp_fechas_horas_colacion_y_formato_email_spec.md`
+- **Detalle de Mejoras y Cambios (Corrección Integral Dossier EDP: Horarios de Faena, Rango de Colación y Contraste de Email RFC):**
+  - **[PDF/EDP] Reparación de Fechas y Horarios en Dossier EDP (Anexo 1):**
+    - Erradicación definitiva de los marcadores vacíos `-- : -- - -- : --` y saltos de línea antiestéticos en la columna "Horario" mediante extracción de `hora_inicio` y `hora_termino` y clase `whitespace-nowrap` con fallback UTC-3 `America/Santiago`.
+    - Período de facturación en Carátula se deriva automáticamente de las fechas mínimas y máximas de los reportes en caso de no existir cortes persistidos.
+  - **[DATA/EDP] Captura y Visualización Formal del Intervalo de Colación (Anexo 2):**
+    - Nuevas columnas en base de datos PostgreSQL (`sch_leangsp.tedp_reporte_avance`): `hora_inicio`, `hora_termino`, `hora_inicio_colacion` y `hora_termino_colacion`. Backfill histórico aplicado sobre OT 103 (`GSP-2609-1933-014`).
+    - En App Conductor (`ViajeConductor.vue`): Inputs de rango horario de colación (`<input type="time">`) condicionados a duración, sincronizados bidireccionalmente con los botones de minutos y transmitidos en el sellado FES.
+    - En Torre PMO (`ModalVisorReport.vue`): Soporte completo para auditar y modificar `hora_inicio_colacion` y `hora_termino_colacion` en ajustes de analista.
+    - En Dossier EDP (Anexo 2) y Report Diario PDF: Presentación estandarizada `Faena: 08:00 a 18:00 | Colación: 13:00 a 14:00 (1.0 hr)` (o `Sin colación (0 hrs)` si es 0).
+  - **[EMAIL/RFC] Contraste Alto y Legibilidad Garantizada en Solicitud de Modificación de EDP:**
+    - Erradicación de texto ilegible en clientes de correo mediante estilos inline prioritarios (`!important`) en `.content-box` de `messageModel.js`.
+    - En `estadoPagoController.js`: Reescritura del cuerpo del email RFC con etiquetas en cian brillante (`#38bdf8`), datos en blanco puro (`#ffffff`), montos en verde esmeralda (`#34d399`) y justificación en bloque gris oscuro contrastado (`#14171f`).
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.75
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 19:48:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-039`
+- **Especificación Técnica:** `.agents/specs/61_gantt_flota_metricas_estados_y_navegacion_spec.md`
+- **Detalle de Mejoras y Cambios (Rediseño Perspectiva Temporal de Flota Gantt, Métricas de Gestión y Erradicación Cockpit):**
+  - **[UI/CLEAN] Erradicación Total de Términos Desalineados ("Cockpit"):**
+    - En `Torre.vue` (cabecera PMO), eliminación del texto `Actualizar Cockpit` y sustitución por botón de actualización puramente icónico `🔄`, compacto y estilizado en azul/slate (`title="Actualizar datos"`).
+    - Limpieza de todos los comentarios y etiquetas en interfaz con dicha palabra.
+  - **[FEAT/GANTT] Métricas de Gestión y Productividad por Equipo en Fila Fija (`Torre.vue` vista `gantt`):**
+    - **Inspecciones Realizadas:** Nueva columna sticky `Inspecc.` que calcula las inspecciones y checklists de cada equipo (`📋 X`), integrando la subconsulta SQL de `tsrv_survey` en `tequEquipoModel.js` y las inspecciones preoperacionales de patio activas.
+    - **Producción Económica ($):** Nueva columna sticky `Producido ($)` que calcula con precisión los ingresos netos devengados o facturados de cada máquina (`formatMoneda(eq.totalProducido)`), computando líneas de servicio con asignación de equipo y OTs donde el equipo figure como grúa principal, excluyendo cancelados.
+    - **Productividad OEE (%):** Columna sticky `OEE %` con indicador numérico y barra gráfica de ocupación temporal.
+  - **[FEAT/GANTT] Matriz de Barras Temporales con 4 Estados Cromáticos Contrastados e Interactividad:**
+    - 🟦 **Reservado / Programado:** Azul (`bg-blue-600`) / Cian en faena activa (`bg-cyan-600`).
+    - 🟩 **Ya Ejecutado:** Verde Esmeralda (`bg-emerald-600`).
+    - ⬛ **Cancelado:** Gris Pizarra con tachado (`bg-slate-700` `line-through`).
+    - 🟧 **En Mantenimiento:** Ámbar / Naranja fuego (`bg-amber-600`).
+    - 🟥 **Colisión Horaria:** Rojo intenso pulsante (`bg-red-600` `animate-pulse`).
+    - **Navegación 1-Clic a la OT:** Al hacer clic en cualquier barra temporal se redirige inmediatamente a la OT correspondiente (`abrirProyecto(evento.proyectoId, subtab)`), con apertura contextual en ejecución o comercial.
+  - **[BE/EQUIPOS] Subconsulta SQL de Inspecciones en Catálogo de Equipos (`tequEquipoModel.js`):**
+    - Se incorporó subconsulta correlacionada `cant_inspecciones` sobre `sch_leangsp.tsrv_survey` por ID de equipo y patente en `getEquipos()`, desplegado en producción en PM2 `lean-services-gsp`.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.74
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 19:25:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-038`
+- **Especificación Técnica:** `.agents/specs/60_aislamiento_control_financiero_kanban_vs_pmo_spec.md`
+- **Detalle de Mejoras y Cambios (Aislamiento de Control Financiero: Modo Solo Lectura en Kanban vs Edición Exclusiva en PMO):**
+  - **[ARCH/KANBAN] Inmutabilidad Financiera y Modo Solo Lectura en Tablero Kanban (`GestorOportunidades.vue`):**
+    - Paso 1 (ITS): Se preserva `ModalITS` en modo de solo lectura estricta (`:readonly="true"`).
+    - Paso 2 (EDP): Se bloquea la edición invocando `ModalCaratulaEDP` con `:solo-lectura="true"`.
+    - Paso 3 (OC Mandante): Se retiran los botones de subida física (`+ Adjuntar OC`) y acción de asunción; se eliminan los botones de borrado de OC. Se añade banner indicativo de solo lectura y visor de OCs con enlace directo a PDF.
+    - Paso 4 (Facturación DTE): Erradicación completa de los inputs interactivos de número de factura, fecha, HES y del botón maestro de cierre contable (`Declarar Facturada & Cerrar`). Se implementa ficha ejecutiva de solo lectura con banner informativo que deriva la gestión a la Torre de Control PMO.
+  - **[FEAT/PMO] Edición y Cierre Exclusivo en la Torre de Control PMO (`Torre.vue` - Sub-vista 3 `pendientes_edp`):**
+    - El botón de acción en la grilla fue reemplazado por `[ 🧾 Carátula & Facturar PMO ➔ ]`, abriendo `ModalCaratulaEDP` directamente en el Cockpit del Analista sin redirigir al CRM.
+    - Invocación de `ModalCaratulaEDP` con `:solo-lectura="false"`, facultando a Tesorería (Pamela) y Administrador (Sergio) para ajustar tarifas, cargar archivos de OC y Factura DTE y pulsar `[ 🏁 Declarar Facturado & Concluir ]`.
+  - **[COMP/EDP] ModalCaratulaEDP Resiliente y Multifuncional (`ModalCaratulaEDP.vue`):**
+    - Nuevo prop `soloLectura: Boolean` que conmuta entre el modo de auditoría visual (Kanban) y el modo de gestión operativa financiera (PMO).
+    - Bloqueo de edición de tarifas y ocultamiento de formularios cuando `soloLectura` está activo.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.73
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 18:55:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-037`
+- **Especificación Técnica:** `.agents/specs/59_edp_gobernanza_permisos_admin_y_solicitud_cambio_rfc_spec.md`
+- **Detalle de Mejoras y Cambios (Soporte Documental OC/Factura, Permisos Globales Admin Sergio Gajardo, Flujo RFC y Fallback Resiliente WhatsApp):**
+  - **[FEAT/DOCS] Soporte Documental Completo de OC y Factura en Carátula de EDP (`ModalCaratulaEDP.vue`):**
+    - Módulo integral de Cierre y Soporte Documental: Subida física de archivos binarios (PDF o imagen de Orden de Compra y PDF de Factura DTE) mediante estándar `leanglobal_file_storage_standard` a `/api/v1/storage/upload`.
+    - Ingreso manual estructurado de metadatos de cobranza: N° OC, fecha de emisión y monto neto; N° Factura, fecha de facturación, monto neto, monto bruto e incidencias/observaciones.
+    - Botón de salvaguarda `[ ⚖️ Sin OC (Asumir EDP) ]` para negocios ejecutados sin orden formal de compra previa.
+    - Botón formal `[ 🏁 Declarar Facturado & Concluir ]` que actualiza el estado del proyecto a `7` (`FACTURADO / CONCLUIDO`) y persiste los datos en `ordenes_compra`, `oc_v1` y `liquidacion_v1`.
+  - **[FEAT/ADMIN] Permisos Globales de Edición para Administrador y Gobernanza RFC:**
+    - Habilitación de facultades plenas de edición de tarifas y ajustes contables en `ModalCaratulaEDP.vue` y endpoint `POST /api/operaciones/edp/ajustes-tesoreria` para el Administrador del Sistema (`sgajardoc@gmail.com`, `id_rol: 1`).
+    - Flujo de Solicitud de Cambio (RFC de EDP) para perfiles analistas o comerciales sin permisos de modificación, con submodal estructurado y registro auditable en `tpry_proyecto.json_field -> edp_solicitudes_ajuste`.
+    - Endpoints backend `POST /api/operaciones/edp/solicitar-modificacion` y `POST /api/operaciones/edp/resolver-solicitud-modificacion` con resolución de estados (`APLICADA` / `DESCARTADA`).
+  - **[FIX/NOTIF] Diagnóstico de Entrega de WhatsApp y Fallback Resiliente Omnicanal (`notificacionService.js`):**
+    - Diagnóstico de la causa raíz de entrega: el servicio intentaba conectar a `http://127.0.0.1:3085/enviar` en entornos locales donde no hay microservicio Baileys local.
+    - Implementación de arquitectura multi-endpoint con conmutación por error (failover) transparente hacia el endpoint público HTTPS `https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar`.
+    - Normalización automática de números telefónicos chilenos (E.164) y resolución cruzada de campos `movil`, `fono` y `telefono` desde `tsec_users`.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.72
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 15:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-036`
+- **Especificación Técnica:** `.agents/specs/58_torre_control_pmo_avance_global_y_herencia_estados_spec.md`
+- **Detalle de Mejoras y Cambios (Gobernanza de PDFs Oficiales, Barra de Avance Global y Herencia Retrospectiva de Estados):**
+  - **[FEAT/PMO] Acceso y Descarga Directa de PDFs Oficiales de ITS y EDP:**
+    - Se agregó el botón rojo estándar `📄 PDF` en la columna Acción de la Sub-vista 2 (Informes de Término de Servicio - ITS) y se transformó el Folio ITS en un enlace interactivo con apertura directa a `/operaciones/its/preview-pdf/:id_proyecto`.
+    - Se incorporó el botón `📄 Ver EDP` en la columna Acción de la Sub-vista 3 (Pipeline EDP & Facturación) y se habilitó el badge `🔓 EDP Liberado` como acceso directo al PDF de Carátula y Dossier de cobro en `/operaciones/edp/proyecto/:id_proyecto/pdf`.
+  - **[FEAT/METRICAS] Barra de Avance Global del Negocio (0% a 100%):**
+    - Se incorporó la columna "Avance Global" en la Matriz de Hitos (Sub-vista 4) con cálculo ponderado de 7 hitos (`getAvanceNegocio(p)`), degradado continuo (`from-blue-500 to-emerald-400`), porcentaje monospace contrastado y etiqueta de fase en tiempo real.
+  - **[FEAT/LOGICA] Principio de Herencia Retrospectiva de Estados (Lifecycle-Aware Inheritance):**
+    - Erradicación de falsas alarmas y alertas rojas críticas en servicios ejecutados:
+      - *Asignación:* Rescate jerárquico de equipo y operador desde reportes reales de faena (`VCTR.81-9`, Jorge Ponce) y flota master.
+      - *Acreditación:* Conmutación a `No Requerida` si `requiere_acreditacion = false`, o a estado neutro `Superada en Faena` para servicios terminados.
+      - *Salida Patio:* Conmutación automática a `✓ Completado` al detectar reportes validados o ITS cerrado.
+      - *OC Mandante:* Transición a `⚖️ Asumir EDP (S/OC)` en ámbar de Tesorería para servicios de urgencia concluidos sin OC formal.
+      - *Programación:* Restauración reactiva de fechas planificadas desde la cotización y los reportes de terreno.
+    - El negocio 014 refleja un avance global consolidado del **96% • Listo Facturar**.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.71
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-02 13:05:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-035`
+- **Especificación Técnica:** `.agents/specs/46_informe_termino_servicio_its_spec.md` y `.agents/specs/57_ciclo_integral_reports_its_edp_y_facturacion_spec.md`
+- **Detalle de Mejoras y Cambios (Filas Físicas de Flete en Sección 2, Tarifa Estándar Operador $10.000 y Sanitización Universal de Fechas):**
+  - **[FEAT/OPS] Filas Físicas de Traslados (Fletes) en Grilla de Servicios (Sección 2):**
+    - Los fletes ya no son un número flotante en cabecera ni un fantasma en el P&L: ahora figuran como registros físicos concretos en la tabla de jornadas (`Flete Solo Ida` por $200.000 y `Flete Solo Retorno` por $200.000), totalizando los 5 ítems de servicio de la OT 014 (Ida + Día 1 + Día 2 + Día 3 + Retorno).
+    - Desacople matemático en el motor de cálculo: las filas de tipo flete no suman a las horas grúa de faena (que se mantienen en 28 hrs exactas), pero sí aportan al `total_ingresos_fletes` ($400.000) y al total facturable ($2.780.000).
+    - Inclusión del botón `[ 🚚 + Agregar Flete ]` en la barra de herramientas de Sección 2 para permitir la inserción ágil de tramos de traslado con tarifa pre-calculada.
+  - **[FEAT/COSTOS] Tarifa Estándar de Hora Operador ($10.000 / hr) y Asignación de Tripulación Real:**
+    - Erradicación definitiva de registros residuales de prueba (Nicolás Ceballos) y asociación automática del tripulante real de la OT (Jorge Ponce en grúa ATF 50 G3 `VCTR.81-9`).
+    - Fijación de la tarifa unitaria estándar acordada con gerencia en **$10.000 / hr** (28 horas efectivas = $280.000).
+    - Selector desplegable de operador en la grilla de costos que auto-completa el personal asignado al proyecto.
+  - **[BUGFIX/UI] Sanitización Universal de Fechas en Todas las Categorías de Costo:**
+    - Normalización estricta de fechas con `TO_CHAR(fecha, 'YYYY-MM-DD')` en SQL y sanitización `.split('T')[0]` en `cargarITS` de `ModalITS.vue`, erradicando por completo el placeholder vacío `dd-mm-aaaa` en inputs de fecha HTML5.
+
+---
+
 ## [Portal Web GSP] - Versión 1.0.70
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-02 12:35:00 (-03:00)

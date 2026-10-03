@@ -481,6 +481,57 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Valorización por Fila y Columnas de Tarifa y Subtotal:** Inclusión de `Tarifa $/hr` y `Subtotal ($)` en la tabla de jornadas del modal y en el PDF oficial (`itsPdfService.js`), con nuevas columnas relacionales en `tits_jornada_detalle`.
   - **Flete Comercial Completo ($400.000):** Parser de CRM corregido para tomar el subtotal del traslado cotizado (Ida + Retorno faena, 41 km Pitrufquén), cuadrando la venta neta total en `$2.780.000`. `COMPLETADO Y VERIFICADO`.
 
+* [x] **[Filas Físicas de Traslados (Fletes), Tarifa Estándar Operador $10.000 y Fechas Sanitizadas - REQ-035 / v1.0.71 / Spec 46 & 57]:**
+  - **Filas Físicas de Flete en Sección 2:** Inyección y persistencia de `Flete Solo Ida` ($200.000) y `Flete Solo Retorno` ($200.000) como filas concretas en la grilla de servicios. Desacople matemático en el motor de cálculo para no sumar horas grúa a los traslados y totalizar los $2.780.000 facturables exactos. Botón `[ 🚚 + Agregar Flete ]` disponible en la barra de herramientas.
+  - **Tarifa Estándar Operador ($10.000 / hr):** Limpieza de registros espurios de prueba (Nicolás Ceballos) y asociación de tripulación real (Jorge Ponce, patente `VCTR.81-9`, 28 hrs a $10.000/hr = $280.000). Selector desplegable de operador para fácil asignación.
+  - **Sanitización de Fechas:** Erradicación universal del bug de fecha vacía (`dd-mm-aaaa`) en inputs HTML5 para todas las 9 categorías de costos y jornadas. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Torre de Control PMO: Acceso a PDFs, Avance Global del Negocio y Herencia de Estados - REQ-036 / v1.0.72 / Spec 58]:**
+  - **Acceso Directo a PDFs Oficiales de ITS y EDP:** Incorporación del botón rojo estándar `📄 PDF` e hipervínculo en Folio ITS para la Sub-vista 2 (Informes de Término de Servicio), y botón `📄 Ver EDP` junto al badge interactivo `🔓 EDP Liberado` en la Sub-vista 3 (Pipeline EDP & Facturación), conectando con los endpoints oficiales de streaming binario.
+  - **Columna de Avance Global (0% a 100%):** Motor de cálculo ponderado de 7 hitos (`getAvanceNegocio(p)`) y barra de progreso ejecutiva con degradado (`from-blue-500 to-emerald-400`), porcentaje monospace contrastado y etiqueta de fase en tiempo real.
+  - **Principio de Herencia Retrospectiva de Estados (Lifecycle-Aware):** Erradicación total de falsos positivos y alarmas rojas críticas en faenas concluidas. En el negocio 014: Asignación rescata la patente `VCTR.81-9` (Jorge Ponce); Acreditación no requerida pasa a `No Requerida`; Salida Patio pasa a `✓ Completado`; y OC sin documento formal pasa a `⚖️ Asumir EDP (S/OC)` en ámbar de Tesorería, alcanzando un avance consolidado del 96% (`Listo Facturar`). Fechas de programación restauradas desde la cotización. `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Gobernanza de EDP: Permisos Globales de Administración (Sergio Gajardo), Solicitud de Cambio RFC y Notificaciones Omnicanal con Deep Link - REQ-037 / v1.0.73 / Spec 59]:**
+  - **Permisos de Edición para Administrador:** Reconocimiento irrestricto de `sgajardoc@gmail.com` y roles Admin (`id_rol: 1`) en `ModalCaratulaEDP.vue` y endpoint backend `POST /api/operaciones/edp/ajustes-tesoreria`, permitiendo edición directa de tarifas y descuentos con banner distintivo de Administrador del Sistema.
+  - **Flujo de Requerimiento de Cambio (RFC de EDP):** Botón `[ 📝 Solicitar Modificación de EDP ]` para usuarios sin permisos de edición (Analistas PMO, Operaciones, Comerciales) con submodal estructurado (motivo, detalle de tarifas/horas, monto estimado).
+  - **Persistencia y Trazabilidad:** Almacenamiento de solicitudes en `tpry_proyecto.json_field -> edp_solicitudes_ajuste` con identificador único, fecha, datos del solicitante y estado (`PENDIENTE`, `APLICADA`, `DESCARTADA`).
+  - **Notificación Omnicanal con Deep Link Canónico (leanglobal_notification_standard):** Despacho simultáneo vía Email Transaccional (MessageModel) y WhatsApp (Microservicio Baileys) a Pamela Seguel y Sergio Gajardo con enlace contextual directo a la Torre de Control PMO (`/torre?id_proyecto=...&subtab=pendientes_edp`). `COMPLETADO Y VERIFICADO`.
+
+* [x] **[Aislamiento de Control Financiero: Modo Solo Lectura en Tablero Kanban y Edición Exclusiva en Torre de Control PMO - REQ-038 / v1.0.74 / Spec 60]:**
+  - **Inmutabilidad Financiera en el Tablero Kanban (`GestorOportunidades.vue` Subtab D: Liquidación & Cierre):**
+    - Paso 1 (ITS): Se preserva `ModalITS` en modo de solo lectura estricta (`:readonly="true"`).
+    - Paso 2 (EDP): Se bloquea la edición invocando `ModalCaratulaEDP` con `:solo-lectura="true"`.
+    - Paso 3 (OC Mandante): Se retiran los botones de subida física (`+ Adjuntar OC`) y acción de asunción; se eliminan los botones de borrado de OC. Se añade banner indicativo de solo lectura y visor de OCs con enlace directo a PDF.
+    - Paso 4 (Facturación DTE): Erradicación completa de los inputs interactivos de número de factura, fecha, HES y del botón maestro de cierre contable (`Declarar Facturada & Cerrar`). Se implementa ficha ejecutiva de solo lectura con banner informativo que deriva la gestión a la Torre de Control PMO.
+  - **Edición y Cierre Exclusivo en la Torre de Control PMO (`Torre.vue` - Sub-vista 3 `pendientes_edp`):**
+    - El botón de acción en la grilla fue reemplazado por `[ 🧾 Carátula & Facturar PMO ➔ ]`, abriendo `ModalCaratulaEDP` directamente en el Cockpit del Analista sin redirigir al CRM.
+    - Invocación de `ModalCaratulaEDP` con `:solo-lectura="false"`, facultando a Tesorería (Pamela) y Administrador (Sergio) para ajustar tarifas, cargar archivos de OC y Factura DTE y pulsar `[ 🏁 Declarar Facturado & Concluir ]`.
+  - **ModalCaratulaEDP Resiliente y Multifuncional (`ModalCaratulaEDP.vue`):**
+    - Nuevo prop `soloLectura: Boolean` que conmuta entre el modo de auditoría visual (Kanban) y el modo de gestión operativa financiera (PMO). `COMPLETADO Y CERTIFICADO`.
+
+* [x] **[Perspectiva Temporal de Flota (Gantt), Métricas de Gestión y Erradicación Cockpit - REQ-039 / v1.0.75 / Spec 61]:**
+  - **Erradicación del Término "Cockpit":** Eliminación total de la palabra "Cockpit" en toda la interfaz de `Torre.vue`. Sustitución del botón `[ Actualizar Cockpit ]` por botón cuadrado compacto que contiene exclusivamente el ícono `🔄` (`title="Actualizar datos"`), con estilizado sobrio.
+  - **Métricas de Gestión y Productividad por Equipo en Fila Fija (`Torre.vue` vista `gantt`):**
+    - **Inspecciones Realizadas:** Columna sticky `Inspecc.` que calcula las inspecciones y checklists de cada equipo (`📋 X`), integrando la subconsulta SQL de `tsrv_survey` en `tequEquipoModel.js` y las inspecciones preoperacionales de patio activas.
+    - **Producción Económica ($):** Columna sticky `Producido ($)` que calcula con precisión los ingresos netos devengados o facturados de cada máquina (`formatMoneda(eq.totalProducido)`), computando líneas de servicio con asignación de equipo y OTs donde el equipo figure como grúa principal, excluyendo cancelados.
+    - **Productividad OEE (%):** Columna sticky `OEE %` con indicador numérico y barra gráfica de ocupación temporal.
+  - **Matriz de Barras Temporales con 4 Estados Cromáticos Contrastados e Interactividad:**
+    - 🟦 **Reservado / Programado:** Azul (`bg-blue-600`) / Cian en faena activa (`bg-cyan-600`).
+    - 🟩 **Ya Ejecutado:** Verde Esmeralda (`bg-emerald-600`).
+    - ⬛ **Cancelado:** Gris Pizarra con tachado (`bg-slate-700` `line-through`).
+    - 🟧 **En Mantenimiento:** Ámbar / Naranja fuego (`bg-amber-600`).
+    - 🟥 **Colisión Horaria:** Rojo intenso pulsante (`bg-red-600` `animate-pulse`).
+    - **Navegación 1-Clic a la OT:** Al hacer clic en cualquier barra temporal se redirige inmediatamente a la OT correspondiente (`abrirProyecto(evento.proyectoId, subtab)`), con apertura contextual en ejecución o comercial.
+  - **Subconsulta SQL de Inspecciones en Catálogo de Equipos (`tequEquipoModel.js`):**
+    - Se incorporó subconsulta correlacionada `cant_inspecciones` sobre `sch_leangsp.tsrv_survey` por ID de equipo y patente en `getEquipos()`, desplegado en producción en PM2 `lean-services-gsp`. `COMPLETADO Y CERTIFICADO`.
+
+* [x] **[Corrección Integral Dossier EDP: Horarios de Jornada, Rango de Colación y Contraste de Email RFC - REQ-040 / v1.0.76 / Spec 62]:**
+  - **Reparación de Horarios en Dossier EDP (Anexo 1):** Erradicación de valores `-- : -- - -- : --` y envoltura de texto antiestética en la columna "Horario". Se extraen y formatean limpiamente `hora_inicio` y `hora_termino` (ej. `08:00 - 18:00`) con `whitespace-nowrap` y fallback determinista UTC-3 `America/Santiago`. Período de corte en Carátula se deriva de las fechas de los reports cuando no existen cortes persistidos.
+  - **Captura y Visualización de Rango Horario de Colación (Anexo 2):** Se agregaron a nivel de base de datos (`sch_leangsp.tedp_reporte_avance`) las columnas `hora_inicio_colacion` y `hora_termino_colacion` junto a `hora_inicio` y `hora_termino`. En `ViajeConductor.vue` el operador registra el intervalo de colación (ej. 13:00 a 14:00) sincronizado con la duración en minutos. En `ModalVisorReport.vue` el analista PMO puede ajustar y auditar tanto el rango horario como las horas de colación. En el PDF de EDP (Anexo 2) y PDF de Report Diario se despliega formalmente: `Faena: 08:00 a 18:00 | Colación: 13:00 a 14:00 (1.0 hr)` (o `Sin colación (0 hrs)`).
+  - **Legibilidad y Contraste Alto en Correo de Solicitud de Modificación EDP (RFC):** Erradicación de texto oscuro sobre fondo oscuro en clientes de correo (Gmail, Outlook). Se aplicaron estilos inline obligatorios con `!important` en `messageModel.js` y `estadoPagoController.js`, garantizando etiquetas en cian brillante (`#38bdf8`), texto de datos en blanco puro (`#ffffff`), valores destacados en verde esmeralda (`#34d399`) y ámbar (`#fbbf24`), y contenedor con contraste garantizado (`#14171f`). `COMPLETADO Y CERTIFICADO`.
+
 * [ ] **[Backlog: Modelo de Servicios Recurrentes y Modo Arriendo Mensual - REQ-030 / Spec 57]:**
   - Arquitectura para gestionar servicios de largo aliento bajo el mismo negocio/proyecto con cortes de facturación periódicos (EDP mensual) sin duplicar OTs.
+
+
 

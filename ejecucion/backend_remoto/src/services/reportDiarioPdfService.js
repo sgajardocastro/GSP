@@ -121,9 +121,20 @@ function buildReportDiarioHtml(data) {
   const codiOT = report.codi_proyecto || proyecto?.codi_proyecto || `GSP-OT-${report.id_proyecto}`;
   const diaNum = report.dia_correlativo || 1;
   const fechaServicio = formatDateCL(report.fecha_reporte || new Date());
-  const horaInicio = formatTime(report.fecha_inicio_servicio, '08:00');
-  const horaTermino = formatTime(report.fecha_termino_servicio, '18:00');
+  const horaInicio = formatTime(report.hora_inicio || report.fecha_inicio_servicio, '08:00');
+  const horaTermino = formatTime(report.hora_termino || report.fecha_termino_servicio, '18:00');
   const horasColacion = Number(report.horas_colacion !== undefined && report.horas_colacion !== null ? report.horas_colacion : 1.0).toFixed(1);
+  const horaColIni = report.hora_inicio_colacion || (Number(horasColacion) > 0 ? '13:00' : null);
+  let horaColFin = report.hora_termino_colacion;
+  if (!horaColFin && horaColIni && Number(horasColacion) > 0) {
+    if (Number(horasColacion) >= 1.0) horaColFin = '14:00';
+    else if (Number(horasColacion) >= 0.75) horaColFin = '13:45';
+    else if (Number(horasColacion) >= 0.5) horaColFin = '13:30';
+    else horaColFin = '13:30';
+  }
+  const colacionTexto = Number(horasColacion) > 0 
+    ? (horaColIni && horaColFin ? `${horaColIni} - ${horaColFin}` : `${horasColacion} hrs`)
+    : '0 hrs';
   const horasOperadas = Number(report.horas_operadas || 0).toFixed(1);
   const horasMinimas = Number(report.horas_minimas || 8.0).toFixed(1);
   const horasFacturables = Number(report.horas_facturables || horasOperadas).toFixed(1);
@@ -596,7 +607,7 @@ function buildReportDiarioHtml(data) {
         <tr>
           <td><strong>${horaInicio}</strong></td>
           <td><strong>${horaTermino}</strong></td>
-          <td>${horasColacion} hrs</td>
+          <td><strong>${colacionTexto}</strong><span class="metric-sub">${Number(horasColacion) > 0 ? `${horasColacion} hrs colación` : 'Sin colación'}</span></td>
           <td><strong>${horasOperadas} hrs</strong><span class="metric-sub">Efectivas izaje</span></td>
           <td>${horasMinimas} hrs<span class="metric-sub">Base pactada</span></td>
           <td style="background: #ecfdf5;"><span class="metric-highlight">${horasFacturables} hrs</span><span class="metric-sub">Para Estado Pago</span></td>

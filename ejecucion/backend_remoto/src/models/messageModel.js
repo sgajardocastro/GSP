@@ -89,10 +89,19 @@ class MessageModel {
     }
     .content-box {
       background: #14171f;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 14px;
       padding: 25px;
       margin-bottom: 30px;
+      color: #f8fafc;
+    }
+    .content-box p {
+      color: #f1f5f9;
+      margin: 0 0 10px 0;
+      line-height: 1.5;
+    }
+    .content-box strong {
+      color: #38bdf8;
     }
     .content-item {
       margin-bottom: 12px;
@@ -152,18 +161,18 @@ class MessageModel {
   </style>
 </head>
 <body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <div class="header-logo">⚡ GSP</div>
-        <div class="header-title">PLATAFORMA GSP / GESTIÓN DE OPERACIONES</div>
+  <div class="wrapper" style="width: 100%; background-color: #08090c; padding: 40px 0;">
+    <div class="container" style="max-width: 600px; margin: 0 auto; background: #0f1116; border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 20px; overflow: hidden;">
+      <div class="header" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 35px 40px; text-align: center;">
+        <div class="header-logo" style="font-size: 26px; font-weight: 850; color: #ffffff; letter-spacing: 2px; margin: 0 0 8px 0; text-transform: uppercase;">⚡ GSP</div>
+        <div class="header-title" style="font-size: 13px; font-weight: 700; color: #bae6fd; letter-spacing: 1px; margin: 0; text-transform: uppercase;">PLATAFORMA GSP / GESTIÓN DE OPERACIONES</div>
       </div>
       
-      <div class="body">
-        <div class="welcome">${titulo}</div>
-        <div class="subwelcome">${subtitulo}</div>
+      <div class="body" style="padding: 40px; color: #e2e8f0;">
+        <div class="welcome" style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 15px 0;">${titulo}</div>
+        <div class="subwelcome" style="font-size: 15px; color: #94a3b8; line-height: 1.6; margin: 0 0 30px 0;">${subtitulo}</div>
         
-        ${contenido ? `<div class="content-box">${contenido}</div>` : ''}
+        ${contenido ? `<div class="content-box" style="background: #14171f !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 14px; padding: 25px; margin-bottom: 30px; color: #f8fafc !important;">${contenido}</div>` : ''}
         
         ${botonTexto && botonUrl ? `
         <div class="button-container">
@@ -183,11 +192,12 @@ class MessageModel {
 `;
   }
 
-  async enviarYRegistrarCorreo({ para, asunto, cuerpo, esHtml = false }) {
-    console.log(`[MAILER] Enviando correo a ${para} con asunto: "${asunto}"...`);
+  async enviarYRegistrarCorreo({ para, cc, asunto, cuerpo, esHtml = false }) {
+    console.log(`[MAILER] Enviando correo a ${para}${cc ? ` (CC: ${cc})` : ''} con asunto: "${asunto}"...`);
     const mailOptions = {
         from: '"GSP Platform" <notificaciones.gsp@leanglobal.cl>',
         to: para,
+        cc: cc || undefined,
         subject: asunto,
         html: cuerpo
     };

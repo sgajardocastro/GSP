@@ -426,6 +426,11 @@ const reportDiarioController = {
           r.incluye_flete_independiente,
           r.fecha_inicio_servicio,
           r.fecha_termino_servicio,
+          COALESCE(r.hora_inicio, to_char(r.fecha_inicio_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '08:00') AS hora_inicio,
+          COALESCE(r.hora_termino, to_char(r.fecha_termino_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '18:00') AS hora_termino,
+          COALESCE(r.hora_inicio_colacion, '13:00') AS hora_inicio_colacion,
+          COALESCE(r.hora_termino_colacion, '14:00') AS hora_termino_colacion,
+          r.ajustes_analista,
           r.latitud_inicio_servicio,
           r.longitud_inicio_servicio,
           r.latitud_termino_servicio,
@@ -880,6 +885,20 @@ const reportDiarioController = {
       const fotoHorometroFinal = foto_tablero_termino || foto_tablero_inicio || foto_horometro || null;
 
       const fechaBase = fecha_reporte.split('T')[0];
+      hora_inicio = hora_inicio || req.body.hora_inicio || '08:00';
+      hora_termino = hora_termino || req.body.hora_termino || '18:00';
+      let hora_inicio_colacion = req.body.hora_inicio_colacion || null;
+      let hora_termino_colacion = req.body.hora_termino_colacion || null;
+
+      if (!hora_inicio_colacion && (horas_colacion > 0 || req.body.colacion_minutos > 0)) {
+        hora_inicio_colacion = '13:00';
+        const hC = horas_colacion !== undefined ? horas_colacion : 1.0;
+        if (hC >= 1.0) hora_termino_colacion = '14:00';
+        else if (hC >= 0.75) hora_termino_colacion = '13:45';
+        else if (hC >= 0.5) hora_termino_colacion = '13:30';
+        else hora_termino_colacion = '13:30';
+      }
+
       const fecha_inicio_servicio = hora_inicio ? `${fechaBase} ${hora_inicio}:00` : null;
       const fecha_termino_servicio = hora_termino ? `${fechaBase} ${hora_termino}:00` : null;
 
@@ -947,9 +966,13 @@ const reportDiarioController = {
             cliente_rut = $26,
             cliente_cargo = $27,
             cliente_firma_canvas_base64 = $28,
+            hora_inicio = $29,
+            hora_termino = $30,
+            hora_inicio_colacion = $31,
+            hora_termino_colacion = $32,
             estado_reporte = 'PENDIENTE_VALIDACION',
             estado_jornada = 'FINALIZADA'
-          WHERE id_reporte_avance = $29
+          WHERE id_reporte_avance = $33
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -981,6 +1004,10 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
+          hora_inicio,
+          hora_termino,
+          hora_inicio_colacion,
+          hora_termino_colacion,
           id_reporte_avance
         ]);
         reportGuardado = upRes.rows[0];
@@ -1020,11 +1047,15 @@ const reportDiarioController = {
             cliente_cargo,
             cliente_firma_canvas_base64,
             token_report,
+            hora_inicio,
+            hora_termino,
+            hora_inicio_colacion,
+            hora_termino_colacion,
             estado_reporte,
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
           )
           RETURNING *;
         `;
@@ -1060,7 +1091,11 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
-          token_report
+          token_report,
+          hora_inicio,
+          hora_termino,
+          hora_inicio_colacion,
+          hora_termino_colacion
         ]);
         reportGuardado = inRes.rows[0];
       }
@@ -1189,6 +1224,8 @@ const reportDiarioController = {
       if (ajustes && typeof ajustes === 'object') {
         const hInicio = ajustes.hora_inicio || null;
         const hTermino = ajustes.hora_termino || null;
+        const hColIni = ajustes.hora_inicio_colacion || null;
+        const hColFin = ajustes.hora_termino_colacion || null;
         const hCol = ajustes.horas_colacion !== undefined && ajustes.horas_colacion !== null ? parseFloat(ajustes.horas_colacion) : null;
         const horoIni = ajustes.horometro_inicio !== undefined && ajustes.horometro_inicio !== null ? parseFloat(ajustes.horometro_inicio) : null;
         const horoFin = ajustes.horometro_termino !== undefined && ajustes.horometro_termino !== null ? parseFloat(ajustes.horometro_termino) : null;
@@ -1215,11 +1252,15 @@ const reportDiarioController = {
           return def;
         };
 
-        const origHInicio = parseHHMM(rep.fecha_inicio_servicio, '08:00');
-        const origHTermino = parseHHMM(rep.fecha_termino_servicio, '18:00');
+        const origHInicio = rep.hora_inicio || parseHHMM(rep.fecha_inicio_servicio, '08:00');
+        const origHTermino = rep.hora_termino || parseHHMM(rep.fecha_termino_servicio, '18:00');
+        const origHColIni = rep.hora_inicio_colacion || (nuevoHorasColacion > 0 ? '13:00' : null);
+        const origHColFin = rep.hora_termino_colacion || (nuevoHorasColacion > 0 ? '14:00' : null);
 
         const difHInicio = hInicio && hInicio !== origHInicio;
         const difHTermino = hTermino && hTermino !== origHTermino;
+        const difColIni = hColIni && hColIni !== origHColIni;
+        const difColFin = hColFin && hColFin !== origHColFin;
         const difCol = hCol !== null && Math.abs(hCol - nuevoHorasColacion) > 0.01;
         const difHoroIni = horoIni !== null && Math.abs(horoIni - nuevoHorometroInicio) > 0.01;
         const difHoroFin = horoFin !== null && Math.abs(horoFin - nuevoHorometroTermino) > 0.01;
@@ -1228,7 +1269,7 @@ const reportDiarioController = {
         const difFact = hFact !== null && Math.abs(hFact - nuevoHorasFacturables) > 0.01;
         const difOper = hOper !== null && Math.abs(hOper - nuevoHorasOperadas) > 0.01;
 
-        if (difHInicio || difHTermino || difCol || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper) {
+        if (difHInicio || difHTermino || difCol || difColIni || difColFin || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper) {
           huboAjustes = true;
 
           const fechaBase = rep.fecha_reporte ? (new Date(rep.fecha_reporte).toISOString().split('T')[0]) : (new Date().toISOString().split('T')[0]);
@@ -1243,6 +1284,8 @@ const reportDiarioController = {
             valores_originales: {
               hora_inicio: origHInicio,
               hora_termino: origHTermino,
+              hora_inicio_colacion: origHColIni,
+              hora_termino_colacion: origHColFin,
               horas_operadas: nuevoHorasOperadas,
               horas_facturables: nuevoHorasFacturables,
               horas_colacion: nuevoHorasColacion,
@@ -1254,6 +1297,8 @@ const reportDiarioController = {
             valores_ajustados: {
               hora_inicio: hInicio || origHInicio,
               hora_termino: hTermino || origHTermino,
+              hora_inicio_colacion: hColIni || origHColIni,
+              hora_termino_colacion: hColFin || origHColFin,
               horas_operadas: hOper !== null ? hOper : nuevoHorasOperadas,
               horas_facturables: hFact !== null ? hFact : nuevoHorasFacturables,
               horas_colacion: hCol !== null ? hCol : nuevoHorasColacion,
@@ -1301,7 +1346,11 @@ const reportDiarioController = {
           fecha_inicio_servicio = $11,
           fecha_termino_servicio = $12,
           horas_sobretiempo = $13,
-          ajustes_analista = $14
+          ajustes_analista = $14,
+          hora_inicio = COALESCE($16, hora_inicio),
+          hora_termino = COALESCE($17, hora_termino),
+          hora_inicio_colacion = COALESCE($18, hora_inicio_colacion),
+          hora_termino_colacion = COALESCE($19, hora_termino_colacion)
         WHERE id_reporte_avance = $15
         RETURNING *;
       `;
@@ -1321,7 +1370,11 @@ const reportDiarioController = {
         nuevaFechaTermino,
         nuevoSobretiempo,
         payloadAjustes ? JSON.stringify(payloadAjustes) : null,
-        id
+        id,
+        (ajustes && ajustes.hora_inicio) ? ajustes.hora_inicio : null,
+        (ajustes && ajustes.hora_termino) ? ajustes.hora_termino : null,
+        (ajustes && ajustes.hora_inicio_colacion) ? ajustes.hora_inicio_colacion : null,
+        (ajustes && ajustes.hora_termino_colacion) ? ajustes.hora_termino_colacion : null
       ]);
 
       const reportActualizado = result.rows[0];

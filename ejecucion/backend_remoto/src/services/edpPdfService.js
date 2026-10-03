@@ -67,21 +67,56 @@ function formatCLP(val) {
 function formatDateCL(dateStr) {
   if (!dateStr) return 'N/A';
   try {
+    if (typeof dateStr === 'string') {
+      const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return `${match[3]}/${match[2]}/${match[1]}`;
+      }
+    }
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return String(dateStr);
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    return d.toLocaleDateString('es-CL', {
+      timeZone: 'America/Santiago',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   } catch (e) {
     return String(dateStr);
   }
 }
 
+function formatTimeCL(timeStr, timestamp, fallback = '--:--') {
+  if (timeStr && /^\d{2}:\d{2}$/.test(String(timeStr).trim())) {
+    return String(timeStr).trim();
+  }
+  if (timestamp) {
+    try {
+      const d = new Date(timestamp);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('es-CL', {
+          timeZone: 'America/Santiago',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+    } catch (e) {}
+  }
+  return fallback;
+}
+
 function buildEdpHtml(data) {
   const { edp, proyecto, cliente, cotizacion, reports, detalles_adicionales } = data;
 
+  const sortedReports = [...(reports || [])].sort((a,b) => new Date(a.fecha_reporte) - new Date(b.fecha_reporte));
+  const primerFecha = sortedReports[0]?.fecha_reporte;
+  const ultimaFecha = sortedReports[sortedReports.length - 1]?.fecha_reporte;
+
   const numeroEdp = edp?.numero_edp || 'EDP-01';
   const fechaEmision = formatDateCL(edp?.fecha_emision || new Date());
-  const periodoInicio = formatDateCL(edp?.fecha_corte_inicio);
-  const periodoFin = formatDateCL(edp?.fecha_corte_fin);
+  const periodoInicio = formatDateCL(edp?.fecha_corte_inicio || primerFecha || new Date());
+  const periodoFin = formatDateCL(edp?.fecha_corte_fin || ultimaFecha || primerFecha || new Date());
 
   const clienteNombre = proyecto?.cliente_nombre || cliente?.razon_social || 'CLIENTE MANDANTE';
   const clienteRut = proyecto?.cliente_rut || cliente?.rut || 'N/A';
@@ -108,6 +143,10 @@ function buildEdpHtml(data) {
     totalHorasFacturables += facturables;
     totalSobretiempo += st;
 
+    const aj = rep.ajustes_analista?.valores_ajustados || rep.ajustes_analista?.valores_originales || {};
+    const horaIni = formatTimeCL(rep.hora_inicio || aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
+    const horaFin = formatTimeCL(rep.hora_termino || aj.hora_termino, rep.fecha_termino_servicio, '18:00');
+
     const equipoDesc = rep.patente ? `${rep.patente} (${rep.modelo || 'Grúa'})` : (rep.equipo_nombre || 'Grúa Principal');
     const operador = rep.operador_nombre || 'Operador Asignado';
     const rigger = rep.rigger_nombre || 'Rigger Asignado';
@@ -119,7 +158,7 @@ function buildEdpHtml(data) {
         <td class="px-2.5 py-2 text-center text-slate-700 border-r border-slate-200 font-mono">${formatDateCL(rep.fecha_reporte)}</td>
         <td class="px-2.5 py-2 text-slate-800 font-medium border-r border-slate-200">${equipoDesc}</td>
         <td class="px-2.5 py-2 text-slate-600 border-r border-slate-200 text-xs">${operador} / ${rigger}</td>
-        <td class="px-2.5 py-2 text-center font-mono text-xs border-r border-slate-200">${rep.hora_inicio || '--:--'} - ${rep.hora_termino || '--:--'}</td>
+        <td class="px-2.5 py-2 text-center font-mono text-xs border-r border-slate-200 whitespace-nowrap">${horaIni} - ${horaFin}</td>
         <td class="px-2.5 py-2 text-center font-mono font-bold text-slate-800 border-r border-slate-200">${facturables.toFixed(1)} hrs</td>
         <td class="px-2.5 py-2 text-center font-mono font-bold text-amber-700 border-r border-slate-200">${st > 0 ? `+${st.toFixed(1)} hrs` : '-'}</td>
         <td class="px-2.5 py-2 text-xs text-slate-700 border-r border-slate-200">${rep.horometro_inicio || '0'} ➔ ${rep.horometro_termino || '0'}</td>
@@ -132,6 +171,31 @@ function buildEdpHtml(data) {
   const anexosReportsHtml = (reports || []).map((rep, idx) => {
     const firmaCanvas = rep.cliente_firma_canvas_base64;
     const tieneFirma = firmaCanvas && (firmaCanvas.startsWith('data:image') || firmaCanvas.startsWith('http'));
+
+    const aj = rep.ajustes_analista?.valores_ajustados || rep.ajustes_analista?.valores_originales || {};
+    const horaIni = formatTimeCL(rep.hora_inicio || aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
+    const horaFin = formatTimeCL(rep.hora_termino || aj.hora_termino, rep.fecha_termino_servicio, '18:00');
+
+    const hColVal = rep.horas_colacion !== undefined && rep.horas_colacion !== null 
+      ? Number(rep.horas_colacion) 
+      : (aj.horas_colacion !== undefined ? Number(aj.horas_colacion) : 1.0);
+
+    const horaColIni = rep.hora_inicio_colacion || aj.hora_inicio_colacion || (hColVal > 0 ? '13:00' : null);
+    let horaColFin = rep.hora_termino_colacion || aj.hora_termino_colacion;
+    if (!horaColFin && horaColIni && hColVal > 0) {
+      if (hColVal >= 1.0) horaColFin = '14:00';
+      else if (hColVal >= 0.75) horaColFin = '13:45';
+      else if (hColVal >= 0.5) horaColFin = '13:30';
+      else horaColFin = '13:30';
+    }
+
+    let colacionTexto = 'Sin colación (0 hrs)';
+    if (hColVal > 0) {
+      const duracionStr = hColVal >= 1.0 ? `${hColVal.toFixed(1)} hrs` : `${Math.round(hColVal * 60)} min`;
+      colacionTexto = (horaColIni && horaColFin)
+        ? `${horaColIni} a ${horaColFin} (${duracionStr})`
+        : `${duracionStr} colación`;
+    }
 
     return `
       <div class="report-card mb-5 border border-slate-300 rounded-lg p-4 bg-white shadow-sm break-inside-avoid">
@@ -151,13 +215,14 @@ function buildEdpHtml(data) {
             <strong class="text-slate-900">${rep.patente || 'S/P'} — ${rep.modelo || 'Grúa'}</strong>
           </div>
           <div>
-            <span class="text-slate-500 block font-semibold text-[10px] uppercase">Horario & Colación:</span>
-            <span class="text-slate-900 font-mono">${rep.hora_inicio || '--:--'} a ${rep.hora_termino || '--:--'} (${rep.horas_colacion || 0}m colación)</span>
+            <span class="text-slate-500 block font-semibold text-[10px] uppercase">Horario Faena & Colación:</span>
+            <div class="text-slate-900 font-mono">Faena: <strong>${horaIni} a ${horaFin}</strong></div>
+            <div class="text-slate-700 font-mono text-[11px] mt-0.5">Colación: <strong class="text-amber-800">${colacionTexto}</strong></div>
           </div>
           <div>
             <span class="text-slate-500 block font-semibold text-[10px] uppercase">Horas Facturables / ST:</span>
-            <strong class="text-slate-900 font-mono">${Number(rep.horas_facturables || 0).toFixed(1)} hrs</strong>
-            ${Number(rep.horas_sobretiempo || 0) > 0 ? `<span class="text-amber-700 font-bold"> (+${Number(rep.horas_sobretiempo).toFixed(1)} ST)</span>` : ''}
+            <strong class="text-slate-900 font-mono text-sm">${Number(rep.horas_facturables || 0).toFixed(1)} hrs</strong>
+            ${Number(rep.horas_sobretiempo || 0) > 0 ? `<span class="text-amber-700 font-bold block text-[11px]"> (+${Number(rep.horas_sobretiempo).toFixed(1)} ST)</span>` : ''}
           </div>
         </div>
 
