@@ -469,27 +469,6 @@
                     {{ min === 0 ? 'Sin colación' : `${min} min` }}
                   </button>
                 </div>
-                <!-- Horario de inicio y término de colación -->
-                <div v-if="formReport.colacion_minutos > 0" class="grid grid-cols-2 gap-2 bg-[#050810] p-2.5 rounded-xl border border-amber-500/30">
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Inicio Colación</label>
-                    <input
-                      type="time"
-                      v-model="formReport.hora_inicio_colacion"
-                      @change="onColacionTimeChange"
-                      class="w-full bg-[#0a0f1e] border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 font-mono font-bold outline-none focus:border-amber-400"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Término Colación</label>
-                    <input
-                      type="time"
-                      v-model="formReport.hora_termino_colacion"
-                      @change="onColacionTimeChange"
-                      class="w-full bg-[#0a0f1e] border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 font-mono font-bold outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
               </div>
 
               <!-- CÁLCULO REACTIVO DE HORAS -->
@@ -786,10 +765,9 @@
               <strong class="text-white font-mono">{{ modalReportVisor.hora_inicio || '08:00' }} a {{ modalReportVisor.hora_termino || '18:00' }}</strong>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block font-semibold">Horario de Colación:</span>
+              <span class="text-[10px] text-slate-400 block font-semibold">Colación:</span>
               <strong class="text-white font-mono">
-                {{ modalReportVisor.hora_inicio_colacion && modalReportVisor.hora_termino_colacion ? `${modalReportVisor.hora_inicio_colacion} a ${modalReportVisor.hora_termino_colacion}` : (modalReportVisor.colacion_minutos ? '13:00 a 14:00' : 'Sin colación') }}
-                <span class="text-amber-400 text-[10px] font-sans">({{ modalReportVisor.colacion_minutos || 0 }} min)</span>
+                {{ modalReportVisor.colacion_minutos ? `${modalReportVisor.colacion_minutos} min` : 'Sin colación' }}
               </strong>
             </div>
             <div class="col-span-2 flex justify-between border-t border-white/5 pt-1.5 mt-1">
@@ -948,8 +926,6 @@ const formReport = ref({
   foto_horometro: '',
   hora_inicio: '08:00',
   hora_termino: '18:00',
-  hora_inicio_colacion: '13:00',
-  hora_termino_colacion: '14:00',
   colacion_minutos: 60,
   maniobra_detalle: '',
   mandante_nombre: '',
@@ -960,31 +936,6 @@ const formReport = ref({
 
 const setColacionMinutos = (min) => {
   formReport.value.colacion_minutos = min
-  if (min === 0) {
-    formReport.value.hora_inicio_colacion = ''
-    formReport.value.hora_termino_colacion = ''
-  } else {
-    if (!formReport.value.hora_inicio_colacion) {
-      formReport.value.hora_inicio_colacion = '13:00'
-    }
-    const [h, m] = formReport.value.hora_inicio_colacion.split(':').map(Number)
-    const totalMin = (h || 13) * 60 + (m || 0) + min
-    const hFin = Math.floor(totalMin / 60) % 24
-    const mFin = totalMin % 60
-    formReport.value.hora_termino_colacion = `${String(hFin).padStart(2, '0')}:${String(mFin).padStart(2, '0')}`
-  }
-}
-
-const onColacionTimeChange = () => {
-  if (!formReport.value.hora_inicio_colacion || !formReport.value.hora_termino_colacion) {
-    formReport.value.colacion_minutos = 0
-    return
-  }
-  const [hIni, mIni] = formReport.value.hora_inicio_colacion.split(':').map(Number)
-  const [hFin, mFin] = formReport.value.hora_termino_colacion.split(':').map(Number)
-  let diff = (hFin * 60 + mFin) - (hIni * 60 + mIni)
-  if (diff < 0) diff += 24 * 60
-  formReport.value.colacion_minutos = diff
 }
 
 const proximoDiaCorrelativo = computed(() => {
@@ -1056,8 +1007,6 @@ const abrirFormularioReport = () => {
     foto_horometro: '',
     hora_inicio: horaInicioDefault,
     hora_termino: '18:00',
-    hora_inicio_colacion: '13:00',
-    hora_termino_colacion: '14:00',
     colacion_minutos: 60,
     maniobra_detalle: '',
     mandante_nombre: '',
@@ -1085,8 +1034,6 @@ const sellarYTransmitirReport = async () => {
       delta_motor: Number((Number(formReport.value.horometro_final) - Number(formReport.value.horometro_inicio)).toFixed(1)),
       hora_inicio: formReport.value.hora_inicio,
       hora_termino: formReport.value.hora_termino,
-      hora_inicio_colacion: formReport.value.hora_inicio_colacion || (formReport.value.colacion_minutos > 0 ? '13:00' : null),
-      hora_termino_colacion: formReport.value.hora_termino_colacion || (formReport.value.colacion_minutos > 0 ? '14:00' : null),
       colacion_minutos: formReport.value.colacion_minutos,
       horas_efectivas: reporteHorasCalculadas.value.efectivas,
       horas_facturables: reporteHorasCalculadas.value.facturables,
@@ -1109,8 +1056,6 @@ const sellarYTransmitirReport = async () => {
       fecha_reporte: formReport.value.fecha || new Date().toISOString().split('T')[0],
       hora_inicio: formReport.value.hora_inicio || '08:00',
       hora_termino: formReport.value.hora_termino || '18:00',
-      hora_inicio_colacion: formReport.value.hora_inicio_colacion || (formReport.value.colacion_minutos > 0 ? '13:00' : null),
-      hora_termino_colacion: formReport.value.hora_termino_colacion || (formReport.value.colacion_minutos > 0 ? '14:00' : null),
       horas_colacion: Number((Number(formReport.value.colacion_minutos || 60) / 60).toFixed(2)),
       horas_operadas: Number(reporteHorasCalculadas.value.efectivas || 0),
       horas_minimas: Number(pisoMinimoEstructurador.value || 8.0),

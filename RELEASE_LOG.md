@@ -2,6 +2,26 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP y Backend API] - Versión 1.0.77
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-03 13:08:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-041`
+- **Especificación Técnica:** `.agents/specs/62_edp_fechas_horas_colacion_y_formato_email_spec.md`
+- **Detalle de Mejoras y Cambios (Alineación Estricta al Alcance Original, Supresión de Registro de Horarios de Colación, Horarios Nativos de Faena y Contraste Email RFC):**
+  - **[SCOPE/DB] Alineación Estricta de Alcance y Reversión de Base de Datos:**
+    - Reversión total de cualquier registro de horarios de colación (`hora_inicio_colacion` y `hora_termino_colacion`) fuera de scope. Columnas eliminadas de PostgreSQL (`sch_leangsp.tedp_reporte_avance`).
+    - En App Móvil (`ViajeConductor.vue`) y Torre PMO (`ModalVisorReport.vue`): Erradicación completa de los inputs y campos de horas de inicio/fin de colación, manteniendo exclusivamente la duración en minutos pactada en el alcance contractual.
+    - En Dossier EDP (Anexo 2) y Report Diario PDF: Despliegue sobrio y verídico con únicamente la duración registrada (`Colación: 1.0 hr` o `Sin colación (0 hrs)`), sin campos vacíos ni simulación de intervalos horarios.
+  - **[PDF/EDP] Horarios de Inicio y Término de Faena en Anexo 1:**
+    - Formateo limpio en celda `whitespace-nowrap font-mono` (`08:00 - 18:00` / `08:00 - 19:00`) derivado con precisión de los timestamps existentes `fecha_inicio_servicio` y `fecha_termino_servicio` en zona horaria chilena (`America/Santiago`, UTC-3), sin valores vacíos ni desbordes.
+    - Derivación automática de período de corte de la Carátula de EDP desde las fechas de los reportes.
+  - **[EMAIL/RFC] Contraste Alto y Legibilidad en Solicitud de Modificación de EDP:**
+    - Estilos inline prioritarios (`!important`) en `.content-box` y etiquetas en cian brillante (`#38bdf8`), datos en blanco puro (`#ffffff`) y montos en verde esmeralda (`#34d399`), asegurando legibilidad en todos los clientes webmail y móviles.
+
+---
+
 ## [Portal Web GSP y Backend API] - Versión 1.0.76
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-03 12:45:00 (-03:00)

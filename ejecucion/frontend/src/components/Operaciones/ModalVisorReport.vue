@@ -190,28 +190,6 @@
                       </span>
                     </div>
                   </div>
-
-                  <!-- Horario explícito de colación -->
-                  <div v-if="modoAjuste && formAjustes.horas_colacion > 0" class="flex items-center gap-1 pt-1 text-[10px] font-mono">
-                    <span class="text-[9px] text-amber-400 font-sans font-bold">Horario:</span>
-                    <input 
-                      type="time" 
-                      v-model="formAjustes.hora_inicio_colacion"
-                      class="bg-[#0a0f1e] border border-amber-500/50 rounded px-1 py-0.5 text-amber-300 focus:outline-none w-16 text-center"
-                      title="Inicio colación"
-                    />
-                    <span class="text-slate-500">➔</span>
-                    <input 
-                      type="time" 
-                      v-model="formAjustes.hora_termino_colacion"
-                      class="bg-[#0a0f1e] border border-amber-500/50 rounded px-1 py-0.5 text-amber-300 focus:outline-none w-16 text-center"
-                      title="Término colación"
-                    />
-                  </div>
-                  <div v-else-if="formAjustes.horas_colacion > 0" class="text-[10.5px] font-mono text-slate-400">
-                    <span>Horario: </span>
-                    <strong class="text-amber-300">{{ formAjustes.hora_inicio_colacion || '13:00' }} ➔ {{ formAjustes.hora_termino_colacion || '14:00' }}</strong>
-                  </div>
                 </div>
               </div>
 
@@ -908,8 +886,6 @@ let leafletMap = null
 const formAjustes = ref({
   hora_inicio: '08:00',
   hora_termino: '18:00',
-  hora_inicio_colacion: '13:00',
-  hora_termino_colacion: '14:00',
   horas_colacion: 1.0,
   horometro_inicio: 0,
   horometro_termino: 0,
@@ -954,13 +930,6 @@ watch(() => props.report, (newRep) => {
         ? valAj.horas_colacion
         : (newRep.horas_colacion !== undefined && newRep.horas_colacion !== null ? newRep.horas_colacion : 1.0)
     )
-    const hColIni = tieneAjuste && valAj.hora_inicio_colacion
-      ? valAj.hora_inicio_colacion
-      : (newRep.hora_inicio_colacion || (col > 0 ? '13:00' : ''))
-    const hColFin = tieneAjuste && valAj.hora_termino_colacion
-      ? valAj.hora_termino_colacion
-      : (newRep.hora_termino_colacion || (col > 0 ? (col >= 1.0 ? '14:00' : (col >= 0.75 ? '13:45' : '13:30')) : ''))
-
     const horoIni = Number(
       tieneAjuste && valAj.horometro_inicio !== undefined
         ? valAj.horometro_inicio
@@ -985,8 +954,6 @@ watch(() => props.report, (newRep) => {
     formAjustes.value = {
       hora_inicio: hIni,
       hora_termino: hFin,
-      hora_inicio_colacion: hColIni,
-      hora_termino_colacion: hColFin,
       horas_colacion: col,
       horometro_inicio: horoIni,
       horometro_termino: horoFin,
@@ -1225,11 +1192,7 @@ const esHorarioModificado = computed(() => {
 const esColacionModificada = computed(() => {
   if (!reportLocal.value) return false
   const orig = Number(reportLocal.value.horas_colacion !== undefined ? reportLocal.value.horas_colacion : 1.0)
-  const origIni = reportLocal.value.hora_inicio_colacion || (orig > 0 ? '13:00' : '')
-  const origFin = reportLocal.value.hora_termino_colacion || (orig > 0 ? (orig >= 1.0 ? '14:00' : '13:30') : '')
-  return Math.abs(Number(formAjustes.value.horas_colacion) - orig) > 0.01 ||
-         formAjustes.value.hora_inicio_colacion !== origIni ||
-         formAjustes.value.hora_termino_colacion !== origFin
+  return Math.abs(Number(formAjustes.value.horas_colacion) - orig) > 0.01
 })
 
 const esHorometroModificado = computed(() => {
@@ -1405,8 +1368,6 @@ const ejecutarValidacionConPin = async () => {
       ajustes: hayModificaciones.value ? {
         hora_inicio: formAjustes.value.hora_inicio,
         hora_termino: formAjustes.value.hora_termino,
-        hora_inicio_colacion: formAjustes.value.hora_inicio_colacion,
-        hora_termino_colacion: formAjustes.value.hora_termino_colacion,
         horas_colacion: formAjustes.value.horas_colacion,
         horometro_inicio: formAjustes.value.horometro_inicio,
         horometro_termino: formAjustes.value.horometro_termino,

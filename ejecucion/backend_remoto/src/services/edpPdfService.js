@@ -144,8 +144,8 @@ function buildEdpHtml(data) {
     totalSobretiempo += st;
 
     const aj = rep.ajustes_analista?.valores_ajustados || rep.ajustes_analista?.valores_originales || {};
-    const horaIni = formatTimeCL(rep.hora_inicio || aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
-    const horaFin = formatTimeCL(rep.hora_termino || aj.hora_termino, rep.fecha_termino_servicio, '18:00');
+    const horaIni = formatTimeCL(aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
+    const horaFin = formatTimeCL(aj.hora_termino, rep.fecha_termino_servicio, '18:00');
 
     const equipoDesc = rep.patente ? `${rep.patente} (${rep.modelo || 'Grúa'})` : (rep.equipo_nombre || 'Grúa Principal');
     const operador = rep.operador_nombre || 'Operador Asignado';
@@ -173,29 +173,16 @@ function buildEdpHtml(data) {
     const tieneFirma = firmaCanvas && (firmaCanvas.startsWith('data:image') || firmaCanvas.startsWith('http'));
 
     const aj = rep.ajustes_analista?.valores_ajustados || rep.ajustes_analista?.valores_originales || {};
-    const horaIni = formatTimeCL(rep.hora_inicio || aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
-    const horaFin = formatTimeCL(rep.hora_termino || aj.hora_termino, rep.fecha_termino_servicio, '18:00');
+    const horaIni = formatTimeCL(aj.hora_inicio, rep.fecha_inicio_servicio, '08:00');
+    const horaFin = formatTimeCL(aj.hora_termino, rep.fecha_termino_servicio, '18:00');
 
     const hColVal = rep.horas_colacion !== undefined && rep.horas_colacion !== null 
       ? Number(rep.horas_colacion) 
       : (aj.horas_colacion !== undefined ? Number(aj.horas_colacion) : 1.0);
 
-    const horaColIni = rep.hora_inicio_colacion || aj.hora_inicio_colacion || (hColVal > 0 ? '13:00' : null);
-    let horaColFin = rep.hora_termino_colacion || aj.hora_termino_colacion;
-    if (!horaColFin && horaColIni && hColVal > 0) {
-      if (hColVal >= 1.0) horaColFin = '14:00';
-      else if (hColVal >= 0.75) horaColFin = '13:45';
-      else if (hColVal >= 0.5) horaColFin = '13:30';
-      else horaColFin = '13:30';
-    }
-
-    let colacionTexto = 'Sin colación (0 hrs)';
-    if (hColVal > 0) {
-      const duracionStr = hColVal >= 1.0 ? `${hColVal.toFixed(1)} hrs` : `${Math.round(hColVal * 60)} min`;
-      colacionTexto = (horaColIni && horaColFin)
-        ? `${horaColIni} a ${horaColFin} (${duracionStr})`
-        : `${duracionStr} colación`;
-    }
+    const colacionTexto = hColVal > 0 
+      ? (hColVal >= 1.0 ? `${hColVal.toFixed(1)} hrs` : `${Math.round(hColVal * 60)} min`)
+      : 'Sin colación (0 hrs)';
 
     return `
       <div class="report-card mb-5 border border-slate-300 rounded-lg p-4 bg-white shadow-sm break-inside-avoid">

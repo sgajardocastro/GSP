@@ -55,10 +55,8 @@ exports.getEstadosPagoPorProyecto = async (req, res) => {
     // 2. Obtener reportes validados no asociados a ningún EDP aún (disponibles para liquidar)
     const repSql = `
       SELECT r.*, 
-             COALESCE(r.hora_inicio, to_char(r.fecha_inicio_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '08:00') AS hora_inicio,
-             COALESCE(r.hora_termino, to_char(r.fecha_termino_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '18:00') AS hora_termino,
-             COALESCE(r.hora_inicio_colacion, '13:00') AS hora_inicio_colacion,
-             COALESCE(r.hora_termino_colacion, '14:00') AS hora_termino_colacion,
+             to_char(r.fecha_inicio_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI') AS hora_inicio,
+             to_char(r.fecha_termino_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI') AS hora_termino,
              e.patente, e.modelo, e.marca,
              COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
              COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
@@ -142,10 +140,8 @@ exports.generarPdfEdp = async (req, res) => {
     // 4. Obtener Reports Diarios del proyecto
     const repRes = await db.query(`
       SELECT r.*,
-             COALESCE(r.hora_inicio, to_char(r.fecha_inicio_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '08:00') AS hora_inicio,
-             COALESCE(r.hora_termino, to_char(r.fecha_termino_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI'), '18:00') AS hora_termino,
-             COALESCE(r.hora_inicio_colacion, '13:00') AS hora_inicio_colacion,
-             COALESCE(r.hora_termino_colacion, '14:00') AS hora_termino_colacion,
+             to_char(r.fecha_inicio_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI') AS hora_inicio,
+             to_char(r.fecha_termino_servicio AT TIME ZONE 'America/Santiago', 'HH24:MI') AS hora_termino,
              e.patente, e.modelo, e.marca,
              COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
              COALESCE(u_rig.name_frst || ' ' || u_rig.apellido_pat, 'Rigger') AS rigger_nombre
