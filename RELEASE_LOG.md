@@ -2,6 +2,237 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [PWA, Backend API, Base de Datos & Web] - Versión 1.0.91
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-05 16:15:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **PWA Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-993`
+- **Especificación Técnica:** Evidencias Fotográficas Separadas de Horómetro y Odómetro en Report Diario Móvil (PWA) + Simulador Web Interactivo de Cotización (Spec 64)
+- **Detalle de Mejoras y Cambios:**
+  - **[PWA - REQ-993] Registro y Fotos Separadas de Horómetros y Odómetros (`ReportDiarioIzaje.vue`):**
+    - Se incorporaron slots de captura fotográfica e inputs numéricos completamente independientes tanto en el **Momento 1 (Inicio de Jornada en Faena)** como en el **Momento 2 (Término de Jornada)**.
+    - Se resolvió la limitación física de terreno donde el horómetro (horas de motor/torreta) y el odómetro (tacógrafo de cabina en km) están en consolas físicamente separadas.
+    - Botones dedicados: `📸 Tomar Foto Horómetro Superestructura` (Obligatoria) y `📸 Tomar Foto Odómetro Chasis` (con validación reactiva obligatoria si se registra kilometraje).
+    - Mantenida la foto de horómetro de chasis para equipos bimotor.
+  - **[BACKEND - REQ-993] Persistencia y Homologación de Evidencias (`reportDiarioController.js`):**
+    - Ingesta y almacenamiento de `foto_odometro_inicio`, `foto_odometro_termino`, `odometro_inicio` y `odometro_termino` en endpoints `POST /operaciones/report/inicio-jornada` y `POST /operaciones/report/guardar`.
+    - Consulta reactiva en `getReportsPorProyecto` y `getReportContexto` para precarga en caso de reapertura o contingencia.
+  - **[BASE DE DATOS - REQ-993] DDL en PostgreSQL DEV y PROD:**
+    - Columnas `foto_odometro_inicio TEXT` y `foto_odometro_termino TEXT` creadas y comentadas en `sch_leangsp.tedp_reporte_avance` y `sch_leangsp_prod.tedp_reporte_avance`.
+  - **[WEB - SIMULADOR INTERACTIVO] Walkthrough Interactivo de Generación de Cotizaciones:**
+    - Generación del artefacto interactivo `simulador_cotizacion_web.html` y publicación en `ejecucion/frontend/public/simulador_cotizacion.html` con cursor virtual animado, typing realista, selección de grúa en estructurador comercial y renderizado visual del PDF formal de 5 días hábiles.
+
+## [PWA, Portal Web GSP y Nginx] - Versión 1.0.86
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue Producción:** 2026-10-05 01:20:00 (-03:00)
+- **Fecha de Despliegue Dev:** 2026-10-05 01:20:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **PWA Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-045`
+- **Especificación Técnica:** Corrección de Enrutamiento PWA a Hoja de Ruta de Conductor y Desacoplamiento de Estados de Despacho
+- **Detalle de Mejoras y Cambios (Resolución del Disconnect PWA ➔ Web):**
+  - **[BUGFIX/PWA] Dinamización de Enlace de Viaje en PWA (`Surveys.vue:893-898`):**
+    - Se corrigió `abrirViajeNativo(token)` que redirigía estáticamente a `${baseOrigin}/lg-gsp-dev/viaje/${token}` incluso cuando el usuario operaba en la PWA de producción (`/pwa-gsp-prod/`).
+    - Ahora detecta dinámicamente el prefijo de ambiente (`/pwa-gsp-prod` o `/lg-gsp-prod`) y redirige hacia `${baseOrigin}/lg-gsp-prod/viaje/${token}`, garantizando que las peticiones HTTP (`/operaciones/viaje/:token/salida`) se ejecuten contra el backend y base de datos de producción (`sch_leangsp_prod`).
+  - **[BUGFIX/NGINX] Redirección Global de Rutas de Viaje Móvil (`/etc/nginx/default.d/base.conf`):**
+    - Se corrigió la regla `location /viaje/` en Nginx que redirigía con código HTTP 301 permanente hacia `/lg-gsp-dev/viaje/$1`.
+    - Actualizada para redirigir limpiamente hacia `/lg-gsp-prod/viaje/$1`.
+  - **[BUGFIX/WEB] Claridad Visual de Estados y Odómetros en Despacho (`GestorOportunidades.vue:2011-2035`):**
+    - Se desacopló la lógica del badge de viaje: si el convoy fue asignado en patio pero el conductor aún no registra odómetro de salida (`estado_trayecto === 'ASIGNADO'`), se visualiza `🟡 SALIDA PENDIENTE` en vez del falso `🔵 EN RUTA` parpadeante.
+    - Se corrigió el placeholder `|| 0` por `!= null ? val : '---'` en odómetros y horómetros, eliminando la confusa cifra de 0 KM previa a la salida.
+    - El chip de PIN ahora valida la presencia real de `pin_hash` o `km_inicial` (`🔐 PIN Validado ✅` vs `🔐 PIN Pendiente`), eliminando el texto estático engañoso.
+
+## [Portal Web GSP, PWA y Backend API] - Versión 1.0.85
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue Producción:** 2026-10-05 00:40:00 (-03:00)
+- **Fecha de Despliegue Dev:** 2026-10-05 00:40:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Backend Servicio Prod:** `lean-services-gsp-prod` (PM2 ID 13, puerto 3016)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio Dev:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **PWA Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimiento Backlog:** `REQ-044`
+- **Especificación Técnica:** Auditoría Exhaustiva de URLs, Endpoints y Storage Paths (Limpieza Total de Hardcoding)
+- **Detalle de Mejoras y Cambios (Zero Hardcoding & Total Dynamic Routing):**
+  - **[FRONTEND] Limpieza y Dinamización de Enlaces y Endpoints:**
+    - `ModalCaratulaEDP.vue`: Reemplazadas URLs fijas `servidor.leanglobal.cl/lg-gsp` por llamadas directas con `apiAxios.post('/operaciones/edp/firmar-comercial')` y resolución dinámica de dossier PDF y archivos adjuntos según el entorno activo (`/lg-gsp-prod/api` vs `/lg-gsp-dev/api`).
+    - `ModalITS.vue`: Función `resolverUrlArchivo` dinamizada para usar el prefijo del ambiente activo (`/lg-gsp-prod` o `/lg-gsp-dev`), eliminando fallback fijo a `lg-gsp-dev`.
+    - `ModalMapaViaje.vue`: Enlace a "Abrir Hoja Conductor" parametrizado con `urlHojaConductor` dinámico (`/lg-gsp-prod/viaje/:token` en producción).
+    - `AcreditacionDrawer.vue`: Eliminadas peticiones crudas a `lg-gsp/api`; reemplazadas por `apiAxios.get` y `apiAxios.put` con autenticación y enrutamiento dinámico.
+    - `GestorOportunidades.vue`: 
+      - Despacho de WhatsApp dinamizado con `wspBase` (`/lg-gsp-prod/whatsapp/enviar` en producción y `/lg-gsp-dev/whatsapp/enviar` en desarrollo).
+      - Enlaces de hoja de viaje de conductor (`getLinkViajeOperador`, `abrirModalDespachoWhatsApp`, `copiarEnlaceViaje`, `abrirWebViaje`) dirigidos dinámicamente según el entorno.
+      - Descarga de PDF de EDP (`descargarDossierPdfEDP`) y enlaces en listados de OT migrados a resolución canónica `getFullStaticUrl`.
+    - `Vista360.vue`: Generación de código QR para equipos dirigida dinámicamente a `/lg-gsp-prod/equipo/:patente` en producción.
+    - `ListadosMinsal.vue` y `ListadosRecss.vue`: Eliminadas URLs residuales hacia `transmac-dev`; fotos vinculadas al backend activo mediante `apiAxios.defaults.baseURL`.
+  - **[BACKEND] Dinamización de Rutas de Validación, PDF y Almacenamiento:**
+    - `archivoController.js`: Validación de documentos (`validacionUrl`) y fallback de carpeta pública parametrizados según `process.env.APP_ENV` y `process.cwd()`.
+    - `itsController.js`: `validacionUrl` dinamizada hacia `/lg-gsp-prod/validador-doc` o `/lg-gsp-dev/validador-doc`.
+    - `reportDiarioController.js`: `validacionUrl` y `linkPdfCompleto` generados dinámicamente con prefijo de entorno y endpoint canónico `/api/archivo/ver/:id_doc`.
+    - `reportDiarioPdfService.js`: Fallback de validación TSA en pie de página ajustado dinámicamente según `APP_ENV`.
+    - `estadoPagoController.js`: URL de PDF de EDP generada con prefijo correspondiente al entorno.
+    - `exportService.js`: `resolveBaseWebUrl()` parametrizado según `APP_ENV`.
+    - `proyectoModel.js` e `itsPdfService.js`: Detección de carpeta `public` para logos priorizando `process.cwd()` de la instancia en ejecución.
+    - `storageConfig.js`: Candidatos de directorios para búsqueda de archivos actualizados para incluir `process.cwd()/public`.
+    - `notificacionService.js`: Endpoint de fallback HTTPS para WhatsApp ajustado a `/lg-gsp-prod/whatsapp/enviar` en producción.
+    - `signatureController.js`: `VALIDATION_URL` dinamizada con `envPrefix`.
+  - **[PWA] Aislamiento de Ambiente y Dinamismo en Cliente Móvil:**
+    - `services/api.js`: Implementado `resolveApiBase()` dinámico que detecta automáticamente si la PWA se ejecuta bajo `/pwa-gsp-prod/` o `/pwa-gsp-dev/`, garantizando que las llamadas a la API siempre coincidan con el entorno servido sin depender de variables fijas.
+    - `App.vue`: Watcher de conectividad ajustado con la misma resolución dinámica.
+    - `.env.production` y `.env.prod`: Configurados formalmente para apuntar a producción (`/pwa-gsp-prod/` y `/lg-gsp-prod/api`, con `VUE_APP_TENANT_CODE=gsp`).
+    - `EquiposMoviles.vue`: Eliminado fallback hardcodeado a `pwa-transmac-dev`; previsualización de archivos migrada a `/archivo/ver/:id`.
+    - `Inspeccion.vue` y `useFlujoAprobacion.js`: Sustituido código duro `'transmac'` y usuario fijo `1` por `process.env.VUE_APP_TENANT_CODE || 'gsp'` y usuario autenticado en sesión.
+
+## [Portal Web GSP, Base de Datos y Backend API] - Versión 1.0.84
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue Producción:** 2026-10-05 00:15:00 (-03:00)
+- **Fecha de Despliegue Dev:** 2026-10-05 00:15:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Backend Servicio Prod:** `lean-services-gsp-prod` (PM2 ID 13, puerto 3016)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio Dev:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-043`
+- **Especificación Técnica:** Gobernanza RBAC y Protocolo de Notificaciones
+- **Detalle de Mejoras y Cambios (Corrección de Destinatario Omar Ghiselini y Aislamiento de Almacenamiento):**
+  - **[BD/RBAC] Corrección de Roles y Creación de Usuario Omar Ghiselini:**
+    - Se identificó que `OMAR SOFFIA REYES` (user 46) es un operador de grúa (`cargo: "Operador"`). Se le retiró el rol `Admin` y se le asignó el rol `GSP_EJEC` (Operador).
+    - Se creó/activó a `Omar Ghiselini` (`omar.ghiselini@arriendosanpablo.cl` / `omar.ghisellini@arriendosanpablo.cl`) con cargo `Director General` y rol `Admin` tanto en `sch_leangsp_prod` como en `sch_leangsp`.
+  - **[FRONTEND/NOTIFICACIONES] Actualización de Propuestas de Envío:**
+    - En `ModalEnviarCotizacion.vue`, se reemplazó cualquier sugerencia de Omar Soffia por **Omar Ghiselini (Director)**. Al consultar dinámicamente los administradores por API, ahora se propone de forma nativa a Omar Ghiselini.
+    - En `GestorOportunidades.vue`, se actualizaron los destinatarios institucionales en copia a `omar.ghiselini@arriendosanpablo.cl`.
+  - **[STORAGE/BACKEND] Aislamiento Estricto de Almacenamiento:**
+    - Corregido `storageConfig.js` para respetar `process.env.APP_ENV` en lugar de caer en el fallback `'dev'`.
+    - Documentos generados en producción ahora se almacenan bajo `/u05/LeanDocs/GSP/prod/...` y se sirven bajo `https://servidor.leanglobal.cl/lg-gsp-prod/api/archivo/ver/:id_doc`.
+
+## [Portal Web GSP y Backend API] - Versión 1.0.81
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue Producción:** 2026-10-04 18:30:00 (-03:00)
+- **Fecha de Despliegue Dev:** 2026-10-04 18:30:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Backend Servicio Prod:** `lean-services-gsp-prod` (PM2 ID 13, puerto 3016)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio Dev:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-042`
+- **Especificación Técnica:** `.agents/specs/52_notificaciones_omnichannel_deep_linking_spec.md` y `.agents/specs/63_control_operativo_vivo_hibrido_spec.md`
+- **Detalle de Mejoras y Cambios (Parametrización Estricta de Ambiente en Notificaciones y WhatsApp):**
+  - **[BACKEND/PARAMETRIZACIÓN] Discriminación Canónica de Entorno en `notificacionService.js`:**
+    - Detección de ambiente `esAmbienteProduccion()` basada en `APP_ENV === 'prod'`, `NODE_ENV === 'production'` o esquema `sch_leangsp_prod`.
+    - URLs canónicas ajustadas a `/lg-gsp-prod` y `/pwa-gsp-prod` en producción, y `/lg-gsp-dev` y `/pwa-gsp-dev` en desarrollo.
+    - Inyección automática del prefijo `🟡 [DEV / PRUEBAS]` en el asunto de correos y `🟡 *[SIMULACIÓN DEV / PRUEBAS]*` al inicio de mensajes de WhatsApp en desarrollo para evitar movilizaciones o reportes erróneos en terreno.
+    - Dinamización del esquema `${SCHEMA}.tnot_notification_log` en el registro de auditoría transaccional.
+  - **[BACKEND/AUDITORÍA] Parametrización en `slaAuditorService.js`:**
+    - Generación de Deep Link contextual hacia la Torre de Control mediante `notificacionService.construirDeepLink({ ruta: 'torre' })`, eliminando URL fija a DEV.
+    - Dinamización del esquema `${SCHEMA}.tedp_reporte_avance` en la consulta del auditor de SLA.
+  - **[FRONTEND/PARAMETRIZACIÓN] Enlace Directo a Operador en `ControlOperativoVivo.vue`:**
+    - El enlace directo de WhatsApp (`https://wa.me/...`) detecta el entorno de ejecución (`-dev` o `localhost`) e inyecta `🟡 [PRUEBAS DEV / NO REAL]` al mensaje preformateado.
+  - **[FRONTEND/PARAMETRIZACIÓN] Hoja de Ruta en `ModalDespachoWhatsApp.vue`:**
+    - La URL de la hoja de ruta conmuta dinámicamente entre `/lg-gsp-prod/viaje/` y `/lg-gsp-dev/viaje/` según la ruta activa.
+    - Inyección de advertencia de pruebas en el texto de recordatorio y despacho para entornos de desarrollo.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.80
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue Producción:** 2026-10-04 18:05:00 (-03:00)
+- **Fecha de Despliegue Dev:** 2026-10-03 16:15:00 (-03:00)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Backend Servicio Prod:** `lean-services-gsp-prod` (PM2 ID 13, puerto 3016)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio Dev:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-042`
+- **Especificación Técnica:** `.agents/specs/63_control_operativo_vivo_hibrido_spec.md`
+- **Detalle de Mejoras y Cambios (Soporte Multi-Equipo en Control Operativo en Vivo con la OT como Driver):**
+  - **[ARQUITECTURA/DECISIÓN] La OT como Driver Unificado:**
+    - Se preserva la Orden de Trabajo (OT) como entidad principal de monitoreo en el tablero de Control Operativo en Vivo, evitando la dispersión de tarjetas y manteniendo el agrupador comercial y operacional.
+  - **[FEAT/UI] Selector Interactivo de Flota Asignada en Tarjeta y Drawer (`ControlOperativoVivo.vue`):**
+    - Para OTs que involucran múltiples equipos (ej.: grúas telescópicas + camiones pluma + camas bajas + escoltas, como en OT 98 con 4 máquinas y OT 76 con 3 máquinas), la tarjeta incorpora una botonera de píldoras interactivas con ícono por tipo de máquina (`🚜` Izaje / `🚛` Transporte), código de patente/modelo y micro-semáforo individual de estado.
+    - Las OTs mono-equipo (caso estándar) se mantienen 100% limpias sin selectores redundantes.
+    - Al hacer click en cualquier máquina de la flota asignada, la tarjeta y el Drawer de Timeline Intradía conmutan en tiempo real:
+      1. El nombre completo y modelo del equipo.
+      2. El operador o chofer asignado con su botón directo de WhatsApp (`https://wa.me/...`) y mensaje contextualizado con la máquina y la OT.
+      3. La mini-franja multi-día `[R][R][▶][ ][FIN]` con el contador de reportes de esa máquina.
+      4. El desglose detallado de actividades Plan vs Real de esa máquina específica.
+  - **[BACKEND/MULTI-EQUIPO] Ingesta y Rollup de Flota en Endpoint (`controlVivoController.js`):**
+    - Ingesta combinada de flota desde `crm_v1.lineas_servicio` y `sch_leangsp.tpry_rel_equipo` (precargada en batch por proyecto).
+    - Resolución individual del operador asignado (`operador_asignado_id`, `tripulacion_asignada` y catálogo de usuarios).
+    - Discriminación inteligente de ciclo operativo (`esEquipoFaena`): Grúas y equipos de izaje evalúan reports de terreno (`REPORT_INICIO` y `REPORT_TERMINO`); equipos de transporte evalúan ciclo de desplazamiento (`INSPECCION_PATIO`, `SALIDA_BASE`, `LLEGADA_FAENA`, `VIAJE_RETORNO`) sin disparar falsas alarmas de reporte de inicio.
+    - Rollup del semáforo global de la OT (`estado_global`) tomando la peor condición de sus máquinas (`PRI_SEMAFORO`).
+    - Alertas in-web enriquecidas con la patente del equipo afectado (`OT (PATENTE): mensaje`).
+  - **[FEAT/SEARCH] Búsqueda Global en Flota Completa:**
+    - El buscador superior de la vista ahora filtra coincidencias no solo por OT o cliente, sino también buscando en las patentes, modelos y nombres de operadores de todos los equipos asignados a la OT.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.79
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-03 15:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-042`
+- **Especificación Técnica:** `.agents/specs/63_control_operativo_vivo_hibrido_spec.md`
+- **Detalle de Correcciones y Optimizaciones (Resolución de Operador, Grúa, Reportes y Candado en Control Vivo):**
+  - **[BACKEND/FIX] Remoción del Filtro Destructivo de Flete en Reportes (`controlVivoController.js` y `reportDiarioController.js`):**
+    - Se eliminó el filtro erróneo `AND COALESCE(incluye_flete_independiente, false) = false` que excluía todos los reportes operacionales legítimos (los cuales por estándar de facturación ITS tienen `incluye_flete_independiente = true`).
+    - La exclusión de fletes puros se formaliza estrictamente mediante el discriminador canónico `(token_report IS NULL OR token_report NOT LIKE 'FLT-%')`.
+  - **[BACKEND/RESOLUTION] Resolución Canónica de Operadores y Equipos:**
+    - Precarga e indexación de catálogos `sch_leangsp.tsec_users` y `sch_leangsp.tequ_equipo` en memoria antes de evaluar OTs del día.
+    - Resolución del operador asignado (`Jorge Ponce`, `+56977501322`) a partir de `id_user` en `tripulacion_asignada`, `operador_id` o líneas de servicio CRM.
+    - Resolución del equipo y modelo (`GRUAS TELESCOPICAS · VCTR.81-9 (ATF 50 G3)`) a partir de `equipo_asignado_id`.
+  - **[BACKEND/ALGORITHM] Cálculo Consolidado de Días y Candado Operacional:**
+    - `totalDiasOT` considera ahora dinámicamente `Math.max(1, diasHabilesLista.length, maxDiaReport)` reflejando exactamente los reportes emitidos en terreno (3/3).
+    - El candado operacional reconoce inmediatamente los servicios concluidos (`estado_global = 'terminado'`), silenciando alarmas rojas falsas en OTs completadas con éxito.
+    - Normalización de las actividades de inicio y término con `fecha_inicio_servicio` y `fecha_termino_servicio` cuando el reporte está validado por analista.
+
+---
+
+## [Portal Web GSP y Backend API] - Versión 1.0.78
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-03 15:00:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Backend Servicio:** `lean-services-gsp` (PM2 ID 10, puerto 3006)
+- **Requerimiento Backlog:** `REQ-042`
+- **Especificación Técnica:** `.agents/specs/63_control_operativo_vivo_hibrido_spec.md`
+- **Detalle de Mejoras y Cambios (Control Operativo en Vivo: Opción 3 Híbrida, Semáforos Cromáticos 5 Estados, Candado por OT y Sanación de Datos):**
+  - **[FEAT/UI] Opción 3 Híbrida: Matriz de Tarjetas de Servicios del Día + Slide-Over Timeline Intradía (`ControlOperativoVivo.vue`):**
+    - Integrado como sub-vista prioritaria en Torre de Control PMO (`Torre.vue` -> `pmoVistaSecundaria = 'control_vivo'`).
+    - Cabecera con Reloj Oficial de Chile (`America/Santiago`, UTC-3), indicador de Ventana Operativa activa (07:00 a 20:00), cuenta regresiva de auto-refresco cada 5 minutos (300 s) y botón de actualización manual puramente icónico `🔄` (con animación de rotación, sin texto ni palabras desalineadas).
+    - Campana interactiva de Notificaciones In-Web con badge de conteo y popup modal para auditar y marcar alertas leídas individualmente o en lote.
+    - Barra de KPIs cromáticos filtrables al click: Total OTs, Rojo (crítico / vencido con pulsación), Amarillo (riesgo próximo < 1h), Azul (planificado > 1h), Verde (cumplido en tiempo), Negro (realizado tarde), Candado (concluido) y Sin Plan.
+    - Grid de tarjetas de servicios ordenadas automáticamente por orden de severidad de excepción, incluyendo:
+      - Encabezado con OT, ID de negocio, cliente, obra y equipo.
+      - Operador con enlace directo a WhatsApp (`https://wa.me/...`) y mensaje preformateado.
+      - **Mini-Franja Multi-Día `[R][R][▶][ ][FIN]`** con seguimiento del avance del servicio día a día.
+      - Desglose de actividades según el tipo de día (Día 1 / Único: Inspección patio, Salida patio, Llegada faena, Report inicio, Report término, Retorno base; Días intermedios: Reportes diarios).
+      - Cálculo automático de desfases en minutos (`+35 min retraso`, `OK`, etc.).
+      - Botones de acción rápida: Ver Report oficial (`ModalVisorReport`), Abrir Expediente OT (`GestorOportunidades`) y Ver Timeline.
+    - **Slide-Over Drawer Lateral con Timeline Intradía:** Línea de tiempo continua de 07:00 a 20:00 con marcador interactivo `NOW` y visualización de hitos planificados vs reales.
+  - **[FEAT/ASIGNACION] Configuración de Horarios y Plan Diario Reactivo en Asignación (`GestorOportunidades.vue`):**
+    - Campo específico para hora de llegada a faena planificada (`hora_llegada_plan`, default `09:30`).
+    - Generación y persistencia reactiva de `plan_diario` (días hábiles entre `fecha_salida_plan` y `fecha_fin_plan`) en `json_field.ejecucion_v1.plan_diario`.
+    - Badge en cabecera con el conteo de días hábiles calculados.
+  - **[BACKEND/API] Endpoint Consolidado del Monitor y Alertas In-Web:**
+    - Creado `/api/operaciones/control-vivo` con agregación en tiempo real de proyectos, viajes, surveys e inspecciones de portón (Template 79).
+    - Creados `/api/operaciones/control-vivo/notificaciones`, `/notificaciones/:id/leida` y `/notificaciones/marcar-todas`.
+    - Tabla en base de datos PostgreSQL: `sch_leangsp.tnot_notification_web`.
+  - **[BACKEND/SECURITY] Candado Operativo Fail-Closed por Días Hábiles de OT (`reportDiarioController.js`):**
+    - Funciones canónicas `calcularCupoDiasHabiles` y `getReportesConsumidosOT` con exclusión estricta de reportes FLETE.
+    - Bloqueo duro con HTTP 403 `SERVICIO_CONCLUIDO` cuando se intenta emitir un reporte adicional habiendo completado los días contratados.
+    - Manejo en App Conductor (`ViajeConductor.vue`) y PWA (`ReportDiarioIzaje.vue`) para descartar de la cola offline y no atascar la sincronización.
+  - **[DATA/AUDIT] Sellado de Auditoría y Resiliencia Offline:**
+    - Registro de `fecha_transmision_termino` al momento exacto de transmitir el Report Diario (Momento 2).
+    - Soporte de `device_timestamp` en salida, llegada y reportes para trazabilidad offline verídica.
+  - **[CLEAN] Limpieza y Normalización:**
+    - Erradicación de placeholders fijos (`VCTR.81-9`, `Jorge Ponce`) en `Torre.vue`.
+    - Depuración de endpoints y verificación de 0 regresiones.
+
+---
+
 ## [Portal Web GSP y Backend API] - Versión 1.0.77
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-03 13:08:00 (-03:00)

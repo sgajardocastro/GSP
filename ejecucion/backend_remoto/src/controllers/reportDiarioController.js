@@ -328,7 +328,8 @@ const reportDiarioController = {
         hora_inicio,
         horometro_inicio,
         odometro_inicio,
-        foto_tablero_inicio
+        foto_tablero_inicio,
+        foto_odometro_inicio
       } = req.body;
 
       if (!id_proyecto || !fecha_reporte || !id_user_operador) {
@@ -385,10 +386,11 @@ const reportDiarioController = {
             horometro_inicio = $5,
             odometro_inicio = $6,
             foto_tablero_inicio = $7,
-            horas_minimas = $8,
-            device_timestamp = COALESCE($9, device_timestamp),
+            foto_odometro_inicio = COALESCE($8, foto_odometro_inicio),
+            horas_minimas = $9,
+            device_timestamp = COALESCE($10, device_timestamp),
             estado_jornada = 'JORNADA_EN_CURSO'
-          WHERE id_reporte_avance = $10
+          WHERE id_reporte_avance = $11
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -399,6 +401,7 @@ const reportDiarioController = {
           horometro_inicio || null,
           odometro_inicio || null,
           foto_tablero_inicio || null,
+          foto_odometro_inicio || null,
           horasMinimasOT,
           deviceTs,
           existRes.rows[0].id_reporte_avance
@@ -434,6 +437,7 @@ const reportDiarioController = {
             horometro_inicio,
             odometro_inicio,
             foto_tablero_inicio,
+            foto_odometro_inicio,
             token_report,
             horas_minimas,
             device_timestamp,
@@ -441,7 +445,7 @@ const reportDiarioController = {
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
           ) RETURNING *;
         `;
         const inRes = await db.query(insertSql, [
@@ -456,6 +460,7 @@ const reportDiarioController = {
           horometro_inicio || null,
           odometro_inicio || null,
           foto_tablero_inicio || null,
+          foto_odometro_inicio || null,
           token_report,
           horasMinimasOT,
           deviceTs
@@ -516,6 +521,8 @@ const reportDiarioController = {
           r.odometro_termino,
           r.foto_tablero_inicio,
           r.foto_tablero_termino,
+          r.foto_odometro_inicio,
+          r.foto_odometro_termino,
           r.foto_horometro,
           r.notas_mecanicas_gsp,
           r.observacion_trabajo,
@@ -858,6 +865,8 @@ const reportDiarioController = {
         odometro_termino,
         foto_tablero_inicio,
         foto_tablero_termino,
+        foto_odometro_inicio,
+        foto_odometro_termino,
         foto_horometro,
         notas_mecanicas_gsp,
         observacion_trabajo,
@@ -874,6 +883,7 @@ const reportDiarioController = {
       dia_correlativo = dia_correlativo || req.body.dia || 1;
       fecha_reporte = fecha_reporte || req.body.fecha || new Date().toISOString().split('T')[0];
       horometro_termino = horometro_termino !== undefined ? horometro_termino : req.body.horometro_final;
+      odometro_termino = odometro_termino !== undefined ? odometro_termino : req.body.odometro_final;
       cliente_nombre = cliente_nombre || req.body.mandante_nombre || 'Supervisor Mandante';
       cliente_rut = cliente_rut || req.body.mandante_rut || '';
       cliente_cargo = cliente_cargo || req.body.mandante_cargo || 'ITO Mandante';
@@ -1016,22 +1026,24 @@ const reportDiarioController = {
             horas_sobretiempo = $15,
             horometro_inicio = $16,
             horometro_termino = $17,
-            odometro_inicio = $18,
+            odometro_inicio = COALESCE($18, odometro_inicio),
             odometro_termino = $19,
-            foto_tablero_inicio = $20,
+            foto_tablero_inicio = COALESCE($20, foto_tablero_inicio),
             foto_tablero_termino = $21,
-            foto_horometro = $22,
-            notas_mecanicas_gsp = $23,
-            observacion_trabajo = $24,
-            cliente_nombre = $25,
-            cliente_rut = $26,
-            cliente_cargo = $27,
-            cliente_firma_canvas_base64 = $28,
+            foto_odometro_inicio = COALESCE($22, foto_odometro_inicio),
+            foto_odometro_termino = $23,
+            foto_horometro = $24,
+            notas_mecanicas_gsp = $25,
+            observacion_trabajo = $26,
+            cliente_nombre = $27,
+            cliente_rut = $28,
+            cliente_cargo = $29,
+            cliente_firma_canvas_base64 = $30,
             fecha_transmision_termino = CURRENT_TIMESTAMP,
-            device_timestamp = COALESCE($29, device_timestamp),
+            device_timestamp = COALESCE($31, device_timestamp),
             estado_reporte = 'PENDIENTE_VALIDACION',
             estado_jornada = 'FINALIZADA'
-          WHERE id_reporte_avance = $30
+          WHERE id_reporte_avance = $32
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -1056,6 +1068,8 @@ const reportDiarioController = {
           odometro_termino || null,
           foto_tablero_inicio || null,
           foto_tablero_termino || null,
+          foto_odometro_inicio || null,
+          foto_odometro_termino || null,
           fotoHorometroFinal,
           notas_mecanicas_gsp || '',
           observacion_trabajo || '',
@@ -1095,6 +1109,8 @@ const reportDiarioController = {
             odometro_termino,
             foto_tablero_inicio,
             foto_tablero_termino,
+            foto_odometro_inicio,
+            foto_odometro_termino,
             foto_horometro,
             notas_mecanicas_gsp,
             observacion_trabajo,
@@ -1109,7 +1125,7 @@ const reportDiarioController = {
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
           )
           RETURNING *;
         `;
@@ -1138,6 +1154,8 @@ const reportDiarioController = {
           odometro_termino || null,
           foto_tablero_inicio || null,
           foto_tablero_termino || null,
+          foto_odometro_inicio || null,
+          foto_odometro_termino || null,
           fotoHorometroFinal,
           notas_mecanicas_gsp || '',
           observacion_trabajo || '',

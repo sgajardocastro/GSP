@@ -275,7 +275,101 @@
                 @click="inputFotoInicio.click()"
               >
                 <span class="text-2xl">📸</span>
-                <span>Tomar Foto Tablero Inicio</span>
+                <span>Tomar Foto Horómetro Superestructura</span>
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- Odómetro Chasis / Camión Inicial (Independiente del Horómetro) -->
+          <div class="mb-4">
+            <div class="d-flex align-center justify-space-between mb-1.5">
+              <label class="text-sm font-black text-cyan-300 text-uppercase tracking-wider">
+                🛣️ ODÓMETRO CHASIS / CAMIÓN (INICIO)
+              </label>
+              <span class="text-[11px] text-cyan-400 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                Kilometraje
+              </span>
+            </div>
+            <input
+              v-model.number="form.odometro_inicio"
+              type="number"
+              step="1"
+              placeholder="Ej: 145230"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-cyan-300 font-mono text-2xl font-black focus:border-cyan-400 focus:outline-none text-center h-16 shadow-inner"
+            />
+          </div>
+
+          <!-- FOTOGRAFÍA INDEPENDIENTE DEL ODÓMETRO AL INICIO -->
+          <div class="mb-5 pa-5 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <label class="text-lg sm:text-xl font-black text-cyan-300 text-uppercase tracking-wider d-flex align-center ga-2">
+                <span>📸 Foto Odómetro Chasis</span>
+                <span v-if="form.odometro_inicio" class="text-red-400 font-black">*</span>
+              </label>
+              <span v-if="form.foto_odometro_inicio" class="text-base font-black text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-500">
+                ✅ Foto Cargada
+              </span>
+              <span v-else-if="form.odometro_inicio" class="text-base font-black text-amber-400 bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-500">
+                ⚠️ Obligatoria con Km
+              </span>
+              <span v-else class="text-xs font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded-lg">
+                Foto Separada
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mb-3 font-medium">
+              Fotografía clara e independiente del odómetro/tacógrafo en el chasis (para equipos con horómetro y odómetro separados).
+            </p>
+
+            <input
+              ref="inputFotoOdometroInicio"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              class="d-none"
+              @change="onFotoOdometroInicioSeleccionada"
+            />
+
+            <div v-if="form.foto_odometro_inicio" class="position-relative space-y-3">
+              <div class="rounded-2xl overflow-hidden border-2 border-cyan-400 bg-black flex items-center justify-center max-h-80 shadow-md">
+                <img
+                  :src="form.foto_odometro_inicio"
+                  alt="Foto Odómetro Chasis Inicio"
+                  class="w-full h-auto max-h-80 object-contain"
+                />
+              </div>
+              <div class="d-flex ga-3 mt-3">
+                <v-btn
+                  color="cyan-darken-2"
+                  variant="flat"
+                  size="x-large"
+                  class="flex-grow-1 font-black text-base h-14 rounded-2xl text-white"
+                  @click="inputFotoOdometroInicio.click()"
+                >
+                  📸 Cambiar Foto Odómetro
+                </v-btn>
+                <v-btn
+                  color="red-lighten-1"
+                  variant="outlined"
+                  size="x-large"
+                  class="font-black text-base h-14 rounded-2xl px-5"
+                  @click="form.foto_odometro_inicio = null"
+                >
+                  🗑️ Borrar
+                </v-btn>
+              </div>
+            </div>
+
+            <div v-else>
+              <v-btn
+                color="cyan-darken-3"
+                variant="outlined"
+                size="large"
+                block
+                class="font-black text-sm h-14 rounded-2xl d-flex align-center ga-2 text-cyan-300 border-cyan-500/50 hover:bg-cyan-950/40 shadow-lg py-3"
+                @click="inputFotoOdometroInicio.click()"
+              >
+                <span class="text-2xl">📸</span>
+                <span>Tomar Foto Odómetro Chasis (Inicio)</span>
               </v-btn>
             </div>
           </div>
@@ -359,7 +453,7 @@
               </div>
               <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
                 <span class="text-slate-300 text-xs font-bold uppercase d-block">🛣️ Odómetro Ini</span>
-                <span class="text-amber-300 font-mono text-base font-black">{{ form.odometro_inicio || 'N/A' }}</span>
+                <span class="text-cyan-300 font-mono text-base font-black">{{ form.odometro_inicio ? `${form.odometro_inicio} km` : 'N/A' }}</span>
               </div>
             </div>
           </div>
@@ -574,7 +668,98 @@
             </div>
           </div>
 
-          <!-- 2. HORÓMETRO CHASIS TÉRMINO (EQUIPOS BIMOTOR O DOS MOTORES) -->
+          <!-- 2. ODÓMETRO CHASIS / CAMIÓN (TÉRMINO) -->
+          <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-1.5">
+              <label class="text-sm font-black text-cyan-300 text-uppercase tracking-wider">
+                🛣️ ODÓMETRO CHASIS / CAMIÓN (TÉRMINO)
+              </label>
+              <span class="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                Kilometraje
+              </span>
+            </div>
+            <input
+              v-model.number="form.odometro_termino"
+              type="number"
+              step="1"
+              placeholder="Ej: 145290"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-cyan-300 font-mono text-2xl font-black focus:border-cyan-400 focus:outline-none text-center h-16 shadow-inner"
+            />
+
+            <!-- FOTOGRAFÍA INDEPENDIENTE DEL ODÓMETRO AL TÉRMINO -->
+            <div class="mt-3 pt-3 border-t border-slate-800">
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <label class="text-xs font-black text-cyan-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
+                  <span>📸 Foto Odómetro Chasis (Término)</span>
+                  <span v-if="form.odometro_termino" class="text-red-400 font-black">*</span>
+                </label>
+                <span v-if="form.foto_odometro_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
+                  ✅ Foto Cargada
+                </span>
+                <span v-else-if="form.odometro_termino" class="text-[11px] font-black text-amber-400 bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-500">
+                  ⚠️ Obligatoria con Km
+                </span>
+                <span v-else class="text-[10px] text-slate-400">
+                  Foto Separada
+                </span>
+              </div>
+
+              <input
+                ref="inputFotoOdometroTermino"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="d-none"
+                @change="onFotoOdometroTerminoSeleccionada"
+              />
+
+              <div v-if="form.foto_odometro_termino" class="position-relative space-y-2">
+                <div class="rounded-xl overflow-hidden border border-cyan-400 bg-black flex items-center justify-center max-h-60 shadow-md">
+                  <img
+                    :src="form.foto_odometro_termino"
+                    alt="Foto Odómetro Chasis Término"
+                    class="w-full h-auto max-h-60 object-contain"
+                  />
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn
+                    color="cyan-darken-2"
+                    variant="flat"
+                    size="small"
+                    class="flex-grow-1 font-black text-xs h-9 rounded-lg text-white"
+                    @click="inputFotoOdometroTermino.click()"
+                  >
+                    📸 Cambiar Foto Odómetro
+                  </v-btn>
+                  <v-btn
+                    color="red-lighten-1"
+                    variant="outlined"
+                    size="small"
+                    class="font-black text-xs h-9 rounded-lg px-3"
+                    @click="form.foto_odometro_termino = null"
+                  >
+                    🗑️ Borrar
+                  </v-btn>
+                </div>
+              </div>
+
+              <div v-else>
+                <v-btn
+                  color="cyan-darken-3"
+                  variant="outlined"
+                  size="default"
+                  block
+                  class="font-bold text-xs h-11 rounded-xl d-flex align-center ga-2 text-cyan-300 border-cyan-500/50 hover:bg-cyan-950/40 py-2"
+                  @click="inputFotoOdometroTermino.click()"
+                >
+                  <span class="text-lg">📸</span>
+                  <span>Tomar Foto Odómetro Chasis (Término)</span>
+                </v-btn>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. HORÓMETRO CHASIS TÉRMINO (EQUIPOS BIMOTOR O DOS MOTORES) -->
           <div v-if="esGruaBimotor" class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-cyan-300 text-uppercase tracking-wider">
@@ -952,7 +1137,9 @@ const diaCorrelativo = ref(1)
 const horasMinimas = ref(8.0)
 
 const inputFotoInicio = ref(null)
+const inputFotoOdometroInicio = ref(null)
 const inputFotoTermino = ref(null)
+const inputFotoOdometroTermino = ref(null)
 const inputFotoChasisTermino = ref(null)
 
 const form = reactive({
@@ -966,7 +1153,9 @@ const form = reactive({
   odometro_inicio: null,
   odometro_termino: null,
   foto_tablero_inicio: null,
+  foto_odometro_inicio: null,
   foto_tablero_termino: null,
+  foto_odometro_termino: null,
   foto_horometro_chasis_termino: null,
   notas_mecanicas_gsp: '',
   observacion_trabajo: '',
@@ -1033,14 +1222,24 @@ const esGruaBimotor = computed(() => {
   return t.includes('GRUA') || t.includes('TELESCOPICA') || t.includes('LTM') || equipoSeleccionado.value?.cantidad_estanques === 2 || equipoSeleccionado.value?.es_bimotor === true
 })
 
-// Acciones de cámara para foto inicio
+// Acciones de cámara para foto inicio horómetro
 const onFotoInicioSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_inicio = b64 })
+}
+
+// Acciones de cámara para foto inicio odómetro
+const onFotoOdometroInicioSeleccionada = (event) => {
+  comprimirYAsignar(event, (b64) => { form.foto_odometro_inicio = b64 })
 }
 
 // Acciones de cámara para foto término superestructura
 const onFotoTerminoSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_termino = b64 })
+}
+
+// Acciones de cámara para foto término odómetro
+const onFotoOdometroTerminoSeleccionada = (event) => {
+  comprimirYAsignar(event, (b64) => { form.foto_odometro_termino = b64 })
 }
 
 // Acciones de cámara para foto término chasis (bimotor)
@@ -1158,7 +1357,7 @@ watch(() => calculoHoras.value.efectivas, (newEf) => {
 
 const puedeGuardarInicio = computed(() => {
   if (servicioConcluido.value) return false
-  return (
+  const okHorometro = (
     form.fecha_reporte &&
     form.hora_inicio &&
     form.horometro_inicio !== null &&
@@ -1166,6 +1365,11 @@ const puedeGuardarInicio = computed(() => {
     form.foto_tablero_inicio &&
     !enviandoInicio.value
   )
+  if (!okHorometro) return false
+  if (form.odometro_inicio && Number(form.odometro_inicio) > 0 && !form.foto_odometro_inicio) {
+    return false
+  }
+  return true
 })
 
 const puedeAvanzarAReport = computed(() => {
@@ -1178,6 +1382,9 @@ const puedeAvanzarAReport = computed(() => {
     form.foto_tablero_termino
   )
   if (!superOk) return false
+  if (form.odometro_termino && Number(form.odometro_termino) > 0 && !form.foto_odometro_termino) {
+    return false
+  }
   if (esGruaBimotor.value && form.horometro_chasis_termino) {
     if (!form.foto_horometro_chasis_termino) return false
   }
@@ -1202,7 +1409,13 @@ const irAMomento2 = () => {
     return
   }
   if (!form.foto_tablero_inicio) {
-    snackbar.text = '⚠️ La Foto del Tablero al Inicio es OBLIGATORIA'
+    snackbar.text = '⚠️ La Foto del Horómetro al Inicio es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (form.odometro_inicio && Number(form.odometro_inicio) > 0 && !form.foto_odometro_inicio) {
+    snackbar.text = '⚠️ La Foto del Odómetro al Inicio es OBLIGATORIA al registrar kilometraje'
     snackbar.color = 'warning'
     snackbar.show = true
     return
@@ -1235,7 +1448,13 @@ const irAReportMandante = () => {
     if (!confirma) return
   }
   if (!form.foto_tablero_termino) {
-    snackbar.text = '⚠️ La Foto del Tablero de Superestructura al Término es OBLIGATORIA'
+    snackbar.text = '⚠️ La Foto del Horómetro de Superestructura al Término es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (form.odometro_termino && Number(form.odometro_termino) > 0 && !form.foto_odometro_termino) {
+    snackbar.text = '⚠️ La Foto del Odómetro al Término es OBLIGATORIA al registrar kilometraje'
     snackbar.color = 'warning'
     snackbar.show = true
     return
@@ -1322,7 +1541,11 @@ const cargarContexto = async (idEqParam = null) => {
         }
         form.horometro_inicio = j.horometro_inicio ? Number(j.horometro_inicio) : null
         form.odometro_inicio = j.odometro_inicio ? Number(j.odometro_inicio) : null
+        form.odometro_termino = j.odometro_termino ? Number(j.odometro_termino) : null
         form.foto_tablero_inicio = j.foto_tablero_inicio || null
+        form.foto_odometro_inicio = j.foto_odometro_inicio || null
+        form.foto_tablero_termino = j.foto_tablero_termino || null
+        form.foto_odometro_termino = j.foto_odometro_termino || null
         if (j.fecha_inicio_servicio) {
           try {
             const d = new Date(j.fecha_inicio_servicio)
@@ -1376,7 +1599,13 @@ const guardarInicioJornada = async () => {
       return
     }
     if (!form.foto_tablero_inicio) {
-      snackbar.text = '⚠️ La Foto del Tablero al Inicio es OBLIGATORIA'
+      snackbar.text = '⚠️ La Foto del Horómetro al Inicio es OBLIGATORIA'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (form.odometro_inicio && Number(form.odometro_inicio) > 0 && !form.foto_odometro_inicio) {
+      snackbar.text = '⚠️ La Foto del Odómetro al Inicio es OBLIGATORIA al registrar kilometraje'
       snackbar.color = 'warning'
       snackbar.show = true
       return
@@ -1394,6 +1623,7 @@ const guardarInicioJornada = async () => {
       horometro_inicio: form.horometro_inicio,
       odometro_inicio: form.odometro_inicio,
       foto_tablero_inicio: form.foto_tablero_inicio,
+      foto_odometro_inicio: form.foto_odometro_inicio || null,
       device_timestamp: new Date().toISOString()
     }
 
@@ -1489,9 +1719,11 @@ const sellarYTransmitirReport = async () => {
       horometro_termino: form.horometro_termino,
       horometro_chasis_termino: form.horometro_chasis_termino || null,
       odometro_inicio: form.odometro_inicio,
-      odometro_termino: null,
+      odometro_termino: form.odometro_termino || null,
       foto_tablero_inicio: form.foto_tablero_inicio,
       foto_tablero_termino: form.foto_tablero_termino,
+      foto_odometro_inicio: form.foto_odometro_inicio || null,
+      foto_odometro_termino: form.foto_odometro_termino || null,
       foto_horometro_chasis_termino: form.foto_horometro_chasis_termino || null,
       notas_mecanicas_gsp: form.notas_mecanicas_gsp,
       observacion_trabajo: form.observacion_trabajo,
