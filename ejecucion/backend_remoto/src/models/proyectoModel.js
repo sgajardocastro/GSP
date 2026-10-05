@@ -7,7 +7,7 @@ class ProyectoModel {
   }
 
   // Obtener todos los proyectos
-  async getProyectos(id_empresa = null) {
+  async getProyectos(id_empresa = null, scope = null) {
     let query = `
       SELECT 
         p.*,
@@ -19,11 +19,22 @@ class ProyectoModel {
       LEFT JOIN tpry_estado  est ON p.id_proyecto_estado = est.id_proyecto_estado
       LEFT JOIN tpry_tipo   tip ON p.id_proyecto_tipo = tip.id_proyecto_tipo
     `;
+    const conditions = [];
     const values = [];
 
     if (id_empresa) {
-      query += ` WHERE p.id_empresa = $1`;
       values.push(id_empresa);
+      conditions.push(`p.id_empresa = $${values.length}`);
+    }
+
+    // Restricción de Scope Comercial (RBAC): ejecutivos comerciales solo ven sus propios proyectos
+    if (scope && scope.solo_propios && scope.id_user) {
+      values.push(scope.id_user);
+      conditions.push(`p.id_usuario_creacion = $${values.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
     }
 
     query += ` ORDER BY p.id_proyecto DESC;`;
@@ -223,9 +234,12 @@ class ProyectoModel {
       objetivo_proyecto = null,
       observacion_proyecto = null,
       id_user_creacion = null, // 👈 estilo survey
+      id_usuario_creacion = null,
       id_empresa = null,
       json_field = null
     } = data;
+
+    const final_user_creacion = id_usuario_creacion ?? id_user_creacion ?? null;
 
     // Auto-guardado de contacto si aplica
     let json_field_processed = json_field;
@@ -289,7 +303,7 @@ class ProyectoModel {
       avance_plan_proyecto,
       objetivo_proyecto,
       observacion_proyecto,
-      id_user_creacion,
+      final_user_creacion,
       json_field_processed
     ];
 
@@ -551,8 +565,9 @@ class ProyectoModel {
       let finalLogoPath = emisor.logoPath;
       try {
         const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
-        const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
-        const fs = require('fs');
+        const cwdPath = path.join(process.cwd(), 'public', logoFileName);
+        const fallbackPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const diskPath = fs.existsSync(cwdPath) ? cwdPath : fallbackPath;
         if (fs.existsSync(diskPath)) {
           const imgBuf = fs.readFileSync(diskPath);
           finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
@@ -1101,7 +1116,9 @@ class ProyectoModel {
       let finalLogoPath = emisor.logoPath;
       try {
         const logoFileName = emisor.logoPath || 'logo-sanpablo.png';
-        const diskPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const cwdPath = path.join(process.cwd(), 'public', logoFileName);
+        const fallbackPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const diskPath = fs.existsSync(cwdPath) ? cwdPath : fallbackPath;
         if (fs.existsSync(diskPath)) {
           const imgBuf = fs.readFileSync(diskPath);
           finalLogoPath = 'data:image/png;base64,' + imgBuf.toString('base64');
@@ -1137,6 +1154,7 @@ class ProyectoModel {
       // Tiempos Operativos
       const fechaSalida = ejec.fecha_salida_plan || crm.fecha_inicio_plan || 'Por definir';
       const horaSalida = ejec.hora_salida_plan || '08:00';
+      const horaInicioServicio = ejec.hora_llegada_plan || ejec.hora_inicio_servicio || crm.hora_inicio || '09:00';
       const fechaFin = ejec.fecha_fin_plan || crm.fecha_fin_plan || 'Por definir';
       const horaFin = ejec.hora_fin_plan || '18:00';
 
@@ -1153,9 +1171,30 @@ class ProyectoModel {
       // Flota & Convoy Asignado
       const flotaItems = [];
       const lineasServicio = crm.lineas_servicio || [];
+
+      // Horas Mínimas Contractuales (Piso Mínimo)
+      let horasMinimas = 8.0;
+      if (lineasServicio && lineasServicio.length > 0) {
+        const lPiso = lineasServicio.find(l => l.pisoMinimo || l.horas_minimas || l.cantidad_horas);
+        if (lPiso) {
+          horasMinimas = Number(lPiso.pisoMinimo || lPiso.horas_minimas || lPiso.cantidad_horas || 8.0);
+        }
+      } else if (ejec.horas_minimas || crm.horas_minimas) {
+        horasMinimas = Number(ejec.horas_minimas || crm.horas_minimas || 8.0);
+      }
       
-      // Segmento 1: Flota Principal
+      // Helper para identificar líneas que NO son de izaje principal (traslados, fletes, personal)
+      const isTrasladoOrLogistica = (l) => {
+        if (!l) return false;
+        const tipo = String(l.tipo || '').toUpperCase();
+        const desc = String(l.descripcion || l.subcategoria || '').toUpperCase();
+        return tipo.includes('TRASLADO') || tipo.includes('FLETE') || tipo.includes('PERSONAL') || tipo.includes('TRANSPORTE') || desc.includes('TRASLADO') || desc.includes('FLETE');
+      };
+
+      // Segmento 1: Flota Principal (Grúas y Equipos de Izaje Primario)
       lineasServicio.forEach((l, idx) => {
+        if (isTrasladoOrLogistica(l)) return; // Excluir traslados/fletes de la flota principal
+
         const eqId = l.equipo_asignado_id || l.equipo_id;
         if (eqId) {
           const eqObj = getEquipoInfo(eqId) || {};
@@ -1186,6 +1225,24 @@ class ProyectoModel {
           });
         }
       });
+
+      // Si no hay equipos_extra pero lineasServicio tenía una línea de traslado con equipo asignado:
+      if (equiposExtra.length === 0) {
+        lineasServicio.filter(isTrasladoOrLogistica).forEach((l) => {
+          const eqId = l.equipo_asignado_id || l.equipo_id;
+          if (eqId) {
+            const eqObj = getEquipoInfo(eqId) || {};
+            const chObj = getUserInfo(l.operador_asignado_id || ejec.chofer_id) || {};
+            flotaItems.push({
+              segmento: 'Traslado & Logística',
+              tipo: l.tipo || eqObj.tipo || 'Transporte',
+              modelo: eqObj.nombre_equipo || eqObj.modelo || l.subcategoria || l.descripcion || 'Cama Baja',
+              patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+              chofer: chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado'
+            });
+          }
+        });
+      }
 
       if (flotaItems.length === 0 && ejec.equipo_id) {
         const eqObj = getEquipoInfo(ejec.equipo_id) || {};
@@ -1397,6 +1454,12 @@ class ProyectoModel {
           <tr>
             <td class="info-lbl">Salida de Base / Patio:</td>
             <td class="info-val"><strong style="color: #047857;">${fechaSalida} a las ${horaSalida} hrs</strong></td>
+            <td class="info-lbl">Inicio Faena / Servicio:</td>
+            <td class="info-val"><strong style="color: #0284c7;">${fechaSalida} a las ${horaInicioServicio} hrs</strong></td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Piso Mínimo Contractual:</td>
+            <td class="info-val"><strong style="color: #0f172a;">${horasMinimas} hrs diarias mínimas</strong></td>
             <td class="info-lbl">Término y Retorno:</td>
             <td class="info-val"><strong style="color: #b91c1c;">${fechaFin} a las ${horaFin} hrs</strong></td>
           </tr>
@@ -1559,7 +1622,7 @@ class ProyectoModel {
       const otObj = versiones.find(v => Number(v.version) === requestedVersion) || versiones[versiones.length - 1];
       
       const destinatarios = Array.isArray(payload.destinatarios) && payload.destinatarios.length > 0 ? payload.destinatarios : ['sgajardoc@gmail.com'];
-      const asunto = payload.asunto || `🏗️ Orden de Trabajo OT-${p.codi_proyecto || 'GSP'}V${requestedVersion} - ${p.nombre_proyecto || 'Servicio de Izaje'}`;
+      const asunto = payload.asunto || `📋 Orden de Trabajo OT-${p.codi_proyecto || 'GSP'}V${requestedVersion} - ${p.nombre_proyecto || 'Servicio de Izaje'}`;
       
       if (!ejec.ot_despachos_historicos) ejec.ot_despachos_historicos = [];
       

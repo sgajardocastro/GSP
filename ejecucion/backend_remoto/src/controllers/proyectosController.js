@@ -1,5 +1,7 @@
 const ProyectoModel = require("../models/proyectoModel.js");
 const EquipoProyectoModel = require("../models/equipoProyectoModel.js"); // ✅ nuevo
+const pool = require("../config/postgresPool.js");
+const notificacionService = require("../services/notificacionService.js");
 
 const proyecto = new ProyectoModel();
 const equipoProyecto = new EquipoProyectoModel();
@@ -71,8 +73,27 @@ module.exports = {
       if (id_empresa === 'all' || id_empresa === '0' || id_empresa === 0 || id_empresa === 'null') {
         id_empresa = null;
       }
-      const proyectos = await proyecto.getProyectos(id_empresa);
-      return res.status(200).json({ message: "Proyectos obtenidos correctamente", proyectos });
+
+      // Evaluación de Scope RBAC:
+      // Roles con acceso global: Admin, ADM_COM, COORD, roles operacionales GSP (o usuarios clave autorizados)
+      const roles = Array.isArray(req.user?.roles) ? req.user.roles : [];
+      const isAdminOrGlobal = roles.some(r => ['Admin', 'ADM_COM', 'COORD', 'GSP_PROG', 'GSP_APROB', 'GSP_CONTA'].includes(r)) || [1, 19, 46, 55].includes(Number(req.user?.id_user));
+      
+      let scope = null;
+      if (!isAdminOrGlobal && roles.includes('COMERCIAL')) {
+        // Comercial restringido a ver únicamente sus propios procesos comerciales de todas las empresas
+        scope = {
+          solo_propios: true,
+          id_user: req.user?.id_user
+        };
+      }
+
+      const proyectos = await proyecto.getProyectos(id_empresa, scope);
+      return res.status(200).json({ 
+        message: "Proyectos obtenidos correctamente", 
+        proyectos,
+        scope: scope ? 'COMERCIAL_PROPIOS' : 'GLOBAL'
+      });
     } catch (err) {
       console.error("Error en getProyectos:", err);
       return res.status(500).json({ error: err.message });
@@ -85,6 +106,17 @@ module.exports = {
       const prj = await proyecto.getProyectoById(id);
 
       if (!prj) return res.status(404).json({ error: "Proyecto no existe" });
+
+      // Verificación de Scope RBAC para COMERCIAL
+      if (req.user) {
+        const roles = Array.isArray(req.user.roles) ? req.user.roles : [];
+        const isAdminOrGlobal = roles.some(r => ['Admin', 'ADM_COM', 'COORD', 'GSP_PROG', 'GSP_APROB', 'GSP_CONTA'].includes(r)) || [1, 19, 46, 55].includes(Number(req.user?.id_user));
+        if (!isAdminOrGlobal && roles.includes('COMERCIAL')) {
+          if (Number(prj.id_usuario_creacion) !== Number(req.user.id_user)) {
+            return res.status(403).json({ error: "Acceso denegado: Solo tiene permisos para consultar sus propias cotizaciones." });
+          }
+        }
+      }
 
       return res.status(200).json({ message: "Proyecto obtenido correctamente", proyecto: prj });
     } catch (err) {
@@ -318,6 +350,163 @@ module.exports = {
       });
     } catch (err) {
       console.error("Error en enviarOT:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  },
+
+  // ✅ POST: Reversar cotización desde Verificación a Preventa Comercial con Motivo y Notificación Interna (REQ-990)
+  reversarACotizacion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { motivo, payload } = req.body;
+
+      if (!id || Number(id) <= 0) {
+        return res.status(400).json({ error: "id_proyecto es requerido y debe ser válido" });
+      }
+
+      if (!motivo || typeof motivo !== 'string' || motivo.trim().length < 5) {
+        return res.status(400).json({ error: "El motivo de la devolución es obligatorio (mínimo 5 caracteres)." });
+      }
+
+      const existing = await proyecto.getProyectoById(id);
+      if (!existing) {
+        return res.status(404).json({ error: "Proyecto no encontrado" });
+      }
+
+      const currentUser = req.user || {};
+      const fechaNow = new Date().toISOString();
+      const motivoTexto = motivo.trim();
+
+      // Fusionar json_field existente con los datos de reverso
+      const existingJson = typeof existing.json_field === 'object' && existing.json_field !== null ? existing.json_field : {};
+      const crmV1 = { ...(existingJson.crm_v1 || {}) };
+      
+      crmV1.motivo_reverso_verificacion = motivoTexto;
+      crmV1.fecha_reverso_verificacion = fechaNow;
+      crmV1.usuario_reverso_verificacion = {
+        id_user: currentUser.id_user || null,
+        nombre: currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : (currentUser.nombre || 'Operaciones')
+      };
+
+      // Si el cliente mandó un payload con cambios adicionales de la UI:
+      const mergedPayload = {
+        ...(payload || {}),
+        id_proyecto_estado: 2, // ESTADOS_DB.COTIZANDO
+        id_user_modificacion: currentUser.id_user || null,
+        json_field: {
+          ...existingJson,
+          ...(payload?.json_field || {}),
+          crm_v1: {
+            ...crmV1,
+            ...(payload?.json_field?.crm_v1 || {}),
+            motivo_reverso_verificacion: motivoTexto,
+            fecha_reverso_verificacion: fechaNow
+          }
+        }
+      };
+
+      const updated = await proyecto.updateProyecto(id, mergedPayload);
+
+      // Notificación Omnicanal Interna (Email + WhatsApp)
+      // Cumpliendo leanglobal_notification_standard: Cero contacto con el cliente mandante
+      try {
+        const idEjecutivo = crmV1.id_ejecutivo_comercial || existing.id_user_responsable || existing.id_usuario_creacion;
+        const codiPry = existing.codi_proyecto || `PRY-${id}`;
+        const nombreCliente = existing.nombre_empresa_cliente || existing.cliente || 'Cliente';
+        const nombreReversor = currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : 'Equipo de Operaciones';
+
+        // Buscar usuarios internos para notificar: ejecutivo responsable + jefatura y PMO
+        const targetIds = [19, 65, 66]; // Jorge Ponce, Yiara Mendoza, Omar Ghiselini
+        if (idEjecutivo && !targetIds.includes(Number(idEjecutivo))) {
+          targetIds.push(Number(idEjecutivo));
+        }
+
+        const usersRes = await pool.query(
+          `SELECT id_user, name_frst, apellido_pat, email, movil AS fono FROM tsec_users WHERE id_user = ANY($1::int[])`,
+          [targetIds]
+        );
+
+        const fechaFormateada = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+        const asuntoNotif = `⚠️ Negocio Reversado a Preventa Comercial: ${codiPry} — ${nombreCliente}`;
+
+        for (const u of usersRes.rows) {
+          if (!u.email && !u.fono) continue;
+
+          const destNombre = `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() || 'Estimado Colaborador';
+          const canalesDest = [];
+          if (u.email) canalesDest.push('EMAIL');
+          if (u.fono) canalesDest.push('WHATSAPP');
+
+          const mensajeWsp = `⚠️ *[GSP] Negocio Reversado a Preventa Comercial*\n\n` +
+            `Hola ${destNombre},\n` +
+            `El requerimiento fue devuelto desde la etapa de *Verificación Operativa* a *Preventa Comercial*.\n\n` +
+            `📋 *Proyecto:* ${codiPry}\n` +
+            `🏢 *Cliente:* ${nombreCliente}\n` +
+            `👤 *Devuelto por:* ${nombreReversor}\n` +
+            `📅 *Fecha:* ${fechaFormateada}\n\n` +
+            `📝 *Motivo de Devolución:*\n"${motivoTexto}"\n\n` +
+            `👉 *Acción requerida:* Por favor revisar y ajustar la cotización en el CRM.`;
+
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <h2 style="color: #d97706; margin-bottom: 8px;">⚠️ Negocio Reversado a Preventa Comercial</h2>
+              <p style="color: #64748b; font-size: 14px; margin-top: 0;">Estimado(a) <strong>${destNombre}</strong>,</p>
+              <p>Se informa que el siguiente requerimiento ha sido devuelto desde <strong>Verificación Operativa</strong> a <strong>Preventa Comercial</strong> para ajustes o corrección:</p>
+              
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <p style="margin: 4px 0;"><strong>Código Proyecto:</strong> <span style="color: #0284c7; font-weight: bold;">${codiPry}</span></p>
+                <p style="margin: 4px 0;"><strong>Cliente Mandante:</strong> ${nombreCliente}</p>
+                <p style="margin: 4px 0;"><strong>Devuelto por:</strong> ${nombreReversor}</p>
+                <p style="margin: 4px 0;"><strong>Fecha y Hora:</strong> ${fechaFormateada}</p>
+              </div>
+
+              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 14px; border-radius: 4px; margin: 20px 0;">
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #92400e;">Motivo de la Devolución:</p>
+                <p style="margin: 0; color: #78350f; font-style: italic; font-size: 14px;">"${motivoTexto}"</p>
+              </div>
+
+              <p style="font-size: 12px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                🔒 <em>Nota de confidencialidad: Esta es una notificación interna exclusiva para el equipo de Grúas San Pablo. El cliente mandante no ha recibido este aviso.</em>
+              </p>
+            </div>
+          `;
+
+          await notificacionService.despacharNotificacion({
+            evento: 'PROYECTO_REVERSADO_A_COMERCIAL',
+            canales: canalesDest,
+            destinatario: {
+              nombre: destNombre,
+              email: u.email,
+              telefono: u.fono
+            },
+            deepLink: {
+              tipoApp: 'WEB',
+              ruta: 'crm',
+              params: { id_proyecto: id }
+            },
+            emailData: {
+              asunto: asuntoNotif,
+              titulo: 'Negocio Reversado a Comercial',
+              subtitulo: `${codiPry} — ${nombreCliente}`,
+              contenido: emailHtml,
+              botonTexto: 'ABRIR EN CRM'
+            },
+            wspData: {
+              mensaje: mensajeWsp
+            }
+          });
+        }
+      } catch (notifErr) {
+        console.error("[Reverso] Error al enviar notificaciones internas (no bloqueante):", notifErr);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Proyecto devuelto a Preventa Comercial exitosamente y notificado al equipo interno.",
+        proyecto: updated
+      });
+    } catch (err) {
+      console.error("Error en reversarACotizacion:", err);
       return res.status(500).json({ error: err.message });
     }
   }

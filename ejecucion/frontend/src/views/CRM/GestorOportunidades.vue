@@ -821,17 +821,25 @@
 
             <!-- Programación de Tiempos Planificados (Inline) + Botón Generar OT -->
             <div class="flex flex-wrap items-center gap-2 text-xs">
-              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1">
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1" title="Salida Planificada de Base/Patio">
                 <span class="text-xs text-slate-300 font-semibold">Salida Base:</span>
                 <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
                 <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
               <span class="text-slate-500 font-bold text-xs">➔</span>
-              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1">
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1" title="Inicio Planificado del Servicio en Faena">
+                <span class="text-xs text-slate-300 font-semibold">Inicio Servicio Faena:</span>
+                <input type="time" v-model="operacionesAssignment.hora_llegada_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] pl-1" />
+              </div>
+              <span class="text-slate-500 font-bold text-xs">➔</span>
+              <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1" title="Término Planificado en Faena">
                 <span class="text-xs text-slate-300 font-semibold">Término Faena:</span>
                 <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
                 <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
+              <span v-if="planDiarioGenerado.length > 0" class="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-1 rounded font-mono font-bold" title="Días hábiles planificados calculados para el servicio">
+                {{ planDiarioGenerado.length }} {{ planDiarioGenerado.length === 1 ? 'Día hábil' : 'Días hábiles' }}
+              </span>
               <button @click="propagarFechasPlanificadas" type="button" class="text-xs bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-bold transition-colors cursor-pointer flex items-center gap-1" title="Propagar estas fechas a todos los equipos y personal">
                 <span>Propagar</span>
               </button>
@@ -1370,7 +1378,7 @@
 
               <div class="flex items-center gap-2 pt-1 border-t border-white/5">
                 <a 
-                  :href="ot.id_doc ? `${archivoBaseUrl}/v1/storage/view/${ot.id_doc}` : getFullStaticUrl(ot.url)" 
+                  :href="ot.id_doc ? getFullStaticUrl(`/archivo/ver/${ot.id_doc}`) : getFullStaticUrl(ot.url)" 
                   target="_blank" 
                   rel="noopener"
                   class="flex-1 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 rounded text-center text-xs font-bold transition-colors flex items-center justify-center gap-1.5 no-underline cursor-pointer"
@@ -2000,8 +2008,8 @@
                         <span class="text-[10px] font-bold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
                           <span>🚛</span> Despacho & Hoja de Ruta
                         </span>
-                        <span v-if="getViajeDeEquipo(eqId)" :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse'" class="text-[9px] px-2 py-0.5 rounded border font-bold">
-                          {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO' : '🔵 EN RUTA' }}
+                        <span v-if="getViajeDeEquipo(eqId)" :class="getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : (getViajeDeEquipo(eqId).estado_trayecto === 'EN_RUTA' || getViajeDeEquipo(eqId).km_inicial ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 animate-pulse' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')" class="text-[9px] px-2 py-0.5 rounded border font-bold">
+                          {{ getViajeDeEquipo(eqId).estado_trayecto === 'LLEGADO' || getViajeDeEquipo(eqId).estado_viaje === 'ARRIBADO_FAENA' ? '🟢 ARRIBADO' : (getViajeDeEquipo(eqId).estado_trayecto === 'EN_RUTA' || getViajeDeEquipo(eqId).km_inicial ? '🔵 EN RUTA' : '🟡 SALIDA PENDIENTE') }}
                         </span>
                         <span v-else-if="getInspeccionEquipo(eqId)?.salida_autorizada" class="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
                           ✅ Salida Autorizada
@@ -2014,14 +2022,16 @@
                       <!-- CASO 1: SI YA EXISTE VIAJE REGISTRADO EN BD (EN RUTA O ARRIBADO A FAENA) -->
                       <div v-if="getViajeDeEquipo(eqId)" class="p-2.5 bg-black/60 border border-blue-500/30 rounded-lg space-y-2 font-mono text-[10.5px]">
                         <div class="grid grid-cols-2 gap-2 text-slate-300 bg-white/[0.02] p-2 rounded border border-white/5">
-                          <div>Odóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).km_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).km_final || '---' }} KM</strong></div>
-                          <div>Horóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).horometro_inicial || 0 }} ➔ {{ getViajeDeEquipo(eqId).horometro_final || '---' }} HRS</strong></div>
+                          <div>Odóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).km_inicial != null ? getViajeDeEquipo(eqId).km_inicial : '---' }} ➔ {{ getViajeDeEquipo(eqId).km_final != null ? getViajeDeEquipo(eqId).km_final : '---' }} KM</strong></div>
+                          <div>Horóm: <strong class="text-amber-400 font-bold">{{ getViajeDeEquipo(eqId).horometro_inicial != null ? getViajeDeEquipo(eqId).horometro_inicial : '---' }} ➔ {{ getViajeDeEquipo(eqId).horometro_final != null ? getViajeDeEquipo(eqId).horometro_final : '---' }} HRS</strong></div>
                         </div>
                         
                         <div class="flex justify-between items-center text-[10px] text-slate-400 pt-0.5">
                           <span class="text-blue-300">🛰️ {{ getViajeDeEquipo(eqId).pings_ruta?.length || 0 }} waypoints GPS</span>
                           <span v-if="Number(getViajeDeEquipo(eqId).total_litros) > 0" class="text-amber-300">⛽ {{ getViajeDeEquipo(eqId).total_litros }} L</span>
-                          <span class="text-emerald-400">🔐 PIN Validado ✅</span>
+                          <span :class="getViajeDeEquipo(eqId).pin_hash || getViajeDeEquipo(eqId).km_inicial != null ? 'text-emerald-400' : 'text-slate-400'">
+                            🔐 PIN {{ getViajeDeEquipo(eqId).pin_hash || getViajeDeEquipo(eqId).km_inicial != null ? 'Validado ✅' : 'Pendiente' }}
+                          </span>
                         </div>
                         
                         <div class="flex gap-2 pt-1 font-sans">
@@ -2033,7 +2043,7 @@
                             <span>🗺️</span> Telemetría
                           </button>
                           <a 
-                            :href="`https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${getViajeDeEquipo(eqId).token_viaje}`" 
+                            :href="getLinkViajeOperador(eqId)" 
                             target="_blank" 
                             class="px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg font-bold text-xs flex items-center justify-center gap-1 no-underline cursor-pointer"
                             title="Abrir vista del conductor"
@@ -3054,7 +3064,7 @@
         </div>
       </div>
 
-        <!-- PASO 3: RESPALDO DE ÓRDENES DE COMPRA (OC / HES DEL MANDANTE) -->
+        <!-- PASO 3: RESPALDO DE ÓRDENES DE COMPRA (OC / HES DEL MANDANTE — SOLO LECTURA EN KANBAN) -->
         <div v-else-if="pasoCierreActivo === 'oc'" class="space-y-6">
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
           <div class="flex flex-wrap justify-between items-center gap-3 border-b border-white/10 pb-3">
@@ -3084,27 +3094,23 @@
                   {{ totalMontoOCs >= (edpData?.resumen_financiero?.total_neto || 0) ? '✔ 100% Cubierto' : '⚠️ Saldo pendiente: ' + formatCurrency((edpData?.resumen_financiero?.total_neto || 0) - totalMontoOCs) }}
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  @click="asumirSinOC"
-                  class="px-3.5 py-2 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
-                  title="El cliente no emite OC formal: Asumir valor neto del Estado de Pago para Facturación"
-                >
-                  <span>📄 Cliente Sin OC (Asumir EDP)</span>
-                </button>
-                <button
-                  type="button"
-                  @click="abrirModalNuevaOC"
-                  class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>+ Adjuntar OC (PDF)</span>
-                </button>
-              </div>
+              <span class="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg font-mono font-bold text-[10px] uppercase">
+                Solo Lectura
+              </span>
             </div>
           </div>
 
-          <!-- Listado de OCs -->
+          <!-- BANNER SOLO LECTURA KANBAN -->
+          <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-200">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">ℹ️</span>
+              <span>
+                <strong>Modo Consulta (Kanban):</strong> La recepción, registro y validación formal de las Órdenes de Compra se gestionan exclusivamente en la <strong>Torre de Control PMO</strong>.
+              </span>
+            </div>
+          </div>
+
+          <!-- Listado de OCs (Solo Lectura) -->
           <div v-if="ordenesCompra.length > 0" class="space-y-2">
             <div v-for="(oc, ocIdx) in ordenesCompra" :key="ocIdx" class="bg-black/30 border border-white/5 rounded-lg p-3 flex flex-wrap justify-between items-center gap-3 text-xs">
               <div>
@@ -3127,29 +3133,12 @@
                 <a v-if="oc.archivo?.url" :href="getFullStaticUrl(oc.archivo.url)" target="_blank" class="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs font-bold flex items-center gap-1 no-underline">
                   📄 Ver PDF
                 </a>
-                <button type="button" @click="eliminarOC(ocIdx)" class="p-1 text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar OC">🗑️</button>
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-6 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-400 text-xs space-y-3">
-            <p>Sin Órdenes de Compra adjuntas del mandante.</p>
-            <div class="flex items-center justify-center gap-3 flex-wrap">
-              <button
-                type="button"
-                @click="abrirModalNuevaOC"
-                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs transition-colors"
-              >
-                + Adjuntar OC (PDF)
-              </button>
-              <span class="text-slate-600 text-xs font-mono">o si el cliente no emite OC:</span>
-              <button
-                type="button"
-                @click="asumirSinOC"
-                class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded text-xs transition-colors"
-              >
-                📄 Cliente Sin OC (Asumir Valor Factura del EDP)
-              </button>
-            </div>
+          <div v-else class="text-center py-6 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-400 text-xs space-y-1.5">
+            <p class="font-medium text-slate-300">Sin Órdenes de Compra registradas del mandante.</p>
+            <p class="text-slate-500 text-[11px]">La carga de OC y respaldo legal se realiza por el Analista de Control de Gestión en la Torre de Control PMO.</p>
           </div>
         </div>
 
@@ -3174,111 +3163,93 @@
         </div>
       </div>
 
-        <!-- FORMULARIO DE REGISTRO DE FACTURACIÓN Y CIERRE DE SERVICIO (PASO 4) -->
+        <!-- INFORMACIÓN DE FACTURACIÓN Y CIERRE (PASO 4 — SOLO LECTURA EN KANBAN) -->
         <div v-else-if="pasoCierreActivo === 'factura'" class="space-y-6">
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
-          <div class="border-b border-white/10 pb-3 flex justify-between items-center">
-            <div class="flex items-center gap-2.5">
-              <span class="text-xl">🏁</span>
-              <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono">
-                Paso 4: Registro de Facturación Oficial (DTE / Laudus)
-              </h4>
-            </div>
-            <span v-if="estadoDbActual === 7" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg">
-              OT Cerrada & Facturada
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- N° Factura -->
-            <div class="space-y-1">
-              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Factura Emitida <span class="text-red-400">*</span></label>
-              <input
-                v-model="formFacturacion.factura_numero"
-                type="text"
-                placeholder="ej. F-14029"
-                :disabled="estadoDbActual === 7"
-                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
-              />
-            </div>
-
-            <!-- N° HES / OC -->
-            <div class="space-y-1">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-mono font-bold uppercase text-slate-300 block">N° Orden Compra / HES</label>
-                <button
-                  v-if="estadoDbActual !== 7"
-                  type="button"
-                  @click="formFacturacion.hes_oc_numero = 'S/OC - ASUME EDP'"
-                  class="text-[9px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 font-mono cursor-pointer transition-colors"
-                  title="Cliente no emite OC: Asumir valor del Estado de Pago"
-                >
-                  📄 Sin OC (Asume EDP)
-                </button>
+            <div class="border-b border-white/10 pb-3 flex justify-between items-center">
+              <div class="flex items-center gap-2.5">
+                <span class="text-xl">🧾</span>
+                <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono">
+                  Paso 4: Información de Facturación (DTE)
+                </h4>
               </div>
-              <div v-if="ordenesCompra.length > 0" class="flex flex-wrap gap-1 mb-1">
-                <span class="text-[10px] text-amber-400 font-mono font-bold">OCs del Paso 3:</span>
-                <button
-                  v-for="(oc, oIdx) in ordenesCompra"
-                  :key="oIdx"
-                  type="button"
-                  @click="seleccionarOCParaFactura(oc)"
-                  class="text-[9px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-1.5 py-0.5 font-mono cursor-pointer"
-                  :title="'Asociar ' + oc.numero_oc"
-                >
-                  + {{ oc.numero_oc }}
-                </button>
-              </div>
-              <input
-                v-model="formFacturacion.hes_oc_numero"
-                type="text"
-                placeholder="ej. HES-2026-9941 o S/OC - ASUME EDP"
-                :disabled="estadoDbActual === 7"
-                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
-              />
-            </div>
-
-            <!-- Fecha Facturación -->
-            <div class="space-y-1">
-              <label class="text-xs font-mono font-bold uppercase text-slate-300 block">Fecha de Facturación</label>
-              <input
-                v-model="formFacturacion.fecha_facturacion"
-                type="date"
-                :disabled="estadoDbActual === 7"
-                class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-amber-400 outline-none disabled:opacity-60"
-              />
-            </div>
-
-            <!-- Botón Maestro de Cierre -->
-            <div class="space-y-1 flex flex-col justify-end">
-              <button
-                v-if="estadoDbActual !== 7"
-                @click="guardarCierreFacturacion"
-                :disabled="guardandoFacturacion || !formFacturacion.factura_numero"
-                class="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              <span 
+                v-if="estadoDbActual === 7 || formFacturacion.factura_numero" 
+                class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-lg"
               >
-                <span v-if="guardandoFacturacion" class="animate-spin">⚙️</span>
-                <span v-else>🏁</span>
-                <span>{{ guardandoFacturacion ? 'Registrando...' : 'Declarar Facturada & Cerrar' }}</span>
-              </button>
-              <div v-else class="text-center py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-bold text-emerald-300 font-mono">
-                ✅ Proceso 100% Concluido
+                ✅ OT Facturada & Concluida
+              </span>
+              <span 
+                v-else 
+                class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg"
+              >
+                ⏳ Pendiente de Facturación DTE
+              </span>
+            </div>
+
+            <!-- BANNER SOLO LECTURA KANBAN -->
+            <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-200">
+              <div class="flex items-center gap-2.5">
+                <span class="text-lg">ℹ️</span>
+                <span>
+                  <strong>Modo Solo Lectura (Kanban):</strong> El registro fiscal de Facturación Electrónica (DTE) y el cierre financiero se ejecutan exclusivamente desde la <strong>Torre de Control PMO</strong> por el Analista de Control de Gestión y Tesorería.
+                </span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 font-mono">
+                Solo Lectura
+              </span>
+            </div>
+
+            <!-- FICHA DE DETALLE DE FACTURACIÓN (SOLO LECTURA) -->
+            <div v-if="estadoDbActual === 7 || formFacturacion.factura_numero" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-[#080d1a] border border-white/10 rounded-xl p-4">
+              <div>
+                <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">N° Factura Emitida</span>
+                <div class="text-base font-black font-mono text-emerald-400 mt-1">
+                  {{ formFacturacion.factura_numero || 'Facturado' }}
+                </div>
+              </div>
+              <div>
+                <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">Fecha Facturación</span>
+                <div class="text-xs font-mono text-white mt-1">
+                  {{ formFacturacion.fecha_facturacion || '—' }}
+                </div>
+              </div>
+              <div>
+                <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">N° Orden Compra / HES</span>
+                <div class="text-xs font-mono text-amber-400 mt-1">
+                  {{ formFacturacion.hes_oc_numero || 'S/OC' }}
+                </div>
+              </div>
+              <div>
+                <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">Total Facturado (Bruto)</span>
+                <div class="text-base font-black font-mono text-emerald-300 mt-1">
+                  {{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}
+                </div>
+              </div>
+              <div v-if="formFacturacion.observaciones_facturacion" class="sm:col-span-2 md:col-span-4 border-t border-white/5 pt-2 mt-1">
+                <span class="text-[10px] font-mono font-bold uppercase text-slate-400 block">Observaciones Contables</span>
+                <p class="text-xs text-slate-300 italic mt-0.5">{{ formFacturacion.observaciones_facturacion }}</p>
               </div>
             </div>
-          </div>
 
-          <!-- Observaciones -->
-          <div class="space-y-1">
-            <label class="text-xs font-mono font-bold uppercase text-slate-400 block">Observaciones Administrativas / Contables</label>
-            <input
-              v-model="formFacturacion.observaciones_facturacion"
-              type="text"
-              placeholder="Detalle contable o notas de conciliación..."
-              :disabled="estadoDbActual === 7"
-              class="w-full bg-[#080d1a] border border-white/20 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:border-amber-400 outline-none disabled:opacity-60"
-            />
+            <!-- ESTADO PENDIENTE DE FACTURACIÓN (SOLO LECTURA) -->
+            <div v-else class="bg-[#080d1a] border border-white/10 rounded-xl p-5 space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl">
+                  ⏳
+                </div>
+                <div>
+                  <h5 class="text-xs font-bold font-mono text-amber-300 uppercase">Servicio Pendiente de Facturación DTE</h5>
+                  <p class="text-[11px] text-slate-400">
+                    Monto devengado autorizado: <strong class="text-emerald-400 font-mono">{{ formatCurrency(edpData?.resumen_financiero?.total_neto || 0) }}</strong> (+ IVA: {{ formatCurrency(edpData?.resumen_financiero?.total_bruto || 0) }}).
+                  </p>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400 border-t border-white/5 pt-2">
+                Para ingresar el folio fiscal DTE, adjuntar la factura oficial y cerrar financieramente este servicio, accede al panel <strong>PMO (Control de Gestión)</strong> en la Torre de Control.
+              </p>
+            </div>
           </div>
-        </div>
 
         <!-- BARRA DE NAVEGACIÓN PASO 4 -->
         <div class="flex justify-start items-center bg-[#050810] border border-white/10 rounded-xl p-4">
@@ -4797,6 +4768,65 @@
       </div>
     </div>
 
+    <!-- Modal Motivo Devolución a Preventa Comercial (Reverso desde Verificación - REQ-990) -->
+    <div v-if="mostrarModalReverso" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div class="bg-slate-900 border border-amber-500/40 rounded-xl w-full max-w-lg p-6 shadow-2xl relative text-left">
+        <div class="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-bold">
+            ↩️
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider">
+              Devolver Requerimiento a Preventa Comercial
+            </h3>
+            <p class="text-[11px] text-slate-400">El negocio regresará a etapa de cotización para ajustes técnico-comerciales.</p>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs text-amber-300 font-semibold mb-1">
+              Motivo de la Devolución a Comercial <span class="text-red-400">*</span>:
+            </label>
+            <textarea 
+              v-model="motivoReversoTexto" 
+              rows="4" 
+              placeholder="Indique detalladamente por qué se regresa la cotización (ej: Falta definir modelo de grúa alternativo, cliente solicita cambiar fecha a faena, tarifa de traslado desactualizada)..."
+              class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-3 text-xs text-white resize-none focus:border-amber-400 outline-none transition-colors placeholder-slate-500"
+            ></textarea>
+            <p v-if="errorMotivoReverso" class="text-xs text-red-400 mt-1 font-semibold">{{ errorMotivoReverso }}</p>
+          </div>
+
+          <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-[11px] text-amber-200/90 space-y-1">
+            <p class="font-bold flex items-center gap-1.5 text-amber-300">
+              <span>🛡️</span> Notificación Automática al Equipo Interno
+            </p>
+            <p class="text-slate-300 text-[11px]">
+              Se enviará una alerta inmediata por correo y WhatsApp al Ejecutivo Comercial asignado y a Jefatura de Operaciones. El cliente mandante <strong>no</strong> será notificado.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6 border-t border-white/5 pt-4">
+          <button 
+            @click="mostrarModalReverso = false" 
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+            :disabled="enviandoReverso"
+          >
+            Cancelar
+          </button>
+          <button 
+            @click="confirmarReversoACotizacion" 
+            class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-2 shadow"
+            :disabled="enviandoReverso"
+          >
+            <span v-if="enviandoReverso" class="animate-spin text-xs">⏳</span>
+            <span>{{ enviandoReverso ? 'Reversando...' : 'Confirmar Devolución' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   <!-- MODAL: GENERAR REQUERIMIENTO A OPERACIONES -->
   <div v-if="showModalGenerarRequerimiento" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
     <div class="w-full max-w-xl bg-[#0f172a] border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -5338,7 +5368,7 @@
             </div>
           </div>
           <a 
-            :href="selectedOTVersionForEmail?.id_doc ? `${archivoBaseUrl}/v1/storage/view/${selectedOTVersionForEmail.id_doc}` : getFullStaticUrl(selectedOTVersionForEmail?.url)" 
+            :href="selectedOTVersionForEmail?.id_doc ? getFullStaticUrl(`/archivo/ver/${selectedOTVersionForEmail.id_doc}`) : getFullStaticUrl(selectedOTVersionForEmail?.url)" 
             target="_blank" 
             class="text-blue-400 hover:underline font-bold text-[11px]"
           >
@@ -5386,10 +5416,11 @@
     @report-validado="onReportValidado"
   />
 
-  <!-- MODAL CARÁTULA OFICIAL DE ESTADO DE PAGO (EDP) (Spec 38) -->
+  <!-- MODAL CARÁTULA OFICIAL DE ESTADO DE PAGO (EDP) (Spec 38 — SOLO LECTURA EN KANBAN) -->
   <ModalCaratulaEDP
     :visible="modalCaratulaEDPAbierto"
     :edp-data="edpData"
+    :solo-lectura="true"
     @close="modalCaratulaEDPAbierto = false"
     @edp-actualizado="cargarResumenEDP"
   />
@@ -5749,8 +5780,9 @@ const getArchivoUrl = (idDocOrSurvey) => {
   }
 
   let base = String(apiAxios.defaults.baseURL || '').replace(/\/$/, '')
-  if (!base || base.includes('localhost:5173')) {
-    base = 'https://servidor.leanglobal.cl/lg-gsp/api'
+  if (!base || base.includes('localhost')) {
+    const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+    base = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
   }
   return `${base}/archivo/ver/${encodeURIComponent(stringId)}`
 }
@@ -5763,8 +5795,9 @@ const getFullStaticUrl = (path) => {
   }
 
   let base = String(apiAxios.defaults.baseURL || '').replace(/\/$/, '');
-  if (!base || base.includes('localhost:5173')) {
-    base = 'https://servidor.leanglobal.cl/lg-gsp/api';
+  if (!base || base.includes('localhost')) {
+    const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+    base = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api';
   }
 
   if (cleanPath.startsWith('http')) {
@@ -5926,6 +5959,7 @@ const operacionesAssignment = ref({
   rigger_id: 'RIG-201',
   fecha_salida_plan: '',
   hora_salida_plan: '08:00',
+  hora_llegada_plan: '09:30',
   tonelaje_operaciones: '',
   equipo_sugerido_operaciones: '',
   observaciones_operaciones: '',
@@ -5934,6 +5968,48 @@ const operacionesAssignment = ref({
   hora_fin_plan: '18:00',
   cumplimiento_acreditaciones: {},
   implementos_survey: getInitialImplementos()
+})
+
+const generarPlanDiario = () => {
+  const iniStr = operacionesAssignment.value?.fecha_salida_plan
+  const finStr = operacionesAssignment.value?.fecha_fin_plan || iniStr
+  if (!iniStr) return []
+  
+  const dIni = new Date(String(iniStr).split('T')[0] + 'T00:00:00')
+  const dFin = new Date(String(finStr).split('T')[0] + 'T00:00:00')
+  if (isNaN(dIni.getTime()) || isNaN(dFin.getTime()) || dFin < dIni) return []
+
+  const dias = []
+  let curr = new Date(dIni)
+  while (curr <= dFin) {
+    const dayOfWeek = curr.getDay()
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0=Dom, 6=Sab
+      dias.push(curr.toISOString().split('T')[0])
+    }
+    curr.setDate(curr.getDate() + 1)
+  }
+
+  const total = dias.length
+  return dias.map((fStr, idx) => {
+    const diaNum = idx + 1
+    let tipo = 'INTERMEDIO'
+    if (total === 1) tipo = 'UNICO'
+    else if (diaNum === 1) tipo = 'INICIO'
+    else if (diaNum === total) tipo = 'FIN'
+
+    return {
+      dia: diaNum,
+      fecha: fStr,
+      tipo,
+      hora_salida_plan: operacionesAssignment.value?.hora_salida_plan || '08:00',
+      hora_llegada_plan: operacionesAssignment.value?.hora_llegada_plan || '09:30',
+      hora_fin_plan: operacionesAssignment.value?.hora_fin_plan || '18:00'
+    }
+  })
+}
+
+const planDiarioGenerado = computed(() => {
+  return generarPlanDiario()
 })
 
 const dbCategories = ref([])
@@ -8732,7 +8808,8 @@ const abrirPDFInspeccion = async (idSurvey, eqId) => {
 
     if (idDoc) {
       if (ins) ins.id_doc_pdf = idDoc
-      const base = (apiAxios.defaults.baseURL || 'https://servidor.leanglobal.cl/lg-gsp/api').replace(/\/$/, '')
+      const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+      const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
       const pdfUrl = `${base}/v1/storage/view/${idDoc}`
       window.open(pdfUrl, '_blank')
     } else {
@@ -10524,6 +10601,7 @@ const cargarDatosCotizacion = async () => {
           const { iniFecha: comIniFecha, iniHora: comIniHora, finFecha: comFinFecha, finHora: comFinHora } = obtenerFechasComercialesDefecto()
           operacionesAssignment.value.fecha_salida_plan = ejecucion.fecha_salida_plan || comIniFecha || new Date().toISOString().substring(0, 10)
           operacionesAssignment.value.hora_salida_plan = ejecucion.hora_salida_plan || comIniHora || '08:00'
+          operacionesAssignment.value.hora_llegada_plan = ejecucion.hora_llegada_plan || '09:30'
           operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan || comFinFecha || operacionesAssignment.value.fecha_salida_plan
           operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan || comFinHora || '18:00'
           // 1. Asignar operadores y riggers a líneas de equipos principales
@@ -11071,8 +11149,10 @@ const buildPayload = () => {
         tripulacion_asignada: tripulacionAsignada.value || [],
         fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
         hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
+        hora_llegada_plan: operacionesAssignment.value.hora_llegada_plan || '09:30',
         fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
         hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
+        plan_diario: generarPlanDiario(),
         observaciones: operacionesAssignment.value.observaciones_operaciones,
         aparejos_asignados_json: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos || [],
         implementos_survey: operacionesAssignment.value.implementos_survey || [],
@@ -11182,7 +11262,7 @@ const generarRequerimiento = async () => {
   try {
     await apiAxios.post('/message', {
       para: 'vendedor@arriendosanpablo.cl',
-      cc: 'luis@arriendosanpablo.cl, omar@arriendosanpablo.cl, analista@arriendosanpablo.cl, coordinador@arriendosanpablo.cl',
+      cc: 'luis@arriendosanpablo.cl, omar.ghiselini@arriendosanpablo.cl, analista@arriendosanpablo.cl, coordinador@arriendosanpablo.cl',
       asunto: `Nuevo Requerimiento de Operaciones: ${antecedentes.value.identificador_formal || 'COT'}`,
       cuerpo: `Se ha generado un nuevo requerimiento para la cotización ${antecedentes.value.identificador_formal || 'COT'}. Ya puedes revisarlo en el módulo de Operaciones.`
     })
@@ -11252,7 +11332,7 @@ const aprobarYGenerarOT = async () => {
       try {
         await apiAxios.post('/message', {
           para: 'vendedor@arriendosanpablo.cl',
-          cc: 'luis@arriendosanpablo.cl, omar@arriendosanpablo.cl, analista@arriendosanpablo.cl, coordinador@arriendosanpablo.cl',
+          cc: 'luis@arriendosanpablo.cl, omar.ghiselini@arriendosanpablo.cl, analista@arriendosanpablo.cl, coordinador@arriendosanpablo.cl',
           asunto: `Requerimiento Confirmado CON OBSERVACIONES (Diff): ${antecedentes.value.identificador_formal || 'COT'}`,
           cuerpo: `El área de Operaciones ha confirmado el requerimiento ${antecedentes.value.identificador_formal || 'COT'}, pero se registraron modificaciones (Diffs) respecto a lo cotizado comercialmente. Favor revisar los detalles en la plataforma.`
         })
@@ -12061,8 +12141,9 @@ const descargarDossierPdfGlobal = () => {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
   if (!id) return
-  const baseUrl = import.meta.env.VITE_API_URL || 'https://servidor.leanglobal.cl/lg-gsp'
-  const pdfUrl = `${baseUrl}/api/operaciones/edp/proyecto/${id}/pdf`
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+  const pdfUrl = `${base}/operaciones/edp/proyecto/${id}/pdf`
   
   descargandoPdfEDP.value = true
   window.open(pdfUrl, '_blank')
@@ -12230,6 +12311,9 @@ const abrirModalDespachoWhatsApp = (tipo, vehiculo = null) => {
   const targetVehiculo = vehiculo || (viajesConvoyLista.value?.length ? viajesConvoyLista.value[0] : null) || {}
   const fono = getTelefonoConductor(targetVehiculo)
 
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const baseApp = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod' : 'https://servidor.leanglobal.cl/lg-gsp-dev'
+
   datosWhatsAppModal.value = {
     tipo: tipo,
     operador_nombre: targetVehiculo.chofer_nombre || 'Operador Asignado',
@@ -12242,8 +12326,8 @@ const abrirModalDespachoWhatsApp = (tipo, vehiculo = null) => {
     nombre_cliente: p.nombre_cliente || 'Mandante',
     token: targetVehiculo.token || `vj-${p.id_proyecto || 'ot'}-${targetVehiculo.id_equipo || '1'}`,
     url: tipo === 'REPORTE'
-      ? `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${targetVehiculo.token || 'vj-demo-1234'}?fase=reporte`
-      : `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${targetVehiculo.token || 'vj-demo-1234'}`
+      ? `${baseApp}/viaje/${targetVehiculo.token || 'vj-demo-1234'}?fase=reporte`
+      : `${baseApp}/viaje/${targetVehiculo.token || 'vj-demo-1234'}`
   }
   modalWhatsAppVisible.value = true
 }
@@ -12253,7 +12337,9 @@ const onWhatsAppDespachado = (evento) => {
 }
 
 const copiarEnlaceViaje = (token) => {
-  const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const baseApp = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod' : 'https://servidor.leanglobal.cl/lg-gsp-dev'
+  const url = `${baseApp}/viaje/${token}`
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url)
     alert(`📋 Enlace copiado al portapapeles:\n\n${url}\n\nPuedes enviarlo al conductor por WhatsApp o SMS.`)
@@ -12263,7 +12349,9 @@ const copiarEnlaceViaje = (token) => {
 }
 
 const abrirWebViaje = (token) => {
-  const url = `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const baseApp = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod' : 'https://servidor.leanglobal.cl/lg-gsp-dev'
+  const url = `${baseApp}/viaje/${token}`
   window.open(url, '_blank')
 }
 
@@ -12384,8 +12472,10 @@ const confirmarAsignacionOT = async () => {
       chofer_id: operacionesAssignment.value.chofer_id,
       fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
       hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
+      hora_llegada_plan: operacionesAssignment.value.hora_llegada_plan || '09:30',
       fecha_fin_plan: operacionesAssignment.value.fecha_fin_plan,
       hora_fin_plan: operacionesAssignment.value.hora_fin_plan,
+      plan_diario: generarPlanDiario(),
       observaciones: operacionesAssignment.value.observaciones_operaciones,
       aparejos_solicitados_json: snapshotComercial.value.aparejos || {},
       aparejos_asignados_json: operacionesAssignment.value.implementos_survey || operacionesAssignment.value.aparejos,
@@ -12531,6 +12621,12 @@ const confirmarAsignacionOT = async () => {
       </div>
     `
 
+    const isProdEnv = typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/lg-gsp-prod') ||
+      window.location.pathname.startsWith('/pwa-gsp-prod')
+    )
+    const wspBaseUrl = isProdEnv ? 'https://servidor.leanglobal.cl/lg-gsp-prod/whatsapp' : 'https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp'
+
     targetUsers.forEach(u => {
       apiAxios.post('/message', {
         para: u.email,
@@ -12545,6 +12641,25 @@ const confirmarAsignacionOT = async () => {
         `🚜 Asignación de Servicio OT: ${antecedentes.value.identificador_formal || 'COT'} - ${equipoNombre}`,
         `Notificación de asignación enviada a integrante de tripulación`
       )
+
+      // Notificación WhatsApp a Tripulación (REQ-804)
+      let uFono = String(u.movil || u.telefono || u.celular || u.cel_personal || '').replace(/\D/g, '')
+      if (uFono.startsWith('56') && uFono.length > 9) {
+        // ok
+      } else if (uFono.length === 9 && uFono.startsWith('9')) {
+        uFono = '56' + uFono
+      }
+      if (uFono && uFono.length >= 11) {
+        const rolTexto = u.id_user === operacionesAssignment.value.operador_id ? 'Operador' : (u.id_user === operacionesAssignment.value.rigger_id ? 'Rigger' : 'Tripulante')
+        const wspTexto = `👷 *GRÚAS SAN PABLO - ASIGNACIÓN DE FAENA*\n\nEstimado(a) *${u.name_frst || u.nombre_user || 'Tripulante'}* (${rolTexto}):\nHa sido asignado al servicio operacional:\n\n📋 *OT:* ${antecedentes.value.identificador_formal || 'COT'}\n🚚 *Equipo:* ${equipoNombre}\n🏢 *Cliente:* ${clienteSeleccionado.value?.razon_social || opportunity.value.rut_cliente}\n📍 *Obra:* ${siteVisit.value.obra_nombre || 'En Terreno'} (${siteVisit.value.obra_ciudad || ''})\n⏰ *Salida Planificada:* ${operacionesAssignment.value.fecha_salida_plan || ''} a las ${operacionesAssignment.value.hora_salida_plan || '08:00'} hrs.\n\n_Coordinación de Operaciones Grúas San Pablo._`
+
+        axios.post(`${wspBaseUrl}/enviar`, {
+          numero: uFono,
+          mensaje: wspTexto
+        }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }).catch(err => {
+          console.warn(`[WSP] Fallo WhatsApp tripulación a ${u.email}:`, err.message)
+        })
+      }
     })
 
     // Notificación explícita al Coordinador de Patio
@@ -12842,7 +12957,9 @@ const autorizandoSalidaId = ref(null)
 const getLinkViajeOperador = (eqId) => {
   const ins = getInspeccionEquipo(eqId)
   const token = ins?.token_viaje || ('vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId)
-  return `https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${token}`
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const baseApp = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod' : 'https://servidor.leanglobal.cl/lg-gsp-dev'
+  return `${baseApp}/viaje/${token}`
 }
 
 const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
@@ -13009,8 +13126,11 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
 
       const wspTexto = `🚛 *GRÚAS SAN PABLO - HOJA DE RUTA OPERACIONAL*\n\nEstimado(a) *${opNombre}*:\nSe ha autorizado la salida de patio y generado su Hoja de Ruta para el servicio:\n\n📋 *OT:* ${otTexto}\n🚚 *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n👉 *Inicie su viaje y registre odómetro inicial aquí:*\n${tripUrl}\n\n_Buen viaje y conduzca con precaución._`
 
+      const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+      const wspBase = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/whatsapp' : 'https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp'
+
       try {
-        const wspResp = await axios.post('https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar', {
+        const wspResp = await axios.post(`${wspBase}/enviar`, {
           numero: fonoLimpio,
           mensaje: wspTexto
         }, {
@@ -13025,6 +13145,25 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
       } catch (errWsp) {
         console.warn('Advertencia al enviar WhatsApp:', errWsp)
         wspErrorMsg = errWsp.response?.data?.error || errWsp.message
+      }
+
+      // Notificar también al Rigger asignado vía WhatsApp (REQ-804)
+      try {
+        const riggerId = operacionesAssignment.value?.rigger_id
+        if (riggerId) {
+          const riggerUser = (usuarios.value || []).find(u => u.id_user === riggerId)
+          if (riggerUser) {
+            let rFono = String(riggerUser.movil || riggerUser.telefono || riggerUser.celular || '').replace(/\D/g, '')
+            if (rFono.startsWith('56') && rFono.length > 9) {} else if (rFono.length === 9 && rFono.startsWith('9')) { rFono = '56' + rFono }
+            if (rFono && rFono.length >= 11 && rFono !== fonoLimpio) {
+              const riggerNombre = riggerUser.name_frst ? `${riggerUser.name_frst} ${riggerUser.apellido_pat || ''}`.trim() : (riggerUser.nombre_user || 'Rigger')
+              const wspRigger = `🏗️ *GRÚAS SAN PABLO - SALIDA AUTORIZADA*\n\nEstimado(a) Rigger *${riggerNombre}*:\nSe ha autorizado la salida de base para el servicio:\n\n📋 *OT:* ${otTexto}\n🚚 *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n_Favor coordinarse con el operador ${opNombre} para la faena._`
+              axios.post(`${wspBase}/enviar`, { numero: rFono, mensaje: wspRigger }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }).catch(e => console.warn('Error WSP rigger:', e.message))
+            }
+          }
+        }
+      } catch (eRig) {
+        console.warn('Error notificando rigger por WhatsApp:', eRig)
       }
     }
 
@@ -13508,33 +13647,51 @@ const restaurarACotizar = async () => {
   }
 }
 
-const volverACotizar = async () => {
+const mostrarModalReverso = ref(false)
+const motivoReversoTexto = ref('')
+const errorMotivoReverso = ref('')
+const enviandoReverso = ref(false)
+
+const volverACotizar = () => {
+  motivoReversoTexto.value = ''
+  errorMotivoReverso.value = ''
+  mostrarModalReverso.value = true
+}
+
+const confirmarReversoACotizacion = async () => {
+  if (!motivoReversoTexto.value || motivoReversoTexto.value.trim().length < 5) {
+    errorMotivoReverso.value = 'Debe ingresar un motivo detallado de la devolución (mínimo 5 caracteres).'
+    return
+  }
+
   const projectId = props.proyectoId || currentProyectoId.value
   if (!projectId) return
 
+  enviandoReverso.value = true
+  errorMotivoReverso.value = ''
+
   try {
     const token = localStorage.getItem('token') || ''
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    
     const payload = buildPayload()
-    
-    // Cambiar a estado 2 ("Preparación de Cotización / Preventa Comercial")
-    payload.id_proyecto_estado = ESTADOS_DB.COTIZANDO
-    opportunity.value.id_proyecto_estado = ESTADOS_DB.COTIZANDO
-    payload.id_user_modificacion = currentUser.id_user || null
 
-    await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    await apiAxios.post(`/proyectos/${projectId}/reversar-a-cotizacion`, {
+      motivo: motivoReversoTexto.value.trim(),
+      payload
+    }, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    
+
+    mostrarModalReverso.value = false
     isDirty.value = false
     topTab.value = 'comercial'
-    alert('Cotización devuelta a Preventa Comercial exitosamente (100% editable).')
+    alert('Cotización devuelta a Preventa Comercial exitosamente. Se ha notificado al equipo interno.')
     emit('creada', { id: projectId })
     emit('close')
   } catch (error) {
-    console.error('Error al devolver a cotizar:', error)
-    alert('Error al devolver la cotización.')
+    console.error('Error al devolver cotización a comercial:', error)
+    errorMotivoReverso.value = error.response?.data?.error || 'Error al devolver la cotización.'
+  } finally {
+    enviandoReverso.value = false
   }
 }
 </script>

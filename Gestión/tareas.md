@@ -530,8 +530,65 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Horarios de Inicio y Término de Faena en Anexo 1 del EDP:** Extracción y formateo limpio de la jornada a partir de los campos timestamp existentes (`fecha_inicio_servicio` y `fecha_termino_servicio`) en zona horaria chilena (`America/Santiago`, UTC-3) con estilo `whitespace-nowrap font-mono` (`08:00 - 18:00`), eliminando definitivamente los marcadores vacíos `-- : -- - -- : --`. Período de corte en Carátula toma fallback de primera y última fecha de los reportes incluidos.
   - **Legibilidad y Contraste Alto en Correo de Solicitud de Modificación EDP (RFC):** Estilos inline prioritarios (`!important`) en `.content-box` y etiquetas en cian brillante (`#38bdf8`), datos en blanco puro (`#ffffff`) y montos en verde esmeralda (`#34d399`), asegurando lectura nítida en clientes webmail y móviles. `COMPLETADO Y CERTIFICADO`.
 
+* [x] **[Control Operativo en Vivo: Opción 3 Híbrida, Semáforos Cromáticos 5 Estados, Candado por OT y Sanación de Datos - REQ-042 / v1.0.78 / Spec 63]:**
+  - **Fase 0 (Sanación y Blindaje de Datos):**
+    - Exclusión de reportes FLETE del cómputo de cupo de días de faena en backend.
+    - Función canónica de cuota `validarCupoReportesOT` fail-closed en creación y actualización de reportes.
+    - Soporte de timestamp de dispositivo en eventos de viaje y reportes para resiliencia offline.
+    - Registro de timestamp de transmisión en Momento 2 de reporte diario (`fecha_transmision_termino`).
+    - Erradicación de placeholders fijos en Matriz PMO y depuración de endpoints redundantes de ping.
+  - **Fase 1 (Arquitectura del Plan Diario y Parámetros en Asignación):**
+    - Desglose reactivo de días hábiles en `json_field.ejecucion_v1.plan_diario` con horas inicio/término editables.
+    - Captura de hora de llegada a faena planificada en formulario de asignación.
+  - **Fase 2 (Backend Endpoint Agregado y Notificaciones In-Web):**
+    - Endpoint `GET /api/operaciones/control-vivo` con agregación de OTs del día, estados de semáforo y KPIs.
+    - Tabla y lógica de generación de alertas in-web en PostgreSQL (`tnot_notification_web`).
+  - **Fase 3 (Frontend Opción 3 Híbrida en Torre de Control):**
+    - Componente modular `ControlOperativoVivo.vue` integrado como sub-vista en PMO de `Torre.vue`.
+    - Tarjetas ordenadas por criticidad, mini-franja multi-día, slide-over lateral con timeline 07:00-20:00 y campana interactiva. `COMPLETADO Y DESPLEGADO EN PRODUCCIÓN DEV (v1.0.78)`.
+
+* [x] **[Gobernanza RBAC y Protocolo de Notificaciones - REQ-043 / v1.0.84]:**
+  - Corrección de rol a Omar Soffia como Operador (`GSP_EJEC`).
+  - Creación y activación de Omar Ghiselini como Director General (`Admin`) en BD DEV y PROD.
+  - Actualización de sugerencias de destinatarios en `ModalEnviarCotizacion.vue` y `GestorOportunidades.vue`.
+  - Aislamiento de almacenamiento por ambiente en `storageConfig.js` (`/u05/LeanDocs/GSP/prod/`). `COMPLETADO Y CERTIFICADO`.
+
+* [x] **[Auditoría Exhaustiva de URLs y Storage Paths (Zero Hardcoding) - REQ-044 / v1.0.85]:**
+  - Limpieza y dinamización de endpoints en `ModalCaratulaEDP.vue`, `ModalITS.vue`, `ModalMapaViaje.vue`, `AcreditacionDrawer.vue`, `GestorOportunidades.vue`.
+  - Backend: `archivoController.js`, `itsController.js`, `reportDiarioController.js`, `exportService.js` dinamizados según `APP_ENV`.
+  - PWA: `resolveApiBase()` dinámico en `api.js` detectando `/pwa-gsp-prod/` vs `/pwa-gsp-dev/`. `COMPLETADO Y CERTIFICADO`.
+
+* [x] **[Corrección de Enrutamiento PWA a Hoja de Conductor y Desacoplamiento de Despacho - REQ-045 / v1.0.86]:**
+  - Dinamización de `abrirViajeNativo(token)` en `Surveys.vue` para redirigir al ambiente activo (`/lg-gsp-prod/viaje/` en producción).
+  - Nginx: redirección de `/viaje/` a `/lg-gsp-prod/viaje/`.
+  - Desacoplamiento de badge de viaje en despacho (`SALIDA PENDIENTE` vs `EN RUTA`) y odómetros no iniciados (`---` en vez de `0 KM`). `COMPLETADO Y CERTIFICADO`.
+
 * [ ] **[Backlog: Modelo de Servicios Recurrentes y Modo Arriendo Mensual - REQ-030 / Spec 57]:**
   - Arquitectura para gestionar servicios de largo aliento bajo el mismo negocio/proyecto con cortes de facturación periódicos (EDP mensual) sin duplicar OTs.
+
+---
+
+### 📋 Requerimientos de Terreno (Backlog Jorge Ponce - 05-Oct-2026)
+* [x] **[REQ-569] Cambio de empresa en cotización:** Al colocar otra empresa como Bestmaq o Logística se actualiza correctamente en la cotización. `CONCLUIDO Y VERIFICADO EN DEV Y PROD`.
+* [x] **[REQ-620] Limpieza de campos al crear negocio:** Limpieza de nombres de obra y ciudad precargados al crear un nuevo negocio. `CONCLUIDO Y VERIFICADO EN DEV Y PROD`.
+* [x] **[REQ-651] Destinatarios al enviar cotización:** Destinatario corregido formalmente a Omar Ghiselini como Director General en lugar de Omar Soffia (Operador). `CONCLUIDO Y VERIFICADO EN DEV Y PROD`.
+* [x] **[REQ-682] Duplicidad de traslado en PDF cotización vs estructurador:** Corrección del filtro de flota en `proyectoModel.js` evitando que traslados comerciales ingresen al segmento de izaje principal; deduplicación certificada en `GSP-2610-4853-003` (2 registros exactos). `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.88)`.
+* [x] **[REQ-773] Hora de inicio de servicio en OT y horas mínimas en PDF OT:** Incorporada hora de inicio de faena/servicio en OT y reflejadas las horas mínimas en el PDF de OT. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.87)`.
+* [x] **[REQ-804] Notificación WhatsApp a operador y rigger:** Despacho y entrega de WhatsApp de asignación y salida autorizada tanto a operador como rigger con endpoint dinámico prod/dev. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.87)`.
+* [x] **[REQ-835] Simplificación de toma de combustible en App PWA:** Eliminada toma de combustible en salida de base; select de porcentaje (1 a 100%) y foto en llegada a faena. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.87)`.
+* [x] **[REQ-896] Defecto de cierre de App tras arribo a obra:** Corregido botón verde con deep link dinámico a `/pwa-gsp-prod/#/reportDiario...` sin botar sesión ni enviar a dev; eliminado odómetro redundante en Momento 1. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.87)`.
+* [x] **[REQ-957] Claridad de horómetros al término de servicio en Report:** Registro claro e individual de ambos horómetros (Superestructura y Chasis bimotor) con fotografías dedicadas al término de faena; odómetro retirado de Momento 2. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.87)`.
+* [x] **[REQ-990] Motivo de reverso y notificación interna en devolución Verificación a Comercial:** Modal con motivo obligatorio al devolver cotización a comercial, persistencia en `crm_v1.motivo_reverso_verificacion` y despacho omnicanal (Email y WhatsApp) exclusivamente al equipo interno (comercial, operaciones y PMO), excluyendo al cliente mandante. `CONCLUIDO Y VERIFICADO EN DEV Y PROD (v1.0.88)`.
+* [ ] **[REQ-988] Flujo de retorno a base:** Botón simple de salida de obra a base y registro de llegada a base con odómetro, horómetro y fotos. `PENDIENTE (Sprint B)`.
+
+---
+
+### 📌 Tareas Prioritarias Registradas (05-Oct-2026)
+* [ ] **1. Coordinar inducción:** Llamar a Marcelo Reyes para coordinar inducción.
+* [ ] **2. Notificaciones Jorge Ponce:** Reemplazar el usuario de notificaciones de Jorge que está con Gmail por su cuenta recién enrolada con el dominio `arriendosanpablo.cl`.
+* [ ] **3. Backlog:** Revisar backlog. (Completada sincronización y relevamiento DEV/PROD; items 1, 2, 3 concluidos; 4 en revisión; 10 pendiente; 5, 6, 7, 8, 9 en ejecución).
+* [ ] **4. Formulario de control:** Validar formulario de control con Yiara.
+
 
 
 

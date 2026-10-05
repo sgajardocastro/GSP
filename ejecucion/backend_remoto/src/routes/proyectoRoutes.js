@@ -29,6 +29,7 @@ router.post('/crearEquipoProyecto', proyectoController.crearEquipoProyecto);
 router.post('/:id/generar-cotizacion', proyectoController.generarCotizacion);
 router.post('/:id/generar-ot', proyectoController.generarOT);
 router.post('/:id/enviar-ot', proyectoController.enviarOT);
+router.post('/:id/reversar-a-cotizacion', proyectoController.reversarACotizacion);
 
 // Sub-rutas para asignaciones (Personas y Equipos)
 router.use('/:id/asignaciones', asignacionRecursosRoutes);
