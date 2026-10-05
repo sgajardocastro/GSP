@@ -194,39 +194,25 @@
             />
           </div>
 
-          <!-- Horómetro y Odómetro Inicial -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <div>
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
-                ⚙️ HORÓMETRO INICIO *
-              </label>
-              <input
-                v-model.number="form.horometro_inicio"
-                type="number"
-                step="0.1"
-                placeholder="Ej: 3450.5"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
-              />
-            </div>
-            <div>
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
-                🛣️ ODÓMETRO INICIO
-              </label>
-              <input
-                v-model.number="form.odometro_inicio"
-                type="number"
-                step="1"
-                placeholder="Ej: 145000"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
-              />
-            </div>
+          <!-- Horómetro Superestructura Inicial (Sin Odómetro Redundante) -->
+          <div class="mb-4">
+            <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
+              ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *
+            </label>
+            <input
+              v-model.number="form.horometro_inicio"
+              type="number"
+              step="0.1"
+              placeholder="Ej: 3450.5"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
+            />
           </div>
 
-          <!-- FOTOGRAFÍA OBLIGATORIA DEL TABLERO AL INICIO -->
+          <!-- FOTOGRAFÍA OBLIGATORIA DEL HORÓMETRO AL INICIO -->
           <div class="mb-5 pa-5 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-2">
               <label class="text-lg sm:text-xl font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-2">
-                <span>📸 Foto Tablero Inicio</span>
+                <span>📸 Foto Horómetro Superestructura</span>
                 <span class="text-red-400 font-black">*</span>
               </label>
               <span v-if="form.foto_tablero_inicio" class="text-base font-black text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-500">
@@ -237,7 +223,7 @@
               </span>
             </div>
             <p class="text-base text-slate-300 mb-4 font-medium">
-              Fotografía clara del panel y horómetro al iniciar la jornada.
+              Fotografía clara del horómetro de la superestructura/grúa al iniciar la faena.
             </p>
 
             <input
@@ -468,143 +454,209 @@
             </div>
           </div>
 
-          <!-- Horómetro y Odómetro Término -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <div>
-              <div class="d-flex align-center justify-space-between mb-1.5">
-                <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                  ⚙️ HORÓMETRO TÉRMINO *
-                </label>
-                <button
-                  v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
-                  type="button"
-                  @click="aplicarHorometroSugerido"
-                  class="text-[11px] font-bold text-amber-400 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
-                >
-                  💡 Usar Sugerido: {{ horometroPropuesto }}
-                </button>
-              </div>
-              <input
-                v-model.number="form.horometro_termino"
-                type="number"
-                step="0.1"
-                placeholder="Ej: 3459.0"
-                class="w-full bg-slate-950 border-2 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:outline-none text-center h-16 shadow-inner"
-                :class="estadoHorometroTermino.tipo === 'ERROR_MENOR' ? 'border-red-500 text-red-400 animate-pulse' : (estadoHorometroTermino.tipo === 'WARNING_DISPARADO' ? 'border-yellow-500 text-yellow-300' : 'border-slate-700 focus:border-amber-400')"
-              />
-
-              <!-- ALERTA: HOROMETRO MENOR -->
-              <div v-if="estadoHorometroTermino.tipo === 'ERROR_MENOR'" class="mt-2 p-2 bg-red-950/80 border border-red-500/80 rounded-xl text-xs text-red-200 font-bold flex items-center justify-between">
-                <span>{{ estadoHorometroTermino.mensaje }}</span>
-                <button @click="aplicarHorometroSugerido" type="button" class="underline text-white text-[11px] ml-2 cursor-pointer">
-                  Corregir
-                </button>
-              </div>
-
-              <!-- ALERTA: HOROMETRO DISPARADO -->
-              <div v-else-if="estadoHorometroTermino.tipo === 'WARNING_DISPARADO'" class="mt-2 p-2.5 bg-yellow-950/90 border-2 border-yellow-500 rounded-xl text-xs text-yellow-200 font-bold space-y-1.5">
-                <div class="flex items-start gap-1.5">
-                  <span>{{ estadoHorometroTermino.mensaje }}</span>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-yellow-500/30">
-                  <span class="text-[11px] text-yellow-400">Sugerido estimado: {{ horometroPropuesto }} hrs</span>
-                  <button @click="aplicarHorometroSugerido" type="button" class="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-2.5 py-1 rounded-lg text-xs cursor-pointer shadow">
-                    Reemplazar por Sugerido
-                  </button>
-                </div>
-              </div>
-
-              <div v-else-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold flex items-center justify-space-between">
-                <span>Δ Motor: {{ deltaHorometro }} hrs</span>
-                <span v-if="horometroPropuesto" class="text-slate-400 text-[11px]">Sugerido: {{ horometroPropuesto }} hrs</span>
-              </div>
-            </div>
-            <div>
-              <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
-                🛣️ ODÓMETRO TÉRMINO
-              </label>
-              <input
-                v-model.number="form.odometro_termino"
-                type="number"
-                step="1"
-                placeholder="Ej: 145020"
-                class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:border-amber-400 focus:outline-none text-center h-16 shadow-inner"
-              />
-              <span v-if="deltaOdometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold">
-                Δ Distancia: {{ deltaOdometro }} km
-              </span>
-            </div>
-          </div>
-
-          <!-- FOTOGRAFÍA OBLIGATORIA DEL TABLERO AL TÉRMINO -->
+          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OBLIGATORIO) -->
           <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-1.5">
-              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-                <span>📸 Foto Tablero Término</span>
-                <span class="text-red-400 font-black">*</span>
+              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
+                ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *
               </label>
-              <span v-if="form.foto_tablero_termino" class="text-xs font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-500">
-                ✅ Foto Cargada
-              </span>
-              <span v-else class="text-xs font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-lg border border-amber-500">
-                ⚠️ Obligatoria
-              </span>
+              <button
+                v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
+                type="button"
+                @click="aplicarHorometroSugerido"
+                class="text-[11px] font-bold text-amber-400 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
+              >
+                💡 Usar Sugerido: {{ horometroPropuesto }}
+              </button>
             </div>
-            <p class="text-xs text-slate-300 mb-3 font-medium">
-              Fotografía clara del panel del horómetro al finalizar la faena.
-            </p>
-
             <input
-              ref="inputFotoTermino"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              class="d-none"
-              @change="onFotoTerminoSeleccionada"
+              v-model.number="form.horometro_termino"
+              type="number"
+              step="0.1"
+              placeholder="Ej: 3459.0"
+              class="w-full bg-slate-950 border-2 rounded-xl px-4 py-3 text-amber-300 font-mono text-2xl font-black focus:outline-none text-center h-16 shadow-inner"
+              :class="estadoHorometroTermino.tipo === 'ERROR_MENOR' ? 'border-red-500 text-red-400 animate-pulse' : (estadoHorometroTermino.tipo === 'WARNING_DISPARADO' ? 'border-yellow-500 text-yellow-300' : 'border-slate-700 focus:border-amber-400')"
             />
 
-            <div v-if="form.foto_tablero_termino" class="position-relative space-y-3">
-              <div class="rounded-2xl overflow-hidden border-2 border-amber-400 bg-black flex items-center justify-center max-h-80 shadow-md">
-                <img
-                  :src="form.foto_tablero_termino"
-                  alt="Foto Tablero Término"
-                  class="w-full h-auto max-h-80 object-contain"
-                />
+            <!-- ALERTA: HOROMETRO MENOR -->
+            <div v-if="estadoHorometroTermino.tipo === 'ERROR_MENOR'" class="mt-2 p-2 bg-red-950/80 border border-red-500/80 rounded-xl text-xs text-red-200 font-bold flex items-center justify-between">
+              <span>{{ estadoHorometroTermino.mensaje }}</span>
+              <button @click="aplicarHorometroSugerido" type="button" class="underline text-white text-[11px] ml-2 cursor-pointer">
+                Corregir
+              </button>
+            </div>
+
+            <!-- ALERTA: HOROMETRO DISPARADO -->
+            <div v-else-if="estadoHorometroTermino.tipo === 'WARNING_DISPARADO'" class="mt-2 p-2.5 bg-yellow-950/90 border-2 border-yellow-500 rounded-xl text-xs text-yellow-200 font-bold space-y-1.5">
+              <div class="flex items-start gap-1.5">
+                <span>{{ estadoHorometroTermino.mensaje }}</span>
               </div>
-              <div class="d-flex ga-2 mt-2.5">
+              <div class="flex items-center justify-between pt-1 border-t border-yellow-500/30">
+                <span class="text-[11px] text-yellow-400">Sugerido estimado: {{ horometroPropuesto }} hrs</span>
+                <button @click="aplicarHorometroSugerido" type="button" class="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-2.5 py-1 rounded-lg text-xs cursor-pointer shadow">
+                  Reemplazar por Sugerido
+                </button>
+              </div>
+            </div>
+
+            <div v-else-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold flex items-center justify-space-between">
+              <span>Δ Superestructura: {{ deltaHorometro }} hrs</span>
+              <span v-if="horometroPropuesto" class="text-slate-400 text-[11px]">Sugerido: {{ horometroPropuesto }} hrs</span>
+            </div>
+
+            <!-- FOTOGRAFÍA OBLIGATORIA SUPERESTRUCTURA -->
+            <div class="mt-3 pt-3 border-t border-slate-800">
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <label class="text-xs font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
+                  <span>📸 Foto Tablero Superestructura (Término)</span>
+                  <span class="text-red-400 font-black">*</span>
+                </label>
+                <span v-if="form.foto_tablero_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
+                  ✅ Foto Cargada
+                </span>
+                <span v-else class="text-[11px] font-black text-amber-400 bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-500">
+                  ⚠️ Obligatoria
+                </span>
+              </div>
+
+              <input
+                ref="inputFotoTermino"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="d-none"
+                @change="onFotoTerminoSeleccionada"
+              />
+
+              <div v-if="form.foto_tablero_termino" class="position-relative space-y-2">
+                <div class="rounded-xl overflow-hidden border border-amber-400 bg-black flex items-center justify-center max-h-60 shadow-md">
+                  <img
+                    :src="form.foto_tablero_termino"
+                    alt="Foto Horómetro Superestructura Término"
+                    class="w-full h-auto max-h-60 object-contain"
+                  />
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn
+                    color="amber"
+                    variant="flat"
+                    size="small"
+                    class="flex-grow-1 font-black text-xs h-9 rounded-lg text-slate-950"
+                    @click="inputFotoTermino.click()"
+                  >
+                    📸 Cambiar Foto Superestructura
+                  </v-btn>
+                  <v-btn
+                    color="red-lighten-1"
+                    variant="outlined"
+                    size="small"
+                    class="font-black text-xs h-9 rounded-lg px-3"
+                    @click="form.foto_tablero_termino = null"
+                  >
+                    🗑️ Borrar
+                  </v-btn>
+                </div>
+              </div>
+
+              <div v-else>
                 <v-btn
                   color="amber"
                   variant="flat"
                   size="default"
-                  class="flex-grow-1 font-black text-base h-12 rounded-xl text-slate-950"
+                  block
+                  class="font-black text-xs h-11 rounded-xl d-flex align-center ga-2 text-slate-950 shadow py-2"
                   @click="inputFotoTermino.click()"
                 >
-                  📸 Cambiar Foto
-                </v-btn>
-                <v-btn
-                  color="red-lighten-1"
-                  variant="outlined"
-                  size="default"
-                  class="font-black text-base h-12 rounded-xl px-4"
-                  @click="form.foto_tablero_termino = null"
-                >
-                  🗑️ Borrar
+                  <span class="text-lg">📸</span>
+                  <span>Tomar Foto Horómetro Superestructura</span>
                 </v-btn>
               </div>
             </div>
+          </div>
 
-            <div v-else>
-              <v-btn
-                color="amber"
-                variant="flat"
-                size="large"
-                block
-                class="font-black text-base h-14 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
-                @click="inputFotoTermino.click()"
-              >
-                <span class="text-2xl">📸</span>
-                <span>Tomar Foto Tablero Término</span>
-              </v-btn>
+          <!-- 2. HORÓMETRO CHASIS TÉRMINO (EQUIPOS BIMOTOR O DOS MOTORES) -->
+          <div v-if="esGruaBimotor" class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-1.5">
+              <label class="text-sm font-black text-cyan-300 text-uppercase tracking-wider">
+                🚜 HORÓMETRO CHASIS (TÉRMINO)
+              </label>
+              <span class="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">Motor Chasis</span>
+            </div>
+            <input
+              v-model.number="form.horometro_chasis_termino"
+              type="number"
+              step="0.1"
+              placeholder="Ej: 5120.4"
+              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-cyan-300 font-mono text-2xl font-black focus:border-cyan-400 focus:outline-none text-center h-16 shadow-inner"
+            />
+
+            <!-- FOTOGRAFÍA HORÓMETRO CHASIS -->
+            <div class="mt-3 pt-3 border-t border-slate-800">
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <label class="text-xs font-black text-cyan-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
+                  <span>📸 Foto Tablero Chasis (Término)</span>
+                  <span v-if="form.horometro_chasis_termino" class="text-red-400 font-black">*</span>
+                </label>
+                <span v-if="form.foto_horometro_chasis_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
+                  ✅ Foto Cargada
+                </span>
+                <span v-else-if="form.horometro_chasis_termino" class="text-[11px] font-black text-amber-400 bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-500">
+                  ⚠️ Obligatoria al registrar horómetro chasis
+                </span>
+              </div>
+
+              <input
+                ref="inputFotoChasisTermino"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="d-none"
+                @change="onFotoChasisTerminoSeleccionada"
+              />
+
+              <div v-if="form.foto_horometro_chasis_termino" class="position-relative space-y-2">
+                <div class="rounded-xl overflow-hidden border border-cyan-400 bg-black flex items-center justify-center max-h-60 shadow-md">
+                  <img
+                    :src="form.foto_horometro_chasis_termino"
+                    alt="Foto Horómetro Chasis Término"
+                    class="w-full h-auto max-h-60 object-contain"
+                  />
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn
+                    color="cyan-darken-2"
+                    variant="flat"
+                    size="small"
+                    class="flex-grow-1 font-black text-xs h-9 rounded-lg text-white"
+                    @click="inputFotoChasisTermino.click()"
+                  >
+                    📸 Cambiar Foto Chasis
+                  </v-btn>
+                  <v-btn
+                    color="red-lighten-1"
+                    variant="outlined"
+                    size="small"
+                    class="font-black text-xs h-9 rounded-lg px-3"
+                    @click="form.foto_horometro_chasis_termino = null"
+                  >
+                    🗑️ Borrar
+                  </v-btn>
+                </div>
+              </div>
+
+              <div v-else>
+                <v-btn
+                  color="cyan-darken-3"
+                  variant="outlined"
+                  size="default"
+                  block
+                  class="font-bold text-xs h-11 rounded-xl d-flex align-center ga-2 text-cyan-300 border-cyan-500/50 hover:bg-cyan-950/40 py-2"
+                  @click="inputFotoChasisTermino.click()"
+                >
+                  <span class="text-lg">📸</span>
+                  <span>Tomar Foto Horómetro Chasis</span>
+                </v-btn>
+              </div>
             </div>
           </div>
 
@@ -827,6 +879,36 @@
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="4000">
       <span class="text-xl font-bold">{{ snackbar.text }}</span>
     </v-snackbar>
+
+    <!-- MODAL CONFIRMACIÓN TÉRMINO DE FAENA & INICIO RETORNO (REQ-988) -->
+    <v-dialog v-model="mostrarModalRetorno" persistent max-width="500">
+      <v-card class="rounded-3xl bg-slate-950 border-2 border-emerald-500 pa-6 text-white text-center shadow-2xl">
+        <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto text-4xl mb-4">
+          🏁
+        </div>
+        <h3 class="text-xl font-black uppercase text-white font-mono mb-2">
+          ¡Faena Concluida con Éxito!
+        </h3>
+        <p class="text-sm text-slate-300 mb-4">
+          Has transmitido el <strong>último Report Diario</strong> programado para esta orden de trabajo.
+          Se ha generado la <strong>Hoja de Ruta de RETORNO</strong> hacia la Base Central San Pablo.
+        </p>
+        <div class="bg-black/50 border border-white/10 rounded-2xl p-3 mb-5 text-left font-mono text-xs space-y-1">
+          <div class="text-amber-400 font-bold">🚜 Origen: {{ proyecto.obra_nombre || 'Faena Operativa' }}</div>
+          <div class="text-emerald-400 font-bold">🏢 Destino: Base Central San Pablo</div>
+          <div class="text-slate-400 text-[10px]">Token Hoja de Ruta: {{ modalRetornoToken }}</div>
+        </div>
+        <v-btn
+          block
+          size="x-large"
+          color="emerald-darken-1"
+          class="font-black text-uppercase rounded-2xl text-white py-4 text-base shadow-lg tracking-wider"
+          @click="irAViajeRetorno"
+        >
+          🚀 INICIAR VIAJE DE RETORNO ➔
+        </v-btn>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -850,6 +932,17 @@ const idEquipoSeleccionado = ref(route.query.id_equipo ? Number(route.query.id_e
 const idReporteAvanceActivo = ref(null)
 const servicioConcluido = ref(false)
 const mensajeConcluido = ref('')
+const mostrarModalRetorno = ref(false)
+const modalRetornoToken = ref(null)
+
+const irAViajeRetorno = () => {
+  const isProd = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/lg-gsp-prod') ||
+    window.location.pathname.startsWith('/pwa-gsp-prod')
+  )
+  const webPrefix = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
+  window.location.href = `${window.location.origin}${webPrefix}/viaje/${modalRetornoToken.value}`
+}
 
 const proyecto = ref({})
 const equipos = ref([])
@@ -860,6 +953,7 @@ const horasMinimas = ref(8.0)
 
 const inputFotoInicio = ref(null)
 const inputFotoTermino = ref(null)
+const inputFotoChasisTermino = ref(null)
 
 const form = reactive({
   fecha_reporte: new Date().toISOString().split('T')[0],
@@ -868,10 +962,12 @@ const form = reactive({
   minutos_colacion: 60,
   horometro_inicio: null,
   horometro_termino: null,
+  horometro_chasis_termino: null,
   odometro_inicio: null,
   odometro_termino: null,
   foto_tablero_inicio: null,
   foto_tablero_termino: null,
+  foto_horometro_chasis_termino: null,
   notas_mecanicas_gsp: '',
   observacion_trabajo: '',
   cliente_nombre: '',
@@ -931,12 +1027,10 @@ const deltaHorometro = computed(() => {
   return null
 })
 
-const deltaOdometro = computed(() => {
-  if (form.odometro_inicio !== null && form.odometro_termino !== null) {
-    const diff = form.odometro_termino - form.odometro_inicio
-    return diff >= 0 ? diff : 0
-  }
-  return null
+
+const esGruaBimotor = computed(() => {
+  const t = (equipoSeleccionado.value?.tipo_equipo || equipoSeleccionado.value?.modelo || '').toUpperCase()
+  return t.includes('GRUA') || t.includes('TELESCOPICA') || t.includes('LTM') || equipoSeleccionado.value?.cantidad_estanques === 2 || equipoSeleccionado.value?.es_bimotor === true
 })
 
 // Acciones de cámara para foto inicio
@@ -944,9 +1038,14 @@ const onFotoInicioSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_inicio = b64 })
 }
 
-// Acciones de cámara para foto término
+// Acciones de cámara para foto término superestructura
 const onFotoTerminoSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_termino = b64 })
+}
+
+// Acciones de cámara para foto término chasis (bimotor)
+const onFotoChasisTerminoSeleccionada = (event) => {
+  comprimirYAsignar(event, (b64) => { form.foto_horometro_chasis_termino = b64 })
 }
 
 const comprimirYAsignar = (event, callback) => {
@@ -1071,13 +1170,18 @@ const puedeGuardarInicio = computed(() => {
 
 const puedeAvanzarAReport = computed(() => {
   if (servicioConcluido.value) return false
-  return (
+  const superOk = (
     form.hora_termino &&
     form.horometro_termino !== null &&
     Number(form.horometro_termino) >= Number(form.horometro_inicio || 0) &&
     estadoHorometroTermino.value.tipo !== 'ERROR_MENOR' &&
     form.foto_tablero_termino
   )
+  if (!superOk) return false
+  if (esGruaBimotor.value && form.horometro_chasis_termino) {
+    if (!form.foto_horometro_chasis_termino) return false
+  }
+  return true
 })
 
 const puedeEnviarReport = computed(() => {
@@ -1131,7 +1235,13 @@ const irAReportMandante = () => {
     if (!confirma) return
   }
   if (!form.foto_tablero_termino) {
-    snackbar.text = '⚠️ La Foto del Tablero al Término es OBLIGATORIA'
+    snackbar.text = '⚠️ La Foto del Tablero de Superestructura al Término es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (esGruaBimotor.value && form.horometro_chasis_termino && !form.foto_horometro_chasis_termino) {
+    snackbar.text = '⚠️ La Foto del Horómetro de Chasis al Término es OBLIGATORIA'
     snackbar.color = 'warning'
     snackbar.show = true
     return
@@ -1283,7 +1393,8 @@ const guardarInicioJornada = async () => {
       hora_inicio: form.hora_inicio,
       horometro_inicio: form.horometro_inicio,
       odometro_inicio: form.odometro_inicio,
-      foto_tablero_inicio: form.foto_tablero_inicio
+      foto_tablero_inicio: form.foto_tablero_inicio,
+      device_timestamp: new Date().toISOString()
     }
 
     const res = await api.post('/operaciones/report/inicio-jornada', payload)
@@ -1376,10 +1487,12 @@ const sellarYTransmitirReport = async () => {
       horas_sobretiempo: calculoHoras.value.sobretiempo,
       horometro_inicio: form.horometro_inicio,
       horometro_termino: form.horometro_termino,
+      horometro_chasis_termino: form.horometro_chasis_termino || null,
       odometro_inicio: form.odometro_inicio,
-      odometro_termino: form.odometro_termino,
+      odometro_termino: null,
       foto_tablero_inicio: form.foto_tablero_inicio,
       foto_tablero_termino: form.foto_tablero_termino,
+      foto_horometro_chasis_termino: form.foto_horometro_chasis_termino || null,
       notas_mecanicas_gsp: form.notas_mecanicas_gsp,
       observacion_trabajo: form.observacion_trabajo,
       cliente_nombre: form.cliente_nombre,
@@ -1388,7 +1501,8 @@ const sellarYTransmitirReport = async () => {
       cliente_firma_canvas_base64: form.cliente_firma_canvas_base64,
       latitud_inicio_servicio: geo.latitud,
       longitud_inicio_servicio: geo.longitud,
-      accuracy_firma: geo.accuracy
+      accuracy_firma: geo.accuracy,
+      device_timestamp: new Date().toISOString()
     }
 
     const res = await api.post('/operaciones/report/guardar', payload)
@@ -1397,9 +1511,14 @@ const sellarYTransmitirReport = async () => {
       snackbar.color = 'success'
       snackbar.show = true
 
-      setTimeout(() => {
-        router.push('/surveys')
-      }, 1500)
+      if (res.data.es_ultimo_report && res.data.token_viaje_retorno) {
+        modalRetornoToken.value = res.data.token_viaje_retorno
+        mostrarModalRetorno.value = true
+      } else {
+        setTimeout(() => {
+          router.push('/surveys')
+        }, 1500)
+      }
     }
   } catch (err) {
     console.error('Error al guardar report diario:', err)

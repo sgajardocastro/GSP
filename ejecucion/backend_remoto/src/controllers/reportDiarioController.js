@@ -7,6 +7,61 @@ const { generarPdfReportDiario } = require('../services/reportDiarioPdfService')
 const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
 const archivoModel = require('../models/archivoModel');
 const slaAuditorService = require('../services/slaAuditorService');
+const viajeModel = require('../models/viajeModel');
+
+// --- SPEC 63 / REQ-042: CÓMPUTO DETERMINISTA DE CUOTA Y DÍAS HÁBILES ---
+function calcularCupoDiasHabiles(proyecto, maxDiaHistorico = 0) {
+  if (!proyecto) return Math.max(1, maxDiaHistorico);
+  const jf = proyecto.json_field || {};
+  const ejec = jf.ejecucion_v1 || {};
+  const crm = jf.crm_v1 || {};
+  
+  if (Array.isArray(ejec.plan_diario) && ejec.plan_diario.length > 0) {
+    return Math.max(1, ejec.plan_diario.length, maxDiaHistorico);
+  }
+
+  const fechaIni = ejec.fecha_salida_plan || proyecto.fecha_plan_ini;
+  const fechaFin = ejec.fecha_fin_plan || proyecto.fecha_plan_fin;
+
+  if (fechaIni && fechaFin) {
+    const sIni = String(fechaIni).split('T')[0];
+    const sFin = String(fechaFin).split('T')[0];
+    const dIni = new Date(sIni + 'T00:00:00');
+    const dFin = new Date(sFin + 'T00:00:00');
+    if (!isNaN(dIni.getTime()) && !isNaN(dFin.getTime()) && dFin >= dIni) {
+      let habiles = 0;
+      let curr = new Date(dIni);
+      while (curr <= dFin) {
+        const day = curr.getDay();
+        if (day !== 0 && day !== 6) { // Excluir Sábado y Domingo
+          habiles++;
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+      return Math.max(1, habiles, maxDiaHistorico);
+    }
+  }
+
+  let totalDias = 1;
+  const lines = crm.lineas_servicio || jf.lineas_servicio || [];
+  for (const l of lines) {
+    const d = Number(l.cantidad_dias || l.dias || 0);
+    if (d > totalDias) totalDias = d;
+  }
+  return Math.max(1, totalDias, maxDiaHistorico);
+}
+
+async function getReportesConsumidosOT(id_proyecto, dbClient) {
+  const q = `
+    SELECT COUNT(*) AS total
+    FROM tedp_reporte_avance
+    WHERE id_proyecto = $1
+      AND estado_reporte != 'JORNADA_EN_CURSO'
+      AND (token_report IS NULL OR token_report NOT LIKE 'FLT-%')
+  `;
+  const res = await dbClient.query(q, [id_proyecto]);
+  return parseInt(res.rows[0]?.total || '0', 10);
+}
 
 const reportDiarioController = {
   // 1. Obtener contexto y datos precargados para emitir Report Diario (PWA)
@@ -223,20 +278,15 @@ const reportDiarioController = {
         await db.query('UPDATE tedp_reporte_avance SET horas_minimas = $1 WHERE id_reporte_avance = $2', [horasMinimas, jornadaActiva.id_reporte_avance]);
       }
 
-      // Calcular total de días autorizados de la OT (Spec 57)
-      let totalDiasOT = 1;
-      try {
-        const jf = proyecto.json_field || {};
-        const lines = jf.crm_v1?.lineas_servicio || jf.lineas_servicio || [];
-        for (const l of lines) {
-          const d = Number(l.cantidad_dias || l.dias || 0);
-          if (d > totalDiasOT) totalDiasOT = d;
-        }
-      } catch (e) {
-        console.warn('Error calculando totalDiasOT:', e.message);
-      }
+      // Calcular total de días autorizados de la OT (Spec 63 / REQ-042)
+      const maxDiaHistorico = reportsDelEquipo.reduce((m, r) => Math.max(m, Number(r.dia_correlativo || 0)), 0);
+      const totalDiasOT = calcularCupoDiasHabiles(proyecto, maxDiaHistorico);
 
-      const cantReportesTerminados = reportsDelEquipo.filter(r => r.estado_reporte !== 'JORNADA_EN_CURSO').length;
+      // Reports de faena que consumen cuota (excluyendo FLETE y jornadas en curso)
+      const cantReportesTerminados = reportsDelEquipo.filter(r => 
+        r.estado_reporte !== 'JORNADA_EN_CURSO' &&
+        (!r.token_report || !r.token_report.startsWith('FLT-'))
+      ).length;
       const servicioConcluido = cantReportesTerminados >= totalDiasOT;
 
       res.json({
@@ -313,6 +363,8 @@ const reportDiarioController = {
         console.warn('Error resolviendo pisoMinimo en guardarInicioJornada:', e.message);
       }
 
+      const deviceTs = req.body.device_timestamp ? new Date(req.body.device_timestamp) : null;
+
       // Verificar si ya existe una jornada en curso para hoy y este equipo
       const existSql = `
         SELECT id_reporte_avance 
@@ -334,8 +386,9 @@ const reportDiarioController = {
             odometro_inicio = $6,
             foto_tablero_inicio = $7,
             horas_minimas = $8,
+            device_timestamp = COALESCE($9, device_timestamp),
             estado_jornada = 'JORNADA_EN_CURSO'
-          WHERE id_reporte_avance = $9
+          WHERE id_reporte_avance = $10
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -347,10 +400,26 @@ const reportDiarioController = {
           odometro_inicio || null,
           foto_tablero_inicio || null,
           horasMinimasOT,
+          deviceTs,
           existRes.rows[0].id_reporte_avance
         ]);
         reportRow = upRes.rows[0];
       } else {
+        // Validación estricta de cuota fail-closed (Spec 63 / REQ-042)
+        const proyCupo = await db.query('SELECT json_field, fecha_plan_ini, fecha_plan_fin FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+        if (proyCupo.rows.length === 0) {
+          return res.status(404).json({ error: 'Proyecto no encontrado para validar cuota operacional' });
+        }
+        const totalDiasPermitidos = calcularCupoDiasHabiles(proyCupo.rows[0]);
+        const reportesConsumidos = await getReportesConsumidosOT(id_proyecto, db);
+        if (reportesConsumidos >= totalDiasPermitidos) {
+          return res.status(403).json({
+            success: false,
+            codigo: 'SERVICIO_CONCLUIDO',
+            error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${reportesConsumidos} reportes finalizados). No es posible iniciar nuevas jornadas.`
+          });
+        }
+
         const token_report = crypto.randomBytes(24).toString('hex');
         const insertSql = `
           INSERT INTO tedp_reporte_avance (
@@ -367,11 +436,12 @@ const reportDiarioController = {
             foto_tablero_inicio,
             token_report,
             horas_minimas,
+            device_timestamp,
             estado_reporte,
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
           ) RETURNING *;
         `;
         const inRes = await db.query(insertSql, [
@@ -387,7 +457,8 @@ const reportDiarioController = {
           odometro_inicio || null,
           foto_tablero_inicio || null,
           token_report,
-          horasMinimasOT
+          horasMinimasOT,
+          deviceTs
         ]);
         reportRow = inRes.rows[0];
       }
@@ -533,13 +604,13 @@ const reportDiarioController = {
           COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, 'Operador') AS operador_nombre,
           CASE WHEN ra.id_user_rigger IS NOT NULL THEN (u_rig.name_frst || ' ' || u_rig.apellido_pat) ELSE NULL END AS rigger_nombre,
           COALESCE(u_val.name_frst || ' ' || u_val.apellido_pat, 'Analista GSP') AS validador_nombre
-        FROM sch_leangsp.tedp_reporte_avance ra
-        LEFT JOIN sch_leangsp.tpry_proyecto p ON ra.id_proyecto = p.id_proyecto
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tequ_equipo e ON ra.id_equipo = e.id_equipo
-        LEFT JOIN sch_leangsp.tsec_users u_op ON ra.id_user_operador = u_op.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_rig ON ra.id_user_rigger = u_rig.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_val ON ra.id_user_validador = u_val.id_user
+        FROM tedp_reporte_avance ra
+        LEFT JOIN tpry_proyecto p ON ra.id_proyecto = p.id_proyecto
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tequ_equipo e ON ra.id_equipo = e.id_equipo
+        LEFT JOIN tsec_users u_op ON ra.id_user_operador = u_op.id_user
+        LEFT JOIN tsec_users u_rig ON ra.id_user_rigger = u_rig.id_user
+        LEFT JOIN tsec_users u_val ON ra.id_user_validador = u_val.id_user
         ORDER BY 
           CASE WHEN ra.estado_reporte = 'PENDIENTE_VALIDACION' THEN 0 ELSE 1 END,
           ra.fecha_reporte DESC,
@@ -567,10 +638,10 @@ const reportDiarioController = {
           COUNT(ra.id_reporte_avance) FILTER (WHERE ra.estado_reporte = 'VALIDADO_ANALISTA') AS reports_validados,
           COUNT(ra.id_reporte_avance) FILTER (WHERE ra.estado_reporte = 'PENDIENTE_VALIDACION') AS reports_pendientes,
           COUNT(ra.id_reporte_avance) AS total_reports
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tits_informe_termino its ON p.id_proyecto = its.id_proyecto
-        LEFT JOIN sch_leangsp.tedp_reporte_avance ra ON p.id_proyecto = ra.id_proyecto
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tits_informe_termino its ON p.id_proyecto = its.id_proyecto
+        LEFT JOIN tedp_reporte_avance ra ON p.id_proyecto = ra.id_proyecto
         WHERE p.id_proyecto_estado >= 4
         GROUP BY p.id_proyecto, p.codi_proyecto, p.nombre_proyecto, p.id_proyecto_estado, clt.razon_social, clt.name_empresa, p.json_field, its.id_its, its.folio_its, its.estado_its, its.total_ingresos_facturables, its.total_costos_operacionales, its.utilidad_bruta, its.margen_porcentaje
         ORDER BY p.id_proyecto DESC
@@ -626,9 +697,9 @@ const reportDiarioController = {
           v.id_equipo,
           v.patente,
           v.estado_trayecto
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tequ_log_desplazamiento v ON p.id_proyecto = v.id_proyecto AND v.id_user_chofer = $1
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tequ_log_desplazamiento v ON p.id_proyecto = v.id_proyecto AND v.id_user_chofer = $1
         WHERE (
           v.id_user_chofer = $1
           OR (p.json_field->'ejecucion_v1'->>'operador_id')::text = $1::text
@@ -659,7 +730,7 @@ const reportDiarioController = {
           )
           OR EXISTS (
             SELECT 1 
-            FROM sch_leangsp.tedp_reporte_avance ra 
+            FROM tedp_reporte_avance ra 
             WHERE ra.id_proyecto = p.id_proyecto 
               AND (ra.id_user_operador = $1 OR ra.id_user_rigger = $1)
           )
@@ -678,23 +749,22 @@ const reportDiarioController = {
         const crm = jf.crm_v1 || {};
         const lines = crm.lineas_servicio || [];
 
-        // Calcular total de días comprometidos
-        let totalDias = 1;
-        for (const l of lines) {
-          const d = Number(l.cantidad_dias || l.dias || 0);
-          if (d > totalDias) totalDias = d;
-        }
-
-        // Consultar reportes existentes para la OT
+        // Consultar reportes existentes para la OT que consumen cuota (excluyendo FLETE)
         const repRes = await db.query(
           `SELECT id_reporte_avance, dia_correlativo, fecha_reporte, estado_reporte, estado_jornada
-           FROM sch_leangsp.tedp_reporte_avance
-           WHERE id_proyecto = $1 AND estado_reporte != 'JORNADA_EN_CURSO'
+           FROM tedp_reporte_avance
+           WHERE id_proyecto = $1 
+             AND estado_reporte != 'JORNADA_EN_CURSO'
+             AND (token_report IS NULL OR token_report NOT LIKE 'FLT-%')
            ORDER BY dia_correlativo ASC`,
           [r.id_proyecto]
         );
         const reportes = repRes.rows;
         const cantReportes = reportes.length;
+        const maxDiaReport = reportes.reduce((m, x) => Math.max(m, Number(x.dia_correlativo || 0)), 0);
+
+        // Calcular total de días autorizados de la OT (Spec 63 / REQ-042)
+        const totalDias = calcularCupoDiasHabiles(r, maxDiaReport);
 
         // Verificar si hoy ya fue reportado
         const reportadoHoy = reportes.some(x => {
@@ -713,7 +783,7 @@ const reportDiarioController = {
           }
         }
         if (idEquipo && !patente) {
-          const eqRes = await db.query('SELECT patente FROM sch_leangsp.tequ_equipo WHERE id_equipo = $1', [idEquipo]);
+          const eqRes = await db.query('SELECT patente FROM tequ_equipo WHERE id_equipo = $1', [idEquipo]);
           if (eqRes.rows.length > 0) patente = eqRes.rows[0].patente;
         }
 
@@ -841,39 +911,43 @@ const reportDiarioController = {
         return res.status(400).json({ error: 'id_proyecto, fecha_reporte y id_user_operador son obligatorios' });
       }
 
-      // Validación estricta de cuota de días autorizados (Spec 57 / REQ-025)
-      if (!id_reporte_avance && id_proyecto) {
-        try {
-          const proyDiasRes = await db.query(
-            'SELECT json_field FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1',
-            [id_proyecto]
-          );
-          if (proyDiasRes.rows.length > 0) {
-            const jf = proyDiasRes.rows[0].json_field || {};
-            const lineas = jf.crm_v1?.lineas_servicio || jf.lineas_servicio || [];
-            let totalDiasPermitidos = 1;
-            for (const l of lineas) {
-              const d = Number(l.cantidad_dias || l.dias || 0);
-              if (d > totalDiasPermitidos) totalDiasPermitidos = d;
-            }
+      const deviceTs = req.body.device_timestamp ? new Date(req.body.device_timestamp) : null;
 
-            const repCountRes = await db.query(
-              `SELECT COUNT(*) AS total FROM sch_leangsp.tedp_reporte_avance 
-               WHERE id_proyecto = $1 AND estado_reporte != 'JORNADA_EN_CURSO'`,
-              [id_proyecto]
+      // Validación estricta de cuota de días autorizados fail-closed (Spec 63 / REQ-042)
+      try {
+        const proyDiasRes = await db.query(
+          'SELECT json_field, fecha_plan_ini, fecha_plan_fin FROM tpry_proyecto WHERE id_proyecto = $1',
+          [id_proyecto]
+        );
+        if (proyDiasRes.rows.length > 0) {
+          const totalDiasPermitidos = calcularCupoDiasHabiles(proyDiasRes.rows[0]);
+          const totalExistentes = await getReportesConsumidosOT(id_proyecto, db);
+
+          let esNuevoConsumo = true;
+          if (id_reporte_avance) {
+            const checkActual = await db.query(
+              'SELECT estado_reporte FROM tedp_reporte_avance WHERE id_reporte_avance = $1',
+              [id_reporte_avance]
             );
-            const totalExistentes = parseInt(repCountRes.rows[0]?.total || '0', 10);
-            if (totalExistentes >= totalDiasPermitidos) {
-              return res.status(403).json({
-                success: false,
-                codigo: 'SERVICIO_CONCLUIDO',
-                error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${totalExistentes} reportes finalizados). No es posible emitir nuevos reportes.`
-              });
+            if (checkActual.rows.length > 0 && checkActual.rows[0].estado_reporte !== 'JORNADA_EN_CURSO') {
+              esNuevoConsumo = false; // Ya consumía cuota previamente
             }
           }
-        } catch (checkErr) {
-          console.warn('Advertencia comprobando cuota de días en guardarReportDiario:', checkErr.message);
+
+          if (esNuevoConsumo && totalExistentes >= totalDiasPermitidos) {
+            return res.status(403).json({
+              success: false,
+              codigo: 'SERVICIO_CONCLUIDO',
+              error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${totalExistentes} reportes finalizados). No es posible emitir nuevos reportes.`
+            });
+          }
         }
+      } catch (checkErr) {
+        console.error('[Candado FAIL-CLOSED] Error comprobando cuota de días:', checkErr.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Error de validación de cuota operacional: ' + checkErr.message
+        });
       }
 
       if (!cliente_firma_canvas_base64) {
@@ -953,9 +1027,11 @@ const reportDiarioController = {
             cliente_rut = $26,
             cliente_cargo = $27,
             cliente_firma_canvas_base64 = $28,
+            fecha_transmision_termino = CURRENT_TIMESTAMP,
+            device_timestamp = COALESCE($29, device_timestamp),
             estado_reporte = 'PENDIENTE_VALIDACION',
             estado_jornada = 'FINALIZADA'
-          WHERE id_reporte_avance = $29
+          WHERE id_reporte_avance = $30
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -987,6 +1063,7 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
+          deviceTs,
           id_reporte_avance
         ]);
         reportGuardado = upRes.rows[0];
@@ -1026,11 +1103,13 @@ const reportDiarioController = {
             cliente_cargo,
             cliente_firma_canvas_base64,
             token_report,
+            device_timestamp,
+            fecha_transmision_termino,
             estado_reporte,
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
           )
           RETURNING *;
         `;
@@ -1066,7 +1145,8 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
-          token_report
+          token_report,
+          deviceTs
         ]);
         reportGuardado = inRes.rows[0];
       }
@@ -1083,10 +1163,42 @@ const reportDiarioController = {
         }
       }
 
+      // REQ-988: Detección del Último Report para activar automáticamente la Hoja de Ruta de RETORNO
+      let esUltimoReport = false;
+      let viajeRetorno = null;
+
+      try {
+        const proyCheckRes = await db.query(
+          'SELECT id_proyecto, codi_proyecto, json_field, fecha_plan_ini, fecha_plan_fin FROM tpry_proyecto WHERE id_proyecto = $1',
+          [id_proyecto]
+        );
+        if (proyCheckRes.rows.length > 0) {
+          const proyRow = proyCheckRes.rows[0];
+          const totalDiasPermitidos = calcularCupoDiasHabiles(proyRow);
+          const totalConsumidos = await getReportesConsumidosOT(id_proyecto, db);
+
+          if (Number(dia_correlativo) >= Number(totalDiasPermitidos) || totalConsumidos >= totalDiasPermitidos) {
+            esUltimoReport = true;
+            viajeRetorno = await viajeModel.crearViajeRetorno({
+              id_proyecto,
+              id_equipo,
+              id_user_chofer: id_user_operador,
+              patente: null
+            });
+            console.log(`[REQ-988] Último Report detectado en OT ${proyRow.codi_proyecto}. Hoja de Ruta de RETORNO activada: ${viajeRetorno.token_viaje}`);
+          }
+        }
+      } catch (errRetorno) {
+        console.warn('[REQ-988] Error verificando/creando viaje de retorno:', errRetorno.message);
+      }
+
       res.status(201).json({
         success: true,
         message: 'Report Diario guardado y firmado exitosamente',
-        data: reportGuardado
+        data: reportGuardado,
+        es_ultimo_report: esUltimoReport,
+        token_viaje_retorno: viajeRetorno?.token_viaje || null,
+        id_log_desplazamiento_retorno: viajeRetorno?.id_log_desplazamiento || null
       });
     } catch (err) {
       console.error('Error al guardar report diario:', err);
@@ -1107,7 +1219,7 @@ const reportDiarioController = {
       // 4.1 Resolver un validador válido en tsec_users
       let validValidadorId = 55; // Default Sergio Gajardo
       if (id_user_validador) {
-        const uCheck = await db.query('SELECT id_user FROM sch_leangsp.tsec_users WHERE id_user = $1', [id_user_validador]);
+        const uCheck = await db.query('SELECT id_user FROM tsec_users WHERE id_user = $1', [id_user_validador]);
         if (uCheck.rows.length > 0) {
           validValidadorId = uCheck.rows[0].id_user;
         }
@@ -1122,7 +1234,7 @@ const reportDiarioController = {
       }
 
       const validadorUserRes = await db.query(
-        'SELECT id_user, name_frst, apellido_pat, rut, email, pass_hash_fes FROM sch_leangsp.tsec_users WHERE id_user = $1',
+        'SELECT id_user, name_frst, apellido_pat, rut, email, pass_hash_fes FROM tsec_users WHERE id_user = $1',
         [validValidadorId]
       );
       if (validadorUserRes.rows.length === 0) {
@@ -1161,13 +1273,13 @@ const reportDiarioController = {
           u_val.apellido_pat as val_apellido,
           u_val.rut as val_rut,
           u_val.email as val_email
-        FROM sch_leangsp.tedp_reporte_avance r
-        LEFT JOIN sch_leangsp.tpry_proyecto p ON r.id_proyecto = p.id_proyecto
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tequ_equipo e ON r.id_equipo = e.id_equipo
-        LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
-        LEFT JOIN sch_leangsp.tsec_users u_val ON u_val.id_user = $1
+        FROM tedp_reporte_avance r
+        LEFT JOIN tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tequ_equipo e ON r.id_equipo = e.id_equipo
+        LEFT JOIN tsec_users u_op ON r.id_user_operador = u_op.id_user
+        LEFT JOIN tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
+        LEFT JOIN tsec_users u_val ON u_val.id_user = $1
         WHERE r.id_reporte_avance = $2
       `;
       const repRes = await db.query(repQuery, [validValidadorId, id]);
@@ -1289,7 +1401,7 @@ const reportDiarioController = {
 
       // 4.5 Actualizar en BD el estado y firma FES
       const updateSql = `
-        UPDATE sch_leangsp.tedp_reporte_avance
+        UPDATE tedp_reporte_avance
         SET 
           estado_reporte = 'VALIDADO_ANALISTA',
           id_user_validador = $1,
@@ -1362,7 +1474,7 @@ const reportDiarioController = {
           },
           validador: validadorUser,
           codigoFes,
-          validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/lg-gsp-dev/validador-doc`
+          validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/${(process.env.APP_ENV === 'prod') ? 'lg-gsp-prod' : 'lg-gsp-dev'}/validador-doc`
         });
 
         // 4.7 Guardar archivo siguiendo leanglobal_file_storage_standard
@@ -1394,7 +1506,7 @@ const reportDiarioController = {
 
         // Asociar id_doc_pdf a tedp_reporte_avance
         await db.query(
-          'UPDATE sch_leangsp.tedp_reporte_avance SET id_doc_pdf = $1 WHERE id_reporte_avance = $2',
+          'UPDATE tedp_reporte_avance SET id_doc_pdf = $1 WHERE id_reporte_avance = $2',
           [idDocPdf, id]
         );
         reportActualizado.id_doc_pdf = idDocPdf;
@@ -1402,7 +1514,7 @@ const reportDiarioController = {
 
         // 4.8 Adjuntar documento al Dossier del Proyecto en tpry_proyecto (json_field.ejecucion_v1.dossier_documentos)
         try {
-          const pryDocRes = await db.query('SELECT json_field FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1', [rep.id_proyecto]);
+          const pryDocRes = await db.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [rep.id_proyecto]);
           if (pryDocRes.rows.length > 0) {
             const jf = pryDocRes.rows[0].json_field || {};
             if (!jf.ejecucion_v1) jf.ejecucion_v1 = {};
@@ -1429,7 +1541,7 @@ const reportDiarioController = {
             );
             jf.ejecucion_v1.dossier_documentos.unshift(docDossierItem);
 
-            await db.query('UPDATE sch_leangsp.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, rep.id_proyecto]);
+            await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, rep.id_proyecto]);
           }
         } catch (dosErr) {
           console.warn('[DOSSIER] Error adjuntando report a dossier de proyecto:', dosErr.message);
@@ -1502,7 +1614,8 @@ const reportDiarioController = {
         }
 
         const baseUrlApp = process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl';
-        const linkPdfCompleto = urlPdfView ? `${baseUrlApp}${urlPdfView}` : '';
+        const envPrefix = (process.env.APP_ENV === 'prod') ? '/lg-gsp-prod' : '/lg-gsp-dev';
+        const linkPdfCompleto = idDocPdf ? `${baseUrlApp}${envPrefix}/api/archivo/ver/${idDocPdf}` : (urlPdfView ? `${baseUrlApp}${envPrefix}${urlPdfView}` : '');
 
         const contenidoMail = `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #334155;">

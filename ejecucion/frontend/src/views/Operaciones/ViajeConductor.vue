@@ -46,13 +46,20 @@
         </div>
 
         <div class="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5 text-xs">
+          <!-- Origen si es Retorno -->
+          <div v-if="viaje.tipo_trayecto === 'RETORNO'" class="flex items-center gap-2 text-slate-300">
+            <span class="text-amber-400">🏗️</span>
+            <span class="font-semibold text-white">Origen:</span>
+            <span class="truncate">{{ viaje.origen_nombre || viaje.obra_nombre || 'Faena Mandante' }}</span>
+          </div>
+
           <div class="flex items-center gap-2 text-slate-300">
-            <span class="text-amber-400">📍</span>
+            <span class="text-emerald-400">📍</span>
             <span class="font-semibold text-white">Destino:</span>
-            <span class="truncate">{{ viaje.obra_nombre || 'Obra Mandante' }}</span>
+            <span class="truncate">{{ viaje.tipo_trayecto === 'RETORNO' ? (viaje.destino_nombre || 'Patio Central San Pablo - Base GSP') : (viaje.obra_nombre || 'Obra Mandante') }}</span>
           </div>
           <div class="flex items-center gap-2 text-slate-400 text-[11px] pl-5">
-            <span class="truncate">{{ viaje.obra_direccion || 'Dirección de Faena' }}</span>
+            <span class="truncate">{{ viaje.tipo_trayecto === 'RETORNO' ? (viaje.destino_direccion || 'Panamericana Norte #1020, Santiago') : (viaje.obra_direccion || 'Dirección de Faena') }}</span>
           </div>
           <div class="flex items-center gap-2 text-slate-300 border-t border-white/5 pt-1.5 mt-1.5">
             <span class="text-emerald-400">👷</span>
@@ -91,8 +98,12 @@
         <div class="flex items-center gap-2 border-b border-white/10 pb-2">
           <span class="text-base">🚀</span>
           <div>
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Paso 1: Salida de Base / Patio</h2>
-            <p class="text-[11px] text-slate-400">Registra odómetro, horómetro y firma para iniciar el convoy.</p>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">
+              {{ viaje.tipo_trayecto === 'RETORNO' ? 'Paso 1: Salida de Faena hacia Base GSP' : 'Paso 1: Salida de Base / Patio' }}
+            </h2>
+            <p class="text-[11px] text-slate-400">
+              {{ viaje.tipo_trayecto === 'RETORNO' ? 'Registra odómetro de salida de faena y firma para iniciar convoy de retorno.' : 'Registra odómetro, horómetro y firma para iniciar el convoy.' }}
+            </p>
           </div>
         </div>
 
@@ -107,40 +118,7 @@
             <input type="number" step="0.1" v-model="formSalida.horometro" placeholder="Ej: 3240.2" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
           </div>
 
-          <!-- Control de Combustible Salida (Explícito según equipo) -->
-          <div class="bg-black/50 border border-amber-500/30 rounded-xl p-3 space-y-2.5">
-            <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">⛽ Nivel Combustible Salida</span>
-              <span class="text-[10px] text-slate-400 font-mono">{{ esGruaBimotor ? '2 Estanques' : '1 Estanque' }}</span>
-            </div>
 
-            <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">
-                {{ esGruaBimotor ? 'Estanque 1: Chasis / Traslado *' : 'Estanque Principal (Chasis) *' }}
-              </label>
-              <input type="text" v-model="formSalida.combustible_chasis" placeholder="Ej: 100% o 380 L" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-amber-400" />
-            </div>
-
-            <div v-if="esGruaBimotor">
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">
-                Estanque 2: Grúa / Superestructura *
-              </label>
-              <input type="text" v-model="formSalida.combustible_grua" placeholder="Ej: 100% o 250 L" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-amber-400" />
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">Foto Marcador Combustible *</label>
-              <div v-if="formSalida.foto_combustible" class="relative rounded-xl overflow-hidden border border-amber-500/50 mb-1">
-                <img :src="formSalida.foto_combustible" alt="Marcador Combustible Salida" class="w-full h-32 object-cover" />
-                <button @click="formSalida.foto_combustible = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
-              </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/30 transition-colors">
-                <span class="text-xl mb-0.5">📸</span>
-                <span class="text-xs font-bold text-amber-400">Tomar Foto Marcador Combustible</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleSalida" class="hidden" />
-              </label>
-            </div>
-          </div>
 
           <!-- Captura de Fotografía Tablero -->
           <div>
@@ -177,10 +155,6 @@
               {{ formSalida.horometro ? '✓' : '⚠️' }} Horómetro
             </span>
             <span class="text-slate-600">•</span>
-            <span :class="(formSalida.combustible_chasis && formSalida.foto_combustible) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
-              {{ (formSalida.combustible_chasis && formSalida.foto_combustible) ? '✓' : '⚠️' }} Combustible
-            </span>
-            <span class="text-slate-600">•</span>
             <span :class="(formSalida.pin && formSalida.pin.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
               {{ (formSalida.pin && formSalida.pin.length === 4) ? '✓' : '⚠️' }} PIN ({{ formSalida.pin ? formSalida.pin.length : 0 }}/4)
             </span>
@@ -189,7 +163,7 @@
 
         <button @click="ejecutarInicioViaje" :disabled="guardando" type="button" class="w-full min-h-[58px] bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer">
           <span v-if="guardando">⏳ Registrando...</span>
-          <span v-else>🟢 INICIAR VIAJE (SALIDA DE BASE)</span>
+          <span v-else>{{ viaje.tipo_trayecto === 'RETORNO' ? '🟢 INICIAR RETORNO (SALIDA DE FAENA)' : '🟢 INICIAR VIAJE (SALIDA DE BASE)' }}</span>
         </button>
       </div>
 
@@ -241,8 +215,12 @@
           <div class="flex items-center gap-2">
             <span class="text-blue-400 text-base">⏱️</span>
             <div>
-              <h2 class="text-xs font-bold text-white uppercase tracking-wider font-mono">2. Convoy en Ruta</h2>
-              <span class="text-[10px] text-blue-400 font-medium">Hacia {{ viaje.obra_nombre }}</span>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                {{ viaje.tipo_trayecto === 'RETORNO' ? '2. Convoy en Retorno a Base' : '2. Convoy en Ruta' }}
+              </h2>
+              <span class="text-[10px] text-blue-400 font-medium">
+                {{ viaje.tipo_trayecto === 'RETORNO' ? 'Hacia Patio Central San Pablo' : ('Hacia ' + (viaje.obra_nombre || 'Faena')) }}
+              </span>
             </div>
           </div>
           <div class="bg-blue-500/20 border border-blue-500/40 px-3 py-1 rounded-lg text-xs font-mono font-bold text-white flex items-center gap-1.5">
@@ -256,9 +234,9 @@
           <span>⛽ Rendir Carga de Combustible (Copec)</span>
         </button>
 
-        <!-- Botón Principal: Confirmar Llegada a Faena -->
+        <!-- Botón Principal: Confirmar Llegada a Faena / Patio -->
         <button @click="abrirModalLlegada" type="button" class="w-full min-h-[54px] bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer">
-          <span>🏁 CONFIRMAR LLEGADA A FAENA</span>
+          <span>{{ viaje.tipo_trayecto === 'RETORNO' ? '🏁 CONFIRMAR LLEGADA A PATIO CENTRAL GSP' : '🏁 CONFIRMAR LLEGADA A FAENA' }}</span>
         </button>
       </div>
 
@@ -302,7 +280,7 @@
           <!-- BOTÓN DE RETORNO A PWA PARA REPORT DIARIO -->
           <div class="pt-2">
             <a
-              href="/pwa-gsp-dev/"
+              :href="urlRetornoReport"
               class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 no-underline cursor-pointer"
             >
               <span>🚜</span>
@@ -629,8 +607,12 @@
           <div class="flex items-center gap-2">
             <span class="text-xl">🏁</span>
             <div>
-              <h3 class="text-sm font-bold text-white uppercase">Confirmación de Llegada a Faena</h3>
-              <p class="text-[10px] text-slate-400">Cierre de viaje y paso a etapa de maniobra</p>
+              <h3 class="text-sm font-bold text-white uppercase">
+                {{ viaje.tipo_trayecto === 'RETORNO' ? 'Confirmación de Llegada a Patio Central San Pablo' : 'Confirmación de Llegada a Faena' }}
+              </h3>
+              <p class="text-[10px] text-slate-400">
+                {{ viaje.tipo_trayecto === 'RETORNO' ? 'Recepción de maquinaria en base GSP y cierre definitivo de servicio' : 'Cierre de viaje y paso a etapa de maniobra' }}
+              </p>
             </div>
           </div>
           <button @click="modalLlegada.visible = false" type="button" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
@@ -658,14 +640,20 @@
               <label class="block text-[11px] font-bold text-slate-300 mb-1">
                 {{ esGruaBimotor ? 'Estanque 1: Chasis / Traslado *' : 'Estanque Principal (Chasis) *' }}
               </label>
-              <input type="text" v-model="formLlegada.combustible_chasis" placeholder="Ej: 75% o 280 L" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-emerald-400" />
+              <select v-model="formLlegada.combustible_chasis" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-emerald-400">
+                <option value="" disabled>Seleccione porcentaje (1% a 100%)...</option>
+                <option v-for="pct in nivelesCombustible" :key="pct" :value="pct">{{ pct }}</option>
+              </select>
             </div>
 
             <div v-if="esGruaBimotor">
               <label class="block text-[11px] font-bold text-slate-300 mb-1">
                 Estanque 2: Grúa / Superestructura *
               </label>
-              <input type="text" v-model="formLlegada.combustible_grua" placeholder="Ej: 100% o 250 L" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-emerald-400" />
+              <select v-model="formLlegada.combustible_grua" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-emerald-400">
+                <option value="" disabled>Seleccione porcentaje (1% a 100%)...</option>
+                <option v-for="pct in nivelesCombustible" :key="pct" :value="pct">{{ pct }}</option>
+              </select>
             </div>
 
             <div>
@@ -707,7 +695,7 @@
         </div>
 
         <button @click="ejecutarLlegadaFaena" :disabled="!isFormLlegadaValido" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
-          Confirmar Llegada y Cerrar Desplazamiento
+          {{ viaje.tipo_trayecto === 'RETORNO' ? '🏁 Confirmar Llegada a Patio y Liberar Equipo' : 'Confirmar Llegada y Cerrar Desplazamiento' }}
         </button>
       </div>
     </div>
@@ -870,13 +858,27 @@ const viaje = ref({
   total_pings_gps: 0
 })
 
+const nivelesCombustible = [
+  '100% (Lleno)',
+  '90%',
+  '80%',
+  '75% (3/4)',
+  '70%',
+  '60%',
+  '50% (1/2)',
+  '40%',
+  '30%',
+  '25% (1/4)',
+  '20%',
+  '15%',
+  '10% (Reserva)',
+  '5%'
+]
+
 // Formularios
 const formSalida = ref({
   odometro: '145820.5',
   horometro: '3240.2',
-  combustible_chasis: '',
-  combustible_grua: '',
-  foto_combustible: '',
   foto: '',
   pin: ''
 })
@@ -937,6 +939,21 @@ const formReport = ref({
 const setColacionMinutos = (min) => {
   formReport.value.colacion_minutos = min
 }
+
+const urlRetornoReport = computed(() => {
+  const isProd = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/lg-gsp-prod') ||
+    window.location.pathname.startsWith('/pwa-gsp-prod')
+  )
+  const pwaPrefix = isProd ? '/pwa-gsp-prod' : '/pwa-gsp-dev'
+  const pId = viaje.value?.id_proyecto
+  const eqId = viaje.value?.id_equipo
+  if (pId) {
+    const eqParam = eqId ? `&id_equipo=${eqId}` : ''
+    return `${window.location.origin}${pwaPrefix}/#/reportDiario?id_proyecto=${pId}${eqParam}`
+  }
+  return `${window.location.origin}${pwaPrefix}/#/surveys`
+})
 
 const proximoDiaCorrelativo = computed(() => {
   return (viaje.value.reportes_diarios && viaje.value.reportes_diarios.length) 
@@ -1074,7 +1091,25 @@ const sellarYTransmitirReport = async () => {
       latitud_inicio_servicio: coords?.latitud || null,
       longitud_inicio_servicio: coords?.longitud || null,
       accuracy_firma: coords?.accuracy || null,
-      token_viaje: tokenViaje.value
+      token_viaje: tokenViaje.value,
+      device_timestamp: new Date().toISOString()
+    }
+
+    // Enviar al servicio oficial de report diario si hay red
+    if (isOnline.value && !tokenViaje.value.includes('demo')) {
+      try {
+        await apiAxios.post('/operaciones/report/guardar', payloadBackend)
+      } catch (httpErr) {
+        if (httpErr?.response?.status === 403 && (httpErr?.response?.data?.code === 'SERVICIO_CONCLUIDO' || httpErr?.response?.data?.error?.includes('concluido') || httpErr?.response?.data?.error?.includes('completó'))) {
+          alert(`🚫 CANDADO OPERATIVO:\n${httpErr?.response?.data?.error || 'Este servicio ya completó la cantidad de días hábiles planificados contratados.'}\nNo es posible emitir más reportes diarios. Contacte a Control de Gestión (Yiara).`)
+          guardandoReport.value = false
+          return
+        }
+        console.warn('Error HTTP al guardar report oficial, encolando mutación:', httpErr)
+        await encolarMutacion(tokenViaje.value, 'CREAR_REPORTE_DIARIO', payloadBackend)
+      }
+    } else {
+      await encolarMutacion(tokenViaje.value, 'CREAR_REPORTE_DIARIO', payloadBackend)
     }
 
     if (!viaje.value.reportes_diarios) viaje.value.reportes_diarios = []
@@ -1082,18 +1117,6 @@ const sellarYTransmitirReport = async () => {
 
     // Guardar sesión local offline-first
     await guardarSesionLocal(tokenViaje.value, viaje.value)
-
-    // Enviar al servicio oficial de report diario si hay red
-    if (isOnline.value && !tokenViaje.value.includes('demo')) {
-      try {
-        await apiAxios.post('/operaciones/report/guardar', payloadBackend)
-      } catch (httpErr) {
-        console.warn('Error HTTP al guardar report oficial, encolando mutación:', httpErr)
-        await encolarMutacion(tokenViaje.value, 'CREAR_REPORTE_DIARIO', payloadBackend)
-      }
-    } else {
-      await encolarMutacion(tokenViaje.value, 'CREAR_REPORTE_DIARIO', payloadBackend)
-    }
 
     formularioReportAbierto.value = false
     modalReportVisor.value = nuevoReport
@@ -1114,16 +1137,10 @@ let timerInterval = null
 
 // Validaciones Computadas
 const isFormSalidaValido = computed(() => {
-  const baseValida = Boolean(formSalida.value.odometro) &&
-                     Boolean(formSalida.value.horometro) &&
-                     Boolean(formSalida.value.pin) &&
-                     formSalida.value.pin.length === 4 &&
-                     Boolean(formSalida.value.combustible_chasis?.trim()) &&
-                     Boolean(formSalida.value.foto_combustible)
-  if (esGruaBimotor.value) {
-    return baseValida && Boolean(formSalida.value.combustible_grua?.trim())
-  }
-  return baseValida
+  return Boolean(formSalida.value.odometro) &&
+         Boolean(formSalida.value.horometro) &&
+         Boolean(formSalida.value.pin) &&
+         formSalida.value.pin.length === 4
 })
 
 const isFormRendicionCombustibleValido = computed(() => {
@@ -1358,15 +1375,12 @@ const ejecutarInicioViaje = async () => {
     id_user_chofer: viaje.value.id_user_chofer || null,
     km_inicial: Number(formSalida.value.odometro),
     horometro_inicial: Number(formSalida.value.horometro),
-    combustible_salida: {
-      chasis: formSalida.value.combustible_chasis,
-      grua: esGruaBimotor.value ? formSalida.value.combustible_grua : null,
-      foto: formSalida.value.foto_combustible
-    },
+    combustible_salida: null,
     foto_salida: formSalida.value.foto || null,
     pin_hash: pinHashed,
     latitud: gps.latitud,
-    longitud: gps.longitud
+    longitud: gps.longitud,
+    device_timestamp: new Date().toISOString()
   }
 
   // 1. Enviar directamente por HTTP al Backend GSP
@@ -1489,7 +1503,8 @@ const ejecutarLlegadaFaena = async () => {
     pin_hash: pinHashed,
     latitud: gps.latitud,
     longitud: gps.longitud,
-    obs_termino: formLlegada.value.obs_termino || 'Arribo a faena verificado con éxito'
+    obs_termino: formLlegada.value.obs_termino || 'Arribo a faena verificado con éxito',
+    device_timestamp: new Date().toISOString()
   }
 
   // 1. Enviar directamente al Backend GSP por HTTP
@@ -1531,7 +1546,12 @@ const ejecutarLlegadaFaena = async () => {
   modalLlegada.value.visible = false
   if (timerInterval) clearInterval(timerInterval)
   guardando.value = false
-  abrirFormularioReport()
+
+  if (viaje.value.tipo_trayecto === 'RETORNO') {
+    alert('🏁 ¡Retorno a Base Central San Pablo Concluido!\n\nLa maquinaria ha ingresado a patio conforme y queda en estado DISPONIBLE.\nEl servicio operacional ha concluido exitosamente.')
+  } else {
+    abrirFormularioReport()
+  }
 }
 
 // -------------------------------------------------------------

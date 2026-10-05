@@ -57,7 +57,7 @@ const viajeModel = {
         v.id_proyecto,
         v.id_equipo,
         v.id_user_chofer,
-        v.patente,
+        COALESCE(v.patente, e.patente, 'S/P') AS patente,
         v.tipo_trayecto,
         v.fecha_salida_patio,
         v.fecha_llegada_faena,
@@ -77,12 +77,29 @@ const viajeModel = {
         v.token_viaje,
         v.obs_termino,
         COALESCE(v.pings_ruta, '[]'::jsonb) AS pings_ruta,
+        v.combustible_salida,
+        v.combustible_llegada,
+        p.json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio,
         p.nombre_proyecto,
         p.codi_proyecto,
-        COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
-        COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
-        COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Conductor Asignado') AS chofer_nombre,
-        u.email AS chofer_email,
+        COALESCE(
+          p.json_field->'crm_v1'->'siteVisit'->>'obra_nombre',
+          p.json_field->'crm_v1'->'opportunity'->>'nombre_obra',
+          p.json_field->>'obra_nombre',
+          p.json_field->'ejecucion_v1'->'cliente'->>'obra',
+          p.nombre_proyecto
+        ) AS obra_nombre,
+        COALESCE(
+          p.json_field->'crm_v1'->'siteVisit'->>'obra_direccion',
+          p.json_field->'crm_v1'->'siteVisit'->>'direccion',
+          p.json_field->'crm_v1'->'opportunity'->>'direccion_obra',
+          p.json_field->'crm_v1'->'opportunity'->>'direccion',
+          p.json_field->>'direccion_obra',
+          p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena',
+          'Faena Operacional GSP'
+        ) AS obra_direccion,
+        COALESCE(u.name_frst || ' ' || u.apellido_pat, u_alt.name_frst || ' ' || u_alt.apellido_pat, 'Sergio Gajardo') AS chofer_nombre,
+        COALESCE(u.email, u_alt.email) AS chofer_email,
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
         COALESCE(e.marca, 'GSP') AS marca
@@ -90,6 +107,11 @@ const viajeModel = {
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
       LEFT JOIN tsec_users u ON v.id_user_chofer = u.id_user
+      LEFT JOIN tsec_users u_alt ON u_alt.id_user = COALESCE(
+        (p.json_field->'ejecucion_v1'->'preparacion_salida'->'inspecciones_patio'->v.id_equipo::text->>'operador_id')::int,
+        (p.json_field->'ejecucion_v1'->>'operador_id')::int,
+        55
+      )
       WHERE v.token_viaje = $1;
     `;
     const res = await db.query(sql, [token]);
@@ -117,6 +139,26 @@ const viajeModel = {
       `;
       const fuelRes = await db.query(fuelSql, [viaje.id_log_desplazamiento]);
       viaje.cargas_combustible = fuelRes.rows;
+      viaje.cantidad_estanques = (viaje.tipo_equipo && viaje.tipo_equipo.toUpperCase().includes('GRUA')) ? 2 : 1;
+      if (viaje.lineas_servicio && Array.isArray(viaje.lineas_servicio)) {
+        const lineaEq = viaje.lineas_servicio.find(l => l.tipo?.toUpperCase().includes('GRUA') || l.equipo_asignado_id === viaje.id_equipo);
+        viaje.piso_minimo_estructurador = Number(lineaEq?.pisoMinimo || lineaEq?.cantidad_horas || lineaEq?.horas || 8);
+      } else {
+        viaje.piso_minimo_estructurador = 8;
+      }
+
+      if (viaje.tipo_trayecto === 'RETORNO') {
+        viaje.destino_nombre = 'Patio Central San Pablo - Base GSP';
+        viaje.destino_direccion = 'Panamericana Norte #1020, Santiago';
+        viaje.origen_nombre = viaje.obra_nombre || 'Faena Mandante';
+        viaje.origen_direccion = viaje.obra_direccion || 'Dirección de Faena';
+      } else {
+        viaje.origen_nombre = 'Patio Central San Pablo - Base GSP';
+        viaje.origen_direccion = 'Panamericana Norte #1020, Santiago';
+        viaje.destino_nombre = viaje.obra_nombre;
+        viaje.destino_direccion = viaje.obra_direccion;
+      }
+
       return viaje;
     }
 
@@ -128,25 +170,52 @@ const viajeModel = {
           p.id_proyecto,
           p.nombre_proyecto,
           p.codi_proyecto,
-          COALESCE(p.json_field->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre,
-          COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
+          COALESCE(
+            p.json_field->'crm_v1'->'siteVisit'->>'obra_nombre',
+            p.json_field->'crm_v1'->'opportunity'->>'nombre_obra',
+            p.json_field->>'obra_nombre',
+            p.json_field->'ejecucion_v1'->'cliente'->>'obra',
+            p.nombre_proyecto
+          ) AS obra_nombre,
+          COALESCE(
+            p.json_field->'crm_v1'->'siteVisit'->>'obra_direccion',
+            p.json_field->'crm_v1'->'siteVisit'->>'direccion',
+            p.json_field->'crm_v1'->'opportunity'->>'direccion_obra',
+            p.json_field->'crm_v1'->'opportunity'->>'direccion',
+            p.json_field->>'direccion_obra',
+            p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena',
+            'Faena Operacional GSP'
+          ) AS obra_direccion,
           e.id_equipo,
           e.patente,
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
           COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
-          COALESCE(e.marca, 'GSP') AS marca
+          COALESCE(e.marca, 'GSP') AS marca,
+          COALESCE(u.id_user, 55) AS id_user_chofer,
+          COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Sergio Gajardo') AS chofer_nombre,
+          p.json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio
         FROM tpry_proyecto p
         LEFT JOIN tequ_equipo e ON e.id_equipo = $2
+        LEFT JOIN tsec_users u ON u.id_user = COALESCE(
+          (p.json_field->'ejecucion_v1'->'preparacion_salida'->'inspecciones_patio'->$2::text->>'operador_id')::int,
+          (p.json_field->'ejecucion_v1'->>'operador_id')::int,
+          55
+        )
         WHERE p.id_proyecto = $1;
       `;
       const infoRes = await db.query(infoSql, [id_proyecto, id_equipo || 0]);
       if (infoRes.rows.length > 0) {
         const row = infoRes.rows[0];
+        let pisoMin = 8;
+        if (row.lineas_servicio && Array.isArray(row.lineas_servicio)) {
+          const lEq = row.lineas_servicio.find(l => l.tipo?.toUpperCase().includes('GRUA') || l.equipo_asignado_id === row.id_equipo);
+          pisoMin = Number(lEq?.pisoMinimo || lEq?.cantidad_horas || lEq?.horas || 8);
+        }
         return {
           id_log_desplazamiento: null,
           id_proyecto: row.id_proyecto,
           id_equipo: row.id_equipo || null,
-          id_user_chofer: null,
+          id_user_chofer: row.id_user_chofer || 55,
           patente: row.patente || 'S/P',
           tipo_trayecto: 'IDA',
           fecha_salida_patio: null,
@@ -171,10 +240,13 @@ const viajeModel = {
           codi_proyecto: row.codi_proyecto,
           obra_nombre: row.obra_nombre,
           obra_direccion: row.obra_direccion,
-          chofer_nombre: 'Conductor Asignado',
+          chofer_nombre: row.chofer_nombre || 'Sergio Gajardo',
           tipo_equipo: row.tipo_equipo,
           modelo: row.modelo,
           marca: row.marca,
+          cantidad_estanques: (row.tipo_equipo && row.tipo_equipo.toUpperCase().includes('GRUA')) ? 2 : 1,
+          lineas_servicio: row.lineas_servicio || [],
+          piso_minimo_estructurador: pisoMin,
           cargas_combustible: []
         };
       }
@@ -184,8 +256,10 @@ const viajeModel = {
   },
 
   // 2. Registrar Salida de Patio (Paso 1 - Con Creación/Insert Garantizado)
-  async registrarSalida({ token_viaje, id_proyecto, id_equipo, id_user_chofer, km_inicial, horometro_inicial, foto_salida, pin_hash, latitud, longitud }) {
+  async registrarSalida({ token_viaje, id_proyecto, id_equipo, id_user_chofer, km_inicial, horometro_inicial, combustible_salida, foto_salida, pin_hash, latitud, longitud, device_timestamp }) {
     if (!token_viaje) throw new Error('token_viaje requerido');
+
+    const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
 
     // 2.1 Verificar si ya existe fila para este token
     const checkSql = `SELECT id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1;`;
@@ -200,11 +274,16 @@ const viajeModel = {
           horometro_inicial = $2,
           foto_tablero_salida_path = $3,
           pin_hash = $4,
-          fecha_salida_patio = CURRENT_TIMESTAMP,
-          latitud_salida_patio = $5,
-          longitud_salida_patio = $6,
+          fecha_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_salida_patio ELSE CURRENT_TIMESTAMP END,
+          fecha_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN CURRENT_TIMESTAMP ELSE fecha_salida_faena END,
+          device_timestamp_salida = COALESCE($5, CURRENT_TIMESTAMP),
+          latitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN latitud_salida_patio ELSE $6 END,
+          longitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN longitud_salida_patio ELSE $7 END,
+          latitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN $6 ELSE latitud_salida_faena END,
+          longitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN $7 ELSE longitud_salida_faena END,
+          combustible_salida = $8,
           estado_trayecto = 'EN_RUTA'
-        WHERE token_viaje = $7
+        WHERE token_viaje = $9
         RETURNING *;
       `;
       const res = await db.query(updateSql, [
@@ -212,33 +291,49 @@ const viajeModel = {
         horometro_inicial || null,
         foto_salida || null,
         pin_hash || null,
+        deviceTs,
         latitud || null,
         longitud || null,
+        combustible_salida ? JSON.stringify(combustible_salida) : null,
         token_viaje
       ]);
       const viajeActualizado = res.rows[0];
 
       if (viajeActualizado.id_proyecto) {
         try {
-          await db.query(
-            `UPDATE tpry_proyecto 
-             SET id_proyecto_estado = 5,
-                 json_field = jsonb_set(
-                   jsonb_set(
+          if (viajeActualizado.tipo_trayecto === 'RETORNO') {
+            await db.query(
+              `UPDATE tpry_proyecto 
+               SET json_field = jsonb_set(
                      COALESCE(json_field, '{}'::jsonb),
-                     '{ejecucion_v1,viaje_iniciado}',
+                     '{ejecucion_v1,retorno_iniciado}',
                      'true'::jsonb,
                      true
-                   ),
-                   '{ejecucion_v1,preparacion_salida,preparacion_finalizada}',
-                   'true'::jsonb,
-                   true
-                 )
-             WHERE id_proyecto = $1;`,
-            [viajeActualizado.id_proyecto]
-          );
+                   )
+               WHERE id_proyecto = $1;`,
+              [viajeActualizado.id_proyecto]
+            );
+          } else {
+            await db.query(
+              `UPDATE tpry_proyecto 
+               SET id_proyecto_estado = 5,
+                   json_field = jsonb_set(
+                     jsonb_set(
+                       COALESCE(json_field, '{}'::jsonb),
+                       '{ejecucion_v1,viaje_iniciado}',
+                       'true'::jsonb,
+                       true
+                     ),
+                     '{ejecucion_v1,preparacion_salida,preparacion_finalizada}',
+                     'true'::jsonb,
+                     true
+                   )
+               WHERE id_proyecto = $1;`,
+              [viajeActualizado.id_proyecto]
+            );
+          }
         } catch (ePry) {
-          console.warn('Error al elevar estado del proyecto:', ePry.message);
+          console.warn('Error al actualizar estado del proyecto en salida:', ePry.message);
         }
       }
 
@@ -271,15 +366,17 @@ const viajeModel = {
           token_viaje,
           km_inicial,
           horometro_inicial,
+          combustible_salida,
           foto_tablero_salida_path,
           pin_hash,
           fecha_salida_patio,
+          device_timestamp_salida,
           latitud_salida_patio,
           longitud_salida_patio,
           pings_ruta
         ) VALUES (
           $1, $2, $3, $4, 'IDA', 'EN_RUTA', $5,
-          $6, $7, $8, $9, CURRENT_TIMESTAMP, $10, $11, '[]'::jsonb
+          $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, COALESCE($11, CURRENT_TIMESTAMP), $12, $13, '[]'::jsonb
         ) RETURNING *;
       `;
       const res = await db.query(insertSql, [
@@ -290,8 +387,10 @@ const viajeModel = {
         token_viaje,
         km_inicial,
         horometro_inicial || null,
+        combustible_salida ? JSON.stringify(combustible_salida) : null,
         foto_salida || null,
         pin_hash || null,
+        deviceTs,
         latitud || null,
         longitud || null
       ]);
@@ -344,8 +443,9 @@ const viajeModel = {
     return res.rows[0];
   },
 
-  // 4. Registrar Llegada a Faena (Paso 3)
-  async registrarLlegada({ token_viaje, km_final, horometro_final, foto_llegada, pin_hash, latitud, longitud, obs_termino }) {
+  // 4. Registrar Llegada a Faena o Llegada a Patio (Paso 3)
+  async registrarLlegada({ token_viaje, km_final, horometro_final, combustible_llegada, foto_llegada, pin_hash, latitud, longitud, obs_termino, device_timestamp }) {
+    const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
     const sql = `
       UPDATE tequ_log_desplazamiento
       SET 
@@ -353,12 +453,17 @@ const viajeModel = {
         horometro_final = $2,
         foto_tablero_llegada_path = $3,
         pin_hash = $4,
-        fecha_llegada_faena = CURRENT_TIMESTAMP,
-        latitud_llegada_faena = $5,
-        longitud_llegada_faena = $6,
-        obs_termino = $7,
-        estado_trayecto = 'ARRIBADO'
-      WHERE token_viaje = $8
+        fecha_llegada_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_llegada_faena ELSE CURRENT_TIMESTAMP END,
+        fecha_llegada_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN CURRENT_TIMESTAMP ELSE fecha_llegada_patio END,
+        device_timestamp_llegada = COALESCE($5, CURRENT_TIMESTAMP),
+        latitud_llegada_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN latitud_llegada_faena ELSE $6 END,
+        longitud_llegada_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN longitud_llegada_faena ELSE $7 END,
+        latitud_llegada_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN $6 ELSE latitud_llegada_patio END,
+        longitud_llegada_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN $7 ELSE longitud_llegada_patio END,
+        obs_termino = $8,
+        combustible_llegada = $9,
+        estado_trayecto = CASE WHEN tipo_trayecto = 'RETORNO' THEN 'CONCLUIDO' ELSE 'ARRIBADO' END
+      WHERE token_viaje = $10
       RETURNING *;
     `;
     const res = await db.query(sql, [
@@ -366,13 +471,47 @@ const viajeModel = {
       horometro_final || null,
       foto_llegada || null,
       pin_hash || null,
+      deviceTs,
       latitud || null,
       longitud || null,
-      obs_termino || 'Arribo a faena verificado con éxito',
+      obs_termino || 'Arribo verificado con éxito',
+      combustible_llegada ? JSON.stringify(combustible_llegada) : null,
       token_viaje
     ]);
     if (res.rows.length === 0) throw new Error('Viaje no encontrado para registrar llegada');
-    return res.rows[0];
+    const viajeTerminado = res.rows[0];
+
+    // Si es viaje de RETORNO concluido en patio, liberar equipo y cerrar operacionalmente el proyecto
+    if (viajeTerminado.tipo_trayecto === 'RETORNO') {
+      try {
+        if (viajeTerminado.id_equipo) {
+          await db.query(
+            `UPDATE tequ_equipo 
+             SET estado = 'DISPONIBLE' 
+             WHERE id_equipo = $1;`,
+            [viajeTerminado.id_equipo]
+          );
+        }
+        if (viajeTerminado.id_proyecto) {
+          await db.query(
+            `UPDATE tpry_proyecto 
+             SET id_proyecto_estado = 6,
+                 json_field = jsonb_set(
+                   COALESCE(json_field, '{}'::jsonb),
+                   '{ejecucion_v1,retorno_concluido}',
+                   'true'::jsonb,
+                   true
+                 )
+             WHERE id_proyecto = $1;`,
+            [viajeTerminado.id_proyecto]
+          );
+        }
+      } catch (eCierre) {
+        console.warn('[Retorno] Error liberando equipo o cerrando proyecto:', eCierre.message);
+      }
+    }
+
+    return viajeTerminado;
   },
 
   // 5. Registrar Carga de Combustible (Copec)
@@ -417,13 +556,35 @@ const viajeModel = {
   },
 
   // 6. Crear o Asignar Viaje desde CRM
-  async crearOObtenerViaje({ id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto }) {
-    const token = `vj_${id_proyecto}_${id_equipo}_${crypto.randomBytes(4).toString('hex')}`;
+  async crearOObtenerViaje({ id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto, token_viaje, fecha_programada }) {
+    const token = token_viaje || `vj_${id_proyecto}_${id_equipo}_${crypto.randomBytes(4).toString('hex')}`;
+
+    // Verificar si ya existe registro con este token_viaje
+    const checkSql = `SELECT id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1 LIMIT 1;`;
+    const checkRes = await db.query(checkSql, [token]);
+    if (checkRes.rows.length > 0) {
+      const updateSql = `
+        UPDATE tequ_log_desplazamiento
+        SET id_user_chofer = COALESCE($1, id_user_chofer),
+            patente = COALESCE($2, patente),
+            fecha_programada = COALESCE($3, fecha_programada)
+        WHERE id_log_desplazamiento = $4
+        RETURNING *;
+      `;
+      const upRes = await db.query(updateSql, [
+        id_user_chofer || null,
+        patente || null,
+        fecha_programada || null,
+        checkRes.rows[0].id_log_desplazamiento
+      ]);
+      return upRes.rows[0];
+    }
+
     const insertSql = `
       INSERT INTO tequ_log_desplazamiento (
         id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto,
-        estado_trayecto, token_viaje, pings_ruta
-      ) VALUES ($1, $2, $3, $4, $5, 'ASIGNADO', $6, '[]'::jsonb)
+        estado_trayecto, token_viaje, fecha_programada, pings_ruta
+      ) VALUES ($1, $2, $3, $4, $5, 'ASIGNADO', $6, $7, '[]'::jsonb)
       RETURNING *;
     `;
     const res = await db.query(insertSql, [
@@ -432,7 +593,8 @@ const viajeModel = {
       id_user_chofer || null,
       patente || null,
       tipo_trayecto || 'IDA',
-      token
+      token,
+      fecha_programada || null
     ]);
     return res.rows[0];
   },
@@ -476,6 +638,7 @@ const viajeModel = {
         v.tipo_trayecto,
         v.estado_trayecto,
         v.token_viaje,
+        v.fecha_programada,
         v.fecha_salida_patio,
         v.fecha_llegada_faena,
         v.km_inicial,
@@ -499,6 +662,41 @@ const viajeModel = {
     `;
     const res = await db.query(sql, [id_user]);
     return res.rows[0] || null;
+  },
+
+  // 9. Crear o Asignar Viaje de Retorno al emitir el último Report Diario (REQ-988)
+  async crearViajeRetorno({ id_proyecto, id_equipo, id_user_chofer, patente }) {
+    if (!id_proyecto) throw new Error('id_proyecto es requerido para viaje de retorno');
+
+    // Verificar si ya existe un viaje de retorno para este proyecto y equipo
+    const checkSql = `
+      SELECT * FROM tequ_log_desplazamiento 
+      WHERE id_proyecto = $1 
+        AND (id_equipo = $2 OR $2 IS NULL)
+        AND tipo_trayecto = 'RETORNO'
+      ORDER BY id_log_desplazamiento DESC LIMIT 1;
+    `;
+    const checkRes = await db.query(checkSql, [id_proyecto, id_equipo || null]);
+    if (checkRes.rows.length > 0) {
+      return checkRes.rows[0];
+    }
+
+    let pat = patente || 'S/P';
+    if (!patente && id_equipo) {
+      const eqRes = await db.query('SELECT patente FROM tequ_equipo WHERE id_equipo = $1', [id_equipo]);
+      if (eqRes.rows.length > 0) pat = eqRes.rows[0].patente;
+    }
+
+    const token = `vj-ret-${id_proyecto}-${id_equipo || 0}-${crypto.randomBytes(3).toString('hex')}`;
+    const insertSql = `
+      INSERT INTO tequ_log_desplazamiento (
+        id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto,
+        estado_trayecto, token_viaje, pings_ruta, fecha_programada
+      ) VALUES ($1, $2, $3, $4, 'RETORNO', 'ASIGNADO', $5, '[]'::jsonb, CURRENT_TIMESTAMP)
+      RETURNING *;
+    `;
+    const res = await db.query(insertSql, [id_proyecto, id_equipo || null, id_user_chofer || 55, pat, token]);
+    return res.rows[0];
   }
 };
 
