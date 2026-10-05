@@ -4173,6 +4173,70 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- CONDICIONES Y ACUERDOS COMERCIALES (DEBAJO DEL ESTRUCTURADOR) -->
+            <div class="mt-3 bg-[#0a0f1e]/80 border border-white/10 rounded-xl p-3.5 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm">📋</span>
+                  <label class="block text-[11px] text-white font-bold uppercase tracking-wider">
+                    Condiciones y Acuerdos Comerciales de la Cotización
+                  </label>
+                  <div class="flex items-center gap-1.5">
+                    <span 
+                      class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                      :class="categoriasDetectadas.gruas ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                    >
+                      {{ categoriasDetectadas.gruas ? '✓ GRÚAS / CAMIONES PLUMA' : 'GRÚAS / PLUMAS' }}
+                    </span>
+                    <span 
+                      class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                      :class="categoriasDetectadas.traslados ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                    >
+                      {{ categoriasDetectadas.traslados ? '✓ TRASLADOS' : 'TRASLADOS' }}
+                    </span>
+                    <span 
+                      class="text-[9px] font-bold px-2 py-0.5 rounded border transition-colors"
+                      :class="categoriasDetectadas.plataformas ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-slate-800/40 text-slate-500 border-white/5'"
+                    >
+                      {{ categoriasDetectadas.plataformas ? '✓ PLATAFORMAS' : 'PLATAFORMAS' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-1.5 bg-black/40 border border-white/10 px-2 py-1 rounded">
+                    <span class="text-[10px] text-slate-400 font-semibold">Validez de Oferta:</span>
+                    <input 
+                      type="number" 
+                      v-model.number="comercial.validez_dias" 
+                      min="1" 
+                      class="w-12 bg-transparent text-center text-xs text-amber-300 font-mono font-bold outline-none border-b border-amber-500/40" 
+                    />
+                    <span class="text-[10px] text-slate-400">días hábiles</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click="regenerarCondicionesTexto" 
+                    class="text-[10px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Reconstruir texto con las cláusulas oficiales según los servicios presentes en el estructurador"
+                  >
+                    <span>🔄 Regenerar Acuerdos</span>
+                  </button>
+                </div>
+              </div>
+
+              <textarea 
+                v-model="comercial.condiciones_texto_pdf" 
+                rows="8" 
+                placeholder="Ingrese o ajuste los acuerdos comerciales y condiciones que aparecerán en la propuesta comercial..." 
+                class="w-full bg-[#050810] border border-white/10 rounded p-2.5 text-xs text-white outline-none resize-y font-mono leading-relaxed focus:border-amber-500/50"
+              ></textarea>
+              <div class="flex justify-between items-center text-[9px] text-slate-500">
+                <span>* Texto oficial de Arriendos San Pablo inyectado automáticamente según los servicios cotizados. Editable antes de emitir la cotización.</span>
+                <span class="text-amber-400/80 font-mono font-bold">{{ comercial.condiciones_texto_pdf?.length || 0 }} caracteres</span>
+              </div>
+            </div>
           </div>
 
           <!-- TAB 1: SITE VISIT & VIABILIDAD (DATOS GENERALES) -->
@@ -9649,7 +9713,7 @@ const cargarVisitaDesdeBD = async () => {
 }
 
 const comercial = ref({
-  validez_dias: 15,
+  validez_dias: 5,
   moneda: 'CLP',
   condicion_servicio: 'programado',
   condiciones_texto_pdf: '',
@@ -9701,20 +9765,37 @@ const ACUERDOS_COMERCIALES_BASE = {
 Observaciones: 
 Traslado incluye seguro de carga Traslado con sobredimensión deben solicitarse con 10 días de anticipación Valor no considera sobreestadía Guías de Traslados son responsabilidad del cliente Todos los Valores son más Iva Carga y descarga de maquinarias y equipos externos son responsabilidad de cliente.`,
 
-  GRUA_TELESCOPICA: `GRUA TELESCOPICA:
-Observaciones: 
-a. La hora de la máquina comenzará a regir desde que esta sale de nuestras bodegas; Salvo que se cobre Flete por traslado. 
-b. Las Máquinas se ocuparán en faenas de acuerdo a sus condiciones y capacidad, para lo cual han sido diseñadas. 
-c. Se entenderá por hora Máquina, el tiempo de reloj durante el cual estén disponible para el cliente; solo se considerara 1 hora de colación como máximo 
-d. Será por cuenta del cliente el traslado de contrapesos durante y dentro del recinto de faena. 
-e. Si la maquinaria trabajase menos de las horas mínimas el cliente igual debera cancelar el mínimo de horas pactadas en esta cotización. 
-f. Será responsabilidad del cliente informar sobre la resistencia y condiciones del terreno y/o área de trabajo, en caso contrario ARRIENDO SAN PABLO se desliga de cualquier responsabilidad por daños que la Máquina pueda ocasionar. 
-g. La factura deberá cancelarse a los 30 días de su fecha de emisión, siempre y cuando el cliente tenga un crédito aprobado de 30 días. 
-h. En caso de que el CLIENTE no necesitará la máquina o suspendiera el servicio una vez que esta haya salido desde nuestras instalaciones, el cliente deberá cancelar la tarifa mínima de la máquina en cuestión. 
-i. Si por fuerza mayor, ante algún evento inesperado (maquinarias encerradas en faenas, pannes, congestión del tránsito, etc.) la grúa se ve impedida de llegar en día y hora programada, no corresponderá ningún tipo de descuento ni cobro a ARRIENDO SAN PABLO tampoco corresponderá el endoso de multas o infracciones de cualquier tipo a ARRIENDO SAN PABLO 
-j. La presente cotización tiene una validez de 05 días. 
-k. Maquinaria sujeta a disponibilidad 
-l.Todos los valores son más iva.`,
+  GRUA_TELESCOPICA: `CONDICIONES Y ACUERDOS COMERCIALES: GRÚA TELESCÓPICA Y CAMIÓN PLUMA
+
+Las siguientes condiciones rigen la prestación del servicio por parte de ARRIENDOS SAN PABLO, buscando garantizar la transparencia y eficiencia operativa para nuestros clientes.
+
+1. Modalidad del Servicio y Disponibilidad
+• Servicio PROGRAMADO: Garantizamos al 100% la disponibilidad y concurrencia exclusiva de nuestros equipos y personal en los días y horarios acordados. Dado el compromiso de estos recursos de manera exclusiva para su operación, este servicio es facturable a todo evento, independientemente de si el equipo se utiliza o no en su totalidad durante el periodo acordado.
+• Servicio A DISPOSICIÓN: La confirmación de la maquinaria queda sujeta a la disponibilidad real de nuestros equipos para el día antes del servicio. Atendemos estas solicitudes estrictamente por orden de ingreso, por lo que una pronta confirmación formal nos ayuda a gestionar su requerimiento con mayor prioridad, pero no aseguramos disponibilidad del servicio.
+
+2. Inicio, Término de Servicio y Cobro de Horas
+• Servicios en Radio Urbano: El tiempo de cobro (hora máquina) comenzará a regir desde que el equipo sale de nuestra base (Casa Matriz o Sucursal) hasta el término del servicio en la obra.
+• Servicios No Urbanos: El tiempo de cobro comenzará a regir desde el horario de inicio acordado directamente en la obra, hasta el término efectivo del servicio en la misma.
+• Hora Máquina: Se entenderá por hora máquina el tiempo de reloj durante el cual el equipo esté disponible para el cliente. Se considerará 1 hora de colación como máximo dentro de la jornada.
+• Cobro Mínimo: Si la maquinaria trabajase menos de las horas mínimas establecidas, o si el cliente suspende el servicio una vez que el equipo ya salió de nuestras instalaciones, el cliente deberá cancelar de igual forma el mínimo de horas pactadas en esta cotización.
+
+3. Extensiones de Servicio
+Toda extensión que exceda el tiempo o los días originalmente acordados en esta cotización será tratada operativamente como un nuevo servicio. Estará sujeta a una nueva validación de disponibilidad de equipos y personal por parte de Operaciones, y requerirá una nueva cotización comercial con su respectiva aprobación.
+
+4. Aprobación de Trabajos en Terreno (Reports)
+• El cliente se compromete a firmar diariamente el Report de Servicio (en papel físico o digital) realizado por nuestro operador.
+• En caso de que nuestro personal no pueda obtener la firma del responsable en obra, el operador informará inmediatamente a Operaciones de San Pablo. Ante esta situación, el report se dará por aprobado por defecto y el ejecutivo comercial enviará el respaldo correspondiente al cliente para formalizar el cierre del día.
+
+5. Responsabilidades Operativas y Fuerza Mayor
+• Condiciones del Terreno: Será responsabilidad exclusiva del cliente informar sobre la resistencia y condiciones del terreno y/o área de trabajo. En caso contrario, ARRIENDOS SAN PABLO se desliga de cualquier responsabilidad por daños que la máquina pueda ocasionar (hundimientos, roturas de lozas, etc.).
+• Contrapesos: Será por cuenta del cliente el traslado de contrapesos durante y dentro del recinto de faena, si la maniobra lo requiere.
+• Uso Adecuado: Las máquinas se ocuparán en faenas estrictamente de acuerdo a sus condiciones y capacidad técnica para lo cual han sido diseñadas y contratadas.
+• Fuerza Mayor: Si por eventos inesperados o de fuerza mayor (maquinarias encerradas en faenas, fallas mecánicas fortuitas, alta congestión de tránsito, etc.) la grúa se ve impedida de llegar el día y hora programada, no corresponderá ningún tipo de descuento ni cobro a ARRIENDOS SAN PABLO. Tampoco procederá el endoso de multas o infracciones de cualquier tipo.
+
+6. Condiciones Administrativas
+• Validez: La presente cotización tiene una validez de 05 días hábiles.
+• Condiciones de Pago: La factura deberá ser cancelada a los 30 días de su fecha de emisión, siempre y cuando el cliente cuente con un crédito aprobado a 30 días por nuestro departamento de finanzas.
+• Valores: Todos los valores expresados en este documento son más IVA.`,
 
   PLATAFORMAS: `PLATAFORMAS:
 Observaciones: 
@@ -10521,6 +10602,7 @@ const cargarDatosCotizacion = async () => {
           } else {
             comercial.value.condiciones_texto_pdf = construirAcuerdosComercialesTexto()
           }
+          comercial.value.validez_dias = crm.validez_dias !== undefined && crm.validez_dias !== null ? Number(crm.validez_dias) : 5
 
           if (crm.pensiones) {
             comercial.value.pensiones = {

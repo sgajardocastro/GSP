@@ -893,7 +893,7 @@ class ProyectoModel {
           <table class="info-table">
             <tr>
               <td class="info-label">Validez de Oferta:</td>
-              <td class="info-value">${crm.validez_dias || 15} días corridos</td>
+              <td class="info-value">${crm.validez_dias || 5} días hábiles</td>
               <td class="info-label">Moneda Cotizada:</td>
               <td class="info-value" style="text-transform: uppercase;">${crm.moneda || 'CLP'}</td>
             </tr>
