@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual Visual de Cotización Paso a Paso • Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #0f172a;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Estilo de lámina / diapositiva */
+    .slide-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2.5rem;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    /* Marcador rojo llamativo para que no se pierda */
+    .foco-rojo {
+      border: 4px solid #ef4444 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25), 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+      position: relative;
+    }
+
+    .etiqueta-toca-aqui {
+      background: #ef4444;
+      color: white;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Ajustes para impresión en papel / PDF */
+    @media print {
+      body {
+        background-color: #ffffff;
+        color: #000000;
+      }
+      .no-imprimir {
+        display: none !important;
+      }
+      .slide-card {
+        box-shadow: none !important;
+        border: 2px solid #cbd5e1 !important;
+        margin-bottom: 2rem !important;
+        page-break-inside: avoid !important;
+      }
+      .max-w-5xl {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen py-8 px-4 sm:px-6">
+
+  <!-- BARRA SUPERIOR DE ACCIÓN (NO SE IMPRIME) -->
+  <div class="max-w-5xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-4 bg-slate-800/90 border border-slate-700/80 p-4 rounded-2xl shadow-xl backdrop-blur no-imprimir">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+        🚜
+      </div>
+      <div>
+        <h1 class="text-white font-extrabold text-lg sm:text-xl flex items-center gap-2">
+          <span>Manual de Cotización: Paso a Paso</span>
+          <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-mono font-bold">100% Visual</span>
+        </h1>
+        <p class="text-slate-300 text-xs sm:text-sm">Guía oficial con peras y manzanas para el cotizador comercial • Grúas San Pablo</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="window.print()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer">
+        <span>🖨️</span>
+        <span>Imprimir en Papel / Guardar en PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold rounded-xl transition-colors no-underline flex items-center gap-1.5">
+        <span>⬅️</span>
+        <span class="hidden sm:inline">Centro de Docs</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL (LÁMINAS VERTICALES) -->
+  <div class="max-w-5xl mx-auto space-y-8">
+
+    <!-- BANNER DE RESUMEN DEL FLUJO COMPLETO -->
+    <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 p-6 rounded-2xl shadow-xl text-slate-950">
+      <div class="text-xs font-black uppercase tracking-widest text-slate-900/80 mb-1">El Camino Corto y Seguro</div>
+      <h2 class="text-2xl sm:text-3xl font-black mb-3">Solo son 6 pasos. Haz uno por uno.</h2>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-xs font-bold">
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">1️⃣</div>
+          <div>Abrir Nueva</div>
+        </div>
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">2️⃣</div>
+          <div>Elegir Cliente</div>
+        </div>
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">3️⃣</div>
+          <div>Poner Kilómetros</div>
+        </div>
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">4️⃣</div>
+          <div>Aplicar Caso</div>
+        </div>
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">5️⃣</div>
+          <div>Grúa y Precio</div>
+        </div>
+        <div class="bg-slate-950/10 p-2.5 rounded-xl border border-slate-950/15">
+          <div class="text-lg mb-0.5">6️⃣</div>
+          <div>Generar PDF</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 1: ABRIR NUEVA COTIZACIÓN                         -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <!-- Encabezado de la lámina -->
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">1</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 1: Abrir una Nueva Cotización</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">Tiempo: 5 segundos</span>
+      </div>
+
+      <!-- Cuerpo de la lámina: 2 columnas -->
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Izquierda: Imagen / Representación Visual con Foco Rojo -->
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-mono mb-2 flex items-center justify-between">
+            <span>PANTALLA: TORRE DE CONTROL / CRM</span>
+            <span class="text-amber-400">Arriba a la derecha</span>
+          </div>
+
+          <div class="bg-[#0b1120] p-4 rounded-lg border border-slate-800 flex items-center justify-between">
+            <div class="text-sm font-bold text-slate-300">
+              📊 Tablero de Oportunidades & Cotizaciones
+            </div>
+            
+            <!-- EL BOTÓN CON FOCO ROJO -->
+            <div class="foco-rojo p-1">
+              <div class="px-3.5 py-2 bg-amber-500 text-slate-950 font-black text-xs rounded-md shadow flex items-center gap-1.5 uppercase tracking-wide">
+                <span>➕</span>
+                <span>Nueva Oportunidad</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 flex justify-end">
+            <span class="etiqueta-toca-aqui">
+              <span>👉</span> HAZ CLIC EN ESTE BOTÓN
+            </span>
+          </div>
+        </div>
+
+        <!-- Derecha: Explicación en Castellano Simple -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">¿Dónde tocar?</div>
+            <p class="text-sm text-slate-800 font-bold mt-0.5">
+              En la esquina superior derecha, presiona el botón amarillo que dice <span class="bg-amber-100 text-amber-900 px-1 rounded font-black">+ Nueva Oportunidad</span>.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-blue-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-blue-600 tracking-wider">¿Qué va a pasar?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              La pantalla se limpiará y se abrirá el formulario vacío para empezar a cargar los datos del cliente.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-emerald-600 tracking-wider">¿Cómo sé que lo hice bien?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              Aparecerá el título: <strong>"Gestor de Oportunidades & Cotizaciones"</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 2: ELEGIR EMPRESA Y CLIENTE                       -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">2</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 2: ¿A quién le cotizamos? (Empresa y Cliente)</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">Tiempo: 15 segundos</span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+          <div class="text-[10px] text-slate-400 font-mono mb-1">PANEL IZQUIERDO: DATOS DE LA OPORTUNIDAD</div>
+
+          <!-- Campo 1: Empresa Emisora -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Empresa Emisora (Cotizar a nombre de):</label>
+            <div class="foco-rojo p-1">
+              <div class="w-full bg-[#0a0f1e] border border-white/20 rounded px-3 py-2 text-xs text-amber-300 font-bold flex justify-between items-center">
+                <span>🏢 SAN PABLO</span>
+                <span class="text-slate-400">▼</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo 2: Cliente Mandante -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-bold block mb-1">Cliente Mandante:</label>
+            <div class="foco-rojo p-1">
+              <div class="w-full bg-[#0a0f1e] border border-white/20 rounded px-3 py-2 text-xs text-white font-bold flex items-center gap-2">
+                <span>🔍</span>
+                <span>SOCIEDAD DE CONSTRUCTORES TENSACON S.A.</span>
+              </div>
+            </div>
+            <div class="mt-1 flex justify-end">
+              <span class="etiqueta-toca-aqui">
+                <span>👉</span> ESCRIBE 3 LETRAS Y HAZ CLIC EN EL NOMBRE
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">¿Qué tocar y qué escribir?</div>
+            <p class="text-sm text-slate-800 font-bold mt-0.5">
+              1. En <strong>Empresa Emisora</strong>, deja seleccionada <strong>SAN PABLO</strong> (o elige Bestmaq/Logística si es de ellas).<br>
+              2. En <strong>Cliente Mandante</strong>, escribe el nombre del cliente (por ejemplo: <em>Tensacon</em>) y <strong>haz clic sobre su nombre</strong> en la lista que se despliega.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-amber-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-amber-600 tracking-wider">Regla de Oro</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              <strong>Nunca dejes el cliente vacío.</strong> Al hacer clic en su nombre, el sistema llena solo el RUT, el teléfono y el correo de contacto.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-emerald-600 tracking-wider">¿Cómo sé que lo hice bien?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              Verás el RUT y los datos del cliente escritos abajo automáticamente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 3: DISTANCIA EN KILÓMETROS                        -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">3</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 3: ¿A cuántos kilómetros queda la obra?</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">Tiempo: 10 segundos</span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="text-[10px] text-slate-400 font-mono mb-1">CASILLERO DE DISTANCIA (EN EL PANEL IZQUIERDO)</div>
+
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-300 font-bold">Distancia Faena (ida) *:</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
+              🏙️ URBANO (≤30km)
+            </span>
+          </div>
+
+          <div class="foco-rojo p-1">
+            <div class="w-full bg-[#050810] border border-white/20 rounded px-3 py-2 text-base text-amber-300 font-mono font-black flex justify-between items-center">
+              <span>15</span>
+              <span class="text-xs text-slate-500 font-normal">km ida</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <span class="etiqueta-toca-aqui">
+              <span>👉</span> ESCRIBE AQUÍ LOS KM (EJEMPLO: 15 o 45)
+            </span>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">¿Qué escribir?</div>
+            <p class="text-sm text-slate-800 font-bold mt-0.5">
+              Escribe el número de kilómetros que hay desde la base de San Pablo hasta la obra.
+            </p>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2 text-xs">
+            <div class="font-black text-amber-900 flex items-center gap-1.5">
+              <span>💡</span>
+              <span>Regla muy simple para entender:</span>
+            </div>
+            <ul class="space-y-1.5 text-slate-700">
+              <li>• <strong>Si es dentro de la ciudad o cerca (30 km o menos):</strong> Se llama <em>Urbano</em>. No se cobra flete de grúa (el viaje se cobra dentro de las horas de arriendo).</li>
+              <li>• <strong>Si queda lejos por carretera (más de 30 km):</strong> Se llama <em>Rural</em>. Es obligatorio cobrar flete de carretera por la grúa.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 4: APLICAR EL CASO DE COBRO                       -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">4</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 4: Presionar el botón "⬇️ Aplicar Caso"</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-amber-200 text-amber-900 px-2.5 py-1 rounded-md">¡Paso Más Importante!</span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="text-[10px] text-slate-400 font-mono mb-1">PESTAÑA: ESTRUCTURADOR DE SERVICIOS (COLUMNA DERECHA)</div>
+
+          <!-- Tarjeta Caso 1 con Foco Rojo en el Botón -->
+          <div class="rounded-xl p-3 border-2 border-amber-500 bg-amber-500/10 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-black text-xs text-amber-300">CASO 1: URBANO (SIN FLETE)</span>
+              <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-black">Sugerido</span>
+            </div>
+            <div class="text-[11px] text-slate-300 space-y-0.5">
+              <div>• Distancia: ≤ 30 km</div>
+              <div>• Grúa Normal (Sin contrapesos)</div>
+              <div class="font-bold text-white">• 1 Línea ($0 Flete)</div>
+            </div>
+
+            <!-- BOTÓN CON FOCO ROJO -->
+            <div class="pt-2 border-t border-white/10 flex justify-end">
+              <div class="foco-rojo p-1">
+                <button class="px-3 py-1.5 bg-amber-500 text-slate-950 font-black text-xs rounded shadow flex items-center gap-1.5 uppercase">
+                  <span>⬇️</span>
+                  <span>Aplicar Caso</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <span class="etiqueta-toca-aqui">
+              <span>👉</span> HAZ CLIC AQUÍ PARA QUE LA TABLA SE ARME SOLA
+            </span>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">¿Dónde tocar?</div>
+            <p class="text-sm text-slate-800 font-bold mt-0.5">
+              Mira las 5 tarjetas de arriba. La tarjeta correcta estará encendida con borde dorado. <strong>Haz clic en el botón amarillo abajo a la derecha que dice "⬇️ Aplicar Caso"</strong>.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-blue-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-blue-600 tracking-wider">¿Por qué es mágico este botón?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              Porque al tocarlo, <strong>el sistema arma automáticamente la tabla de abajo con las líneas que corresponden</strong> (grúa, fletes y contrapesos si aplican). Tú no tienes que inventar nada.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-emerald-600 tracking-wider">¿Cómo sé que lo hice bien?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              El botón cambiará a color verde/dorado y dirá: <strong>"✓ Caso Activo"</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 5: ELEGIR GRÚA, DÍAS Y PRECIO                     -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">5</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 5: En la tabla, pon la Grúa, los Días y el Precio</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md">Tiempo: 20 segundos</span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <div class="text-[10px] text-slate-400 font-mono mb-1">TABLA INFERIOR DE SERVICIOS (3 CASILLEROS CLAVE)</div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="text-slate-400 text-[10px] uppercase border-b border-white/10 pb-1">
+                  <th class="p-1">1. Subcategoría (Equipo)</th>
+                  <th class="p-1 text-center">2. Días</th>
+                  <th class="p-1 text-right">3. Valor Hora</th>
+                  <th class="p-1 text-right text-amber-400">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-white/5">
+                  <!-- Casillero 1: Grúa con foco rojo -->
+                  <td class="p-1.5">
+                    <div class="foco-rojo p-0.5">
+                      <div class="bg-[#0a0f1e] border border-white/20 rounded px-2 py-1 text-[11px] text-amber-300 font-bold">
+                        GRUA 90 TON ▼
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Casillero 2: Días con foco rojo -->
+                  <td class="p-1.5 text-center">
+                    <div class="foco-rojo p-0.5 inline-block">
+                      <div class="bg-[#0a0f1e] border border-white/20 rounded px-2 py-1 text-xs text-white font-bold w-12 text-center">
+                        2
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Casillero 3: Valor con foco rojo -->
+                  <td class="p-1.5 text-right">
+                    <div class="foco-rojo p-0.5 inline-block">
+                      <div class="bg-[#0a0f1e] border border-white/20 rounded px-2 py-1 text-xs text-emerald-400 font-bold w-24 text-right">
+                        $95.000
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Subtotal automático -->
+                  <td class="p-1.5 text-right font-black text-amber-400 font-mono text-sm">
+                    $1.520.000
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1">
+            <span>✨ El total y el IVA se calculan solos.</span>
+            <span class="etiqueta-toca-aqui">
+              <span>👉</span> SOLO LLENAS ESTOS 3 CASILLEROS
+            </span>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">Los 3 únicos datos que debes tocar:</div>
+            <ol class="text-sm text-slate-800 font-bold mt-1 space-y-1.5 list-decimal pl-4">
+              <li><strong>Subcategoría:</strong> Haz clic y elige la grúa que el cliente pidió (ej: <em>GRUA 75 TON</em> o <em>GRUA 90 TON</em>).</li>
+              <li><strong>Días:</strong> Escribe cuántos días va a trabajar (ej: <em>1</em>, <em>2</em> o <em>5</em>).</li>
+              <li><strong>Valor Unitario:</strong> Escribe el precio acordado por hora (ej: <em>95000</em>).</li>
+            </ol>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-emerald-600 tracking-wider">¿Tengo que sumar algo con calculadora?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              <strong>NO.</strong> El sistema multiplica los días por las horas mínimas y por el valor hora automáticamente. El total neto aparece solo.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- LÁMINA 6: GENERAR EL PDF FORMAL Y ENVIAR                 -->
+    <!-- ======================================================== -->
+    <div class="slide-card">
+      <div class="bg-slate-100 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-900 text-white font-black text-lg flex items-center justify-center">6</span>
+          <h3 class="text-xl font-black text-slate-900 uppercase">Paso 6: Presionar "Generar Cotización" (¡Listo!)</h3>
+        </div>
+        <span class="text-xs font-mono font-bold bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md">Paso Final</span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <div class="lg:col-span-7 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+          <div class="text-[10px] text-slate-400 font-mono mb-1">ARRIBA A LA DERECHA (BARRA DE ACCIONES SUPERIOR)</div>
+
+          <div class="bg-[#0b1120] p-4 rounded-lg border border-slate-800 flex items-center justify-end gap-3">
+            <div class="px-3 py-2 bg-slate-800 text-slate-400 rounded text-xs font-bold">
+              Guardar en Preventa
+            </div>
+
+            <!-- BOTÓN GENERAR CON FOCO ROJO -->
+            <div class="foco-rojo p-1">
+              <div class="px-4 py-2.5 bg-slate-800 text-white font-black text-xs rounded-md shadow flex items-center gap-2 uppercase tracking-wide">
+                <span>📄</span>
+                <span>Generar Cotización</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <span class="etiqueta-toca-aqui">
+              <span>👉</span> HAZ CLIC AQUÍ PARA GENERAR EL PDF
+            </span>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="border-l-4 border-red-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-red-600 tracking-wider">¿Dónde tocar?</div>
+            <p class="text-sm text-slate-800 font-bold mt-0.5">
+              En la barra superior derecha, haz clic en el botón que dice <strong>"📄 Generar Cotización"</strong>.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-blue-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-blue-600 tracking-wider">¿Qué va a pasar?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              Aparecerá un mensaje que dice <em>"Generando PDF..."</em> y en 3 segundos se abrirá la cotización oficial formal con el logo de San Pablo, los datos del cliente, las tarifas y la <strong>validez de 5 días hábiles</strong>.
+            </p>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4 py-1">
+            <div class="text-xs font-black uppercase text-emerald-600 tracking-wider">¿Cómo se la mando al cliente?</div>
+            <p class="text-sm text-slate-700 mt-0.5">
+              En el visor que se abre, presiona el botón verde que dice <strong>"📧 Despachar / Enviar Cotización"</strong> y el sistema se la envía a su correo electrónico al instante con copia a gerencia.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESUMEN FINAL / RECORDATORIO DE ESCRITORIO -->
+    <div class="bg-white border-2 border-slate-300 rounded-2xl p-6 shadow-lg text-slate-900 page-break-inside-avoid">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-2xl">📌</span>
+        <h4 class="text-lg font-black uppercase">Resumen en 1 Frase para acordarte siempre:</h4>
+      </div>
+      <p class="text-sm text-slate-700 leading-relaxed font-medium">
+        <strong>"Abres la cotización ➔ Eliges al cliente ➔ Pones los kilómetros ➔ Aprietas [Aplicar Caso] ➔ Pones la grúa y el precio ➔ Aprietas [Generar Cotización]."</strong>
+      </p>
+      <div class="mt-4 pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500">
+        <span>Grúas San Pablo SpA • Sistema Oficial de Gestión Operacional</span>
+        <span class="font-mono">Documento Versión 1.0.93</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

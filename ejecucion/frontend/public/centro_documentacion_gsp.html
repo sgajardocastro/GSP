@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centro de Documentación del Sistema | Grúas San Pablo</title>
+  <!-- Tailwind CSS & Lucide Icons via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              blue: '#2563eb',
+              blueDark: '#1e3a8a',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    .badge-glow {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar">
+
+  <!-- ========================================== -->
+  <!-- BARRA SUPERIOR GLOBAL                      -->
+  <!-- ========================================== -->
+  <header class="h-16 border-b border-brand-border bg-brand-dark/95 backdrop-blur sticky top-0 z-50 px-4 md:px-8 flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl">
+          <i data-lucide="layers" class="w-5 h-5 text-slate-950"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">Docs Oficial</span>
+          </div>
+          <p class="text-xs text-slate-400">Sistema Integrado de Gestión Operacional & Comercial</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegación y Acciones -->
+    <div class="flex items-center space-x-3">
+      <button id="btnVolverCatalogoNav" onclick="mostrarCatalogo()" class="hidden px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
+        <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+        <span>Ver Catálogo Completo</span>
+      </button>
+
+      <a href="./" class="text-xs text-slate-400 hover:text-amber-400 transition-colors hidden sm:flex items-center space-x-1">
+        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        <span>Ir a la Plataforma Web</span>
+      </a>
+
+      <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+      <div class="text-right">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
+          Producción v1.0
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- VISTA 1: CATÁLOGO DE DOCUMENTACIÓN         -->
+  <!-- ========================================== -->
+  <main id="seccionCatalogo" class="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 transition-opacity duration-300">
+    
+    <!-- Hero / Encabezado -->
+    <div class="mb-10 text-center md:text-left md:flex md:items-end md:justify-between border-b border-slate-800/80 pb-8">
+      <div>
+        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span>Biblioteca de Conocimiento & Procesos</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+          Documentación Oficial del Sistema
+        </h1>
+        <p class="mt-2 text-sm md:text-base text-slate-400 max-w-2xl leading-relaxed">
+          Acceso centralizado a los planos maestros de procesos, recorridos funcionales interactivos, especificaciones de liquidación financiera y protocolos de validación en faena.
+        </p>
+      </div>
+
+      <!-- Métricas / Resumen Rápido -->
+      <div class="mt-6 md:mt-0 flex items-center space-x-3 text-left">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
+          <div class="text-xs text-slate-400">Módulos Validados</div>
+          <div class="text-xl font-bold text-amber-400 font-mono">4 Pilares</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
+          <div class="text-xs text-slate-400">Cobertura Operativa</div>
+          <div class="text-xl font-bold text-blue-400 font-mono">100% E2E</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros Rápidos -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div class="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0">
+        <button onclick="filtrarModulos('todos')" class="filtro-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition-all">Todos los Módulos</button>
+        <button onclick="filtrarModulos('operaciones')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Operaciones & Procesos</button>
+        <button onclick="filtrarModulos('comercial')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Comercial & Cotización</button>
+        <button onclick="filtrarModulos('finanzas')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Liquidación & Finanzas</button>
+      </div>
+
+      <div class="relative w-full sm:w-64">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+        <input id="inputBuscar" oninput="buscarModulo(this.value)" type="text" placeholder="Buscar por tema o rol..." class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors" />
+      </div>
+    </div>
+
+    <!-- Grid de Tarjetas de Documentación -->
+    <div id="gridDocumentos" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- TARJETA 1: PLANO MAESTRO PIPELINE INTERACTIVO -->
+      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="pipeline e2e kanban procesos despacho salida patio report linaje roles trazabilidad">
+        <div>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
+                <i data-lucide="git-merge" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-mono uppercase text-blue-400 tracking-wider">Procesos & Linaje E2E</span>
+                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Plano Maestro de Procesos & Linaje Operativo
+                </h3>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+              6 Etapas E2E
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Arquitectura visual del ciclo de vida operativo completo de 6 etapas: Oportunidad comercial, Adjudicación, Planificación y Despacho, Inspección de Patio, Ejecución en Terreno (Reports) y Cierre Administrativo con Liquidación. Detalla estados, reglas de avance y responsabilidades por rol.
+          </p>
+
+          <!-- Metadatos de Negocio -->
+          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
+              <span class="text-slate-200 font-medium">Jefatura Operaciones, Planificadores, Torre Control</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
+              <span class="text-slate-200 font-medium">Linaje Estricto, Inmutabilidad de Etapas Concluidas</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
+          <button onclick="abrirVisor('./presentacion_pipeline_interactivo.html', 'Plano Maestro de Procesos & Linaje Operativo')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Explorar en Visor Integrado</span>
+          </button>
+          <a href="./presentacion_pipeline_interactivo.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- TARJETA 2: RECORRIDO OFICIAL COTIZACIÓN WEB (CRM) -->
+      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="comercial" data-keywords="cotizacion crm gestor oportunidades equipos tarifas chofer rigger viaticos pdf margen comercial">
+        <div>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-mono uppercase text-amber-400 tracking-wider">Módulo Comercial & CRM</span>
+                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Flujo Oficial de Cotización WEB
+                </h3>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              6 Pasos Guiados
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Recorrido paso a paso fiel al código de producción (<code class="text-amber-400 font-mono text-[11px]">GestorOportunidades.vue</code> y <code class="text-amber-400 font-mono text-[11px]">proyectoModel.js</code>). Cubre el ciclo comercial completo: creación de oportunidad, costeo técnico de grúas/plumas, asignación de tripulación, viáticos y pernoctación, validación de margen y emisión del PDF formal.
+          </p>
+
+          <!-- Metadatos de Negocio -->
+          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
+              <span class="text-slate-200 font-medium">Ejecutivos Comerciales, Jefatura Comercial, Gerencia</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
+              <span class="text-slate-200 font-medium">Tarifas UF/CLP, Validaciones de Margen Mínimo, PDF Oficial</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-3 border-t border-slate-800/70">
+          <div class="flex items-center space-x-3">
+            <button onclick="abrirVisor('./navegacion_cotizacion_web.html', 'Flujo Oficial de Cotización WEB')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+              <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+              <span>Explorar en Visor Integrado</span>
+            </button>
+            <a href="./navegacion_cotizacion_web.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          </div>
+          <a href="./manual_cotizacion_paso_a_paso.html" target="_blank" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center justify-center space-x-2 transition-all no-underline">
+            <span>📄</span>
+            <span>Ver Manual Visual Paso a Paso (Para Imprimir)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- TARJETA 3: CICLO FINANCIERO INTEGRAL & MATRIZ DE PRUEBAS -->
+      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="finanzas" data-keywords="finanzas report diario its edp estado de pago facturacion yiara analista pmo protocolo pruebas spec 57 liquidacion conciliacion">
+        <div>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Control de Gestión & Liquidación</span>
+                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Proceso Financiero & Protocolo de Pruebas
+                </h3>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+              Spec 57 Validada
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Especificación funcional integral y protocolo exhaustivo de pruebas del circuito de liquidación operacional: Report Diario de Terreno (captura con firma digital FES) &rarr; Informe Técnico de Servicio (ITS consolidado) &rarr; Estado de Pago (EDP aprobado por mandante) &rarr; Facturación electrónica y conciliación contable.
+          </p>
+
+          <!-- Metadatos de Negocio -->
+          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
+              <span class="text-slate-200 font-medium">Analista de Operaciones (Yiara), Finanzas, Facturación</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
+              <span class="text-slate-200 font-medium">Candado de Liquidación, Matriz de Casos BDD, Cero Fuga de Cobro</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
+          <button onclick="abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', 'Proceso Financiero & Protocolo de Pruebas')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Explorar en Visor Integrado</span>
+          </button>
+          <a href="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- TARJETA 4: MARCHA BLANCA & CASOS DE NEGOCIO EN TERRENO -->
+      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="marcha blanca casos de negocio terreno faena pwa conductor operador izaje mineria amsa codelco">
+        <div>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center">
+                <i data-lucide="truck" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-mono uppercase text-purple-400 tracking-wider">Validación en Faena</span>
+                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Marcha Blanca: Casos de Negocio GSP
+                </h3>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+              Validación Terreno
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Catálogo de casos de negocio reales probados en marcha blanca operacional para servicios de izaje de alta exigencia (camiones pluma y grúas telescópicas en faenas mineras e industriales). Valida checklists preoperacionales, tracking GPS y transmisión de reports desde la PWA móvil.
+          </p>
+
+          <!-- Metadatos de Negocio -->
+          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
+              <span class="text-slate-200 font-medium">Supervisores de Faena, Operadores, Choferes, Cuadrillas</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
+              <span class="text-slate-200 font-medium">Inspección Preoperacional de Patio, Registro de Viaje, Firma en Sitio</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
+          <button onclick="abrirVisor('./marcha_blanca_casos_negocio.html', 'Marcha Blanca: Casos de Negocio GSP')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Explorar en Visor Integrado</span>
+          </button>
+          <a href="./marcha_blanca_casos_negocio.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Banner Informativo Inferior -->
+    <div class="mt-12 bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <i data-lucide="info" class="w-5 h-5 text-amber-400 shrink-0"></i>
+        <p class="text-xs text-slate-300">
+          Esta documentación refleja fielmente la implementación productiva de Grúas San Pablo. Cada material interactivo se ejecuta de forma autónoma y respeta las reglas de negocio oficiales del ecosistema LeanGlobal.
+        </p>
+      </div>
+      <div class="shrink-0 text-xs font-mono text-slate-400">
+        Actualizado: Octubre 2026
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- VISTA 2: VISOR INTEGRADO INTERACTIVO       -->
+  <!-- ========================================== -->
+  <section id="seccionVisor" class="hidden flex-1 flex flex-col bg-slate-950 overflow-hidden">
+    <!-- Barra de Control del Visor -->
+    <div class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-20">
+      
+      <!-- Izquierda: Selector / Selector Rápido de Documento -->
+      <div class="flex items-center space-x-3">
+        <button onclick="mostrarCatalogo()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 border border-slate-700 transition-colors">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Volver</span>
+        </button>
+
+        <div class="h-4 w-px bg-slate-700"></div>
+
+        <!-- Selector desplegable de módulo -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-400 hidden md:inline">Documento:</span>
+          <select id="selectDocumentoVisor" onchange="cambiarDocumentoDesdeSelect(this.value)" class="bg-slate-800 text-slate-100 text-xs rounded border border-slate-700 px-2.5 py-1 focus:outline-none focus:border-amber-500 font-medium">
+            <option value="./presentacion_pipeline_interactivo.html">1. Plano Maestro de Procesos & Linaje E2E</option>
+            <option value="./navegacion_cotizacion_web.html">2. Flujo Oficial de Cotización WEB (CRM)</option>
+            <option value="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html">3. Proceso Financiero & Protocolo de Pruebas</option>
+            <option value="./marcha_blanca_casos_negocio.html">4. Marcha Blanca: Casos de Negocio GSP</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Derecha: Acciones del Visor -->
+      <div class="flex items-center space-x-2">
+        <button onclick="recargarIframe()" title="Recargar documento" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors">
+          <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="togglePantallaCompleta()" title="Pantalla Completa" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors">
+          <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+        </button>
+        <a id="btnAbrirNuevaPestana" href="#" target="_blank" title="Abrir en Pestaña Independiente" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center space-x-1 transition-colors">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Abrir en Pestaña</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Contenedor del Iframe -->
+    <div id="contenedorIframe" class="flex-1 relative w-full bg-slate-950">
+      <div id="loadingIframe" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-3 z-10 transition-opacity duration-300">
+        <i data-lucide="loader-2" class="w-8 h-8 text-amber-500 animate-spin"></i>
+        <span class="text-xs text-slate-400 font-mono tracking-wider">Cargando material interactivo...</span>
+      </div>
+      <iframe id="iframeVisor" src="" class="w-full h-full border-0" onload="iframeCargado()"></iframe>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- FOOTER                                     -->
+  <!-- ========================================== -->
+  <footer class="border-t border-brand-border bg-brand-dark/95 py-4 px-4 md:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div>
+      <span class="font-semibold text-slate-400">Grúas San Pablo S.A.</span> &bull; Centro Oficial de Documentación &bull; Ecosistema LeanGlobal
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      Acceso Público &bull; Solo Lectura
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- SCRIPTS DE INTERACCIÓN                     -->
+  <!-- ========================================== -->
+  <script>
+    lucide.createIcons();
+
+    const seccionCatalogo = document.getElementById('seccionCatalogo');
+    const seccionVisor = document.getElementById('seccionVisor');
+    const iframeVisor = document.getElementById('iframeVisor');
+    const selectDocumentoVisor = document.getElementById('selectDocumentoVisor');
+    const btnAbrirNuevaPestana = document.getElementById('btnAbrirNuevaPestana');
+    const loadingIframe = document.getElementById('loadingIframe');
+    const btnVolverCatalogoNav = document.getElementById('btnVolverCatalogoNav');
+
+    function abrirVisor(url, titulo) {
+      seccionCatalogo.classList.add('hidden');
+      seccionVisor.classList.remove('hidden');
+      btnVolverCatalogoNav.classList.remove('hidden');
+
+      loadingIframe.style.opacity = '1';
+      loadingIframe.style.display = 'flex';
+
+      iframeVisor.src = url;
+      selectDocumentoVisor.value = url;
+      btnAbrirNuevaPestana.href = url;
+
+      // Actualizar hash en URL sin recargar
+      const urlHash = url.replace('./', '').replace('.html', '');
+      window.location.hash = 'doc=' + urlHash;
+
+      lucide.createIcons();
+    }
+
+    function mostrarCatalogo() {
+      seccionVisor.classList.add('hidden');
+      seccionCatalogo.classList.remove('hidden');
+      btnVolverCatalogoNav.classList.add('hidden');
+      iframeVisor.src = '';
+      window.location.hash = '';
+      lucide.createIcons();
+    }
+
+    function cambiarDocumentoDesdeSelect(url) {
+      loadingIframe.style.opacity = '1';
+      loadingIframe.style.display = 'flex';
+      iframeVisor.src = url;
+      btnAbrirNuevaPestana.href = url;
+      const urlHash = url.replace('./', '').replace('.html', '');
+      window.location.hash = 'doc=' + urlHash;
+    }
+
+    function iframeCargado() {
+      if (iframeVisor.src && iframeVisor.src !== 'about:blank') {
+        loadingIframe.style.opacity = '0';
+        setTimeout(() => {
+          loadingIframe.style.display = 'none';
+        }, 300);
+      }
+    }
+
+    function recargarIframe() {
+      if (iframeVisor.src) {
+        loadingIframe.style.opacity = '1';
+        loadingIframe.style.display = 'flex';
+        iframeVisor.src = iframeVisor.src;
+      }
+    }
+
+    function togglePantallaCompleta() {
+      const elem = document.getElementById('contenedorIframe');
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => {
+          alert('Error intentando entrar en pantalla completa: ' + err.message);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function filtrarModulos(categoria) {
+      document.querySelectorAll('.filtro-btn').forEach(b => {
+        b.classList.remove('bg-amber-500', 'text-slate-950', 'active');
+        b.classList.add('bg-slate-900', 'text-slate-300');
+      });
+      event.target.classList.remove('bg-slate-900', 'text-slate-300');
+      event.target.classList.add('bg-amber-500', 'text-slate-950', 'active');
+
+      const cards = document.querySelectorAll('.card-modulo');
+      cards.forEach(card => {
+        if (categoria === 'todos' || card.getAttribute('data-categoria') === categoria) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function buscarModulo(query) {
+      const q = query.toLowerCase().trim();
+      const cards = document.querySelectorAll('.card-modulo');
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase() + ' ' + (card.getAttribute('data-keywords') || '');
+        if (!q || text.includes(q)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // Comprobar parámetros o hash al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(window.location.search);
+      const docParam = params.get('doc');
+
+      let targetDoc = null;
+      if (docParam) {
+        targetDoc = docParam;
+      } else if (hash && hash.startsWith('#doc=')) {
+        targetDoc = hash.replace('#doc=', '');
+      }
+
+      if (targetDoc) {
+        if (targetDoc.includes('pipeline')) {
+          abrirVisor('./presentacion_pipeline_interactivo.html', 'Plano Maestro de Procesos & Linaje E2E');
+        } else if (targetDoc.includes('cotizacion')) {
+          abrirVisor('./navegacion_cotizacion_web.html', 'Flujo Oficial de Cotización WEB');
+        } else if (targetDoc.includes('financiero') || targetDoc.includes('pruebas')) {
+          abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', 'Proceso Financiero & Protocolo de Pruebas');
+        } else if (targetDoc.includes('marcha_blanca') || targetDoc.includes('terreno')) {
+          abrirVisor('./marcha_blanca_casos_negocio.html', 'Marcha Blanca: Casos de Negocio GSP');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
