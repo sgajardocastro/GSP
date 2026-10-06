@@ -458,13 +458,63 @@
                 </span>
               </div>
 
-              <!-- Tiempos Plan vs Real + Desvío -->
+              <!-- Tiempos Plan vs Real + Desvío + Edición Rápida Yiara/Adm (REQ-997) -->
               <div class="flex items-center gap-2 shrink-0">
                 <span class="text-slate-400 text-[10px]">{{ act.hora_plan || '--:--' }}</span>
                 <span class="text-slate-600">➔</span>
-                <span class="font-bold text-[11px]" :class="getColorTextoReal(act.estado)">
-                  {{ act.hora_real || '--:--' }}
-                </span>
+
+                <!-- Modo Edición Inline -->
+                <div v-if="editandoHitoKey === getHitoKey(s, act)" class="flex items-center gap-1" @click.stop>
+                  <input
+                    type="time"
+                    v-model="horaOverrideInput"
+                    class="bg-slate-900 border border-cyan-400 rounded px-1.5 py-0.5 text-xs text-cyan-300 font-mono font-bold outline-none [color-scheme:dark]"
+                    @keyup.enter="guardarOverrideHito(s, act)"
+                    @keyup.esc="cancelarEdicionHito"
+                  />
+                  <button
+                    type="button"
+                    @click.stop="guardarOverrideHito(s, act)"
+                    class="px-1.5 py-0.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] rounded cursor-pointer transition-all"
+                    title="Guardar hora real"
+                    :disabled="guardandoOverride"
+                  >✓</button>
+                  <button
+                    type="button"
+                    @click.stop="cancelarEdicionHito"
+                    class="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] rounded cursor-pointer transition-all"
+                    title="Cancelar"
+                  >✕</button>
+                </div>
+
+                <!-- Modo Lectura con gatillo de edición -->
+                <div v-else class="flex items-center gap-1 group/edit">
+                  <span 
+                    class="font-bold text-[11px] cursor-pointer hover:underline flex items-center gap-1" 
+                    :class="getColorTextoReal(act.estado)"
+                    @click.stop="iniciarEdicionHito(s, act)"
+                    :title="act.override ? ('Hora ajustada manualmente por ' + (act.modificado_por || 'Torre de Control') + ' • Clic para corregir') : 'Clic para ingresar o corregir hora real'"
+                  >
+                    {{ act.hora_real || '--:--' }}
+                  </span>
+                  <button 
+                    type="button" 
+                    @click.stop="iniciarEdicionHito(s, act)" 
+                    class="opacity-70 hover:opacity-100 text-slate-400 hover:text-cyan-400 text-[10px] p-0.5 cursor-pointer transition-opacity" 
+                    title="Editar / Ingresar hora real"
+                  >
+                    ✏️
+                  </button>
+                  <span 
+                    v-if="act.requiere_regularizacion || (act.override && !act.hora_real_original)" 
+                    class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold font-mono tracking-tight" 
+                    title="Hora estimada ingresada en Torre de Control sin reporte móvil. Requiere regularización documental en ITS."
+                  >
+                    ⚠️ Req. Regularización
+                  </span>
+                  <span v-else-if="act.override" class="text-[9px] text-cyan-400" title="Ajustado manualmente por Torre de Control">⚙️</span>
+                </div>
+
                 <!-- Badge de Desvío / Estado -->
                 <span 
                   class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase border"
@@ -716,6 +766,14 @@
                     <div>
                       <span>Real: </span>
                       <strong :class="getColorTextoReal(act.estado)">{{ act.hora_real || 'Pendiente' }}</strong>
+                      <span 
+                        v-if="act.requiere_regularizacion || (act.override && !act.hora_real_original)" 
+                        class="ml-1 text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold"
+                        title="Hora estimada en Torre de Control. Requiere regularización documental."
+                      >
+                        ⚠️ Req. Regularización
+                      </span>
+                      <span v-else-if="act.override" class="ml-1 text-[9px] text-cyan-400" title="Ajustado manualmente">⚙️</span>
                     </div>
                   </div>
 
@@ -966,6 +1024,60 @@ const getEquipoActivo = (s) => {
     if (found) return found
   }
   return s.equipos[0]
+}
+
+// REQ-997 / Caso 2: Carga Manual y Corrección Rápida de Horas de Hitos (Yiara / Adm)
+const editandoHitoKey = ref(null)
+const horaOverrideInput = ref('')
+const guardandoOverride = ref(false)
+
+const getHitoKey = (s, act) => {
+  const eq = getEquipoActivo(s)
+  const eqId = eq?.id_equipo || 0
+  return `${s.id_proyecto}-${eqId}-${act.clave}`
+}
+
+const iniciarEdicionHito = (s, act) => {
+  editandoHitoKey.value = getHitoKey(s, act)
+  horaOverrideInput.value = act.hora_real || act.hora_plan || '08:00'
+}
+
+const cancelarEdicionHito = () => {
+  editandoHitoKey.value = null
+  horaOverrideInput.value = ''
+}
+
+const guardarOverrideHito = async (s, act) => {
+  if (!horaOverrideInput.value) return
+  const eq = getEquipoActivo(s)
+  try {
+    guardandoOverride.value = true
+    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
+      id_proyecto: s.id_proyecto,
+      id_equipo: eq?.id_equipo || 0,
+      fecha: fechaFiltro.value,
+      clave_actividad: act.clave,
+      hora_real: horaOverrideInput.value,
+      motivo: 'Ajuste manual de Torre de Control',
+      requiere_regularizacion: !act.hora_real_original
+    })
+
+    if (data && data.success) {
+      act.hora_real = horaOverrideInput.value
+      act.ejecutado = true
+      act.override = true
+      if (!act.hora_real_original) {
+        act.requiere_regularizacion = true
+      }
+      cancelarEdicionHito()
+      await cargarDatos()
+    }
+  } catch (err) {
+    console.error('Error guardando override de hito:', err)
+    alert('❌ Error al guardar la hora del hito: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoOverride.value = false
+  }
 }
 
 // Filtros y Búsqueda

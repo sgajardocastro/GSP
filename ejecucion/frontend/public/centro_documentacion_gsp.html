@@ -131,7 +131,7 @@
       <div class="mt-6 md:mt-0 flex items-center space-x-3 text-left">
         <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
           <div class="text-xs text-slate-400">Módulos Validados</div>
-          <div class="text-xl font-bold text-amber-400 font-mono">4 Pilares</div>
+          <div class="text-xl font-bold text-amber-400 font-mono">5 Módulos</div>
         </div>
         <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
           <div class="text-xs text-slate-400">Cobertura Operativa</div>
@@ -308,7 +308,55 @@
         </div>
       </div>
 
-      <!-- TARJETA 4: MARCHA BLANCA & CASOS DE NEGOCIO EN TERRENO -->
+      <!-- TARJETA 4: MANEJO DE EXCEPCIONES (CONTROL DE GESTIÓN & LIQUIDACIÓN) -->
+      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="finanzas" data-keywords="manejo de excepciones control en vivo pmo its edp liquidacion horas reales reporte fisico standby piso minimo contractual flete trazabilidad finanzas">
+        <div>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Control de Gestión & Liquidación</span>
+                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Manejo de Excepciones
+                </h3>
+              </div>
+            </div>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+              Spec 63 §12
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Protocolo de gobernanza y trazabilidad financiera ante omisiones o discrepancias de registro en faena. Establece la separación estricta entre el monitoreo en Torre de Control y el linaje probatorio para cobro: Vía A (Reporte Físico de contingencia firmado por ITO) y Vía B (Cobro de Piso Mínimo Contractual por reserva/standby imputable al mandante).
+          </p>
+
+          <!-- Metadatos de Negocio -->
+          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
+              <span class="text-slate-200 font-medium">Torre de Control, Control de Gestión, Administración</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
+              <span class="text-slate-200 font-medium">Inmutabilidad Financiera, Doble Vía de Regularización</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
+          <button onclick="abrirVisor('./politica_manejo_excepciones_gsp.html', 'Manejo de Excepciones: De Torre de Control a ITS y EDP')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Explorar en Visor Integrado</span>
+          </button>
+          <a href="./politica_manejo_excepciones_gsp.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- TARJETA 5: MARCHA BLANCA & CASOS DE NEGOCIO EN TERRENO -->
       <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="marcha blanca casos de negocio terreno faena pwa conductor operador izaje mineria amsa codelco">
         <div>
           <div class="flex items-start justify-between mb-4">
@@ -395,7 +443,8 @@
             <option value="./presentacion_pipeline_interactivo.html">1. Plano Maestro de Procesos & Linaje E2E</option>
             <option value="./navegacion_cotizacion_web.html">2. Flujo Oficial de Cotización WEB (CRM)</option>
             <option value="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html">3. Proceso Financiero & Protocolo de Pruebas</option>
-            <option value="./marcha_blanca_casos_negocio.html">4. Marcha Blanca: Casos de Negocio GSP</option>
+            <option value="./politica_manejo_excepciones_gsp.html">4. Manejo de Excepciones: Control en Vivo ➔ ITS ➔ EDP</option>
+            <option value="./marcha_blanca_casos_negocio.html">5. Marcha Blanca: Casos de Negocio GSP</option>
           </select>
         </div>
       </div>
@@ -565,6 +614,8 @@
           abrirVisor('./presentacion_pipeline_interactivo.html', 'Plano Maestro de Procesos & Linaje E2E');
         } else if (targetDoc.includes('cotizacion')) {
           abrirVisor('./navegacion_cotizacion_web.html', 'Flujo Oficial de Cotización WEB');
+        } else if (targetDoc.includes('excepcion') || targetDoc.includes('excepciones')) {
+          abrirVisor('./politica_manejo_excepciones_gsp.html', 'Manejo de Excepciones: De Torre de Control a ITS y EDP');
         } else if (targetDoc.includes('financiero') || targetDoc.includes('pruebas')) {
           abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', 'Proceso Financiero & Protocolo de Pruebas');
         } else if (targetDoc.includes('marcha_blanca') || targetDoc.includes('terreno')) {

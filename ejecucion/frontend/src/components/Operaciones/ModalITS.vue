@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" :class="embedded ? 'w-full animate-fadeIn' : 'fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 animate-fadeIn'">
-    <div :class="embedded ? 'bg-[#0b1021] border border-blue-500/30 rounded-2xl w-full flex flex-col shadow-xl text-slate-200' : 'bg-[#0b1021] border border-blue-500/40 rounded-2xl w-full max-w-7xl max-h-[96vh] flex flex-col overflow-hidden shadow-2xl shadow-black text-slate-200'">
+    <div :class="embedded ? 'bg-[#0b1021] border border-blue-500/30 rounded-2xl w-full flex flex-col shadow-xl text-slate-200' : 'bg-[#0b1021] border border-blue-500/40 rounded-2xl w-full max-w-[98vw] 2xl:max-w-[1750px] max-h-[96vh] flex flex-col overflow-hidden shadow-2xl shadow-black text-slate-200'">
       
       <!-- HEADER / ACCIONES GLOBALES -->
       <header class="bg-[#050810] px-5 py-3.5 border-b border-white/10 flex flex-wrap justify-between items-center gap-3 flex-shrink-0" :class="embedded ? 'rounded-t-2xl' : ''">
@@ -105,7 +105,6 @@
             class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-white/15 flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Ver PDF Oficial"
           >
-            <span>👁️</span>
             <span>PDF Oficial</span>
           </button>
 
@@ -134,7 +133,7 @@
       <!-- BANNER READONLY EN KANBAN (Spec 57 / REQ-023) -->
       <div v-if="readonly" class="bg-blue-950/40 border-b border-blue-500/30 px-5 py-2.5 flex items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2 text-blue-300 font-mono font-bold">
-          <span>👁️</span>
+          <span>🔒</span>
           <span>MODO CONSULTA EN KANBAN</span>
         </div>
         <span class="text-slate-300 text-[11px]">
@@ -306,7 +305,7 @@
               </span>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <button 
                 type="button" 
                 @click="agregarJornada" 
@@ -314,6 +313,33 @@
               >
                 <span>+</span>
                 <span>Agregar Jornada</span>
+              </button>
+              <button 
+                type="button" 
+                @click="agregarJornadaDocFisico" 
+                class="px-2.5 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/40 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Regularizar jornada con boleta manual escaneada firmada por ITO"
+              >
+                <span>📄</span>
+                <span>+ Doc Físico (Vía A)</span>
+              </button>
+              <button 
+                type="button" 
+                @click="agregarJornadaPisoMinimo" 
+                class="px-2.5 py-1 rounded bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Cobro de piso mínimo contractual de 8 hrs por paralización / standby mandante"
+              >
+                <span>⚖️</span>
+                <span>+ Piso Mínimo (Vía B)</span>
+              </button>
+              <button 
+                type="button" 
+                @click="agregarFlete('Flete Solo Ida')" 
+                class="px-2.5 py-1 rounded bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Agregar tramo físico de flete o traslado"
+              >
+                <span>🚚</span>
+                <span>+ Agregar Flete</span>
               </button>
             </div>
           </div>
@@ -425,7 +451,30 @@
                   </td>
 
                   <td class="p-2">
-                    <input type="text" v-model="j.numero_report" placeholder="REP-101" class="w-24 bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-slate-300" />
+                    <div class="flex items-center gap-1">
+                      <span 
+                        v-if="j.tipo_respaldo === 'PISO_MINIMO' || (j.numero_report && j.numero_report.includes('PISO-MIN'))" 
+                        class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold text-[9px] shrink-0"
+                        title="Piso Mínimo Contractual (Standby imputable al mandante)"
+                      >
+                        ⚖️ Piso Mín.
+                      </span>
+                      <span 
+                        v-else-if="j.tipo_respaldo === 'FISICO_MANUAL' || (j.numero_report && (j.numero_report.includes('DOC-FIS') || j.numero_report.includes('BOL-')))" 
+                        class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[9px] shrink-0"
+                        title="Reporte físico regularizado con boleta manual escaneada"
+                      >
+                        📄 Doc Físico
+                      </span>
+                      <span 
+                        v-else-if="j.codigo_validacion_fes || j.cliente_firma_canvas_base64" 
+                        class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[9px] shrink-0"
+                        title="Firmado digitalmente en terreno (FES)"
+                      >
+                        🟢 FES
+                      </span>
+                      <input type="text" v-model="j.numero_report" placeholder="REP-101" class="w-24 bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-slate-300 font-mono" />
+                    </div>
                   </td>
 
                   <td class="p-2 text-center">
@@ -437,10 +486,11 @@
                       <button 
                         type="button"
                         @click="toggleOcultarFila(j)" 
-                        :title="j.es_oculta ? 'Mostrar fila y sumar al cálculo' : 'Ocultar/Tachar fila (no cobrar)'"
-                        class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer transition-colors"
+                        :title="j.es_oculta ? 'Restaurar fila y sumar al cálculo' : 'Tachar fila (no cobrar)'"
+                        :class="j.es_oculta ? 'bg-amber-950/80 text-amber-300 border-amber-600/40' : 'bg-slate-800 text-slate-300 border-white/10 hover:text-white'"
+                        class="px-2 py-0.5 rounded text-[10px] font-mono border cursor-pointer transition-colors"
                       >
-                        {{ j.es_oculta ? '👁️‍🗨️' : '👁️' }}
+                        {{ j.es_oculta ? 'Tachada' : 'Activa' }}
                       </button>
                       <button 
                         type="button"
@@ -836,7 +886,16 @@
                           <option v-if="it.patente && !patentesAsignadas.some(e => e.patente === it.patente)" :value="it.patente">{{ it.patente }}</option>
                         </select>
                       </td>
-                      <td class="p-1.5"><input type="text" v-model="it.nombre_personal" placeholder="Nombre Operador" class="w-36 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white" /></td>
+                      <td class="p-1.5">
+                        <select v-if="personalAsignadoLista.length > 0" v-model="it.nombre_personal" class="w-36 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white font-bold">
+                          <option value="" disabled>Seleccione tripulante...</option>
+                          <option v-for="p in personalAsignadoLista" :key="p.id_user || p.nombre" :value="p.nombre">
+                            {{ p.nombre }}
+                          </option>
+                          <option v-if="it.nombre_personal && !personalAsignadoLista.some(p => p.nombre === it.nombre_personal)" :value="it.nombre_personal">{{ it.nombre_personal }}</option>
+                        </select>
+                        <input v-else type="text" v-model="it.nombre_personal" placeholder="Nombre Operador" class="w-36 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white" />
+                      </td>
                       <td class="p-1.5"><input type="number" v-model.number="it.precio_unitario" @input="recalcularCostoOperador(it)" class="w-24 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white text-right" /></td>
                       <td class="p-1.5"><input type="number" step="0.5" v-model.number="it.cantidad_unidades" @input="recalcularCostoOperador(it)" class="w-20 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white text-right font-bold text-amber-300" /></td>
                       <td class="p-1.5 font-bold text-rose-300 text-right">{{ formatMoneda(it.monto_total) }}</td>
@@ -1419,7 +1478,9 @@ const categoriasPendientesList = computed(() => {
 const jornadasActivas = computed(() => jornadas.value.filter(j => !j.es_oculta));
 
 const totalHorasRealesActivas = computed(() => {
-  return jornadasActivas.value.reduce((acc, j) => acc + (parseFloat(j.horas_reales) || 0), 0);
+  return jornadasActivas.value
+    .filter(j => !j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete'))
+    .reduce((acc, j) => acc + (parseFloat(j.horas_reales) || 0), 0);
 });
 
 const porcentajeCostosSobreVenta = computed(() => {
@@ -1452,6 +1513,8 @@ const pasoPendienteActual = computed(() => {
 });
 
 const puedeFirmarPasoActual = computed(() => {
+  if (props.readonly) return false;
+  if (!flujoData.value.pasos || flujoData.value.pasos.length === 0) return true;
   if (!pasoPendienteActual.value) return false;
   if (flujoData.value.puede_firmar !== undefined && flujoData.value.puede_firmar !== null) {
     return flujoData.value.puede_firmar === true;
@@ -1558,16 +1621,29 @@ const cargarITS = async () => {
           subtotal: parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (hrs * tarifa))
         };
       });
+      const rawCostos = res.data.data.costos || {};
+      const formatearItems = (lista) => (lista || []).map(it => {
+        let f = it.fecha;
+        if (f) {
+          if (typeof f === 'string') {
+            f = f.split('T')[0];
+          } else if (f instanceof Date) {
+            f = f.toISOString().split('T')[0];
+          }
+        }
+        return { ...it, fecha: f || '' };
+      });
+
       costos.value = {
-        combustible: res.data.data.costos?.combustible || [],
-        movilizacion: res.data.data.costos?.movilizacion || [],
-        peajes: res.data.data.costos?.peajes || [],
-        pensiones: res.data.data.costos?.pensiones || [],
-        personal_externo: res.data.data.costos?.personal_externo || [],
-        feriados: res.data.data.costos?.feriados || [],
-        subcontratacion_flete: res.data.data.costos?.subcontratacion_flete || [],
-        gastos_extraordinarios: res.data.data.costos?.gastos_extraordinarios || [],
-        costo_hora_operador: res.data.data.costos?.costo_hora_operador || []
+        combustible: formatearItems(rawCostos.combustible),
+        movilizacion: formatearItems(rawCostos.movilizacion),
+        peajes: formatearItems(rawCostos.peajes),
+        pensiones: formatearItems(rawCostos.pensiones),
+        personal_externo: formatearItems(rawCostos.personal_externo),
+        feriados: formatearItems(rawCostos.feriados),
+        subcontratacion_flete: formatearItems(rawCostos.subcontratacion_flete),
+        gastos_extraordinarios: formatearItems(rawCostos.gastos_extraordinarios),
+        costo_hora_operador: formatearItems(rawCostos.costo_hora_operador)
       };
       // Recalcular pensiones según condiciones comerciales
       (costos.value.pensiones || []).forEach(it => recalcularPension(it));
@@ -1596,6 +1672,7 @@ const guardar = async (cerrarModal = false) => {
     const res = await api.post('/operaciones/its/guardar', payload);
     if (res.data && res.data.success) {
       if (res.data.id_its) its.value.id_its = res.data.id_its;
+      await cargarFlujo();
       emit('actualizado');
       if (cerrarModal) cerrar();
     }
@@ -1615,18 +1692,40 @@ const guardarYPasarEDP = async () => {
 const cargarFlujo = async () => {
   if (!props.idProyecto) return;
   try {
-    // 1. Cargar catálogo de motivos de rechazo desde servicio canónico
-    try {
-      const resMotivos = await api.get('/servicio/leanglobal/obtnerMotivosRechazo');
-      if (resMotivos.data && Array.isArray(resMotivos.data)) {
-        motivosRechazoList.value = resMotivos.data;
+    const res = await api.get(`/operaciones/its/flujo/${props.idProyecto}?id_user=${usuarioActual.value?.id_user || 1}`);
+    if (res.data && res.data.success && res.data.data) {
+      if (Array.isArray(res.data.data.pasos) && res.data.data.pasos.length > 0) {
+        flujoData.value = {
+          ...flujoData.value,
+          ...res.data.data,
+          puede_firmar: res.data.data.puede_firmar !== undefined ? res.data.data.puede_firmar : true
+        };
+        if (res.data.data.motivos_rechazo?.length) {
+          motivosRechazoList.value = res.data.data.motivos_rechazo;
+        }
+        return;
       }
-    } catch (eMotivos) {
-      console.warn('Fallback motivos rechazo:', eMotivos.message);
+      if (res.data.data.motivos_rechazo?.length) {
+        motivosRechazoList.value = res.data.data.motivos_rechazo;
+      }
     }
+  } catch (eFlujo) {
+    console.warn('Fallback cargarFlujo via /operaciones/its/flujo:', eFlujo.message);
+  }
 
-    // 2. Si el ITS ya tiene id_flow, consultar pasos reales desde servicio canónico
-    if (its.value?.id_flow) {
+  // 1. Cargar catálogo de motivos de rechazo desde servicio canónico
+  try {
+    const resMotivos = await api.get('/servicio/leanglobal/obtnerMotivosRechazo');
+    if (resMotivos.data && Array.isArray(resMotivos.data)) {
+      motivosRechazoList.value = resMotivos.data;
+    }
+  } catch (eMotivos) {
+    console.warn('Fallback motivos rechazo:', eMotivos.message);
+  }
+
+  // 2. Si el ITS ya tiene id_flow, consultar pasos reales desde servicio canónico
+  if (its.value?.id_flow) {
+    try {
       const resSteps = await api.get(`/servicio/leanglobal/flujosAprobacionSteps?id_flow=${its.value.id_flow}`);
       if (resSteps.data && Array.isArray(resSteps.data) && resSteps.data.length > 0) {
         flujoData.value.pasos = resSteps.data.map(s => ({
@@ -1643,21 +1742,22 @@ const cargarFlujo = async () => {
           observaciones: s.flow_step_obs,
           fecha_firma: s.fecha_event
         }));
+        flujoData.value.puede_firmar = true;
         return;
       }
+    } catch (eSteps) {
+      console.warn('Fallback flujosAprobacionSteps:', eSteps.message);
     }
-
-    // 3. Fallback determinista Template 90 (FES 3 pasos) según estado del ITS
-    const est = its.value?.estado_its || 'BORRADOR';
-    flujoData.value.pasos = [
-      { orden: 1, nombre_paso: '1. Elaboración & Liquidación Técnica', estado: est !== 'BORRADOR' && est !== 'EN_CORRECCION' ? 'APROBADO' : 'PENDIENTE', rol_nom: 'Analista de Operaciones' },
-      { orden: 2, nombre_paso: '2. V°B° Jefatura de Operaciones', estado: est === 'EN_REVISION_OPERACIONES' ? 'PENDIENTE' : (est === 'EN_REVISION_CONTABILIDAD' || est === 'CONCLUIDO' ? 'APROBADO' : 'EN ESPERA'), rol_nom: 'Jefe de Operaciones' },
-      { orden: 3, nombre_paso: '3. Recepción Conforme Contabilidad', estado: est === 'EN_REVISION_CONTABILIDAD' ? 'PENDIENTE' : (est === 'CONCLUIDO' ? 'APROBADO' : 'EN ESPERA'), rol_nom: 'Contabilidad y Finanzas' }
-    ];
-    flujoData.value.puede_firmar = true;
-  } catch (error) {
-    console.error('Error al cargar flujo FES de ITS:', error);
   }
+
+  // 3. Fallback determinista Template 90 (FES 3 pasos) según estado del ITS
+  const est = its.value?.estado_its || 'BORRADOR';
+  flujoData.value.pasos = [
+    { orden: 1, nombre_paso: '1. Elaboración & Liquidación Técnica', estado: est !== 'BORRADOR' && est !== 'EN_CORRECCION' ? 'APROBADO' : 'PENDIENTE', rol_nom: 'Analista de Operaciones' },
+    { orden: 2, nombre_paso: '2. V°B° Jefatura de Operaciones', estado: est === 'EN_REVISION_OPERACIONES' ? 'PENDIENTE' : (est === 'EN_REVISION_CONTABILIDAD' || est === 'CONCLUIDO' ? 'APROBADO' : 'EN ESPERA'), rol_nom: 'Jefe de Operaciones' },
+    { orden: 3, nombre_paso: '3. Recepción Conforme Contabilidad', estado: est === 'EN_REVISION_CONTABILIDAD' ? 'PENDIENTE' : (est === 'CONCLUIDO' ? 'APROBADO' : 'EN ESPERA'), rol_nom: 'Contabilidad y Finanzas' }
+  ];
+  flujoData.value.puede_firmar = true;
 };
 
 const hashPinSha256 = async (pin) => {
@@ -1727,25 +1827,30 @@ const confirmarFirmaFes = async () => {
     }
   }
 
-  // Validación de Auditoría de Costos completa para Paso 1
+  // Auto-completar categorías sin movimientos como 'Sin Costo' para permitir la firma expedita
   if (formFes.value.aprueba_rechaza === 'APRUEBA' && (pasoPendienteActual.value?.orden === 1 || !pasoPendienteActual.value)) {
-    if (totalCategoriasAuditadas.value < 9) {
-      const faltantes = categoriasPendientesList.value.map(t => t.label).join(', ');
-      errorFes.value = `Auditoría incompleta: Debes auditar las categorías pendientes (${faltantes}) ingresando gastos o marcándolas como 'Sin Costo' antes de firmar.`;
-      return;
-    }
+    categoriasCostosTabs.forEach(t => {
+      if (getEstadoCategoria(t.key) === 'PENDIENTE') {
+        categoriasSinCosto.value[t.key] = true;
+      }
+    });
   }
 
   try {
     enviandoFes.value = true;
     errorFes.value = null;
 
+    // Asegurar que el ITS esté persistido en BD antes de firmar FES
+    if (!its.value.id_its) {
+      await guardar(false);
+    }
+
     const pass_hash_fes = await hashPinSha256(formFes.value.pin);
     const payload = {
       id_proyecto: props.idProyecto,
       id_its: its.value.id_its,
       id_user: usuarioActual.value?.id_user || 1,
-      id_flow_step: pasoPendienteActual.value?.id_flow_step,
+      id_flow_step: pasoPendienteActual.value?.id_flow_step || pasoPendienteActual.value?.id_flow_stp,
       aprueba_rechaza: formFes.value.aprueba_rechaza,
       id_motivo_rechazo: formFes.value.id_motivo_rechazo,
       observaciones: formFes.value.observaciones,
@@ -1773,19 +1878,25 @@ const recalcularTotales = () => {
   // 1. Horas facturables y Subtotal por Jornada
   let totalHrs = 0;
   let totalIngHoras = 0;
+  let totalIngFletes = 0;
   const vHoraDefault = parseFloat(its.value.valor_hora_pactado || 0);
 
   jornadas.value.forEach(j => {
+    const esFlete = j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete');
     if (j.tarifa_hora === undefined || j.tarifa_hora === null || isNaN(j.tarifa_hora)) {
-      j.tarifa_hora = vHoraDefault;
+      j.tarifa_hora = esFlete ? Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2) : vHoraDefault;
     }
     const hrs = parseFloat(j.horas_report || 0);
     const tarifa = parseFloat(j.tarifa_hora || 0);
     j.subtotal = hrs * tarifa;
 
     if (!j.es_oculta) {
-      totalHrs += hrs;
-      totalIngHoras += j.subtotal;
+      if (esFlete) {
+        totalIngFletes += j.subtotal;
+      } else {
+        totalHrs += hrs;
+        totalIngHoras += j.subtotal;
+      }
     }
   });
 
@@ -1793,9 +1904,13 @@ const recalcularTotales = () => {
   its.value.total_ingresos_horas = totalIngHoras;
 
   // 2. Ingresos
-  const vFlete = parseFloat(its.value.valor_flete_pactado || 0);
-  its.value.total_ingresos_fletes = vFlete;
-  its.value.total_ingresos_facturables = its.value.total_ingresos_horas + vFlete;
+  if (totalIngFletes > 0) {
+    its.value.total_ingresos_fletes = totalIngFletes;
+    its.value.valor_flete_pactado = totalIngFletes;
+  } else {
+    its.value.total_ingresos_fletes = parseFloat(its.value.valor_flete_pactado || 0);
+  }
+  its.value.total_ingresos_facturables = its.value.total_ingresos_horas + its.value.total_ingresos_fletes;
 
   // 3. Costos (suma de las 9 categorías)
   let totalCostos = 0;
@@ -1832,26 +1947,34 @@ const calcularHorasReales = (j) => {
   if (tipo === 'Flete Solo Ida') {
     // Tramo de carretera de ida: Salida de Patio a Llegada a Faena
     minTotales = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
-    // Desacople de mínimos de faena: flete cobra horas efectivas o tarifa plana
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
     if (!j.horas_report || j.horas_report === 0) {
-      j.horas_report = j.horas_reales;
+      j.horas_report = 1.0;
+    }
+    if (!j.tarifa_hora || j.tarifa_hora === parseFloat(its.value.valor_hora_pactado || 0)) {
+      j.tarifa_hora = Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2) || 200000;
     }
   } else if (tipo === 'Flete Solo Retorno') {
     // Tramo de carretera de regreso: Término de Faena a Retorno a Patio
     minTotales = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
     if (!j.horas_report || j.horas_report === 0) {
-      j.horas_report = j.horas_reales;
+      j.horas_report = 1.0;
+    }
+    if (!j.tarifa_hora || j.tarifa_hora === parseFloat(its.value.valor_hora_pactado || 0)) {
+      j.tarifa_hora = Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2) || 200000;
     }
   } else if (tipo === 'Flete Ida y Retorno') {
     // Ambos tramos carreteros
     const minIda = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
     const minRetorno = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
     minTotales = minIda + minRetorno;
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 2.0;
     if (!j.horas_report || j.horas_report === 0) {
-      j.horas_report = j.horas_reales;
+      j.horas_report = 1.0;
+    }
+    if (!j.tarifa_hora || j.tarifa_hora === parseFloat(its.value.valor_hora_pactado || 0)) {
+      j.tarifa_hora = parseFloat(its.value.valor_flete_pactado || 400000);
     }
   } else {
     // Faena normal (Hora, Mensual, Fijo): Llegada a Término descontando colación
@@ -1859,6 +1982,9 @@ const calcularHorasReales = (j) => {
     j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
     if (!j.horas_report || j.horas_report === 0) {
       j.horas_report = Math.max(j.horas_reales, its.value.horas_minimas_pactadas || 4.0);
+    }
+    if (!j.tarifa_hora || j.tarifa_hora > 150000) {
+      j.tarifa_hora = parseFloat(its.value.valor_hora_pactado || 85000);
     }
   }
 
@@ -1879,7 +2005,8 @@ const agregarJornada = () => {
     id_its: its.value.id_its,
     fecha: hoy,
     numero_ot: proyecto.value.codi_proyecto || 'OT',
-    patente: asignaciones.value.equipos?.[0]?.patente || 'S/P',
+    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
     tipo_servicio: 'Hora',
     hora_salida: '08:00',
     hora_llegada: '08:30',
@@ -1898,6 +2025,94 @@ const agregarJornada = () => {
   recalcularTotales();
 };
 
+const agregarJornadaDocFisico = () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  const tarifa = parseFloat(its.value.valor_hora_pactado || 0);
+  const hrs = parseFloat(its.value.horas_minimas_pactadas || 8.0);
+  jornadas.value.push({
+    id_jornada: null,
+    id_its: its.value.id_its,
+    fecha: hoy,
+    numero_ot: proyecto.value.codi_proyecto || 'OT',
+    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    tipo_servicio: 'Hora',
+    tipo_respaldo: 'FISICO_MANUAL',
+    hora_salida: '08:00',
+    hora_llegada: '08:30',
+    hora_termino: '18:00',
+    hora_retorno: '19:00',
+    colacion_minutos: 60,
+    horas_reales: 8.5,
+    horas_report: hrs,
+    tarifa_hora: tarifa,
+    subtotal: hrs * tarifa,
+    numero_report: 'DOC-FIS-' + Math.floor(1000 + Math.random() * 9000),
+    es_oculta: false,
+    vb_conciliado: true,
+    orden: jornadas.value.length + 1
+  });
+  recalcularTotales();
+};
+
+const agregarJornadaPisoMinimo = () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  const tarifa = parseFloat(its.value.valor_hora_pactado || 0);
+  const hrs = parseFloat(its.value.horas_minimas_pactadas || 8.0);
+  jornadas.value.push({
+    id_jornada: null,
+    id_its: its.value.id_its,
+    fecha: hoy,
+    numero_ot: proyecto.value.codi_proyecto || 'OT',
+    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    tipo_servicio: 'Hora',
+    tipo_respaldo: 'PISO_MINIMO',
+    hora_salida: null,
+    hora_llegada: null,
+    hora_termino: null,
+    hora_retorno: null,
+    colacion_minutos: 0,
+    horas_reales: 0,
+    horas_report: hrs,
+    tarifa_hora: tarifa,
+    subtotal: hrs * tarifa,
+    numero_report: 'PISO-MIN-STANDBY',
+    es_oculta: false,
+    vb_conciliado: true,
+    orden: jornadas.value.length + 1
+  });
+  recalcularTotales();
+};
+
+const agregarFlete = (tipo = 'Flete Solo Ida') => {
+  const hoy = new Date().toISOString().split('T')[0];
+  const montoFlete = Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2) || 200000;
+  jornadas.value.push({
+    id_jornada: null,
+    id_its: its.value.id_its,
+    fecha: hoy,
+    numero_ot: proyecto.value.codi_proyecto || 'OT',
+    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    tipo_servicio: tipo,
+    hora_salida: tipo.includes('Ida') ? '07:00' : null,
+    hora_llegada: tipo.includes('Ida') ? '08:00' : null,
+    hora_termino: tipo.includes('Retorno') ? '18:00' : null,
+    hora_retorno: tipo.includes('Retorno') ? '19:00' : null,
+    colacion_minutos: 0,
+    horas_reales: 1.0,
+    horas_report: 1.0,
+    tarifa_hora: montoFlete,
+    subtotal: montoFlete,
+    numero_report: tipo.includes('Ida') ? 'FLE-IDA' : 'FLE-RET',
+    es_oculta: false,
+    vb_conciliado: true,
+    orden: jornadas.value.length + 1
+  });
+  recalcularTotales();
+};
+
 const eliminarJornada = (idx) => {
   jornadas.value.splice(idx, 1);
   recalcularTotales();
@@ -1907,8 +2122,10 @@ const eliminarJornada = (idx) => {
 const resolverUrlArchivo = (pathOrUrl) => {
   if (!pathOrUrl) return '#';
   if (pathOrUrl.startsWith('http') || pathOrUrl.startsWith('data:')) return pathOrUrl;
-  const base = api.defaults.baseURL || 'https://servidor.leanglobal.cl/lg-gsp-dev/api';
-  if (pathOrUrl.startsWith('/api/archivo')) return `https://servidor.leanglobal.cl/lg-gsp-dev${pathOrUrl}`;
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod');
+  const base = (api.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '');
+  const prefix = base.replace(/\/api$/, '');
+  if (pathOrUrl.startsWith('/api/archivo')) return `${prefix}${pathOrUrl}`;
   return `${base}/archivo/ver/${encodeURIComponent(pathOrUrl)}`;
 };
 
@@ -2002,13 +2219,16 @@ const agregarItemCosto = (cat) => {
       monto_total: 0
     });
   } else if (cat === 'costo_hora_operador') {
+    const defaultTripulante = personalAsignadoLista.value?.[0]?.nombre || 'JORGE PONCE';
+    const defaultPat = patentesAsignadas.value?.[0]?.patente || 'VCTR.81-9';
+    const hrs = its.value.total_horas_report || 28;
     costos.value[cat].push({
       fecha: hoy,
-      patente: patentesAsignadas.value?.[0]?.patente || '',
-      nombre_personal: '',
-      precio_unitario: 12000,
-      cantidad_unidades: its.value.total_horas_report || 8,
-      monto_total: 12000 * (its.value.total_horas_report || 8)
+      patente: defaultPat,
+      nombre_personal: defaultTripulante,
+      precio_unitario: 10000,
+      cantidad_unidades: hrs,
+      monto_total: 10000 * hrs
     });
   } else {
     costos.value[cat].push({

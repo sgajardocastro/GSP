@@ -114,7 +114,9 @@ function buildItsHtml(data) {
   // Inyección de Logo en Base64 Data URI según leanglobal_pdf_standards
   let finalLogoBase64 = '';
   try {
-    const publicDir = process.env.PUBLIC_STATIC_DIR || '/home/nodeadmin/proyectos/lean-services-gsp/public';
+    const defaultPublicDir = path.join(process.cwd(), 'public');
+    const fallbackPublicDir = '/home/nodeadmin/proyectos/lean-services-gsp/public';
+    const publicDir = process.env.PUBLIC_STATIC_DIR || (fs.existsSync(defaultPublicDir) ? defaultPublicDir : fallbackPublicDir);
     let diskPath = path.join(publicDir, empresaLogoName);
     if (!fs.existsSync(diskPath)) {
       diskPath = path.join(__dirname, '../../../frontend/public', empresaLogoName);
@@ -294,7 +296,34 @@ function buildItsHtml(data) {
           </div>
         </div>
 
-        <!-- Firma del Mandante -->
+        <!-- Respaldo Probatorio / Firma del Mandante -->
+        ${(j.numero_report && j.numero_report.includes('PISO-MIN')) || j.tipo_respaldo === 'PISO_MINIMO' ? `
+          <div class="border border-purple-200 rounded p-2 bg-purple-50/50 flex items-center justify-between gap-4">
+            <div class="space-y-0.5 text-[10px]">
+              <span class="text-[9px] font-mono uppercase text-purple-700 font-bold block">⚖️ PISO MÍNIMO CONTRACTUAL (STANDBY)</span>
+              <div>Cláusula: <strong class="text-slate-900">Tarifa Base 8.0 hrs por Disponibilidad de Equipo</strong></div>
+              <div class="text-slate-600">Causa: Reserva / Standby imputable al mandante</div>
+              <div class="font-mono text-purple-800 text-[9px]">Respaldo Legal: Cotización Comercial & Orden de Compra</div>
+            </div>
+            <div class="bg-white border border-purple-300 rounded p-1 h-14 w-36 flex flex-col items-center justify-center text-center flex-shrink-0">
+              <span class="text-xs font-black text-purple-800 font-mono tracking-tight">STANDBY</span>
+              <span class="text-[8px] text-purple-600 font-bold uppercase">Piso Contractual</span>
+            </div>
+          </div>
+        ` : (j.numero_report && (j.numero_report.includes('DOC-FIS') || j.numero_report.includes('BOL-'))) || j.tipo_respaldo === 'FISICO_MANUAL' ? `
+          <div class="border border-amber-200 rounded p-2 bg-amber-50/50 flex items-center justify-between gap-4">
+            <div class="space-y-0.5 text-[10px]">
+              <span class="text-[9px] font-mono uppercase text-amber-700 font-bold block">📄 DOC FÍSICO REGULARIZADO</span>
+              <div>Boleta / Reporte Manual: <strong class="text-slate-900">${j.numero_report || 'Boleta de Papel'}</strong></div>
+              <div class="text-slate-600">Recepción: Documento físico firmado por ITO de obra</div>
+              <div class="font-mono text-amber-800 text-[9px]">Anexo: Fotografía / Copia escaneada adjunta al expediente</div>
+            </div>
+            <div class="bg-white border border-amber-300 rounded p-1 h-14 w-36 flex flex-col items-center justify-center text-center flex-shrink-0">
+              <span class="text-xs font-black text-amber-700 font-mono tracking-tight">REGULARIZADO</span>
+              <span class="text-[8px] text-amber-600 font-bold uppercase">Boleta Terreno</span>
+            </div>
+          </div>
+        ` : `
         <div class="border border-slate-200 rounded p-2 bg-slate-50 flex items-center justify-between gap-4">
           <div class="space-y-0.5 text-[10px]">
             <span class="text-[9px] font-mono uppercase text-slate-500 font-bold block">✍️ Firma Conforme del Mandante</span>
@@ -311,6 +340,7 @@ function buildItsHtml(data) {
             `}
           </div>
         </div>
+        `}
       </div>
     `;
   }).join('');

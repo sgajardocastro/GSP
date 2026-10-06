@@ -2,6 +2,68 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.96
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 13:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-999`
+- **Especificación Técnica:** Manejo de Excepciones Operacionales: Torre de Control ➔ Mesa ITS ➔ Liquidación EDP, Vías A y B, Sello PDF Oficial y Portal de Documentación (`ControlOperativoVivo.vue`, `ModalITS.vue`, `itsPdfService.js`, `centro_documentacion_gsp.html`, `politica_manejo_excepciones_gsp.html`)
+- **Detalle de Mejoras y Cambios:**
+  - **[WEB / TORRE - REQ-999] Marcaje Visual de Regularización en Torre de Control (`ControlOperativoVivo.vue`):**
+    - Identificación automática de hitos modificados manualmente sin telemetría ni report móvil (`act.override && !act.hora_real_original`).
+    - Despliegue de insignia de alerta `⚠️ Req. Regularización` junto al engranaje de configuración para visibilidad inmediata de Yiara.
+    - Envío de `{ requiere_regularizacion: true }` en el payload de `POST /operaciones/control-vivo/override-hito`.
+  - **[WEB / ITS - REQ-999] Vías Alternativas de Liquidación en Mesa ITS (`ModalITS.vue`):**
+    - Botones de acción dedicados: `[📄 + Doc Físico (Vía A)]` (`agregarJornadaDocFisico`) para adjuntar respaldo escaneado o físico y `[⚖️ + Piso Mínimo (Vía B)]` (`agregarJornadaPisoMinimo`) para invocar cobro por standby o piso garantizado.
+    - Badges cromáticos diferenciados en grilla de jornadas: `🟢 FES` (Terreno digital), `📄 Doc Físico` (Regularizado Vía A) y `⚖️ Piso Mín.` (Vía B contractual).
+  - **[BACKEND - REQ-999] Sello Formal en PDF Oficial ITS (`itsPdfService.js`):**
+    - Renderizado de estampas de auditoría: `[📄 DOC FÍSICO REGULARIZADO]` con cita al folio o anexo de respaldo, o `[⚖️ PISO MÍNIMO CONTRACTUAL (STANDBY)]` citando cláusula de horas mínimas contractuales.
+  - **[DOCUMENTACIÓN - REQ-999] Centro de Documentación y Política Nº 04:**
+    - Despliegue del portal centralizado `centro_documentacion_gsp.html` y la Política de Manejo de Excepciones `politica_manejo_excepciones_gsp.html` bajo estándar formal de roles y cargos.
+
+## [Portal Web GSP] - Versión 1.0.95
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 10:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-998`
+- **Especificación Técnica:** Simplificación y Unificación de Flujo en Terreno PWA: Consola Maestra 1-2-3 (Viaje Ida ➔ Report Faena ➔ Retorno a Base), Detección de Jornada en Curso y Erradicación de Quiebres UX (`Surveys.vue`, `ViajeConductor.vue`, `ReportDiarioIzaje.vue`, `reportDiarioController.js`, `viajeModel.js`)
+- **Detalle de Mejoras y Cambios:**
+  - **[PWA - REQ-998] Consola Maestra de Terreno Unificada (`Surveys.vue`):**
+    - Unificación de las tarjetas separadas y desarticuladas ("Registro de Viaje" y "Report Diario") en una única **Consola de Flujo Continuo del Servicio Activo**.
+    - Stepper didáctico 1-2-3 con micro-estados visuales: `[1. Viaje a Faena] ➔ [2. Report Faena] ➔ [3. Retorno Base]`, indicando con íconos y contrastes cromáticos el estado de cada etapa (Pendiente, En Ruta, Arribado/Firmado).
+    - Botón de Acción Rápida Único ("👉 TU PRÓXIMA ACCIÓN"): Botón de 58px de altura con texto inequívoco que le dice al operador exactamente qué hacer en cada instante (Iniciar Viaje, Registrar Llegada, Iniciar Jornada de Faena, Finalizar & Firmar Report, o Iniciar Viaje de Retorno).
+    - Selector compacto para alternar entre OTs en caso de que el operador cuente con más de una orden activa.
+  - **[WEB / PWA - REQ-998] Hoja de Conductor y Cierres de Traslado (`ViajeConductor.vue`):**
+    - Distinción nítida entre Arribo a Faena (Ida) y Arribo a Base Central San Pablo (Retorno).
+    - En Arribo a Faena: Banner verde `🏁 Traslado Arribado a Faena` y botón principal `[ 📋 PASO 2: INICIAR REPORT DIARIO DE FAENA ➔ ]`, acompañado de botón de navegación a la Home.
+    - En Arribo a Patio Base San Pablo: Erradicación del botón erróneo de report diario; pantalla de confirmación triunfal `🏁 Retorno a Base Central San Pablo Concluido`, equipo en estado `DISPONIBLE` y botón directo `[ 🏠 VOLVER A MIS SERVICIOS (MENÚ PRINCIPAL) ➔ ]`.
+    - Enrutamiento dinámico `urlHomePwa` respetando prefijos de ambientes DEV y PROD sin pérdida de sesión.
+  - **[PWA - REQ-998] Modal de Término de Faena e Inicio de Retorno (`ReportDiarioIzaje.vue`):**
+    - Incorporación de botón secundario de retorno seguro al Menú Principal en el diálogo modal de confirmación de última jornada y apertura de retorno.
+  - **[BACKEND - REQ-998] Auditoría de Jornadas y Priorización de Viajes (`reportDiarioController.js` & `viajeModel.js`):**
+    - Endpoint `/reports/usuario/pendientes`: Detección en tiempo real de reportes con `estado_reporte = 'JORNADA_EN_CURSO'` para retornar flag `jornada_en_curso: true/false`, permitiendo a la UI conmutar instantáneamente entre "Iniciar Jornada" y "Finalizar & Firmar con Mandante".
+    - `viajeModel.getViajeActivoPorUsuario`: Implementación de ordenamiento ponderado `CASE`, priorizando viajes de retorno y de ida pendientes o en ruta sobre registros históricos concluidos.
+
+## [Portal Web GSP] - Versión 1.0.94
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 10:00:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-997`
+- **Especificación Técnica:** Operaciones Críticas: Enrolamiento Rápido de Rigger Externo en Asignación de Recursos (`GestorOportunidades.vue`) y Corrección/Carga Manual de Horas de Hitos en Torre de Control en Vivo (`ControlOperativoVivo.vue` & `controlVivoController.js`)
+- **Detalle de Mejoras y Cambios:**
+  - **[CASO 1 / REQ-997] Enrolamiento Rápido de Rigger Externo:**
+    - Se agregó el botón `[➕ Ext]` junto al selector de Rigger en la pestaña de Asignación de Recursos OT.
+    - Se implementó mini-modal flotante con captura de Nombre, RUT, Móvil/WhatsApp y Empresa Proveedora.
+    - Nuevo endpoint backend `POST /api/acreditacion/personal/externo` que registra al especialista en `tsec_users` con flag `is_externo: true`, rol `Rigger`, lo autoselecciona de inmediato y lo sincroniza en `usuarios.value` y `tpry_rel_persona`.
+    - Distinción visual con badge `🏢 EXT` para personal subcontratado.
+  - **[CASO 2 / REQ-997] Corrección y Carga Manual de Horas de Hitos en Control en Vivo:**
+    - Soporte interactivo inline en cada fila de actividad planificada en la tarjeta de `ControlOperativoVivo.vue`.
+    - Yiara y Administradores pueden hacer clic sobre `--:--` o el botón lápiz `✏️` para ingresar la hora real (`HH:mm`) y confirmarla con `[✓]`.
+    - Nuevo endpoint backend `POST /api/operaciones/control-vivo/override-hito` que persiste el ajuste en `tpry_proyecto.json_field->'control_vivo_overrides'`, sincroniza marcas en `tvia_viaje` / `tedp_reporte_avance` y recalcula los semáforos al instante sin matar ni interrumpir la PWA del operador en terreno.
+
 ## [Portal Web GSP] - Versión 1.0.93
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-05 22:45:00 (-03:00)
