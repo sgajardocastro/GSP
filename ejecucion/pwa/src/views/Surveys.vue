@@ -1,113 +1,6 @@
 <template>
   <v-container class="surveys-page">
-    <!-- 🚜 TARJETA DESTACADA: CONTROL DE FLOTA CUANDO EL EQUIPO YA ARRIBÓ A FAENA -->
-    <v-card
-      v-if="viajeActivo && (viajeActivo.estado_trayecto === 'ARRIBADO' || viajeActivo.estado_trayecto === 'LLEGADO')"
-      class="mb-4 rounded-2xl border-2 border-emerald-500/60 text-white pa-4"
-      style="background: linear-gradient(135deg, #07130e 0%, #0d281e 100%); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.35);"
-      elevation="6"
-    >
-      <div class="d-flex align-center justify-space-between mb-2">
-        <div class="d-flex align-center ga-2">
-          <span class="text-2xl">🚜</span>
-          <div>
-            <div class="text-xs font-black text-emerald-400 text-uppercase tracking-wider">
-              OPERACIÓN & CONTROL DE FLOTA EN FAENA (GSP)
-            </div>
-            <div class="text-base font-black text-white font-mono">
-              OT: {{ viajeActivo.codi_proyecto || 'GSP-OT' }} • {{ viajeActivo.patente }}
-              <span class="text-grey-lighten-1 font-weight-normal text-xs font-sans">({{ viajeActivo.modelo }})</span>
-            </div>
-          </div>
-        </div>
-        <v-chip size="small" color="emerald" variant="flat" class="font-black text-xs">
-          🟢 ARRIBADO
-        </v-chip>
-      </div>
-
-      <div class="text-xs text-slate-200 mb-2 bg-black/60 pa-2.5 rounded-xl border border-white/10 d-flex flex-column ga-1">
-        <div>📍 <strong>Mandante:</strong> {{ viajeActivo.cliente_nombre || 'Cliente Mandante' }} • <strong>Faena:</strong> {{ viajeActivo.obra_nombre || 'Obra en Faena' }}</div>
-        <div class="font-mono text-emerald-300">
-          ⏱️ <strong>Odóm. Arribo:</strong> {{ viajeActivo.km_final || viajeActivo.km_inicial || 0 }} KM • <strong>Horóm. Arribo:</strong> {{ viajeActivo.horometro_final || viajeActivo.horometro_inicial || 0 }} HRS
-        </div>
-      </div>
-
-      <v-btn
-        block
-        color="emerald-darken-1"
-        size="x-large"
-        class="font-black text-uppercase rounded-xl text-white py-4 min-h-[56px] text-sm sm:text-base shadow-lg shadow-emerald-500/20 tracking-wider"
-        @click="abrirReportDiario(viajeActivo.id_proyecto)"
-      >
-        🚜 Abrir Control de Flota & Report ➔
-      </v-btn>
-    </v-card>
-
-    <!-- 🚛 BANNER DE VIAJE SI ESTÁ EN TRÁNSITO O ASIGNADO -->
-    <v-card
-      v-else-if="viajeActivo && (viajeActivo.estado_trayecto === 'EN_RUTA' || viajeActivo.estado_trayecto === 'ASIGNADO')"
-      class="mb-4 rounded-xl border border-amber-500/40 text-white pa-4"
-      style="background: linear-gradient(135deg, #0a0f1e 0%, #151e36 100%); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);"
-      elevation="4"
-    >
-      <div class="d-flex align-center justify-space-between mb-2">
-        <div class="d-flex align-center ga-2">
-          <span class="text-h6">🚛</span>
-          <div>
-            <div class="text-caption font-weight-black text-amber-400 text-uppercase tracking-wider">
-              {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ En Tránsito / En Ruta' : '🚦 Salida Autorizada — Iniciar Viaje' }}
-            </div>
-            <div class="text-subtitle-2 font-weight-black text-white font-mono">
-              {{ viajeActivo.patente }} <span class="text-grey-lighten-1 font-weight-normal">• {{ viajeActivo.modelo }}</span>
-            </div>
-          </div>
-        </div>
-        <v-chip size="small" :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'" variant="flat" class="font-weight-bold">
-          {{ viajeActivo.estado_trayecto }}
-        </v-chip>
-      </div>
-
-      <div class="text-caption text-slate-300 mb-2">
-        📍 <strong>Destino:</strong> {{ viajeActivo.obra_nombre || 'Faena Operacional' }} (OT {{ viajeActivo.codi_proyecto || 'GSP' }})
-      </div>
-
-      <v-btn
-        block
-        :color="viajeActivo.estado_trayecto === 'EN_RUTA' ? 'info' : 'warning'"
-        size="large"
-        class="font-weight-black text-uppercase rounded-lg text-black"
-        @click="abrirViajeNativo(viajeActivo.token_viaje)"
-      >
-        {{ viajeActivo.estado_trayecto === 'EN_RUTA' ? '🛰️ Continuar Registro de Viaje' : '🟢 Iniciar Salida de Patio (Odómetro/PIN)' }}
-      </v-btn>
-    </v-card>
-
-    <!-- 🚜 ACCESO RÁPIDO SI NO HAY VIAJE ASIGNADO AL USUARIO -->
-    <v-card
-      v-else-if="!cargandoViajeActivo"
-      class="mb-4 rounded-xl border border-white/10 text-white pa-3 bg-[#0b1021]"
-    >
-      <div class="d-flex align-center justify-space-between">
-        <div class="d-flex align-center ga-2">
-          <span class="text-xl">🚜</span>
-          <div>
-            <div class="text-[11px] font-bold text-slate-300">Control de Flota & Operación Diaria</div>
-            <div class="text-[10px] text-slate-500 font-mono">Seleccione su servicio para registrar jornada</div>
-          </div>
-        </div>
-        <v-btn
-          size="small"
-          color="emerald"
-          variant="tonal"
-          class="font-bold text-xs"
-          @click="abrirReportDiario(74)"
-        >
-          Abrir Control ➔
-        </v-btn>
-      </div>
-    </v-card>
-
-    <!-- 🚧 ACCESO RÁPIDO: INSPECCIÓN DE ENTRADA Y SALIDA DE PATIO (CHECKLIST AUTÓNOMO) -->
+    <!-- 1️⃣ 🚧 ACCESO RÁPIDO: CONTROL DE PORTÓN & PATIO (INSPECCIÓN AUTÓNOMA) -->
     <v-card
       class="mb-4 rounded-xl border border-amber-500/30 text-white pa-3"
       style="background: linear-gradient(135deg, #0b1426 0%, #17264a 100%);"
@@ -134,6 +27,188 @@
           Nueva Inspección ➔
         </v-btn>
       </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 🌟 CONSOLA MAESTRA DE FLUJO EN TERRENO: VIAJE (IDA) ➔ REPORT ➔ RETORNO   -->
+    <!-- ========================================================================= -->
+    <v-card
+      v-if="servicioOperativoActivo"
+      class="mb-4 rounded-2xl border-2 border-amber-500/40 text-white pa-4 shadow-2xl overflow-hidden"
+      style="background: linear-gradient(135deg, #070d1e 0%, #0f1c3f 100%);"
+    >
+      <!-- Cabecera del Servicio Activo -->
+      <div class="d-flex align-center justify-space-between flex-wrap ga-2 border-b border-white/10 pb-3 mb-3">
+        <div class="d-flex align-center ga-2.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">
+            🚜
+          </div>
+          <div>
+            <div class="d-flex align-center ga-2">
+              <span class="text-xs font-mono font-black text-amber-400 uppercase tracking-wider">
+                OT {{ servicioOperativoActivo.codi_proyecto }}
+              </span>
+              <v-chip size="x-small" color="amber-darken-2" variant="flat" class="font-black text-[9px] px-2">
+                {{ servicioOperativoActivo.tipo_equipo }}
+              </v-chip>
+            </div>
+            <div class="text-base font-black text-white font-mono leading-tight mt-0.5">
+              {{ servicioOperativoActivo.patente }} <span class="text-xs font-normal text-slate-300 font-sans">• {{ servicioOperativoActivo.modelo }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 uppercase font-mono block">Faena Mandante</span>
+          <span class="text-xs font-bold text-white block truncate max-w-[200px]">
+            📍 {{ servicioOperativoActivo.obra_nombre }}
+          </span>
+        </div>
+      </div>
+
+      <!-- STEPPER DIDÁCTICO DE 3 HITOS (HILO CONTINUO 1-2-3) -->
+      <div class="bg-black/40 border border-white/10 rounded-xl p-3 mb-3">
+        <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
+          <!-- Paso 1: Viaje Ida -->
+          <div
+            class="p-2 rounded-lg border transition-all"
+            :class="estadoPaso1ViajeIda === 'COMPLETADO' 
+              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300' 
+              : estadoPaso1ViajeIda === 'EN_RUTA' 
+                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 animate-pulse font-black' 
+                : 'bg-amber-950/60 border-amber-500/60 text-amber-300 font-bold'"
+          >
+            <div class="text-base mb-0.5">
+              {{ estadoPaso1ViajeIda === 'COMPLETADO' ? '✅' : '🚛' }}
+            </div>
+            <div class="text-[10px] uppercase font-bold">1. Viaje a Faena</div>
+            <div class="text-[9px] opacity-80">
+              {{ estadoPaso1ViajeIda === 'COMPLETADO' ? 'Arribado' : estadoPaso1ViajeIda === 'EN_RUTA' ? 'En Ruta' : 'Pendiente' }}
+            </div>
+          </div>
+
+          <!-- Paso 2: Report Faena -->
+          <div
+            class="p-2 rounded-lg border transition-all"
+            :class="estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' 
+              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300'
+              : estadoPaso2ReportFaena === 'JORNADA_EN_CURSO'
+                ? 'bg-amber-950/80 border-amber-400 text-amber-200 animate-pulse font-black'
+                : estadoPaso2ReportFaena === 'PENDIENTE_INICIO'
+                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-bold'
+                  : 'bg-black/50 border-white/10 text-slate-500 opacity-60'"
+          >
+            <div class="text-base mb-0.5">
+              {{ estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' ? '✅' : estadoPaso2ReportFaena === 'BLOQUEADO' ? '🔒' : '📋' }}
+            </div>
+            <div class="text-[10px] uppercase font-bold">2. Report Faena</div>
+            <div class="text-[9px] opacity-80">
+              {{ estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' ? 'Firmado' : estadoPaso2ReportFaena === 'JORNADA_EN_CURSO' ? 'En Curso' : estadoPaso2ReportFaena === 'BLOQUEADO' ? 'En espera' : 'Pendiente' }}
+            </div>
+          </div>
+
+          <!-- Paso 3: Retorno Base -->
+          <div
+            class="p-2 rounded-lg border transition-all"
+            :class="estadoPaso3ViajeRetorno === 'COMPLETADO' 
+              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300'
+              : estadoPaso3ViajeRetorno === 'EN_RUTA'
+                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 animate-pulse font-black'
+                : estadoPaso3ViajeRetorno === 'PENDIENTE_SALIDA'
+                  ? 'bg-purple-950/80 border-purple-400 text-purple-200 font-bold'
+                  : 'bg-black/50 border-white/10 text-slate-500 opacity-60'"
+          >
+            <div class="text-base mb-0.5">
+              {{ estadoPaso3ViajeRetorno === 'COMPLETADO' ? '✅' : estadoPaso3ViajeRetorno === 'BLOQUEADO' ? '🔒' : '🏁' }}
+            </div>
+            <div class="text-[10px] uppercase font-bold">3. Retorno Base</div>
+            <div class="text-[9px] opacity-80">
+              {{ estadoPaso3ViajeRetorno === 'COMPLETADO' ? 'En Patio' : estadoPaso3ViajeRetorno === 'EN_RUTA' ? 'En Ruta' : estadoPaso3ViajeRetorno === 'BLOQUEADO' ? 'En espera' : 'Por salir' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÓN MAESTRO DE ACCIÓN RÁPIDA (CALL TO ACTION PRINCIPAL) -->
+      <div v-if="proximaAccionFlujo" class="space-y-2">
+        <div class="text-[10px] font-mono text-amber-300 uppercase tracking-widest font-black flex items-center ga-1">
+          <span>👉</span>
+          <span>TU PRÓXIMA ACCIÓN:</span>
+        </div>
+
+        <v-btn
+          block
+          size="x-large"
+          :color="proximaAccionFlujo.color"
+          :class="[
+            'font-black text-sm rounded-2xl py-4 h-auto shadow-2xl tracking-wider',
+            proximaAccionFlujo.colorTexto,
+            proximaAccionFlujo.pulsar ? 'animate-pulse' : ''
+          ]"
+          :prepend-icon="proximaAccionFlujo.icono"
+          :disabled="proximaAccionFlujo.deshabilitado"
+          @click="proximaAccionFlujo.accion"
+        >
+          {{ proximaAccionFlujo.titulo }}
+        </v-btn>
+        
+        <p class="text-center text-xs text-slate-300 font-medium">
+          {{ proximaAccionFlujo.subtitulo }}
+        </p>
+      </div>
+
+      <!-- BOTONES DE ACCESO DIRECTO SECUNDARIOS -->
+      <div class="d-flex align-center justify-space-between pt-3 mt-3 border-t border-white/10 text-xs">
+        <v-btn
+          v-if="viajeActivo"
+          variant="text"
+          color="blue-lighten-3"
+          size="small"
+          class="font-bold text-[11px]"
+          prepend-icon="mdi-map-search-outline"
+          @click="abrirViajeNativo(viajeActivo.token_viaje)"
+        >
+          Ver Hoja de Ruta
+        </v-btn>
+
+        <v-btn
+          v-if="reportPrincipalPendiente || reportsConcluidos.length > 0"
+          variant="text"
+          color="emerald-lighten-3"
+          size="small"
+          class="font-bold text-[11px]"
+          prepend-icon="mdi-file-document-outline"
+          @click="abrirReportDiario(servicioOperativoActivo.id_proyecto, servicioOperativoActivo.id_equipo)"
+        >
+          Historial / Reports
+        </v-btn>
+      </div>
+
+      <!-- Selector de múltiples OTs si aplica -->
+      <div v-if="reportsPendientes.length > 1" class="w-100 d-flex align-center ga-1.5 mt-2 pt-2 border-t border-white/10 flex-wrap">
+        <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Cambiar OT:</span>
+        <v-chip
+          v-for="(rp, idx) in reportsPendientes"
+          :key="rp.id_proyecto"
+          size="x-small"
+          :color="indiceReportSeleccionado === idx ? 'emerald-darken-1' : 'grey-darken-3'"
+          variant="flat"
+          class="cursor-pointer font-bold text-[9.5px]"
+          @click="indiceReportSeleccionado = idx"
+        >
+          OT {{ rp.codi_proyecto }} (Día {{ rp.dia_a_reportar }}/{{ rp.total_dias }})
+        </v-chip>
+      </div>
+    </v-card>
+
+    <!-- CASO SIN SERVICIOS OPERATIVOS ASIGNADOS -->
+    <v-card
+      v-else
+      class="mb-4 rounded-xl border border-white/10 text-white pa-4 text-center bg-slate-900/80"
+    >
+      <div class="text-3xl mb-1">🟢</div>
+      <div class="text-sm font-black uppercase text-slate-200">Sin Servicios Operativos Pendientes</div>
+      <div class="text-xs text-slate-400 mt-0.5">No tienes viajes ni reportes de izaje asignados para hoy.</div>
     </v-card>
 
     <!-- 🚧 MODAL DE INSPECCIÓN DE PATIO -->
@@ -228,13 +303,13 @@
     </v-dialog>
 
     <v-row dense class="align-center">
-      <v-col v-if="!esVistaReclamos" cols="12" md="6" class="py-1">
+      <v-col v-if="false && !esVistaReclamos" cols="12" md="6" class="py-1">
         <div class="asignacion-dia-title">
           {{ esVistaAsignacionesCnx ? `Asignación para el día de ${tituloAsignacionDia}` : 'Protocolos e Inspecciones' }}
         </div>
       </v-col>
 
-      <template v-else>
+      <template v-else-if="false">
         <v-col cols="12" md="6" class="py-1">
           <div class="asignacion-dia-title">
             Reclamos
@@ -242,7 +317,7 @@
         </v-col>
       </template>
 
-      <v-col v-if="rolesSesionReady && !esVistaReclamos && !esVistaAsignacionesCnx" cols="6" md="6" class="py-1 d-flex align-center">
+      <v-col v-if="false && rolesSesionReady && !esVistaReclamos && !esVistaAsignacionesCnx" cols="6" md="6" class="py-1 d-flex align-center">
         <v-btn
           color="primary"
           prepend-icon="mdi-file-document-edit-outline"
@@ -415,7 +490,7 @@
         </v-card>
       </v-dialog>
 
-      <v-col v-if="!esVistaReclamos && !esVistaAsignacionesCnx && rolesSesionReady" cols="12" class="pt-1">
+      <v-col v-if="false && !esVistaReclamos && !esVistaAsignacionesCnx && rolesSesionReady" cols="12" class="pt-1">
         <v-row dense>
           <v-col cols="12" md="3">
             <v-select
@@ -638,6 +713,225 @@ const idUser = computed(() => userDetailStore.userDetail?.id_user ?? null)
 const viajeActivo = ref(null)
 const cargandoViajeActivo = ref(false)
 
+// --- MÓDULO DE REPORTS DIARIOS DISCRIMINADOS PWA (Spec 57 / REQ-025) ---
+const reportsPendientes = ref([])
+const reportsConcluidos = ref([])
+const cargandoReportsPendientes = ref(false)
+const indiceReportSeleccionado = ref(0)
+const reportPrincipalPendiente = computed(() => {
+  if (reportsPendientes.value.length === 0) return null
+  return reportsPendientes.value[indiceReportSeleccionado.value] || reportsPendientes.value[0]
+})
+const primerConcluido = computed(() => {
+  return reportsConcluidos.value[0] || null
+})
+
+// --- MÓDULO UNIFICADO DE FLUJO OPERATIVO EN TERRENO (VIAJE IDA -> REPORT -> RETORNO) ---
+const servicioOperativoActivo = computed(() => {
+  const v = viajeActivo.value
+  const r = reportPrincipalPendiente.value || primerConcluido.value
+  if (!v && !r) return null
+
+  return {
+    codi_proyecto: v?.codi_proyecto || r?.codi_proyecto || 'GSP-OT',
+    id_proyecto: v?.id_proyecto || r?.id_proyecto,
+    id_equipo: v?.id_equipo || r?.id_equipo,
+    patente: v?.patente || r?.patente || 'S/P',
+    modelo: v?.modelo || 'Maquinaria de Izaje GSP',
+    tipo_equipo: v?.tipo_equipo || 'EQUIPO DE FLOTA',
+    obra_nombre: v?.obra_nombre || r?.obra_nombre || 'Faena Operativa',
+    obra_direccion: v?.obra_direccion || r?.obra_direccion || '',
+    cliente_nombre: v?.cliente_nombre || r?.cliente_nombre || 'Cliente Mandante'
+  }
+})
+
+const estadoPaso1ViajeIda = computed(() => {
+  const v = viajeActivo.value
+  if (v && v.tipo_trayecto === 'RETORNO') return 'COMPLETADO'
+  if (!v || v.tipo_trayecto !== 'IDA') {
+    if (reportPrincipalPendiente.value || primerConcluido.value) return 'COMPLETADO'
+    return 'SIN_ASIGNAR'
+  }
+  if (v.estado_trayecto === 'ASIGNADO') return 'PENDIENTE'
+  if (v.estado_trayecto === 'EN_RUTA') return 'EN_RUTA'
+  if (v.estado_trayecto === 'ARRIBADO' || v.estado_trayecto === 'LLEGADO') return 'COMPLETADO'
+  return 'COMPLETADO'
+})
+
+const estadoPaso2ReportFaena = computed(() => {
+  const p1 = estadoPaso1ViajeIda.value
+  const r = reportPrincipalPendiente.value
+  const c = primerConcluido.value
+
+  if (p1 !== 'COMPLETADO' && p1 !== 'SIN_ASIGNAR') return 'BLOQUEADO'
+
+  if (r) {
+    if (r.jornada_en_curso) return 'JORNADA_EN_CURSO'
+    if (r.puede_reportar) return 'PENDIENTE_INICIO'
+  }
+
+  if (c) {
+    if (c.motivo === 'SERVICIO_CONCLUIDO') return 'CONCLUIDO_TOTAL'
+    if (c.motivo === 'AL_DIA_HOY') return 'AL_DIA_HOY'
+  }
+
+  return 'AL_DIA'
+})
+
+const estadoPaso3ViajeRetorno = computed(() => {
+  const p2 = estadoPaso2ReportFaena.value
+  const v = viajeActivo.value
+
+  if (v && v.tipo_trayecto === 'RETORNO') {
+    if (v.estado_trayecto === 'ASIGNADO') return 'PENDIENTE_SALIDA'
+    if (v.estado_trayecto === 'EN_RUTA') return 'EN_RUTA'
+    if (v.estado_trayecto === 'ARRIBADO' || v.estado_trayecto === 'LLEGADO') return 'COMPLETADO'
+  }
+
+  if (p2 === 'CONCLUIDO_TOTAL') {
+    return 'PENDIENTE_CREACION'
+  }
+
+  return 'BLOQUEADO'
+})
+
+const proximaAccionFlujo = computed(() => {
+  const v = viajeActivo.value
+  const r = reportPrincipalPendiente.value
+  const p1 = estadoPaso1ViajeIda.value
+  const p2 = estadoPaso2ReportFaena.value
+  const p3 = estadoPaso3ViajeRetorno.value
+
+  // 1. VIAJE DE IDA PENDIENTE
+  if (p1 === 'PENDIENTE') {
+    return {
+      paso: 1,
+      titulo: '1. INICIAR VIAJE A FAENA ➔',
+      subtitulo: `Registra odómetro, horómetro camión y sal de base hacia ${v?.obra_nombre || 'la obra'}`,
+      badge: 'SALIDA DE PATIO',
+      color: 'amber-darken-2',
+      colorTexto: 'text-black',
+      icono: 'mdi-truck-fast-outline',
+      pulsar: true,
+      accion: () => abrirViajeNativo(v?.token_viaje)
+    }
+  }
+
+  // 2. VIAJE DE IDA EN RUTA
+  if (p1 === 'EN_RUTA') {
+    return {
+      paso: 1,
+      titulo: '1. EN RUTA A FAENA ➔ REGISTRAR LLEGADA ➔',
+      subtitulo: `Traslado en curso hacia ${v?.obra_nombre || 'faena'}. Registra odómetro, horómetro camión y horómetro grúa`,
+      badge: 'EN TRAYECTO',
+      color: 'info',
+      colorTexto: 'text-white',
+      icono: 'mdi-map-marker-path',
+      pulsar: true,
+      accion: () => abrirViajeNativo(v?.token_viaje)
+    }
+  }
+
+  // 3. FAENA: JORNADA EN CURSO -> FINALIZAR Y FIRMAR MANDANTE (MOMENTO 2 Y 3)
+  if (p2 === 'JORNADA_EN_CURSO' && r) {
+    return {
+      paso: 2,
+      titulo: `2. FINALIZAR FAENA & FIRMAR REPORT DÍA ${r.dia_a_reportar} ➔`,
+      subtitulo: `Jornada iniciada. Toca aquí para registrar horómetro final y firmar con mandante`,
+      badge: 'FAENA EN CURSO',
+      color: 'amber-darken-3',
+      colorTexto: 'text-white',
+      icono: 'mdi-file-document-edit-outline',
+      pulsar: true,
+      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo)
+    }
+  }
+
+  // 4. FAENA: INICIAR JORNADA (MOMENTO 1)
+  if (p2 === 'PENDIENTE_INICIO' && r) {
+    const esMultiDia = Number(r.dia_a_reportar) > 1
+    return {
+      paso: 2,
+      titulo: esMultiDia 
+        ? `2. INICIAR JORNADA DÍA ${r.dia_a_reportar} ➔` 
+        : `2. INICIAR JORNADA DE FAENA (DÍA ${r.dia_a_reportar}) ➔`,
+      subtitulo: esMultiDia
+        ? `Equipo en obra. Registra hora de inicio (horómetro de izaje heredado del cierre previo)`
+        : `Arribo cumplido. Toca para registrar horómetro inicial de izaje`,
+      badge: esMultiDia ? `DÍA ${r.dia_a_reportar} EN FAENA` : 'INICIO DE FAENA',
+      color: 'emerald-darken-1',
+      colorTexto: 'text-white',
+      icono: 'mdi-play-circle-outline',
+      pulsar: true,
+      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo)
+    }
+  }
+
+  // 5. RETORNO: SALIDA DE FAENA PENDIENTE
+  if (p3 === 'PENDIENTE_SALIDA' && v) {
+    return {
+      paso: 3,
+      titulo: '3. INICIAR VIAJE DE REGRESO A PATIO ➔',
+      subtitulo: 'Faena concluida. Registra salida de faena hacia patio Central San Pablo',
+      badge: 'RETORNO A BASE',
+      color: 'deep-purple-accent-3',
+      colorTexto: 'text-white',
+      icono: 'mdi-truck-cargo-container',
+      pulsar: true,
+      accion: () => abrirViajeNativo(v.token_viaje)
+    }
+  }
+
+  // 6. RETORNO: EN RUTA A PATIO
+  if (p3 === 'EN_RUTA' && v) {
+    return {
+      paso: 3,
+      titulo: '3. RETORNO EN RUTA ➔ REGISTRAR LLEGADA A BASE ➔',
+      subtitulo: 'Camino a Patio Central San Pablo. Toca aquí al ingresar a la base',
+      badge: 'RETORNO EN TRAYECTO',
+      color: 'cyan-darken-2',
+      colorTexto: 'text-white',
+      icono: 'mdi-map-marker-check',
+      pulsar: true,
+      accion: () => abrirViajeNativo(v.token_viaje)
+    }
+  }
+
+  // 7. RETORNO CUMPLIDO / SERVICIO CONCLUIDO
+  if (p3 === 'COMPLETADO') {
+    return {
+      paso: 3,
+      titulo: '🏆 ¡SERVICIO OPERACIONAL CONCLUIDO CON ÉXITO!',
+      subtitulo: 'Maquinaria recepcionada en Base Central San Pablo. El equipo ha quedado disponible.',
+      badge: 'CONCLUIDO',
+      color: 'emerald-darken-4',
+      colorTexto: 'text-emerald-200',
+      icono: 'mdi-check-decagram',
+      pulsar: false,
+      deshabilitado: true,
+      accion: () => {}
+    }
+  }
+
+  // 8. DÍA REPORTADO HOY, PERO CONTINÚA MAÑANA
+  if (p2 === 'AL_DIA_HOY') {
+    return {
+      paso: 2,
+      titulo: '✅ JORNADA DE HOY AL DÍA',
+      subtitulo: primerConcluido.value?.mensaje || 'Reporte del día sellado conforme. La faena continúa mañana.',
+      badge: 'AL DÍA',
+      color: 'slate-800',
+      colorTexto: 'text-slate-200',
+      icono: 'mdi-calendar-clock',
+      pulsar: false,
+      deshabilitado: true,
+      accion: () => {}
+    }
+  }
+
+  return null
+})
+
 // --- MÓDULO DE INSPECCIÓN AUTÓNOMA DE PATIO (TEMPLATE 79) ---
 const dialogPatio = ref(false)
 const cargandoEquiposPatio = ref(false)
@@ -787,12 +1081,36 @@ const consultarViajeActivo = async () => {
 const abrirViajeNativo = (token) => {
   if (!token) return
   const baseOrigin = window.location.origin
-  window.location.href = `${baseOrigin}/viaje/${token}`
+  const isProd = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/pwa-gsp-prod') ||
+    window.location.pathname.startsWith('/lg-gsp-prod')
+  )
+  const appPrefix = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
+  window.location.href = `${baseOrigin}${appPrefix}/viaje/${token}`
 }
 
-const abrirReportDiario = (idProyecto) => {
+const consultarReportsPendientes = async () => {
+  const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
+  if (!uid) return
+  try {
+    cargandoReportsPendientes.value = true
+    const { data } = await apiAxios.get('/reports/usuario/pendientes', { params: { id_user: uid } })
+    if (data?.success) {
+      reportsPendientes.value = data.pendientes || []
+      reportsConcluidos.value = data.concluidos || []
+      indiceReportSeleccionado.value = 0
+    }
+  } catch (err) {
+    console.warn('No se pudo consultar reports pendientes:', err)
+  } finally {
+    cargandoReportsPendientes.value = false
+  }
+}
+
+const abrirReportDiario = (idProyecto, idEquipo) => {
   if (!idProyecto) return
-  router.push(`/reportDiario?id_proyecto=${idProyecto}`)
+  const query = idEquipo ? `?id_proyecto=${idProyecto}&id_equipo=${idEquipo}` : `?id_proyecto=${idProyecto}`
+  router.push(`/reportDiario${query}`)
 }
 
 const filtros = ref([
@@ -1253,6 +1571,7 @@ onMounted(async () => {
   await getSurvey()
   await cargarNotificaciones()
   await consultarViajeActivo()
+  await consultarReportsPendientes()
 })
 
 watch(() => route.path, async () => {
@@ -1262,11 +1581,13 @@ watch(() => route.path, async () => {
   }
   await getSurvey()
   await consultarViajeActivo()
+  await consultarReportsPendientes()
 })
 
 watch(() => idUser.value, async (newVal) => {
   if (newVal) {
     await consultarViajeActivo()
+    await consultarReportsPendientes()
   }
 })
 
@@ -1373,6 +1694,16 @@ async function goToInspeccion(survey, tieneNotif) {
         }
       }
     } catch {}
+
+    // Si la encuesta está en VERIFICACION, redirigir directamente al flujo de firma electrónica
+    const esVerificacion = String(survey?.estado_srv || '').trim().toUpperCase() === 'VERIFICACION'
+    if (esVerificacion) {
+      await router.push({
+        path: '/firmaElectronica',
+        query: { id_survey: String(id) }
+      })
+      return
+    }
 
     await router.push({
       path: '/inspeccion',
@@ -1490,6 +1821,10 @@ async function getSurvey() {
         // Ocultar si está APROBADO o TERMINADO, a menos que verTerminados sea true
         const esTerminada = it.estado_srv === 'APROBADO' || it.estado_srv === 'TERMINADO' || it.estado_srv === 'Terminado'
         const coincideEstado = verTerminados.value || !esTerminada || (it.estado_srv === 'VERIFICACION' && esMiPasoPendiente)
+
+        // Template 500 (Consentimiento Informado FES): no mostrar en la bandeja operativa de terreno si ya está aprobado o sin paso pendiente
+        const esConsentimiento = Number(it.id_template) === 500 || it.desc_template_srv === 'Consentimiento'
+        if (esConsentimiento && (esTerminada || !esMiPasoPendiente)) return false
 
         return it.estado_srv !== 'Pre Creado' &&
           coincideEstado &&

@@ -244,7 +244,7 @@
       <!-- ESTADO 3: EN FAENA & EMISIÓN EXCLUSIVA DE REPORT DIARIO                   -->
       <!-- ========================================================================= -->
       <!-- ========================================================================= -->
-      <!-- ESTADO 3: EN FAENA (TRASLADO CUMPLIDO - GESTIÓN DE REPORT EN PWA)         -->
+      <!-- ESTADO 3: EN FAENA O RETORNADO A PATIO (TRASLADO CUMPLIDO)                -->
       <!-- ========================================================================= -->
       <div v-if="viaje.estado_viaje === 'ARRIBADO_FAENA'" class="space-y-4">
         
@@ -253,12 +253,30 @@
           <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/60 flex items-center justify-center mx-auto text-3xl">
             🏁
           </div>
-          <div class="space-y-1">
-            <h2 class="text-base font-black text-white uppercase tracking-wider font-mono">
+
+          <!-- CASO RETORNO: PATIO CENTRAL SAN PABLO -->
+          <div v-if="viaje.tipo_trayecto === 'RETORNO'" class="space-y-1">
+            <span class="text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded font-black tracking-wider">
+              SERVICIO OPERACIONAL CONCLUIDO
+            </span>
+            <h2 class="text-base font-black text-white uppercase tracking-wider font-mono mt-1">
+              Retorno a Base Central San Pablo Concluido
+            </h2>
+            <p class="text-xs text-slate-300">
+              La maquinaria <strong>{{ viaje.patente }}</strong> ha ingresado conforme a Patio Central San Pablo. El servicio ha finalizado con éxito y el equipo queda <strong>DISPONIBLE</strong>.
+            </p>
+          </div>
+
+          <!-- CASO IDA: ARRIBADO A FAENA MANDANTE -->
+          <div v-else class="space-y-1">
+            <span class="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-0.5 rounded font-black tracking-wider">
+              PASO 1 CUMPLIDO • LISTO PARA OPERAR
+            </span>
+            <h2 class="text-base font-black text-white uppercase tracking-wider font-mono mt-1">
               Traslado de Convoy Arribado a Faena
             </h2>
             <p class="text-xs text-slate-300">
-              El equipo <strong>{{ viaje.patente }}</strong> se encuentra posicionado en la obra <strong>{{ viaje.obra_nombre }}</strong>. El hito comercial de traslado ha sido cumplido con éxito.
+              El equipo <strong>{{ viaje.patente }}</strong> se encuentra posicionado en la obra <strong>{{ viaje.obra_nombre }}</strong>. Tu siguiente paso es iniciar el Report Diario de Faena.
             </p>
           </div>
 
@@ -277,15 +295,35 @@
             </div>
           </div>
 
-          <!-- BOTÓN DE RETORNO A PWA PARA REPORT DIARIO -->
-          <div class="pt-2">
+          <!-- BOTONES DE ACCIÓN SEGÚN TIPO DE TRAYECTO -->
+          <div class="pt-2 space-y-2">
+            <!-- Si es Retorno: volver a la PWA / Menú Principal -->
             <a
-              :href="urlRetornoReport"
+              v-if="viaje.tipo_trayecto === 'RETORNO'"
+              :href="urlHomePwa"
               class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 no-underline cursor-pointer"
             >
-              <span>🚜</span>
-              <span>IR A LA PWA / REGISTRAR REPORT DIARIO ➔</span>
+              <span>🏠</span>
+              <span>VOLVER A MIS SERVICIOS (MENÚ PRINCIPAL) ➔</span>
             </a>
+
+            <!-- Si es Ida: avanzar al Report Diario de Faena -->
+            <template v-else>
+              <a
+                :href="urlRetornoReport"
+                class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 no-underline cursor-pointer"
+              >
+                <span>📋</span>
+                <span>PASO 2: INICIAR REPORT DIARIO DE FAENA ➔</span>
+              </a>
+              <a
+                :href="urlHomePwa"
+                class="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-[11px] uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-1.5 border border-white/10 no-underline cursor-pointer"
+              >
+                <span>🏠</span>
+                <span>Volver al Menú Principal</span>
+              </a>
+            </template>
           </div>
         </div>
 
@@ -625,8 +663,18 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro de Llegada (HRS) *</label>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro Camión / Chasis Llegada (HRS) *</label>
             <input type="number" step="0.1" v-model="formLlegada.horometro" placeholder="Ej: 3248.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
+          </div>
+
+          <!-- Horómetro Grúa / Superestructura Inicial (Solo en Llegada a Faena, no en Retorno) -->
+          <div v-if="viaje.tipo_trayecto !== 'RETORNO'" class="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 space-y-1">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-amber-300 uppercase tracking-wide">⚙️ Horómetro Grúa / Superestructura (Inicio Faena) *</label>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">Línea base izaje</span>
+            </div>
+            <p class="text-[11px] text-slate-300">Lectura inicial de la superestructura antes de posicionar estabilizadores.</p>
+            <input type="number" step="0.1" v-model="formLlegada.horometro_grua" placeholder="Ej: 1250.0" class="w-full bg-[#050810] border border-amber-500/60 rounded-xl px-3 py-3 text-base text-amber-300 font-mono font-bold outline-none focus:border-amber-400" />
           </div>
 
           <!-- Control de Combustible Llegada (Explícito según equipo) -->
@@ -886,6 +934,7 @@ const formSalida = ref({
 const formLlegada = ref({
   odometro: '',
   horometro: '',
+  horometro_grua: '',
   combustible_chasis: '',
   combustible_grua: '',
   foto_combustible: '',
@@ -955,6 +1004,15 @@ const urlRetornoReport = computed(() => {
   return `${window.location.origin}${pwaPrefix}/#/surveys`
 })
 
+const urlHomePwa = computed(() => {
+  const isProd = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/lg-gsp-prod') ||
+    window.location.pathname.startsWith('/pwa-gsp-prod')
+  )
+  const pwaPrefix = isProd ? '/pwa-gsp-prod' : '/pwa-gsp-dev'
+  return `${window.location.origin}${pwaPrefix}/#/surveys`
+})
+
 const proximoDiaCorrelativo = computed(() => {
   return (viaje.value.reportes_diarios && viaje.value.reportes_diarios.length) 
     ? viaje.value.reportes_diarios.length + 1 
@@ -1007,7 +1065,7 @@ const isFormReportValido = computed(() => {
 
 const abrirFormularioReport = () => {
   const dia = proximoDiaCorrelativo.value
-  let horoInicio = viaje.value.horometro_llegada || viaje.value.horometro_salida || 3248.5
+  let horoInicio = viaje.value.horometro_grua_llegada || viaje.value.horometro_llegada || viaje.value.horometro_salida || 3248.5
   if (viaje.value.reportes_diarios && viaje.value.reportes_diarios.length > 0) {
     const ultimo = viaje.value.reportes_diarios[viaje.value.reportes_diarios.length - 1]
     if (ultimo.horometro_final) horoInicio = ultimo.horometro_final
@@ -1155,6 +1213,9 @@ const isFormLlegadaValido = computed(() => {
                      formLlegada.value.pin.length === 4 &&
                      Boolean(formLlegada.value.combustible_chasis?.trim()) &&
                      Boolean(formLlegada.value.foto_combustible)
+  if (viaje.value.tipo_trayecto !== 'RETORNO' && !formLlegada.value.horometro_grua) {
+    return false
+  }
   if (esGruaBimotor.value) {
     return baseValida && Boolean(formLlegada.value.combustible_grua?.trim())
   }

@@ -601,6 +601,12 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Mesa ITS (`itsController.js`):** Proyección de reportes regularizados con `tipo_respaldo = 'FISICO_MANUAL'` y `url_comprobante`, vinculación fluida en grilla de jornadas ITS y preservación de tarifas de propuesta.
   - **Pestaña 6 CRM (`GestorOportunidades.vue` & `ModalVisorReport.vue`):** Botón `[ ➕ Regularizar Reporte Físico ]`, badges cromáticos de estado (`📄 Doc Físico OK`, `⚠️ Regularizado Manual`), modales dedicados para adjuntar evidencia física escaneada y apertura directa de documentos. `CONCLUIDO Y VERIFICADO EN DEV Y PROD`.
 * [ ] **[REQ-994] Cotizador Express Móvil en PWA (Spec 64):** Módulo mobile-first para cotizar servicios de izaje en terreno en menos de 60 segundos con despacho directo a WhatsApp y validez estricta de 5 días hábiles. `ESPECIFICADO (Spec 64)`.
+* [x] **[REQ-1001] Optimización Cinemática de Viaje y Report Multi-Día (Spec 49 v1.1.0):**
+  - **Matriz Canónica de Instrumentos 5x3:** Salida (Odómetro + Horómetro Camión), Llegada (Odómetro + Horómetro Camión + Horómetro Grúa), Término (Horómetro Grúa + Hora Término + Firma), Retorno (Odómetro + Horómetro Camión) y Llegada a Base (Odómetro + Horómetro Camión + Combustible).
+  - **Hoja de Conductor (`ViajeConductor.vue`):** Ajuste de campos según matriz en las 4 instancias de ruta, ocultando horómetro de grúa en ruta y habilitando horómetro inicial de grúa exclusivamente al arribar a faena.
+  - **Report Diario (`ReportDiarioIzaje.vue`):** Erradicación total de campos y fotos de odómetro en faena. Día 1: toma inicio de grúa desde llegada. Día > 1: inicio de faena solo registra tiempo (Hora de Inicio) con herencia automática de horómetro previo. Término: solo Hora Término, Horómetro Grúa y firma mandante.
+  - **Consola Maestra PWA (`Surveys.vue`):** Desbloqueo de Retorno a Base condicionado estrictamente al último report planificado (`dia_correlativo === dias_planificados`). En días intermedios, mantener estado en espera de próxima jornada en faena.
+  - **Backend API:** Normalización de esquemas y payloads en `viajeController.js`, `reportDiarioController.js`, `tequ_log_desplazamiento` y `tedp_reporte_avance`. `CONCLUIDO Y VERIFICADO`.
 
 ---
 

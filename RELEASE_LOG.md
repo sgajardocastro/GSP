@@ -2,6 +2,29 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.98
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 16:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1001`
+- **Especificación Técnica:** Optimización Cinemática de Hoja de Ruta, Matriz Canónica de Instrumentos 5x3 y Flujo Multi-Día en Terreno (`Spec 49 v1.1.0`): Erradicación de odómetro en faena, herencia automática de horómetro de superestructura en días intermedios, habilitación de Horómetro Grúa en Llegada a Faena y Candado Duro de Retorno a Base (`viajeModel.js`, `viajeController.js`, `reportDiarioController.js`, `ViajeConductor.vue`, `ReportDiarioIzaje.vue`, `Surveys.vue`, `tequ_log_desplazamiento`)
+- **Detalle de Mejoras y Cambios:**
+  - **[BASE DE DATOS / DDL - REQ-1001]:** Incorporación de columna `horometro_grua_inicial numeric` en tabla `tequ_log_desplazamiento` tanto en esquemas `sch_leangsp` (DEV) como `sch_leangsp_prod` (PROD).
+  - **[BACKEND / TRASLADO & HANDOFF - REQ-1001] Persistencia y Pre-carga de Grúa (`viajeModel.js` & `viajeController.js`):**
+    - `registrarLlegada` persiste formalmente `horometro_grua_inicial` en el log de desplazamiento carretero.
+    - `procesarHandoffTraslado` pre-inicializa de inmediato el `horometro_inicio` de la grúa en `tedp_reporte_avance` al certificar la llegada del convoy a la faena del cliente mandante.
+  - **[BACKEND / REPORT - REQ-1001] Contexto de Flota Precargado (`reportDiarioController.js`):**
+    - `getReportContexto` incluye `v.horometro_grua_inicial AS horometro_grua_llegada` en `eqSql`, priorizando dicha lectura para sugerir el horómetro inicial del izaje en el Día 1.
+  - **[FRONTEND WEB / HOJA DE CONDUCTOR - REQ-1001] Ergonomía de Cabina (`ViajeConductor.vue`):**
+    - Modal de Llegada solicita `horometro_grua` (Horómetro de Superestructura) únicamente cuando el convoy arriba a faena (`tipo_trayecto !== 'RETORNO'`), manteniéndolo oculto en salida y ruta.
+    - Pre-carga automática de la grúa en la apertura del formulario de report diario.
+  - **[PWA / REPORT DIARIO - REQ-1001] Erradicación de Odómetro y Flujo Multi-Día (`ReportDiarioIzaje.vue`):**
+    - Erradicación total de inputs y fotografías de odómetro en faena (Momento 1 y Momento 2), eliminando fricción con el supervisor/mandante en obra que solo fiscaliza horas de grúa.
+    - Soporte multi-día para Día > 1: el equipo pernocta en la obra y no registra desplazamiento cinemático; el operador cuenta con botón de inicio rápido que solo estampa la hora de inicio y hereda automáticamente el horómetro de superestructura del día previo sin requerir fotografías obligatorias de inicio.
+  - **[PWA / CONSOLA MAESTRA - REQ-1001] Desbloqueo Condicional de Retorno (`Surveys.vue`):**
+    - `proximaAccionFlujo` y `estadoPaso3ViajeRetorno` mantienen el Retorno a Base en estado de espera en días intermedios (`dia_a_reportar < dias_planificados`), habilitando el Retorno únicamente al concluir el último report planificado.
+
 ## [Portal Web GSP] - Versión 1.0.97
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-06 14:30:00 (-03:00)

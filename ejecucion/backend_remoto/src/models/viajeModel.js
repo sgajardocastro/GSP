@@ -444,7 +444,7 @@ const viajeModel = {
   },
 
   // 4. Registrar Llegada a Faena o Llegada a Patio (Paso 3)
-  async registrarLlegada({ token_viaje, km_final, horometro_final, combustible_llegada, foto_llegada, pin_hash, latitud, longitud, obs_termino, device_timestamp }) {
+  async registrarLlegada({ token_viaje, km_final, horometro_final, horometro_grua_inicial, combustible_llegada, foto_llegada, pin_hash, latitud, longitud, obs_termino, device_timestamp }) {
     const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
     const sql = `
       UPDATE tequ_log_desplazamiento
@@ -462,8 +462,9 @@ const viajeModel = {
         longitud_llegada_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN $7 ELSE longitud_llegada_patio END,
         obs_termino = $8,
         combustible_llegada = $9,
+        horometro_grua_inicial = COALESCE($10, horometro_grua_inicial),
         estado_trayecto = CASE WHEN tipo_trayecto = 'RETORNO' THEN 'CONCLUIDO' ELSE 'ARRIBADO' END
-      WHERE token_viaje = $10
+      WHERE token_viaje = $11
       RETURNING *;
     `;
     const res = await db.query(sql, [
@@ -476,6 +477,7 @@ const viajeModel = {
       longitud || null,
       obs_termino || 'Arribo verificado con éxito',
       combustible_llegada ? JSON.stringify(combustible_llegada) : null,
+      horometro_grua_inicial || null,
       token_viaje
     ]);
     if (res.rows.length === 0) throw new Error('Viaje no encontrado para registrar llegada');
@@ -657,7 +659,14 @@ const viajeModel = {
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
       WHERE v.id_user_chofer = $1
-      ORDER BY v.id_log_desplazamiento DESC
+      ORDER BY 
+        CASE 
+          WHEN v.tipo_trayecto = 'RETORNO' AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA') THEN 1
+          WHEN v.tipo_trayecto = 'IDA' AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA') THEN 2
+          WHEN v.tipo_trayecto = 'RETORNO' AND v.estado_trayecto = 'LLEGADO' THEN 4
+          ELSE 3
+        END ASC,
+        v.id_log_desplazamiento DESC
       LIMIT 1;
     `;
     const res = await db.query(sql, [id_user]);

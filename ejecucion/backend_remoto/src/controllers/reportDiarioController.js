@@ -112,11 +112,12 @@ const reportDiarioController = {
           v.km_inicial,
           v.km_final,
           v.horometro_inicial AS horometro_viaje_salida,
-          v.horometro_final AS horometro_viaje_llegada
+          v.horometro_final AS horometro_viaje_llegada,
+          v.horometro_grua_inicial AS horometro_grua_llegada
         FROM tpry_rel_equipo re
         JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
         LEFT JOIN LATERAL (
-          SELECT estado_trayecto, token_viaje, km_inicial, km_final, horometro_inicial, horometro_final
+          SELECT estado_trayecto, token_viaje, km_inicial, km_final, horometro_inicial, horometro_final, horometro_grua_inicial
           FROM tequ_log_desplazamiento
           WHERE id_proyecto = re.id_proyecto AND id_equipo = re.id_equipo
           ORDER BY id_log_desplazamiento DESC
@@ -232,7 +233,9 @@ const reportDiarioController = {
       } else if (targetIdEquipo) {
         const eqMatch = equipos.find(e => Number(e.id_equipo) === targetIdEquipo);
         if (eqMatch) {
-          if (eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida) {
+          if (eqMatch.horometro_grua_llegada) {
+            horometroSugerido = Number(eqMatch.horometro_grua_llegada);
+          } else if (eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida) {
             horometroSugerido = Number(eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida);
           } else if (eqMatch.horometro_base) {
             horometroSugerido = Number(eqMatch.horometro_base);
