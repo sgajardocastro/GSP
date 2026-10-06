@@ -794,6 +794,17 @@ const reportDiarioController = {
           if (eqRes.rows.length > 0) patente = eqRes.rows[0].patente;
         }
 
+        // Verificar si hoy ya hay una jornada en curso (Momento 1 guardado)
+        const jEnCursoRes = await db.query(
+          `SELECT id_reporte_avance, dia_correlativo, fecha_inicio_servicio, horometro_inicio
+           FROM tedp_reporte_avance
+           WHERE id_proyecto = $1 
+             AND (estado_reporte = 'JORNADA_EN_CURSO' OR estado_jornada = 'JORNADA_EN_CURSO')
+           ORDER BY id_reporte_avance DESC LIMIT 1`,
+          [r.id_proyecto]
+        );
+        const jornadaEnCurso = jEnCursoRes.rows.length > 0;
+
         const item = {
           id_proyecto: r.id_proyecto,
           codi_proyecto: r.codi_proyecto,
@@ -807,10 +818,20 @@ const reportDiarioController = {
           dias_reportados: cantReportes,
           dia_a_reportar: cantReportes + 1,
           reportado_hoy: reportadoHoy,
+          jornada_en_curso: jornadaEnCurso,
+          jornada_datos: jornadaEnCurso ? jEnCursoRes.rows[0] : null,
           estado_trayecto: r.estado_trayecto || 'ARRIBADO'
         };
 
-        if (cantReportes >= totalDias) {
+        if (jornadaEnCurso) {
+          item.puede_reportar = true;
+          item.motivo = 'JORNADA_EN_CURSO';
+          const horaIniStr = jEnCursoRes.rows[0].fecha_inicio_servicio 
+            ? new Date(jEnCursoRes.rows[0].fecha_inicio_servicio).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) 
+            : '08:00';
+          item.mensaje = `Jornada en curso (iniciada ${horaIniStr}). Pendiente registrar término y firmar report con mandante.`;
+          pendientes.push(item);
+        } else if (cantReportes >= totalDias) {
           item.puede_reportar = false;
           item.motivo = 'SERVICIO_CONCLUIDO';
           item.mensaje = `Faena concluida (${cantReportes} de ${totalDias} días reportados).`;
@@ -1956,6 +1977,328 @@ const reportDiarioController = {
       res.json(resultado);
     } catch (err) {
       console.error('[SLA] Error al ejecutar alertas de SLA:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // 9. Normalización de Evidencias Físicas: Adjuntar documento escaneado/foto firmado por mandante
+  async adjuntarRespaldoFisico(req, res) {
+    try {
+      const { id } = req.params;
+      const { id_doc, notas_evidencia, id_user } = req.body || {};
+
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'id_reporte_avance es requerido' });
+      }
+
+      // 1. Obtener reporte existente
+      const repRes = await db.query(`
+        SELECT r.*, p.codi_proyecto
+        FROM tedp_reporte_avance r
+        JOIN tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+        WHERE r.id_reporte_avance = $1
+      `, [id]);
+
+      if (repRes.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Reporte no encontrado' });
+      }
+      const rep = repRes.rows[0];
+
+      let idDocFinal = id_doc ? parseInt(id_doc, 10) : null;
+      let archivoInfo = null;
+      const idUserValidador = id_user || req.user?.id_user || 55;
+
+      // 2. Si se subió un archivo físico
+      const uploadedFile = req.files?.archivo || req.files?.file;
+      if (uploadedFile) {
+        const path_relativo = buildStoragePath('GSP', 'reports');
+        const targetDir = path.join(STORAGE_ROOT, path_relativo);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const ext = path.extname(uploadedFile.name) || '.pdf';
+        const fileName = `Respaldo_Fisico_OT_${rep.codi_proyecto || rep.id_proyecto}_D${rep.dia_correlativo || 1}_${Date.now()}${ext}`;
+        const filePath = path.join(targetDir, fileName);
+
+        if (uploadedFile.mv) {
+          await uploadedFile.mv(filePath);
+        } else if (uploadedFile.data) {
+          fs.writeFileSync(filePath, uploadedFile.data);
+        }
+
+        const archivoM = new archivoModel();
+        const docFile = await archivoM.insertarTfmgFile(
+          'REPORT_FISICO_RESPALDO',
+          uploadedFile.mimetype || 'application/pdf',
+          uploadedFile.name || fileName,
+          fileName,
+          path_relativo,
+          idUserValidador,
+          'A'
+        );
+        idDocFinal = docFile.id_doc;
+        archivoInfo = docFile;
+      }
+
+      if (!idDocFinal) {
+        return res.status(400).json({ success: false, error: 'Debe adjuntar un archivo (PDF/imagen) o indicar id_doc' });
+      }
+
+      // 3. Actualizar tedp_reporte_avance a VALIDADO_ANALISTA con respaldo físico
+      const nowIso = new Date().toISOString();
+      const ajustesActuales = typeof rep.ajustes_analista === 'object' && rep.ajustes_analista !== null ? rep.ajustes_analista : {};
+      const nuevosAjustes = {
+        ...ajustesActuales,
+        evidencia_fisica_adjunta: true,
+        requiere_evidencia_fisica: false,
+        fecha_evidencia_adjuntada: nowIso,
+        id_doc_evidencia: idDocFinal,
+        usuario_adjunto: req.user?.name_frst ? `${req.user.name_frst} ${req.user.apellido_pat || ''}`.trim() : (req.user?.email || 'Control Gestión'),
+        notas_evidencia: notas_evidencia || 'Respaldo físico digitalizado y verificado conforme'
+      };
+
+      const upRes = await db.query(`
+        UPDATE tedp_reporte_avance
+        SET id_doc_pdf = $1,
+            estado_reporte = 'VALIDADO_ANALISTA',
+            estado_jornada = 'CONCLUIDO',
+            fecha_validacion = COALESCE(fecha_validacion, CURRENT_TIMESTAMP),
+            id_user_validador = COALESCE(id_user_validador, $2),
+            obs_validador = COALESCE(obs_validador, $3),
+            ajustes_analista = $4
+        WHERE id_reporte_avance = $5
+        RETURNING *;
+      `, [
+        idDocFinal,
+        idUserValidador,
+        notas_evidencia || 'Validado mediante respaldo físico escaneado',
+        JSON.stringify(nuevosAjustes),
+        id
+      ]);
+
+      const repActualizado = upRes.rows[0];
+
+      // 4. Registrar en dossier_documentos de la OT
+      try {
+        const proyRes = await db.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [rep.id_proyecto]);
+        if (proyRes.rows.length > 0) {
+          const jf = proyRes.rows[0].json_field || {};
+          if (!jf.ejecucion_v1) jf.ejecucion_v1 = {};
+          if (!Array.isArray(jf.ejecucion_v1.dossier_documentos)) jf.ejecucion_v1.dossier_documentos = [];
+          jf.ejecucion_v1.dossier_documentos.push({
+            id_doc: idDocFinal,
+            tipo_documento: 'REPORT_FISICO_RESPALDO',
+            titulo: `Respaldo Físico Reporte Día ${rep.dia_correlativo || 1} (OT ${rep.codi_proyecto || rep.id_proyecto})`,
+            nombre_archivo: archivoInfo?.name_doc_orig || `Respaldo_D${rep.dia_correlativo}.pdf`,
+            url_vista: `/api/v1/storage/view/${idDocFinal}`,
+            url_descarga: `/api/v1/storage/download/${idDocFinal}`,
+            fecha_adjunto: nowIso
+          });
+          await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), rep.id_proyecto]);
+        }
+      } catch (errDossier) {
+        console.warn('[Dossier] No se pudo agregar al dossier:', errDossier.message);
+      }
+
+      res.json({
+        success: true,
+        message: 'Respaldo físico adjuntado y reporte validado exitosamente',
+        data: repActualizado
+      });
+    } catch (err) {
+      console.error('[Adjuntar Respaldo] Error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // 10. Regularización Directa Manual de Reporte Físico (Pestaña 6 o API)
+  async regularizarReporteManual(req, res) {
+    try {
+      const {
+        id_proyecto,
+        id_equipo,
+        id_user_operador,
+        dia_correlativo,
+        fecha_reporte,
+        hora_inicio,
+        hora_termino,
+        horas_colacion,
+        horas_minimas,
+        horometro_inicio,
+        horometro_termino,
+        odometro_inicio,
+        odometro_termino,
+        cliente_nombre,
+        cliente_cargo,
+        observacion_trabajo,
+        motivo
+      } = req.body || {};
+
+      if (!id_proyecto || !fecha_reporte) {
+        return res.status(400).json({ success: false, error: 'id_proyecto y fecha_reporte son requeridos' });
+      }
+
+      // Validar proyecto
+      const pRes = await db.query('SELECT id_proyecto, codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+      if (pRes.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+      }
+      const proyecto = pRes.rows[0];
+
+      // Determinar equipo y operador
+      let finalEqId = parseInt(id_equipo, 10) || null;
+      if (!finalEqId) {
+        const eqRes = await db.query('SELECT id_equipo FROM tpry_rel_equipo WHERE id_proyecto = $1 LIMIT 1', [id_proyecto]);
+        finalEqId = eqRes.rows[0]?.id_equipo || 35;
+      }
+
+      let finalOpId = parseInt(id_user_operador, 10) || null;
+      if (!finalOpId) {
+        const uRes = await db.query(`
+          SELECT u.id_user FROM tpry_rel_persona rp 
+          JOIN tsec_users u ON rp.id_user = u.id_user 
+          WHERE rp.id_proyecto = $1 AND (UPPER(rp.rol_asignado) LIKE '%OPERADOR%' OR UPPER(rp.rol_asignado) LIKE '%CHOFER%')
+          LIMIT 1
+        `, [id_proyecto]);
+        finalOpId = uRes.rows[0]?.id_user || 53;
+      }
+
+      // Determinar correlativo
+      let diaCorr = parseInt(dia_correlativo, 10) || 0;
+      if (!diaCorr) {
+        const maxD = await db.query('SELECT COALESCE(MAX(dia_correlativo), 0) + 1 as next_d FROM tedp_reporte_avance WHERE id_proyecto = $1', [id_proyecto]);
+        diaCorr = parseInt(maxD.rows[0]?.next_d || 1, 10);
+      }
+
+      // Calcular horas
+      const hIni = hora_inicio || '08:00';
+      const hFin = hora_termino || '18:00';
+      const tsIni = `${fecha_reporte} ${hIni}:00`;
+      const tsFin = `${fecha_reporte} ${hFin}:00`;
+
+      const diffMin = Math.max(0, (new Date(tsFin) - new Date(tsIni)) / 60000);
+      const colac = parseFloat(horas_colacion !== undefined ? horas_colacion : 1.0);
+      const operadas = Math.max(0, parseFloat(((diffMin - colac * 60) / 60).toFixed(2)));
+      const minimas = parseFloat(horas_minimas || 8.0);
+      const facturables = Math.max(operadas, minimas);
+      const sobretiempo = Math.max(0, parseFloat((operadas - minimas).toFixed(2)));
+
+      // Procesar archivo si viene adjunto en la misma solicitud
+      let idDocFinal = null;
+      const uploadedFile = req.files?.archivo || req.files?.file;
+      if (uploadedFile) {
+        const path_relativo = buildStoragePath('GSP', 'reports');
+        const targetDir = path.join(STORAGE_ROOT, path_relativo);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+        const ext = path.extname(uploadedFile.name) || '.pdf';
+        const fileName = `Respaldo_Fisico_OT_${proyecto.codi_proyecto || proyecto.id_proyecto}_D${diaCorr}_${Date.now()}${ext}`;
+        const filePath = path.join(targetDir, fileName);
+
+        if (uploadedFile.mv) {
+          await uploadedFile.mv(filePath);
+        } else if (uploadedFile.data) {
+          fs.writeFileSync(filePath, uploadedFile.data);
+        }
+
+        const archivoM = new archivoModel();
+        const docFile = await archivoM.insertarTfmgFile(
+          'REPORT_FISICO_RESPALDO',
+          uploadedFile.mimetype || 'application/pdf',
+          uploadedFile.name || fileName,
+          fileName,
+          path_relativo,
+          req.user?.id_user || 55,
+          'A'
+        );
+        idDocFinal = docFile.id_doc;
+      }
+
+      const tieneDoc = Boolean(idDocFinal);
+      const estadoReporte = tieneDoc ? 'VALIDADO_ANALISTA' : 'REGULARIZADO_MANUAL';
+      const tokenReport = `REG-${id_proyecto}-D${diaCorr}-${Date.now().toString().slice(-4)}`;
+
+      const ajustesAnalista = {
+        origen: 'REGULARIZACION_MANUAL_PMO',
+        regularizado_manual: true,
+        requiere_evidencia_fisica: !tieneDoc,
+        evidencia_fisica_adjunta: tieneDoc,
+        id_doc_evidencia: idDocFinal,
+        modificado_por: req.user?.name_frst ? `${req.user.name_frst} ${req.user.apellido_pat || ''}`.trim() : (req.user?.email || 'Control Gestión'),
+        fecha_regularizacion: new Date().toISOString(),
+        motivo: motivo || 'Carga manual directa de reporte físico'
+      };
+
+      const insSql = `
+        INSERT INTO tedp_reporte_avance (
+          id_proyecto,
+          id_equipo,
+          id_user_operador,
+          dia_correlativo,
+          fecha_reporte,
+          unidad_cobro,
+          fecha_inicio_servicio,
+          fecha_termino_servicio,
+          horas_operadas,
+          horas_facturables,
+          horas_sobretiempo,
+          horas_colacion,
+          horas_minimas,
+          horometro_inicio,
+          horometro_termino,
+          odometro_inicio,
+          odometro_termino,
+          cliente_nombre,
+          cliente_cargo,
+          observacion_trabajo,
+          token_report,
+          estado_reporte,
+          estado_jornada,
+          id_doc_pdf,
+          ajustes_analista,
+          fecha_registro,
+          fecha_validacion
+        ) VALUES (
+          $1, $2, $3, $4, $5, 'HRS_DIA', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'CONCLUIDO', $22, $23, CURRENT_TIMESTAMP, $24
+        ) RETURNING *;
+      `;
+
+      const result = await db.query(insSql, [
+        id_proyecto,
+        finalEqId,
+        finalOpId,
+        diaCorr,
+        fecha_reporte,
+        tsIni,
+        tsFin,
+        operadas,
+        facturables,
+        sobretiempo,
+        colac,
+        minimas,
+        horometro_inicio || null,
+        horometro_termino || null,
+        odometro_inicio || null,
+        odometro_termino || null,
+        cliente_nombre || 'Cliente Mandante',
+        cliente_cargo || 'Supervisor Faena',
+        observacion_trabajo || 'Reporte regularizado físicamente',
+        tokenReport,
+        estadoReporte,
+        idDocFinal,
+        JSON.stringify(ajustesAnalista),
+        tieneDoc ? new Date().toISOString() : null
+      ]);
+
+      res.status(201).json({
+        success: true,
+        message: 'Reporte diario regularizado exitosamente',
+        data: result.rows[0]
+      });
+    } catch (err) {
+      console.error('[Regularizar Reporte Manual] Error:', err);
       res.status(500).json({ success: false, error: err.message });
     }
   }

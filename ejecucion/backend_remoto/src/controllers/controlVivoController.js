@@ -362,8 +362,25 @@ const controlVivoController = {
             (eq.tipo_equipo || '').toUpperCase().includes(kw) || (eq.rol_equipo || '').toUpperCase().includes(kw)
           );
 
-          // Helper de evaluación de actividad para el equipo
+          const getOverrideHito = (clave) => {
+            const byEq = p.json_field?.control_vivo_overrides?.[fechaConsulta]?.[String(eq.id_equipo)]?.[clave]
+                      || p.json_field?.control_vivo_overrides?.[fechaConsulta]?.[eq.id_equipo]?.[clave]
+                      || p.json_field?.control_vivo_overrides?.[fechaConsulta]?.['TODOS']?.[clave];
+            return byEq || null;
+          };
+
+          // Helper de evaluación de actividad para el equipo (con soporte de override administrativo)
           const evalActividadEq = (clave, nombre, planHoraStr, realHoraStr, ejecutado) => {
+            const ovr = getOverrideHito(clave);
+            let esOverride = false;
+            let modificadoPor = null;
+            if (ovr && ovr.hora_real) {
+              realHoraStr = ovr.hora_real;
+              ejecutado = true;
+              esOverride = true;
+              modificadoPor = ovr.modificado_por || 'YIARA';
+            }
+
             const planMins = parseHoraMinutos(planHoraStr);
             let realMins = realHoraStr ? parseHoraMinutos(realHoraStr) : null;
             let estado = 'azul';
@@ -410,7 +427,9 @@ const controlVivoController = {
               hora_real: realHoraStr || null,
               ejecutado: !!ejecutado,
               estado,
-              desvio_minutos: desvioMins
+              desvio_minutos: desvioMins,
+              override: esOverride,
+              modificado_por: modificadoPor
             };
           };
 
@@ -821,6 +840,272 @@ const controlVivoController = {
     } catch (err) {
       console.error('[Notificaciones Web] Error marcando todas leídas:', err);
       res.status(500).json({ error: err.message });
+    }
+  },
+
+  // 5. REQ-997 / Caso 2: Carga manual y corrección rápida de horas de hitos por Control de Gestión (Yiara / Adm)
+  async overrideHitoActividad(req, res) {
+    try {
+      const { id_proyecto, id_equipo, fecha, clave_actividad, hora_real, motivo } = req.body || {};
+      if (!id_proyecto || !clave_actividad || !hora_real) {
+        return res.status(400).json({ success: false, message: 'Faltan parámetros requeridos: id_proyecto, clave_actividad, hora_real' });
+      }
+
+      const nowChile = getChileTime();
+      const fechaOperativa = fecha || nowChile.toISOString().split('T')[0];
+      const modificadoPor = req.user?.name_frst ? `${req.user.name_frst} ${req.user.apellido_pat || ''}`.trim() : (req.user?.email || 'YIARA (Control Gestión)');
+      const eqIdKey = id_equipo ? String(id_equipo) : 'TODOS';
+
+      // 1. Obtener y actualizar json_field en tpry_proyecto
+      const proyRes = await pool.query(`SELECT json_field FROM ${SCHEMA}.tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
+      if (proyRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
+      }
+
+      let jsonField = proyRes.rows[0].json_field || {};
+      if (typeof jsonField === 'string') {
+        try { jsonField = JSON.parse(jsonField); } catch (e) { jsonField = {}; }
+      }
+
+      if (!jsonField.control_vivo_overrides) jsonField.control_vivo_overrides = {};
+      if (!jsonField.control_vivo_overrides[fechaOperativa]) jsonField.control_vivo_overrides[fechaOperativa] = {};
+      if (!jsonField.control_vivo_overrides[fechaOperativa][eqIdKey]) jsonField.control_vivo_overrides[fechaOperativa][eqIdKey] = {};
+
+      jsonField.control_vivo_overrides[fechaOperativa][eqIdKey][clave_actividad] = {
+        hora_real,
+        modificado_por: modificadoPor,
+        fecha_registro: nowChile.toISOString(),
+        motivo: motivo || 'Ajuste manual de Torre de Control'
+      };
+
+      await pool.query(`UPDATE ${SCHEMA}.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`, [JSON.stringify(jsonField), id_proyecto]);
+
+      // 2. Sincronización colateral no destructiva en tablas operativas para que aguas abajo (Conta, RRHH, ITS, EDP) tengan el dato
+      const tsHito = `${fechaOperativa} ${hora_real}:00`;
+      const eqIdNum = parseInt(id_equipo, 10) || 0;
+
+      if (clave_actividad === 'SALIDA_BASE') {
+        const vExist = await pool.query(
+          `SELECT id_log_desplazamiento FROM ${SCHEMA}.tequ_log_desplazamiento 
+           WHERE id_proyecto = $1 AND (id_equipo = $2 OR $2 = 0 OR id_equipo IS NULL) 
+             AND (fecha_salida_patio::date = $3 OR fecha_programada::date = $3 OR fecha_registro::date = $3)
+           LIMIT 1`,
+          [id_proyecto, eqIdNum, fechaOperativa]
+        ).catch(() => ({ rows: [] }));
+
+        if (vExist.rows.length > 0) {
+          await pool.query(
+            `UPDATE ${SCHEMA}.tequ_log_desplazamiento 
+             SET fecha_salida_patio = $1,
+                 device_timestamp_salida = COALESCE(device_timestamp_salida, $1::timestamptz),
+                 estado_trayecto = COALESCE(estado_trayecto, 'EN_RUTA')
+             WHERE id_log_desplazamiento = $2`,
+            [tsHito, vExist.rows[0].id_log_desplazamiento]
+          ).catch(() => {});
+        } else {
+          await pool.query(
+            `INSERT INTO ${SCHEMA}.tequ_log_desplazamiento (
+               id_proyecto, id_equipo, fecha_salida_patio, fecha_programada, estado_trayecto, token_viaje, fecha_registro
+             ) VALUES ($1, $2, $3, $4, 'EN_RUTA', $5, CURRENT_TIMESTAMP)`,
+            [id_proyecto, eqIdNum || null, tsHito, fechaOperativa, `vj-${id_proyecto}-${eqIdNum || 1}-${Date.now().toString().slice(-4)}`]
+          ).catch(() => {});
+        }
+      } else if (clave_actividad === 'LLEGADA_FAENA') {
+        const vExist = await pool.query(
+          `SELECT id_log_desplazamiento FROM ${SCHEMA}.tequ_log_desplazamiento 
+           WHERE id_proyecto = $1 AND (id_equipo = $2 OR $2 = 0 OR id_equipo IS NULL) 
+             AND (fecha_salida_patio::date = $3 OR fecha_programada::date = $3 OR fecha_registro::date = $3)
+           LIMIT 1`,
+          [id_proyecto, eqIdNum, fechaOperativa]
+        ).catch(() => ({ rows: [] }));
+
+        if (vExist.rows.length > 0) {
+          await pool.query(
+            `UPDATE ${SCHEMA}.tequ_log_desplazamiento 
+             SET fecha_llegada_faena = $1,
+                 device_timestamp_llegada = COALESCE(device_timestamp_llegada, $1::timestamptz),
+                 estado_trayecto = 'ARRIBADO'
+             WHERE id_log_desplazamiento = $2`,
+            [tsHito, vExist.rows[0].id_log_desplazamiento]
+          ).catch(() => {});
+        } else {
+          await pool.query(
+            `INSERT INTO ${SCHEMA}.tequ_log_desplazamiento (
+               id_proyecto, id_equipo, fecha_llegada_faena, fecha_programada, estado_trayecto, token_viaje, fecha_registro
+             ) VALUES ($1, $2, $3, $4, 'ARRIBADO', $5, CURRENT_TIMESTAMP)`,
+            [id_proyecto, eqIdNum || null, tsHito, fechaOperativa, `vj-${id_proyecto}-${eqIdNum || 1}-${Date.now().toString().slice(-4)}`]
+          ).catch(() => {});
+        }
+      } else if (clave_actividad === 'REPORT_INICIO' || clave_actividad === 'REPORT_TERMINO') {
+        // UPSERT determinista en tedp_reporte_avance
+        const rExist = await pool.query(
+          `SELECT id_reporte_avance, dia_correlativo, fecha_inicio_servicio, fecha_termino_servicio, 
+                  horas_minimas, horas_colacion, ajustes_analista, id_doc_pdf, estado_reporte, estado_jornada
+           FROM ${SCHEMA}.tedp_reporte_avance
+           WHERE id_proyecto = $1 
+             AND (fecha_reporte = $2 OR fecha_inicio_servicio::date = $2 OR fecha_registro::date = $2)
+             AND (id_equipo = $3 OR $3 = 0 OR id_equipo IS NULL)
+           ORDER BY id_reporte_avance DESC LIMIT 1`,
+          [id_proyecto, fechaOperativa, eqIdNum]
+        ).catch(() => ({ rows: [] }));
+
+        if (rExist.rows.length > 0) {
+          const row = rExist.rows[0];
+          let newInicio = clave_actividad === 'REPORT_INICIO' ? tsHito : (row.fecha_inicio_servicio ? new Date(row.fecha_inicio_servicio).toISOString() : `${fechaOperativa} 08:00:00`);
+          let newTermino = clave_actividad === 'REPORT_TERMINO' ? tsHito : (row.fecha_termino_servicio ? new Date(row.fecha_termino_servicio).toISOString() : null);
+
+          let horasOperadas = 0;
+          let horasFacturables = parseFloat(row.horas_minimas || 8.0);
+          let horasSobretiempo = 0;
+          let estadoJornada = row.estado_jornada || 'JORNADA_EN_CURSO';
+
+          if (newInicio && newTermino) {
+            const diffMin = Math.max(0, (new Date(newTermino) - new Date(newInicio)) / (1000 * 60));
+            const colacMin = parseFloat(row.horas_colacion || 1.0) * 60;
+            horasOperadas = Math.max(0, parseFloat(((diffMin - colacMin) / 60).toFixed(2)));
+            horasFacturables = Math.max(horasOperadas, parseFloat(row.horas_minimas || 8.0));
+            horasSobretiempo = Math.max(0, parseFloat((horasOperadas - parseFloat(row.horas_minimas || 8.0)).toFixed(2)));
+            estadoJornada = 'CONCLUIDO';
+          }
+
+          const nuevosAjustes = {
+            ...(row.ajustes_analista || {}),
+            origen: 'TORRE_CONTROL',
+            regularizado_manual: true,
+            requiere_evidencia_fisica: !row.id_doc_pdf,
+            ultimo_override: {
+              clave_actividad,
+              hora_real,
+              modificado_por: modificadoPor,
+              fecha: nowChile.toISOString()
+            }
+          };
+
+          await pool.query(
+            `UPDATE ${SCHEMA}.tedp_reporte_avance SET
+               fecha_inicio_servicio = $1,
+               fecha_termino_servicio = $2,
+               horas_operadas = $3,
+               horas_facturables = $4,
+               horas_sobretiempo = $5,
+               estado_jornada = $6,
+               ajustes_analista = $7
+             WHERE id_reporte_avance = $8`,
+            [
+              newInicio,
+              newTermino,
+              horasOperadas,
+              horasFacturables,
+              horasSobretiempo,
+              estadoJornada,
+              JSON.stringify(nuevosAjustes),
+              row.id_reporte_avance
+            ]
+          ).catch(errUp => console.warn('[Override Hito] Error actualizando reporte existente:', errUp.message));
+        } else {
+          // INSERT de nuevo reporte regularizado
+          let finalEqId = eqIdNum;
+          if (!finalEqId) {
+            const relEq = await pool.query(`SELECT id_equipo FROM ${SCHEMA}.tpry_rel_equipo WHERE id_proyecto = $1 LIMIT 1`, [id_proyecto]).catch(() => ({ rows: [] }));
+            finalEqId = relEq.rows[0]?.id_equipo || 35;
+          }
+
+          const relUser = await pool.query(
+            `SELECT u.id_user FROM ${SCHEMA}.tpry_rel_persona rp 
+             JOIN ${SCHEMA}.tsec_users u ON rp.id_user = u.id_user 
+             WHERE rp.id_proyecto = $1 
+               AND (UPPER(rp.rol_asignado) LIKE '%OPERADOR%' OR UPPER(rp.rol_asignado) LIKE '%CHOFER%')
+             LIMIT 1`,
+            [id_proyecto]
+          ).catch(() => ({ rows: [] }));
+          const finalOpId = relUser.rows[0]?.id_user || 53;
+
+          const dRes = await pool.query(`SELECT COALESCE(MAX(dia_correlativo), 0) + 1 AS next_dia FROM ${SCHEMA}.tedp_reporte_avance WHERE id_proyecto = $1`, [id_proyecto]).catch(() => ({ rows: [{ next_dia: 1 }] }));
+          const diaCorr = parseInt(dRes.rows[0]?.next_dia || 1, 10);
+
+          let newInicio = clave_actividad === 'REPORT_INICIO' ? tsHito : `${fechaOperativa} 08:00:00`;
+          let newTermino = clave_actividad === 'REPORT_TERMINO' ? tsHito : null;
+
+          let horasOperadas = 0;
+          let horasFacturables = 8.0;
+          let horasSobretiempo = 0;
+          let estadoJornada = 'JORNADA_EN_CURSO';
+
+          if (clave_actividad === 'REPORT_TERMINO') {
+            const diffMin = Math.max(0, (new Date(newTermino) - new Date(newInicio)) / (1000 * 60));
+            horasOperadas = Math.max(0, parseFloat(((diffMin - 60) / 60).toFixed(2)));
+            horasFacturables = Math.max(horasOperadas, 8.0);
+            horasSobretiempo = Math.max(0, parseFloat((horasOperadas - 8.0).toFixed(2)));
+            estadoJornada = 'CONCLUIDO';
+          }
+
+          const tokenReport = `REG-${id_proyecto}-D${diaCorr}-${Date.now().toString().slice(-4)}`;
+          const ajustesJson = {
+            origen: 'TORRE_CONTROL',
+            regularizado_manual: true,
+            requiere_evidencia_fisica: true,
+            modificado_por: modificadoPor,
+            fecha_regularizacion: nowChile.toISOString(),
+            motivo: motivo || 'Carga manual de horas desde Torre de Control'
+          };
+
+          await pool.query(
+            `INSERT INTO ${SCHEMA}.tedp_reporte_avance (
+               id_proyecto,
+               id_equipo,
+               id_user_operador,
+               dia_correlativo,
+               fecha_reporte,
+               unidad_cobro,
+               fecha_inicio_servicio,
+               fecha_termino_servicio,
+               horas_operadas,
+               horas_facturables,
+               horas_sobretiempo,
+               horas_colacion,
+               horas_minimas,
+               token_report,
+               estado_reporte,
+               estado_jornada,
+               ajustes_analista,
+               fecha_registro
+             ) VALUES (
+               $1, $2, $3, $4, $5, 'HRS_DIA', $6, $7, $8, $9, $10, 1.0, 8.0, $11, 'REGULARIZADO_MANUAL', $12, $13, CURRENT_TIMESTAMP
+             )`,
+            [
+              id_proyecto,
+              finalEqId,
+              finalOpId,
+              diaCorr,
+              fechaOperativa,
+              newInicio,
+              newTermino,
+              horasOperadas,
+              horasFacturables,
+              horasSobretiempo,
+              tokenReport,
+              estadoJornada,
+              JSON.stringify(ajustesJson)
+            ]
+          ).catch(errIns => console.warn('[Override Hito] Error insertando reporte regularizado:', errIns.message));
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Hito ${clave_actividad} actualizado a las ${hora_real} exitosamente.`,
+        data: {
+          id_proyecto,
+          id_equipo,
+          fecha: fechaOperativa,
+          clave_actividad,
+          hora_real,
+          modificado_por: modificadoPor
+        }
+      });
+    } catch (err) {
+      console.error('[Override Hito] Error:', err);
+      res.status(500).json({ success: false, error: err.message });
     }
   }
 };

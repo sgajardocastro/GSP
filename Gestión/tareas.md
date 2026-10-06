@@ -595,6 +595,11 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Mesa ITS (`ModalITS.vue`):** Botones `[📄 + Doc Físico (Vía A)]` (`agregarJornadaDocFisico`) y `[⚖️ + Piso Mínimo (Vía B)]` (`agregarJornadaPisoMinimo`). Badges cromáticos `🟢 FES`, `📄 Doc Físico`, `⚖️ Piso Mín.`.
   - **PDF Oficial ITS (`itsPdfService.js`):** Sello `[📄 DOC FÍSICO REGULARIZADO]` con anexo documental o `[⚖️ PISO MÍNIMO CONTRACTUAL (STANDBY)]` citando cláusula de horas mínimas contractuales.
   - **Centro Documentación y Política Nº 04:** Portal centralizado y política formal de excepciones desplegados. `CONCLUIDO Y VERIFICADO`.
+* [x] **[Cierre E2E Torre de Control ➔ Pestaña 6 CRM ➔ Evidencia Física ➔ Mesa ITS - REQ-1000 / v1.0.97]:**
+  - **Torre de Control (`controlVivoController.js`):** Upsert automático en `tedp_reporte_avance` ante ingreso manual de horas en Torre de Control con cálculo de horas operadas, facturables, sobretiempo y flag `requiere_evidencia_fisica = true`. Corrección de sincronización de `tequ_log_desplazamiento`.
+  - **Gestión Documental de Terreno (`reportDiarioController.js` & `reportDiarioRoutes.js`):** Endpoints `POST /api/operaciones/report/:id/adjuntar-respaldo-fisico` y `POST /api/operaciones/report/regularizar-manual` para normalizar respaldos escaneados/fotográficos y asociar `id_doc_pdf` con cambio de estado a `VALIDADO_ANALISTA`.
+  - **Mesa ITS (`itsController.js`):** Proyección de reportes regularizados con `tipo_respaldo = 'FISICO_MANUAL'` y `url_comprobante`, vinculación fluida en grilla de jornadas ITS y preservación de tarifas de propuesta.
+  - **Pestaña 6 CRM (`GestorOportunidades.vue` & `ModalVisorReport.vue`):** Botón `[ ➕ Regularizar Reporte Físico ]`, badges cromáticos de estado (`📄 Doc Físico OK`, `⚠️ Regularizado Manual`), modales dedicados para adjuntar evidencia física escaneada y apertura directa de documentos. `CONCLUIDO Y VERIFICADO EN DEV Y PROD`.
 * [ ] **[REQ-994] Cotizador Express Móvil en PWA (Spec 64):** Módulo mobile-first para cotizar servicios de izaje en terreno en menos de 60 segundos con despacho directo a WhatsApp y validez estricta de 5 días hábiles. `ESPECIFICADO (Spec 64)`.
 
 ---

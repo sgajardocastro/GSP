@@ -2,6 +2,28 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.97
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 14:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1000`
+- **Especificación Técnica:** Cierre de Brecha Operacional E2E: Ingesta Automática de Horas Manuales desde Torre de Control a Report Diario (`tedp_reporte_avance`), Normalización de Evidencias Físicas Escaneadas/Fotográficas en Pestaña 6 CRM, Visualización en Visor Digital y Proyección Fluida de Jornadas de Izaje a Mesa ITS (`controlVivoController.js`, `reportDiarioController.js`, `reportDiarioRoutes.js`, `itsController.js`, `GestorOportunidades.vue`, `ModalVisorReport.vue`)
+- **Detalle de Mejoras y Cambios:**
+  - **[BACKEND / TORRE - REQ-1000] Ingesta Automática y Upsert en Reporte Diario (`controlVivoController.js`):**
+    - Ante edición manual de `REPORT_INICIO` o `REPORT_TERMINO` en Torre de Control sin reporte previo, se ejecuta `UPSERT` en `tedp_reporte_avance` calculando `horas_operadas`, `horas_facturables` y `horas_sobretiempo`, asignando token oficial `REG-${id_proyecto}-D${diaCorr}-${random}`, estado `REGULARIZADO_MANUAL`, y metadata `requiere_evidencia_fisica = true`.
+    - Corrección de sincronización de `SALIDA_BASE` y `LLEGADA_FAENA` hacia `tequ_log_desplazamiento` (eliminando dependencia de tabla inexistente `tvia_viaje`).
+  - **[BACKEND / ARCHIVOS - REQ-1000] Normalización de Evidencias Físicas y Regularización (`reportDiarioController.js` & `reportDiarioRoutes.js`):**
+    - Nuevo endpoint `POST /api/operaciones/report/:id/adjuntar-respaldo-fisico`: recibe archivo escaneado o foto (PDF, PNG, JPG), guarda en storage con tipo `REPORT_FISICO_RESPALDO` en `tfmg_file`, vincula `id_doc_pdf`, pasa el reporte a `VALIDADO_ANALISTA` y `evidencia_fisica_adjunta = true`.
+    - Nuevo endpoint `POST /api/operaciones/report/regularizar-manual`: permite cargar una jornada física completa desde el CRM con horas, horómetros y documento adjunto.
+  - **[BACKEND / ITS - REQ-1000] Proyección a Mesa ITS (`itsController.js`):**
+    - Mapeo de reportes regularizados como jornadas con `tipo_respaldo = 'FISICO_MANUAL'` y `url_comprobante = '/api/v1/storage/view/' + id_doc_pdf`, garantizando que la grúa aparezca en la grilla valorizada respetando la tarifa de la cotización ($500.000/hr) junto a los fletes.
+  - **[FRONTEND / CRM - REQ-1000] Pestaña 6 y Visor de Report (`GestorOportunidades.vue` & `ModalVisorReport.vue`):**
+    - Botón `[ ➕ Regularizar Reporte Físico ]` en Pestaña 6 para registro manual de reportes.
+    - Badges de estado en tabla: `📄 Doc Físico OK` (verde), `⚠️ Regularizado Manual` (ámbar si falta evidencia), `✅ Validado FES` y `⏳ Pendiente Terreno`.
+    - Acciones de fila: botón `[ 📎 Adjuntar Doc ]` con modal interactivo para subir el respaldo escaneado firmado por el mandante, y botón `[ 📄 Doc ]` para visualizar el documento directamente.
+    - Soporte completo en `ModalVisorReport.vue` para visualizar reportes regularizados con su respaldo documental.
+
 ## [Portal Web GSP] - Versión 1.0.96
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-06 13:30:00 (-03:00)

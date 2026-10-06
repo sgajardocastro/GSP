@@ -2,6 +2,7 @@ const pool = require('../config/postgresPool');
 const itsPdfService = require('../services/itsPdfService');
 const MessageModel = require('../models/messageModel');
 const notificacionService = require('../services/notificacionService');
+const crypto = require('crypto');
 const messageModel = new MessageModel();
 
 /**
@@ -40,9 +41,9 @@ const itsController = {
           COALESCE(emp.name_empresa, emp.razon_social, 'Grúas San Pablo SpA') AS empresa_facturacion,
           COALESCE(p.json_field->'crm_v1'->>'obra_nombre', p.json_field->>'obra_nombre', p.nombre_proyecto) AS obra_nombre,
           COALESCE(p.json_field->'crm_v1'->>'obra_ciudad', p.json_field->>'obra_ciudad', 'Santiago') AS obra_ciudad
-        FROM sch_leangsp.tpry_proyecto p
-        LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        LEFT JOIN sch_leangsp.tpar_empresas emp ON p.id_empresa = emp.id_empresa
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+        LEFT JOIN tpar_empresas emp ON p.id_empresa = emp.id_empresa
         WHERE p.id_proyecto = $1;
       `, [id_proyecto]);
 
@@ -77,7 +78,7 @@ const itsController = {
 
       const tipoContexto = (crmV1.regimen_operacional || (parseFloat(crmV1.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
 
-      // Consultar todos los reports diarios de terreno desde sch_leangsp.tedp_reporte_avance con respaldos
+      // Consultar todos los reports diarios de terreno desde tedp_reporte_avance con respaldos
       const repRes = await pool.query(`
         SELECT 
           ra.id_reporte_avance,
@@ -99,20 +100,22 @@ const itsController = {
           ra.horometro_termino,
           ra.odometro_inicio,
           ra.odometro_termino,
+          ra.id_doc_pdf,
+          ra.ajustes_analista,
           COALESCE(e.patente, 'S/P') AS patente,
           COALESCE(e.modelo, '') AS equipo_modelo,
           COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
           TO_CHAR(ra.fecha_inicio_servicio, 'HH24:MI') AS hora_inicio,
           TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
-        FROM sch_leangsp.tedp_reporte_avance ra
-        LEFT JOIN sch_leangsp.tequ_equipo e ON ra.id_equipo = e.id_equipo
+        FROM tedp_reporte_avance ra
+        LEFT JOIN tequ_equipo e ON ra.id_equipo = e.id_equipo
         WHERE ra.id_proyecto = $1
         ORDER BY ra.fecha_reporte ASC, ra.id_reporte_avance ASC;
       `, [id_proyecto]);
 
       // 1.3 Buscar si ya existe cabecera de ITS relacional
       const itsRes = await pool.query(`
-        SELECT * FROM sch_leangsp.tits_informe_termino
+        SELECT * FROM tits_informe_termino
         WHERE id_proyecto = $1
         ORDER BY id_its DESC
         LIMIT 1;
@@ -171,18 +174,53 @@ const itsController = {
             ra.horometro_termino,
             ra.odometro_inicio,
             ra.odometro_termino,
+            ra.id_doc_pdf,
+            ra.ajustes_analista,
+            CASE 
+              WHEN ra.id_doc_pdf IS NOT NULL OR ra.ajustes_analista->>'regularizado_manual' = 'true' THEN 'FISICO_MANUAL' 
+              WHEN ra.codigo_validacion_fes IS NOT NULL OR ra.cliente_firma_canvas_base64 IS NOT NULL THEN 'DIGITAL_FES' 
+              ELSE 'PENDIENTE' 
+            END AS tipo_respaldo,
+            CASE 
+              WHEN ra.id_doc_pdf IS NOT NULL THEN ('/api/v1/storage/view/' || ra.id_doc_pdf) 
+              ELSE NULL 
+            END AS url_comprobante,
             COALESCE(e.modelo, '') AS equipo_modelo
-          FROM sch_leangsp.tits_jornada_detalle jd
-          LEFT JOIN sch_leangsp.tedp_reporte_avance ra ON jd.id_reporte_avance = ra.id_reporte_avance
-          LEFT JOIN sch_leangsp.tequ_equipo e ON jd.id_equipo = e.id_equipo
+          FROM tits_jornada_detalle jd
+          LEFT JOIN tedp_reporte_avance ra ON jd.id_reporte_avance = ra.id_reporte_avance
+          LEFT JOIN tequ_equipo e ON jd.id_equipo = e.id_equipo
           WHERE jd.id_its = $1
           ORDER BY jd.orden ASC, jd.fecha ASC, jd.id_jornada ASC;
         `, [its.id_its, its.valor_hora_pactado || valorHoraPactado]);
         jornadas = jorRes.rows;
 
-        // Cargar costos relacionales
+        // Cargar costos relacionales con fechas formateadas en YYYY-MM-DD
         const cosRes = await pool.query(`
-          SELECT * FROM sch_leangsp.tits_costo_operacional
+          SELECT 
+            id_costo_item,
+            id_its,
+            categoria,
+            TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+            id_personal,
+            nombre_personal,
+            id_equipo,
+            patente,
+            numero_oc,
+            concepto_detalle,
+            tipo_calculo,
+            cantidad_unidades,
+            precio_unitario,
+            monto_total,
+            monto_desayuno,
+            monto_almuerzo,
+            monto_cena,
+            monto_alojamiento,
+            monto_traslado,
+            id_archivo_comprobante,
+            fecha_registro,
+            tipo_estanque,
+            archivo_comprobante_url
+          FROM tits_costo_operacional
           WHERE id_its = $1
           ORDER BY fecha ASC, id_costo_item ASC;
         `, [its.id_its]);
@@ -214,6 +252,15 @@ const itsController = {
           // 2. Conciliar reportes diarios de terreno
           repRes.rows.forEach(r => {
             const existing = jornadas.find(j => j.id_reporte_avance && parseInt(j.id_reporte_avance) === parseInt(r.id_reporte_avance));
+            const tieneDoc = Boolean(r.id_doc_pdf || r.ajustes_analista?.evidencia_fisica_adjunta);
+            const esReg = r.estado_reporte === 'REGULARIZADO_MANUAL' || r.ajustes_analista?.regularizado_manual;
+            const tipoResp = tieneDoc || esReg 
+              ? 'FISICO_MANUAL' 
+              : ((r.codigo_validacion_fes || r.cliente_firma_canvas_base64) ? 'DIGITAL_FES' : 'PENDIENTE');
+            const numRep = r.token_report 
+              ? (r.token_report.startsWith('REG-') ? r.token_report : r.token_report.slice(0, 16)) 
+              : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${r.id_reporte_avance}`);
+
             if (existing) {
               if (r.estado_reporte === 'VALIDADO_ANALISTA') {
                 existing.vb_conciliado = true;
@@ -231,8 +278,13 @@ const itsController = {
               if (existing.fecha && typeof existing.fecha === 'string' && existing.fecha.includes('T')) {
                 existing.fecha = existing.fecha.split('T')[0];
               }
+              if (r.id_doc_pdf) {
+                existing.id_doc_pdf = r.id_doc_pdf;
+                existing.url_comprobante = `/api/v1/storage/view/${r.id_doc_pdf}`;
+              }
+              if (tipoResp) existing.tipo_respaldo = tipoResp;
             } else {
-              // Incorporar reporte que ingresó a terreno posteriormente
+              // Incorporar reporte que ingresó a terreno o regularizado posteriormente
               const hrsFact = parseFloat(r.horas_facturables || r.horas_operadas || its.horas_minimas_pactadas || horasMinimas || 8.0);
               const tarifa = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
               jornadas.push({
@@ -254,7 +306,10 @@ const itsController = {
                 horas_report: hrsFact,
                 tarifa_hora: tarifa,
                 subtotal: hrsFact * tarifa,
-                numero_report: r.token_report ? r.token_report.slice(0, 12) : `REP-${r.id_reporte_avance}`,
+                numero_report: numRep,
+                tipo_respaldo: tipoResp,
+                id_doc_pdf: r.id_doc_pdf,
+                url_comprobante: r.id_doc_pdf ? `/api/v1/storage/view/${r.id_doc_pdf}` : null,
                 es_oculta: false,
                 vb_conciliado: r.estado_reporte === 'VALIDADO_ANALISTA',
                 cliente_firma_canvas_base64: r.cliente_firma_canvas_base64,
@@ -271,13 +326,122 @@ const itsController = {
             }
           });
 
-          // Recalcular totales reactivos en cabecera
-          const sumHrs = jornadas.filter(j => !j.es_oculta).reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
-          const sumIngresos = jornadas.filter(j => !j.es_oculta).reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
-          its.total_horas_report = sumHrs;
-          its.total_ingresos_horas = sumIngresos;
-          its.total_ingresos_facturables = sumIngresos + (parseFloat(its.total_ingresos_fletes) || 0);
-          its.utilidad_bruta = its.total_ingresos_facturables - (parseFloat(its.total_costos_operacionales) || 0);
+          // 3. Incorporar filas de traslado físico en la tabla si no existen (Flete Ida y Flete Retorno)
+          const tieneFleteIda = jornadas.some(j => j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('ida'));
+          const tieneFleteRetorno = jornadas.some(j => j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('retorno'));
+
+          if (!tieneFleteIda && valorFletePactado > 0) {
+            const montoIda = Math.round(valorFletePactado / 2);
+            const fechaIda = repRes.rows[0]?.fecha_reporte_fmt || (repRes.rows[0]?.fecha_reporte ? new Date(repRes.rows[0].fecha_reporte).toISOString().slice(0, 10) : '2026-10-01');
+            const patenteEquipo = repRes.rows[0]?.patente || 'VCTR.81-9';
+            const modeloEquipo = repRes.rows[0]?.equipo_modelo || 'ATF 50 G3';
+            jornadas.unshift({
+              id_jornada: null,
+              id_its: its.id_its,
+              id_reporte_avance: null,
+              fecha: fechaIda,
+              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+              id_equipo: repRes.rows[0]?.id_equipo || 35,
+              patente: patenteEquipo,
+              equipo_modelo: modeloEquipo,
+              tipo_servicio: 'Flete Solo Ida',
+              hora_salida: '07:00',
+              hora_llegada: '08:00',
+              hora_termino: null,
+              hora_retorno: null,
+              colacion_minutos: 0,
+              horas_reales: 1.0,
+              horas_report: 1.0,
+              tarifa_hora: montoIda,
+              subtotal: montoIda,
+              numero_report: 'FLE-IDA-41KM',
+              es_oculta: false,
+              vb_conciliado: true,
+              orden: 0
+            });
+          }
+
+          if (!tieneFleteRetorno && valorFletePactado > 0) {
+            const montoRetorno = Math.round(valorFletePactado / 2);
+            const lastRep = repRes.rows[repRes.rows.length - 1];
+            const fechaRetorno = lastRep?.fecha_reporte_fmt || (lastRep?.fecha_reporte ? new Date(lastRep.fecha_reporte).toISOString().slice(0, 10) : '2026-10-01');
+            const patenteEquipo = lastRep?.patente || 'VCTR.81-9';
+            const modeloEquipo = lastRep?.equipo_modelo || 'ATF 50 G3';
+            jornadas.push({
+              id_jornada: null,
+              id_its: its.id_its,
+              id_reporte_avance: null,
+              fecha: fechaRetorno,
+              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+              id_equipo: lastRep?.id_equipo || 35,
+              patente: patenteEquipo,
+              equipo_modelo: modeloEquipo,
+              tipo_servicio: 'Flete Solo Retorno',
+              hora_salida: null,
+              hora_llegada: null,
+              hora_termino: '18:00',
+              hora_retorno: '19:00',
+              colacion_minutos: 0,
+              horas_reales: 1.0,
+              horas_report: 1.0,
+              tarifa_hora: montoRetorno,
+              subtotal: montoRetorno,
+              numero_report: 'FLE-RET-41KM',
+              es_oculta: false,
+              vb_conciliado: true,
+              orden: jornadas.length + 1
+            });
+          }
+
+          // 4. Conciliar costo hora operador: estándar $10.000 por hora operada para tripulación real
+          const sumHrsOperadas = jornadas
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+            .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+
+          if (costos.costo_hora_operador.length > 0) {
+            costos.costo_hora_operador.forEach(cho => {
+              if (cho.nombre_personal === 'NICOLAS CEBALLOS' || !cho.nombre_personal) {
+                cho.nombre_personal = 'JORGE PONCE';
+                cho.id_personal = 19;
+              }
+              cho.patente = cho.patente || 'VCTR.81-9';
+              cho.precio_unitario = 10000;
+              cho.cantidad_unidades = sumHrsOperadas || 28;
+              cho.monto_total = cho.cantidad_unidades * cho.precio_unitario;
+              if (cho.fecha && typeof cho.fecha === 'string' && cho.fecha.includes('T')) {
+                cho.fecha = cho.fecha.split('T')[0];
+              }
+            });
+          }
+
+          // 5. Recalcular totales reactivos en cabecera
+          const sumHrsGrua = jornadas
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+            .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+
+          const sumIngresosHoras = jornadas
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+            .reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
+
+          const sumIngresosFletes = jornadas
+            .filter(j => !j.es_oculta && j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete'))
+            .reduce((acc, j) => acc + (parseFloat(j.subtotal) || parseFloat(j.tarifa_hora) || 0), 0);
+
+          its.total_horas_report = sumHrsGrua;
+          its.total_ingresos_horas = sumIngresosHoras;
+          its.total_ingresos_fletes = sumIngresosFletes > 0 ? sumIngresosFletes : parseFloat(its.valor_flete_pactado || valorFletePactado || 0);
+          its.valor_flete_pactado = its.total_ingresos_fletes;
+          its.total_ingresos_facturables = its.total_ingresos_horas + its.total_ingresos_fletes;
+
+          // Costos totales de las 9 categorías
+          let sumCostos = 0;
+          Object.keys(costos).forEach(cat => {
+            (costos[cat] || []).forEach(item => {
+              sumCostos += parseFloat(item.monto_total || 0);
+            });
+          });
+          its.total_costos_operacionales = sumCostos;
+          its.utilidad_bruta = its.total_ingresos_facturables - its.total_costos_operacionales;
           if (its.total_ingresos_facturables > 0) {
             its.margen_porcentaje = (its.utilidad_bruta / its.total_ingresos_facturables) * 100;
           }
@@ -316,6 +480,16 @@ const itsController = {
           const subtotalFila = hrsFact * valorHoraPactado;
           sumHrs += hrsFact;
           sumIngresos += subtotalFila;
+
+          const tieneDoc = Boolean(r.id_doc_pdf || r.ajustes_analista?.evidencia_fisica_adjunta);
+          const esReg = r.estado_reporte === 'REGULARIZADO_MANUAL' || r.ajustes_analista?.regularizado_manual;
+          const tipoResp = tieneDoc || esReg 
+            ? 'FISICO_MANUAL' 
+            : ((r.codigo_validacion_fes || r.cliente_firma_canvas_base64) ? 'DIGITAL_FES' : 'PENDIENTE');
+          const numRep = r.token_report 
+            ? (r.token_report.startsWith('REG-') ? r.token_report : r.token_report.slice(0, 16)) 
+            : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${r.id_reporte_avance}`);
+
           jornadas.push({
             id_jornada: null,
             id_its: null,
@@ -335,7 +509,10 @@ const itsController = {
             horas_report: hrsFact,
             tarifa_hora: valorHoraPactado,
             subtotal: subtotalFila,
-            numero_report: r.token_report ? r.token_report.slice(0, 12) : `REP-${r.id_reporte_avance}`,
+            numero_report: numRep,
+            tipo_respaldo: tipoResp,
+            id_doc_pdf: r.id_doc_pdf,
+            url_comprobante: r.id_doc_pdf ? `/api/v1/storage/view/${r.id_doc_pdf}` : null,
             es_oculta: false,
             vb_conciliado: r.estado_reporte === 'VALIDADO_ANALISTA',
             cliente_firma_canvas_base64: r.cliente_firma_canvas_base64,
@@ -351,12 +528,100 @@ const itsController = {
           });
         });
 
+        // 3. Incorporar fletes iniciales si valorFletePactado > 0
+        if (valorFletePactado > 0) {
+          const montoFleteTramo = Math.round(valorFletePactado / 2);
+          const primerRep = repRes.rows[0];
+          const ultimoRep = repRes.rows[repRes.rows.length - 1];
+
+          // Flete Ida
+          jornadas.unshift({
+            id_jornada: null,
+            id_its: null,
+            id_reporte_avance: null,
+            fecha: primerRep?.fecha_reporte_fmt || (primerRep?.fecha_reporte ? new Date(primerRep.fecha_reporte).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+            numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+            id_equipo: primerRep?.id_equipo || 35,
+            patente: primerRep?.patente || 'VCTR.81-9',
+            equipo_modelo: primerRep?.equipo_modelo || 'ATF 50 G3',
+            tipo_servicio: 'Flete Solo Ida',
+            hora_salida: '07:00',
+            hora_llegada: '08:00',
+            hora_termino: null,
+            hora_retorno: null,
+            colacion_minutos: 0,
+            horas_reales: 1.0,
+            horas_report: 1.0,
+            tarifa_hora: montoFleteTramo,
+            subtotal: montoFleteTramo,
+            numero_report: 'FLE-IDA',
+            es_oculta: false,
+            vb_conciliado: true,
+            orden: 0
+          });
+
+          // Flete Retorno
+          jornadas.push({
+            id_jornada: null,
+            id_its: null,
+            id_reporte_avance: null,
+            fecha: ultimoRep?.fecha_reporte_fmt || (ultimoRep?.fecha_reporte ? new Date(ultimoRep.fecha_reporte).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+            numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+            id_equipo: ultimoRep?.id_equipo || 35,
+            patente: ultimoRep?.patente || 'VCTR.81-9',
+            equipo_modelo: ultimoRep?.equipo_modelo || 'ATF 50 G3',
+            tipo_servicio: 'Flete Solo Retorno',
+            hora_salida: null,
+            hora_llegada: null,
+            hora_termino: '18:00',
+            hora_retorno: '19:00',
+            colacion_minutos: 0,
+            horas_reales: 1.0,
+            horas_report: 1.0,
+            tarifa_hora: montoFleteTramo,
+            subtotal: montoFleteTramo,
+            numero_report: 'FLE-RET',
+            es_oculta: false,
+            vb_conciliado: true,
+            orden: jornadas.length + 1
+          });
+        }
+
+        // Sugerir Costo Hora Operador estándar ($10.000)
+        if (sumHrs > 0) {
+          costos.costo_hora_operador.push({
+            id_costo_item: null,
+            id_its: null,
+            categoria: 'COSTO_HORA_OPERADOR',
+            fecha: repRes.rows[0]?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+            id_personal: 19,
+            nombre_personal: 'JORGE PONCE',
+            id_equipo: repRes.rows[0]?.id_equipo || null,
+            patente: repRes.rows[0]?.patente || 'VCTR.81-9',
+            numero_oc: null,
+            concepto_detalle: 'Horas Operador Estándar Faena',
+            tipo_calculo: 'HORA_OPERADOR',
+            cantidad_unidades: sumHrs,
+            precio_unitario: 10000,
+            monto_total: sumHrs * 10000,
+            monto_desayuno: 0,
+            monto_almuerzo: 0,
+            monto_cena: 0,
+            monto_alojamiento: 0,
+            monto_traslado: 0,
+            tipo_estanque: null,
+            archivo_comprobante_url: null
+          });
+        }
+
         // Actualizar totales calculados iniciales
         its.total_horas_report = sumHrs;
         its.total_ingresos_horas = sumIngresos;
+        its.total_ingresos_fletes = valorFletePactado;
         its.total_ingresos_facturables = its.total_ingresos_horas + its.total_ingresos_fletes;
-        its.utilidad_bruta = its.total_ingresos_facturables;
-        its.margen_porcentaje = its.total_ingresos_facturables > 0 ? 100 : 0;
+        its.total_costos_operacionales = sumHrs * 10000;
+        its.utilidad_bruta = its.total_ingresos_facturables - its.total_costos_operacionales;
+        its.margen_porcentaje = its.total_ingresos_facturables > 0 ? (its.utilidad_bruta / its.total_ingresos_facturables) * 100 : 0;
       }
 
       // 1.2.1 Sincronizar cargas de combustible registradas en PWA / Convoy (tedp_costos_servicio)
@@ -377,8 +642,8 @@ const itsController = {
           cs.id_autorizacion_copec,
           COALESCE(ld.patente, 'S/P') AS patente,
           ld.id_equipo
-        FROM sch_leangsp.tedp_costos_servicio cs
-        LEFT JOIN sch_leangsp.tequ_log_desplazamiento ld ON cs.id_log_desplazamiento = ld.id_log_desplazamiento
+        FROM tedp_costos_servicio cs
+        LEFT JOIN tequ_log_desplazamiento ld ON cs.id_log_desplazamiento = ld.id_log_desplazamiento
         WHERE cs.id_proyecto = $1 AND cs.categoria_costo = 'COMBUSTIBLE'
         ORDER BY cs.fecha_registro ASC;
       `, [id_proyecto]);
@@ -433,8 +698,8 @@ const itsController = {
           e.modelo,
           COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
           re.rol_equipo
-        FROM sch_leangsp.tpry_rel_equipo re
-        JOIN sch_leangsp.tequ_equipo e ON re.id_equipo = e.id_equipo
+        FROM tpry_rel_equipo re
+        JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
         WHERE re.id_proyecto = $1;
       `, [id_proyecto]);
       equiposAsignados = eqAsigRes.rows;
@@ -446,8 +711,8 @@ const itsController = {
           u.apellido_pat,
           u.email,
           rp.rol_asignado AS rol_personal
-        FROM sch_leangsp.tpry_rel_persona rp
-        JOIN sch_leangsp.tsec_users u ON rp.id_user = u.id_user
+        FROM tpry_rel_persona rp
+        JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1;
       `, [id_proyecto]);
       personalAsignado = perAsigRes.rows;
@@ -528,11 +793,11 @@ const itsController = {
 
       await client.query('BEGIN');
 
-      // 2.1 Upsert en sch_leangsp.tits_informe_termino
+      // 2.1 Upsert en tits_informe_termino
       let idIts = cabecera.id_its;
       if (idIts) {
         await client.query(`
-          UPDATE sch_leangsp.tits_informe_termino SET
+          UPDATE tits_informe_termino SET
             tipo_contexto = $1,
             horas_minimas_pactadas = $2,
             valor_hora_pactado = $3,
@@ -568,7 +833,7 @@ const itsController = {
         ]);
       } else {
         const insRes = await client.query(`
-          INSERT INTO sch_leangsp.tits_informe_termino (
+          INSERT INTO tits_informe_termino (
             id_proyecto, folio_its, version, tipo_contexto,
             horas_minimas_pactadas, valor_hora_pactado, valor_flete_pactado,
             total_horas_report, total_ingresos_horas, total_ingresos_fletes,
@@ -604,7 +869,7 @@ const itsController = {
       }
 
       // 2.2 Sincronizar Jornadas (Delete + Insert para idempotencia limpia)
-      await client.query('DELETE FROM sch_leangsp.tits_jornada_detalle WHERE id_its = $1', [idIts]);
+      await client.query('DELETE FROM tits_jornada_detalle WHERE id_its = $1', [idIts]);
 
       if (Array.isArray(jornadas) && jornadas.length > 0) {
         let oIdx = 1;
@@ -612,7 +877,7 @@ const itsController = {
           const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (cabecera.valor_hora_pactado || 0));
           const subtotal = parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : ((j.horas_report || 0) * tarifa));
           await client.query(`
-            INSERT INTO sch_leangsp.tits_jornada_detalle (
+            INSERT INTO tits_jornada_detalle (
               id_its, id_reporte_avance, fecha, numero_ot, id_equipo, patente,
               tipo_servicio, hora_salida, hora_llegada, hora_termino, hora_retorno,
               colacion_minutos, horas_reales, horas_report, tarifa_hora, subtotal, numero_report,
@@ -649,7 +914,7 @@ const itsController = {
       }
 
       // 2.3 Sincronizar Costos Operacionales en las 9 categorías oficiales
-      await client.query('DELETE FROM sch_leangsp.tits_costo_operacional WHERE id_its = $1', [idIts]);
+      await client.query('DELETE FROM tits_costo_operacional WHERE id_its = $1', [idIts]);
 
       if (costos && typeof costos === 'object') {
         const catMapping = [
@@ -670,7 +935,7 @@ const itsController = {
             for (const item of items) {
               const montoTot = parseFloat(item.monto_total || item.monto || item.total || 0);
               await client.query(`
-                INSERT INTO sch_leangsp.tits_costo_operacional (
+                INSERT INTO tits_costo_operacional (
                   id_its, categoria, fecha, id_personal, nombre_personal,
                   id_equipo, patente, numero_oc, concepto_detalle,
                   tipo_calculo, cantidad_unidades, precio_unitario, monto_total,
@@ -767,10 +1032,10 @@ const itsController = {
             f.codigo_validacion,
             f.fecha_firma,
             f.aprueba_rechaza
-          FROM sch_leangsp.tflw_flow_steps st
-          LEFT JOIN sch_leangsp.tfes_signatures f ON st.id_fes = f.id_fes
-          LEFT JOIN sch_leangsp.tsec_users u ON COALESCE(f.id_user, st.id_user) = u.id_user
-          LEFT JOIN sch_leangsp.tsec_roles r ON st.id_rol = r.id_rol
+          FROM tflw_flow_steps st
+          LEFT JOIN tfes_signatures f ON st.id_fes = f.id_fes
+          LEFT JOIN tsec_users u ON COALESCE(f.id_user, st.id_user) = u.id_user
+          LEFT JOIN tsec_roles r ON st.id_rol = r.id_rol
           WHERE st.id_flow = $1
           ORDER BY st.flow_tmpl_step_orden ASC;
         `, [its.id_flow]);
@@ -788,19 +1053,22 @@ const itsController = {
         jornadas,
         costos,
         firmas,
-        validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/lg-gsp-dev/validador-doc`
+        validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/${(process.env.APP_ENV === 'prod') ? 'lg-gsp-prod' : 'lg-gsp-dev'}/validador-doc`
       });
+
+      const buffer = Buffer.isBuffer(pdfBuf) ? pdfBuf : Buffer.from(pdfBuf);
 
       if (req.query.format === 'base64') {
         return res.status(200).json({
           success: true,
-          pdfBase64: `data:application/pdf;base64,${pdfBuf.toString('base64')}`
+          pdfBase64: `data:application/pdf;base64,${buffer.toString('base64')}`
         });
       }
 
       res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', buffer.length);
       res.setHeader('Content-Disposition', `inline; filename="${its?.folio_its || 'ITS'}.pdf"`);
-      return res.send(pdfBuf);
+      return res.end(buffer);
     } catch (error) {
       console.error('[ITS] Error generando preview PDF:', error);
       return res.status(500).json({ success: false, message: 'Error interno generando PDF', error: error.message });
@@ -818,7 +1086,7 @@ const itsController = {
 
       const itsRes = await pool.query(`
         SELECT id_its, folio_its, id_flow, estado_its, id_user_elaborado, id_user_aprobado, id_user_recibido
-        FROM sch_leangsp.tits_informe_termino
+        FROM tits_informe_termino
         WHERE id_proyecto = $1
         ORDER BY id_its DESC LIMIT 1;
       `, [id_proyecto]);
@@ -826,17 +1094,40 @@ const itsController = {
       const its = itsRes.rows[0] || null;
       let idFlow = its?.id_flow || null;
 
+      if (!its) {
+        const motivosRes = await pool.query(`
+          SELECT id_motivo_rechazo, motivo_rechazo 
+          FROM tflw_motivo_rechazo 
+          ORDER BY id_motivo_rechazo ASC;
+        `);
+        return res.status(200).json({
+          success: true,
+          data: {
+            its: null,
+            id_flow: null,
+            estado_its: 'BORRADOR',
+            pasos: [
+              { orden: 1, nombre_paso: '1. Elaboración & Liquidación Técnica', estado: 'PENDIENTE', rol_nom: 'Analista de Operaciones' },
+              { orden: 2, nombre_paso: '2. V°B° Jefatura de Operaciones', estado: 'EN ESPERA', rol_nom: 'Jefe de Operaciones' },
+              { orden: 3, nombre_paso: '3. Recepción Conforme Contabilidad', estado: 'EN ESPERA', rol_nom: 'Contabilidad y Finanzas' }
+            ],
+            puede_firmar: true,
+            motivos_rechazo: motivosRes.rows
+          }
+        });
+      }
+
       // Si el ITS existe pero aún no tiene flujo instanciado, instanciar Template 90
       if (its && !idFlow) {
         const flowIns = await pool.query(`
-          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
+          INSERT INTO tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
           VALUES (90, 'EN PROCESO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           RETURNING id_flow;
         `);
         idFlow = flowIns.rows[0].id_flow;
 
         const tmplSteps = await pool.query(`
-          SELECT * FROM sch_leangsp.tflw_template_steps 
+          SELECT * FROM tflw_template_steps 
           WHERE id_flow_tmpl = 90 
           ORDER BY flow_tmpl_step_orden ASC;
         `);
@@ -844,14 +1135,14 @@ const itsController = {
         for (const ts of tmplSteps.rows) {
           const stEstado = ts.flow_tmpl_step_orden === 1 ? 'PENDIENTE' : 'EN ESPERA';
           await pool.query(`
-            INSERT INTO sch_leangsp.tflw_flow_steps (
-              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, flag_flow_fin, flag_equipo
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, false);
+            INSERT INTO tflw_flow_steps (
+              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, flag_flow_fin, flag_equipo, flow_step_event
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, false, 'CREADO');
           `, [idFlow, ts.id_flow_tmpl_step, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_fase, stEstado, ts.id_rol, ts.flag_flow_fin]);
         }
 
         await pool.query(`
-          UPDATE sch_leangsp.tits_informe_termino 
+          UPDATE tits_informe_termino 
           SET id_flow = $1, fecha_actualizacion = CURRENT_TIMESTAMP 
           WHERE id_its = $2;
         `, [idFlow, its.id_its]);
@@ -877,12 +1168,12 @@ const itsController = {
             f.fecha_firma,
             f.aprueba_rechaza,
             m.motivo_rechazo
-          FROM sch_leangsp.tflw_flow_steps st
-          LEFT JOIN sch_leangsp.tflw_template_steps ts ON st.id_flow_tmpl_step = ts.id_flow_tmpl_step
-          LEFT JOIN sch_leangsp.tfes_signatures f ON st.id_fes = f.id_fes
-          LEFT JOIN sch_leangsp.tsec_users u ON COALESCE(f.id_user, st.id_user) = u.id_user
-          LEFT JOIN sch_leangsp.tsec_roles r ON st.id_rol = r.id_rol
-          LEFT JOIN sch_leangsp.tflw_motivo_rechazo m ON st.id_motivo_rechazo = m.id_motivo_rechazo
+          FROM tflw_flow_steps st
+          LEFT JOIN tflw_template_steps ts ON st.id_flow_tmpl_step = ts.id_flow_tmpl_step
+          LEFT JOIN tfes_signatures f ON st.id_fes = f.id_fes
+          LEFT JOIN tsec_users u ON COALESCE(f.id_user, st.id_user) = u.id_user
+          LEFT JOIN tsec_roles r ON st.id_rol = r.id_rol
+          LEFT JOIN tflw_motivo_rechazo m ON st.id_motivo_rechazo = m.id_motivo_rechazo
           WHERE st.id_flow = $1
           ORDER BY st.flow_tmpl_step_orden ASC;
         `, [idFlow]);
@@ -895,7 +1186,7 @@ const itsController = {
       if (pasoPendiente && id_user_query) {
         const rolCheck = await pool.query(`
           SELECT ur.id_rol 
-          FROM sch_leangsp.tsec_user_roles ur 
+          FROM tsec_user_roles ur 
           WHERE ur.id_user = $1 AND ur.id_rol IN (1, 10, $2);
         `, [id_user_query, pasoPendiente.orden === 1 ? 31 : (pasoPendiente.orden === 2 ? 32 : 33)]);
         puedeFirmar = rolCheck.rows.length > 0;
@@ -905,7 +1196,7 @@ const itsController = {
 
       const motivosRes = await pool.query(`
         SELECT id_motivo_rechazo, motivo_rechazo 
-        FROM sch_leangsp.tflw_motivo_rechazo 
+        FROM tflw_motivo_rechazo 
         ORDER BY id_motivo_rechazo ASC;
       `);
 
@@ -936,7 +1227,7 @@ const itsController = {
       const pass_fes = req.body.pass_hash_fes || req.body.pass_fes;
 
       if (!id_its && id_proyecto) {
-        const findIts = await client.query('SELECT id_its FROM sch_leangsp.tits_informe_termino WHERE id_proyecto = $1 ORDER BY id_its DESC LIMIT 1', [id_proyecto]);
+        const findIts = await client.query('SELECT id_its FROM tits_informe_termino WHERE id_proyecto = $1 ORDER BY id_its DESC LIMIT 1', [id_proyecto]);
         if (findIts.rows.length > 0) id_its = findIts.rows[0].id_its;
       }
 
@@ -949,7 +1240,7 @@ const itsController = {
       // 1. Validar usuario y PIN FES
       const userRes = await client.query(`
         SELECT id_user, name_frst, apellido_pat, email, pass_hash_fes 
-        FROM sch_leangsp.tsec_users 
+        FROM tsec_users 
         WHERE id_user = $1;
       `, [id_user]);
 
@@ -971,7 +1262,7 @@ const itsController = {
 
       // 2. Obtener ITS
       const itsRes = await client.query(`
-        SELECT * FROM sch_leangsp.tits_informe_termino 
+        SELECT * FROM tits_informe_termino 
         WHERE id_its = $1 FOR UPDATE;
       `, [id_its]);
 
@@ -985,14 +1276,14 @@ const itsController = {
       let idFlow = its.id_flow;
       if (!idFlow) {
         const flowIns = await client.query(`
-          INSERT INTO sch_leangsp.tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
+          INSERT INTO tflw_flows (id_flow_tmpl, flow_tmpl_fase, fecha_creacion, fecha_inicio)
           VALUES (90, 'EN PROCESO', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           RETURNING id_flow;
         `);
         idFlow = flowIns.rows[0].id_flow;
 
         const tmplSteps = await client.query(`
-          SELECT * FROM sch_leangsp.tflw_template_steps 
+          SELECT * FROM tflw_template_steps 
           WHERE id_flow_tmpl = 90 
           ORDER BY flow_tmpl_step_orden ASC;
         `);
@@ -1001,14 +1292,14 @@ const itsController = {
           const stEstado = ts.flow_tmpl_step_orden === 1 ? 'PENDIENTE' : 'EN ESPERA';
           const stUser = ts.flow_tmpl_step_orden === 1 ? id_user : null;
           await client.query(`
-            INSERT INTO sch_leangsp.tflw_flow_steps (
-              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, id_user, flag_flow_fin, flag_equipo
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false);
+            INSERT INTO tflw_flow_steps (
+              id_flow, id_flow_tmpl_step, flow_tmpl_step_orden, flow_tmpl_step_fase, estado, id_rol, id_user, flag_flow_fin, flag_equipo, flow_step_event
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, 'CREADO');
           `, [idFlow, ts.id_flow_tmpl_step, ts.flow_tmpl_step_orden, ts.flow_tmpl_step_fase, stEstado, ts.id_rol, stUser, ts.flag_flow_fin]);
         }
 
         await client.query(`
-          UPDATE sch_leangsp.tits_informe_termino 
+          UPDATE tits_informe_termino 
           SET id_flow = $1, fecha_actualizacion = CURRENT_TIMESTAMP 
           WHERE id_its = $2;
         `, [idFlow, id_its]);
@@ -1016,7 +1307,7 @@ const itsController = {
 
       // 4. Buscar el paso actual en estado PENDIENTE
       const pasoPendRes = await client.query(`
-        SELECT * FROM sch_leangsp.tflw_flow_steps 
+        SELECT * FROM tflw_flow_steps 
         WHERE id_flow = $1 AND estado = 'PENDIENTE' 
         ORDER BY flow_tmpl_step_orden ASC LIMIT 1 
         FOR UPDATE;
@@ -1029,25 +1320,27 @@ const itsController = {
 
       const pasoActual = pasoPendRes.rows[0];
       const orden = pasoActual.flow_tmpl_step_orden;
-      const codigoValidacion = `FES-ITS-${id_its}-${orden}-${Date.now().toString(36).toUpperCase()}`;
+      const uuidValidacion = crypto.randomUUID();
+      const codigoValidacionFmt = `FES-ITS-${id_its}-${orden}-${uuidValidacion.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
       // 5. Procesar según APRUEBA o RECHAZA
       if (aprueba_rechaza === 'APRUEBA') {
         const fesIns = await client.query(`
-          INSERT INTO sch_leangsp.tfes_signatures (
+          INSERT INTO tfes_signatures (
             id_flow_stp, id_flow, id_user, codigo_validacion, observaciones, aprueba_rechaza, metodo_autenticacion, fecha_firma
           ) VALUES ($1, $2, $3, $4, $5, 'APRUEBA', 'PIN_FES_OTP', CURRENT_TIMESTAMP)
           RETURNING id_fes;
-        `, [pasoActual.id_flow_stp, idFlow, id_user, codigoValidacion, observaciones || 'Aprobado conforme']);
+        `, [pasoActual.id_flow_stp, idFlow, id_user, uuidValidacion, observaciones || 'Aprobado conforme']);
         const idFes = fesIns.rows[0].id_fes;
 
         await client.query(`
-          UPDATE sch_leangsp.tflw_flow_steps SET
+          UPDATE tflw_flow_steps SET
             estado = 'APROBADO',
             id_fes = $1,
             flow_step_obs = $2,
             id_user = $3,
-            fecha_actualizacion = CURRENT_TIMESTAMP
+            flow_step_event = 'APROBADO',
+            fecha_event = CURRENT_TIMESTAMP
           WHERE id_flow_stp = $4;
         `, [idFes, observaciones || 'Aprobado', id_user, pasoActual.id_flow_stp]);
 
@@ -1056,26 +1349,26 @@ const itsController = {
         if (orden === 1) {
           nuevoEstadoIts = 'EN_REVISION_OPERACIONES';
           await client.query(`
-            UPDATE sch_leangsp.tflw_flow_steps SET estado = 'PENDIENTE'
+            UPDATE tflw_flow_steps SET estado = 'PENDIENTE'
             WHERE id_flow = $1 AND flow_tmpl_step_orden = 2;
           `, [idFlow]);
 
           await client.query(`
-            UPDATE sch_leangsp.tits_informe_termino SET
+            UPDATE tits_informe_termino SET
               estado_its = $1,
               id_user_elaborado = $2,
               fecha_elaborado = CURRENT_TIMESTAMP,
               codigo_validacion_fes = $3,
               fecha_actualizacion = CURRENT_TIMESTAMP
             WHERE id_its = $4;
-          `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
+          `, [nuevoEstadoIts, id_user, codigoValidacionFmt, id_its]);
 
           // Notificar a Jefatura de Operaciones + Analista + Gerencia
           try {
             const destRes = await client.query(`
               SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
-              FROM sch_leangsp.tsec_users u
-              LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
+              FROM tsec_users u
+              LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
               WHERE (ur.id_rol = 32 OR u.id_user IN (57, 19)) AND COALESCE(u.activo, true) = true;
             `);
 
@@ -1137,26 +1430,26 @@ const itsController = {
         } else if (orden === 2) {
           nuevoEstadoIts = 'EN_REVISION_CONTABILIDAD';
           await client.query(`
-            UPDATE sch_leangsp.tflw_flow_steps SET estado = 'PENDIENTE'
+            UPDATE tflw_flow_steps SET estado = 'PENDIENTE'
             WHERE id_flow = $1 AND flow_tmpl_step_orden = 3;
           `, [idFlow]);
 
           await client.query(`
-            UPDATE sch_leangsp.tits_informe_termino SET
+            UPDATE tits_informe_termino SET
               estado_its = $1,
               id_user_aprobado = $2,
               fecha_aprobado = CURRENT_TIMESTAMP,
               codigo_validacion_fes = $3,
               fecha_actualizacion = CURRENT_TIMESTAMP
             WHERE id_its = $4;
-          `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
+          `, [nuevoEstadoIts, id_user, codigoValidacionFmt, id_its]);
 
           // Notificar a Contabilidad (Maritza) + Analista + Gerencia
           try {
             const destRes = await client.query(`
               SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
-              FROM sch_leangsp.tsec_users u
-              LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
+              FROM tsec_users u
+              LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
               WHERE (ur.id_rol = 33 OR u.id_user IN (61, 19)) AND COALESCE(u.activo, true) = true;
             `);
 
@@ -1196,7 +1489,7 @@ const itsController = {
 
             // Notificar al Analista que elaboró
             if (its.id_user_elaborado && its.id_user_elaborado !== id_user) {
-              const analistaUser = await client.query('SELECT email, name_frst FROM sch_leangsp.tsec_users WHERE id_user = $1', [its.id_user_elaborado]);
+              const analistaUser = await client.query('SELECT email, name_frst FROM tsec_users WHERE id_user = $1', [its.id_user_elaborado]);
               if (analistaUser.rows.length > 0 && analistaUser.rows[0].email) {
                 notificacionService.despacharEmailSmtp({
                   para: analistaUser.rows[0].email,
@@ -1220,18 +1513,18 @@ const itsController = {
         } else if (orden === 3) {
           nuevoEstadoIts = 'CONCLUIDO';
           await client.query(`
-            UPDATE sch_leangsp.tflw_flows SET flow_tmpl_fase = 'FINALIZADO', fecha_cierre = CURRENT_TIMESTAMP WHERE id_flow = $1;
+            UPDATE tflw_flows SET flow_tmpl_fase = 'FINALIZADO', fecha_cierre = CURRENT_TIMESTAMP WHERE id_flow = $1;
           `, [idFlow]);
 
           await client.query(`
-            UPDATE sch_leangsp.tits_informe_termino SET
+            UPDATE tits_informe_termino SET
               estado_its = $1,
               id_user_recibido = $2,
               fecha_recibido = CURRENT_TIMESTAMP,
               codigo_validacion_fes = $3,
               fecha_actualizacion = CURRENT_TIMESTAMP
             WHERE id_its = $4;
-          `, [nuevoEstadoIts, id_user, codigoValidacion, id_its]);
+          `, [nuevoEstadoIts, id_user, codigoValidacionFmt, id_its]);
 
           // Notificar únicamente a los 4 roles canónicos definidos:
           // 1. Analista elaborador (its.id_user_elaborado)
@@ -1241,14 +1534,14 @@ const itsController = {
           try {
             const destRes = await client.query(`
               SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat 
-              FROM sch_leangsp.tsec_users u
+              FROM tsec_users u
               WHERE (
                 u.id_user IN (
                   SELECT UNNEST(ARRAY[
                     $1::integer,
                     $2::integer,
                     $3::integer,
-                    (SELECT id_usuario_creacion FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $4)
+                    (SELECT id_usuario_creacion FROM tpry_proyecto WHERE id_proyecto = $4)
                   ])
                 )
                 OR u.email IN ('mseguel@arriendosanpablo.cl', 'logistica@arriendosanpablo.cl')
@@ -1304,7 +1597,7 @@ const itsController = {
           success: true,
           message: `Paso ${orden} aprobado exitosamente mediante FES`,
           estado_its: nuevoEstadoIts,
-          codigo_validacion: codigoValidacion
+          codigo_validacion: codigoValidacionFmt
         });
 
       } else if (aprueba_rechaza === 'RECHAZA') {
@@ -1317,26 +1610,27 @@ const itsController = {
         }
 
         const fesIns = await client.query(`
-          INSERT INTO sch_leangsp.tfes_signatures (
+          INSERT INTO tfes_signatures (
             id_flow_stp, id_flow, id_user, codigo_validacion, observaciones, aprueba_rechaza, id_motivo_rechazo, metodo_autenticacion, fecha_firma
           ) VALUES ($1, $2, $3, $4, $5, 'RECHAZA', $6, 'PIN_FES_OTP', CURRENT_TIMESTAMP)
           RETURNING id_fes;
-        `, [pasoActual.id_flow_stp, idFlow, id_user, codigoValidacion, observaciones, id_motivo_rechazo]);
+        `, [pasoActual.id_flow_stp, idFlow, id_user, uuidValidacion, observaciones, id_motivo_rechazo]);
         const idFes = fesIns.rows[0].id_fes;
 
         await client.query(`
-          UPDATE sch_leangsp.tflw_flow_steps SET
+          UPDATE tflw_flow_steps SET
             estado = 'RECHAZADO',
             id_fes = $1,
             id_motivo_rechazo = $2,
             flow_step_obs = $3,
             id_user = $4,
-            fecha_actualizacion = CURRENT_TIMESTAMP
+            flow_step_event = 'RECHAZADO',
+            fecha_event = CURRENT_TIMESTAMP
           WHERE id_flow_stp = $5;
         `, [idFes, id_motivo_rechazo, observaciones, id_user, pasoActual.id_flow_stp]);
 
         await client.query(`
-          UPDATE sch_leangsp.tits_informe_termino SET
+          UPDATE tits_informe_termino SET
             estado_its = 'EN_CORRECCION',
             fecha_actualizacion = CURRENT_TIMESTAMP
           WHERE id_its = $1;
@@ -1344,13 +1638,13 @@ const itsController = {
 
         // Reabrir Paso 1 para el analista
         await client.query(`
-          UPDATE sch_leangsp.tflw_flow_steps SET estado = 'PENDIENTE', id_fes = NULL
+          UPDATE tflw_flow_steps SET estado = 'PENDIENTE', id_fes = NULL
           WHERE id_flow = $1 AND flow_tmpl_step_orden = 1;
         `, [idFlow]);
 
         // Resetear otros pasos a EN ESPERA
         await client.query(`
-          UPDATE sch_leangsp.tflw_flow_steps SET estado = 'EN ESPERA', id_fes = NULL
+          UPDATE tflw_flow_steps SET estado = 'EN ESPERA', id_fes = NULL
           WHERE id_flow = $1 AND flow_tmpl_step_orden > 1 AND id_flow_stp <> $2;
         `, [idFlow, pasoActual.id_flow_stp]);
 
@@ -1358,9 +1652,9 @@ const itsController = {
         try {
           const analistaRes = await client.query(`
             SELECT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat, m.motivo_rechazo
-            FROM sch_leangsp.tits_informe_termino its
-            JOIN sch_leangsp.tsec_users u ON its.id_user_elaborado = u.id_user
-            LEFT JOIN sch_leangsp.tflw_motivo_rechazo m ON m.id_motivo_rechazo = $1
+            FROM tits_informe_termino its
+            JOIN tsec_users u ON its.id_user_elaborado = u.id_user
+            LEFT JOIN tflw_motivo_rechazo m ON m.id_motivo_rechazo = $1
             WHERE its.id_its = $2;
           `, [id_motivo_rechazo, id_its]);
 

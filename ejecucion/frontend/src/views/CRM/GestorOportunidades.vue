@@ -980,17 +980,26 @@
                             <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Rigger (Opcional) --</option>
                             <optgroup v-if="getUsuariosAgrupados('Rigger').sugeridos.length > 0" label="🎯 Riggers Sugeridos" class="bg-[#0a0f1e] text-cyan-400 font-bold">
                               <option v-for="u in getUsuariosAgrupados('Rigger').sugeridos" :key="'rig-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
                               </option>
                             </optgroup>
                             <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
                               <option v-for="u in getUsuariosAgrupados('Rigger').otros" :key="'rig-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
                               </option>
                             </optgroup>
                           </select>
+                          <button
+                            type="button"
+                            @click.stop="abrirModalRiggerExterno(line)"
+                            class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 flex-shrink-0 cursor-pointer transition-all shadow-xs"
+                            title="Enrolar y asignar rápidamente un Rigger Externo contratado para esta faena"
+                          >
+                            <span>➕</span> Ext
+                          </button>
                           <template v-if="line.rigger_asignado_id">
-                            <button type="button" v-if="getSemaforoTripulante(line.rigger_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                            <span v-if="isRiggerExterno(line.rigger_asignado_id)" class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0" title="Rigger Externo / Subcontratista">🏢 EXT</span>
+                            <button type="button" v-else-if="getSemaforoTripulante(line.rigger_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
                             <button type="button" v-else-if="getSemaforoTripulante(line.rigger_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
                             <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                           </template>
@@ -2596,7 +2605,18 @@
             <h4 class="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono flex items-center gap-2">
               <span>📋 Cronograma de Reports Diarios de Terreno</span>
             </h4>
-            <span class="text-xs text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">{{ reportsFiltrados.length }} de {{ reportsProyecto.length }} report(s)</span>
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                @click="abrirModalRegularizarManual"
+                class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
+                title="Crear o regularizar manualmente un reporte diario de faena con soporte físico"
+              >
+                <span>➕</span>
+                <span>Regularizar Reporte Físico</span>
+              </button>
+              <span class="text-xs text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-md">{{ reportsFiltrados.length }} de {{ reportsProyecto.length }} report(s)</span>
+            </div>
           </div>
 
           <!-- FILTRO POR EQUIPO (Spec 35) -->
@@ -2639,12 +2659,22 @@
           </div>
 
           <!-- Empty State -->
-          <div v-else-if="reportsFiltrados.length === 0" class="p-12 text-center space-y-3">
+          <div v-else-if="reportsFiltrados.length === 0" class="p-12 text-center space-y-4">
             <span class="text-4xl block">📋</span>
             <div class="text-base font-bold text-white">No hay reports registrados para este criterio</div>
             <p class="text-sm text-slate-400 max-w-lg mx-auto">
-              El operador de la grúa puede generar el Report Diario desde la PWA en terreno al concluir la jornada de izaje.
+              El operador de la grúa puede generar el Report Diario desde la PWA en terreno o puede regularizarse manualmente desde Torre de Control con la hoja de faena firmada.
             </p>
+            <div class="pt-2">
+              <button
+                type="button"
+                @click="abrirModalRegularizarManual"
+                class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs font-mono transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-amber-500/20"
+              >
+                <span>➕</span>
+                <span>Regularizar Reporte Manual Ahora</span>
+              </button>
+            </div>
           </div>
 
           <!-- Table -->
@@ -2732,29 +2762,68 @@
                   <!-- Estado -->
                   <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
                     <span 
-                      v-if="rep.estado_reporte === 'VALIDADO_ANALISTA'" 
-                      class="px-3 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1"
+                      v-if="rep.id_doc_pdf || rep.ajustes_analista?.evidencia_fisica_adjunta" 
+                      class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1"
+                      title="Reporte regularizado con respaldo documental físico escaneado"
                     >
-                      ✅ Validado
+                      📄 Doc Físico OK
+                    </span>
+                    <span 
+                      v-else-if="rep.estado_reporte === 'VALIDADO_ANALISTA'" 
+                      class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1"
+                    >
+                      ✅ Validado FES
+                    </span>
+                    <span 
+                      v-else-if="rep.estado_reporte === 'REGULARIZADO_MANUAL' || rep.ajustes_analista?.requiere_evidencia_fisica" 
+                      class="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse inline-flex items-center gap-1"
+                      title="Ingresado manualmente. Pendiente de adjuntar la evidencia física escaneada"
+                    >
+                      ⚠️ Regularizado Manual
                     </span>
                     <span 
                       v-else 
-                      class="px-3 py-1 rounded-md text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse inline-flex items-center gap-1"
+                      class="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 inline-flex items-center gap-1"
                     >
-                      ⏳ Pendiente
+                      ⏳ Pendiente Terreno
                     </span>
                   </td>
 
                   <!-- Acciones -->
                   <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
                       <button
+                        type="button"
                         @click="abrirVisorReport(rep)"
-                        class="px-3.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        class="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shadow-sm"
                         title="Ver Documento Digital y Firma"
                       >
                         <span>👁️</span>
                         <span>Ver</span>
+                      </button>
+
+                      <!-- Ver documento físico si existe -->
+                      <a
+                        v-if="rep.id_doc_pdf"
+                        :href="getUrlDocFisico(rep.id_doc_pdf)"
+                        target="_blank"
+                        class="px-2.5 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-300 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 shadow-sm"
+                        title="Abrir respaldo físico escaneado (PDF/Imagen)"
+                      >
+                        <span>📄</span>
+                        <span>Doc</span>
+                      </a>
+
+                      <!-- Botón Adjuntar Respaldo Físico si falta o está regularizado -->
+                      <button
+                        v-if="!rep.id_doc_pdf || rep.estado_reporte === 'REGULARIZADO_MANUAL' || rep.ajustes_analista?.requiere_evidencia_fisica"
+                        type="button"
+                        @click="abrirModalAdjuntarEvidencia(rep)"
+                        class="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/50 text-amber-300 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                        title="Adjuntar PDF o foto de la boleta/hoja de reporte físico firmado"
+                      >
+                        <span>📎</span>
+                        <span>Adjuntar Doc</span>
                       </button>
                     </div>
                   </td>
@@ -4869,6 +4938,93 @@
       <div class="text-slate-400 text-xs">Por favor, espera un momento.</div>
     </div>
 
+    <!-- Modal Enrolamiento Rápido de Rigger Externo (REQ-997 / Caso 1) -->
+    <div v-if="mostrarModalRiggerExterno" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn">
+      <div class="bg-[#0b0f19] border border-cyan-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-left font-sans space-y-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🦺</span>
+            <div>
+              <h3 class="text-sm font-black text-white uppercase tracking-wider">Registrar Rigger Externo</h3>
+              <p class="text-[11px] text-cyan-400">Enrolamiento rápido para faena y asignación en OT</p>
+            </div>
+          </div>
+          <button @click="mostrarModalRiggerExterno = false" class="text-slate-400 hover:text-white text-base cursor-pointer">✕</button>
+        </div>
+
+        <!-- Formulario -->
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-300 mb-1">Nombre Completo <span class="text-red-400">*</span></label>
+            <input 
+              v-model="formRiggerExterno.nombre" 
+              type="text" 
+              placeholder="Ej: JUAN PÉREZ SOTO" 
+              class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 text-white font-medium outline-none focus:border-cyan-400 uppercase"
+              @keyup.enter="guardarRiggerExterno"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-300 mb-1">RUT (Opcional)</label>
+              <input 
+                v-model="formRiggerExterno.rut" 
+                type="text" 
+                placeholder="15.342.112-K" 
+                class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 text-white font-medium outline-none focus:border-cyan-400 uppercase font-mono"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-300 mb-1">Teléfono / WhatsApp</label>
+              <input 
+                v-model="formRiggerExterno.movil" 
+                type="text" 
+                placeholder="+56 9 8765 4321" 
+                class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 text-white font-medium outline-none focus:border-cyan-400 font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-300 mb-1">Empresa Proveedora / Subcontratista</label>
+            <input 
+              v-model="formRiggerExterno.empresa_proveedora" 
+              type="text" 
+              placeholder="Ej: SERVICIOS INDUSTRIALES SPA / INDEPENDIENTE" 
+              class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 text-white font-medium outline-none focus:border-cyan-400 uppercase"
+            />
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-cyan-950/30 border border-cyan-500/20 rounded-xl text-[11px] text-cyan-300 leading-relaxed">
+          💡 El especialista quedará registrado como <strong>Personal Externo (Rigger)</strong>, asignado inmediatamente a esta máquina y visible para la PWA del operador, el Report Diario y el PDF de cotización.
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+          <button 
+            type="button" 
+            @click="mostrarModalRiggerExterno = false" 
+            class="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold rounded-lg transition-all cursor-pointer"
+            :disabled="guardandoRiggerExterno"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button" 
+            @click="guardarRiggerExterno" 
+            class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase tracking-wider rounded-lg shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            :disabled="guardandoRiggerExterno"
+          >
+            <span v-if="guardandoRiggerExterno">⏳ Guardando...</span>
+            <span v-else>💾 Guardar y Asignar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Motivo No Ganada -->
     <div v-if="mostrarModalNoAsignada" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div class="bg-slate-900 border border-white/10 rounded-xl w-full max-w-md p-6 shadow-2xl relative text-left">
@@ -5563,6 +5719,195 @@
     @close="modalVisorReportAbierto = false"
     @report-validado="onReportValidado"
   />
+
+  <!-- MODAL NORMALIZAR / ADJUNTAR EVIDENCIA FÍSICA A REPORTE -->
+  <div v-if="mostrarModalAdjuntarEvidencia" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[#0b1021] border border-amber-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div class="bg-gradient-to-r from-amber-950/80 to-[#0b1021] border-b border-white/10 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg">
+            📎
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">Normalizar Evidencia Física</h3>
+            <p class="text-[11px] text-slate-300">
+              Día {{ reportParaEvidencia?.dia_correlativo || 1 }} • {{ formatearFechaCorta(reportParaEvidencia?.fecha_reporte) }} • {{ reportParaEvidencia?.equipo_patente || 'Grúa' }}
+            </p>
+          </div>
+        </div>
+        <button @click="cerrarModalAdjuntarEvidencia" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-slate-200">
+        <div class="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 text-xs space-y-1">
+          <p class="text-amber-300 font-bold flex items-center gap-1.5">
+            <span>ℹ️</span>
+            <span>Respaldo Documental de Terreno</span>
+          </p>
+          <p class="text-slate-300 leading-relaxed">
+            Adjunte el escaneo o fotografía legible de la boleta o reporte físico en papel con la firma y timbre del supervisor mandante.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1.5">
+            Archivo Escaneado (PDF o Imagen PNG/JPG) <span class="text-amber-400">*</span>
+          </label>
+          <input 
+            type="file" 
+            ref="archivoEvidenciaInputRef" 
+            accept=".pdf,.png,.jpg,.jpeg" 
+            @change="onArchivoEvidenciaChange"
+            class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 file:cursor-pointer bg-[#050810] border border-white/20 rounded-lg p-2 outline-none"
+          />
+          <p v-if="archivoEvidenciaSeleccionado" class="text-xs text-emerald-400 mt-1 font-mono">
+            ✓ Archivo cargado: {{ archivoEvidenciaSeleccionado.name }} ({{ (archivoEvidenciaSeleccionado.size / 1024).toFixed(1) }} KB)
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Observaciones / Notas de Validación</label>
+          <textarea 
+            v-model="notasEvidenciaInput" 
+            rows="3" 
+            placeholder="ej. Boleta física N° 48192 firmada por supervisor mandante en faena conforme." 
+            class="w-full bg-[#050810] border border-white/20 rounded-lg p-3 text-xs text-white font-sans focus:border-amber-400 outline-none"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+          <button 
+            type="button" 
+            @click="cerrarModalAdjuntarEvidencia" 
+            class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-mono border border-white/10 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button" 
+            :disabled="!archivoEvidenciaSeleccionado || guardandoEvidencia" 
+            @click="guardarEvidenciaFisica" 
+            class="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-xs font-mono shadow-md transition-all flex items-center gap-1.5"
+          >
+            <span v-if="guardandoEvidencia" class="animate-spin">⏳</span>
+            <span>{{ guardandoEvidencia ? 'Subiendo y Validando...' : 'Guardar y Validar Reporte' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL REGULARIZACIÓN MANUAL DIRECTA DE REPORTE FÍSICO -->
+  <div v-if="mostrarModalRegularizarManual" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-[#0b1021] border border-amber-500/40 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 my-8">
+      <div class="bg-gradient-to-r from-amber-950/80 to-[#0b1021] border-b border-white/10 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-lg">
+            ➕
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">Regularizar Reporte Diario Físico</h3>
+            <p class="text-[11px] text-slate-300">Cargar jornada de izaje manual con o sin respaldo escaneado</p>
+          </div>
+        </div>
+        <button @click="mostrarModalRegularizarManual = false" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-slate-200 max-h-[80vh] overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Fecha Operativa <span class="text-amber-400">*</span></label>
+            <input v-model="formRegularizar.fecha_reporte" type="date" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Día Correlativo</label>
+            <input v-model.number="formRegularizar.dia_correlativo" type="number" min="1" placeholder="ej. 1" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Equipo / Grúa</label>
+            <select v-model="formRegularizar.id_equipo" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none">
+              <option :value="null">-- Seleccionar Equipo --</option>
+              <option v-for="eq in listaEquiposUnicosReports" :key="eq.id_equipo" :value="eq.id_equipo">
+                {{ eq.patente }} - {{ eq.modelo }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Hora Inicio Servicio <span class="text-amber-400">*</span></label>
+            <input v-model="formRegularizar.hora_inicio" type="time" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Hora Término Servicio <span class="text-amber-400">*</span></label>
+            <input v-model="formRegularizar.hora_termino" type="time" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Colación (Horas)</label>
+            <input v-model.number="formRegularizar.horas_colacion" type="number" step="0.5" min="0" placeholder="1.0" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Horómetro Inicial ➔ Final</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input v-model="formRegularizar.horometro_inicio" type="number" step="0.1" placeholder="Inicio" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+              <input v-model="formRegularizar.horometro_termino" type="number" step="0.1" placeholder="Fin" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-amber-400 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Supervisor Mandante / Cargo</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input v-model="formRegularizar.cliente_nombre" type="text" placeholder="Nombre" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-sans focus:border-amber-400 outline-none" />
+              <input v-model="formRegularizar.cliente_cargo" type="text" placeholder="Cargo" class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white font-sans focus:border-amber-400 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Observaciones / Trabajos Realizados</label>
+          <textarea v-model="formRegularizar.observacion_trabajo" rows="2" placeholder="Detalle de maniobras de izaje y condiciones de faena..." class="w-full bg-[#050810] border border-white/20 rounded-lg p-2.5 text-xs text-white font-sans focus:border-amber-400 outline-none"></textarea>
+        </div>
+
+        <div class="border-t border-white/10 pt-3">
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1.5">
+            📎 Adjuntar Respaldo Físico (PDF o Imagen Opcional)
+          </label>
+          <input 
+            type="file" 
+            ref="archivoRegularizarInputRef" 
+            accept=".pdf,.png,.jpg,.jpeg" 
+            @change="onArchivoRegularizarChange"
+            class="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 file:cursor-pointer bg-[#050810] border border-white/20 rounded-lg p-2 outline-none"
+          />
+          <p v-if="archivoRegularizarSeleccionado" class="text-xs text-emerald-400 mt-1 font-mono">
+            ✓ Adjunto: {{ archivoRegularizarSeleccionado.name }} (Validación inmediata)
+          </p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-white/10">
+          <button 
+            type="button" 
+            @click="mostrarModalRegularizarManual = false" 
+            class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-mono border border-white/10 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button" 
+            :disabled="!formRegularizar.fecha_reporte || !formRegularizar.hora_inicio || !formRegularizar.hora_termino || guardandoRegularizacion" 
+            @click="guardarRegularizacionManual" 
+            class="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-xs font-mono shadow-md transition-all flex items-center gap-1.5"
+          >
+            <span v-if="guardandoRegularizacion" class="animate-spin">⏳</span>
+            <span>{{ guardandoRegularizacion ? 'Guardando...' : 'Crear y Regularizar Reporte' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL CARÁTULA OFICIAL DE ESTADO DE PAGO (EDP) (Spec 38 — SOLO LECTURA EN KANBAN) -->
   <ModalCaratulaEDP
@@ -7853,6 +8198,81 @@ const catalogoAparejos = ref([
 const aparejosMasterList = catalogoAparejos
 
 const especialistasTerreno = ref([])
+
+// REQ-997 / Caso 1: Enrolamiento Rápido de Rigger Externo en Faena
+const mostrarModalRiggerExterno = ref(false)
+const lineaObjetivoRigger = ref(null)
+const guardandoRiggerExterno = ref(false)
+const formRiggerExterno = ref({
+  nombre: '',
+  rut: '',
+  movil: '',
+  email: '',
+  empresa_proveedora: ''
+})
+
+const abrirModalRiggerExterno = (line) => {
+  lineaObjetivoRigger.value = line
+  formRiggerExterno.value = {
+    nombre: '',
+    rut: '',
+    movil: '',
+    email: '',
+    empresa_proveedora: ''
+  }
+  mostrarModalRiggerExterno.value = true
+}
+
+const isRiggerExterno = (idUser) => {
+  if (!idUser) return false
+  const u = (usuarios.value || []).find(user => Number(user.id_user) === Number(idUser))
+  return u?.is_externo === true || u?.json_data?.is_externo === true || (u?.cargo && u.cargo.toLowerCase().includes('externo'))
+}
+
+const guardarRiggerExterno = async () => {
+  if (!formRiggerExterno.value.nombre || !formRiggerExterno.value.nombre.trim()) {
+    alert('⚠️ Debe ingresar el nombre completo del rigger externo.')
+    return
+  }
+  try {
+    guardandoRiggerExterno.value = true
+    const { data } = await apiAxios.post('/acreditacion/personal/externo', {
+      nombre: formRiggerExterno.value.nombre.trim(),
+      rut: formRiggerExterno.value.rut.trim(),
+      movil: formRiggerExterno.value.movil.trim(),
+      email: formRiggerExterno.value.email.trim(),
+      empresa_proveedora: formRiggerExterno.value.empresa_proveedora.trim(),
+      cargo: 'Rigger'
+    })
+
+    if (data?.status === 'success' && data.data) {
+      const nuevo = data.data
+      const idxExistente = (usuarios.value || []).findIndex(u => Number(u.id_user) === Number(nuevo.id_user))
+      if (idxExistente >= 0) {
+        usuarios.value[idxExistente] = { ...usuarios.value[idxExistente], ...nuevo }
+      } else {
+        if (!Array.isArray(usuarios.value)) usuarios.value = []
+        usuarios.value.push(nuevo)
+      }
+
+      if (lineaObjetivoRigger.value) {
+        lineaObjetivoRigger.value.rigger_asignado_id = nuevo.id_user
+        onRiggerEquipoCambiado(lineaObjetivoRigger.value)
+        marcarDirtyAsignacion()
+        // Auto-guardar la asignación en la OT para persistir inmediatamente en BD
+        await guardarCambiosAsignacion()
+      }
+
+      mostrarModalRiggerExterno.value = false
+      alert(`✅ Rigger externo "${nuevo.nombre_user}" enrolado y asignado exitosamente a la OT.`)
+    }
+  } catch (err) {
+    console.error('Error registrando rigger externo:', err)
+    alert('❌ Error al enrolar rigger externo: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoRiggerExterno.value = false
+  }
+}
 
 const onRiggerEquipoCambiado = (line) => {
   marcarDirtyAsignacion()
@@ -10452,8 +10872,17 @@ const handleBeforeUnload = (e) => {
   }
 }
 
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave(async (to, from, next) => {
   if (hayCambiosSinGuardar.value) {
+    const st = Number(estadoDbActual.value || 1)
+    if ((st === 4 || st === 5) && isDirtyAsignacion.value) {
+      const guardar = window.confirm('Tienes modificaciones de asignación pendientes.\n\n¿Deseas GUARDAR los cambios antes de salir?\n\n• [Aceptar]: Guardar cambios y salir\n• [Cancelar]: Salir sin guardar')
+      if (guardar) {
+        await guardarCambiosAsignacion()
+      }
+      next()
+      return
+    }
     const answer = window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas salir y perder tu progreso?')
     if (answer) {
       next()
@@ -10465,7 +10894,7 @@ onBeforeRouteLeave((to, from, next) => {
   }
 })
 
-const handleCancelar = () => {
+const handleCancelar = async () => {
   const volver = () => {
     emit('close')
     if (router) {
@@ -10474,6 +10903,15 @@ const handleCancelar = () => {
   }
 
   if (hayCambiosSinGuardar.value) {
+    const st = Number(estadoDbActual.value || 1)
+    if ((st === 4 || st === 5) && isDirtyAsignacion.value) {
+      const guardar = window.confirm('Tienes modificaciones de asignación pendientes.\n\n¿Deseas GUARDAR los cambios antes de volver al Kanban?\n\n• [Aceptar]: Guardar cambios y volver\n• [Cancelar]: Volver sin guardar')
+      if (guardar) {
+        await guardarCambiosAsignacion()
+      }
+      volver()
+      return
+    }
     if (window.confirm('Tienes cambios sin guardar. ¿Estás seguro que deseas volver al Kanban y perder tu progreso?')) {
       volver()
     }
@@ -12326,6 +12764,168 @@ const resumenKpiReports = computed(() => {
     horometroRange
   }
 })
+
+// === NORMALIZACIÓN DE EVIDENCIAS FÍSICAS Y REGULARIZACIÓN MANUAL (REQ-1000) ===
+const mostrarModalAdjuntarEvidencia = ref(false)
+const reportParaEvidencia = ref(null)
+const archivoEvidenciaSeleccionado = ref(null)
+const archivoEvidenciaInputRef = ref(null)
+const notasEvidenciaInput = ref('')
+const guardandoEvidencia = ref(false)
+
+const abrirModalAdjuntarEvidencia = (rep) => {
+  reportParaEvidencia.value = rep
+  archivoEvidenciaSeleccionado.value = null
+  notasEvidenciaInput.value = ''
+  mostrarModalAdjuntarEvidencia.value = true
+  if (archivoEvidenciaInputRef.value) {
+    archivoEvidenciaInputRef.value.value = ''
+  }
+}
+
+const cerrarModalAdjuntarEvidencia = () => {
+  mostrarModalAdjuntarEvidencia.value = false
+  reportParaEvidencia.value = null
+  archivoEvidenciaSeleccionado.value = null
+  notasEvidenciaInput.value = ''
+}
+
+const onArchivoEvidenciaChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    archivoEvidenciaSeleccionado.value = file
+  }
+}
+
+const guardarEvidenciaFisica = async () => {
+  if (!reportParaEvidencia.value?.id_reporte_avance || !archivoEvidenciaSeleccionado.value) return
+  try {
+    guardandoEvidencia.value = true
+    const formData = new FormData()
+    formData.append('archivo', archivoEvidenciaSeleccionado.value)
+    formData.append('notas_evidencia', notasEvidenciaInput.value)
+
+    const repId = reportParaEvidencia.value.id_reporte_avance
+    const { data } = await apiAxios.post(`/operaciones/report/${repId}/adjuntar-respaldo-fisico`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    if (data?.success) {
+      alert('✅ Documento físico adjuntado y reporte validado exitosamente.')
+      cerrarModalAdjuntarEvidencia()
+      await cargarReportsProyecto()
+      if (typeof cargarResumenEDP === 'function') {
+        await cargarResumenEDP()
+      }
+    }
+  } catch (err) {
+    console.error('Error adjuntando evidencia física:', err)
+    alert('❌ Error al subir documento: ' + (err.response?.data?.error || err.message))
+  } finally {
+    guardandoEvidencia.value = false
+  }
+}
+
+const getUrlDocFisico = (idDoc) => {
+  if (!idDoc) return '#'
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+  return `${base}/v1/storage/view/${idDoc}`
+}
+
+// Modal Regularizar Reporte Manual
+const mostrarModalRegularizarManual = ref(false)
+const guardandoRegularizacion = ref(false)
+const archivoRegularizarSeleccionado = ref(null)
+const archivoRegularizarInputRef = ref(null)
+const formRegularizar = ref({
+  fecha_reporte: new Date().toISOString().split('T')[0],
+  dia_correlativo: 1,
+  id_equipo: null,
+  hora_inicio: '08:00',
+  hora_termino: '18:00',
+  horas_colacion: 1.0,
+  horometro_inicio: null,
+  horometro_termino: null,
+  odometro_inicio: null,
+  odometro_termino: null,
+  cliente_nombre: '',
+  cliente_cargo: '',
+  observacion_trabajo: ''
+})
+
+const abrirModalRegularizarManual = () => {
+  let id = props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  const nextDia = (reportsProyecto.value?.length || 0) + 1
+  const firstEq = listaEquiposUnicosReports.value?.[0]?.id_equipo || null
+  formRegularizar.value = {
+    fecha_reporte: new Date().toISOString().split('T')[0],
+    dia_correlativo: nextDia,
+    id_equipo: firstEq,
+    hora_inicio: '08:00',
+    hora_termino: '18:00',
+    horas_colacion: 1.0,
+    horometro_inicio: null,
+    horometro_termino: null,
+    odometro_inicio: null,
+    odometro_termino: null,
+    cliente_nombre: '',
+    cliente_cargo: '',
+    observacion_trabajo: ''
+  }
+  archivoRegularizarSeleccionado.value = null
+  mostrarModalRegularizarManual.value = true
+}
+
+const onArchivoRegularizarChange = (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    archivoRegularizarSeleccionado.value = file
+  }
+}
+
+const guardarRegularizacionManual = async () => {
+  let id = props.proyectoId || currentProyectoId.value
+  if (typeof id === 'object' && id !== null) {
+    id = id.id_proyecto || id.id || id.id_cotizacion
+  }
+  if (!id) return
+
+  try {
+    guardandoRegularizacion.value = true
+    const formData = new FormData()
+    formData.append('id_proyecto', id)
+    Object.keys(formRegularizar.value).forEach(k => {
+      if (formRegularizar.value[k] !== null && formRegularizar.value[k] !== undefined) {
+        formData.append(k, formRegularizar.value[k])
+      }
+    })
+    if (archivoRegularizarSeleccionado.value) {
+      formData.append('archivo', archivoRegularizarSeleccionado.value)
+    }
+
+    const { data } = await apiAxios.post('/operaciones/report/regularizar-manual', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    if (data?.success) {
+      alert('🎉 Reporte regularizado registrado exitosamente.')
+      mostrarModalRegularizarManual.value = false
+      await cargarReportsProyecto()
+      if (typeof cargarResumenEDP === 'function') {
+        await cargarResumenEDP()
+      }
+    }
+  } catch (err) {
+    console.error('Error regularizando reporte manual:', err)
+    alert('❌ Error al regularizar reporte: ' + (err.response?.data?.error || err.message))
+  } finally {
+    guardandoRegularizacion.value = false
+  }
+}
 
 // === FUNCIONES DE LIQUIDACIÓN Y EDP (Spec 38 & Spec 40) ===
 const descargandoPdfEDP = ref(false)

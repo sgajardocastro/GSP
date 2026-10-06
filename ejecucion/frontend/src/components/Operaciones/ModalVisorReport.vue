@@ -12,12 +12,28 @@
                 Report Diario Digital — Día {{ reportLocal?.dia_correlativo || 1 }}
               </h3>
               <span 
-                :class="esValidado 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'" 
-                class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border"
+                v-if="reportLocal?.ajustes_analista?.evidencia_fisica_adjunta"
+                class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
               >
-                {{ esValidado ? '✅ Validado por Analista' : '⏳ Pendiente Validación' }}
+                📄 Respaldo Físico Normalizado
+              </span>
+              <span 
+                v-else-if="esValidado" 
+                class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+              >
+                ✅ Validado FES
+              </span>
+              <span 
+                v-else-if="reportLocal?.estado_reporte === 'REGULARIZADO_MANUAL' || reportLocal?.ajustes_analista?.requiere_evidencia_fisica"
+                class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse"
+              >
+                ⚠️ Regularizado Manual (Falta Doc)
+              </span>
+              <span 
+                v-else
+                class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-md border bg-blue-500/20 text-blue-300 border-blue-500/40"
+              >
+                ⏳ Pendiente Terreno
               </span>
               <span 
                 v-if="reportLocal?.ajustes_analista?.modificado || hayModificaciones" 
@@ -35,16 +51,16 @@
         </div>
 
         <div class="flex items-center gap-2.5">
-          <!-- BOTÓN VER PDF OFICIAL SI EXISTE -->
+          <!-- BOTÓN VER DOCUMENTO OFICIAL / RESPALDO FÍSICO SI EXISTE -->
           <a 
             v-if="reportLocal?.id_doc_pdf"
             :href="urlPdfOficial"
             target="_blank"
             class="px-3 py-1.5 text-xs font-bold font-mono rounded-lg border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 text-red-200 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-red-950/40"
-            title="Abrir PDF Oficial con Firma Electrónica FES y georreferencia"
+            :title="reportLocal?.ajustes_analista?.evidencia_fisica_adjunta ? 'Abrir Respaldo Físico Escaneado' : 'Abrir PDF Oficial con Firma Electrónica FES'"
           >
             <span>📄</span>
-            <span>PDF Firmado FES</span>
+            <span>{{ reportLocal?.ajustes_analista?.evidencia_fisica_adjunta ? 'Doc Físico Adjunto' : 'PDF Firmado FES' }}</span>
             <span v-if="reportLocal?.codigo_validacion_fes" class="text-[9px] bg-red-950/80 text-red-300 px-1 py-0.5 rounded border border-red-500/40 hidden sm:inline-block">
               {{ reportLocal.codigo_validacion_fes }}
             </span>
