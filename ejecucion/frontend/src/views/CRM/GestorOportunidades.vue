@@ -429,6 +429,7 @@
                             <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
                             <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
                             <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
+                            <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
                           </template>
                         </select>
                         <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
@@ -3289,7 +3290,7 @@
       
       <!-- LEFT: CLIENTE & VERSION -->
       <div v-show="!panelClienteMinimizado" class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
-        <fieldset :disabled="isModoOperaciones" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
+        <fieldset :disabled="isModoOperaciones" :class="{ 'pointer-events-none opacity-80 select-none': isModoOperaciones }" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
         <div class="space-y-4">
           <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
             1. Datos de la Oportunidad
@@ -3704,7 +3705,7 @@
         <!-- Tab Body -->
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="flex-1 min-h-0 overflow-y-auto p-5 scrollbar-hide space-y-6">
-            <fieldset :disabled="isModoOperaciones" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
+            <fieldset :disabled="isModoOperaciones" :class="{ 'pointer-events-none opacity-80 select-none': isModoOperaciones }" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
           
           <!-- TAB 0: ANTECEDENTES -->
           <div v-if="activeTab === 'antecedentes'" class="space-y-6">
@@ -3759,9 +3760,6 @@
           <div v-if="activeTab === 'servicios'" class="h-full flex flex-col space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-xs font-bold text-white uppercase tracking-wider">Líneas de Servicio a Cotizar</span>
-              <button @click="agregarLinea" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
-                + Agregar Línea
-              </button>
             </div>
 
             <!-- ASISTENTE VISUAL: MATRIZ DE COBRO Y ESTRUCTURACIÓN GSP -->
@@ -3801,112 +3799,201 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                 <!-- Tarjeta Caso 1 -->
                 <div 
-                  @click="seleccionarYAplicarCaso(1)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  @click="!esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(1)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
                   :class="[
                     esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
                     casoCobroActual === 1 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 1: URBANO (SIN FLETE)</span>
-                    <span v-if="casoCobroActual === 1" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                    <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 1: URBANO (SIN FLETE)</span>
+                      <span v-if="casoCobroActual === 1" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                      <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
+                      <div>• Distancia: ≤ 30 km</div>
+                      <div>• Grúa Normal (Sin contrapesos)</div>
+                      <div>• Taxímetro: Salida de Matriz</div>
+                      <div class="font-bold text-slate-200">• 1 Línea ($0 Flete)</div>
+                    </div>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
-                    <div>• Distancia: ≤ 30 km</div>
-                    <div>• Grúa Normal (Sin contrapesos)</div>
-                    <div>• Taxímetro: Salida de Matriz</div>
-                    <div class="font-bold text-slate-200">• 1 Línea ($0 Flete)</div>
+                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
+                    <span class="text-[9px] text-slate-500 font-mono">Urbano</span>
+                    <button 
+                      type="button"
+                      :disabled="esRuralActual || isModoOperaciones"
+                      @click.stop="seleccionarYAplicarCaso(1)"
+                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
+                      :class="[
+                        esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
+                        (casoCobroActual === 1 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
+                      ]"
+                    >
+                      <span v-if="casoCobroActual === 1">✓ Caso Activo</span>
+                      <span v-else>⬇️ Aplicar Caso</span>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Tarjeta Caso 2 -->
                 <div 
-                  @click="seleccionarYAplicarCaso(2)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  @click="!esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(2)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
                   :class="[
                     esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
                     casoCobroActual === 2 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 2: URBANO (CON FLETE CONTRAPESOS)</span>
-                    <span v-if="casoCobroActual === 2" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                    <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 2: URBANO (CON FLETE CONTRAPESOS)</span>
+                      <span v-if="casoCobroActual === 2" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                      <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
+                      <div>• Distancia: ≤ 30 km</div>
+                      <div>• Grúa con Contrapesos (Cama baja)</div>
+                      <div>• Taxímetro: Salida de Matriz</div>
+                      <div class="font-bold text-slate-200">• 2 Líneas (Flete Contrap.)</div>
+                    </div>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
-                    <div>• Distancia: ≤ 30 km</div>
-                    <div>• Grúa con Contrapesos (Cama baja)</div>
-                    <div>• Taxímetro: Salida de Matriz</div>
-                    <div class="font-bold text-slate-200">• 2 Líneas (Flete Contrap.)</div>
+                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
+                    <span class="text-[9px] text-slate-500 font-mono">Urbano</span>
+                    <button 
+                      type="button"
+                      :disabled="esRuralActual || isModoOperaciones"
+                      @click.stop="seleccionarYAplicarCaso(2)"
+                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
+                      :class="[
+                        esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
+                        (casoCobroActual === 2 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
+                      ]"
+                    >
+                      <span v-if="casoCobroActual === 2">✓ Caso Activo</span>
+                      <span v-else>⬇️ Aplicar Caso</span>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Tarjeta Caso 3 -->
                 <div 
-                  @click="seleccionarYAplicarCaso(3)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  @click="esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(3)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
                   :class="[
                     !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
                     casoCobroActual === 3 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 3: RURAL (CON FLETE GRÚA)</span>
-                    <span v-if="casoCobroActual === 3" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                    <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 3: RURAL (CON FLETE GRÚA)</span>
+                      <span v-if="casoCobroActual === 3" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                      <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
+                      <div>• Distancia: &gt; 30 km</div>
+                      <div>• Grúa Normal (Sin contrapesos)</div>
+                      <div>• Taxímetro: Llegada Faena</div>
+                      <div class="font-bold text-slate-200">• 2 Líneas (Flete Grúa Obl.)</div>
+                    </div>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
-                    <div>• Distancia: &gt; 30 km</div>
-                    <div>• Grúa Normal (Sin contrapesos)</div>
-                    <div>• Taxímetro: Llegada Faena</div>
-                    <div class="font-bold text-slate-200">• 2 Líneas (Flete Grúa Obl.)</div>
+                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
+                    <span class="text-[9px] text-slate-500 font-mono">Rural</span>
+                    <button 
+                      type="button"
+                      :disabled="!esRuralActual || isModoOperaciones"
+                      @click.stop="seleccionarYAplicarCaso(3)"
+                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
+                      :class="[
+                        !esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
+                        (casoCobroActual === 3 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
+                      ]"
+                    >
+                      <span v-if="casoCobroActual === 3">✓ Caso Activo</span>
+                      <span v-else>⬇️ Aplicar Caso</span>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Tarjeta Caso 4 -->
                 <div 
-                  @click="seleccionarYAplicarCaso(4)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative"
+                  @click="esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(4)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
                   :class="[
                     !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
                     casoCobroActual === 4 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)</span>
-                    <span v-if="casoCobroActual === 4" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                    <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)</span>
+                      <span v-if="casoCobroActual === 4" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                      <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
+                      <div>• Distancia: &gt; 30 km</div>
+                      <div>• Grúa con Contrapesos (Cama baja)</div>
+                      <div>• Taxímetro: Llegada Faena</div>
+                      <div class="font-bold text-slate-200">• 3 Líneas (Piso 8h + Fletes)</div>
+                    </div>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
-                    <div>• Distancia: &gt; 30 km</div>
-                    <div>• Grúa con Contrapesos (Cama baja)</div>
-                    <div>• Taxímetro: Llegada Faena</div>
-                    <div class="font-bold text-slate-200">• 3 Líneas (Piso 8h + Fletes)</div>
+                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
+                    <span class="text-[9px] text-slate-500 font-mono">Rural</span>
+                    <button 
+                      type="button"
+                      :disabled="!esRuralActual || isModoOperaciones"
+                      @click.stop="seleccionarYAplicarCaso(4)"
+                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
+                      :class="[
+                        !esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
+                        (casoCobroActual === 4 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
+                      ]"
+                    >
+                      <span v-if="casoCobroActual === 4">✓ Caso Activo</span>
+                      <span v-else>⬇️ Aplicar Caso</span>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Tarjeta Caso 5 (Especial / Mixto Libre / Flete Puro) -->
                 <div 
-                  @click="seleccionarYAplicarCaso(5)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative cursor-pointer"
+                  @click="!isModoOperaciones && seleccionarYAplicarCaso(5)"
+                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between cursor-pointer"
                   :class="[
                     casoCobroActual === 5 
                       ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-1 ring-cyan-500/30' 
                       : 'border-white/5 bg-black/20 hover:border-cyan-500/40'
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="font-bold text-[11px]" :class="casoCobroActual === 5 ? 'text-cyan-300' : 'text-slate-300'">CASO 5: ESPECIAL / MIXTO LIBRE</span>
-                    <span v-if="casoCobroActual === 5" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-400 text-black">Activo</span>
-                    <span v-else class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-cyan-950/40 text-cyan-400/80 border border-cyan-500/20">Personalizado</span>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-[11px]" :class="casoCobroActual === 5 ? 'text-cyan-300' : 'text-slate-300'">CASO 5: ESPECIAL / MIXTO LIBRE</span>
+                      <span v-if="casoCobroActual === 5" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-400 text-black">Activo</span>
+                      <span v-else class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-cyan-950/40 text-cyan-400/80 border border-cyan-500/20">Personalizado</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 space-y-0.5">
+                      <div>• Distancia: Libre (Urbana / Rural)</div>
+                      <div>• Flete Puro / Carga de Terceros</div>
+                      <div>• Canasta Abierta (Sin grúa oblig.)</div>
+                      <div class="font-bold text-cyan-200">• Metadato: Auditoría &amp; Control</div>
+                    </div>
                   </div>
-                  <div class="text-[10px] text-slate-400 space-y-0.5">
-                    <div>• Distancia: Libre (Urbana / Rural)</div>
-                    <div>• Flete Puro / Carga de Terceros</div>
-                    <div>• Canasta Abierta (Sin grúa oblig.)</div>
-                    <div class="font-bold text-cyan-200">• Metadato: Auditoría &amp; Control</div>
+                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
+                    <span class="text-[9px] text-cyan-400/70 font-mono">Especial</span>
+                    <button 
+                      type="button"
+                      :disabled="isModoOperaciones"
+                      @click.stop="seleccionarYAplicarCaso(5)"
+                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      :class="[
+                        casoCobroActual === 5 ? 'bg-cyan-400 text-black shadow-sm cursor-default' : 'bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-500/30'
+                      ]"
+                    >
+                      <span v-if="casoCobroActual === 5">✓ Caso Activo</span>
+                      <span v-else>⬇️ Aplicar Caso</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3936,19 +4023,16 @@
                     </span>
                   </div>
                 </div>
+                
+                <!-- Botón + Agregar Línea Reubicado en esta franja -->
                 <button 
-                  v-if="casoCobroActual"
                   type="button" 
-                  @click="aplicarConfiguracionCaso(casoCobroActual)"
-                  class="px-3 py-1.5 rounded font-bold font-mono text-[11px] transition-all shadow flex items-center gap-1.5 cursor-pointer"
-                  :class="!esEstructuraValidaParaCaso 
-                    ? 'bg-amber-600 hover:bg-amber-500 text-black shadow-amber-500/20 shadow-md' 
-                    : (casoCobroActual === 5 ? 'bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/30' : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10')"
+                  @click="agregarLinea"
+                  :disabled="isModoOperaciones"
+                  class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all shadow flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ml-auto"
                 >
-                  <span>⚡</span>
-                  {{ !esEstructuraValidaParaCaso 
-                    ? `Aplicar Configuración Caso ${casoCobroActual}` 
-                    : (casoCobroActual === 5 ? 'Mantener Régimen Caso 5 Libre' : `Re-Aplicar Configuración Caso ${casoCobroActual}`) }}
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                  <span>+ Agregar Línea</span>
                 </button>
               </div>
 
@@ -8604,8 +8688,17 @@ const snapshotComercial = ref({})
 
 const isOriginalLine = (index) => {
   if (!snapshotComercial.value) return false
-  if (Array.isArray(snapshotComercial.value.lines)) {
-    return index < snapshotComercial.value.lines.length
+  const linea = lines.value[index]
+  // Si la línea corresponde a personal solicitado formalmente en preventa comercial, es original
+  if (linea && linea.tipo === 'PERSONAL CERTIFICADO') {
+    if (linea.subcategoria === 'RIGGER' && opportunity.value.requiere_rigger) return true
+    if (linea.subcategoria === 'PREVENCIONISTA' && opportunity.value.requiere_prevencionista) return true
+  }
+  const countSnapshot = Array.isArray(snapshotComercial.value.lines) ? snapshotComercial.value.lines.length : 0
+  const countCrmLineas = Array.isArray(opportunity.value?.json_field?.crm_v1?.lineas_servicio) ? opportunity.value.json_field.crm_v1.lineas_servicio.length : 0
+  const maxOriginales = Math.max(countSnapshot, countCrmLineas)
+  if (maxOriginales > 0) {
+    return index < maxOriginales
   }
   return index === 0 && !!snapshotComercial.value.equipo_descripcion
 }
@@ -8659,7 +8752,9 @@ const hasDiff = (field, index = 0) => {
   }
   if (field === 'equipo_unidad') {
     const orig = snapshotComercial.value.lines?.[index]?.unidad ?? ''
-    return cleanVal(lines.value[index]?.unidad) !== cleanVal(orig)
+    const uCurr = cleanVal(lines.value[index]?.unidad).toUpperCase().replace(/[\/_\s-]/g, '')
+    const uOrig = cleanVal(orig).toUpperCase().replace(/[\/_\s-]/g, '')
+    return uCurr !== uOrig
   }
   
   return false
@@ -9983,6 +10078,7 @@ const enviarCotizacionPorCorreo = async () => {
 }
 
 const agregarLinea = () => {
+  if (isModoOperaciones.value) return
   lines.value.push({ 
     tipo: '', 
     subcategoria: '', 
@@ -9999,6 +10095,7 @@ const agregarLinea = () => {
 }
 
 const eliminarLinea = (idx) => {
+  if (isModoOperaciones.value) return
   lines.value.splice(idx, 1)
 }
 
@@ -10141,6 +10238,11 @@ const asegurarLineaGruaBase = () => {
 }
 
 const seleccionarYAplicarCaso = (caso) => {
+  if (isModoOperaciones.value) return
+  const km = parseFloat(opportunity.value?.distancia_km) || 0
+  if (km > 30 && (caso === 1 || caso === 2)) return
+  if (km > 0 && km <= 30 && (caso === 3 || caso === 4)) return
+
   opportunity.value.tipo_caso = caso
   if (caso === 1) {
     opportunity.value.lleva_contrapeso = false
@@ -10160,6 +10262,7 @@ const seleccionarYAplicarCaso = (caso) => {
 }
 
 const aplicarConfiguracionCaso = (casoParam = null) => {
+  if (isModoOperaciones.value) return
   const caso = casoParam || casoCobroActual.value || 1
   opportunity.value.tipo_caso = caso
   const km = parseFloat(opportunity.value?.distancia_km) || 0
@@ -10524,8 +10627,14 @@ const cargarDatosCotizacion = async () => {
                   valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
                   valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0
                 }
-              } else if (mappedUnidad === 'Flete' || mappedUnidad === 'Viaje' || mappedUnidad === 'Traslados' || mappedUnidad === 'Traslado') {
-                mappedUnidad = 'Traslado'
+              } else if (mappedUnidad === 'Flete' || mappedUnidad === 'Viaje' || mappedUnidad === 'Traslados' || mappedUnidad === 'Traslado' || (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('TRASLADO'))) {
+                if (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('IDA/VUELTA')) {
+                  mappedUnidad = 'TRASLADO IDA/VUELTA'
+                } else if (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('IDA')) {
+                  mappedUnidad = 'TRASLADO IDA'
+                } else {
+                  mappedUnidad = 'Traslado'
+                }
                 let cant = Number(l.cantidad) || 1
                 return {
                   ...l,
@@ -10620,6 +10729,10 @@ const cargarDatosCotizacion = async () => {
           }
           if (crm.snapshot_comercial && Object.keys(crm.snapshot_comercial).length > 0) {
             snapshotComercial.value = JSON.parse(JSON.stringify(crm.snapshot_comercial))
+            // Si el snapshot guardado tenía menos líneas que las líneas de servicio cotizadas en preventa, reconciliar
+            if (Array.isArray(lines.value) && (!Array.isArray(snapshotComercial.value.lines) || snapshotComercial.value.lines.length < lines.value.length)) {
+              snapshotComercial.value.lines = JSON.parse(JSON.stringify(lines.value))
+            }
           } else {
             snapshotComercial.value = JSON.parse(JSON.stringify({
               peso_carga: siteVisit.value.peso_carga || '',

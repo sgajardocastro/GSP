@@ -2,6 +2,40 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.93
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-05 22:45:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-996`
+- **Especificación Técnica:** Control y Usabilidad del Estructurador Comercial: Candado de Distancia, Reubicación de Agregar Línea, Inmutabilidad en Etapas Concluidas y Botones Contextuales de Aplicación de Casos (`GestorOportunidades.vue`)
+- **Detalle de Mejoras y Cambios:**
+  - **[WEB - REQ-996] Candado Duro de Casos según Distancia:**
+    - Bloqueo determinista de Casos 1 y 2 (Régimen Urbano $\le 30$ km) cuando la distancia a faena es mayor a 30 km (Régimen Rural), y viceversa para Casos 3 y 4.
+    - Se agregaron guardias lógicas en `seleccionarYAplicarCaso` e inhabilitación física de clics (`cursor-not-allowed`) para evitar selecciones erróneas.
+  - **[WEB - REQ-996] Reubicación de "+ Agregar Línea":**
+    - Se retiró el botón del encabezado superior `Líneas de Servicio a Cotizar` y se integró directamente en la franja horizontal de acción operativa (encima de la tabla de servicios), con fondo índigo destacado y alineación ergonómica.
+  - **[WEB - REQ-996] Inmutabilidad Estricta de Preventa Comercial en Etapas 3+ y 5:**
+    - Se incorporó la clase `pointer-events-none opacity-80 select-none` en los `fieldset` comerciales de las columnas izquierda y derecha, asegurando que tablas, botones y tarjetas no reciban clics cuando el proyecto está en Operaciones (`isModoOperaciones`).
+    - Se implementaron guardias estrictas en `agregarLinea`, `eliminarLinea`, `seleccionarYAplicarCaso` y `aplicarConfiguracionCaso` para impedir mutaciones desde cualquier evento.
+  - **[WEB - REQ-996] Eliminación de "Re-Aplicar Configuración" y Botones Individuales por Tarjeta:**
+    - Se eliminó el botón ambiguo `[⚡ Re-Aplicar Configuración Caso X]` de la franja horizontal.
+    - Cada una de las 5 tarjetas de caso ahora incorpora en su esquina inferior derecha un botón explícito: `[⬇️ Aplicar Caso]` cuando está disponible, o `[✓ Caso Activo]` cuando ya está seleccionado.
+
+## [Portal Web GSP] - Versión 1.0.92
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-05 20:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-995`
+- **Especificación Técnica:** Corrección de Falsos Positivos en Validación & Auditoría Diff de Requerimientos Operativos (GestorOportunidades.vue)
+- **Detalle de Mejoras y Cambios:**
+  - **[WEB - REQ-995] Normalización de Unidades de Traslado (`GestorOportunidades.vue`):**
+    - Se incorporó soporte explícito para unidades compuestas `'TRASLADO IDA'` y `'TRASLADO IDA/VUELTA'` en el mapeador de carga de proyectos (`cargarProyecto`), evitando la mutación a `'Valor Fijo'` o `'Traslado'` genérico.
+    - Se implementó normalización insensible a caracteres especiales y espacios en `hasDiff('equipo_unidad')`, eliminando falsas observaciones en traslados cotizados originalmente.
+  - **[WEB - REQ-995] Reconciliación de Líneas Originales de Preventa (`isOriginalLine`):**
+    - Se extendió la verificación de líneas originales incorporando como respaldo canónico el arreglo de `crm_v1.lineas_servicio` de la oportunidad comercial, garantizando que líneas de personal certificado (Rigger, Prevencionista) no se clasifiquen como "Nueva Línea Operativa" ni disparen falsas observaciones cuando no han sufrido alteraciones.
+
 ## [PWA, Backend API, Base de Datos & Web] - Versión 1.0.91
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-05 16:15:00 (-03:00)
