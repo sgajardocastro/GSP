@@ -2,6 +2,141 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.105
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-07 11:05:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1007` (Visión Gráfica Comparativa del Devengado & Monto Total Cotizado CRM)
+- **Especificación Técnica:** Centro Gráfico Comparativo del Devengado (Core IFRS 15) e Integración del Pipeline Comercial Cotizado E2E:
+  1. **Integración del Monto Total Cotizado ($29.649.999 CLP):** Incorporación del valor total de propuestas comerciales activas en CRM (39 cotizaciones en Gestor de Oportunidades) en la banda superior de KPIs (cuadrícula ejecutiva de 6 dimensiones) y como Paso 0 en el Pipeline E2E.
+  2. **Erradicación de Barras Horizontales Planas:** Sustitución de las barras planas por un módulo visual comparativo multidimensional con 3 perspectivas clave mediante switcher de pestañas.
+  3. **Perspectiva 1 - Columnas E2E (Funnel de Valor):** Gráfico de 6 columnas verticales calibradas sobre escala Y (0% a 100%) mostrando la conversión completa: Cotizado ($29.6M / 100%) ➔ En Faena ($12.4M / 42%) ➔ Con ITS ➔ EDP Visado ➔ Esperando OC ($12.2M / 41% Cuello de Botella con resplandor y badge animado) ➔ Facturado SII ($170K / 0.6%).
+  4. **Perspectiva 2 - 4 Pilares Macro de Caja:** 4 columnas volumétricas de contraste directo (Cotizado CRM, Devengado Faena, Brecha Descalce Retenido y Facturación DTE).
+  5. **Perspectiva 3 - Descalce por Mandante:** Gráfico comparativo segmentado por cliente mandante (Pocuro, Asenav, Dfan, etc.) evidenciando a qué clientes presionar por OCs.
+  6. **Drill-down y Filtrado Reactivo:** Filtrado instantáneo de la tabla de OTs retenidas al hacer clic en cualquier fase o cliente, con indicador activo y botón de limpieza de filtros.
+- **Detalle de Mejoras y Cambios:**
+  - **[FRONTEND / DASHBOARD EJECUTIVO] (`Dashboard.vue`):** Refactor integral del bloque de Balanza y Pipeline; adición de imports `FileText`, `Building2`, `X`; reactividad completa en `statsPipelineReal`, `pipelineEstaciones`, `columnasComparativasE2E` y `clientesComparativa`.
+  - **[BACKEND / GOBERNANZA]:** Validación estricta con datos 100% reales de PostgreSQL (`sch_leangsp`), sin multiplicadores aproximados ni mock data.
+
+## [Portal Web GSP] - Versión 1.0.104
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-07 10:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1006` (Dashboard Directivo BI, Telemetría en Vivo & Versión Beta)
+- **Especificación Técnica:** Consola Directiva de Business Intelligence (BI) y Control Operacional en Tiempo Real para Dirección General:
+  1. **Banner Oficial de Versión Beta:** Indicador superior prominente de versión beta v0.9 en fase de calibración de métricas con Control de Gestión (Yiara Mendoza) y Dirección.
+  2. **Cálculo Transaccional Real del Devengado (IFRS 15):** Suma determinista de ingresos devengados sobre proyectos en ejecución y concluidos ($12.434.999 CLP reales) y balanza del descalce ($12.264.999 CLP retenidos en 16 OTs de faena).
+  3. **Waffle Chart / Heatmap de Flota (110 Equipos):** Matriz compacta de los 110 activos con 5 estados cromáticos vivos (Operando, En Ruta, Disponible, Taller, Bloqueado por Documentos), filtros por familia y tarjeta reactiva de telemetría.
+  4. **Feed de Alertas Accionables y Mantenimiento:** Detección de revisiones técnicas vencidas en 51 equipos, OTs pendientes de OC mandante y radar de inspecciones registradas.
+- **Detalle de Mejoras y Cambios:**
+  - **[FRONTEND / DASHBOARD EJECUTIVO] (`Dashboard.vue`):** Rediseño total de la consola principal integrando pipeline de 5 fases de devengado, balanza financiera con drill-down a OTs retenidas, matriz waffle de 110 equipos y alertas directivas en 1 clic.
+  - **[GOBERNANZA Y REGLAS DE NEGOCIO]:** Erradicación total de números simulados o datos inventados de maqueta; conexión directa a endpoints de catálogo de equipos (`/tequ-equipos`), proyectos (`/proyectos`), usuarios y control en vivo.
+
+## [Portal Web GSP / PWA] - Versión 1.0.103
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 22:40:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-994` (Hotfix Visual & Segregación RBAC)
+- **Especificación Técnica:** Rediseño Ergonómico Integral del Cotizador Express Móvil y Segregación Estricta RBAC para Perfiles Admin/Comercial (`Spec 64 v1.2.0`):
+  1. **Solución Definitiva a Superposición de Textos:** Separación física estricta entre etiquetas HTML superiores y placeholders de inputs (`<v-text-field>`), erradicando las etiquetas flotantes de Vuetify 3 que colisionaban con el texto sugerido.
+  2. **Compatibilidad Visual y Alto Contraste Bi-Tema:** Adaptabilidad nativa tanto en modo claro como en modo oscuro con fondos sobrios (`bg-white` / `bg-slate-900`), cabecera industrial navy `#0b1426`, botones ámbar contrastados y estado activo/deshabilitado con tipografía visible en todo momento.
+  3. **Segregación Estricta RBAC (Admin / Comercial):** Erradicación del banner de cotizaciones del flujo operativo de conductores y operadores de terreno (`GSP_EJEC`). Acceso exclusivo condicionado a perfiles `Admin`, `ADM_COM`, `COMERCIAL` o gerenciales mediante computed reactivo `esAdminOComercial`.
+  4. **Navegación Móvil de 1 Toque:** Inclusión de pestaña dedicada `[ ⚡ Cotizador ]` en la barra de navegación inferior fija (`v-bottom-navigation` en `App.vue`) visible únicamente para usuarios autorizados, y protección de ruta con Navigation Guard en `router/index.js`.
+- **Detalle de Mejoras y Cambios:**
+  - **[FRONTEND / PWA CONSOLA MAESTRA] (`Surveys.vue`):** Restitución del menú principal operativo a su flujo limpio y enfocado; la tarjeta comercial solo se muestra condicionalmente si el usuario tiene privilegios comerciales/admin.
+  - **[FRONTEND / PWA NAVEGACIÓN] (`App.vue` & `router/index.js`):** Inclusión de pestaña dinámica en la barra inferior para perfiles comerciales y validación `requireAdminOrCom` en guards de ruta.
+  - **[FRONTEND / COTIZADOR EXPRESS] (`CotizadorExpress.vue`):** Rediseño completo con selector segmented, tarjetas táctiles de grúas y plumas, stepper de días ergonómico, desglose financiero proforma y pantalla de confirmación optimizada.
+
+## [Portal Web GSP / PWA] - Versión 1.0.102
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 22:20:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-994`
+- **Especificación Técnica:** Cotizador Express Móvil en Terreno (APP PWA), Despacho WhatsApp y PDF Oficial Simétrico (`Spec 64 v1.1.0`): Módulo mobile-first de alta velocidad que permite cotizar servicios de izaje en terreno en menos de 60 segundos con despacho directo al cliente por WhatsApp (enlace `wa.me` con mensaje formal y descarga directa del PDF oficial). Simetría estructural absoluta con `tpry_proyecto` y `json_field.crm_v1.lineas_servicio` para que las cotizaciones puedan ser tratadas, visualizadas, auditadas y convertidas a OT desde el CRM Web de escritorio (`GestorOportunidades.vue`) y la Torre de Control (`Torre.vue`). Catálogo formal de 7 grúas móviles telescópicas (40t a 250t) y 3 camiones pluma (10t a 25t), auto-guardado de prospectos en `tpar_empresas` y `tpar_contactos`, condiciones contractuales estándar con piso mínimo de 9 horas diarias y validez estricta de 5 días hábiles.
+- **Detalle de Mejoras y Cambios:**
+  - **[BACKEND / NORMALIZADOR CANÓNICO - REQ-994] (`cotizacionExpressController.js` & `proyectoRoutes.js`):**
+    - `GET /api/proyectos/express/catalogo`: Entrega catálogo unificado de familias (`GRUAS TELESCOPICAS`, `CAMIONES`), capacidades, tarifas diarias sugeridas (CLP) y piso mínimo (9 hrs/día).
+    - `POST /api/proyectos/express/cotizar`: Resuelve cliente mandante o crea prospecto provisional en `tpar_empresas`, auto-guarda contacto en `tpar_contactos`, genera `codi_proyecto` oficial (`GSP-YYMM-CLIENT-XXX`), normaliza `lineas_servicio` idéntico al CRM de escritorio (`_uid`, `tipo`, `unidad`, `pisoMinimo: 9`, `subtotal`, `is_linea_base: true`), inserta en `tpry_proyecto` con `id_proyecto_estado = 2` (Cotización Enviada), compila el PDF oficial formal mediante `proyecto.generarCotizacionVersion` y genera el link nativo de WhatsApp.
+  - **[FRONTEND / PWA TERRENO - REQ-994] (`CotizadorExpress.vue`, `Surveys.vue`, `router/index.js`):**
+    - Wizard táctil optimizado de 3 pasos: 1) Mandante y Faena predictivos, 2) Selección de Equipo, Días de Servicio y Flete de Traslado opcional con recálculo dinámico en vivo, 3) Resumen Financiero y Emisión.
+    - Pantalla de éxito con botón maestro de despacho a WhatsApp (`mdi-whatsapp`), visor de PDF oficial y botones de salida ágil.
+    - Tarjeta de acceso rápido destacada `⚡ Cotizador Express en Terreno` en la consola maestra móvil (`Surveys.vue`) y ruta `/cotizador-express`.
+  - **[GOBERNANZA Y REGLAS DE DOMINIO]:**
+    - Erradicación absoluta de grúas torre y su emoji en todo el flujo, aplicando rigurosamente los íconos de grúas móviles (`🚜`) y camiones pluma (`🚛`).
+    - Cumplimiento de la regla de validez estricta de 5 días hábiles y piso mínimo contractual de 9 horas diarias.
+
+## [Portal Web GSP] - Versión 1.0.101
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 21:40:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1004`
+- **Especificación Técnica:** Transición Determinista Kanban Columna 5 (Operaciones) ➔ Columna 6 (Contabilidad), Apertura Directa en Subpestaña 7 y Sincronización Backend ITS-Proyecto - Caso Altumac (`Spec 38 v1.1.0`): Resolución integral de la anomalía donde OTs con faena concluida o ITS visado (como Altumac GSP-2610-4671-002) permanecían visibles en la columna de operaciones. Implementación del helper canónico `esFinalizadoOperacional`, filtro de exclusión mutua entre Columna 5 y Columna 6, redirección al hacer clic a `subtab: 'liquidacion'`, proyección de ITS en consulta de proyectos (`proyectoModel.js`) y sincronización atómica de `id_proyecto_estado >= 6` en V°B° de ITS (`itsController.js`, `Torre.vue`).
+- **Detalle de Mejoras y Cambios:**
+  - **[ANÁLISIS FORENSE Y DIAGNÓSTICO DE CAUSA RAÍZ - REQ-1004]:**
+    - Se identificó la causa exacta planteada por Jorge Ponce respecto al servicio Altumac (terminación 02 / `GSP-2610-4671-002`):
+      1. En `Torre.vue`, la Columna 5 ("En Ejecución / Faena", Operaciones) ejecutaba `return [6, 7].includes(st)`, reteniendo en la vista operativa a todas las OTs con faena finalizada (`st === 6`) o facturada (`st === 7`).
+      2. La Columna 6 ("Finalizado / Devengado", Contabilidad) filtraba exclusivamente por `Number(p.id_proyecto_estado) === 8`. Dado que el estado final en el dominio GSP es `7` (`Facturado / Concluido`), el estado `8` nunca se cumplía, dejando la columna permanentemente vacía.
+      3. Al hacer clic en las tarjetas de Columna 6, se ejecutaba `@click="abrirProyecto(p.id_proyecto, 'dossier_acreditacion')"`, enviando erróneamente al usuario a la acreditación de portería en lugar de la mesa de liquidación contable.
+      4. `proyectoModel.js` no realizaba join con `tits_informe_termino`, por lo que las tarjetas desconocían `estado_its` y `folio_its`.
+      5. `itsController.js` no elevaba el `id_proyecto_estado` a `>= 6` al firmar el V°B° de Operaciones o Contabilidad.
+  - **[FRONTEND / TORRE DE CONTROL PMO & KANBAN - REQ-1004] (`Torre.vue`):**
+    - **Helper Canónico `esFinalizadoOperacional(p)`:** Identifica de forma determinista si un proyecto culminó su fase de terreno o se encuentra en contabilidad (`st >= 6 && st < 99` sin desestimación, `estado_its IN ('EN_REVISION_CONTABILIDAD', 'CONCLUIDO')`, `estado_financiero IN ('DEVENGADO_PENDIENTE_FACTURA', 'FACTURADO_CONFORME')`, `its_v1.concluido` o `ejecucion_finalizada`).
+    - **Columna 5 ("En Ejecución / Faena" - Operaciones):** Excluye inmediatamente a cualquier proyecto que califique en `esFinalizadoOperacional(p)` y solo muestra OTs activas en terreno (`st === 5 && estaEnFaena(p)`).
+    - **Columna 6 ("Finalizado / Contabilidad"):** Agrupa automáticamente todos los proyectos que cumplen `esFinalizadoOperacional(p)`, visualiza badges cromáticos financieros, folio ITS y al hacer clic navega directamente a la **Subpestaña 7: `7. Valorización, ITS & Facturación`** (`subtab: 'liquidacion'`).
+    - **Navegación PMO y KPIs:** `getSubTabSugeridaPMO` sugiere `'liquidacion'` para proyectos finalizados y el KPI `pendientesFacturacion` audita proyectos concluidos no facturados sin depender de estados fantasma.
+  - **[BACKEND / MODELO Y CONTROLADOR - REQ-1004] (`proyectoModel.js` & `itsController.js`):**
+    - En `proyectoModel.js`, incorporación de `LEFT JOIN LATERAL` hacia `tits_informe_termino` seleccionando `id_its`, `folio_its` y `estado_its`.
+    - En `itsController.js`, sincronización atómica relacional en BD `UPDATE tpry_proyecto SET id_proyecto_estado = GREATEST(id_proyecto_estado, 6)` al visar el ITS en Paso 2 y Paso 3.
+
+## [Portal Web GSP] - Versión 1.0.100
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 21:00:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1003`
+- **Especificación Técnica:** Resolución y Blindaje del Bucle de Redirección en Retorno de Faena a Base - Caso Finning Puerto Montt / Natalia (`Spec 49 v1.2.1`): Erradicación del loop infinito entre Viaje de Retorno y Report Diario mediante asignación determinista de `tipo_trayecto`, segregación de timestamps para retorno (`fecha_salida_faena` y `fecha_llegada_patio`), supresión de llamadas a `abrirFormularioReport()` al arribar a base, y estado de servicio operacionalmente concluido (`ViajeConductor.vue`, `Surveys.vue`, `viajeModel.js`).
+- **Detalle de Mejoras y Cambios:**
+  - **[ANÁLISIS FORENSE Y DIAGNÓSTICO DE CAUSA RAÍZ - REQ-1003]:**
+    - Se identificó la causa exacta del incidente reportado por Jorge Ponce en el Proyecto 3 (Finning Puerto Montt): En `ViajeConductor.vue`, la variable reactiva `viaje.value.tipo_trayecto` no era poblada en `onMounted` a partir de `dbViaje.tipo_trayecto`, quedando indefinida (`undefined`).
+    - Toda la lógica condicional `viaje.tipo_trayecto === 'RETORNO'` fallaba a `false`, tratando el viaje de retorno como si fuera de salida/ida.
+    - Al confirmar el arribo a base en `ejecutarLlegadaFaena`, la función caía en la rama `else` y ejecutaba `abrirFormularioReport()`.
+    - La vista de Report Diario detectaba que el número de reports alcanzaba los días contratados (`dia >= dias_planificados`) y desplegaba el modal bloqueante invitando a retornar a base con el token `vj-ret-3-44-...`. Al hacer clic, el operador volvía al viaje que lo enviaba nuevamente al report, atrapándolo en un bucle cerrado.
+  - **[FRONTEND / HOJA DE CONDUCTOR - REQ-1003] (`ViajeConductor.vue`):**
+    - **Detección Determinista:** Inicialización y asignación explícita de `tipo_trayecto: (dbViaje.tipo_trayecto === 'RETORNO' || tokenViaje.includes('ret')) ? 'RETORNO' : 'IDA'`.
+    - **Timestamps Segregados:** Asignación de `timestamp_inicio` desde `fecha_salida_faena` y `timestamp_llegada` desde `fecha_llegada_patio` para viajes de retorno.
+    - **Ruptura Definitiva del Bucle:** En `ejecutarLlegadaFaena`, se actualiza el estado a `CONCLUIDO`, se suprime cualquier invocación a `abrirFormularioReport()`, se notifica al conductor con alerta de servicio concluido conforme y se despliega el botón directo `[ 🏠 VOLVER A MIS SERVICIOS (MENÚ PRINCIPAL) ➔ ]`.
+  - **[FRONTEND / PWA CONSOLA MAESTRA - REQ-1003] (`Surveys.vue`):**
+    - `estadoPaso3ViajeRetorno` incorpora soporte para `v.estado_trayecto === 'CONCLUIDO'`, reconociendo el retorno como `COMPLETADO`.
+    - `proximaAccionFlujo` muestra la tarjeta triunfal de servicio finalizado y equipo disponible (`deshabilitado: true`), evitando reentradas a formularios de terreno.
+  - **[BACKEND / MODELO OPERACIONAL - REQ-1003] (`viajeModel.js`):**
+    - Inclusión de `CONCLUIDO` en la cláusula de ordenamiento ponderado `CASE` de `getViajeActivoPorUsuario`, garantizando coherencia de prioridad entre DEV y PROD.
+
+## [Portal Web GSP] - Versión 1.0.99
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-06 20:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1002`
+- **Especificación Técnica:** Matriz Fotográfica Desacoplada por Instrumento en Terreno, Manual Operativo Visual y Locución Chilena es-CL (`Spec 49 v1.2.0`): Persistencia independiente de fotos de odómetro, horómetro camión, horómetro grúa y combustible; erradicación del término técnico "PWA" por "APP" o "Tu Aplicación en el Celular", incorporación de síntesis de voz en español de Chile (`es-CL`) y manual interactivo paso a paso para operadores con afiche de cabina (`tequ_log_desplazamiento`, `viajeModel.js`, `viajeController.js`, `ViajeConductor.vue`, `manual_operador_terreno_gsp.html`).
+- **Detalle de Mejoras y Cambios:**
+  - **[BASE DE DATOS / DDL - REQ-1002]:** Creación de columnas de persistencia fotográfica independiente en `tequ_log_desplazamiento`: `foto_odometro_salida_path`, `foto_horometro_salida_path`, `foto_odometro_llegada_path`, `foto_horometro_camion_llegada_path` y `foto_horometro_grua_llegada_path` en esquemas `sch_leangsp` (DEV) y `sch_leangsp_prod` (PROD).
+  - **[BACKEND / PERSISTENCIA Y HANDOFF - REQ-1002] (`viajeModel.js` & `viajeController.js`):**
+    - Desestructuración y persistencia atómica en BD de fotos separadas para odómetro y horómetro camión tanto en `registrarSalida` como en `registrarLlegada`.
+    - Handoff automático de `foto_horometro_grua_llegada_path` hacia `foto_tablero_inicio` en `tedp_reporte_avance` garantizando trazabilidad probatoria del inicio de faena.
+  - **[FRONTEND / APP DEL OPERADOR - REQ-1002] Desacople Multi-Foto (`ViajeConductor.vue`):**
+    - **Salida:** Exige y permite 2 fotografías independientes (Foto 1: Odómetro del camión, Foto 2: Horómetro del camión), incluyendo botón opcional de atajo ergonómico si ambos instrumentos comparten la misma pantalla digital.
+    - **Llegada a Faena:** Exige 4 fotografías independientes estructuradas por bloque: Foto 1 Odómetro, Foto 2 Horómetro Camión, Foto 3 Horómetro Grúa (cabina de izaje LICCON), y Foto 4 Nivel de Combustible.
+    - **Retorno y Llegada a Base:** Exige 2 fotos en salida de obra y 3 fotos al ingresar a Base Central San Pablo.
+  - **[DOCUMENTACIÓN Y UX - REQ-1002] Manual Visual y Voz es-CL (`manual_operador_terreno_gsp.html`):**
+    - Erradicación total y absoluta de la sigla "PWA" en textos, manuales y botones, denominándose exclusivamente **"APP"** o **"Tu Aplicación en el Celular"**.
+    - Implementación de síntesis y locución de voz con motor Web Speech API configurado en español de Chile (`es-CL`) para guiar auditivamente al operador de terreno.
+    - Publicación de la Matriz Oficial de Instrumentos y afiche técnico de cabina imprimible en DEV y PROD.
+
 ## [Portal Web GSP] - Versión 1.0.98
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-06 16:30:00 (-03:00)
