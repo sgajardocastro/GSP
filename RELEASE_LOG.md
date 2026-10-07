@@ -2,6 +2,19 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web & PWA GSP] - Versión 1.0.107
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-07 12:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1009` (Hotfix Enlace PDF Cotizador Express y Formato de Mensajería WhatsApp)
+- **Especificación Técnica:** Resolución de Ruta del PDF de Cotización Express y Formato de Mensajería WhatsApp:
+  1. **Inyección Dinámica de Prefijo de Proxy Nginx (`envPrefix`):** Modificación en `cotizacionExpressController.js` para resolver dinámicamente `/lg-gsp-prod` o `/lg-gsp-dev` antes de la ruta del archivo `/api/archivo/ver/:id`, erradicando el error HTTP 404 al intentar descargar el presupuesto oficial desde WhatsApp o desde el botón de la PWA.
+  2. **Homologación de Ubicación en el Mensaje:** Concatenación inteligente de `obra_nombre` y `obra_comuna` separados por coma y espacio, impidiendo cadenas pegadas en el texto de WhatsApp y asignando una descripción limpia y formal al proyecto.
+- **Detalle de Mejoras y Cambios:**
+  - **[BACKEND / COTIZADOR EXPRESS] (`cotizacionExpressController.js`):** Construcción canónica de `pdfFullUrl` con `process.env.APP_BASE_URL` y `envPrefix`, y formateo de `ubicacionLimpia` en `textoWsp` y `nombreProyectoFinal`.
+  - **[GOBERNANZA]:** Sincronización en `tcfg_backlog` y `tcfg_releases` en bases de datos PostgreSQL de desarrollo y producción (`sch_leangsp` y `sch_leangsp_prod`).
+
 ## [Portal Web GSP] - Versión 1.0.106
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-07 12:25:00 (-03:00)
