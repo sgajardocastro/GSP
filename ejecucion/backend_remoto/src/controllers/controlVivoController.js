@@ -120,12 +120,44 @@ const controlVivoController = {
           COALESCE(p.json_field->>'obra_nombre', p.json_field->'crm_v1'->>'obra_nombre', p.json_field->'ejecucion_v1'->'cliente'->>'obra', p.nombre_proyecto) AS obra_nombre
         FROM ${SCHEMA}.tpry_proyecto p
         LEFT JOIN ${SCHEMA}.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
-        WHERE p.id_proyecto_estado IN (4, 5, 6)
+        WHERE p.id_proyecto_estado IN (4, 5, 6, 7, 8)
           AND (
+            -- 1. Dentro de la ventana de fechas planificadas
             $1 BETWEEN COALESCE(p.fecha_plan_ini::date, NULLIF(p.json_field->'ejecucion_v1'->>'fecha_salida_plan', '')::date, CURRENT_DATE - interval '14 days')
                    AND COALESCE(p.fecha_plan_fin::date, NULLIF(p.json_field->'ejecucion_v1'->>'fecha_fin_plan', '')::date, CURRENT_DATE + interval '30 days')
+            -- 2. O existe reporte emitido en la fecha consultada
             OR EXISTS (
               SELECT 1 FROM ${SCHEMA}.tedp_reporte_avance r WHERE r.id_proyecto = p.id_proyecto AND r.fecha_reporte::date = $1
+            )
+            -- 3. O existe viaje/desplazamiento en la fecha consultada
+            OR EXISTS (
+              SELECT 1 FROM ${SCHEMA}.tequ_log_desplazamiento v 
+              WHERE v.id_proyecto = p.id_proyecto 
+                AND (v.fecha_salida_patio::date = $1 OR v.fecha_llegada_faena::date = $1 OR v.fecha_programada::date = $1)
+            )
+            -- 4. O existe inspección de patio en la fecha consultada
+            OR EXISTS (
+              SELECT 1 FROM ${SCHEMA}.tsrv_survey s 
+              WHERE s.id_proyecto = p.id_proyecto 
+                AND (s.fecha_real_ini::date = $1 OR s.created::date = $1)
+                AND s.id_template IN (76, 79)
+            )
+            -- 5. O el ITS fue elaborado/creado en la fecha consultada
+            OR EXISTS (
+              SELECT 1 FROM ${SCHEMA}.tits_informe_termino its 
+              WHERE its.id_proyecto = p.id_proyecto 
+                AND (its.fecha_elaborado::date = $1 OR its.fecha_creacion::date = $1)
+            )
+            -- 6. O es un servicio activo en faena/ruta cuya conclusión no ocurrió antes de la fecha consultada
+            OR (
+              p.id_proyecto_estado IN (4, 5, 6, 7)
+              AND COALESCE(p.fecha_plan_ini::date, NULLIF(p.json_field->'ejecucion_v1'->>'fecha_salida_plan', '')::date) <= $1
+              AND NOT EXISTS (
+                SELECT 1 FROM ${SCHEMA}.tits_informe_termino its 
+                WHERE its.id_proyecto = p.id_proyecto 
+                  AND its.estado_its = 'CONCLUIDO' 
+                  AND its.fecha_elaborado::date < $1
+              )
             )
           )
         ORDER BY p.id_proyecto DESC;

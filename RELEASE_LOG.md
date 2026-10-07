@@ -2,6 +2,20 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.106
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-07 12:25:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1008` (Hotfix Visibilidad Control en Vivo OTs en Faena & Transición ITS)
+- **Especificación Técnica:** Resiliencia de Consultas y Auditoría Operacional en Vivo para OTs en Faena y Servicios en Transición Documental (Caso Altumaq SA):
+  1. **Inclusión de Estados Operativos Críticos:** Ampliación del filtro de estados de proyectos en `controlVivoController.js` para incluir `id_proyecto_estado IN (4, 5, 6, 7, 8)`, erradicando la exclusión inadvertida de OTs en estado 7 (`En Faena`) y 8 (`Finalizado Operacional`).
+  2. **Resolución de Brecha Temporal en Servicios de Corta Duración:** Inclusión de condiciones multidimensionales de fecha que contemplan la actividad del día consultado: rango planificado, emisión de reportes diarios, desplazamientos/viajes de ida/retorno, inspecciones de patio preoperacionales, elaboración o firma de ITS, y servicios activos en faena/ruta cuya conclusión formal no ocurrió antes de la fecha consultada.
+  3. **Auditoría Efectiva de SLA 13:00 hrs:** Garantiza que los servicios que concluyeron faena el día hábil anterior se mantengan visibles en el monitor del día siguiente para alertar y controlar el cumplimiento del SLA de emisión de ITS a las 13:00 hrs.
+- **Detalle de Mejoras y Cambios:**
+  - **[BACKEND / CONTROL EN VIVO] (`controlVivoController.js`):** Refactor integral de la consulta `proySql` en `getControlVivo` incorporando estados 7 y 8, y cláusulas `EXISTS` para reportes, viajes, inspecciones e ITS en la fecha consultada.
+  - **[GOBERNANZA]:** Verificación y certificación determinista sobre base de datos PostgreSQL de producción (`sch_leangsp_prod`).
+
 ## [Portal Web GSP] - Versión 1.0.105
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-07 11:05:00 (-03:00)
