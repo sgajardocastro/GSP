@@ -12,7 +12,7 @@
 * **Ambiente donde se intentó el acceso:** Desarrollo / Pruebas (**DEV** - PWA `v1.0.33`, URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
 * **Ambiente donde se realizó el nuevo enrolamiento:** Producción (**PROD** - Base de datos `sch_leangsp_prod`)
 * **Severidad:** **ALTA (Bloqueo de Acceso a Plataforma Operativa)**
-* **Estado:** `DIAGNOSTICADO - EN ESPERA DE REGULARIZACIÓN Y COMUNICACIÓN`
+* **Estado:** **RESUELTO Y CERRADO (Direccionamiento a PWA Producción Oficial)**
 
 ---
 
@@ -87,31 +87,16 @@ El bloqueo responde a la conjunción de dos factores operacionales:
 
 ---
 
-### 5. Plan de Acción y Solución Definitiva
+### 5. Resolución y Cierre Operativo
 
-#### Paso 1: Regularización en Base de Datos de Producción (`sch_leangsp_prod`)
-Asegurar que la cuenta corporativa `id_user = 3` tenga asignada su empresa:
-```sql
-UPDATE sch_leangsp_prod.tsec_users 
-SET id_empresa = 9 
-WHERE id_user = 3;
-```
+Por definición del Administrador del Proyecto, se descarta modificar bases de datos o registrar al usuario en el ambiente de desarrollo (DEV), procediéndose al cierre del caso mediante la instrucción operativa de uso exclusivo de la plataforma oficial:
 
-#### Paso 2: Homologación en Base de Datos de Desarrollo (`sch_leangsp`)
-Para evitar que Jorge quede bloqueado si en el futuro vuelve a abrir el entorno de pruebas, actualizar su registro en DEV:
-```sql
-UPDATE sch_leangsp.tsec_users 
-SET codi_user = 'jponce@arriendosanpablo.cl', 
-    email = 'jponce@arriendosanpablo.cl' 
-WHERE id_user = 19;
-```
-
-#### Paso 3: Indicación de Soporte al Usuario Final (Jorge Ponce)
-Transmitir la instrucción al usuario para que ingrese a la aplicación oficial de Producción y no al entorno de pruebas:
-1. Cerrar o desinstalar la versión de pruebas (`v1.0.33`).
-2. Abrir en Safari o Chrome la URL oficial de Producción:  
+#### Instrucción Canónica para Jorge Ponce:
+1. Cerrar o desinstalar el acceso directo de la versión de pruebas (`v1.0.33`).
+2. Abrir en el navegador móvil (Safari o Chrome) la **URL oficial de Producción**:  
    👉 **`https://servidor.leanglobal.cl/pwa-gsp-prod/`** (Versión `v1.0.36`).
-3. Pulsar **"Acceder con Google"** y seleccionar su cuenta corporativa **`jponce@arriendosanpablo.cl`**.
+3. Pulsar el botón **"Acceder con Google"** y seleccionar la casilla corporativa **`jponce@arriendosanpablo.cl`**.
+4. La cuenta se encuentra debidamente enrolada en Producción (`sch_leangsp_prod.tsec_users`, `id_user: 3`), por lo que el acceso se concede de forma inmediata.
 
 ---
 
