@@ -8554,8 +8554,11 @@ const sincronizarTrasladosComerciales = () => {
   const trasladosComerciales = (lines.value || []).filter(l => {
     if (!isTrasladoLine(l)) return false
     if (l.es_traslado_grua) return false
+    const subcat = (l.subcategoria || '').toUpperCase()
+    // Una grúa o pluma jamás es un vehículo auxiliar en equipos_extra
+    if (subcat.includes('GRUA') || subcat.includes('PLUMA') || subcat.includes('LTM')) return false
     const desc = (l.descripcion || l.subcategoria || '').toUpperCase()
-    const esContrapeso = desc.includes('CONTRAPESO')
+    const esContrapeso = desc.includes('CONTRAPESO') || subcat.includes('CONTRAPESO')
     const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
     if (!esContrapeso && !esFleteTercero) return false
     return true
@@ -8568,11 +8571,16 @@ const sincronizarTrasladosComerciales = () => {
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || opportunity.value?.fecha_tentativa || ''
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || opportunity.value?.fecha_tentativa || ''
 
-  // Depurar de equipos_extra líneas base obsoletas que correspondan a traslados de grúa propia autopropulsada
+  // Depurar de equipos_extra líneas obsoletas que correspondan a grúas autopropulsadas o equipos ya asignados en Sección 1
   const extrasDepurados = currentExtras.filter(ex => {
-    if (!ex.is_linea_base) return true
+    const subcatEx = (ex.subcategoria || '').toUpperCase()
     const desc = (ex.descripcion || ex.subcategoria || '').toUpperCase()
-    const esContrapeso = desc.includes('CONTRAPESO')
+    // Erradicar de equipos_extra cualquier grúa autopropulsada o equipo que ya esté en Sección 1
+    if (subcatEx.includes('GRUA') || subcatEx.includes('PLUMA') || subcatEx.includes('LTM')) return false
+    const idEqEx = String(ex.id_equipo || '')
+    if (idEqEx && linesEquiposPrincipales.value.some(lp => String(lp.equipo_asignado_id) === idEqEx)) return false
+    if (!ex.is_linea_base) return true
+    const esContrapeso = desc.includes('CONTRAPESO') || subcatEx.includes('CONTRAPESO') || subcatEx.includes('TRACTO')
     const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
     if (!esContrapeso && !esFleteTercero) return false
     return true
