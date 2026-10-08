@@ -7,7 +7,7 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 - **Fecha de Despliegue:** 2026-10-07 22:05:00 (-03:00)
 - **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
 - **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
-- **Requerimientos Asociados:** `REQ-1010`
+- **Requerimientos Asociados:** `REQ-1011`
 - **Especificación Técnica:** SPEC-065 (Matriz Logística de Asignación de Recursos, Desacoplamiento de Traslados, Ciclo de Viajes y Emisión de Reports):
   1. **Desacoplamiento de Traslados de Grúas Autopropulsadas:** Erradicación de la asignación vehicular independiente para grúas móviles telescópicas y camiones pluma en Pestaña C del CRM (`GestorOportunidades.vue`). El ítem comercial de traslado es una tarifa de cobro que subsume el desplazamiento bajo el operador de izaje.
   2. **Supresión de Inserción Forzada Rural:** Eliminación de la creación automática de filas de `CAMA BAJA` en servicios rurales ($>30\text{ km}$), limitando `equipos_extra` a traslados con necesidad física auxiliar.
