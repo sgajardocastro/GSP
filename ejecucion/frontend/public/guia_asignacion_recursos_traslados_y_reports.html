@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía de Asignación de Recursos, Traslados & Reports | Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar selection:bg-amber-500 selection:text-black">
+
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="border-b border-brand-border bg-[#080d1a] px-4 md:px-8 py-3.5 sticky top-0 z-50 backdrop-blur flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">
+        <i data-lucide="truck" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold uppercase">Manual Operacional Nº 05</span>
+        </div>
+        <p class="text-xs text-slate-400">Guía Oficial de Asignación de Recursos, Traslados de Convoy y Emisión de Reports</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Volver a Docs</span>
+      </a>
+      <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
+        Spec 65 Core
+      </span>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-8 space-y-10">
+
+    <!-- HERO / PRINCIPIO RECTOR -->
+    <div class="border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+      <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
+        <i data-lucide="shield-alert" class="w-96 h-96"></i>
+      </div>
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-mono uppercase tracking-widest mb-3">
+          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+          <span>Regla de Oro Constitucional del Ecosistema GSP</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight leading-snug">
+          Las Grúas Autopropulsadas No Se Asignan Dos Veces
+        </h1>
+        <p class="mt-3 text-sm md:text-base text-slate-300 leading-relaxed">
+          En Grúas San Pablo, las grúas telescópicas móviles y camiones pluma son <strong class="text-amber-400">vehículos autopropulsados</strong> conducidos por el propio operador de faena. El ítem comercial de "Traslado / Flete" facturado al cliente mandante es una <strong class="text-white">tarifa comercial de cobro</strong>, jamás una segunda máquina física ni una orden para un segundo chofer.
+        </p>
+        <div class="mt-5 flex flex-wrap items-center gap-3">
+          <span class="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> 1 Grúa = 1 Operador en Faena y Carretera
+          </span>
+          <span class="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="file-check" class="w-4 h-4"></i> 1 Servicio = 1 Único Report Firmado por Mandante
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 1: MATRIZ CANÓNICA DE LOS 5 CASOS DE NEGOCIO -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="grid" class="w-5 h-5 text-amber-400"></i>
+            1. Matriz Canónica de los 5 Casos de Negocio
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Cruza la distancia de traslado, el tonelaje y la presencia de contrapesos para definir la asignación.</p>
+        </div>
+        <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
+          Urbano (&le;30km) vs Rural (&gt;30km)
+        </span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-brand-card">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900/90 border-b border-slate-800 text-slate-400 font-mono uppercase tracking-wider">
+              <th class="p-3.5">Caso & Escenario</th>
+              <th class="p-3.5">Líneas Facturables (CRM)</th>
+              <th class="p-3.5">¿Qué se Asigna en Pestaña C?</th>
+              <th class="p-3.5">Personal Asignado</th>
+              <th class="p-3.5">Hojas de Ruta (Viaje)</th>
+              <th class="p-3.5">Report Diario Mandante</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <!-- CASO 1 -->
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">CASO 1</div>
+                Urbano sin Contrapeso
+                <div class="text-[11px] font-normal text-slate-400">&le; 30 km &bull; &lt; 90 Ton</div>
+              </td>
+              <td class="p-3.5">
+                <span class="text-emerald-400 font-medium">&bull; Horas Arriendo Grúa</span><br>
+                <span class="text-slate-400">(Sin cobro de flete adicional)</span>
+              </td>
+              <td class="p-3.5 font-mono text-white">
+                <span class="px-2 py-0.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded">1 Fila: Grúa Telescópica</span>
+              </td>
+              <td class="p-3.5">
+                1 Operador Grúa<br>
+                <span class="text-slate-400">(+ Rigger si aplica)</span>
+              </td>
+              <td class="p-3.5 font-mono">
+                Ida y Retorno Grúa
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">1 Report Diario</span>
+              </td>
+            </tr>
+
+            <!-- CASO 2 -->
+            <tr class="hover:bg-slate-900/40 transition-colors bg-slate-900/20">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">CASO 2</div>
+                Urbano con Contrapesos
+                <div class="text-[11px] font-normal text-slate-400">&le; 30 km &bull; &ge; 90 Ton</div>
+              </td>
+              <td class="p-3.5">
+                <span class="text-emerald-400 font-medium">&bull; Horas Arriendo Grúa</span><br>
+                <span class="text-blue-400 font-medium">&bull; Traslado Contrapesos ($ fijo)</span>
+              </td>
+              <td class="p-3.5 font-mono text-white space-y-1">
+                <div><span class="px-2 py-0.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded">1. Grúa Telescópica</span></div>
+                <div><span class="px-2 py-0.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded">2. Tracto Contrapesos</span></div>
+              </td>
+              <td class="p-3.5">
+                • 1 Operador Grúa<br>
+                • 1 Chofer Tracto A5<br>
+                <span class="text-slate-400">(+ Rigger si aplica)</span>
+              </td>
+              <td class="p-3.5 font-mono">
+                • Viaje Grúa<br>
+                • Viaje Camión Contrapeso
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">1 Report Diario (Grúa)</span><br>
+                <span class="text-[11px] text-slate-400">Camión solo rinde viaje</span>
+              </td>
+            </tr>
+
+            <!-- CASO 3 -->
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">CASO 3</div>
+                Rural sin Contrapeso
+                <div class="text-[11px] font-normal text-slate-400">&gt; 30 km &bull; &lt; 90 Ton</div>
+              </td>
+              <td class="p-3.5">
+                <span class="text-emerald-400 font-medium">&bull; Horas Grúa (en obra)</span><br>
+                <span class="text-amber-400 font-medium">&bull; Traslado Grúa ($ flete)</span>
+              </td>
+              <td class="p-3.5 font-mono text-white">
+                <span class="px-2 py-0.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded">1 Fila: Grúa Telescópica</span><br>
+                <span class="text-[10px] text-red-400 italic">Línea flete se oculta</span>
+              </td>
+              <td class="p-3.5">
+                1 Operador Grúa<br>
+                <span class="text-slate-400">(+ Rigger si aplica)</span>
+              </td>
+              <td class="p-3.5 font-mono">
+                Ida y Retorno Grúa
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">1 Report Diario</span>
+              </td>
+            </tr>
+
+            <!-- CASO 4 -->
+            <tr class="hover:bg-slate-900/40 transition-colors bg-slate-900/20">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">CASO 4</div>
+                Rural con Contrapesos
+                <div class="text-[11px] font-normal text-slate-400">&gt; 30 km &bull; &ge; 90 Ton</div>
+              </td>
+              <td class="p-3.5">
+                <span class="text-emerald-400 font-medium">&bull; Horas Grúa (mín 8 hrs)</span><br>
+                <span class="text-amber-400 font-medium">&bull; Traslado Grúa ($ flete)</span><br>
+                <span class="text-blue-400 font-medium">&bull; Traslado Contrapesos ($)</span>
+              </td>
+              <td class="p-3.5 font-mono text-white space-y-1">
+                <div><span class="px-2 py-0.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded">1. Grúa Telescópica</span></div>
+                <div><span class="px-2 py-0.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded">2. Tracto Contrapesos</span></div>
+                <div class="text-[10px] text-red-400 italic">Línea flete grúa se oculta</div>
+              </td>
+              <td class="p-3.5">
+                • 1 Operador Grúa<br>
+                • 1 Chofer Tracto A5<br>
+                <span class="text-slate-400">(+ Rigger si aplica)</span>
+              </td>
+              <td class="p-3.5 font-mono">
+                • Viaje Grúa<br>
+                • Viaje Tracto Contrapeso<br>
+                <span class="text-[10px] text-slate-400">(Multi-día: 4 viajes camión)</span>
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">1 Report Diario (Grúa)</span><br>
+                <span class="text-[11px] text-slate-400">Contrapeso se declara en report</span>
+              </td>
+            </tr>
+
+            <!-- CASO 5 -->
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">CASO 5</div>
+                Flete Puro de Carga
+                <div class="text-[11px] font-normal text-slate-400">Transporte maquinaria tercero</div>
+              </td>
+              <td class="p-3.5">
+                <span class="text-purple-400 font-medium">&bull; Flete Cama Baja ($ pactado)</span>
+              </td>
+              <td class="p-3.5 font-mono text-white">
+                <span class="px-2 py-0.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded">1 Fila: Camión Cama Baja</span>
+              </td>
+              <td class="p-3.5">
+                1 Chofer Cama Baja A5<br>
+                <span class="text-slate-400">(Sin operador de izaje)</span>
+              </td>
+              <td class="p-3.5 font-mono">
+                Viaje Cama Baja
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold border border-slate-700">CERO Reports de Izaje</span><br>
+                <span class="text-[11px] text-slate-400">Se cierra con Guía de Despacho</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: PROTOCOLO ESTRICTO EN LA PESTAÑA C (ASIGNACIÓN DE RECURSOS) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Panel Izquierdo: Lo que se DEBE hacer -->
+      <div class="border border-emerald-500/30 bg-emerald-950/10 rounded-xl p-5 space-y-3">
+        <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+          Procedimiento Correcto de Asignación
+        </h3>
+        <ul class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400 font-bold">1.</span>
+            <span><strong>Asignar la Grúa en la Fila Principal:</strong> Seleccionar la patente de la máquina (ej: <code class="text-amber-300 font-mono">PJYY.20-1</code>) y asignar al operador titular (ej: Robert Rodríguez). Su rol se guardará automáticamente como <strong>Operador Grúa</strong>.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400 font-bold">2.</span>
+            <span><strong>Asignar Camión de Contrapesos en su propia fila:</strong> Si la grúa es de 90T o más, el sistema creará la fila para el tracto (ej: <code class="text-cyan-300 font-mono">RWJL.23</code>). Asignar al chofer con licencia A5 titular.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400 font-bold">3.</span>
+            <span><strong>Verificar Rigger:</strong> Si el cliente no dispone de rigger propio en obra, asignar al rigger en la cuadrilla de la grúa.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Panel Derecho: Errores Prohibidos -->
+      <div class="border border-red-500/30 bg-red-950/10 rounded-xl p-5 space-y-3">
+        <h3 class="text-base font-bold text-red-400 flex items-center gap-2">
+          <i data-lucide="x-circle" class="w-5 h-5 text-red-400"></i>
+          Acciones Estrictamente Prohibidas
+        </h3>
+        <ul class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+          <li class="flex items-start gap-2">
+            <span class="text-red-400 font-bold">&times;</span>
+            <span><strong class="text-red-300">NUNCA asignar chofer a la línea "Traslado de Grúa":</strong> Esa línea es una tarifa de cobro en factura. Asignar al operador a esa línea crea una orden de viaje fantasma que bloquea la PWA en terreno.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-red-400 font-bold">&times;</span>
+            <span><strong class="text-red-300">NUNCA sobreescribir el rol del Operador:</strong> Si el operador se asigna erróneamente en un traslado secundario, el sistema cambiará su rol a "Chofer Cama Baja", dejándolo sin permisos para emitir el report de faena.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-red-400 font-bold">&times;</span>
+            <span><strong class="text-red-300">NUNCA pedir 2 reports al cliente mandante:</strong> El supervisor mandante solo firma el Report Diario de la grúa. Exigirle firmar por el camión de contrapesos es una infracción operacional.</span>
+          </li>
+        </ul>
+      </div>
+
+    </section>
+
+    <!-- SECCIÓN 3: CONTRAPESOS EN SERVICIOS MULTI-DÍA (EL CASO TENSACON) -->
+    <section class="border border-slate-800 bg-brand-card rounded-2xl p-6 space-y-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+          <i data-lucide="calendar-range" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Particularidad de Contrapesos en Servicios Multi-Día</h2>
+          <p class="text-xs text-slate-400">Ciclos de desplazamiento independientes entre la Grúa y el Camión de Transporte</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Cuando un servicio de izaje se contrata por múltiples jornadas continuas (ej. 4 días en Planta Ferrero / Tensacon):
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2">
+          <span class="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider block">🚜 Grúa Telescópica (Pernocta en Faena)</span>
+          <div class="text-xs text-slate-300 space-y-1">
+            <div>&bull; <strong>Día 1:</strong> Viaje de Ida (Salida Base &rarr; Llegada Faena). Inicia y cierra Report Día 1.</div>
+            <div>&bull; <strong>Días Intermedios (2 y 3):</strong> 0 viajes carreteros. Solo Report Diario de Faena.</div>
+            <div>&bull; <strong>Día 4:</strong> Cierre de Report Final &rarr; Viaje de Retorno a Patio Central.</div>
+            <div class="text-emerald-400 font-mono text-[11px] pt-1">Total: 2 trayectos viales carreteros.</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2">
+          <span class="text-xs font-mono text-purple-400 font-bold uppercase tracking-wider block">🚛 Camión de Contrapesos (Retorna Diario)</span>
+          <div class="text-xs text-slate-300 space-y-1">
+            <div>&bull; <strong>Día 1 (Ciclo 1):</strong> Viaja cargado &rarr; Descarga contrapesos &rarr; Retorna vacío a base.</div>
+            <div>&bull; <strong>Días 2 y 3:</strong> El camión queda 100% disponible en patio central para otros servicios.</div>
+            <div>&bull; <strong>Día 4 (Ciclo 2):</strong> Viaja vacío a faena &rarr; Carga contrapesos &rarr; Retorna cargado a base.</div>
+            <div class="text-purple-400 font-mono text-[11px] pt-1">Total: 4 trayectos viales independientes.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: BASE LEGAL Y REMUNERACIONES (ART. 25 BIS CÓDIGO DEL TRABAJO) -->
+    <section class="border border-slate-800 bg-brand-card rounded-2xl p-6 space-y-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <i data-lucide="scale" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Impacto en el Pago de Horas a Choferes y Operadores</h2>
+          <p class="text-xs text-slate-400">Desacoplamiento algorítmico entre Horas de Conducción y Horas de Faena</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-amber-400 font-mono font-bold uppercase mb-1">1. Horas Conducción (Viaje)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Se obtienen de las Hojas de Ruta (<code class="text-amber-300 font-mono">tequ_log_desplazamiento</code>). Rigen bajo el <strong>Art. 25 bis del Código del Trabajo</strong> (límite de conducción continua, descansos en ruta y viático de traslado).
+          </p>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-emerald-400 font-mono font-bold uppercase mb-1">2. Horas de Faena (Report)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Se obtienen del Report Diario (<code class="text-emerald-300 font-mono">tedp_reporte_avance</code>). Miden el tiempo efectivo de izaje y determinan la facturación al mandante, el bono de maquinista y las horas extras operacionales.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <div class="text-xs text-blue-400 font-mono font-bold uppercase mb-1">3. Esperas / Stand-by</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Tiempos muertos imputables al mandante (lluvia, falta de inducción o atraso de montajes). El operador estuvo a disposición del empleador y se liquidan como horas de presencia.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: PROTOCOLO ANTE INCIDENCIAS OPERACIONALES -->
+    <section class="border border-slate-800 bg-brand-card rounded-2xl p-6 space-y-4">
+      <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <i data-lucide="wrench" class="w-5 h-5 text-amber-400"></i>
+        Protocolo Rápido ante Incidencias Frecuentes
+      </h2>
+
+      <div class="space-y-3">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-bold text-amber-400 uppercase font-mono">&bull; Incidencia 1: El operador indica que el botón no avanza</span>
+            <p class="text-xs text-slate-300 mt-1">El botón de finalizar valida en tiempo real. Si falta la foto del horómetro final de superestructura o chasis, la app le avisará en pantalla el campo faltante. Indicarle que capture la fotografía del tablero.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[11px] font-mono shrink-0">
+            Resuelto v1.0.36
+          </span>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-bold text-blue-400 uppercase font-mono">&bull; Incidencia 2: El chofer no registró llegada por falta de señal en ruta</span>
+            <p class="text-xs text-slate-300 mt-1">El operador de la grúa no se bloquea. Puede iniciar faena normalmente. El supervisor en base puede ingresar la hora real de arribo vía <em>Override Administrativo</em> en la consola de Control en Vivo.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[11px] font-mono shrink-0">
+            Override en Vivo
+          </span>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-bold text-purple-400 uppercase font-mono">&bull; Incidencia 3: Se duplicó el viaje o el operador aparece como Chofer</span>
+            <p class="text-xs text-slate-300 mt-1">Se cometió el error de asignar la línea comercial de flete. Operaciones debe desvincular la línea en Pestaña C y restablecer el rol a "Operador Grúa" en la OT.</p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 text-[11px] font-mono shrink-0">
+            Desvincular Flete
+          </span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border bg-[#080d1a] py-4 px-4 md:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div>
+      <span class="font-semibold text-slate-400">Grúas San Pablo S.A.</span> &bull; Manual de Operaciones y Despacho &bull; Ecosistema LeanGlobal
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      Spec-Driven Architecture &bull; Documento Oficial
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

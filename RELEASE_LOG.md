@@ -2,6 +2,24 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.109
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-07 22:05:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1010`
+- **Especificación Técnica:** SPEC-065 (Matriz Logística de Asignación de Recursos, Desacoplamiento de Traslados, Ciclo de Viajes y Emisión de Reports):
+  1. **Desacoplamiento de Traslados de Grúas Autopropulsadas:** Erradicación de la asignación vehicular independiente para grúas móviles telescópicas y camiones pluma en Pestaña C del CRM (`GestorOportunidades.vue`). El ítem comercial de traslado es una tarifa de cobro que subsume el desplazamiento bajo el operador de izaje.
+  2. **Supresión de Inserción Forzada Rural:** Eliminación de la creación automática de filas de `CAMA BAJA` en servicios rurales ($>30\text{ km}$), limitando `equipos_extra` a traslados con necesidad física auxiliar.
+  3. **Logística de Contrapesos en 4 Trayectos:** Homologación de líneas de contrapesos como `TRACTO CONTRAPESOS` con sugerencia de `Chofer Transporte`, desacoplado de la estadía multi-día de la grúa.
+  4. **Protección e Inmutabilidad de Roles (Spec 65 §4):** Salvaguarda estricta en `confirmarAsignacionOT` (`mapPersonas`), garantizando que un `Operador Grúa` o `Rigger` jamás pueda ser sobreescrito o degradado a `Chofer`.
+  5. **Concentración Documental y Trazabilidad Art. 25 bis:** Exclusión de reportes diarios para camiones auxiliares, concentrando la firma en el Report de Izaje principal e integrando fórmulas de horas de conducción.
+- **Detalle de Mejoras y Cambios:**
+  - **[PORTAL WEB CRM] (`GestorOportunidades.vue`):** Refactor de `sincronizarTrasladosComerciales`, `tripulacionAsignada` y deduplicación con prioridad de rol en `confirmarAsignacionOT`.
+  - **[DOCUMENTACIÓN OFICIAL WEB]:** Creación del Módulo 6 en `centro_documentacion_gsp.html` y manual interactivo `guia_asignacion_recursos_traslados_y_reports.html` en DEV y PROD.
+  - **[SOPORTE Y BASE DE DATOS] (`sch_leangsp_prod`):** Regularización de OT 4 (Tensacon / Planta Ferrero), cierre de viaje 3 y restitución de rol a `Operador Grúa` para Robert Rodríguez (`49`).
+  - **[GOBERNANZA]:** Registro formal de `REQ-1010` y sincronización en BD PostgreSQL (`tcfg_backlog` y `tcfg_releases`).
+
 ## [Portal Web & PWA GSP] - Versión 1.0.107
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-07 12:50:00 (-03:00)

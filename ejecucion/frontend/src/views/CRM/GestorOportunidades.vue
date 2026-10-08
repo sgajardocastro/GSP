@@ -8465,8 +8465,10 @@ const tripulacionAsignada = computed(() => {
   if (Array.isArray(operacionesAssignment.value?.equipos_extra)) {
     operacionesAssignment.value.equipos_extra.forEach((eqEx, idx) => {
       const rol = (typeof eqEx === 'object' && eqEx !== null && (eqEx.descripcion || eqEx.subcategoria || eqEx.rol)) ? (eqEx.descripcion || eqEx.subcategoria || eqEx.rol) : (eqEx.subcategoria || `Vehículo Traslado #${idx + 1}`)
-      const isEscolta = (rol + ' ' + (eqEx.subcategoria || '') + ' ' + (eqEx.tipo || '')).toLowerCase().includes('escolta') || (rol + ' ' + (eqEx.subcategoria || '')).toLowerCase().includes('guia') || (eqEx.tipo || '').toLowerCase().includes('liviano')
-      const cargo = isEscolta ? 'Escolta / Guía' : 'Chofer Cama Baja'
+      const textoRol = (rol + ' ' + (eqEx.subcategoria || '') + ' ' + (eqEx.tipo || '')).toLowerCase()
+      const isEscolta = textoRol.includes('escolta') || textoRol.includes('guia') || (eqEx.tipo || '').toLowerCase().includes('liviano')
+      const isContrapeso = textoRol.includes('contrapeso')
+      const cargo = isEscolta ? 'Escolta / Guía' : (isContrapeso ? 'Chofer Transporte' : 'Chofer Cama Baja')
       const eqId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.id_equipo : eqEx
       const choferId = (typeof eqEx === 'object' && eqEx !== null) ? eqEx.chofer_id : null
       const ini = (typeof eqEx === 'object' && eqEx !== null && eqEx.fecha_plan_ini) ? eqEx.fecha_plan_ini : (operacionesAssignment.value?.fecha_salida_plan || '')
@@ -8547,9 +8549,17 @@ const eliminarEquipoPrincipal = (line) => {
 };
 
 const sincronizarTrasladosComerciales = () => {
-  const trasladosComerciales = (lines.value || []).filter(l => isTrasladoLine(l))
-  const esRural = (parseFloat(opportunity.value?.distancia_km) || 0) > 30
-  if (trasladosComerciales.length === 0 && !esRural) return
+  // Spec 65: Excluir traslados de grúas autopropulsadas (Casos 1, 2, 3 y 4)
+  // Únicamente sincronizar traslados que requieren vehículo físico auxiliar (Contrapesos o Flete de Terceros)
+  const trasladosComerciales = (lines.value || []).filter(l => {
+    if (!isTrasladoLine(l)) return false
+    if (l.es_traslado_grua) return false
+    const desc = (l.descripcion || l.subcategoria || '').toUpperCase()
+    const esContrapeso = desc.includes('CONTRAPESO')
+    const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
+    if (!esContrapeso && !esFleteTercero) return false
+    return true
+  })
 
   const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
     ? [...operacionesAssignment.value.equipos_extra] 
@@ -8558,40 +8568,32 @@ const sincronizarTrasladosComerciales = () => {
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || opportunity.value?.fecha_tentativa || ''
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || opportunity.value?.fecha_tentativa || ''
 
-  // 1. Si no hay líneas explícitas pero es servicio rural (> 30 km)
-  if (trasladosComerciales.length === 0 && esRural) {
-    const yaExiste = currentExtras.some(ex => ex.is_linea_base)
-    if (!yaExiste) {
-      currentExtras.unshift({
-        _uid: `ex-base-flete-${Date.now()}`,
-        tipo: 'TRASLADOS',
-        subcategoria: 'CAMA BAJA',
-        descripcion: 'Servicio de Traslado / Flete',
-        cantidad: 1,
-        unidad: 'Viaje',
-        id_equipo: '',
-        chofer_id: '',
-        is_linea_base: true,
-        fecha_plan_ini: defaultIni,
-        fecha_plan_fin: defaultFin
-      })
-    }
-  }
+  // Depurar de equipos_extra líneas base obsoletas que correspondan a traslados de grúa propia autopropulsada
+  const extrasDepurados = currentExtras.filter(ex => {
+    if (!ex.is_linea_base) return true
+    const desc = (ex.descripcion || ex.subcategoria || '').toUpperCase()
+    const esContrapeso = desc.includes('CONTRAPESO')
+    const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
+    if (!esContrapeso && !esFleteTercero) return false
+    return true
+  })
 
-  // 2. Mapear cada línea comercial de traslado
+  // Sincronizar traslados auxiliares válidos (Contrapesos o Flete Terceros)
   trasladosComerciales.forEach((tc, idx) => {
-    const subcat = tc.subcategoria || 'CAMA BAJA'
-    const desc = tc.descripcion || tc.subcategoria || `Servicio de Traslado #${idx + 1}`
+    const descTc = (tc.descripcion || tc.subcategoria || '').toUpperCase()
+    const esContrapeso = descTc.includes('CONTRAPESO')
+    const subcat = tc.subcategoria || (esContrapeso ? 'TRACTO CONTRAPESOS' : 'CAMA BAJA')
+    const desc = tc.descripcion || tc.subcategoria || (esContrapeso ? 'Traslado de Contrapesos' : `Servicio de Flete #${idx + 1}`)
     
     // Verificar si ya existe en equipos_extra
-    const match = currentExtras.find(ex => 
+    const match = extrasDepurados.find(ex => 
       (tc._uid && ex._uid === tc._uid) || 
       (tc.id_item && ex.id_item === tc.id_item) ||
       (ex.is_linea_base && (ex.descripcion === desc || ex.subcategoria === subcat))
     )
 
     if (!match) {
-      currentExtras.unshift({
+      extrasDepurados.unshift({
         _uid: tc._uid || `ex-base-${Date.now()}-${idx}`,
         id_item: tc.id_item || null,
         tipo: tc.tipo || 'TRASLADOS',
@@ -8617,7 +8619,7 @@ const sincronizarTrasladosComerciales = () => {
     }
   })
 
-  operacionesAssignment.value.equipos_extra = currentExtras
+  operacionesAssignment.value.equipos_extra = extrasDepurados
 }
 
 const agregarEquipoTraslado = () => {
@@ -13305,7 +13307,17 @@ const confirmarAsignacionOT = async () => {
       const mapPersonas = new Map()
       poolPersonas.forEach(p => {
         if (p.id_user && !isNaN(parseInt(p.id_user))) {
-          mapPersonas.set(parseInt(p.id_user), p)
+          const uid = parseInt(p.id_user)
+          const existing = mapPersonas.get(uid)
+          if (!existing) {
+            mapPersonas.set(uid, p)
+          } else {
+            // Spec 65 §4: Prioridad inmutable. Operador Grúa y Rigger jamás se degradan a Chofer
+            const cargoNuevo = (p.cargo || '').toUpperCase()
+            if (cargoNuevo.includes('OPERADOR') || cargoNuevo.includes('RIGGER')) {
+              mapPersonas.set(uid, p)
+            }
+          }
         }
       })
       const tripulacionLista = Array.from(mapPersonas.values())
