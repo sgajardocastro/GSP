@@ -133,12 +133,19 @@ WHERE id_proyecto = 4 AND id_user = 49;
 
 -- 4. Depuración de duplicidad en asignación de equipos extra (JSON)
 -- Se eliminó la grúa PJYY.20-1 de equipos_extra, manteniendo únicamente el Tractocamión Sinotruk C7H con Chofer Luis Mercado.
+
+-- 5. Regularización de fecha de reporte Día 2 (evita duplicación visual en Control en Vivo)
+UPDATE sch_leangsp_prod.tedp_reporte_avance 
+SET fecha_reporte = '2026-10-07' 
+WHERE id_reporte_avance = 9 AND id_proyecto = 4;
 ```
 
 **Resultado Operativo:**
 1. El Stepper PWA de Robert Rodríguez marcó el Paso 1 como `COMPLETADO`.
-2. El Paso 2 se desbloqueó en estado `JORNADA_EN_CURSO` con el botón maestro ámbar habilitado.
+2. El Paso 2 se desbloqueó en estado `JORNADA_EN_CURSO` con el botón maestro ámbar habilitado, permitiendo el cierre exitoso del Día 2 con mandante Antonio Cartes a las 17:00 hrs.
 3. En CRM Web (Pestaña C), la grúa quedó fijada como Equipo Principal y el Sinotruk C7H como Equipo de Traslado, erradicando filas duplicadas.
+4. En CRM Web (Pestaña 6 - Cronograma de Reports), la fecha del Día 2 se muestra correctamente como `7/10`.
+5. En Control en Vivo (Cockpit PMO), la franja multi-día se corrigió: `D1` y `D2` figuran concluidos con check verde (`✓`), mientras que `D3` (Hoy 08-Oct) se muestra activo en espera del inicio de faena de hoy, eliminando la duplicación del día anterior.
 
 ---
 
