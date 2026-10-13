@@ -36,17 +36,17 @@ function validarGobernanzaAntesDeDesplegar() {
   const releaseLogContent = fs.readFileSync(releaseLogPath, 'utf8');
 
   // Buscar bloque para esta versión exacta
-  const regexVersion = new RegExp(`##\\s*\\[Portal Web GSP\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}`, 'i');
+  const regexVersion = new RegExp(`##\\s*\\[Portal Web GSP[^\\]]*\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}`, 'i');
   if (!regexVersion.test(releaseLogContent)) {
     console.error("\n==========================================================================");
     console.error(`❌ DESPLIEGUE BLOQUEADO: La versión ${versionActual} no está documentada en RELEASE_LOG.md`);
-    console.error(`   Debes crear el bloque: "## [Portal Web GSP] - Versión ${versionActual}" antes de desplegar.`);
+    console.error(`   Debes crear el bloque: "## [Portal Web GSP y Backend API] - Versión ${versionActual}" antes de desplegar.`);
     console.error("==========================================================================\n");
     process.exit(1);
   }
 
   // Extraer el código REQ asociado
-  const bloqueMatch = releaseLogContent.match(new RegExp(`##\\s*\\[Portal Web GSP\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}[\\s\\S]*?(?=##\\s*\\[|$)`, 'i'));
+  const bloqueMatch = releaseLogContent.match(new RegExp(`##\\s*\\[Portal Web GSP[^\\]]*\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}[\\s\\S]*?(?=##\\s*\\[|$)`, 'i'));
   const bloqueTexto = bloqueMatch ? bloqueMatch[0] : '';
   const reqMatch = bloqueTexto.match(/REQ-\d+/i);
   if (!reqMatch) {
@@ -80,8 +80,24 @@ function validarGobernanzaAntesDeDesplegar() {
     process.exit(1);
   }
 
+  // Extraer título de tareas.md para este REQ
+  const lineaTareaMatch = tareasContent.match(new RegExp(`\\[x\\]\\s*\\*\\*\\[([^\\]]+)\\s*-\\s*${reqCodigo}[^\\]]*\\]\\*\\*`, 'i'));
+  const nombreReq = lineaTareaMatch ? lineaTareaMatch[1].trim() : `Requerimiento ${reqCodigo} (v${versionActual})`;
+
+  // Extraer detalle de cambios de RELEASE_LOG.md
+  const lineasDetalle = bloqueTexto.split('\n')
+    .filter(l => l.trim().startsWith('- **[') || l.trim().startsWith('*   - **['))
+    .map(l => l.replace(/^[\s\*\-]+/, '').replace(/\*\*/g, '').trim());
+  const descripcionImpacto = lineasDetalle.join('; ').substring(0, 350) || `Actualización ${reqCodigo} v${versionActual}`;
+
   console.log(`✅ [HARD GATE SUPERADO]: Versión ${versionActual} y ${reqCodigo} validados y trazables en Backlog.\n`);
-  return { version: versionActual, req: reqCodigo, titulo: `Portal Web GSP v${versionActual}` };
+  return { 
+    version: versionActual, 
+    req: reqCodigo, 
+    titulo: `Portal Web GSP v${versionActual}`,
+    nombreReq,
+    descripcion: descripcionImpacto
+  };
 }
 
 async function sincronizarBaseDeDatos(governanceInfo) {
@@ -95,19 +111,32 @@ async function sincronizarBaseDeDatos(governanceInfo) {
         fecha_registro, fecha_implementacion, solicitado_por, estado, creado_por
       ) VALUES (
         $1, $2, $3, 'Alta',
-        CURRENT_DATE, CURRENT_DATE, 'Sergio Gajardo / Operaciones', 'Implementado', 'Sergio Gajardo'
+        CURRENT_DATE, CURRENT_DATE, 'Sesión Marcha Blanca Temuco', 'Implementado', 'Sergio Gajardo'
       )
       ON CONFLICT (codigo_req) DO UPDATE
-      SET estado = 'Implementado',
+      SET nombre_requerimiento = EXCLUDED.nombre_requerimiento,
+          descripcion = EXCLUDED.descripcion,
+          estado = 'Implementado',
           fecha_implementacion = CURRENT_DATE,
           updated_at = NOW();
     `;
     await client.query(qBacklog, [
       governanceInfo.req,
-      `Estandarización Kanban y Rediseño Asignación (v${governanceInfo.version})`,
-      'Redirección directa a Torre, erradicación de falsa alerta dirty en etapas 3+, tarjetas Kanban estándar y rediseño de asignación con títulos azules sin guiones ni candados.'
+      governanceInfo.nombreReq,
+      governanceInfo.descripcion
     ]);
-    console.log(`✅ ${governanceInfo.req} sincronizado en sch_leangsp.tcfg_backlog`);
+    // Sincronizar también REQ-704 y REQ-735 en DEV
+    await client.query(`
+      INSERT INTO sch_leangsp.tcfg_backlog (
+        codigo_req, nombre_requerimiento, descripcion, prioridad,
+        fecha_registro, fecha_implementacion, solicitado_por, estado, creado_por
+      ) VALUES 
+        ('REQ-704', 'Formato Monetario con Separador de Miles', 'Input interactivo con adornador $ y separador de miles es-CL', 'Baja', CURRENT_DATE, CURRENT_DATE, 'Jorge Ponce', 'Implementado', 'Sergio Gajardo'),
+        ('REQ-735', 'Descripciones Limpias y Validación Obligatoria', 'Descripción limpia, celda 280px y validación obligatoria antes de guardar o cotizar', 'Media', CURRENT_DATE, CURRENT_DATE, 'Jorge Ponce', 'Implementado', 'Sergio Gajardo')
+      ON CONFLICT (codigo_req) DO UPDATE 
+      SET estado = 'Implementado', fecha_implementacion = CURRENT_DATE, updated_at = NOW();
+    `);
+    console.log(`✅ REQ-633, REQ-704 y REQ-735 sincronizados en sch_leangsp.tcfg_backlog`);
 
     // 2. Sincronizar Release
     const qRelease = `
@@ -115,8 +144,8 @@ async function sincronizarBaseDeDatos(governanceInfo) {
         version, fecha_release, titulo, tipo_release, descripcion_impacto, requerimientos_asociados, publicado_por
       ) VALUES (
         $1, CURRENT_DATE, $2, 'Feature & UI',
-        'Estandarización visual Kanban, inmutabilidad anti-dirty y rediseño de asignación de recursos.',
-        $3::jsonb, 'Sergio Gajardo'
+        $3,
+        $4::jsonb, 'Sergio Gajardo'
       )
       ON CONFLICT (version) DO UPDATE
       SET fecha_release = CURRENT_DATE,
@@ -127,7 +156,8 @@ async function sincronizarBaseDeDatos(governanceInfo) {
     await client.query(qRelease, [
       `v${governanceInfo.version}`,
       governanceInfo.titulo,
-      JSON.stringify([governanceInfo.req])
+      governanceInfo.descripcion,
+      JSON.stringify(['REQ-633', 'REQ-704', 'REQ-735'])
     ]);
     console.log(`✅ v${governanceInfo.version} sincronizada en sch_leangsp.tcfg_releases`);
   } catch (dbErr) {
@@ -154,6 +184,7 @@ async function run() {
     console.log("Resultado respaldo:", bkpRes.stdout || "OK");
 
     console.log(`Subiendo ${localDist} a ${remoteDir}...`);
+    await ssh.execCommand(`rm -rf ${remoteDir}/*`);
     const status = await ssh.putDirectory(localDist, remoteDir, {
       recursive: true,
       concurrency: 10,
@@ -171,6 +202,21 @@ async function run() {
     console.log("Ajustando permisos...");
     await ssh.execCommand(`chown -R nginx:nginx ${remoteDir} || chown -R root:root ${remoteDir}`);
     await ssh.execCommand(`chmod -R 755 ${remoteDir}`);
+
+    // Sincronizar Backend en servidor remoto
+    console.log("\n⬆️ Sincronizando código de Backend en /home/nodeadmin/proyectos/lean-services-gsp/src...");
+    const localBackendSrc = path.join(rootDir, 'ejecucion/backend_remoto/src');
+    const remoteBackendSrc = '/home/nodeadmin/proyectos/lean-services-gsp/src';
+    await ssh.putDirectory(localBackendSrc, remoteBackendSrc, {
+      recursive: true,
+      concurrency: 10
+    });
+    await ssh.execCommand(`chown -R nodeadmin:nodeadmin /home/nodeadmin/proyectos/lean-services-gsp`);
+    console.log("✅ Backend sincronizado!");
+
+    console.log("🔄 Reiniciando proceso PM2 lean-services-gsp (ID 10)...");
+    const pm2Res = await ssh.execCommand('su - nodeadmin -c "pm2 restart lean-services-gsp"');
+    console.log("PM2 Output:\n", pm2Res.stdout || pm2Res.stderr);
 
     // Sincronizar metadatos en base de datos
     await sincronizarBaseDeDatos(governanceInfo);

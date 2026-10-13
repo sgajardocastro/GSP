@@ -2,6 +2,305 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.129
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-13 11:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-633`, `REQ-704`, `REQ-735`
+- **Especificación Técnica:** Portal Web GSP v1.0.129: Mejoras de Usabilidad en Estructurador CRM: Selector de Tonelaje (10T), Formato Monetario y Descripciones Limpias (SPEC-074):
+  1. **Selector de Tonelaje en Saltos de 10T (REQ-633):**
+     - En `getSubcategoriesForType`, para categoría `GRUAS TELESCOPICAS`, se despliega el listado completo y ordenado numéricamente de 10 en 10 toneladas (40T, 50T, 55T, 60T, 70T, 75T, 80T, 90T, 100T, ..., 400T), resolviendo la restricción que impedía cotizar tonelajes nominales específicos y eliminando el desorden alfabético.
+  2. **Formato Monetario con Separador de Miles (REQ-704):**
+     - Formateo reactivo en inputs de precio/valor unitario con adornador `$`, separación de miles con punto (`es-CL`) y prevención de errores de digitación en Preventa Comercial y visualización en Operaciones.
+  3. **Descripciones Limpias y Validación Obligatoria (REQ-735):**
+     - Inicialización limpia de líneas con placeholder instructivo, ensanchamiento de columna a 280px y validación bloqueante antes de guardar en Preventa y cotizar formalmente.
+
+## [Portal Web GSP] - Versión 1.0.128
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-13 11:22:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1030`
+- **Especificación Técnica:** Portal Web GSP v1.0.128: Tipificación y Edición Libre de Trayectos de Viaje en ITS Transición y Desacoplamiento DEV/PROD (SPEC-066 Master):
+  1. **Edición Libre y Sugerencias de Trayectos en Reporte de Costos:**
+     - En jornadas operativas (`costos.jornadas`), se reemplazó el selector rígido por un control interactivo de entrada libre (`<input v-model="j.tipo_servicio" list="tipos-servicio-jornada-list" ... />`) permitiendo ingresar cualquier texto descriptivo.
+     - Se incorporó la lista de sugerencias rápidas (`datalist`) con: `Ida y Vuelta`, `Solo Ida`, `Solo Vuelta`, `Flete Ida y Vuelta`, `Flete Solo Ida`, `Flete Solo Retorno`, `Hora`, `Fijo` y `Standby`.
+     - En la subtabla de traslado (`costos.horas_traslado`), se vinculó `<datalist id="conceptos-traslado-list">` con opciones análogas de trayecto (`Chofer Cama Baja (Solo Ida / Solo Vuelta / Ida y Vuelta)`, `Tracto Contrapesos (...)`, `Traslado (...)`) y edición libre.
+  2. **Desacoplamiento Estricto de Entornos DEV y PROD:**
+     - Compilación y empaquetado diferenciado: `npm run build:dev` para DEV (apuntando a `/lg-gsp-dev/`) y `npm run build` para PROD (apuntando a `/lg-gsp-prod/`).
+     - Erradicación definitiva del bucle de redirección hacia PROD al ingresar a rutas de DEV (`https://servidor.leanglobal.cl/lg-gsp-dev/its-transicion`).
+  3. **Consolidación de Informes en Producción:**
+     - Sincronización íntegra de los 14 borradores de Yiara y los 4 informes de Jorge Ponce, consolidando 19 informes en la base de datos de producción (`sch_leangsp_prod.tits_transicion_historial`).
+
+## [Portal Web GSP] - Versión 1.0.127
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-13 10:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1029`
+- **Especificación Técnica:** Portal Web GSP v1.0.127: Asistente Automático de Migración de Informes Locales a la Nube PostgreSQL (SPEC-066 Master):
+  1. **Backup Preventivo Inmutable:** Creación automática de copia local inmutable (`its_transicion_historial_backup_seguridad`) para blindar los datos locales de cada usuario contra pérdidas accidentales.
+  2. **Detección Determinista de Pendientes:** Escaneo inteligente en cliente que compara registros locales contra la base de datos de producción (`/operaciones/its/transicion/list`).
+  3. **Banner Superior No Invasivo:** Visualización del conteo de informes locales no compartidos con detalle de cotizaciones detectadas.
+  4. **Migración por Lotes con 1 Clic:** Subida masiva asistida a PostgreSQL mediante `POST /operaciones/its/transicion/save` asociando elaborador, jornadas y costos completos.
+  5. **Herramienta de Respaldo JSON:** Descarga directa de archivo `.json` con los informes locales como salvaguarda adicional.
+
+## [Portal Web GSP] - Versión 1.0.126
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-13 09:40:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1028`
+- **Especificación Técnica:** Portal Web GSP v1.0.126: Colaboración Universal, Visibilidad Multi-Usuario y Autoguardado en Nube de Informes de Término de Servicio (ITS Transición) (SPEC-066 Master):
+  1. **Autoguardado Inmediato en Servidor:**
+     - Al seleccionar y comenzar a elaborar un ITS desde la Matriz Operativa de Conciliación, se registra de inmediato el estado `BORRADOR` en PostgreSQL (`tits_transicion_historial`) con el usuario en sesión (`id_usuario_elaborador`).
+  2. **Trazabilidad en Vivo en Matriz de Conciliación:**
+     - Despliegue del autor en el badge de estado (`🟡 BORRADOR (👤 [Nombre])`) y habilitación del botón `[✏️ Continuar]` accesible para toda la organización.
+  3. **Backend Controller Enriquecido:**
+     - Integración de joins en `listarItsTransicion` (`tsec_users`) para resolver identidades legibles de elaborador, verificador y aprobador.
+  4. **Erradicación de Silenciamiento de Errores y Aislamiento Local:**
+     - Validación estricta de respuesta en `guardarInformeConEstado` y centralización de observaciones en `data_json` de PostgreSQL.
+  5. **Gobernanza:** Sincronización en `Gestión/tareas.md` (`REQ-1028`), `package.json` (`v1.0.126`) y compilación limpia Vite 0 errores.
+
+## [Portal Web GSP] - Versión 1.0.125
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 19:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1027`
+- **Especificación Técnica:** Portal Web GSP v1.0.125: Visualización de Evidencias Iniciales (Antes), Cierre con Evidencias de Solución (Después), Resolución Técnica de Hallazgos en Subtab de OT y Normalización Backend (SPEC-072):
+  1. **Visualización en Subtab "Hallazgos en esta OT":**
+     - Despliegue interactivo de miniaturas fotográficas de evidencia de detección ("Antes") con visor modal a pantalla completa (`abrirPreviewFotoWeb`).
+     - Despliegue estructurado de la resolución técnica (decisión, solución aplicada, responsable y fecha/hora) junto a miniaturas fotográficas de la reparación final ("Después").
+  2. **Acción de Resolución Técnica In Situ:**
+     - Botón `[ 🛠️ Resolver ]` habilitado dentro del subtab de la orden de trabajo para resolver anomalías detectadas sin abandonar el expediente de la grúa.
+     - Recarga reactiva mediante `abrirDetalleOt()` para reflejar el estado `CERRADO` y los metadatos de auditoría al instante.
+  3. **Normalización en Backend (`mantenimientoModel.js`):**
+     - Actualización de `getOtById` para resolver `usuario_reporta` y `usuario_cierra` desde `tsec_users`.
+     - Parseo determinista de `fotos` y `fotos_cierre` asegurando entrega de estructuras JSON normalizadas hacia el cliente.
+  4. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1027`) y `tcfg_releases` (`v1.0.125`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [PWA Taller Móvil GSP] - Versión 1.0.41
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 19:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1027`
+- **Especificación Técnica:** PWA Taller Móvil v1.0.41: Integración Completa de Evidencias Fotográficas Antes/Después y Cierre de Hallazgos en Detalle de OTM (SPEC-072):
+  1. **Captura y Visualización Móvil de Hallazgos:**
+     - Captura de fotos de anomalías en terreno vía cámara y galería en el detalle de la OT (`TallerOtDetalleView.vue`).
+     - Miniaturas fotográficas con `resolverFotoUrl()` para evitar errores 404 en el path relativo.
+  2. **Resolución Móvil de Hallazgos en Terreno:**
+     - Modal de resolución técnica para mecánicos con selección de decisión, solución ejecutada y evidencia fotográfica de término ("Después").
+  3. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1027`) y `tcfg_releases` (`v1.0.41`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [PWA Taller Móvil GSP] - Versión 1.0.39
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 15:25:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1024`, `REQ-1025`
+- **Especificación Técnica:** PWA Taller Móvil v1.0.39: Corrección de Resolución de Fotos 360°, Tareas Base Obligatorias en OTMs, Selector de Técnicos RBAC Priorizado y Erradicación de Solapamiento en Aviso de Avería (SPEC-071):
+  1. **Resolución Determinista de Fotos 360° en PWA:**
+     - Enlace de ranuras de imágenes a través de `resolverFotoUrl(fotos360[slot.key])`, erradicando el error 404 al resolver la ruta relativa `/api/v1/storage/view/:id` contra la URL canónica de la API en el subpath `/lg-gsp-dev/api/`.
+     - Asignación reactiva de ranuras (`fotos360.value = { ...fotos360.value, [slotKey]: ... }`) y soporte tolerante para deserialización de `fotos_recepcion_360` desde PostgreSQL o almacenamiento local.
+  2. **Selector de Técnicos con Priorización RBAC y Etiquetas Semánticas:**
+     - Integración de listado ordenado por roles de taller (`GSP_TALLER_EJEC`, `MECANICO`) con iconos descriptivos (`🛠️`, `👷`, `👤`) y subtítulo de función.
+  3. **Erradicación del Solapamiento Tipográfico en Aviso de Falla:**
+     - Desacoplamiento de etiquetas HTML en bloque (`<label class="text-[11px] font-bold ...">`) y uso de `hide-details` en `<v-autocomplete>`, `<v-select>` y `<v-textarea>`, eliminando la colisión del label flotante con placeholders y textos ingresados.
+  4. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1024`, `REQ-1025`) y `tcfg_releases` (`v1.0.39`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [Portal Web GSP] - Versión 1.0.122
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 15:25:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1025`
+- **Especificación Técnica:** Portal Web GSP v1.0.122: Resolución Determinista de Fotos 360°, Tareas Base en OTMs, Notificaciones Omnicanal de Parada de Máquina y Asignación de Mecánicos (SPEC-071):
+  1. **Resolución de Archivos 360° en Consola Web:**
+     - Renderizado de slots y modal de ampliación fotográfica utilizando `resolverFotoUrl(fotos360Web[slot.key])`.
+     - Asignación reactiva de slots y sanitización robusta al cargar detalles de OT.
+  2. **Inyección de Tareas Mínimas Base en Creación de OTMs:**
+     - Inyección obligatoria de las 4 tareas estructuradas de taller para grúas en órdenes de trabajo que no cuenten con pauta preventiva previa o actividades manuales, evitando OTs vacías.
+  3. **Notificación Omnicanal al Asignar Técnico (Email + WhatsApp):**
+     - Despacho transaccional mediante `notificacionService` con deep link directo a la orden en PWA (`/taller/ot/:id`).
+  4. **Alerta Urgente por Parada de Máquina a Administradores:**
+     - Despacho inmediato de correo y WhatsApp a roles administradores ante avisos con criticidad `PARADA_MAQUINA`.
+  5. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1025`) y `tcfg_releases` (`v1.0.122`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [PWA Taller Móvil GSP] - Versión 1.0.38
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 14:20:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1024`, `REQ-1025`
+- **Especificación Técnica:** Taller Móvil PWA: Ficha QR Oficial, Medidores de Entrada/Cierre (Doble Horómetro & Odómetro), Fotos 360°, Aviso de Avería y Nueva OTM General (SPEC-071):
+  1. **Aviso de Falla 100% Simétrico y Correlativo Automático:**
+     - Normalización de payload en `TallerHomeView.vue` (`descripcion_sintoma` y `descripcion`), sincronizado con backend (`mantenimientoController.js` y `mantenimientoModel.js`).
+     - Generación automática de folio canónico correlativo anual (`AV-YYYY-XXXX`) en base de datos para satisfacer la restricción NOT NULL de `tmnt_aviso`.
+     - Selector de activo convertido a `v-autocomplete` interactivo con búsqueda en vivo.
+  2. **Botón [➕ Nueva OTM] Superior Operativo:**
+     - Implementación de `abrirNuevaOtModalGeneral()` y vinculación con selector `v-autocomplete` de equipos de la flota (`radarFlota`).
+     - Precarga automática de horómetros acumulados (Grúa, Chasis, Odómetro) según el activo seleccionado.
+  3. **Buscador de Equipos con Autocompletado Inteligente:**
+     - Reemplazo del input plano por `v-autocomplete` enriquecido que despliega patente, código interno (`GPT-135`), marca, modelo y tonelaje.
+     - Botones de acción directa en el desplegable: `[ 📄 Ficha QR ]`, `[ ➕ Abrir OT ]` y `[ ⏱️ Atender OT ]`.
+  4. **Ficha QR Oficial en Tiempo Real (`FichaEquipoPublica.vue`):**
+     - Modal interactivo con visor iframe a `https://servidor.leanglobal.cl/lg-gsp-dev/equipo/:patente` y botón `[ ↗ Abrir QR ]` para consulta de RT, Permiso, SOAP, Tablas de carga y certificaciones Bureau Veritas.
+  5. **Medidores de Entrada y Salida (Doble Horómetro & Odómetro):**
+     - Tarjeta de ingreso en OT con captura de Horómetro Grúa, Horómetro Chasis (grúas bicomponente) y Odómetro con botón `[ 💾 Guardar Medidores de Entrada ]` y endpoint `PUT /ots/:id/medidores-inicio`.
+     - Cierre supervisado con validación de no-regresión (`cierre >= inicio`), selección de estado resultante y firma con PIN FES.
+  6. **Inspección Visual 360° de Recepción:**
+     - Pestaña táctil `📸 Fotos 360° (X/6)` con los 6 slots normados (Frente, Lateral Izquierdo, Lateral Derecho, Posterior, Tablero de Medidores, Pluma/Gancho), captura directa de cámara, miniaturas con visor modal a pantalla completa, eliminación y persistencia en Storage oficial.
+  7. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1024`, `REQ-1025`) y `tcfg_releases` (`v1.0.38`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [Portal Web GSP] - Versión 1.0.121
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-11 13:35:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1025`
+- **Especificación Técnica:** Consola Web Desktop: Simetría Integral de Mantenimiento según SPEC-071:
+  1. **Panel de Medidores de Entrada / Recepción:**
+     - Tarjeta interactiva en detalle de OT con inputs numéricos para Horómetro Grúa (`horometro_grua_inicio`), Horómetro Chasis (`horometro_chasis_inicio`) y Odómetro (`odometro_inicio`).
+     - Botón `[ 💾 Guardar Medidores de Entrada ]` consumiendo `PUT /api/mantenimiento/ots/:id/medidores-inicio`.
+  2. **Inspección Visual 360° de Recepción:**
+     - Subpestaña `📸 Fotos 360° (X/6)` con los 6 slots reglamentarios (Frente, Lateral Izquierdo, Lateral Derecho, Posterior, Tablero de Medidores, Pluma/Gancho).
+     - Subida oficial a Storage (`POST /v1/storage/upload`), persistencia en PostgreSQL (`POST /api/mantenimiento/ots/:id/fotos-360`), miniaturas con zoom a pantalla completa y eliminación.
+  3. **Ficha QR Oficial en Cabecera y Radar de Flota:**
+     - Botón `[ 📄 Ficha QR Oficial ]` en la barra superior de la OT y en cada fila del radar de grúas.
+     - Modal con iframe canónico `https://servidor.leanglobal.cl/lg-gsp-dev/equipo/:patente` y botón `[ ↗ Abrir en Nueva Pestaña ]`.
+  4. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1025`) y `tcfg_releases` (`v1.0.121`) en PostgreSQL DEV (`sch_leangsp`).
+
+## [Portal Web GSP] - Versión 1.0.120
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-10 13:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1022`
+- **Especificación Técnica:** Bóveda Corporativa de Planillas GeraldSoft, Ingesta Incremental con Deduplicación (Upsert) y Matriz de Conciliación Geralsoft ⇄ ITS (SPEC-070):
+  1. **Bóveda Corporativa Centralizada en la Nube:**
+     - Tarjeta destacada en cabecera visible para todas las sesiones y usuarios con el estado de las planillas activas en el servidor (`CONTROLES` y `ORDENES`), fecha y hora exacta de sincronización, nombre del usuario que subió la versión (`usuario_nombre`) y total de registros.
+     - Botón de sincronización manual instantánea `[🔄 Sincronizar Bóveda]` y modal con bitácora histórica de todas las cargas realizadas.
+  2. **Ingesta Incremental Inteligente (Deduplicación & Upsert):**
+     - Selector interactivo entre **Fusión Incremental Diaria (Upsert)** y **Reemplazo Total del Período**.
+     - Comparación por clave natural (`cotizacion` + `orden` + `fecha` + `patente` + `item`) que anexa nuevos registros y actualiza existentes sin pérdida destructiva de datos previos.
+     - Reporte estadístico post-carga: número de nuevos registros agregados, actualizados y total consolidado en el servidor.
+  3. **Matriz Operativa de Conciliación Geralsoft ⇄ ITS (Pipeline de Servicios):**
+     - KPIs ejecutivos en cabecera: Total de Servicios, ⚪ Pendientes de ITS, 🟡 En Trámite / Firmas FES, 🔴 Observados, 🟢 Concluidos.
+     - Filtros de estado por pestañas y buscador en vivo por cotización, mandante o equipo.
+     - Tabla interactiva con semáforos: botón directo `[+ Elaborar ITS]` para servicios sin liquidar (con auto-poblado instantáneo), `[✏️ Continuar]` para borradores/trámites y `[👁️ Ver PDF]` para informes concluidos.
+  4. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1022`) y `tcfg_releases` (`v1.0.120`) en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.119
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 17:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1021`
+- **Especificación Técnica:** Apertura Integral de Costos Operacionales en ITS Sección 3 y Resumen 4 (Homologación Sistema Jorge):
+  1. **Apertura de los 9 Rubros Canónicos en Sección 3:**
+     - Desglose individual de cada rubro con encabezado gris `#f1f5f9`, total en pesos y soporte para N° de OC en Pensiones, Personal Externo y Subcontratos.
+     - Formato de tabla estructurada para ítems con registros y mensaje estándar `Sin registros de gastos en este ítem ($0)` para ítems vacíos:
+       1. `⬢ VIATICO ALIMENTACION PERSONAL`
+       2. `⬢ PEAJES Y TAG DE RUTA`
+       3. `⬢ PENSIONES Y ALOJAMIENTO FAENA`
+       4. `⬢ MOVILIZACION PERSONAL (PASAJES, UBER, TAXI, TRANSFER)`
+       5. `⬢ PERSONAL EXTERNO / RIGGERS DE APOYO`
+       6. `⬢ PAGO FERIADOS Y BONOS`
+       7. `⬢ SUBCONTRATACION FLETE EXTERNO`
+       8. `⬢ GASTOS EXTRAORDINARIOS`
+       9. `⬢ COSTO VALOR HORA OPERADOR (HORAS REPORT)` (Equipo, Categoría Maestra, Valor Hora, Horas Report y Total Operador).
+  2. **Apertura de 8 Conceptos en Tabla B del Resumen Financiero (Sección 4):**
+     - Sustitución de la consolidación de "Otros Costos Operativos Faena" por la apertura de las 8 líneas canónicas de egresos (`1. Viáticos Alimentación`, `2. Peajes y Tag`, `3. Pensiones y Alojamiento`, `4. Movilización Personal`, `5. Personal Externo y Feriados`, `6. Subcontratación Flete Externo`, `7. Gastos Extraordinarios` y `8. Costo Valor Hora Operador`) con desglose de `MONTO ($)` y `% S/ VENTA`.
+  3. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1021`) y `tcfg_releases` (`v1.0.119`) en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.118
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 15:20:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1020`
+- **Especificación Técnica:** Corrección de Firma FES Elaborador y Reposición de Vista Previa PDF:
+  1. **Resolución Multicriterio de Usuario Firmante:**
+     - Corrección en backend (`itsController.js`) para resolver el usuario por `id_user`, `id_usuario`, o búsqueda por RUT de firmante (`firmante_rut`), con fallback inteligente hacia el registro de Yiara Mendoza (`id_user = 65`) y compatibilidad con `pin_fes`, `pin_hash` y `pin`.
+     - Homologación en los tres métodos de firma FES: `firmarElaboradorItsTransicion`, `validarAdminItsTransicion` y `aprobarContabilidadItsTransicion`.
+     - Regularización de estado `activo = true` para el usuario 65 en `sch_leangsp_prod.tsec_users`.
+  2. **Reposición del Botón "Ver Informe PDF" Antes de Firmar:**
+     - Reincorporación del botón `👁️ Ver Informe PDF` (`abrirVentanaImpresionOficial()`) en la barra de acciones de la Sección 4 para estados `BORRADOR` y `OBSERVADO`.
+     - Inclusión del botón `👁️ Ver Informe PDF` en el pie de la ventana modal FES (`modalFesAbierto`), permitiendo a la analista/secretaria revisar el documento oficial antes de estampar su PIN.
+  3. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1020`) y `tcfg_releases` (`v1.0.118`) en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.117
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 14:45:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1019`
+- **Especificación Técnica:** Tarifario Dinámico de Mano de Obra por Categoría de Equipo según Sistema Jorge (SPEC-069):
+  1. **Catálogo Maestro de Tarifas Canónicas:**
+     - Adopción íntegra de la matriz de tarifas horarias de operador del sistema de referencia de Jorge (`viaticos-pensiones.js` y `storage.js`):
+       - `GRUA HORQUILLA`: $3.000 / hr
+       - `CAMION PLUMA`: $5.000 / hr
+       - `CAMION PLUMA 10 TON`: $5.000 / hr
+       - `MANITU / TELEHANDLER`: $5.000 / hr
+       - `GRUA TELESCOPICA 70 TON`: $6.000 / hr
+       - `GRUA TELESCOPICA 80 TON`: $7.000 / hr
+       - `TRACTOCAMION`: $7.000 / hr
+       - `GRUA TELESCOPICA 100 TON`: $8.000 / hr
+       - `GRUA TELESCOPICA 220 TON`: $12.000 / hr
+       - `OTRA MAQUINARIA / GRUA GENERAL`: $8.500 / hr
+  2. **Auto-Detección y Selector Interactivo de Categoría:**
+     - Función inteligente `detectarTarifaYCatSugerida` para asignar automáticamente categoría y tarifa base según la subcategoría o tonelaje del equipo extraído de la cotización/OT GeraldSoft.
+     - Selector interactivo `<select>` en la columna "Categoría Maestra" de la tabla de Mano de Obra en Sección 3 de ITS Transición, permitiendo reclasificar la máquina en tiempo real y actualizando la tarifa horaria sugerida.
+  3. **Sobreescritura Manual y Recálculo Reactivo:**
+     - Conservación de los inputs numéricos editables para horas y tarifa horaria por operador, permitiendo ajustes específicos sin perder la selección de categoría maestra.
+     - Homologación idéntica en el visor web y en la generación de PDF oficial (`generarHtmlDocumentoOficial`).
+  4. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` (`REQ-1019`) y `tcfg_releases` (`v1.0.117`) en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.116
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 13:45:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1018`
+- **Especificación Técnica:** Corrección Cálculo Mano de Obra Operador y Persistencia Servidor de Planillas GeraldSoft (SPEC-068):
+  1. **Corrección de Cálculo de Mano de Obra por Máquina ($111.000 vs $222.000):**
+     - Asignación determinista de tarifa sugerida base de `$3.000/hr` para la categoría `GRUA HORQUILLA` (ej. patente `KKFG50`).
+     - Vinculación estrictamente reactiva e inmediata entre los inputs de edición (`costos.tarifas_operadores_override` y `costos.horas_operadores_override`) y el subtotal de la fila y general: $3.000 \times 37.0\text{ hrs} = \$111.000\text{ CLP}$.
+     - Homologación de la fórmula exacta en la compilación y renderizado de PDF oficial (`generarHtmlDocumentoOficial`).
+  2. **Persistencia de Planillas GeraldSoft en Servidor:**
+     - Creación de tabla relacional `tits_geraldsoft_planillas` en `sch_leangsp` (DEV) y `sch_leangsp_prod` (PROD) con indexación por tipo y estado activo.
+     - Endpoints REST `/api/operaciones/its/transicion/planillas/activas` (GET) y `/api/operaciones/its/transicion/planillas/subir` (POST).
+     - Precarga automática en `onMounted` de `ItsTransicionView.vue`, auto-poblando el selector de cotizaciones y OTs del período al ingresar a la plataforma sin requerir recargas repetitivas por sesión.
+     - Persistencia automática de nuevos archivos Excel subidos por cualquier usuario (Secretaria, Analista o Administrador).
+     - Banner informativo de estado de sincronización de planillas en el servidor.
+  3. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` y `tcfg_releases` en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.115
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 12:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1017`
+- **Especificación Técnica:** Flujo de Aprobaciones ITS Transición, Gobernanza Tripartita, Firmas FES y Notificaciones con Deep Link (SPEC-067):
+  1. **Gobernanza de Roles RBAC y Enrolamiento:** Incorporación del rol `SECRETARIA` (`id_rol = 38`) en `tsec_roles`, homologación de Yiara Mendoza con rol Analista (`id_rol = 31`) y soporte para delegación de digitación de planillas GeraldSoft.
+  2. **Flujo Tripartito de Estados FES:**
+     - **Etapa 1 (Elaboración):** Secretaria o Analista confecciona el informe y estampa la firma FES de elaboración (`firmar-elaborador`) avanzando a `PENDIENTE_VERIFICACION`.
+     - **Etapa 2 (Verificación Operativa - Rol ADMINISTRADOR):** Validación exclusiva por Administrador de Operaciones con facultades para editar, devolver al elaborador con observaciones obligatorias (`devolver`) o validar con PIN FES (`validar-admin`) transicionando a `PENDIENTE_CONTABILIDAD`.
+     - **Etapa 3 (Aprobación Financiera - Rol CONTABILIDAD):** Visto bueno de Contabilidad & Finanzas con posibilidad de editar costos, devolver al elaborador o aprobar definitivo con PIN FES (`aprobar-contabilidad`) avanzando a `APROBADO`.
+  3. **Notificaciones Omnicanal (Email B2B + WhatsApp) con Deep Link Contextual:** En cada transición de estado se genera un despacho dual enriquecido hacia el actor de la siguiente etapa con enlace directo hacia la pantalla de ITS Transición contextualizada con folio y cotización.
+  4. **Erradicación del Pie Estático:** Sustitución integral del cuadro estático en duro por 3 casillas dinámicas oficiales FES (Elaboró, Verificó, Aprobó) con sellos digitales, códigos FES, marcas de tiempo RFC 3161 y bitácora de observaciones resueltas en el visor web y en la compilación PDF con wkhtmltopdf.
+  5. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` y `tcfg_releases` en bases de datos PostgreSQL de DEV y PROD (`sch_leangsp` y `sch_leangsp_prod`).
+
+## [Portal Web GSP] - Versión 1.0.114
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-09 11:06:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1016`
+- **Especificación Técnica:** Módulo ITS Transición y Liquidación Relacional en Producción:
+  1. **Persistencia Relacional en Producción:** Creación determinista de tabla `sch_leangsp_prod.tits_transicion_historial` con secuencia, índices y permisos para `usr_leangsp_prod`.
+  2. **Controlador Backend Dinámico Multiesquema:** Adaptación de consultas SQL en `itsController.js` para usar nombres no cualificados (`tits_transicion_historial`, `tfmg_file`), resolviendo automáticamente el esquema según el contexto (`sch_leangsp_prod` en PROD y `sch_leangsp` en DEV via `SET search_path`).
+  3. **Endpoints REST Activos en Producción (PM2 ID 13):** Registro y despliegue de `/api/operaciones/its/transicion/list`, `/api/operaciones/its/transicion/guardar` y `/api/operaciones/its/compilar-pdf`.
+  4. **Frontend Compilado v1.0.114:** Generación de bundle de producción con Vite (`index-l_NNQtft.js`), despliegue a `/var/www/html/lg-gsp-prod/` y verificación HTTP 200 OK.
+  5. **Gobernanza y Hard Gate:** Sincronización en `tcfg_backlog` y `tcfg_releases` en bases de datos PostgreSQL de DEV y PROD.
+
 ## [Portal Web GSP] - Versión 1.0.109
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-07 22:05:00 (-03:00)

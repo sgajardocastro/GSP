@@ -514,15 +514,17 @@
                         </template>
                       </td>
                       <td class="p-2">
-                        <input 
-                          disabled 
-                          type="number" 
-                          v-model.number="line.valorUnitario" 
-                          min="0" 
-                          class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-right text-xs text-white font-mono opacity-50 cursor-not-allowed transition-colors" 
-                          :class="(!isOriginalLine(idx) || hasDiff('equipo_valor', idx)) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
-                          :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
-                        />
+                        <div class="relative flex items-center">
+                          <span class="absolute left-2 text-slate-500 text-xs font-mono select-none pointer-events-none">$</span>
+                          <input 
+                            disabled 
+                            type="text" 
+                            :value="formatInputMiles(line.valorUnitario)" 
+                            class="w-full bg-[#0a0f1e] border rounded pl-5 pr-2 py-1 text-right text-xs text-slate-300 font-mono opacity-60 cursor-not-allowed transition-colors" 
+                            :class="(!isOriginalLine(idx) || hasDiff('equipo_valor', idx)) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
+                            :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
+                          />
+                        </div>
                       </td>
                       <td class="p-2 text-right font-bold text-amber-400 font-mono">
                         {{ formatCurrency(calcularSubtotalOperaciones(line, idx)) }}
@@ -4170,7 +4172,7 @@
                   <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
                     <th class="p-2.5 min-w-[170px]">Categoría</th>
                     <th class="p-2.5 min-w-[140px]">Subcategoría</th>
-                    <th class="p-2.5 min-w-[160px]">Descripción / Equipo</th>
+                    <th class="p-2.5 min-w-[280px]">Descripción del Servicio *</th>
                     <th class="p-2.5 min-w-[130px]">Unidad de Cobro</th>
                     <th class="p-2.5 text-center min-w-[140px]">Cantidad(es)</th>
                     <th class="p-2.5 text-right min-w-[100px]">Valor Unitario</th>
@@ -4207,7 +4209,15 @@
                       </select>
                     </td>
                     <td class="p-2">
-                      <input type="text" v-model="line.descripcion" placeholder="Ej: Liebherr LTM 1220..." class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                      <input 
+                        type="text" 
+                        v-model="line.descripcion" 
+                        placeholder="Describa el servicio o faena (Obligatorio)..." 
+                        class="w-full bg-[#0a0f1e] border rounded px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-amber-500 outline-none transition-colors" 
+                        :class="!line.descripcion ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10'"
+                        :title="line.descripcion"
+                        maxlength="250"
+                      />
                     </td>
                     <td class="p-2">
                       <select 
@@ -4306,13 +4316,16 @@
                       </template>
                     </td>
                     <td class="p-2">
-                      <input 
-                        type="number" 
-                        v-model.number="line.valorUnitario" 
-                        @input="line.valor_unitario = line.valorUnitario"
-                        min="0" 
-                        class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-right text-xs text-white font-mono" 
-                      />
+                      <div class="relative flex items-center">
+                        <span class="absolute left-2 text-slate-500 text-xs font-mono select-none pointer-events-none">$</span>
+                        <input 
+                          type="text" 
+                          :value="formatInputMiles(line.valorUnitario)" 
+                          @input="onValorUnitarioInput($event, line)" 
+                          placeholder="0" 
+                          class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded pl-5 pr-2 py-1.5 text-right text-xs sm:text-sm text-amber-300 font-mono font-bold tracking-wide outline-none transition-colors" 
+                        />
+                      </div>
                     </td>
                     <td class="p-2 text-right font-bold text-amber-500 font-mono">
                       {{ formatCurrency(calcularSubtotalLinea(line)) }}
@@ -6523,6 +6536,32 @@ const getSubcategoriesForType = (type, line = null) => {
     return normCat === normType || c.nombre_categoria === type
   })
   let subs = category ? [...(category.subcategories || [])] : []
+
+  // REQ-633: Para GRUAS TELESCOPICAS, generar tramos de 10 en 10 Toneladas (40T a 400T) ordenados numéricamente
+  if (normType === 'GRUAS TELESCOPICAS') {
+    const TONELAJES_CANONICOS = [
+      40, 50, 55, 60, 70, 75, 80, 90, 100, 110, 120, 130, 140, 
+      150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 
+      260, 270, 280, 290, 300, 320, 350, 400
+    ]
+    const subGruasMap = new Map()
+    TONELAJES_CANONICOS.forEach((ton, i) => {
+      const nombre = `GRUA ${ton} TON`
+      subGruasMap.set(nombre, { id_subcategoria: 4000 + i, nombre_subcategoria: nombre, tonelaje_num: ton })
+    })
+    subs.forEach(s => {
+      const tonMatch = (s.nombre_subcategoria || '').match(/(\d+)/)
+      const ton = tonMatch ? parseInt(tonMatch[1], 10) : 0
+      if (!subGruasMap.has(s.nombre_subcategoria)) {
+        subGruasMap.set(s.nombre_subcategoria, { ...s, tonelaje_num: ton })
+      }
+    })
+    if (line?.subcategoria && !subGruasMap.has(line.subcategoria)) {
+      const tonMatch = line.subcategoria.match(/(\d+)/)
+      subGruasMap.set(line.subcategoria, { id_subcategoria: 9997, nombre_subcategoria: line.subcategoria, tonelaje_num: tonMatch ? parseInt(tonMatch[1], 10) : 0 })
+    }
+    subs = Array.from(subGruasMap.values()).sort((a, b) => a.tonelaje_num - b.tonelaje_num)
+  }
 
   // Si es TRASLADOS, asegurar que la subcategoría de grúa esté disponible como opción seleccionable
   if (normType === 'TRASLADOS') {
@@ -8862,6 +8901,11 @@ const validarDatosPreventaParaCotizar = () => {
       activeTab.value = 'servicios'
       return false
     }
+    if (!l.descripcion || String(l.descripcion).trim() === '') {
+      alert(`⚠️ Fila #${i + 1} del Estructurador: Debe ingresar la Descripción del Servicio antes de guardar o cotizar.`)
+      activeTab.value = 'servicios'
+      return false
+    }
   }
 
   // 8. Validación Anti-Fuga de Fletes según los Casos (Spec 16 §4.4)
@@ -10475,6 +10519,21 @@ const formatCurrency = (val) => {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(val || 0)
 }
 
+const formatInputMiles = (val) => {
+  if (val === null || val === undefined || val === '') return ''
+  const num = parseInt(String(val).replace(/\D/g, ''), 10)
+  if (isNaN(num) || num === 0) return ''
+  return new Intl.NumberFormat('es-CL').format(num)
+}
+
+const onValorUnitarioInput = (e, line) => {
+  const raw = e.target.value.replace(/\D/g, '')
+  const num = raw ? parseInt(raw, 10) : 0
+  line.valorUnitario = num
+  line.valor_unitario = num
+  e.target.value = num > 0 ? new Intl.NumberFormat('es-CL').format(num) : ''
+}
+
 
 
 const enviarCotizacionPorCorreo = async () => {
@@ -10656,7 +10715,7 @@ const asegurarLineaGruaBase = () => {
     lines.value.unshift({
       tipo: 'GRUAS TELESCOPICAS',
       subcategoria: 'GRUA 75 TON',
-      descripcion: 'Servicio Grúa Telescópica en Faena',
+      descripcion: '',
       unidad: 'Horas Diarias Minimas',
       dias: 1,
       horas: 8,
@@ -11813,6 +11872,16 @@ const guardarEnPreventa = async () => {
   if (!opportunity.value.rut_cliente) {
     alert('⚠️ Requerimiento Obligatorio: Debe seleccionar un Cliente Mandante antes de guardar.')
     return
+  }
+
+  // REQ-735: Validar que cada fila estructurada tenga descripción antes de guardar
+  for (let i = 0; i < (lines.value || []).length; i++) {
+    const l = lines.value[i]
+    if (l.tipo && (!l.descripcion || String(l.descripcion).trim() === '')) {
+      alert(`⚠️ Fila #${i + 1} del Estructurador: Debe ingresar la Descripción del Servicio antes de guardar.`)
+      activeTab.value = 'servicios'
+      return
+    }
   }
 
   if (opportunity.value.contacto_nombre && !opportunity.value.contacto_obj) {
