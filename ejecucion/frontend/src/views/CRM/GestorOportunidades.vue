@@ -3402,6 +3402,9 @@
                 @input="onSearchInput"
                 @blur="onBlur"
                 placeholder="Buscar por Nombre, Razón Social o RUT..." 
+                autocomplete="new-password"
+                data-lpignore="true"
+                name="crm_q_search_mandante"
                 class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white transition-colors"
               />
               <div v-if="showDropdown && filteredClientes.length > 0" class="absolute z-10 w-full bg-[#0a0f1e] border border-white/10 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-2xl scrollbar-hide">
@@ -3451,7 +3454,9 @@
                   v-model="opportunity.contacto_nombre" 
                   @change="autoGuardarContactoManual"
                   placeholder="Nombre solicitante..." 
-                  autocomplete="off"
+                  autocomplete="new-password"
+                  data-lpignore="true"
+                  name="crm_contacto_nom_manual"
                   class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_nombre ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                 />
@@ -3465,7 +3470,9 @@
                   v-model="opportunity.contacto_telefono" 
                   @change="autoGuardarContactoManual"
                   placeholder="Ej: +569..." 
-                  autocomplete="off"
+                  autocomplete="new-password"
+                  data-lpignore="true"
+                  name="crm_contacto_tel_manual"
                   class="w-full bg-[#0a0f1e] border rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                   :class="!opportunity.contacto_telefono ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                 />
@@ -3479,7 +3486,9 @@
                   v-model="opportunity.contacto_correo" 
                   @change="autoGuardarContactoManual"
                   placeholder="contacto@empresa.cl" 
-                  autocomplete="off"
+                  autocomplete="new-password"
+                  data-lpignore="true"
+                  name="crm_contacto_mail_manual"
                   class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                 />
               </div>
@@ -4770,18 +4779,8 @@
                   <span class="text-[9px] text-slate-400">Relevante para devengado y estados de pago</span>
                 </div>
 
-                <!-- Banner explicativo en servicios de 1 día -->
-                <div 
-                  v-if="esServicioUnDia" 
-                  class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2"
-                >
-                  <span class="text-base">ℹ️</span>
-                  <span>En servicios de <strong>1 solo día</strong>, los costos de pensión y viáticos no aplican para la base de EDP. Panel deshabilitado automáticamente con conceptos fijados en <strong>NA (No Aplica)</strong>.</span>
-                </div>
-                
                 <div 
                   class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 transition-all"
-                  :class="esServicioUnDia ? 'opacity-50 pointer-events-none select-none' : ''"
                 >
                   <!-- Alojamiento -->
                   <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
@@ -6815,6 +6814,11 @@ const getEquiposFiltradosPorLinea = (line) => {
       match = master.filter(eq => {
         const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
         return text.includes('TRACTO') || text.includes('TRACTOCAMION') || eq.nombre_subcategoria === 'TRACTOCAMION'
+      })
+    } else if (subTarget.includes('PLATAFORMA')) {
+      match = master.filter(eq => {
+        const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
+        return text.includes('PLATAFORMA') || text.includes('CAMION') || text.includes('CAMIÓN') || text.includes('RAMPLA') || text.includes('PLANA') || (eq.nombre_categoria || '').toUpperCase().includes('TRANSPORTE')
       })
     } else if (subTarget.includes('ESCOLTA') || subTarget.includes('GUIA')) {
       match = master.filter(eq => {
@@ -9324,7 +9328,8 @@ const fetchCategories = async () => {
       { id_subcategoria: 901, nombre_subcategoria: 'CAMA BAJA' },
       { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' },
       { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
-      { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' }
+      { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' },
+      { id_subcategoria: 905, nombre_subcategoria: 'CAMIÓN PLATAFORMA' }
     ])
     upsertCat(151, 'PERSONAL CERTIFICADO', [
       { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
@@ -10317,16 +10322,10 @@ const esServicioUnDia = computed(() => {
   return true
 })
 
-// Si es servicio de 1 día, deshabilitar y forzar automáticamente conceptos de pensiones a 'NA'
+// TSK-SOP-01: Permitir edición libre de conceptos de pensiones/alimentación en servicios de 1 día
 watch(esServicioUnDia, (isOneDay) => {
-  if (isOneDay && comercial.value?.pensiones) {
-    comercial.value.pensiones.alojamiento_costeado = 'NA'
-    comercial.value.pensiones.desayuno_costeado = 'NA'
-    comercial.value.pensiones.almuerzo_costeado = 'NA'
-    comercial.value.pensiones.cena_costeado = 'NA'
-    comercial.value.pensiones.traslado_costeado = 'NA'
-  }
-}, { immediate: true })
+  // Ya no se fuerza a 'NA' para permitir que el comercial indique si el cliente provee alimentación o viático diario
+})
 
 // ACUERDOS COMERCIALES BASE CANÓNICOS POR CATEGORÍA
 const ACUERDOS_COMERCIALES_BASE = {
@@ -11222,15 +11221,15 @@ const cargarDatosCotizacion = async () => {
 
           if (crm.pensiones) {
             comercial.value.pensiones = {
-              alojamiento_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.alojamiento_costeado || 'CLIENTE'),
+              alojamiento_costeado: crm.pensiones.alojamiento_costeado || 'CLIENTE',
               alojamiento_monto: crm.pensiones.alojamiento_monto || 0,
-              desayuno_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE'),
+              desayuno_costeado: crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
               desayuno_monto: crm.pensiones.desayuno_monto || 0,
-              almuerzo_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO'),
+              almuerzo_costeado: crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO',
               almuerzo_monto: crm.pensiones.almuerzo_monto || crm.pensiones.alimentacion_monto || 0,
-              cena_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE'),
+              cena_costeado: crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
               cena_monto: crm.pensiones.cena_monto || 0,
-              traslado_costeado: esServicioUnDia.value ? 'NA' : (crm.pensiones.traslado_costeado || 'CLIENTE'),
+              traslado_costeado: crm.pensiones.traslado_costeado || 'CLIENTE',
               traslado_monto: crm.pensiones.traslado_monto || 0
             }
           }

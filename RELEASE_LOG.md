@@ -2,6 +2,26 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.130
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-13 19:58:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1031`, `REQ-1032`, `REQ-1033`, `REQ-1034`, `REQ-1035`, `REQ-1036`
+- **Especificación Técnica:** Portal Web GSP v1.0.130: Soporte Comercial CRM: Flexibilización de Viáticos, Camión Plataforma y Cotizador PDF Paramétrico (SPEC-075):
+  1. **Flexibilización de Viáticos y Alimentación en Servicios de 1 Día (REQ-1031 / TSK-SOP-01):**
+     - Se eliminó el bloqueo y el forzado automático a `'NA'` en el bloque de pensiones/viáticos cuando el servicio es de 1 jornada. Los ejecutivos comerciales ahora pueden definir con total libertad si el cliente costea o no el almuerzo, desayuno, cena o traslado, reflejándose en la cotización comercial.
+  2. **Incorporación de Subcategoría "Camión Plataforma" en Traslados (REQ-1032 / TSK-SOP-02):**
+     - Se integró la subcategoría `CAMIÓN PLATAFORMA` (ID 905) bajo la categoría `TRASLADOS` (99). En la asignación de equipos de la línea de oportunidad, se filtran automáticamente camiones planos y ramplas de transporte para el traslado de alzahombres y plataformas articuladas.
+  3. **Protección Anti-Autofill del Navegador en Formulario CRM (REQ-1033 / TSK-SOP-03):**
+     - Se resolvieron los incidentes donde Chrome sobrescribía o eliminaba el teléfono y datos del contacto al buscar clientes mediante atributos `autocomplete="new-password"`, `data-lpignore="true"` y nombres de campos desambiguados.
+  4. **Metadatos de Ejecutivo Comercial y Fono en PDF Oficial (REQ-1034 / TSK-COT-01):**
+     - El encabezado de la cotización formal en PDF ahora incluye dinámicamente el nombre completo y teléfono directo del ejecutivo comercial responsable (`crm.vendedor_nombre` o usuario asignado en `tsec_users`), agilizando el contacto directo de los mandantes.
+  5. **Parametrización y Branding Dinámico de Empresa Emisora (REQ-1035 / TSK-COT-02):**
+     - Se corrigió la resolución de la empresa emisora en el backend (`proyectoModel.js`), vinculando la columna real `tpry_proyecto.id_empresa` con `tpar_empresas` y el diccionario paramétrico de emisores (Royal Rental `11`, Bestmaq `7`, Logística del Sur `8`, San Pablo `9`), desplegando el membrete, razón social, RUT y logo oficial correspondiente.
+  6. **Supresión de Cláusula de Régimen Urbano en Caso 5 (REQ-1036 / TSK-COT-03):**
+     - En cotizaciones tipo Caso 5 (Partidas Abiertas / Alzahombres y Plataformas), se suprime la cláusula de régimen urbano (≤ 30 km) y se cataloga operacionalmente como `ESPECIAL / PLATAFORMAS (Partidas Abiertas)`.
+
 ## [Portal Web GSP] - Versión 1.0.129
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-13 11:55:00 (-03:00)

@@ -840,6 +840,17 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Descripciones Limpias y Validación Bloqueante (REQ-735):** Inicialización de líneas con descripción limpia (`''`), ensanchamiento de columna a 280px y validación obligatoria antes de guardar o cotizar.
   - **Gobernanza y Hard Gate:** Sincronización en `package.json` (`v1.0.129`), `RELEASE_LOG.md` y base de datos PostgreSQL (`tcfg_backlog` / `tcfg_releases`).
 
+* [x] **17. Soporte Comercial CRM: Flexibilización de Viáticos, Camión Plataforma y Cotizador PDF Paramétrico [REQ-1031..REQ-1036 / SPEC-075 / Web v1.0.130 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/75_mejoras_soporte_cotizador_pensiones_traslados_y_pdf_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/75_mejoras_soporte_cotizador_pensiones_traslados_y_pdf_spec.md) (SPEC-075).
+  - **Flexibilización de Viáticos y Alimentación en 1 Día (REQ-1031 / TSK-SOP-01):** Eliminación del bloqueo visual y forzado a `NA` en `comercial.pensiones` de `GestorOportunidades.vue`, permitiendo acordar y costear viáticos diarios.
+  - **Incorporación de Camión Plataforma en Traslados (REQ-1032 / TSK-SOP-02):** Creación de subcategoría `CAMIÓN PLATAFORMA` (ID 905) bajo categoría `TRASLADOS` (99) y asignación reactiva de ramplas y camiones planos para plataformas y alzahombres.
+  - **Prevención de Conflicto de Autocompletado del Navegador (REQ-1033 / TSK-SOP-03):** Blindaje de campos de búsqueda de cliente y contacto con `autocomplete="new-password"` y `data-lpignore="true"` para evitar borrado de teléfonos.
+  - **Metadatos de Ejecutivo Comercial y Teléfono en PDF (REQ-1034 / TSK-COT-01):** Incorporación en el header PDF de la cotización del nombre del ejecutivo y fono de contacto directo resolviendo `tsec_users` / `crm.vendedor_nombre`.
+  - **Parametrización y Branding Dinámico de Empresa Emisora (REQ-1035 / TSK-COT-02):** Corrección en `proyectoModel.js` para resolver `p.id_empresa` contra `tpar_empresas` y catálogo (Royal Rental `11`, Bestmaq `7`, Logística `8`, San Pablo `9`).
+  - **Supresión de Régimen Urbano en Caso 5 (REQ-1036 / TSK-COT-03):** Ocultamiento de la cláusula urbana en el PDF para Caso 5 (Plataformas / Partidas Abiertas) y rotulación operacional de partidas especiales.
+  - **Gobernanza y Hard Gate:** Versión `v1.0.130` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`).
+
+
 
 
 

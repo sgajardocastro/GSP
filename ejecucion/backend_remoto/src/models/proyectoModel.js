@@ -13,11 +13,21 @@ class ProyectoModel {
         p.*,
         e.razon_social AS nombre_cliente,
         est.nombre_estado,
-        tip.nombre_tipo
+        tip.nombre_tipo,
+        its.id_its,
+        its.folio_its,
+        its.estado_its
       FROM tpry_proyecto p
       LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
       LEFT JOIN tpry_estado  est ON p.id_proyecto_estado = est.id_proyecto_estado
       LEFT JOIN tpry_tipo   tip ON p.id_proyecto_tipo = tip.id_proyecto_tipo
+      LEFT JOIN LATERAL (
+        SELECT id_its, folio_its, estado_its 
+        FROM tits_informe_termino its 
+        WHERE its.id_proyecto = p.id_proyecto 
+        ORDER BY its.id_its DESC 
+        LIMIT 1
+      ) its ON true
     `;
     const conditions = [];
     const values = [];
@@ -499,11 +509,20 @@ class ProyectoModel {
         }
       }
 
-      // 1b. Obtener detalles de la empresa emisora desde DB (Paramétrico)
+      // 1b. Obtener detalles de la empresa emisora desde DB (Paramétrico según id_empresa)
+      const idEmisora = Number(p.id_empresa || p.id_empresa_emisora || 9);
       let emisorObjDB = null;
-      if (p.id_empresa_emisora) {
-        const { rows: emisorRows } = await client.query('SELECT * FROM tpar_empresas WHERE id_empresa = $1', [p.id_empresa_emisora]);
+      if (idEmisora) {
+        const { rows: emisorRows } = await client.query('SELECT * FROM tpar_empresas WHERE id_empresa = $1', [idEmisora]);
         if (emisorRows.length > 0) emisorObjDB = emisorRows[0];
+      }
+
+      // 1c. TSK-COT-01: Obtener ejecutivo comercial asignado o creador
+      let ejecutivoObj = null;
+      const idUserEjecutivo = p.id_user || p.id_usuario_creacion || p.id_user_creacion;
+      if (idUserEjecutivo) {
+        const { rows: userRows } = await client.query('SELECT name_frst, apellido_pat, email, movil, telefono FROM tsec_users WHERE id_user = $1', [idUserEjecutivo]);
+        if (userRows.length > 0) ejecutivoObj = userRows[0];
       }
 
       // 2. Definir emisor y sus características según id_empresa
@@ -525,7 +544,8 @@ class ProyectoModel {
           direccion: "Camino Labranza KM 9.5, Temuco",
           fono: "+56 9 9443 7725",
           color: "#3b82f6",
-          colorLight: "rgba(59, 130, 246, 0.08)"
+          colorLight: "rgba(59, 130, 246, 0.08)",
+          logoPath: "logo-sanpablo.png"
         },
         8: {
           nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
@@ -534,7 +554,8 @@ class ProyectoModel {
           direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
           fono: "+56 9 9443 7725",
           color: "#10b981",
-          colorLight: "rgba(16, 185, 129, 0.08)"
+          colorLight: "rgba(16, 185, 129, 0.08)",
+          logoPath: "logo-sanpablo.png"
         },
         11: {
           nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
@@ -543,13 +564,14 @@ class ProyectoModel {
           direccion: "Camino Labranza KM 9.5, Temuco",
           fono: "+56 9 9443 7725",
           color: "#8b5cf6",
-          colorLight: "rgba(139, 92, 246, 0.08)"
+          colorLight: "rgba(139, 92, 246, 0.08)",
+          logoPath: "logo-sanpablo.png"
         }
       };
 
 
       // Objeto base de colores
-      let emisorBase = EMISORES[p.id_empresa_emisora] || EMISORES[9];
+      let emisorBase = EMISORES[idEmisora] || EMISORES[9];
       
       const emisor = {
         nombre: emisorObjDB?.razon_social || emisorObjDB?.name_empresa || emisorBase.nombre,
@@ -561,6 +583,11 @@ class ProyectoModel {
         colorLight: emisorBase.colorLight,
         logoPath: emisorObjDB?.logo_empresa || emisorBase.logoPath
       };
+
+      const crm = jsonField.crm_v1 || {};
+      const ejecutivoNombre = crm.vendedor_nombre || (ejecutivoObj ? `${ejecutivoObj.name_frst || ''} ${ejecutivoObj.apellido_pat || ''}`.trim() : 'Wilson Navarrete');
+      const ejecutivoFono = crm.vendedor_telefono || ejecutivoObj?.movil || ejecutivoObj?.telefono || '+56 9 9443 7725';
+      const ejecutivoEmail = crm.vendedor_email || ejecutivoObj?.email || 'ventas@arriendosanpablo.cl';
 
       let finalLogoPath = emisor.logoPath;
       try {
@@ -648,11 +675,15 @@ class ProyectoModel {
       const totalGeneralVal = totalNetoVal + ivaVal;
 
       // Formatear saltos de línea de condiciones para HTML y cláusula contractual de régimen
+      const esCaso5 = Number(crm.tipo_caso) === 5 || crm.tipo_caso_glosa === 'ESPECIAL_MIXTO_LIBRE';
       const kmEstimado = parseFloat(crm.distancia_km) || (crm.incluye_flete ? 35 : 0);
       const esUrbano = kmEstimado <= 30;
-      const clausulaRegimen = esUrbano
-        ? `• RÉGIMEN URBANO (≤ 30 km): La jornada y el cómputo de horas de arriendo inician al momento de la salida del equipo desde las instalaciones de Grúas San Pablo (Panamericana Sur Km 678, Temuco) y finalizan al retornar a las mismas.`
-        : `• RÉGIMEN RURAL (> 30 km): La jornada de arriendo del equipo inicia a la llegada a faena y concluye al término del servicio diario. La movilización (flete ida y retorno) se factura de forma independiente.`;
+      let clausulaRegimen = '';
+      if (!esCaso5) {
+        clausulaRegimen = esUrbano
+          ? `• RÉGIMEN URBANO (≤ 30 km): La jornada y el cómputo de horas de arriendo inician al momento de la salida del equipo desde las instalaciones de Grúas San Pablo (Panamericana Sur Km 678, Temuco) y finalizan al retornar a las mismas.`
+          : `• RÉGIMEN RURAL (> 30 km): La jornada de arriendo del equipo inicia a la llegada a faena y concluye al término del servicio diario. La movilización (flete ida y retorno) se factura de forma independiente.`;
+      }
       
       const condicionesHtml = [clausulaRegimen, crm.condiciones_pdf || ''].filter(Boolean).join('\n\n');
 
@@ -763,6 +794,8 @@ class ProyectoModel {
                     <strong>Número:</strong> ${codi}<br>
                     <strong>Versión:</strong> ${version}<br>
                     <strong>Fecha:</strong> ${new Date(nuevaCotizacion.fecha).toLocaleDateString('es-CL')}<br>
+                    <strong>Ejecutivo:</strong> ${ejecutivoNombre}<br>
+                    <strong>Fono Ejecutivo:</strong> ${ejecutivoFono}<br>
                     <strong>Prioridad:</strong> ${String(crm.prioridad || 'normal').toUpperCase()}
                   </div>
                 </div>
@@ -838,7 +871,7 @@ class ProyectoModel {
               <td class="info-label">Condiciones Operativas:</td>
               <td class="info-value" colspan="3">
                 • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Régimen Operacional:</strong> ${esUrbano ? 'URBANO (≤ 30 km)' : 'RURAL (> 30 km)'} (${kmEstimado > 0 ? kmEstimado + ' km estim. ida' : 'No especificada'})&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Régimen Operacional:</strong> ${esCaso5 ? 'ESPECIAL / PLATAFORMAS (Partidas Abiertas)' : (esUrbano ? 'URBANO (≤ 30 km)' : 'RURAL (> 30 km)')} (${kmEstimado > 0 ? kmEstimado + ' km estim. ida' : 'No especificada'})&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Prevencionista:</strong> ${crm.requiere_prevencionista === true ? 'SÍ' : 'NO'}<br>
                 • <strong>Cliente pone Combustible:</strong> <strong>${crm.cliente_pone_combustible === true ? 'SÍ (Suministrado por Mandante)' : 'NO (Suministrado por San Pablo)'}</strong>
