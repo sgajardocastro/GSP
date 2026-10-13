@@ -13,21 +13,11 @@ class ProyectoModel {
         p.*,
         e.razon_social AS nombre_cliente,
         est.nombre_estado,
-        tip.nombre_tipo,
-        its.id_its,
-        its.folio_its,
-        its.estado_its
+        tip.nombre_tipo
       FROM tpry_proyecto p
       LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
       LEFT JOIN tpry_estado  est ON p.id_proyecto_estado = est.id_proyecto_estado
       LEFT JOIN tpry_tipo   tip ON p.id_proyecto_tipo = tip.id_proyecto_tipo
-      LEFT JOIN LATERAL (
-        SELECT id_its, folio_its, estado_its 
-        FROM tits_informe_termino its 
-        WHERE its.id_proyecto = p.id_proyecto 
-        ORDER BY its.id_its DESC 
-        LIMIT 1
-      ) its ON true
     `;
     const conditions = [];
     const values = [];
@@ -606,7 +596,6 @@ class ProyectoModel {
       }
 
       // 3. Extraer datos estructurados de json_field.crm_v1
-      const crm = jsonField.crm_v1 || {};
       const lineas = crm.lineas_servicio || [];
 
       // Formateador simple de moneda CLP
