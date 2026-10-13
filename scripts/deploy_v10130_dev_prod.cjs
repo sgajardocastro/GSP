@@ -142,20 +142,21 @@ async function deployDevProdV10130() {
 
       INSERT INTO ${s}.tcfg_releases (version, titulo, tipo_release, descripcion_impacto, requerimientos_asociados, publicado_por)
       VALUES (
-        '1.0.130',
+        'v1.0.130',
         'Mejoras de Soporte CRM: Alimentación Flexible, Camión Plataforma y PDF Paramétrico (SPEC-075)',
-        'FEATURE',
+        'Feature & Mejoras',
         'Desbloqueo de edición de viáticos en servicios de 1 día, nueva categoría de Camión Plataforma en traslados, blindaje anti-autofill en formularios CRM y personalización completa de ejecutivo y empresa emisora en cotizaciones PDF.',
-        'REQ-1031, REQ-1032, REQ-1033, REQ-1034, REQ-1035, REQ-1036',
+        '["REQ-1031", "REQ-1032", "REQ-1033", "REQ-1034", "REQ-1035", "REQ-1036"]'::jsonb,
         'Sergio Gajardo'
       )
       ON CONFLICT (version) DO UPDATE SET 
         titulo = EXCLUDED.titulo,
+        tipo_release = EXCLUDED.tipo_release,
         descripcion_impacto = EXCLUDED.descripcion_impacto,
         requerimientos_asociados = EXCLUDED.requerimientos_asociados,
-        updated_at = NOW();
+        fecha_release = CURRENT_DATE;
     `;
-    const resSql = await ssh.execCommand(`su - postgres -c "psql -d postgres -c \\"${sql.replace(/"/g, '\\"')}\\""`);
+    const resSql = await ssh.execCommand('su - postgres -c "psql -d postgres"', { stdin: sql });
     console.log(`Base de Datos (${s}):`, resSql.stdout.trim() || resSql.stderr);
   }
 
