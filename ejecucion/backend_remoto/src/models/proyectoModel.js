@@ -507,13 +507,6 @@ class ProyectoModel {
         if (emisorRows.length > 0) emisorObjDB = emisorRows[0];
       }
 
-      // 1c. TSK-COT-01: Obtener ejecutivo comercial asignado o creador
-      let ejecutivoObj = null;
-      const idUserEjecutivo = p.id_user || p.id_usuario_creacion || p.id_user_creacion;
-      if (idUserEjecutivo) {
-        const { rows: userRows } = await client.query('SELECT name_frst, apellido_pat, email, movil, telefono FROM tsec_users WHERE id_user = $1', [idUserEjecutivo]);
-        if (userRows.length > 0) ejecutivoObj = userRows[0];
-      }
 
       // 2. Definir emisor y sus características según id_empresa
       const EMISORES = {
@@ -535,7 +528,7 @@ class ProyectoModel {
           fono: "+56 9 9443 7725",
           color: "#3b82f6",
           colorLight: "rgba(59, 130, 246, 0.08)",
-          logoPath: "logo-sanpablo.png"
+          logoPath: "logo-bestmaq.png"
         },
         8: {
           nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
@@ -545,7 +538,7 @@ class ProyectoModel {
           fono: "+56 9 9443 7725",
           color: "#10b981",
           colorLight: "rgba(16, 185, 129, 0.08)",
-          logoPath: "logo-sanpablo.png"
+          logoPath: "logo-logisticadelsur.png"
         },
         11: {
           nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
@@ -553,9 +546,9 @@ class ProyectoModel {
           giro: "ARRIENDO DE MAQUINARIAS Y EQUIPOS",
           direccion: "Camino Labranza KM 9.5, Temuco",
           fono: "+56 9 9443 7725",
-          color: "#8b5cf6",
-          colorLight: "rgba(139, 92, 246, 0.08)",
-          logoPath: "logo-sanpablo.png"
+          color: "#d97706",
+          colorLight: "rgba(217, 119, 6, 0.08)",
+          logoPath: "logo-royalrental.png"
         }
       };
 
@@ -575,9 +568,9 @@ class ProyectoModel {
       };
 
       const crm = jsonField.crm_v1 || {};
-      const ejecutivoNombre = crm.vendedor_nombre || (ejecutivoObj ? `${ejecutivoObj.name_frst || ''} ${ejecutivoObj.apellido_pat || ''}`.trim() : 'Wilson Navarrete');
-      const ejecutivoFono = crm.vendedor_telefono || ejecutivoObj?.movil || ejecutivoObj?.telefono || '+56 9 9443 7725';
-      const ejecutivoEmail = crm.vendedor_email || ejecutivoObj?.email || 'ventas@arriendosanpablo.cl';
+      const ejecutivoNombre = crm.vendedor_nombre || 'Wilson Navarrete';
+      const ejecutivoFono = crm.vendedor_telefono || '+56 9 9443 7725';
+      const ejecutivoEmail = crm.vendedor_email || 'ventas@arriendosanpablo.cl';
 
       let finalLogoPath = emisor.logoPath;
       try {
@@ -1101,7 +1094,8 @@ class ProyectoModel {
           direccion: "Camino Labranza KM 9.5, Temuco",
           fono: "+56 9 9443 7725",
           color: "#3b82f6",
-          colorLight: "rgba(59, 130, 246, 0.08)"
+          colorLight: "rgba(59, 130, 246, 0.08)",
+          logoPath: "logo-bestmaq.png"
         },
         8: {
           nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
@@ -1110,7 +1104,8 @@ class ProyectoModel {
           direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
           fono: "+56 9 9443 7725",
           color: "#10b981",
-          colorLight: "rgba(16, 185, 129, 0.08)"
+          colorLight: "rgba(16, 185, 129, 0.08)",
+          logoPath: "logo-logisticadelsur.png"
         },
         11: {
           nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
@@ -1118,8 +1113,9 @@ class ProyectoModel {
           giro: "ARRIENDO DE MAQUINARIAS Y EQUIPOS",
           direccion: "Camino Labranza KM 9.5, Temuco",
           fono: "+56 9 9443 7725",
-          color: "#8b5cf6",
-          colorLight: "rgba(139, 92, 246, 0.08)"
+          color: "#d97706",
+          colorLight: "rgba(217, 119, 6, 0.08)",
+          logoPath: "logo-royalrental.png"
         }
       };
 
