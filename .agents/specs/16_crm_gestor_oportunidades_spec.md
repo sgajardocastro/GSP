@@ -867,29 +867,31 @@ Los metadatos de formalización se almacenan de forma estructurada en el expedie
 ```
 
 ### 15.4. Flujo A — Firma Digital Móvil (FES con Web Token de 1 Solo Uso)
-1. **Generación del Magic Link:**
-   * Desde la pestaña `Contrato & Formalización`, el comercial presiona `[📱 Generar Enlace de Firma Móvil]`.
-   * El backend crea un registro de token criptográfico único asociado al contrato con vigencia configurable (72 horas) y flag `token_utilizado: false`.
-   * Se proveen dos acciones inmediatas: `[💬 Compartir por WhatsApp]` (redacta mensaje automático con el enlace directo) y `[📋 Copiar Enlace]`.
-2. **Experiencia del Cliente (Portal Público Mobile-First):**
-   * El cliente accede a la ruta pública `/firmar-contrato?token=[TOKEN]` desde cualquier dispositivo móvil o de escritorio sin requerir autenticación ni cuenta de usuario.
-   * El portal valida en tiempo real: (a) que el token exista, (b) que no haya expirado y (c) que no haya sido utilizado previamente. Si no es válido, despliega pantalla de contingencia indicando que el enlace ha caducado o ya fue firmado.
-   * El cliente visualiza el contrato íntegro de 4 páginas mediante visor web responsive.
-   * **Formulario de Formalización:** El firmante confirma o ingresa:
-     - Nombre Completo del Representante.
-     - RUT del Representante.
-     - Cargo en la Empresa Mandante.
-     - Fecha de Firma (autocompletada al día actual).
-   * **Pad de Firma Táctil:** Canvas interactivo HTML5 para capturar el trazo de la firma manual con el dedo o puntero táctil (con botón de `[Borrar / Limpiar Trazo]`).
-   * **Casilla de Consentimiento:** Checkbox obligatorio: *"Declaro que tengo las facultades para representar a la Arrendataria y acepto íntegramente las Condiciones Generales y Particulares del Arriendo"*.
-   * **Botón de Acción:** `[🔒 Firmar y Formalizar Contrato]`.
+1. **Despacho Automático Omnicanal (Correo + WhatsApp):**
+   * Desde la pestaña `Contrato & Formalización`, el comercial presiona `[🚀 Enviar Contrato para Firma (Correo & WhatsApp)]`.
+   * El sistema genera el token criptográfico de 72 horas y ejecuta de forma simultánea:
+     a) **Correo Electrónico al Cliente:** Envío transaccional vía Nodemailer (MessageModel) a la dirección del representante (`contrato.representante_email`), con plantilla oficial B2B, individualización del equipo, empresa emisora y botón de llamada a la acción: `[ 📝 REVISAR Y FIRMAR CONTRATO DIGITAL ]`.
+     b) **Copia al Ejecutivo Comercial (CC):** Notificación automática a la casilla del vendedor responsable (`crm.vendedor_email` o usuario en sesión) para resguardo y trazabilidad operativa.
+     c) **Notificación WhatsApp:** Despacho directo al teléfono móvil del cliente (`contrato.representante_telefono`) vía microservicio Baileys con mensaje personalizado y enlace directo.
+     d) **Respaldos Interactivos:** Disponibilidad de botones secundarios `[📱 Abrir WhatsApp Web]` y `[📋 Copiar Enlace Directo]` para contingencias.
+
+2. **Experiencia del Cliente (Portal Público Mobile-First con Lectura Completa):**
+   * El cliente accede a la ruta pública `/firmar-contrato?token=[TOKEN]` desde cualquier dispositivo móvil o de escritorio sin login.
+   * **Visor del Contrato Completo (4 Páginas Reales):** Antes de cualquier interacción de firma, el cliente visualiza el texto íntegro del contrato en alta legibilidad:
+     - Páginas 1 a 3: Encabezado institucional con logo del holding emisor, N° de contrato, fecha y las **14 cláusulas legales completas**.
+     - Página 4: Anexo de Condiciones Particulares con la individualización técnica de la máquina (Serie, Motor, Modelo, Marca, Año), faena de destino, tarifa y plazos.
+   * **Descarga de Borrador:** Botón visible `[📥 Descargar Borrador en PDF]` para revisión legal externa previa.
+   * **Casilla de Aceptación Obligatoria:** Checkbox interactivo: *"He leído atentamente y acepto íntegramente las 14 cláusulas del contrato de arrendamiento y sus condiciones particulares"*.
+   * **Formulario de Identificación y Firma:** Campos para confirmar o corregir Nombre, RUT y Cargo del compareciente, junto a un canvas táctil HTML5 para estampar la firma manuscrita con el dedo o mouse.
+   * **Botón de Formalización:** `[🔒 Confirmar y Firmar Contrato Digitalmente]`.
+
 3. **Procesamiento y Sellado Determinístico:**
    * El backend invalida el token (`token_utilizado: true`).
-   * Estampa la imagen de la firma y los metadatos en las coordenadas exactas de las Páginas 3 y 4 del PDF mediante `pdf-lib`.
-   * Incorpora al pie de página un sello de tiempo y trazabilidad con hash SHA-256, IP pública y User-Agent del dispositivo.
-   * Almacena el PDF final en el repositorio de archivos del proyecto (`contratos/CTR-[AÑO]-[FOLIO]_firmado.pdf`).
+   * Compila el PDF final oficial de 4 páginas mediante `xvfb-run wkhtmltopdf` estampando la firma gráfica y la leyenda "FIRMADO DIGITALMENTE (FES)".
+   * Registra los metadatos de auditoría legal (IP pública, User-Agent, fecha/hora y hash).
+   * Almacena el documento en el repositorio de archivos del proyecto (`contratos/CTR-[AÑO]-[FOLIO].pdf`).
    * Actualiza el estado del contrato en `GestorOportunidades.vue` a **`✅ Firmado Digitalmente (FES)`**.
-   * El cliente recibe confirmación en pantalla con botón para descargar su copia firmada de inmediato.
+   * El cliente recibe confirmación en pantalla con botón para descargar su copia suscrita en PDF inmediatamente.
 
 ### 15.5. Flujo B — Firma Física / Manual Tradicional
 1. Para clientes o contratos que requieran trámite presencial o firma en papel físico:
@@ -903,8 +905,10 @@ La pestaña `Contrato & Formalización` presenta tres paneles coordinados:
 1. **Panel Superior (Control de Estado y Folio):**
    * Folio del contrato, insignia de estado con código de color (Gris: *Borrador*, Ámbar: *Pendiente de Firma*, Verde: *Firmado Digitalmente*, Azul: *Firmado Físico*).
 2. **Panel Central (Ficha de las Partes y Maquinaria):**
-   * Cuadros comparativos del Arrendador y Arrendatario con opción de edición rápida de los datos del representante comercial.
-   * Resumen técnico de la maquinaria asignada (con enlace para previsualizar el PDF antes de despachar).
-3. **Panel Inferior (Acciones de Despacho y Auditoría):**
-   * Botones primarios de generación de enlace, envío por WhatsApp, descarga física y carga de escaneo.
-   * Si el documento ya fue firmado: renderiza la ficha de auditoría jurídica (Fecha/Hora exacta, Nombre del Firmante, RUT, Cargo, IP de origen, Hash SHA-256) y visor integrado del documento final suscrito.
+   * Cuadros comparativos del Arrendador y Arrendatario con campos obligatorios para: Nombre Representante, RUT, Cargo, ✉️ Correo Electrónico y 📱 Teléfono Móvil (auto-sincronizados desde el contacto de preventa y editables).
+   * Resumen técnico de la maquinaria asignada (con botón de previsualización en PDF).
+3. **Panel Inferior (Centro de Despacho Omnicanal y Auditoría):**
+   * Botón primario: `[🚀 Enviar Contrato para Firma (Correo & WhatsApp)]`.
+   * Resumen de trazabilidad indicando el estado del despacho por canal (Correo cliente, Copia ejecutivo, WhatsApp).
+   * Botones de contingencia para abrir WhatsApp Web y copiar enlace.
+   * Ficha de auditoría legal post-firma con visor del documento final suscrito.
