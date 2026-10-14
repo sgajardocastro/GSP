@@ -859,6 +859,24 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Firma Física / Impresa Tradicional:** Descarga de PDF pre-llenado y carga de documento escaneado/fotografiado.
   - **Gobernanza y Hard Gate:** Versión `v1.0.131` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
 
+* [ ] **19. Rediseño Modular PWA Taller (Patrón Operación), Google SSO Exclusivo, Eliminación de Surveys y Concurrencia de OTMs [REQ-1038 / SPEC-073 / PWA v1.0.42 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/73_pwa_taller_redesign_sso_and_concurrency_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/73_pwa_taller_redesign_sso_and_concurrency_spec.md) (SPEC-073).
+  - **Priorización de Google SSO Corporativo en PWA:** Reestructuración de `Login.vue` con botón de acceso Google Workspace (`@arriendosanpablo.cl`) visible en primer plano y formulario clásico de usuario/contraseña subordinado y colapsable para contingencias.
+  - **Rediseño Modular de Taller en 3 Bloques (Patrón Operación):** Transformación de `TallerHomeView.vue` adoptando la arquitectura canónica de `Surveys.vue` (Tarjeta 1: Apertura de Trabajos / Nueva OTM, Tarjeta 2: Alertas de Terreno / Aviso de Avería y Tarjeta 3: Trabajos en Curso / Bandeja de OTMs Activas).
+  - **Erradicación de Surveys Residuales en Taller:** Eliminación completa del bloque "Inspecciones Obligatorias de Grúa (Surveys)" y templates 501/502.
+  - **Habilitación de Concurrencia de OTMs en Backend:** Modificación en `mantenimientoModel.crearOt` suprimiendo la excepción bloqueante `EQUIPO_CON_OT_ACTIVA` para permitir múltiples órdenes de trabajo activas por equipo en simultáneo.
+  - **Gobernanza y Despliegue en DEV y PROD:** Incremento a PWA `v1.0.42`, sincronización en base de datos (`tcfg_backlog` y `tcfg_releases`), compilación limpia Vite 0 errores y despliegue simultáneo en DEV y PROD.
+
+* [x] **20. Hotfix & Estabilidad Módulo de Contrato de Arriendo: Visor Completo de Documento (4 Páginas), Despacho Omnicanal Automático (Cliente + CC Ejecutivo + WhatsApp) y Sincronización de Esquema Backend [REQ-1039 / TSK-COT-05 / Spec 16 / Web v1.0.132 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/16_crm_gestor_oportunidades_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/16_crm_gestor_oportunidades_spec.md) (Sección 15).
+  - **Visor Completo del Contrato en Portal Público (`FirmarContratoView.vue`):** Despliegue íntegro de las 4 páginas del contrato (Págs 1-3 Condiciones Generales con 14 cláusulas legales, Pág 4 Anexo Maquinaria y Condiciones Particulares) para lectura obligatoria previa a la firma, con casilla de aceptación legal de términos y botón de descarga de borrador PDF.
+  - **Despacho Automático Omnicanal (`POST /api/proyectos/:id/contrato/despachar`):** Envío simultáneo por correo electrónico al cliente (plantilla oficial B2B con Magic Link directo a firma), copia (CC) al ejecutivo comercial responsable (`crm.vendedor_email`), y notificación por WhatsApp vía microservicio Baileys al teléfono móvil del cliente.
+  - **Auto-Sincronización en Preventa CRM:** Captura y edición de Nombre, RUT, Cargo, ✉️ Correo Electrónico y 📱 Teléfono Móvil desde el contacto seleccionado en preventa.
+  - **Corrección de Esquema y Módulos Backend:** Corrección de columnas SQL (`codi_proyecto`, `nombre_proyecto`, `tpar_empresas`), inclusión de módulos `path`, `fs`, `exec` y `archivoModel` en `proyectoModel.js`, y retorno de `html_contrato` en consulta pública de token.
+  - **Gobernanza y Hard Gate:** Versión `v1.0.132` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
+
+
+
 
 
 
