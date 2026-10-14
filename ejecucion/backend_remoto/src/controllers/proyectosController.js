@@ -509,5 +509,217 @@ module.exports = {
       console.error("Error en reversarACotizacion:", err);
       return res.status(500).json({ error: err.message });
     }
+  },
+
+  // =========================================================================
+  // CONTRATO & FORMALIZACIÓN (REQ-1037 / TSK-COT-04)
+  // =========================================================================
+
+  generarContratoPdf: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const datosExtra = req.body || {};
+      const resultado = await proyecto.generarContratoArriendoVersion(id, datosExtra);
+      return res.status(200).json({
+        success: true,
+        message: "PDF de Contrato de Arriendo generado exitosamente",
+        contrato: resultado.contrato
+      });
+    } catch (err) {
+      console.error("Error en generarContratoPdf:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  generarTokenFirmaContrato: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(24).toString('hex');
+      const client = await pool.connect();
+      try {
+        const queryProy = 'SELECT id_proyecto, codi_pry, json_field FROM tpry_proyecto WHERE id_proyecto = $1';
+        const resP = await client.query(queryProy, [id]);
+        if (resP.rowCount === 0) {
+          return res.status(404).json({ success: false, error: "Proyecto no encontrado" });
+        }
+        const p = resP.rows[0];
+        const jsonField = p.json_field || {};
+        const crm = jsonField.crm_v1 || {};
+        const contrato = crm.contrato || {};
+
+        contrato.token_firma = {
+          token,
+          estado: 'PENDIENTE',
+          creado_at: new Date().toISOString(),
+          expira_at: new Date(Date.now() + 72 * 3600 * 1000).toISOString()
+        };
+        crm.contrato = contrato;
+        jsonField.crm_v1 = crm;
+
+        await client.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jsonField, id]);
+        
+        return res.status(200).json({
+          success: true,
+          token,
+          contrato
+        });
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      console.error("Error en generarTokenFirmaContrato:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  obtenerContratoPorToken: async (req, res) => {
+    try {
+      const { token } = req.params;
+      if (!token) return res.status(400).json({ success: false, error: "Token requerido" });
+
+      const client = await pool.connect();
+      try {
+        const query = `
+          SELECT p.id_proyecto, p.codi_pry, p.desc_pry, p.id_cliente, p.json_field,
+                 c.razon_social AS mandante_razon_social, c.rut_cliente AS mandante_rut
+          FROM tpry_proyecto p
+          LEFT JOIN tcom_cliente c ON c.id_cliente = p.id_cliente
+          WHERE p.json_field->'crm_v1'->'contrato'->'token_firma'->>'token' = $1
+        `;
+        const resP = await client.query(query, [token]);
+        if (resP.rowCount === 0) {
+          return res.status(404).json({ success: false, error: "Token de firma inválido o inexistente" });
+        }
+        const p = resP.rows[0];
+        const crm = p.json_field?.crm_v1 || {};
+        const contrato = crm.contrato || {};
+        const tokenInfo = contrato.token_firma || {};
+
+        if (tokenInfo.estado === 'FIRMADO') {
+          return res.status(400).json({ 
+            success: false, 
+            ya_firmado: true,
+            error: "Este contrato ya ha sido firmado previamente.",
+            contrato
+          });
+        }
+
+        if (tokenInfo.expira_at && new Date(tokenInfo.expira_at) < new Date()) {
+          return res.status(410).json({ 
+            success: false, 
+            expirado: true,
+            error: "El enlace de firma ha expirado (plazo máximo 72 horas)." 
+          });
+        }
+
+        const items = crm.cotizaciones_v1?.[0]?.items || [];
+        const itemMaq = items[0] || {};
+
+        return res.status(200).json({
+          success: true,
+          proyecto: {
+            id_proyecto: p.id_proyecto,
+            codi_pry: p.codi_pry,
+            desc_pry: p.desc_pry,
+            mandante_razon_social: p.mandante_razon_social || crm.razon_social || 'Cliente Mandante',
+            mandante_rut: p.mandante_rut || crm.rut_cliente || 'Sin RUT'
+          },
+          contrato: {
+            folio: contrato.folio,
+            estado: contrato.estado,
+            representante_nombre: contrato.representante_nombre || '',
+            representante_rut: contrato.representante_rut || '',
+            representante_cargo: contrato.representante_cargo || 'Representante Legal',
+            equipo_nombre: itemMaq.descripcion || 'Plataforma / Equipo de Elevación',
+            tarifa_pactada: itemMaq.total ? `$${Number(itemMaq.total).toLocaleString('es-CL')}` : 'Según cotización',
+            url_pdf: contrato.url_pdf
+          }
+        });
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      console.error("Error en obtenerContratoPorToken:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  firmarContratoPublico: async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { nombre, rut, cargo, firma_base64 } = req.body;
+
+      if (!token) return res.status(400).json({ success: false, error: "Token requerido" });
+      if (!nombre || !rut || !firma_base64) {
+        return res.status(400).json({ success: false, error: "Nombre, RUT y firma gráfica son obligatorios" });
+      }
+
+      const client = await pool.connect();
+      let idPry = null;
+      try {
+        const query = `
+          SELECT p.id_proyecto, p.json_field
+          FROM tpry_proyecto p
+          WHERE p.json_field->'crm_v1'->'contrato'->'token_firma'->>'token' = $1
+        `;
+        const resP = await client.query(query, [token]);
+        if (resP.rowCount === 0) {
+          return res.status(404).json({ success: false, error: "Token de firma inválido o inexistente" });
+        }
+        const p = resP.rows[0];
+        idPry = p.id_proyecto;
+        const crm = p.json_field?.crm_v1 || {};
+        const contrato = crm.contrato || {};
+        const tokenInfo = contrato.token_firma || {};
+
+        if (tokenInfo.estado === 'FIRMADO') {
+          return res.status(400).json({ success: false, error: "Este contrato ya fue firmado" });
+        }
+        if (tokenInfo.expira_at && new Date(tokenInfo.expira_at) < new Date()) {
+          return res.status(410).json({ success: false, error: "El enlace de firma ha expirado" });
+        }
+      } finally {
+        client.release();
+      }
+
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP_DESCONOCIDA';
+      const userAgent = req.headers['user-agent'] || 'USER_AGENT_DESCONOCIDO';
+      const fechaFirma = new Date();
+
+      const resultado = await proyecto.generarContratoArriendoVersion(idPry, {
+        representante_nombre: nombre,
+        representante_rut: rut,
+        representante_cargo: cargo || 'Representante Legal',
+        firma_cliente_base64: firma_base64,
+        ip_firmante: ip,
+        user_agent_firmante: userAgent,
+        fecha_firma: fechaFirma
+      });
+
+      const clientUpdate = await pool.connect();
+      try {
+        const resP2 = await clientUpdate.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [idPry]);
+        const jf = resP2.rows[0].json_field || {};
+        if (jf.crm_v1?.contrato?.token_firma) {
+          jf.crm_v1.contrato.token_firma.estado = 'FIRMADO';
+          jf.crm_v1.contrato.token_firma.firmado_at = fechaFirma.toISOString();
+          jf.crm_v1.contrato.token_firma.ip = ip;
+          jf.crm_v1.contrato.token_firma.user_agent = userAgent;
+        }
+        await clientUpdate.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, idPry]);
+      } finally {
+        clientUpdate.release();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Contrato firmado y registrado exitosamente con plena validez digital",
+        contrato: resultado.contrato
+      });
+    } catch (err) {
+      console.error("Error en firmarContratoPublico:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
   }
 };
