@@ -2,6 +2,25 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.131
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 11:37:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1037` (TSK-COT-04 / SPEC-016)
+- **Especificación Técnica:** Portal Web GSP v1.0.131: Módulo Oficial de Contrato de Arrendamiento y Formalización FES/Física en Preventa Comercial:
+  1. **Sustitución de Pestaña Bitácora & Alertas por Contrato & Formalización:**
+     - Eliminación de la 5ª pestaña inerte en el CRM `GestorOportunidades.vue` e integración de un panel completo para la emisión, seguimiento y formalización de contratos de arrendamiento de maquinaria (plataformas de elevación, alzahombres, grúas).
+  2. **Motor Determinístico de Generación PDF de 4 Páginas (`wkhtmltopdf`):**
+     - Compilación estándar en `proyectoModel.js` con las 4 páginas requeridas: Págs 1 a 3 con las 14 cláusulas legales exhaustivas y tabla comparativa de comparecencia (Holding Arrendador vs Mandante Arrendatario); Pág 4 con el Anexo de Condiciones Particulares e individualización de la maquinaria (Serie, Motor, Modelo, Marca, Año, Faena, Tarifa pactada). Cumplimiento estricto del estándar de la empresa con `xvfb-run wkhtmltopdf`.
+  3. **Portal Móvil de Firma Digital FES (`FirmarContratoView.vue`):**
+     - Portal público móvil responsive con Touch Canvas HTML5 para que el mandante firme con el dedo desde su celular (`/#/firmar-contrato?token=...`).
+     - Token criptográfico de seguridad de un solo uso con vigencia de 72 horas, estampado de firma en PDF, registro de auditoría legal (IP, User-Agent, fecha/hora) y descarga inmediata del PDF suscrito.
+  4. **Soporte de Firma Física / Manual Tradicional:**
+     - Botón de descarga de PDF pre-llenado para impresión tradicional en papel y formulario de carga de documento escaneado/fotografiado con guardado en `tfmg_file`.
+  5. **Gobernanza y Hard Gate:**
+     - Registro formal en `sch_leangsp.tcfg_backlog` y `sch_leangsp_prod.tcfg_backlog` (`REQ-1037`), sincronización en `tcfg_releases` (`1.0.131`) y verificación HTTP 200 OK en DEV y PROD.
+
 ## [Portal Web GSP] - Versión 1.0.130
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-13 19:58:00 (-03:00)
