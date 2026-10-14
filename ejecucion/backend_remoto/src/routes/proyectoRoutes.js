@@ -43,6 +43,7 @@ router.post('/:id/reversar-a-cotizacion', proyectoController.reversarACotizacion
 // Rutas Internas de Gestión de Contrato
 router.post('/:id/contrato/generar-pdf', proyectoController.generarContratoPdf);
 router.post('/:id/contrato/generar-token', proyectoController.generarTokenFirmaContrato);
+router.post('/:id/contrato/despachar', proyectoController.despacharContrato);
 
 // Sub-rutas para asignaciones (Personas y Equipos)
 router.use('/:id/asignaciones', asignacionRecursosRoutes);
