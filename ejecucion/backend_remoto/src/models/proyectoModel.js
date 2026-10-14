@@ -1673,13 +1673,13 @@ class ProyectoModel {
   }
 
   // =========================================================================
-  // CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (REQ-1037 / TSK-COT-04 / Spec 16)
-  // Compilación determinística de 4 Páginas Oficiales con motor wkhtmltopdf
+  // CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (REQ-1037 / REQ-1039 / Spec 16)
+  // Generador de HTML de 4 Páginas Oficiales y Compilación wkhtmltopdf
   // =========================================================================
-  async generarContratoArriendoVersion(id_proyecto, datosExtra = {}) {
-    const client = await this.pool.connect();
+  async obtenerHtmlContratoArriendo(id_proyecto, datosExtra = {}, clientParam = null) {
+    const client = clientParam || await this.pool.connect();
+    const shouldRelease = !clientParam;
     try {
-      await client.query('BEGIN');
 
       const { rows } = await client.query(`
         SELECT p.*, e.razon_social AS nombre_cliente, e.rut_empresa AS rut_cliente, e.direccion AS direccion_cliente
@@ -1979,6 +1979,32 @@ class ProyectoModel {
       </html>
       `;
 
+      return {
+        htmlContent,
+        p,
+        crm,
+        jsonField,
+        contratoPrevio,
+        folioContrato,
+        fechaEmision,
+        mandanteRepNombre,
+        mandanteRepRut,
+        mandanteRepCargo,
+        mandanteRepTelefono,
+        emisor
+      };
+    } finally {
+      if (shouldRelease) client.release();
+    }
+  }
+
+  async generarContratoArriendoVersion(id_proyecto, datosExtra = {}) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const dataContrato = await this.obtenerHtmlContratoArriendo(id_proyecto, datosExtra, client);
+      const { htmlContent, p, jsonField, folioContrato, fechaEmision, mandanteRepNombre, mandanteRepRut, mandanteRepCargo, mandanteRepTelefono } = dataContrato;
+
       // 7. Compilar a PDF con wkhtmltopdf
       const targetDir = path.resolve(__dirname, '../../public/contratos');
       if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
@@ -2013,7 +2039,7 @@ class ProyectoModel {
 
       const contratoResult = {
         folio: folioContrato,
-        estado: datosExtra.firma_cliente_base64 ? 'FIRMADO_DIGITAL' : (contratoPrevio.estado || 'BORRADOR'),
+        estado: datosExtra.firma_cliente_base64 ? 'FIRMADO_DIGITAL' : (dataContrato.contratoPrevio.estado || 'BORRADOR'),
         url_pdf: `/api/archivo/ver/${doc.id_doc}`,
         id_doc: doc.id_doc,
         fecha_emision: fechaEmision,
@@ -2023,8 +2049,8 @@ class ProyectoModel {
         representante_telefono: mandanteRepTelefono
       };
 
-      crm.contrato = { ...(crm.contrato || {}), ...contratoResult };
-      jsonField.crm_v1 = crm;
+      dataContrato.crm.contrato = { ...(dataContrato.crm.contrato || {}), ...contratoResult };
+      jsonField.crm_v1 = dataContrato.crm;
 
       await client.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jsonField, id_proyecto]);
       await client.query('COMMIT');
