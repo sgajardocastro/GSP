@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build": "vite build --mode production --outDir dist_prod",
+    "build:dev": "vite build --mode development --outDir dist_dev",
+    "build:prod": "vite build --mode production --outDir dist_prod",
     "preview": "vite preview"
   },
   "dependencies": {
