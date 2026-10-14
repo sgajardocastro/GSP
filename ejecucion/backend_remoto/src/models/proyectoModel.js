@@ -1667,6 +1667,374 @@ class ProyectoModel {
       client.release();
     }
   }
+
+  // =========================================================================
+  // CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (REQ-1037 / TSK-COT-04 / Spec 16)
+  // Compilación determinística de 4 Páginas Oficiales con motor wkhtmltopdf
+  // =========================================================================
+  async generarContratoArriendoVersion(id_proyecto, datosExtra = {}) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query(`
+        SELECT p.*, e.razon_social AS nombre_cliente, e.rut_empresa AS rut_cliente, e.direccion AS direccion_cliente
+        FROM tpry_proyecto p
+        LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+        WHERE p.id_proyecto = $1
+      `, [id_proyecto]);
+      if (rows.length === 0) throw new Error("Proyecto no encontrado");
+      const p = rows[0];
+
+      const jsonField = p.json_field || {};
+      const crm = jsonField.crm_v1 || {};
+      const contratoPrevio = crm.contrato || {};
+
+      // 1. Folio y Correlativo
+      const folioContrato = datosExtra.folio || contratoPrevio.folio || `CTR-${new Date().getFullYear()}-${String(id_proyecto).padStart(4, '0')}`;
+      const fechaEmision = datosExtra.fecha_firma || contratoPrevio.fecha_firma || new Date().toISOString().split('T')[0];
+      const fechaFormateada = new Date(fechaEmision).toLocaleDateString('es-CL');
+
+      // 2. Resolver Empresa Arrendadora (Holding)
+      const idEmisora = Number(datosExtra.id_empresa_arrendador || p.id_empresa || p.id_empresa_emisora || 11);
+      const EMISORES = {
+        11: {
+          nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
+          rut: "78.254.535-3",
+          direccion: "Ruta S-30 KM 9.5, Labranza, Temuco",
+          fono: "+56 9 9443 7725",
+          logoPath: "logo-royalrental.png"
+        },
+        9: {
+          nombre: "LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)",
+          rut: "52.004.162-1",
+          direccion: "Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco",
+          fono: "+56 9 9443 7725",
+          logoPath: "logo-sanpablo.png"
+        },
+        7: {
+          nombre: "SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)",
+          rut: "76.209.534-3",
+          direccion: "Camino Labranza KM 9.5, Temuco",
+          fono: "+56 9 9443 7725",
+          logoPath: "logo-bestmaq.png"
+        },
+        8: {
+          nombre: "SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)",
+          rut: "76.218.576-8",
+          direccion: "KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco",
+          fono: "+56 9 9443 7725",
+          logoPath: "logo-logisticadelsur.png"
+        }
+      };
+      const emisor = EMISORES[idEmisora] || EMISORES[11];
+
+      // Cargar Logo en Base64 Data URI
+      let logoBase64 = '';
+      try {
+        const logoFileName = emisor.logoPath || 'logo-royalrental.png';
+        const cwdPath = path.join(process.cwd(), 'public', logoFileName);
+        const fallbackPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoFileName);
+        const diskPath = fs.existsSync(cwdPath) ? cwdPath : fallbackPath;
+        if (fs.existsSync(diskPath)) {
+          const imgBuf = fs.readFileSync(diskPath);
+          logoBase64 = 'data:image/png;base64,' + imgBuf.toString('base64');
+        }
+      } catch (errLogo) {
+        console.warn('Error leyendo logo para contrato:', errLogo.message);
+      }
+
+      // 3. Resolver Datos del Mandante (Arrendataria)
+      const mandanteRazonSocial = p.nombre_cliente || crm.razon_social || 'MANDANTE SIN ESPECIFICAR';
+      const mandanteRut = p.rut_cliente || crm.rut_cliente || 'SIN RUT';
+      const mandanteDireccion = crm.obra_direccion || p.direccion_cliente || 'Dirección de faena';
+      const mandanteRepNombre = datosExtra.representante_nombre || contratoPrevio.representante_nombre || '................................................';
+      const mandanteRepRut = datosExtra.representante_rut || contratoPrevio.representante_rut || '................................................';
+      const mandanteRepCargo = datosExtra.representante_cargo || contratoPrevio.representante_cargo || 'Representante Autorizado';
+
+      // 4. Resolver Maquinaria y Condiciones
+      const lineas = crm.lineas_servicio || [];
+      const eqPrincipal = lineas[0] || {};
+      const formatCLP = (v) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(v || 0);
+
+      const maquiSerie = datosExtra.serie || eqPrincipal.serie || 'XUG0147ACSRL0132';
+      const maquiMotor = datosExtra.motor || eqPrincipal.motor || '7RE8931';
+      const maquiModelo = datosExtra.modelo || eqPrincipal.subcategoria || eqPrincipal.descripcion || 'XGA16E';
+      const maquiMarca = datosExtra.marca || eqPrincipal.marca || 'XCMG';
+      const maquiAnio = datosExtra.anio || '2026';
+      const fechaIni = datosExtra.fecha_inicio || crm.fecha_hora_inicio?.split('T')[0] || fechaEmision;
+      const fechaFin = datosExtra.fecha_termino || crm.fecha_hora_termino?.split('T')[0] || 'A CONVENIR';
+      const tipoArriendo = datosExtra.tipo_arriendo || (eqPrincipal.unidad?.includes('Mes') ? 'MENSUAL' : 'SEMANAL / MENSUAL');
+      const tarifaTexto = formatCLP(Number(eqPrincipal.valor_unitario || eqPrincipal.valorUnitario || 0));
+      const lugarFaena = datosExtra.lugar_uso || crm.obra_nombre || crm.obra_ciudad || 'Temuco / Faena Mandante';
+
+      // 5. Firma Digital o Puntos de Firma
+      const firmaClienteDataUri = datosExtra.firma_cliente_base64 || contratoPrevio.firma_digital?.firma_png_base64 || '';
+      const bloqueFirmaCliente = firmaClienteDataUri
+        ? `<div style="text-align: center;"><img src="${firmaClienteDataUri}" style="max-height: 50px; max-width: 150px; display: block; margin: 0 auto 4px auto;" /><div style="font-size: 8px; color: #15803d; font-weight: bold;">FIRMADO DIGITALMENTE (FES)</div></div>`
+        : `<div style="height: 45px; border-bottom: 1px dotted #333; margin-bottom: 4px;"></div>`;
+
+      // 6. Template HTML Estructurado de 4 Páginas
+      const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          @page { size: A4 portrait; margin: 10mm 12mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 9.5px; line-height: 1.35; color: #111; margin: 0; padding: 0; }
+          .page { page-break-after: always; min-height: 1000px; position: relative; }
+          .page:last-child { page-break-after: avoid; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+          .header-table td { vertical-align: middle; }
+          .doc-title { font-size: 13px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+          .meta-box { font-size: 9px; text-align: right; line-height: 1.3; font-weight: bold; }
+          .clause-p { margin-bottom: 7px; text-align: justify; }
+          .clause-p strong { color: #000; }
+          
+          /* Firmas Página 3 */
+          .signature-table { width: 100%; border-collapse: collapse; margin-top: 35px; }
+          .signature-cell { width: 50%; vertical-align: top; padding: 0 15px; font-size: 9px; }
+          
+          /* Anexo Página 4 */
+          .banner-anexo { background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 11px; padding: 5px; text-transform: uppercase; margin-bottom: 10px; }
+          .tabla-anexo { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          .tabla-anexo td, .tabla-anexo th { border: 1px solid #222; padding: 4px 6px; font-size: 8.5px; }
+          .tabla-anexo th { background: #eee; font-weight: bold; text-align: left; }
+          .section-banner { background: #222; color: #fff; font-size: 9px; font-weight: bold; padding: 3px 6px; text-transform: uppercase; margin-bottom: 6px; }
+        </style>
+      </head>
+      <body>
+
+        <!-- PÁGINA 1: CONDICIONES GENERALES 1 A 5 -->
+        <div class="page">
+          <table class="header-table">
+            <tr>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 50px; max-width: 140px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
+              <td class="doc-title" style="width: 50%;">CONDICIONES GENERALES DE ARRIENDO</td>
+              <td class="meta-box" style="width: 25%;">
+                CONTRATO N°: ${folioContrato}<br>
+                FECHA: ${fechaFormateada}
+              </td>
+            </tr>
+          </table>
+
+          <div class="clause-p"><strong>1.- Pago arriendo:</strong> El valor del arrendamiento por el período acordado, se establecerá en la cotización enviada por ${emisor.nombre}, la que deberá ser aceptada antes del despacho.</div>
+          <div class="clause-p"><strong>2.- Entrega de la máquina:</strong> La máquina será entregada en el domicilio de la Arrendataria señalado en la Cotización. Los gastos de transporte de la máquina hasta el lugar en que será utilizada, y los gastos del transporte para la restitución al término del contrato, serán de cargo de la Arrendataria. La entrega constará del documento "Acta de Entrega y Recepción de Maquinaria" que firmará la Arrendataria... Se deja constancia que los equipos no cuentan con permiso de circulación vial urbana a menos que sea expresamente convenido.</div>
+          <div class="clause-p"><strong>3.- Aplicación:</strong> La Arrendataria usará la máquina arrendada únicamente en el lugar indicado en la Cotización. La máquina sólo podrá destinarse a trabajos propios de su diseño, con sujeción estricta a las normas del fabricante. La Arrendataria se obliga a operar el equipo con personal idóneo y calificado, con sus documentos al día, asumiendo la completa responsabilidad civil y penal.</div>
+          <div class="clause-p"><strong>4.- Renta y otros pagos:</strong> La renta se pagará dentro de los 30 días contados desde la recepción de la factura. Conforme a la Ley 19.983, el plazo para reclamar el contenido de la factura es de 8 días corridos. La mora devengará el interés penal máximo convencional. Si se contrata arriendo mensual y el equipo es devuelto antes, se cobrará el mes completo pactado como piso mínimo.</div>
+          <div class="clause-p"><strong>5.- Mantenimiento y reparaciones de cargo de la Arrendadora:</strong> El mantenimiento preventivo en los períodos indicados en las pautas será realizado por la Arrendadora. La Arrendataria se obliga a dar facilidades de ingreso y pases de faena.</div>
+        </div>
+
+        <!-- PÁGINA 2: CONDICIONES GENERALES 6 A 10 -->
+        <div class="page">
+          <table class="header-table">
+            <tr>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : ''}</td>
+              <td style="width: 50%; font-size: 10px; font-weight: bold; text-align: center; color: #555;">CONDICIONES GENERALES DE ARRIENDO (Continuación)</td>
+              <td class="meta-box" style="width: 25%;">PÁGINA 2 / 4</td>
+            </tr>
+          </table>
+
+          <div class="clause-p"><strong>6.- Mantenimiento y reparaciones de cargo de la Arrendataria:</strong> La mantención diaria (engrase, niveles de fluidos, batería, neumáticos, limpieza de filtros e inspección visual) es de cargo exclusivo de la Arrendataria. Reparaciones por daño, negligencia, cortes o sobrecarga serán facturadas a la Arrendataria, devengando arriendo normal mientras dure la reparación.</div>
+          <div class="clause-p"><strong>7.- Responsabilidad:</strong> La Arrendataria asume la responsabilidad civil por daños a terceros durante la tenencia del bien. En caso de siniestro, deberá informar en un plazo no mayor a 24 horas hábiles y cursar la denuncia policial ante Carabineros de Chile y alcoholemia respectiva.</div>
+          <div class="clause-p"><strong>8.- Lucro cesante:</strong> Las partes acuerdan expresamente que la Arrendadora no responderá en caso alguno por lucro cesante, paralización de obras o pérdidas indirectas de la Arrendataria.</div>
+          <div class="clause-p"><strong>9.- Cesibilidad:</strong> Prohibición absoluta de ceder, transferir o subrogar los derechos de este contrato sin autorización previa y escrita.</div>
+          <div class="clause-p"><strong>10.- Propiedad:</strong> El dominio exclusivo pertenece a la Arrendadora. Queda prohibido a la Arrendataria introducir modificaciones estructurales, subarrendar, dar en comodato o constituir gravámenes sobre el bien.</div>
+        </div>
+
+        <!-- PÁGINA 3: CONDICIONES GENERALES 11 A 14 Y COMPARECENCIA DE FIRMAS -->
+        <div class="page">
+          <table class="header-table">
+            <tr>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : ''}</td>
+              <td style="width: 50%; font-size: 10px; font-weight: bold; text-align: center; color: #555;">CONDICIONES GENERALES DE ARRIENDO (Cierre & Firmas)</td>
+              <td class="meta-box" style="width: 25%;">PÁGINA 3 / 4</td>
+            </tr>
+          </table>
+
+          <div class="clause-p"><strong>11.- Garantía:</strong> Este instrumento garantiza el cumplimiento íntegro y oportuno de todas las obligaciones contraídas.</div>
+          <div class="clause-p"><strong>12.- Vigencia:</strong> Rige por el plazo previsto en las Condiciones Particulares y pasará a ser indefinido hasta aviso formal con 10 días de anticipación a la fecha de término.</div>
+          <div class="clause-p"><strong>13.- Término anticipado:</strong> La falta de pago o insolvencia concursal faculta a la Arrendadora a resolver de pleno derecho el contrato y exigir la restitución inmediata más rentas adeudadas.</div>
+          <div class="clause-p"><strong>14.- Restitución de la máquina:</strong> A la terminación, se restituirá la máquina conforme al Acta de Entrega en el mismo estado en que fue recibida, salvo desgaste legítimo.</div>
+
+          <!-- Cuadro de Comparecencia y Firmas -->
+          <table class="signature-table">
+            <tr>
+              <td class="signature-cell">
+                <div style="font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 6px;">ARRENDATARIO</div>
+                <strong>EMPRESA:</strong> ${mandanteRazonSocial}<br>
+                <strong>RUT:</strong> ${mandanteRut}<br><br>
+                <strong>Representada Por:</strong><br>
+                Sr(a): ${mandanteRepNombre}<br>
+                C.I.: ${mandanteRepRut}<br>
+                Cargo: ${mandanteRepCargo}<br><br>
+                ${bloqueFirmaCliente}
+                <div style="text-align: center; font-size: 8px; color: #666;">FIRMA REPRESENTANTE ARRENDATARIO</div>
+              </td>
+              <td class="signature-cell">
+                <div style="font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 6px;">ARRENDADOR</div>
+                <strong>EMPRESA:</strong> ${emisor.nombre}<br>
+                <strong>RUT:</strong> ${emisor.rut}<br><br>
+                <strong>Representada Por:</strong><br>
+                Sr(a): LUIS OMAR GHISELLINI JARA<br>
+                C.I.: 12.031.054-2<br>
+                Cargo: Representante Legal<br><br>
+                <div style="height: 45px; border-bottom: 1px dotted #333; margin-bottom: 4px;"></div>
+                <div style="text-align: center; font-size: 8px; color: #666;">FIRMA REPRESENTANTE ARRENDADOR</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- PÁGINA 4: ANEXO CONTRATO - CONDICIONES PARTICULARES -->
+        <div class="page">
+          <table class="header-table" style="margin-bottom: 6px;">
+            <tr>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 45px; max-width: 130px;" />` : ''}</td>
+              <td style="width: 50%;"></td>
+              <td class="meta-box" style="width: 25%;">
+                CONTRATO N°: ${folioContrato}<br>
+                FECHA: ${fechaFormateada}
+              </td>
+            </tr>
+          </table>
+
+          <div class="banner-anexo">ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA</div>
+
+          <table class="tabla-anexo">
+            <tr>
+              <th style="width: 20%;">ARRENDADOR</th>
+              <td style="width: 80%;">
+                <strong>RAZÓN SOCIAL:</strong> ${emisor.nombre}<br>
+                <strong>RUT:</strong> ${emisor.rut}<br>
+                <strong>DIRECCIÓN:</strong> ${emisor.direccion}<br>
+                <strong>REPRESENTADA POR:</strong> LUIS OMAR GHISELLINI JARA (RUT: 12.031.054-2)
+              </td>
+            </tr>
+            <tr>
+              <th>ARRENDATARIA</th>
+              <td>
+                <strong>RAZÓN SOCIAL:</strong> ${mandanteRazonSocial}<br>
+                <strong>RUT:</strong> ${mandanteRut}<br>
+                <strong>DIRECCIÓN:</strong> ${mandanteDireccion}<br>
+                <strong>REPRESENTADA POR:</strong> ${mandanteRepNombre} (RUT: ${mandanteRepRut})
+              </td>
+            </tr>
+          </table>
+
+          <div class="section-banner">CONDICIONES PARTICULARES</div>
+
+          <table class="tabla-anexo">
+            <tr>
+              <th colspan="4" style="background: #e2e8f0; font-weight: bold;">1.- INDIVIDUALIZACIÓN DE LA MAQUINARIA</th>
+            </tr>
+            <tr>
+              <td><strong>NRO DE SERIE:</strong> ${maquiSerie}</td>
+              <td><strong>MODELO:</strong> ${maquiModelo}</td>
+              <td><strong>MARCA:</strong> ${maquiMarca}</td>
+            </tr>
+            <tr>
+              <td><strong>NRO DE MOTOR:</strong> ${maquiMotor}</td>
+              <td><strong>AÑO:</strong> ${maquiAnio}</td>
+              <td><strong>PROPIETARIO:</strong> ${emisor.nombre}</td>
+            </tr>
+            <tr>
+              <th colspan="2">B.- DURACIÓN DEL CONTRATO</th>
+              <td colspan="2"><strong>FECHA DE INICIO:</strong> ${fechaIni} &nbsp;&nbsp;&nbsp;&nbsp; <strong>FECHA DE TÉRMINO:</strong> ${fechaFin}</td>
+            </tr>
+            <tr>
+              <th colspan="2">C.- RENTA DEL ARRENDAMIENTO</th>
+              <td colspan="2"><strong>TARIFA PACTADA:</strong> ${tarifaTexto} &nbsp;&nbsp;&nbsp;&nbsp; <strong>TIPO DE ARRIENDO:</strong> ${tipoArriendo}</td>
+            </tr>
+            <tr>
+              <th colspan="2">D.- LUGAR DE USO DE LA MAQUINARIA</th>
+              <td colspan="2">${lugarFaena}</td>
+            </tr>
+            <tr>
+              <th colspan="2">E.- MANTENIMIENTO POR ARRENDADOR</th>
+              <td colspan="2">Mantenimiento preventivo según pauta del fabricante.</td>
+            </tr>
+            <tr>
+              <th colspan="2">F.- OBSERVACIONES</th>
+              <td colspan="2">Entrega y cómputo de horas conforme al Acta de Entrega y Recepción de Maquinaria.</td>
+            </tr>
+          </table>
+
+          <div style="margin-top: 40px; width: 45%; float: left;">
+            ${bloqueFirmaCliente}
+            <div style="font-size: 8px; text-align: center; color: #444; font-weight: bold; border-top: 1px solid #000; padding-top: 3px;">
+              FIRMA REPRESENTANTE ARRENDATARIA
+            </div>
+          </div>
+          <div style="clear: both;"></div>
+        </div>
+
+      </body>
+      </html>
+      `;
+
+      // 7. Compilar a PDF con wkhtmltopdf
+      const targetDir = path.resolve(__dirname, '../../public/contratos');
+      if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+      const fileName = `${folioContrato}.pdf`;
+      const filepath = path.join(targetDir, fileName);
+      const tempHtmlPath = path.join(targetDir, `temp_${folioContrato}.html`);
+      fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+      await new Promise((resolve, reject) => {
+        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 10mm --margin-bottom 10mm --margin-left 12mm --margin-right 12mm "${tempHtmlPath}" "${filepath}"`;
+        exec(cmd, (error, stdout, stderr) => {
+          try { if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath); } catch (e) {}
+          if (error && !fs.existsSync(filepath)) {
+            return reject(new Error(`Error al compilar el PDF del contrato: ${error.message}`));
+          }
+          resolve();
+        });
+      });
+
+      // 8. Registrar en Storage Engine
+      const archivoM = new archivoModel();
+      const doc = await archivoM.insertarTfmgFile(
+        'CONTRATO',
+        'application/pdf',
+        fileName,
+        fileName,
+        `contratos/${fileName}`,
+        p.id_user_creacion || null,
+        'A'
+      );
+
+      const contratoResult = {
+        folio: folioContrato,
+        estado: datosExtra.firma_cliente_base64 ? 'FIRMADO_DIGITAL' : (contratoPrevio.estado || 'BORRADOR'),
+        url_pdf: `/api/archivo/ver/${doc.id_doc}`,
+        id_doc: doc.id_doc,
+        fecha_emision: fechaEmision,
+        representante_nombre: mandanteRepNombre,
+        representante_rut: mandanteRepRut,
+        representante_cargo: mandanteRepCargo
+      };
+
+      crm.contrato = { ...(crm.contrato || {}), ...contratoResult };
+      jsonField.crm_v1 = crm;
+
+      await client.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jsonField, id_proyecto]);
+      await client.query('COMMIT');
+
+      return {
+        success: true,
+        contrato: contratoResult,
+        proyecto: p
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = ProyectoModel;
