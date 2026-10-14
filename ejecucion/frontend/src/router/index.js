@@ -12,11 +12,18 @@ import Enrolamiento from '../views/Enrolamiento.vue'
 import BodegasView from '../views/inventario/BodegasView.vue'
 import ProductosView from '../views/inventario/ProductosView.vue'
 import AlertasQuiebresView from '../views/inventario/AlertasQuiebresView.vue'
+import RecepcionMaterialesView from '../views/inventario/RecepcionMaterialesView.vue'
+import DespachoConsumoView from '../views/inventario/DespachoConsumoView.vue'
+import TraspasosTrasladosView from '../views/inventario/TraspasosTrasladosView.vue'
+import ProcesosInventarioView from '../views/inventario/ProcesosInventarioView.vue'
+import ExistenciasYBajasView from '../views/inventario/ExistenciasYBajasView.vue'
 import MantenimientoView from '../views/MantenimientoView.vue'
 import Vista360 from '../views/Vista360.vue'
 import InspeccionEquipos from '../views/InspeccionEquipos.vue'
 import verSurveyPrint from '../pages/verSurveyPrint.vue'
 import FichaEquipoPublica from '../views/FichaEquipoPublica.vue'
+import BacklogView from '../views/BacklogView.vue'
+import ItsTransicionView from '../views/Operaciones/ItsTransicionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL || '/'),
@@ -52,6 +59,11 @@ const router = createRouter({
       component: Cruce
     },
     {
+      path: '/its-transicion',
+      name: 'its_transicion',
+      component: ItsTransicionView
+    },
+    {
       path: '/inventario',
       name: 'inventario',
       redirect: '/inventario/bodegas'
@@ -72,9 +84,41 @@ const router = createRouter({
       component: AlertasQuiebresView
     },
     {
+      path: '/inventario/recepcion',
+      name: 'inventario_recepcion',
+      component: RecepcionMaterialesView
+    },
+    {
+      path: '/inventario/despacho',
+      name: 'inventario_despacho',
+      component: DespachoConsumoView
+    },
+    {
+      path: '/inventario/traspasos',
+      name: 'inventario_traspasos',
+      component: TraspasosTrasladosView
+    },
+    {
+      path: '/inventario/procesos',
+      name: 'inventario_procesos',
+      component: ProcesosInventarioView
+    },
+    {
+      path: '/inventario/bajas',
+      name: 'inventario_bajas',
+      component: ExistenciasYBajasView
+    },
+    {
       path: '/mantenimiento',
+      alias: ['/lg-gsp-dev/mantenimiento', '/lg-gsp-qa/mantenimiento', '/lg-gsp-prod/mantenimiento'],
       name: 'mantenimiento',
       component: MantenimientoView
+    },
+    {
+      path: '/mantenimiento/equipo/:id',
+      alias: ['/lg-gsp-dev/mantenimiento/equipo/:id', '/lg-gsp-qa/mantenimiento/equipo/:id', '/lg-gsp-prod/mantenimiento/equipo/:id'],
+      name: 'hoja_vida_equipo',
+      component: () => import('../views/mantenimiento/HojaVidaEquipoView.vue')
     },
     {
       path: '/crm',
@@ -91,6 +135,11 @@ const router = createRouter({
       path: '/mantenedores',
       name: 'mantenedores',
       component: Mantenedores
+    },
+    {
+      path: '/backlog',
+      name: 'backlog',
+      component: BacklogView
     },
     {
       path: '/acreditacion',
@@ -219,6 +268,30 @@ const router = createRouter({
       name: 'ficha_trabajador_prod',
       component: () => import('../views/FichaTrabajadorPublica.vue'),
       meta: { layout: 'public' }
+    },
+    {
+      path: '/firmar-contrato',
+      name: 'firmar_contrato',
+      component: () => import('../views/FirmarContratoView.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/firmar-contrato',
+      name: 'firmar_contrato_dev',
+      component: () => import('../views/FirmarContratoView.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/firmar-contrato',
+      name: 'firmar_contrato_qa',
+      component: () => import('../views/FirmarContratoView.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/firmar-contrato',
+      name: 'firmar_contrato_prod',
+      component: () => import('../views/FirmarContratoView.vue'),
+      meta: { layout: 'public' }
     }
   ]
 })
@@ -233,8 +306,8 @@ router.beforeEach((to, from, next) => {
     return next()
   }
 
-  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.meta?.layout !== 'public' && to.meta?.layout !== 'print') {
-    return next({ name: 'login' })
+  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.name !== 'its_transicion' && to.meta?.layout !== 'public' && to.meta?.layout !== 'print') {
+    return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
   // Regla de Arquitectura FES: Si flag_proc_enrol está activo, exige completar el enrolamiento
