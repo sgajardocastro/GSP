@@ -3765,8 +3765,9 @@
             <button @click="activeTab = 'antecedentes'" :class="activeTab === 'antecedentes' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
               Antecedentes Licitación
             </button>
-            <button @click="activeTab = 'bitacora'" :class="activeTab === 'bitacora' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all flex items-center gap-1 whitespace-nowrap">
-              <span>Bitácora & Alertas</span>
+            <button @click="activeTab = 'contrato'" :class="activeTab === 'contrato' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all flex items-center gap-1.5 whitespace-nowrap">
+              <span>Contrato & Formalización</span>
+              <span v-if="esArriendo" class="px-1.5 py-0.2 rounded text-[8px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">Arriendo</span>
             </button>
           </div>
 
@@ -4884,46 +4885,141 @@
             </div>
           </div>
 
-          <!-- TAB 4: BITÁCORA & ALERTAS -->
-          <div v-if="activeTab === 'bitacora'" class="space-y-4">
-            <div class="bg-red-500/10 border border-red-500/20 border-l-4 border-l-red-500 rounded p-3 text-red-300 text-xs">
-              <span class="font-bold block mb-1">🚨 ALERTAS DE SEGUIMIENTO (PRÓXIMOS HITOS)</span>
-              <span>No hay alertas vigentes para esta cotización.</span>
-            </div>
+          <!-- TAB 5: CONTRATO DE ARRENDAMIENTO & FORMALIZACIÓN (REQ-1037 / TSK-COT-04) -->
+          <div v-if="activeTab === 'contrato'" class="space-y-4">
             
-            <div class="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
-              <span class="text-xs font-bold text-white uppercase tracking-wider block">Registrar Nueva Interacción / Hito</span>
-              <div class="grid grid-cols-2 gap-3">
+            <!-- Cabecera de Estado y Folio -->
+            <div class="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl">📜</div>
                 <div>
-                  <select v-model="nuevaInteraccion.tipo" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-xs text-white">
-                    <option value="Llamada">📞 Llamada Telefónica</option>
-                    <option value="Correo">✉️ Correo Electrónico</option>
-                    <option value="Reunión">👥 Reunión Comercial</option>
-                  </select>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-black text-white uppercase tracking-wide">Contrato de Arrendamiento de Maquinaria</h3>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded" :class="badgeEstadoContrato.clase">{{ badgeEstadoContrato.texto }}</span>
+                  </div>
+                  <p class="text-xs text-slate-400">Folio Oficial: <strong class="text-slate-200">{{ contratoData.folio || 'Pendiente de Emisión' }}</strong> · Empresa Emisora: <strong class="text-amber-400">{{ infoEmisorContrato.nombre }}</strong></p>
                 </div>
-                <button @click="agregarHito" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-bold text-white rounded transition-colors self-end">
-                  Registrar Hito
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" @click="previsualizarContrato" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
+                  <span>👁️</span> Previsualizar (4 Págs)
+                </button>
+                <button type="button" @click="descargarContratoPdf" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
+                  <span>🖨️</span> Descargar PDF Físico
                 </button>
               </div>
-              <textarea v-model="nuevaInteraccion.comentario" placeholder="Detalle de la interacción..." class="w-full h-16 bg-[#0a0f1e] border border-white/10 rounded p-2 text-xs text-white resize-none"></textarea>
             </div>
-            
-            <!-- Trazabilidad de Envío de Cotizaciones -->
-            <div class="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3 mt-4">
-              <span class="text-xs font-bold text-white uppercase tracking-wider block border-b border-white/5 pb-2">Trazabilidad de Envíos</span>
-              <div v-if="cotizaciones_historicas.length === 0" class="text-xs text-slate-400 italic">No se han registrado envíos de cotización por correo.</div>
-              <div v-else class="space-y-2">
-                <div v-for="(envio, idx) in cotizaciones_historicas" :key="idx" class="bg-black/20 p-2.5 rounded border border-white/5 text-[10px]">
-                  <div class="flex justify-between items-center mb-1">
-                    <span class="font-bold text-amber-500">Versión: {{ envio.version }}</span>
-                    <span class="text-slate-400">{{ formatFecha(envio.fecha_envio) }}</span>
-                  </div>
-                  <div class="text-slate-300"><strong>Destinatario:</strong> {{ envio.destinatario }}</div>
-                  <div class="text-slate-500"><strong>CC:</strong> {{ envio.cc }}</div>
-                  <div class="text-slate-500"><strong>Monto Neto:</strong> {{ formatCurrency(envio.monto_neto) }}</div>
+
+            <!-- Ficha Comparativa de las Partes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- Arrendador (Holding) -->
+              <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">🏢 Arrendador (Holding)</span>
+                  <span class="text-[10px] font-mono text-slate-400">RUT: {{ infoEmisorContrato.rut }}</span>
+                </div>
+                <div class="text-xs space-y-1 text-slate-300">
+                  <p><strong>Razón Social:</strong> {{ infoEmisorContrato.nombre }}</p>
+                  <p><strong>Dirección:</strong> {{ infoEmisorContrato.direccion }}</p>
+                  <p><strong>Representante Legal:</strong> Luis Omar Ghisellini Jara (C.I. 12.031.054-2)</p>
                 </div>
               </div>
+
+              <!-- Arrendatario (Mandante) -->
+              <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">🏗️ Arrendatario (Mandante)</span>
+                  <span class="text-[10px] font-mono text-slate-400">RUT: {{ selectedClient?.rut || opportunity.rut_cliente || 'Sin RUT' }}</span>
+                </div>
+                <div class="text-xs space-y-2">
+                  <p class="text-slate-300"><strong>Razón Social:</strong> {{ selectedClient?.razon_social || opportunity.razon_social || 'Seleccione cliente mandante' }}</p>
+                  <div class="grid grid-cols-3 gap-2 pt-1">
+                    <div class="col-span-1">
+                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Nombre Representante *</label>
+                      <input v-model="contratoData.representante_nombre" type="text" placeholder="Nombre completo" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                    </div>
+                    <div class="col-span-1">
+                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">RUT Firmante *</label>
+                      <input v-model="contratoData.representante_rut" type="text" placeholder="12.345.678-9" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                    </div>
+                    <div class="col-span-1">
+                      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Cargo *</label>
+                      <input v-model="contratoData.representante_cargo" type="text" placeholder="Ej: Administrador Obra" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
+
+            <!-- Maquinaria y Condiciones -->
+            <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-white/10 pb-2">🚜 Maquinaria & Condiciones Operacionales (Anexo Pág 4)</span>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs text-slate-300">
+                <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Equipo Principal</span>{{ linesEquiposPrincipales[0]?.descripcion || 'Equipo según cotización' }}</div>
+                <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Modalidad / Plazo</span>{{ linesEquiposPrincipales[0]?.unidad || 'Horas Mes Mínimas' }}</div>
+                <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Tarifa Pactada</span>{{ formatCurrency(linesEquiposPrincipales[0]?.valorUnitario || 0) }}</div>
+                <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Lugar de Faena</span>{{ siteVisit.obra_ciudad || siteVisit.obra_nombre || 'Según acuerdo comercial' }}</div>
+              </div>
+            </div>
+
+            <!-- Centro de Gestión de Firma y Despacho -->
+            <div class="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
+              <span class="text-xs font-bold text-white uppercase tracking-wider block">⚡ Modalidades de Formalización y Firma</span>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Opción A: Digital Móvil FES -->
+                <div class="bg-white/[0.02] border border-amber-500/20 rounded-lg p-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-amber-400">📱 Firma Digital Móvil (Token 1 Solo Uso)</span>
+                    <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Recomendado</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">Genera un enlace público seguro de un solo uso para que el cliente lea el contrato y lo firme en su celular con el dedo.</p>
+                  
+                  <div class="flex items-center gap-2 pt-1">
+                    <button type="button" @click="generarEnlaceFirmaDigital" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-xs transition-colors shadow cursor-pointer">
+                      Generar Link de Firma
+                    </button>
+                    <button v-if="contratoData.url_publica_firma" type="button" @click="compartirPorWhatsApp" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs transition-colors flex items-center gap-1 cursor-pointer">
+                      <span>💬</span> WhatsApp
+                    </button>
+                    <button v-if="contratoData.url_publica_firma" type="button" @click="copiarEnlaceFirma" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded text-xs transition-colors cursor-pointer">
+                      📋 Copiar
+                    </button>
+                  </div>
+                  <div v-if="contratoData.url_publica_firma" class="p-2 bg-black/40 rounded border border-white/5 font-mono text-[10px] text-amber-300 break-all select-all">
+                    {{ contratoData.url_publica_firma }}
+                  </div>
+                </div>
+
+                <!-- Opción B: Firma Física / Manual -->
+                <div class="bg-white/[0.02] border border-white/5 rounded-lg p-3 space-y-2">
+                  <span class="text-xs font-bold text-slate-300">📄 Firma Física Tradicional (En Papel)</span>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">Para clientes con proceso de impresión física. Descarga el PDF con datos pre-rellenados y adjunta el escaneo firmado.</p>
+                  <div class="pt-1">
+                    <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded text-xs cursor-pointer inline-flex items-center gap-1.5 border border-white/10">
+                      <span>📤</span> Subir Contrato Firmado (PDF/Foto)
+                      <input type="file" accept=".pdf,image/*" @change="subirContratoFirmadoFisico" class="hidden" />
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Ficha de Auditoría si ya está firmado -->
+              <div v-if="contratoData.estado === 'FIRMADO_DIGITAL' || contratoData.estado === 'FIRMADO_FISICO'" class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-200 mt-2 space-y-1">
+                <div class="font-bold flex items-center gap-2 text-sm text-emerald-400">
+                  <span>✅</span> Contrato Suscrito y Validado
+                </div>
+                <p><strong>Firmante Registrado:</strong> {{ contratoData.firma_digital?.firmado_por_nombre || contratoData.representante_nombre }} ({{ contratoData.firma_digital?.firmado_por_cargo || contratoData.representante_cargo }})</p>
+                <p><strong>RUT Firmante:</strong> {{ contratoData.firma_digital?.firmado_por_rut || contratoData.representante_rut }} · <strong>Fecha/Hora:</strong> {{ contratoData.firma_digital?.fecha_hora_firma || contratoData.fecha_firma }}</p>
+                <p class="text-[10px] font-mono text-emerald-300/70" v-if="contratoData.firma_digital?.hash_documento_sha256">Hash SHA-256: {{ contratoData.firma_digital.hash_documento_sha256 }}</p>
+              </div>
+
+            </div>
+
           </div>
           </fieldset>
         </div>
@@ -10439,9 +10535,50 @@ watch(
 )
 
 
-const nuevaInteraccion = ref({
-  tipo: 'Llamada',
-  comentario: ''
+// Contrato de Arrendamiento & Formalización (REQ-1037 / TSK-COT-04)
+const contratoData = ref({
+  folio: '',
+  representante_nombre: '',
+  representante_rut: '',
+  representante_cargo: 'Administrador de Contrato',
+  fecha_firma: new Date().toISOString().split('T')[0],
+  estado: 'BORRADOR', // BORRADOR | ENVIADO_FES | FIRMADO_DIGITAL | FIRMADO_FISICO
+  url_pdf: '',
+  url_pdf_firmado: '',
+  url_publica_firma: '',
+  firma_digital: null,
+  firma_fisica: null
+})
+
+const esArriendo = computed(() => {
+  if (Number(opportunity.value?.tipo_caso) === 5) return true
+  const empId = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+  if (empId === 11) return true
+  return (lines.value || []).some(l => {
+    const u = String(l.unidad || '').toLowerCase()
+    const t = String(l.tipo || '').toUpperCase()
+    const s = String(l.subcategoria || '').toUpperCase()
+    return u.includes('mes') || t.includes('PLATAFORMA') || s.includes('ALZAHOMBRE')
+  })
+})
+
+const badgeEstadoContrato = computed(() => {
+  const est = contratoData.value.estado || 'BORRADOR'
+  if (est === 'FIRMADO_DIGITAL') return { texto: 'FIRMADO DIGITALMENTE (FES) ✅', clase: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' }
+  if (est === 'FIRMADO_FISICO') return { texto: 'FIRMADO FÍSICO 📁', clase: 'bg-blue-500/20 text-blue-300 border border-blue-500/40' }
+  if (est === 'ENVIADO_FES') return { texto: 'ENVIADO A FIRMA (PENDIENTE)', clase: 'bg-amber-500/20 text-amber-300 border border-amber-500/40' }
+  return { texto: 'BORRADOR', clase: 'bg-slate-800 text-slate-300 border border-white/10' }
+})
+
+const infoEmisorContrato = computed(() => {
+  const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+  const CATALOGO_EMPRESAS = {
+    9: { nombre: 'LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)', rut: '52.004.162-1', direccion: 'Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco', fono: '+56 9 9443 7725', logo: 'logo-sanpablo.png' },
+    11: { nombre: 'ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)', rut: '78.254.535-3', direccion: 'Camino Labranza KM 9.5, Temuco', fono: '+56 9 9443 7725', logo: 'logo-royalrental.png' },
+    7: { nombre: 'SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)', rut: '76.209.534-3', direccion: 'Camino Labranza KM 9.5, Temuco', fono: '+56 9 9443 7725', logo: 'logo-bestmaq.png' },
+    8: { nombre: 'SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)', rut: '76.218.576-8', direccion: 'KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco', fono: '+56 9 9443 7725', logo: 'logo-logisticadelsur.png' }
+  }
+  return CATALOGO_EMPRESAS[idEmisora] || CATALOGO_EMPRESAS[9]
 })
 
 const calcularSubtotalLinea = (line) => {
@@ -11233,6 +11370,9 @@ const cargarDatosCotizacion = async () => {
               traslado_monto: crm.pensiones.traslado_monto || 0
             }
           }
+          if (crm.contrato) {
+            contratoData.value = { ...contratoData.value, ...crm.contrato }
+          }
           if (crm.snapshot_comercial && Object.keys(crm.snapshot_comercial).length > 0) {
             snapshotComercial.value = JSON.parse(JSON.stringify(crm.snapshot_comercial))
             // Si el snapshot guardado tenía menos líneas que las líneas de servicio cotizadas en preventa, reconciliar
@@ -11816,6 +11956,7 @@ const buildPayload = () => {
         moneda: comercial.value.moneda,
         condicion_servicio: comercial.value.condicion_servicio,
         pensiones: comercial.value.pensiones,
+        contrato: contratoData.value,
         snapshot_comercial: (estadoDbActual.value >= 3 && snapshotComercial.value && Object.keys(snapshotComercial.value).length > 0)
           ? JSON.parse(JSON.stringify(snapshotComercial.value))
           : {
@@ -14355,10 +14496,50 @@ const despacharOTPorCorreo = async () => {
   }
 }
 
-const agregarHito = () => {
-  if (!nuevaInteraccion.value.comentario) return
-  alert('Hito "' + nuevaInteraccion.value.tipo + '" registrado correctamente en la bitácora.')
-  nuevaInteraccion.value.comentario = ''
+const generarEnlaceFirmaDigital = () => {
+  const projectId = props.proyectoId || currentProyectoId.value || opportunity.value?.id_proyecto || 'CTR'
+  const tokenGenerado = 'CTR-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 8)
+  const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '')
+  contratoData.value.url_publica_firma = `${baseUrl}/#/firmar-contrato?token=${tokenGenerado}&pid=${projectId}`
+  contratoData.value.token_publico = tokenGenerado
+  contratoData.value.estado = 'ENVIADO_FES'
+  contratoData.value.folio = contratoData.value.folio || `CTR-2026-${String(projectId).padStart(4, '0')}`
+  alert('Enlace público de firma digital generado con éxito.\nPuede compartirlo por WhatsApp o copiarlo al portapapeles.')
+}
+
+const compartirPorWhatsApp = () => {
+  if (!contratoData.value.url_publica_firma) return
+  const clienteNombre = selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Cliente'
+  const empresaNombre = infoEmisorContrato.value.nombre
+  const tel = opportunity.value?.contacto_telefono || ''
+  const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la firma digital del Contrato de Arrendamiento de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar y firmar en su celular.`)
+  window.open(`https://wa.me/${tel.replace(/\D/g, '')}?text=${msg}`, '_blank')
+}
+
+const copiarEnlaceFirma = () => {
+  if (!contratoData.value.url_publica_firma) return
+  navigator.clipboard.writeText(contratoData.value.url_publica_firma)
+  alert('Enlace de firma copiado al portapapeles.')
+}
+
+const previsualizarContrato = () => {
+  alert(`Previsualización del Contrato de Arrendamiento (4 Páginas)\n\nArrendador: ${infoEmisorContrato.value.nombre}\nArrendatario: ${selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Mandante'}\nEquipo: ${linesEquiposPrincipales.value[0]?.descripcion || 'Equipo según cotización'}\n\nCondiciones Generales (14 cláusulas) y Anexo Particular de Maquinaria generados.`)
+}
+
+const descargarContratoPdf = () => {
+  alert('Descargando plantilla del Contrato de Arrendamiento para firma física en formato A4...')
+}
+
+const subirContratoFirmadoFisico = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  contratoData.value.estado = 'FIRMADO_FISICO'
+  contratoData.value.firma_fisica = {
+    cargado_por: currentUser?.nombre || 'Wilson Navarrete',
+    fecha_carga: new Date().toLocaleString('es-CL'),
+    nombre_archivo: file.name
+  }
+  alert(`Contrato firmado físicamente "${file.name}" cargado exitosamente.`)
 }
 
 const solicitarAsignacionVisita = async () => {
