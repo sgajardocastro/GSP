@@ -4934,7 +4934,7 @@
                 </div>
                 <div class="text-xs space-y-2">
                   <p class="text-slate-300"><strong>Razón Social:</strong> {{ selectedClient?.razon_social || opportunity.razon_social || 'Seleccione cliente mandante' }}</p>
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-1">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 pt-1">
                     <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Nombre Representante *</label>
                       <input v-model="contratoData.representante_nombre" type="text" placeholder="Ej: Juan Pérez" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
@@ -4952,6 +4952,12 @@
                         <span>📱 Teléfono WhatsApp *</span>
                       </label>
                       <input v-model="contratoData.representante_telefono" type="text" placeholder="+56 9 1234 5678" class="w-full bg-slate-900 border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-mono" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-sky-400 uppercase mb-0.5 flex items-center gap-1">
+                        <span>✉️ Correo Receptor *</span>
+                      </label>
+                      <input v-model="contratoData.representante_email" type="email" placeholder="cliente@empresa.cl" class="w-full bg-slate-900 border border-sky-500/30 rounded px-2 py-1 text-xs text-white font-mono" />
                     </div>
                   </div>
                 </div>
@@ -4976,25 +4982,47 @@
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                <!-- Opción A: Digital Móvil FES -->
-                <div class="bg-white/[0.02] border border-amber-500/20 rounded-lg p-3 space-y-2">
+                <!-- Opción A: Despacho Omnicanal Automatizado (Email + WhatsApp) -->
+                <div class="bg-white/[0.02] border border-amber-500/20 rounded-lg p-3 space-y-2.5">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-amber-400">📱 Firma Digital Móvil (Token 1 Solo Uso)</span>
+                    <span class="text-xs font-bold text-amber-400">⚡ Despacho Omnicanal Automatizado (Email + WhatsApp)</span>
                     <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Recomendado</span>
                   </div>
-                  <p class="text-[11px] text-slate-400 leading-relaxed">Genera un enlace público seguro de un solo uso para que el cliente lea el contrato y lo firme en su celular con el dedo.</p>
+                  <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Envía de forma instantánea el contrato digital al cliente por <strong class="text-white">Correo Oficial</strong> y <strong class="text-emerald-400">WhatsApp</strong>, con copia automática al <strong class="text-sky-300">Ejecutivo Comercial</strong> creador para trazabilidad absoluta.
+                  </p>
                   
-                  <div class="flex items-center gap-2 pt-1">
-                    <button type="button" @click="generarEnlaceFirmaDigital" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-xs transition-colors shadow cursor-pointer">
-                      Generar Link de Firma
+                  <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <button 
+                      type="button" 
+                      @click="despacharContratoDigital" 
+                      :disabled="despachandoContrato || !contratoData.representante_nombre || !contratoData.representante_rut || !contratoData.representante_telefono || !contratoData.representante_email"
+                      class="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black rounded-lg text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                    >
+                      <span v-if="despachandoContrato" class="animate-spin">⏳</span>
+                      <span v-else>🚀</span>
+                      {{ despachandoContrato ? 'Despachando Contrato...' : 'ENVIAR CONTRATO PARA FIRMA' }}
                     </button>
-                    <button v-if="contratoData.url_publica_firma" type="button" @click="compartirPorWhatsApp" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs transition-colors flex items-center gap-1 cursor-pointer">
-                      <span>💬</span> WhatsApp
+                    <button v-if="contratoData.url_publica_firma" type="button" @click="compartirPorWhatsApp" title="Reenviar por WhatsApp Web manual" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-200 hover:text-white font-bold rounded text-xs transition-colors flex items-center gap-1 cursor-pointer">
+                      <span>💬</span> WhatsApp Web
                     </button>
-                    <button v-if="contratoData.url_publica_firma" type="button" @click="copiarEnlaceFirma" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded text-xs transition-colors cursor-pointer">
-                      📋 Copiar
+                    <button v-if="contratoData.url_publica_firma" type="button" @click="copiarEnlaceFirma" title="Copiar enlace directo" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs transition-colors cursor-pointer flex items-center gap-1">
+                      <span>📋</span> Copiar Link
                     </button>
                   </div>
+
+                  <!-- Trazabilidad del Despacho -->
+                  <div v-if="despachoFeedback" class="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-[11px] text-emerald-300 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5">
+                      <span>✅</span> Contrato despachado exitosamente:
+                    </p>
+                    <ul class="list-disc list-inside space-y-0.5 text-[10px] text-emerald-200/90 pl-1">
+                      <li>Correo cliente: <strong>{{ contratoData.representante_email }}</strong></li>
+                      <li>Copia ejecutivo (CC): <strong>{{ emailEjecutivoComercial }}</strong></li>
+                      <li>WhatsApp: <strong>{{ contratoData.representante_telefono }}</strong></li>
+                    </ul>
+                  </div>
+
                   <div v-if="contratoData.url_publica_firma" class="p-2 bg-black/40 rounded border border-white/5 font-mono text-[10px] text-amber-300 break-all select-all">
                     {{ contratoData.url_publica_firma }}
                   </div>
@@ -10541,31 +10569,36 @@ watch(
 )
 
 
-// Contrato de Arrendamiento & Formalización (REQ-1037 / TSK-COT-04)
+// Contrato de Arrendamiento & Formalización (REQ-1037 / TSK-COT-04 / REQ-1039)
 const contratoData = ref({
   folio: '',
   representante_nombre: '',
   representante_rut: '',
   representante_cargo: 'Administrador de Contrato',
   representante_telefono: '',
+  representante_email: '',
   fecha_firma: new Date().toISOString().split('T')[0],
   estado: 'BORRADOR', // BORRADOR | ENVIADO_FES | FIRMADO_DIGITAL | FIRMADO_FISICO
   url_pdf: '',
   url_pdf_firmado: '',
   url_publica_firma: '',
+  token_publico: '',
   firma_digital: null,
   firma_fisica: null
 })
 
 // Sincronizar por defecto datos del receptor desde el contacto seleccionado en Preventa
 watch(
-  [() => opportunity.value?.contacto_nombre, () => opportunity.value?.contacto_telefono, () => opportunity.value?.contacto_obj],
-  ([newNom, newTel, newObj]) => {
+  [() => opportunity.value?.contacto_nombre, () => opportunity.value?.contacto_telefono, () => opportunity.value?.contacto_obj, () => opportunity.value?.contacto_email],
+  ([newNom, newTel, newObj, newEmail]) => {
     if (!contratoData.value.representante_nombre && newNom) {
       contratoData.value.representante_nombre = newNom
     }
     if (!contratoData.value.representante_telefono && newTel) {
       contratoData.value.representante_telefono = newTel
+    }
+    if (!contratoData.value.representante_email && (newEmail || newObj?.email)) {
+      contratoData.value.representante_email = newEmail || newObj?.email || ''
     }
     if (newObj?.rut && !contratoData.value.representante_rut) {
       contratoData.value.representante_rut = newObj.rut
@@ -14524,44 +14557,64 @@ const despacharOTPorCorreo = async () => {
 }
 
 const generandoTokenContrato = ref(false)
+const despachandoContrato = ref(false)
+const despachoFeedback = ref(false)
 const generandoPdfContrato = ref(false)
 
-const generarEnlaceFirmaDigital = async () => {
+const emailEjecutivoComercial = computed(() => {
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  return opportunity.value?.vendedor_email || currentUser.email || ''
+})
+
+const despacharContratoDigital = async () => {
   const projectId = activeProjectId.value || currentProyectoId.value || opportunity.value?.id_proyecto || props.proyectoId
   if (!projectId) {
-    alert('Debe guardar o seleccionar una oportunidad antes de generar el enlace de firma del contrato.')
+    alert('Debe guardar o seleccionar una oportunidad antes de enviar el contrato.')
+    return
+  }
+  if (!contratoData.value.representante_email) {
+    alert('Debe ingresar el correo electrónico del receptor para enviar el contrato.')
+    return
+  }
+  if (!contratoData.value.representante_telefono) {
+    alert('Debe ingresar el teléfono WhatsApp del receptor para enviar el contrato.')
     return
   }
 
-  generandoTokenContrato.value = true
+  despachandoContrato.value = true
+  despachoFeedback.value = false
   try {
-    const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/generar-token`, {
+    const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/despachar`, {
+      id_empresa_arrendador: idEmisora,
       representante_nombre: contratoData.value.representante_nombre,
       representante_rut: contratoData.value.representante_rut,
       representante_cargo: contratoData.value.representante_cargo,
-      representante_telefono: contratoData.value.representante_telefono
+      representante_telefono: contratoData.value.representante_telefono,
+      representante_email: contratoData.value.representante_email,
+      vendedor_email: emailEjecutivoComercial.value
     })
 
-    if (data.success && data.token) {
-      const origin = window.location.origin
-      const baseUrl = import.meta.env.BASE_URL || '/'
-      const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
-      const urlFirma = `${origin}${cleanBase}firmar-contrato?token=${data.token}`
-
-      contratoData.value.url_publica_firma = urlFirma
+    if (data.success && data.url_firma) {
+      contratoData.value.url_publica_firma = data.url_firma
       contratoData.value.token_publico = data.token
       contratoData.value.estado = 'ENVIADO_FES'
       contratoData.value.folio = data.contrato?.folio || contratoData.value.folio || `CTR-2026-${String(projectId).padStart(4, '0')}`
-      alert('🟢 Enlace público de firma digital generado con éxito (Vigencia 72 horas).\nPuede compartirlo por WhatsApp o copiarlo al portapapeles.')
+      despachoFeedback.value = true
+      alert(`🚀 Contrato formal despachado con éxito:\n\n• Correo enviado a: ${contratoData.value.representante_email}\n• Copia CC a ejecutivo: ${emailEjecutivoComercial.value || 'N/A'}\n• Notificación WhatsApp despachada a: ${contratoData.value.representante_telefono}`)
     } else {
-      alert(data.error || 'Error al generar el token de firma.')
+      alert(data.error || 'Error al despachar el contrato.')
     }
   } catch (error) {
-    console.error('Error al generar enlace de firma:', error)
-    alert('Error al generar token de firma: ' + (error.response?.data?.error || error.message))
+    console.error('Error al despachar contrato:', error)
+    alert('Error al despachar contrato: ' + (error.response?.data?.error || error.message))
   } finally {
-    generandoTokenContrato.value = false
+    despachandoContrato.value = false
   }
+}
+
+const generarEnlaceFirmaDigital = async () => {
+  return despacharContratoDigital()
 }
 
 const compartirPorWhatsApp = () => {
