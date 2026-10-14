@@ -880,7 +880,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Resolución Multi-Esquema y Carga de Técnicos en PWA y Web (`mantenimientoModel.js`):** Eliminación de esquema hardcodeado `sch_leangsp.` en `getTecnicos` y soporte inclusivo `(u.id_empresa = $1 OR u.id_empresa IS NULL)`, habilitando la carga y clasificación de los 42 mecánicos, supervisores y personal técnico de GSP en el selector de OTM.
   - **Tira de Alerta Roja Superior (`MantenimientoView.vue`):** Detección reactiva de avisos de avería pendientes; si la criticidad es `PARADA_MAQUINA`, despliegue de banner rojo de urgencia máxima con botón de acción directa `[Atender Aviso ➔]`.
   - **Banner en Bandeja de OTs:** Llamado a la acción visible sobre los filtros de OTs que alerta de avisos de terreno listos para ser convertidos en órdenes de trabajo.
-  - **Sincronización Reactiva Automática (Auto-Polling):** Inclusión de intervalo de 30 segundos en segundo plano en la consola web para reflejar incidencias y avances de taller en tiempo real sin recarga manual.
+  - **Desbloqueo de Cierre de OT sin Restricciones Bloqueantes:** Eliminación de la regla que impedía cerrar OTs con hallazgos abiertos (permitiendo su gestión posterior en backlog o futuras mantenciones) y auto-completado de tareas pendientes de la pauta al firmar el cierre con PIN FES.
   - **Gobernanza y Hard Gate:** Versión `v1.0.133` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
 
 * [x] **22. Almacenamiento Canónico LG-Storage, Previsualización Resiliente Anti-Popups y Despacho Dual de Contratos [REQ-1041 / SPEC-076 / Web v1.0.134 / DEV & PROD]:**
@@ -890,6 +890,12 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Previsualización Resiliente Anti-Bloqueo de Popups (`GestorOportunidades.vue`):** Apertura preventiva de pestaña previa a la compilación asíncrona y feedback visual reactivo de carga en el botón `[ Previsualizar (4 Págs) ]`.
   - **Despacho Dual y WhatsApp Web Directo:** Botón `[ 💬 WhatsApp Web ]` directamente utilizable para envío instantáneo sin advertencias de cifrado nativo de WhatsApp.
   - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.134` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) y validación HTTP 200 OK.
+
+* [x] **23. Optimización Diagramación y Paginación Continua de Contratos de Arriendo (2 Páginas Exactas) [REQ-1042 / SPEC-076 / Web v1.0.135 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/76_contrato_storage_standard_previsualizacion_y_despacho_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/76_contrato_storage_standard_previsualizacion_y_despacho_spec.md) (Sección 5).
+  - **Diagramación Continua 2 Páginas (`proyectoModel.js`):** Erradicación total de cortes de página rígidos (`page-break-after: always`) que generaban 4 páginas con 60% de espacios en blanco. Página 1 integra las 14 cláusulas legales íntegras en formato de doble columna legal continua (`column-count: 2`) y cuadro de comparecencia/firmas FES. Página 2 concentra el Anexo Técnico con partes, individualización de la grúa, condiciones operativas, tarifas y conformidad de partes.
+  - **Actualización de Etiquetas UI (`GestorOportunidades.vue` y `FirmarContratoView.vue`):** Actualización de textos de botones y títulos a `Previsualizar (2 Págs)`, `Anexo Pág 2` y `Texto Íntegro del Contrato (2 Páginas)`.
+  - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.135` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y verificación empírica de 2 páginas con HTTP 200 OK en DEV y PROD.
 
 
 

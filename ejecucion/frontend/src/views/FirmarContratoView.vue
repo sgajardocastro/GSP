@@ -93,11 +93,11 @@
           </div>
         </div>
 
-        <!-- VISOR OFICIAL DEL CONTRATO COMPLETO (4 PÁGINAS) -->
+        <!-- VISOR OFICIAL DEL CONTRATO COMPLETO (2 PÁGINAS) -->
         <div class="bg-[#0f172a]/95 border border-white/10 rounded-2xl p-4 shadow-2xl space-y-3">
           <div class="flex items-center justify-between border-b border-white/10 pb-2">
             <span class="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              📜 Texto Íntegro del Contrato (4 Páginas)
+              📜 Texto Íntegro del Contrato (2 Páginas)
             </span>
             <a 
               v-if="contrato.url_pdf"

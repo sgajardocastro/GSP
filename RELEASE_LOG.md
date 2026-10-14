@@ -2,6 +2,24 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.135
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 15:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1042` (SPEC-076)
+- **Especificación Técnica:** Portal Web GSP v1.0.135: Optimización Diagramación Contratos 2 Páginas y UI Consola Web:
+  1. **Diagramación Continua y Paginación Optimizada 2 Páginas (`proyectoModel.js`):**
+     - Erradicación definitiva de cortes de página rígidos y artificiales que dejaban más del 60% de espacios en blanco por carilla.
+     - **Página 1:** Encabezado con logo corporativo + 14 cláusulas legales íntegras en formato de doble columna legal (`column-count: 2`) + Cuadro formal de comparecencia y firmas (FES digital Arrendatario y Arrendador).
+     - **Página 2:** Anexo de Condiciones Particulares con tabla comparativa de las partes, individualización técnica de la maquinaria (Serie, Motor, Modelo, Marca, Año, Propietario), condiciones operativas (plazos, tarifas, lugar faena, mantenimiento, observaciones) y cuadro de conformidad de las partes.
+  2. **Actualización de Etiquetas UI (`GestorOportunidades.vue` y `FirmarContratoView.vue`):**
+     - Botón de previsualización en CRM actualizado a `[ Previsualizar (2 Págs) ]`.
+     - Título de sección de maquinaria actualizado a `(Anexo Pág 2)`.
+     - Encabezado de visor en pantalla de firma actualizado a `📜 Texto Íntegro del Contrato (2 Páginas)`.
+  3. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.135` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1042`), sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y verificación empírica de 2 páginas con HTTP 200 OK en DEV y PROD.
+
 ## [Portal Web GSP] - Versión 1.0.134
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-14 14:55:00 (-03:00)

@@ -1780,200 +1780,203 @@ class ProyectoModel {
         ? `<div style="text-align: center;"><img src="${firmaClienteDataUri}" style="max-height: 50px; max-width: 150px; display: block; margin: 0 auto 4px auto;" /><div style="font-size: 8px; color: #15803d; font-weight: bold;">FIRMADO DIGITALMENTE (FES)</div></div>`
         : `<div style="height: 45px; border-bottom: 1px dotted #333; margin-bottom: 4px;"></div>`;
 
-      // 6. Template HTML Estructurado de 4 Páginas
+      // 6. Template HTML Estructurado de 2 Páginas Exactas (Sin espacios vacíos)
       const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <style>
-          @page { size: A4 portrait; margin: 10mm 12mm; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 9.5px; line-height: 1.35; color: #111; margin: 0; padding: 0; }
-          .page { page-break-after: always; min-height: 1000px; position: relative; }
+          @page { size: A4 portrait; margin: 8mm 10mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 8px; line-height: 1.25; color: #111; margin: 0; padding: 0; }
+          .page { page-break-after: always; position: relative; }
           .page:last-child { page-break-after: avoid; }
-          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 1.5px solid #222; padding-bottom: 4px; }
           .header-table td { vertical-align: middle; }
-          .doc-title { font-size: 13px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
-          .meta-box { font-size: 9px; text-align: right; line-height: 1.3; font-weight: bold; }
-          .clause-p { margin-bottom: 7px; text-align: justify; }
-          .clause-p strong { color: #000; }
+          .doc-title { font-size: 11px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+          .meta-box { font-size: 8px; text-align: right; line-height: 1.3; font-weight: bold; }
           
-          /* Firmas Página 3 */
-          .signature-table { width: 100%; border-collapse: collapse; margin-top: 35px; }
-          .signature-cell { width: 50%; vertical-align: top; padding: 0 15px; font-size: 9px; }
+          /* Grilla de dos columnas para cláusulas legales */
+          .clauses-container { column-count: 2; column-gap: 14px; text-align: justify; margin-bottom: 8px; }
+          .clause-p { margin-bottom: 4px; break-inside: avoid; font-size: 7.8px; line-height: 1.22; }
+          .clause-p strong { color: #000; font-size: 8px; }
           
-          /* Anexo Página 4 */
-          .banner-anexo { background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 11px; padding: 5px; text-transform: uppercase; margin-bottom: 10px; }
-          .tabla-anexo { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-          .tabla-anexo td, .tabla-anexo th { border: 1px solid #222; padding: 4px 6px; font-size: 8.5px; }
-          .tabla-anexo th { background: #eee; font-weight: bold; text-align: left; }
-          .section-banner { background: #222; color: #fff; font-size: 9px; font-weight: bold; padding: 3px 6px; text-transform: uppercase; margin-bottom: 6px; }
+          /* Cuadro de Firmas Página 1 */
+          .signature-box { border-top: 1.5px solid #000; margin-top: 6px; padding-top: 6px; }
+          .signature-table { width: 100%; border-collapse: collapse; }
+          .signature-cell { width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px; }
+          
+          /* Anexo Página 2 */
+          .banner-anexo { background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 10.5px; padding: 4px; text-transform: uppercase; margin-bottom: 8px; }
+          .tabla-anexo { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+          .tabla-anexo td, .tabla-anexo th { border: 1px solid #333; padding: 4px 6px; font-size: 8px; line-height: 1.25; }
+          .tabla-anexo th { background: #f1f5f9; font-weight: bold; text-align: left; }
+          .section-banner { background: #334155; color: #fff; font-size: 8.5px; font-weight: bold; padding: 3px 6px; text-transform: uppercase; margin-bottom: 4px; margin-top: 6px; }
         </style>
       </head>
       <body>
 
-        <!-- PÁGINA 1: CONDICIONES GENERALES 1 A 5 -->
+        <!-- PÁGINA 1: CONDICIONES GENERALES 1 A 14 Y COMPARECENCIA DE FIRMAS -->
         <div class="page">
           <table class="header-table">
             <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 50px; max-width: 140px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
               <td class="doc-title" style="width: 50%;">CONDICIONES GENERALES DE ARRIENDO</td>
               <td class="meta-box" style="width: 25%;">
                 CONTRATO N°: ${folioContrato}<br>
-                FECHA: ${fechaFormateada}
+                FECHA: ${fechaFormateada}<br>
+                <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">PÁGINA 1 DE 2</span>
               </td>
             </tr>
           </table>
 
-          <div class="clause-p"><strong>1.- Pago arriendo:</strong> El valor del arrendamiento por el período acordado, se establecerá en la cotización enviada por ${emisor.nombre}, la que deberá ser aceptada antes del despacho.</div>
-          <div class="clause-p"><strong>2.- Entrega de la máquina:</strong> La máquina será entregada en el domicilio de la Arrendataria señalado en la Cotización. Los gastos de transporte de la máquina hasta el lugar en que será utilizada, y los gastos del transporte para la restitución al término del contrato, serán de cargo de la Arrendataria. La entrega constará del documento "Acta de Entrega y Recepción de Maquinaria" que firmará la Arrendataria... Se deja constancia que los equipos no cuentan con permiso de circulación vial urbana a menos que sea expresamente convenido.</div>
-          <div class="clause-p"><strong>3.- Aplicación:</strong> La Arrendataria usará la máquina arrendada únicamente en el lugar indicado en la Cotización. La máquina sólo podrá destinarse a trabajos propios de su diseño, con sujeción estricta a las normas del fabricante. La Arrendataria se obliga a operar el equipo con personal idóneo y calificado, con sus documentos al día, asumiendo la completa responsabilidad civil y penal.</div>
-          <div class="clause-p"><strong>4.- Renta y otros pagos:</strong> La renta se pagará dentro de los 30 días contados desde la recepción de la factura. Conforme a la Ley 19.983, el plazo para reclamar el contenido de la factura es de 8 días corridos. La mora devengará el interés penal máximo convencional. Si se contrata arriendo mensual y el equipo es devuelto antes, se cobrará el mes completo pactado como piso mínimo.</div>
-          <div class="clause-p"><strong>5.- Mantenimiento y reparaciones de cargo de la Arrendadora:</strong> El mantenimiento preventivo en los períodos indicados en las pautas será realizado por la Arrendadora. La Arrendataria se obliga a dar facilidades de ingreso y pases de faena.</div>
-        </div>
-
-        <!-- PÁGINA 2: CONDICIONES GENERALES 6 A 10 -->
-        <div class="page">
-          <table class="header-table">
-            <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : ''}</td>
-              <td style="width: 50%; font-size: 10px; font-weight: bold; text-align: center; color: #555;">CONDICIONES GENERALES DE ARRIENDO (Continuación)</td>
-              <td class="meta-box" style="width: 25%;">PÁGINA 2 / 4</td>
-            </tr>
-          </table>
-
-          <div class="clause-p"><strong>6.- Mantenimiento y reparaciones de cargo de la Arrendataria:</strong> La mantención diaria (engrase, niveles de fluidos, batería, neumáticos, limpieza de filtros e inspección visual) es de cargo exclusivo de la Arrendataria. Reparaciones por daño, negligencia, cortes o sobrecarga serán facturadas a la Arrendataria, devengando arriendo normal mientras dure la reparación.</div>
-          <div class="clause-p"><strong>7.- Responsabilidad:</strong> La Arrendataria asume la responsabilidad civil por daños a terceros durante la tenencia del bien. En caso de siniestro, deberá informar en un plazo no mayor a 24 horas hábiles y cursar la denuncia policial ante Carabineros de Chile y alcoholemia respectiva.</div>
-          <div class="clause-p"><strong>8.- Lucro cesante:</strong> Las partes acuerdan expresamente que la Arrendadora no responderá en caso alguno por lucro cesante, paralización de obras o pérdidas indirectas de la Arrendataria.</div>
-          <div class="clause-p"><strong>9.- Cesibilidad:</strong> Prohibición absoluta de ceder, transferir o subrogar los derechos de este contrato sin autorización previa y escrita.</div>
-          <div class="clause-p"><strong>10.- Propiedad:</strong> El dominio exclusivo pertenece a la Arrendadora. Queda prohibido a la Arrendataria introducir modificaciones estructurales, subarrendar, dar en comodato o constituir gravámenes sobre el bien.</div>
-        </div>
-
-        <!-- PÁGINA 3: CONDICIONES GENERALES 11 A 14 Y COMPARECENCIA DE FIRMAS -->
-        <div class="page">
-          <table class="header-table">
-            <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : ''}</td>
-              <td style="width: 50%; font-size: 10px; font-weight: bold; text-align: center; color: #555;">CONDICIONES GENERALES DE ARRIENDO (Cierre & Firmas)</td>
-              <td class="meta-box" style="width: 25%;">PÁGINA 3 / 4</td>
-            </tr>
-          </table>
-
-          <div class="clause-p"><strong>11.- Garantía:</strong> Este instrumento garantiza el cumplimiento íntegro y oportuno de todas las obligaciones contraídas.</div>
-          <div class="clause-p"><strong>12.- Vigencia:</strong> Rige por el plazo previsto en las Condiciones Particulares y pasará a ser indefinido hasta aviso formal con 10 días de anticipación a la fecha de término.</div>
-          <div class="clause-p"><strong>13.- Término anticipado:</strong> La falta de pago o insolvencia concursal faculta a la Arrendadora a resolver de pleno derecho el contrato y exigir la restitución inmediata más rentas adeudadas.</div>
-          <div class="clause-p"><strong>14.- Restitución de la máquina:</strong> A la terminación, se restituirá la máquina conforme al Acta de Entrega en el mismo estado en que fue recibida, salvo desgaste legítimo.</div>
+          <div class="clauses-container">
+            <div class="clause-p"><strong>1.- Pago arriendo:</strong> El valor del arrendamiento por el período acordado, se establecerá en la cotización enviada por ${emisor.nombre}, la que deberá ser aceptada antes del despacho.</div>
+            <div class="clause-p"><strong>2.- Entrega de la máquina:</strong> La máquina será entregada en el domicilio de la Arrendataria señalado en la Cotización. Los gastos de transporte de la máquina hasta el lugar en que será utilizada, y los gastos del transporte para la restitución al término del contrato, serán de cargo de la Arrendataria. La entrega constará del documento "Acta de Entrega y Recepción de Maquinaria" que firmará la Arrendataria. Se deja constancia que los equipos no cuentan con permiso de circulación vial urbana a menos que sea expresamente convenido.</div>
+            <div class="clause-p"><strong>3.- Aplicación:</strong> La Arrendataria usará la máquina arrendada únicamente en el lugar indicado en la Cotización. La máquina sólo podrá destinarse a trabajos propios de su diseño, con sujeción estricta a las normas del fabricante. La Arrendataria se obliga a operar el equipo con personal idóneo y calificado, con sus documentos al día, asumiendo la completa responsabilidad civil y penal.</div>
+            <div class="clause-p"><strong>4.- Renta y otros pagos:</strong> La renta se pagará dentro de los 30 días contados desde la recepción de la factura. Conforme a la Ley 19.983, el plazo para reclamar el contenido de la factura es de 8 días corridos. La mora devengará el interés penal máximo convencional. Si se contrata arriendo mensual y el equipo es devuelto antes, se cobrará el mes completo pactado como piso mínimo.</div>
+            <div class="clause-p"><strong>5.- Mantenimiento Arrendadora:</strong> El mantenimiento preventivo en los períodos indicados en las pautas será realizado por la Arrendadora. La Arrendataria se obliga a dar facilidades de ingreso y pases de faena.</div>
+            <div class="clause-p"><strong>6.- Mantenimiento Arrendataria:</strong> La mantención diaria (engrase, niveles de fluidos, batería, neumáticos, limpieza de filtros e inspección visual) es de cargo exclusivo de la Arrendataria. Reparaciones por daño, negligencia o sobrecarga serán facturadas a la Arrendataria, devengando arriendo normal mientras dure la reparación.</div>
+            <div class="clause-p"><strong>7.- Responsabilidad:</strong> La Arrendataria asume la responsabilidad civil por daños a terceros durante la tenencia del bien. En caso de siniestro, deberá informar en un plazo no mayor a 24 horas hábiles y cursar la denuncia policial respectiva.</div>
+            <div class="clause-p"><strong>8.- Lucro cesante:</strong> Las partes acuerdan expresamente que la Arrendadora no responderá en caso alguno por lucro cesante, paralización de obras o pérdidas indirectas de la Arrendataria.</div>
+            <div class="clause-p"><strong>9.- Cesibilidad:</strong> Prohibición absoluta de ceder, transferir o subrogar los derechos de este contrato sin autorización previa y escrita.</div>
+            <div class="clause-p"><strong>10.- Propiedad:</strong> El dominio exclusivo pertenece a la Arrendadora. Queda prohibido a la Arrendataria introducir modificaciones estructurales, subarrendar, dar en comodato o constituir gravámenes sobre el bien.</div>
+            <div class="clause-p"><strong>11.- Garantía:</strong> Este instrumento garantiza el cumplimiento íntegro y oportuno de todas las obligaciones contraídas.</div>
+            <div class="clause-p"><strong>12.- Vigencia:</strong> Rige por el plazo previsto en las Condiciones Particulares y pasará a ser indefinido hasta aviso formal con 10 días de anticipación a la fecha de término.</div>
+            <div class="clause-p"><strong>13.- Término anticipado:</strong> La falta de pago o insolvencia concursal faculta a la Arrendadora a resolver de pleno derecho el contrato y exigir la restitución inmediata más rentas adeudadas.</div>
+            <div class="clause-p"><strong>14.- Restitución de la máquina:</strong> A la terminación, se restituirá la máquina conforme al Acta de Entrega en el mismo estado en que fue recibida, salvo desgaste legítimo.</div>
+          </div>
 
           <!-- Cuadro de Comparecencia y Firmas -->
-          <table class="signature-table">
-            <tr>
-              <td class="signature-cell">
-                <div style="font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 6px;">ARRENDATARIO</div>
-                <strong>EMPRESA:</strong> ${mandanteRazonSocial}<br>
-                <strong>RUT:</strong> ${mandanteRut}<br><br>
-                <strong>Representada Por:</strong><br>
-                Sr(a): ${mandanteRepNombre}<br>
-                C.I.: ${mandanteRepRut}<br>
-                Cargo: ${mandanteRepCargo}<br><br>
-                ${bloqueFirmaCliente}
-                <div style="text-align: center; font-size: 8px; color: #666;">FIRMA REPRESENTANTE ARRENDATARIO</div>
-              </td>
-              <td class="signature-cell">
-                <div style="font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 6px;">ARRENDADOR</div>
-                <strong>EMPRESA:</strong> ${emisor.nombre}<br>
-                <strong>RUT:</strong> ${emisor.rut}<br><br>
-                <strong>Representada Por:</strong><br>
-                Sr(a): LUIS OMAR GHISELLINI JARA<br>
-                C.I.: 12.031.054-2<br>
-                Cargo: Representante Legal<br><br>
-                <div style="height: 45px; border-bottom: 1px dotted #333; margin-bottom: 4px;"></div>
-                <div style="text-align: center; font-size: 8px; color: #666;">FIRMA REPRESENTANTE ARRENDADOR</div>
-              </td>
-            </tr>
-          </table>
+          <div class="signature-box">
+            <table class="signature-table">
+              <tr>
+                <td class="signature-cell">
+                  <div style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">Arrendatario (Mandante)</div>
+                  <strong>EMPRESA:</strong> ${mandanteRazonSocial}<br>
+                  <strong>RUT:</strong> ${mandanteRut}<br>
+                  <strong>Representada Por:</strong> ${mandanteRepNombre} (C.I.: ${mandanteRepRut})<br>
+                  <strong>Cargo:</strong> ${mandanteRepCargo}<br>
+                  <div style="margin-top: 6px;">
+                    ${bloqueFirmaCliente}
+                  </div>
+                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDATARIO</div>
+                </td>
+                <td class="signature-cell">
+                  <div style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">Arrendador (Propietario)</div>
+                  <strong>EMPRESA:</strong> ${emisor.nombre}<br>
+                  <strong>RUT:</strong> ${emisor.rut}<br>
+                  <strong>Representada Por:</strong> LUIS OMAR GHISELLINI JARA (C.I.: 12.031.054-2)<br>
+                  <strong>Cargo:</strong> Representante Legal<br>
+                  <div style="margin-top: 6px;">
+                    <div style="height: 38px; border-bottom: 1px dotted #333; margin-bottom: 2px;"></div>
+                  </div>
+                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDADOR</div>
+                </td>
+              </tr>
+            </table>
+          </div>
         </div>
 
-        <!-- PÁGINA 4: ANEXO CONTRATO - CONDICIONES PARTICULARES -->
+        <!-- PÁGINA 2: ANEXO CONTRATO - CONDICIONES PARTICULARES -->
         <div class="page">
-          <table class="header-table" style="margin-bottom: 6px;">
+          <table class="header-table">
             <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 45px; max-width: 130px;" />` : ''}</td>
-              <td style="width: 50%;"></td>
+              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
+              <td class="doc-title" style="width: 50%;">ANEXO CONTRATO DE ARRIENDAMIENTO</td>
               <td class="meta-box" style="width: 25%;">
                 CONTRATO N°: ${folioContrato}<br>
-                FECHA: ${fechaFormateada}
+                FECHA: ${fechaFormateada}<br>
+                <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">PÁGINA 2 DE 2</span>
               </td>
             </tr>
           </table>
 
-          <div class="banner-anexo">ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA</div>
+          <div class="banner-anexo">CONDICIONES PARTICULARES DE ARRIENDO DE MAQUINARIA</div>
 
           <table class="tabla-anexo">
             <tr>
-              <th style="width: 20%;">ARRENDADOR</th>
-              <td style="width: 80%;">
+              <th style="width: 22%;">ARRENDADOR</th>
+              <td style="width: 78%;">
                 <strong>RAZÓN SOCIAL:</strong> ${emisor.nombre}<br>
-                <strong>RUT:</strong> ${emisor.rut}<br>
-                <strong>DIRECCIÓN:</strong> ${emisor.direccion}<br>
-                <strong>REPRESENTADA POR:</strong> LUIS OMAR GHISELLINI JARA (RUT: 12.031.054-2)
+                <strong>RUT:</strong> ${emisor.rut} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>DIRECCIÓN:</strong> ${emisor.direccion}<br>
+                <strong>REPRESENTANTE LEGAL:</strong> LUIS OMAR GHISELLINI JARA (RUT: 12.031.054-2)
               </td>
             </tr>
             <tr>
-              <th>ARRENDATARIA</th>
+              <th>ARRENDATARIO</th>
               <td>
                 <strong>RAZÓN SOCIAL:</strong> ${mandanteRazonSocial}<br>
-                <strong>RUT:</strong> ${mandanteRut}<br>
-                <strong>DIRECCIÓN:</strong> ${mandanteDireccion}<br>
-                <strong>REPRESENTADA POR:</strong> ${mandanteRepNombre} (RUT: ${mandanteRepRut})
+                <strong>RUT:</strong> ${mandanteRut} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>DIRECCIÓN:</strong> ${mandanteDireccion}<br>
+                <strong>REPRESENTANTE:</strong> ${mandanteRepNombre} (RUT: ${mandanteRepRut} · ${mandanteRepCargo})
               </td>
             </tr>
           </table>
 
-          <div class="section-banner">CONDICIONES PARTICULARES</div>
-
+          <div class="section-banner">1. INDIVIDUALIZACIÓN TÉCNICA DE LA MAQUINARIA</div>
           <table class="tabla-anexo">
             <tr>
-              <th colspan="4" style="background: #e2e8f0; font-weight: bold;">1.- INDIVIDUALIZACIÓN DE LA MAQUINARIA</th>
-            </tr>
-            <tr>
-              <td><strong>NRO DE SERIE:</strong> ${maquiSerie}</td>
-              <td><strong>MODELO:</strong> ${maquiModelo}</td>
-              <td><strong>MARCA:</strong> ${maquiMarca}</td>
+              <td style="width: 33%;"><strong>NRO DE SERIE:</strong> ${maquiSerie}</td>
+              <td style="width: 33%;"><strong>MODELO:</strong> ${maquiModelo}</td>
+              <td style="width: 34%;"><strong>MARCA:</strong> ${maquiMarca}</td>
             </tr>
             <tr>
               <td><strong>NRO DE MOTOR:</strong> ${maquiMotor}</td>
-              <td><strong>AÑO:</strong> ${maquiAnio}</td>
-              <td><strong>PROPIETARIO:</strong> ${emisor.nombre}</td>
-            </tr>
-            <tr>
-              <th colspan="2">B.- DURACIÓN DEL CONTRATO</th>
-              <td colspan="2"><strong>FECHA DE INICIO:</strong> ${fechaIni} &nbsp;&nbsp;&nbsp;&nbsp; <strong>FECHA DE TÉRMINO:</strong> ${fechaFin}</td>
-            </tr>
-            <tr>
-              <th colspan="2">C.- RENTA DEL ARRENDAMIENTO</th>
-              <td colspan="2"><strong>TARIFA PACTADA:</strong> ${tarifaTexto} &nbsp;&nbsp;&nbsp;&nbsp; <strong>TIPO DE ARRIENDO:</strong> ${tipoArriendo}</td>
-            </tr>
-            <tr>
-              <th colspan="2">D.- LUGAR DE USO DE LA MAQUINARIA</th>
-              <td colspan="2">${lugarFaena}</td>
-            </tr>
-            <tr>
-              <th colspan="2">E.- MANTENIMIENTO POR ARRENDADOR</th>
-              <td colspan="2">Mantenimiento preventivo según pauta del fabricante.</td>
-            </tr>
-            <tr>
-              <th colspan="2">F.- OBSERVACIONES</th>
-              <td colspan="2">Entrega y cómputo de horas conforme al Acta de Entrega y Recepción de Maquinaria.</td>
+              <td><strong>AÑO FABRICACIÓN:</strong> ${maquiAnio}</td>
+              <td><strong>PROPIETARIO REGISTRAL:</strong> ${emisor.nombre}</td>
             </tr>
           </table>
 
-          <div style="margin-top: 40px; width: 45%; float: left;">
-            ${bloqueFirmaCliente}
-            <div style="font-size: 8px; text-align: center; color: #444; font-weight: bold; border-top: 1px solid #000; padding-top: 3px;">
-              FIRMA REPRESENTANTE ARRENDATARIA
-            </div>
+          <div class="section-banner">2. CONDICIONES OPERACIONALES, PLAZOS Y TARIFAS</div>
+          <table class="tabla-anexo">
+            <tr>
+              <th style="width: 25%;">DURACIÓN PACTADA</th>
+              <td style="width: 75%;">
+                <strong>FECHA INICIO:</strong> ${fechaIni} &nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>FECHA TÉRMINO:</strong> ${fechaFin}
+              </td>
+            </tr>
+            <tr>
+              <th>TARIFA Y MODALIDAD</th>
+              <td>
+                <strong>VALOR ARRIENDO:</strong> ${tarifaTexto} &nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>RÉGIMEN / MODALIDAD:</strong> ${tipoArriendo}
+              </td>
+            </tr>
+            <tr>
+              <th>LUGAR DE DESTINO / FAENA</th>
+              <td>${lugarFaena}</td>
+            </tr>
+            <tr>
+              <th>MANTENIMIENTO ARRENDADOR</th>
+              <td>Mantenimiento preventivo periódico según pauta de fabricante por cuenta de la Arrendadora.</td>
+            </tr>
+            <tr>
+              <th>OBSERVACIONES OPERACIONALES</th>
+              <td>Entrega, cómputo de horómetros y estado de conservación regulados por Acta de Entrega y Recepción de Maquinaria.</td>
+            </tr>
+          </table>
+
+          <!-- Recuadro de Cierre del Anexo -->
+          <div style="margin-top: 25px; border-top: 1.5px solid #000; padding-top: 12px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px;">
+                  <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 4px;">CONFORMIDAD ARRENDATARIO</div>
+                  Se suscribe el presente Anexo de Condiciones Particulares en señal de plena conformidad técnica y legal.<br><br>
+                  ${bloqueFirmaCliente}
+                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDATARIO</div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px;">
+                  <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 4px;">CONFORMIDAD ARRENDADOR</div>
+                  Por ${emisor.nombre}:<br><br>
+                  <div style="height: 38px; border-bottom: 1px dotted #333; margin-bottom: 2px;"></div>
+                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDADOR</div>
+                </td>
+              </tr>
+            </table>
           </div>
-          <div style="clear: both;"></div>
+
         </div>
 
       </body>

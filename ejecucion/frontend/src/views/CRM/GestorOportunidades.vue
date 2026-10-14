@@ -4904,7 +4904,7 @@
                 <button type="button" :disabled="generandoPdfContrato" @click="previsualizarContrato" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
                   <span v-if="generandoPdfContrato" class="animate-spin">⏳</span>
                   <span v-else>👁️</span>
-                  {{ generandoPdfContrato ? 'Generando PDF...' : 'Previsualizar (4 Págs)' }}
+                  {{ generandoPdfContrato ? 'Generando PDF...' : 'Previsualizar (2 Págs)' }}
                 </button>
                 <button type="button" @click="descargarContratoPdf" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
                   <span>🖨️</span> Descargar PDF Físico
@@ -4969,7 +4969,7 @@
 
             <!-- Maquinaria y Condiciones -->
             <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
-              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-white/10 pb-2">🚜 Maquinaria & Condiciones Operacionales (Anexo Pág 4)</span>
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-white/10 pb-2">🚜 Maquinaria & Condiciones Operacionales (Anexo Pág 2)</span>
               <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs text-slate-300">
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Equipo Principal</span>{{ linesEquiposPrincipales[0]?.descripcion || 'Equipo según cotización' }}</div>
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Modalidad / Plazo</span>{{ linesEquiposPrincipales[0]?.unidad || 'Horas Mes Mínimas' }}</div>

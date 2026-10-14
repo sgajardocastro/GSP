@@ -60,5 +60,15 @@ Tanto `storageConfig.js` (`resolveStoragePath`) como `archivoController.js` (`ve
 
 ## 4. Matriz de Pruebas y Criterios de Aceptación
 1. `GET /api/archivo/ver/1467`: Retorna HTTP 200 OK con encabezado `Content-Type: application/pdf` y el archivo físico CTR-2026-0109.pdf.
-2. Al hacer clic en `[ Previsualizar (4 Págs) ]` en la oportunidad 109, el botón muestra el spinner de carga y abre de inmediato la nueva pestaña con el documento PDF de 4 páginas compilado.
+2. Al hacer clic en `[ Previsualizar (2 Págs) ]` en la oportunidad 109, el botón muestra el spinner de carga y abre de inmediato la nueva pestaña con el documento PDF compilado en 2 páginas exactas.
 3. Generación de un nuevo contrato escribe físicamente en `/u05/LeanDocs/GSP/{dev|prod}/contratos/{YYYY}/{MM}/` y registra en `tfmg_file` con la ruta relativa estándar.
+
+---
+
+## 5. Diagramación y Paginación Optimizada (2 Páginas Exactas - v1.0.135 / REQ-1042)
+- **Problema Detectado:** Cortes de página rígidos y artificiales generaban un PDF de 4 páginas con más del 60% de espacios en blanco en cada carilla.
+- **Solución Estructural:**
+  - **Página 1 (Condiciones Generales & Firmas):** Encabezado con logo corporativo + 14 cláusulas legales íntegras diagramadas en doble columna continua (`column-count: 2`) + Cuadro formal de comparecencia y firmas (FES digital Arrendatario y Arrendador).
+  - **Página 2 (Anexo Técnico & Condiciones Particulares):** Encabezado con banner + Tabla comparativa de las partes + Ficha técnica de la maquinaria (Serie, Motor, Modelo, Marca, Año, Propietario) + Condiciones operativas (Duración, Tarifas, Lugar faena, Mantenimiento, Observaciones) + Recuadro de conformidad y firma del anexo.
+- **Frontend CRM & Visor Web:** Actualización de etiquetas a `Previsualizar (2 Págs)`, `Anexo Pág 2` y `Texto Íntegro del Contrato (2 Páginas)`.
+
