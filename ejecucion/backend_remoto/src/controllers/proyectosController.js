@@ -534,11 +534,12 @@ module.exports = {
   generarTokenFirmaContrato: async (req, res) => {
     try {
       const { id } = req.params;
+      const { representante_nombre, representante_rut, representante_cargo, representante_telefono } = req.body || {};
       const crypto = require('crypto');
       const token = crypto.randomBytes(24).toString('hex');
       const client = await pool.connect();
       try {
-        const queryProy = 'SELECT id_proyecto, codi_pry, json_field FROM tpry_proyecto WHERE id_proyecto = $1';
+        const queryProy = 'SELECT id_proyecto, codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1';
         const resP = await client.query(queryProy, [id]);
         if (resP.rowCount === 0) {
           return res.status(404).json({ success: false, error: "Proyecto no encontrado" });
@@ -554,6 +555,11 @@ module.exports = {
           creado_at: new Date().toISOString(),
           expira_at: new Date(Date.now() + 72 * 3600 * 1000).toISOString()
         };
+        if (representante_nombre) contrato.representante_nombre = representante_nombre;
+        if (representante_rut) contrato.representante_rut = representante_rut;
+        if (representante_cargo) contrato.representante_cargo = representante_cargo;
+        if (representante_telefono) contrato.representante_telefono = representante_telefono;
+
         crm.contrato = contrato;
         jsonField.crm_v1 = crm;
 
@@ -581,10 +587,10 @@ module.exports = {
       const client = await pool.connect();
       try {
         const query = `
-          SELECT p.id_proyecto, p.codi_pry, p.desc_pry, p.id_cliente, p.json_field,
-                 c.razon_social AS mandante_razon_social, c.rut_cliente AS mandante_rut
+          SELECT p.id_proyecto, p.codi_proyecto, p.nombre_proyecto, p.id_empresa_cliente, p.json_field,
+                 e.razon_social AS mandante_razon_social, e.rut_empresa AS mandante_rut
           FROM tpry_proyecto p
-          LEFT JOIN tcom_cliente c ON c.id_cliente = p.id_cliente
+          LEFT JOIN tpar_empresas e ON e.id_empresa = p.id_empresa_cliente
           WHERE p.json_field->'crm_v1'->'contrato'->'token_firma'->>'token' = $1
         `;
         const resP = await client.query(query, [token]);
@@ -620,8 +626,8 @@ module.exports = {
           success: true,
           proyecto: {
             id_proyecto: p.id_proyecto,
-            codi_pry: p.codi_pry,
-            desc_pry: p.desc_pry,
+            codi_proyecto: p.codi_proyecto,
+            nombre_proyecto: p.nombre_proyecto,
             mandante_razon_social: p.mandante_razon_social || crm.razon_social || 'Cliente Mandante',
             mandante_rut: p.mandante_rut || crm.rut_cliente || 'Sin RUT'
           },
@@ -631,6 +637,7 @@ module.exports = {
             representante_nombre: contrato.representante_nombre || '',
             representante_rut: contrato.representante_rut || '',
             representante_cargo: contrato.representante_cargo || 'Representante Legal',
+            representante_telefono: contrato.representante_telefono || '',
             equipo_nombre: itemMaq.descripcion || 'Plataforma / Equipo de Elevación',
             tarifa_pactada: itemMaq.total ? `$${Number(itemMaq.total).toLocaleString('es-CL')}` : 'Según cotización',
             url_pdf: contrato.url_pdf
