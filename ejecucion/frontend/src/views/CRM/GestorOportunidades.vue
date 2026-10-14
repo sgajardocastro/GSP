@@ -4934,18 +4934,24 @@
                 </div>
                 <div class="text-xs space-y-2">
                   <p class="text-slate-300"><strong>Razón Social:</strong> {{ selectedClient?.razon_social || opportunity.razon_social || 'Seleccione cliente mandante' }}</p>
-                  <div class="grid grid-cols-3 gap-2 pt-1">
-                    <div class="col-span-1">
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-1">
+                    <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Nombre Representante *</label>
-                      <input v-model="contratoData.representante_nombre" type="text" placeholder="Nombre completo" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                      <input v-model="contratoData.representante_nombre" type="text" placeholder="Ej: Juan Pérez" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
                     </div>
-                    <div class="col-span-1">
+                    <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">RUT Firmante *</label>
                       <input v-model="contratoData.representante_rut" type="text" placeholder="12.345.678-9" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
                     </div>
-                    <div class="col-span-1">
+                    <div>
                       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Cargo *</label>
                       <input v-model="contratoData.representante_cargo" type="text" placeholder="Ej: Administrador Obra" class="w-full bg-slate-900 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-emerald-400 uppercase mb-0.5 flex items-center gap-1">
+                        <span>📱 Teléfono WhatsApp *</span>
+                      </label>
+                      <input v-model="contratoData.representante_telefono" type="text" placeholder="+56 9 1234 5678" class="w-full bg-slate-900 border border-emerald-500/30 rounded px-2 py-1 text-xs text-white font-mono" />
                     </div>
                   </div>
                 </div>
@@ -10541,6 +10547,7 @@ const contratoData = ref({
   representante_nombre: '',
   representante_rut: '',
   representante_cargo: 'Administrador de Contrato',
+  representante_telefono: '',
   fecha_firma: new Date().toISOString().split('T')[0],
   estado: 'BORRADOR', // BORRADOR | ENVIADO_FES | FIRMADO_DIGITAL | FIRMADO_FISICO
   url_pdf: '',
@@ -10549,6 +10556,26 @@ const contratoData = ref({
   firma_digital: null,
   firma_fisica: null
 })
+
+// Sincronizar por defecto datos del receptor desde el contacto seleccionado en Preventa
+watch(
+  [() => opportunity.value?.contacto_nombre, () => opportunity.value?.contacto_telefono, () => opportunity.value?.contacto_obj],
+  ([newNom, newTel, newObj]) => {
+    if (!contratoData.value.representante_nombre && newNom) {
+      contratoData.value.representante_nombre = newNom
+    }
+    if (!contratoData.value.representante_telefono && newTel) {
+      contratoData.value.representante_telefono = newTel
+    }
+    if (newObj?.rut && !contratoData.value.representante_rut) {
+      contratoData.value.representante_rut = newObj.rut
+    }
+    if (newObj?.cargo && (!contratoData.value.representante_cargo || contratoData.value.representante_cargo === 'Administrador de Contrato')) {
+      contratoData.value.representante_cargo = newObj.cargo
+    }
+  },
+  { immediate: true }
+)
 
 const esArriendo = computed(() => {
   if (Number(opportunity.value?.tipo_caso) === 5) return true
@@ -14496,24 +14523,59 @@ const despacharOTPorCorreo = async () => {
   }
 }
 
-const generarEnlaceFirmaDigital = () => {
-  const projectId = props.proyectoId || currentProyectoId.value || opportunity.value?.id_proyecto || 'CTR'
-  const tokenGenerado = 'CTR-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 8)
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '')
-  contratoData.value.url_publica_firma = `${baseUrl}/#/firmar-contrato?token=${tokenGenerado}&pid=${projectId}`
-  contratoData.value.token_publico = tokenGenerado
-  contratoData.value.estado = 'ENVIADO_FES'
-  contratoData.value.folio = contratoData.value.folio || `CTR-2026-${String(projectId).padStart(4, '0')}`
-  alert('Enlace público de firma digital generado con éxito.\nPuede compartirlo por WhatsApp o copiarlo al portapapeles.')
+const generandoTokenContrato = ref(false)
+const generandoPdfContrato = ref(false)
+
+const generarEnlaceFirmaDigital = async () => {
+  const projectId = activeProjectId.value || currentProyectoId.value || opportunity.value?.id_proyecto || props.proyectoId
+  if (!projectId) {
+    alert('Debe guardar o seleccionar una oportunidad antes de generar el enlace de firma del contrato.')
+    return
+  }
+
+  generandoTokenContrato.value = true
+  try {
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/generar-token`, {
+      representante_nombre: contratoData.value.representante_nombre,
+      representante_rut: contratoData.value.representante_rut,
+      representante_cargo: contratoData.value.representante_cargo,
+      representante_telefono: contratoData.value.representante_telefono
+    })
+
+    if (data.success && data.token) {
+      const origin = window.location.origin
+      const baseUrl = import.meta.env.BASE_URL || '/'
+      const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+      const urlFirma = `${origin}${cleanBase}firmar-contrato?token=${data.token}`
+
+      contratoData.value.url_publica_firma = urlFirma
+      contratoData.value.token_publico = data.token
+      contratoData.value.estado = 'ENVIADO_FES'
+      contratoData.value.folio = data.contrato?.folio || contratoData.value.folio || `CTR-2026-${String(projectId).padStart(4, '0')}`
+      alert('🟢 Enlace público de firma digital generado con éxito (Vigencia 72 horas).\nPuede compartirlo por WhatsApp o copiarlo al portapapeles.')
+    } else {
+      alert(data.error || 'Error al generar el token de firma.')
+    }
+  } catch (error) {
+    console.error('Error al generar enlace de firma:', error)
+    alert('Error al generar token de firma: ' + (error.response?.data?.error || error.message))
+  } finally {
+    generandoTokenContrato.value = false
+  }
 }
 
 const compartirPorWhatsApp = () => {
   if (!contratoData.value.url_publica_firma) return
-  const clienteNombre = selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Cliente'
+  const clienteNombre = contratoData.value.representante_nombre || selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Cliente'
   const empresaNombre = infoEmisorContrato.value.nombre
-  const tel = opportunity.value?.contacto_telefono || ''
+  const tel = contratoData.value.representante_telefono || opportunity.value?.contacto_telefono || ''
+  if (!tel) {
+    alert('Debe ingresar un número de teléfono celular en los datos del Arrendatario para enviar por WhatsApp.')
+    return
+  }
+  const cleanTel = tel.replace(/\D/g, '')
   const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la firma digital del Contrato de Arrendamiento de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar y firmar en su celular.`)
-  window.open(`https://wa.me/${tel.replace(/\D/g, '')}?text=${msg}`, '_blank')
+  window.open(`https://wa.me/${cleanTel}?text=${msg}`, '_blank')
 }
 
 const copiarEnlaceFirma = () => {
@@ -14522,12 +14584,51 @@ const copiarEnlaceFirma = () => {
   alert('Enlace de firma copiado al portapapeles.')
 }
 
-const previsualizarContrato = () => {
-  alert(`Previsualización del Contrato de Arrendamiento (4 Páginas)\n\nArrendador: ${infoEmisorContrato.value.nombre}\nArrendatario: ${selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Mandante'}\nEquipo: ${linesEquiposPrincipales.value[0]?.descripcion || 'Equipo según cotización'}\n\nCondiciones Generales (14 cláusulas) y Anexo Particular de Maquinaria generados.`)
+const previsualizarContrato = async () => {
+  const projectId = activeProjectId.value || currentProyectoId.value || opportunity.value?.id_proyecto || props.proyectoId
+  if (!projectId) {
+    alert('Debe guardar la oportunidad antes de generar el borrador del contrato.')
+    return
+  }
+
+  generandoPdfContrato.value = true
+  try {
+    const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/generar-pdf`, {
+      id_empresa_arrendador: idEmisora,
+      representante_nombre: contratoData.value.representante_nombre,
+      representante_rut: contratoData.value.representante_rut,
+      representante_cargo: contratoData.value.representante_cargo,
+      representante_telefono: contratoData.value.representante_telefono
+    })
+
+    if (data.success && data.contrato?.url_pdf) {
+      contratoData.value.url_pdf = data.contrato.url_pdf
+      contratoData.value.folio = data.contrato.folio
+      const pdfFullUrl = data.contrato.url_pdf.startsWith('http') 
+        ? data.contrato.url_pdf 
+        : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${data.contrato.url_pdf}`
+      window.open(pdfFullUrl, '_blank')
+    } else {
+      alert(data.error || 'Error al compilar el PDF del contrato.')
+    }
+  } catch (error) {
+    console.error('Error al compilar contrato PDF:', error)
+    alert('Error al generar PDF del contrato: ' + (error.response?.data?.error || error.message))
+  } finally {
+    generandoPdfContrato.value = false
+  }
 }
 
 const descargarContratoPdf = () => {
-  alert('Descargando plantilla del Contrato de Arrendamiento para firma física en formato A4...')
+  if (contratoData.value.url_pdf) {
+    const pdfFullUrl = contratoData.value.url_pdf.startsWith('http') 
+      ? contratoData.value.url_pdf 
+      : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${contratoData.value.url_pdf}`
+    window.open(pdfFullUrl, '_blank')
+  } else {
+    previsualizarContrato()
+  }
 }
 
 const subirContratoFirmadoFisico = (e) => {
