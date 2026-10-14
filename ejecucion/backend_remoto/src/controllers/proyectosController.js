@@ -534,7 +534,7 @@ module.exports = {
   generarTokenFirmaContrato: async (req, res) => {
     try {
       const { id } = req.params;
-      const { representante_nombre, representante_rut, representante_cargo, representante_telefono } = req.body || {};
+      const { representante_nombre, representante_rut, representante_cargo, representante_telefono, representante_email } = req.body || {};
       const crypto = require('crypto');
       const token = crypto.randomBytes(24).toString('hex');
       const client = await pool.connect();
@@ -559,6 +559,7 @@ module.exports = {
         if (representante_rut) contrato.representante_rut = representante_rut;
         if (representante_cargo) contrato.representante_cargo = representante_cargo;
         if (representante_telefono) contrato.representante_telefono = representante_telefono;
+        if (representante_email) contrato.representante_email = representante_email;
 
         crm.contrato = contrato;
         jsonField.crm_v1 = crm;
@@ -575,6 +576,140 @@ module.exports = {
       }
     } catch (err) {
       console.error("Error en generarTokenFirmaContrato:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  despacharContrato: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        representante_nombre, 
+        representante_rut, 
+        representante_cargo, 
+        representante_telefono, 
+        representante_email, 
+        vendedor_email 
+      } = req.body || {};
+
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(24).toString('hex');
+      const client = await pool.connect();
+      let p = null;
+      try {
+        const queryProy = 'SELECT id_proyecto, codi_proyecto, nombre_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1';
+        const resP = await client.query(queryProy, [id]);
+        if (resP.rowCount === 0) {
+          return res.status(404).json({ success: false, error: "Proyecto no encontrado" });
+        }
+        p = resP.rows[0];
+        const jsonField = p.json_field || {};
+        const crm = jsonField.crm_v1 || {};
+        const contrato = crm.contrato || {};
+
+        contrato.token_firma = {
+          token,
+          estado: 'PENDIENTE',
+          creado_at: new Date().toISOString(),
+          expira_at: new Date(Date.now() + 72 * 3600 * 1000).toISOString()
+        };
+        if (representante_nombre) contrato.representante_nombre = representante_nombre;
+        if (representante_rut) contrato.representante_rut = representante_rut;
+        if (representante_cargo) contrato.representante_cargo = representante_cargo;
+        if (representante_telefono) contrato.representante_telefono = representante_telefono;
+        if (representante_email) contrato.representante_email = representante_email;
+        contrato.estado = 'ENVIADO_FES';
+
+        crm.contrato = contrato;
+        jsonField.crm_v1 = crm;
+
+        await client.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jsonField, id]);
+      } finally {
+        client.release();
+      }
+
+      // Construcción del enlace canónico de firma pública
+      const notificacionService = require('../services/notificacionService');
+      const isProd = process.env.APP_ENV === 'prod' || process.env.NODE_ENV === 'production';
+      const baseUrlWeb = isProd 
+        ? 'https://servidor.leanglobal.cl/lg-gsp-prod' 
+        : 'https://servidor.leanglobal.cl/lg-gsp-dev';
+      const urlFirma = `${baseUrlWeb}/firmar-contrato?token=${token}`;
+
+      const folio = p.json_field?.crm_v1?.contrato?.folio || `CTR-2026-${String(id).padStart(4, '0')}`;
+
+      // 1. Envío por Correo Electrónico (Nodemailer SMTP B2B)
+      let emailEnviado = false;
+      let errorEmail = null;
+      const emailDestino = representante_email || p.json_field?.crm_v1?.contacto_email;
+      const emailEjecutivo = vendedor_email || p.json_field?.crm_v1?.vendedor_email;
+
+      if (emailDestino && emailDestino.includes('@')) {
+        try {
+          const resMail = await notificacionService.despacharEmailSmtp({
+            para: emailDestino,
+            cc: (emailEjecutivo && emailEjecutivo.includes('@') && emailEjecutivo !== emailDestino) ? emailEjecutivo : undefined,
+            asunto: `Contrato de Arrendamiento de Maquinaria - Folio ${folio}`,
+            titulo: 'Firma Digital de Contrato de Arriendo',
+            subtitulo: `Estimado(a) ${representante_nombre || 'Cliente'}:`,
+            contenido: `
+              <p>Le compartimos el enlace oficial para la revisión íntegra y firma digital (FES) del Contrato de Arrendamiento correspondiente a <strong>${p.nombre_proyecto || folio}</strong>.</p>
+              <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 15px 0;">
+                <strong>Folio Contrato:</strong> ${folio}<br>
+                <strong>Representante Mandante:</strong> ${representante_nombre || 'Representante Autorizado'}<br>
+                <strong>Vigencia del Enlace:</strong> 72 horas continuas
+              </div>
+              <p>Al hacer clic en el botón inferior podrá revisar en su pantalla las 14 cláusulas del contrato, las condiciones particulares del equipo y estampar su firma digital directamente con su dedo o puntero táctil.</p>
+            `,
+            botonTexto: '📝 REVISAR Y FIRMAR CONTRATO DIGITAL',
+            botonUrl: urlFirma
+          });
+          emailEnviado = resMail.success;
+          if (!resMail.success) errorEmail = resMail.error;
+        } catch (errM) {
+          errorEmail = errM.message;
+        }
+      } else {
+        errorEmail = 'No se especificó un correo de cliente válido';
+      }
+
+      // 2. Envío por WhatsApp (Microservicio Baileys)
+      let wspEnviado = false;
+      let errorWsp = null;
+      const telDestino = representante_telefono || p.json_field?.crm_v1?.contacto_telefono;
+      if (telDestino) {
+        try {
+          const msgWsp = `Estimado(a) ${representante_nombre || 'Cliente'}, le compartimos el enlace oficial para revisar y firmar digitalmente el Contrato de Arrendamiento ${folio}:\n\n${urlFirma}\n\nFavor ingresar para leer las 14 cláusulas y firmar en su celular (vigencia: 72 horas).`;
+          const resWsp = await notificacionService.despacharWhatsAppHttp({
+            telefono: telDestino,
+            mensaje: msgWsp
+          });
+          wspEnviado = resWsp.success;
+          if (!resWsp.success) errorWsp = resWsp.error;
+        } catch (errW) {
+          errorWsp = errW.message;
+        }
+      } else {
+        errorWsp = 'No se especificó un teléfono de cliente válido';
+      }
+
+      return res.status(200).json({
+        success: true,
+        token,
+        url_firma: urlFirma,
+        folio,
+        despacho: {
+          email_enviado: emailEnviado,
+          email_destinatario: emailDestino || 'No especificado',
+          email_copia: emailEjecutivo || null,
+          error_email: errorEmail,
+          wsp_enviado: wspEnviado,
+          wsp_telefono: telDestino || 'No especificado',
+          error_wsp: errorWsp
+        }
+      });
+    } catch (err) {
+      console.error("Error en despacharContrato:", err);
       return res.status(500).json({ success: false, error: err.message });
     }
   },
@@ -622,6 +757,14 @@ module.exports = {
         const items = crm.cotizaciones_v1?.[0]?.items || [];
         const itemMaq = items[0] || {};
 
+        let htmlContrato = '';
+        try {
+          const dataHtml = await proyecto.obtenerHtmlContratoArriendo(p.id_proyecto);
+          htmlContrato = dataHtml.htmlContent || '';
+        } catch (eHtml) {
+          console.warn("No se pudo compilar html_contrato para visor:", eHtml.message);
+        }
+
         return res.status(200).json({
           success: true,
           proyecto: {
@@ -638,10 +781,12 @@ module.exports = {
             representante_rut: contrato.representante_rut || '',
             representante_cargo: contrato.representante_cargo || 'Representante Legal',
             representante_telefono: contrato.representante_telefono || '',
+            representante_email: contrato.representante_email || '',
             equipo_nombre: itemMaq.descripcion || 'Plataforma / Equipo de Elevación',
             tarifa_pactada: itemMaq.total ? `$${Number(itemMaq.total).toLocaleString('es-CL')}` : 'Según cotización',
             url_pdf: contrato.url_pdf
-          }
+          },
+          html_contrato: htmlContrato
         });
       } finally {
         client.release();
