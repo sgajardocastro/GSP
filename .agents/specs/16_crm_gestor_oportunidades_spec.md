@@ -590,16 +590,18 @@ Esta vista centraliza la auditoría técnica y financiera de la faena en tiempo 
 
 ---
 
-## 9. Subpestaña 7: Valorización, ITS & Facturación (Pipeline de Cierre 4 Pasos)
+## 9. Subpestaña 7: Valorización, ITS & Facturación (Pipeline de Cierre 4 Pasos — Modo Solo Lectura en Kanban)
 
 ### 9.1. Propósito y Arquitectura
-Regulado formalmente por la **[Spec 38 (Subpestaña 7)](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/38_liquidacion_edp_y_facturacion_spec.md)**. Se activa en el Gestor de Oportunidades (`operacionesSubTab === 'liquidacion'`) para proyectos con `id_proyecto_estado >= 5`.
+Regulado formalmente por la **[Spec 38 (Subpestaña 7)](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/38_liquidacion_edp_y_facturacion_spec.md)** y la **[Spec 60 (Aislamiento de Control Financiero)](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/60_aislamiento_control_financiero_kanban_vs_pmo_spec.md)**. Se activa en el Gestor de Oportunidades (`operacionesSubTab === 'liquidacion'`) para proyectos con `id_proyecto_estado >= 5`.
 
-Conecta de punta a punta la conciliación de faena con la facturación final mediante un **Pipeline Secuencial de 4 Pasos**:
-1. **Paso 1 - ITS (Informe Término de Servicio):** Control de costos directos (combustible, viáticos, peajes) y cálculo de margen de contribución real post-faena.
-2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas de reports validados contra las tarifas pactadas y cálculo de sobretiempos. Emisión de Carátula Oficial (`ModalCaratulaEDP.vue`).
-3. **Paso 3 - Respaldo OC Mandante:** Repositorio documental persistente de Órdenes de Compra (`json_field.crm_v1.ordenes_compra`) con subida de archivo PDF y validación de cobertura financiera ($\sum \text{Monto OCs} \ge \text{Total Neto EDP}$).
-4. **Paso 4 - Factura DTE:** Integración con ERP Laudus, selector de OC en 1 clic (chips del Paso 3), registro de Folio DTE y transición automática a `id_proyecto_estado = 7` (Facturado y Concluido).
+> **Regla de Negocio Crítica:** En el Tablero Kanban y Gestor Comercial (`GestorOportunidades.vue`), **toda la información financiera opera en modo de solo lectura y auditoría visual**. La edición de tarifas, carga documental de OC y registro de Facturación DTE reside y opera **exclusivamente en la Torre de Control PMO (`Torre.vue` - Sub-vista 3)**.
+
+Conecta de punta a punta la conciliación de faena con la facturación final mediante un **Pipeline Secuencial de 4 Pasos (Auditoría Visual en Kanban)**:
+1. **Paso 1 - ITS (Informe Término de Servicio):** Control de costos directos (combustible, viáticos, peajes) y cálculo de margen de contribución real post-faena (`ModalITS.vue :readonly="true"`).
+2. **Paso 2 - EDP Mandante:** Conciliación automática de jornadas de reports validados contra las tarifas pactadas y cálculo de sobretiempos. Apertura de Carátula Oficial (`ModalCaratulaEDP.vue :solo-lectura="true"`).
+3. **Paso 3 - Respaldo OC Mandante:** Repositorio documental de Órdenes de Compra con enlace directo a ver PDF (`📄 Ver PDF`). Inmutable en Kanban: sin botones de carga ni borrado (administrado en PMO).
+4. **Paso 4 - Factura DTE:** Ficha ejecutiva de solo lectura que detalla el folio DTE, fecha, montos devengados y observaciones contables, con derivación explícita a la Torre PMO para el ingreso fiscal y cierre contable.
 
 ---
 
@@ -673,5 +675,236 @@ Todo requerimiento u oportunidad comercial debe identificar de manera inequívoc
 * `json_field.crm_v1.vendedor_nombre`: Snapshot textual inmutable del nombre del ejecutivo comercial.
 * `json_field.crm_v1.vendedor_email`: Correo electrónico del ejecutivo comercial.
 
+---
 
+## 13. Subpestaña 5: Control de Flota, Despacho y Visor de Telemetría GPS en Tiempo Real
 
+### 13.1. Propósito y Conexión Operativa en el Gestor de Oportunidades
+En la Subpestaña 5 **"Control de Flota & Despacho"** (`operacionesSubTab === 'preparacion_salida'`), habilitada para proyectos con `id_proyecto_estado >= 4`, el Gestor de Oportunidades centraliza:
+1. **Inspección de Patio & Pre-uso:** Verificación técnica de los equipos asignados mediante Template 81.
+2. **Despacho Operacional de Convoy:** Generación de la Hoja de Ruta (`/viaje/:token`), asignación de chofer/operador y despacho omnicanal (Email + WhatsApp).
+3. **Monitoreo de Telemetría GPS en Vivo:** Acceso mediante el botón `[ 🛰️ Ver Mapa / Telemetría ]` (`verMapaViaje(viaje)`), que instancia el modal `ModalMapaViaje.vue`.
+
+### 13.2. Arquitectura Cartográfica (Cero API Key)
+Se erradica CartoDB (por su marca de agua de API Key requerida) y se adopta un esquema 100% abierto y gratuito mediante Leaflet:
+* **Capa Base por Defecto (Calles OSM):** `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`.
+* **Capa Satélite HD:** `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` (Esri World Imagery).
+* **Capa Topográfica:** `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}` (Esri World Topo Map).
+* **Conmutador de Capas:** Switcher flotante en la esquina inferior derecha (`[ 🗺️ Calles (OSM) ]`, `[ 🛰️ Satélite HD ]`, `[ ⛰️ Topográfico ]`) con conmutación reactiva inmediata sin reinicializar la instancia de Leaflet.
+
+### 13.3. Ergonomía Visual en Torre de Control: Pantalla Completa & Bitácora Colapsible
+Para permitir la inspección profunda de maniobras complejas, trayectos viales y accesos a faena:
+1. **Modo Pantalla Completa Inmersivo:** Alternancia mediante botón `[ ⛶ Pantalla Completa ]` / `[ 🗗 Restaurar ]` (`100vw × 100vh`). Se fuerza el redibujado de teselas mediante `map.invalidateSize()` tras la transición.
+2. **Panel de Bitácora Colapsible:** Control flotante `[ 📋 Ocultar/Ver Bitácora ]`. Al ocultar la bitácora cronológica, el visor del mapa se expande al 100% del ancho del modal (`col-span-12`), facilitando la vista panorámica de la ruta.
+3. **Control de Centrado Rápido:** Botón flotante `[ 🎯 Centrar Ruta ]` que ejecuta `map.fitBounds` encuadrando toda la polilínea del trayecto con padding óptimo.
+
+### 13.4. Navegación Interactiva por Hitos (Waypoints FlyTo)
+Cada hito de la bitácora cronológica es interactivo:
+* Clic en **1. Salida de Patio (Base GSP)**, **2. Telemetría en Ruta (Pings GPS)** o **4. Arribo a Faena** ejecuta una animación suave `map.flyTo([lat, lng], 17)` con duración de 1.2s.
+* Abre automáticamente el popup descriptivo con datos de odómetro, horómetro, velocidad instantánea y estampa de tiempo.
+
+### 13.5. Enrutamiento Canónico y Redirección Nginx
+* **Nginx Reverse Proxy (`/etc/nginx/default.d/base.conf`):** Redirección permanente 301 (`/viaje/*` ➔ `/lg-gsp-dev/viaje/*`) resolviendo accesos de enlaces cortos desde dispositivos móviles.
+* **PWA (`Surveys.vue`):** El método `abrirViajeNativo` construye la URL canónica `${baseOrigin}/lg-gsp-dev/viaje/${token}`.
+* **Microservicio WhatsApp (Puerto 3085):** Panel `/admin` con endpoint `/desvincular` para purga de credenciales Baileys y regeneración inmediata de QR sin intervención manual de servidor.
+
+### 13.6. Desacoplamiento Total entre Despacho de Viaje e Inspección de Pre-Uso
+Para evitar cuellos de botella en la operación logística y permitir la salida ágil de la flota desde patio sin supeditar el despacho a la finalización del checklist de inspección:
+1. **Despacho Inmediato e Independiente por Equipo:**
+   * Cada equipo asignado en la Subpestaña 5 ("Control de Flota & Despacho") incorpora en su cabecera un botón de acción rápida `[ 🚀 Despachar Viaje ]` (o `[ 🗺️ Telemetría ]` si ya fue despachado).
+   * Se ejecuta directamente `autorizarSalidaEquipo(eqId, false)` sin requerir la apertura ni ejecución previa de la inspección de pre-uso (Template 81).
+2. **Desbloqueo Permanente del Selector de Operador/Conductor:**
+   * Se elimina la restricción `:disabled` basada en `patio_programado`, permitiendo asignar o reasignar al chofer en cualquier momento del ciclo operativo.
+3. **Pase a Terreno y Transición de Estados Flexibilizados:**
+   * El indicador del Stepper "Estado Pase Terreno" se desacopla del requisito estricto de inspección (`statusSegmento2 === 'GREEN'`). Pasa a estado verde (`🟢 PASE LIBERADO 2/2`) cuando el despacho de convoy está completado (`statusSegmento3 === 'GREEN'`) o cuando la inspección está OK.
+   * En `finalizarPreparacionSalida()`, se elimina el bloqueo que impedía avanzar el proyecto a faena sin el checklist de patio ejecutado, permitiendo que las operaciones en terreno inicien mientras la documentación técnica se completa de forma asíncrona.
+
+---
+
+## 14. Ajustes Operacionales de Marcha Blanca (REQ-017 / v1.0.62 / Consolidación Spec 56)
+
+Durante las sesiones de validación operativa en vivo con Gerencia General y Operaciones, se incorporaron cuatro ajustes mayores al comportamiento de `GestorOportunidades.vue`:
+
+### 14.1. Regla Anti-Fantasma en Especialistas de Terreno
+1. `especialistasTerreno` se inicializa reactivamente como un arreglo vacío (`ref([])`).
+2. Al cargar o inicializar una oportunidad comercial, se evalúan exclusivamente los requerimientos reales:
+   * Si `opportunity.requiere_prevencionista === true` o existe línea comercial con subcategoría `PREVENCIONISTA` / `APR`, se habilita el slot de Prevencionista.
+   * Si `opportunity.requiere_prevencionista === false` o nulo, se purgan de forma absoluta los slots huérfanos de prevencionista sin usuario.
+3. Se mantiene el slot de Rigger únicamente si `opportunity.requiere_rigger === true` o si existe línea comercial correspondiente.
+
+### 14.2. Centralización de Reasignación en Sub-tab 2 y Bloqueo en Despacho
+1. **Sub-tab 2 (Asignación) — Desbloqueo y Reasignación Formal:**
+   * Se elimina la clase `pointer-events-none` de la Sub-tab 2 en OTs confirmadas ($\ge 5$).
+   * Presenta un encabezado informativo de estado confirmado con botón explícito: `[🔄 Reasignar Recursos / Actualizar OT]`.
+   * El usuario puede modificar operadores, riggers o máquinas directamente desde la matriz de asignación. Al pulsar *"Guardar Reasignación"*, se actualiza la OT, se re-gatilla la verificación de acreditaciones (Sub-tab 3) y se sincronizan los viajes de despacho.
+2. **Sub-tab 5 (Despacho) — Modo Solo Lectura de Recursos:**
+   * En Despacho los selectores de recursos se inhabilitan (`disabled` o texto formateado tipo badge).
+   * Despacho opera estrictamente como compuerta de salida física: confirmación de chofer/operador receptor, número de teléfono, generación de link PWA y despacho de WhatsApp. No se permiten alteraciones de asignación en esta etapa.
+
+### 14.3. Rigger Anidado Bajo Operador / Conductor
+1. **Ergonomía de Interfaz:** No se agrega una nueva columna que sature el ancho útil de la tabla.
+2. **Ubicación:** Dentro de la celda de *Operador Asignado* de la *Flota Principal*, si la cotización exige Rigger (`opportunity.requiere_rigger === true`), se renderiza un sub-registro anidado inmediatamente bajo el selector del operador con selector de Rigger y semáforo de acreditación.
+3. **Regla Multi-Grúa en Servicios Complejos:**
+   * En maniobras con múltiples grúas cotizadas, el sub-registro de Rigger se presenta por defecto en la **Grúa Principal** (`linesEquiposPrincipales[0]`).
+   * Únicamente si la cotización comercial incluye la venta de 2 o más Riggers, las líneas secundarias de grúa habilitarán también el sub-registro de Rigger correspondiente.
+4. **Sincronización:** Al seleccionar el Rigger bajo la grúa, se sincroniza reactivamente con `operacionesAssignment.rigger_id` y con la tripulación de la OT para la emisión del PDF de despacho.
+
+### 14.4. Filtro Inclusivo con Separador y Aviso de Mayor Prestación
+1. **Agrupación en Dos Niveles (`getEquiposAgrupados`):**
+   * El `<select>` de asignación de equipos se estructura en dos `<optgroup>` semánticos:
+     - **Grupo 1 (`🎯 Equipos Sugeridos (Compromiso Comercial)`):** Grúas que cumplen con la subcategoría/tonelaje comercialmente pactado.
+     - **Grupo 2 (`🚚 Flota Alternativa / Mayores Prestaciones`):** Toda la flota disponible en el maestro para cubrir indisponibilidades de última hora.
+2. **Aviso de Mayor Prestación:**
+   * Si el usuario selecciona un equipo perteneciente al Grupo 2 (*Alternativas / Mayores Prestaciones*), el sistema renderiza un banner informativo destacado bajo el selector:
+     `[⚠️ Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)]`.
+   * Esto garantiza transparencia operativa sin alterar los montos de la cotización pactados con el cliente.
+
+---
+
+## 15. Formalización Contractual de Arriendos (REQ-1037 / Sustitución de Bitácora & Alertas)
+
+### 15.1. Objetivo y Deprecación de UI
+1. **Deprecación de Pestaña Inerte:** Se elimina de forma definitiva la pestaña `Bitácora & Alertas` de `GestorOportunidades.vue`, la cual operaba únicamente como un formulario testimonial sin integración con la base de datos ni con los flujos operativos.
+2. **Nueva Pestaña Oficial:** Se implementa en su lugar la pestaña **`CONTRATO & FORMALIZACIÓN`**, activa y accesible dentro del ciclo de preventa comercial.
+3. **Criterio de Aplicabilidad:** Aunque está disponible para cualquier oportunidad que requiera formalización jurídica, la pestaña se destaca de forma automática y prioritaria con un indicador visual cuando el servicio corresponde a **Arriendo de Maquinaria** (p. ej. Caso 5: Plataformas de Elevación / Alzahombres, arriendos mensuales o semanales de grúas y camiones pluma).
+
+### 15.2. Estructura Documental y Template Canónico (4 Páginas)
+El contrato de arriendo se autocompila a partir del expediente de la oportunidad comercial y se estructura en un estándar formal de 4 páginas:
+
+1. **Páginas 1 a 3 — Condiciones Generales de Arriendo:**
+   * **Encabezado Paramétrico:** Incorpora el logo oficial de la empresa emisora del holding (según `id_empresa`: Royal Rental, Grúas San Pablo, Bestmaq o Logística del Sur), el número de contrato correlativo (`CTR-[AÑO]-[FOLIO]`) y la fecha de emisión.
+   * **14 Cláusulas Legales Canónicas:**
+     1. *Pago de arriendo:* Determinación del valor conforme a cotización aceptada previo al despacho.
+     2. *Entrega y Restitución:* Entrega en domicilio/faena, Acta de Entrega y Recepción, inicio del cómputo de cobro y exención de permisos viales para tránsito urbano no solicitado.
+     3. *Aplicación y Operación:* Uso estricto en faena declarada, operación con personal calificado y responsabilidad civil por negligencia o dolo.
+     4. *Renta, Plazo de Reclamo y Mora:* Pago a 30 días, plazo legal de reclamo de 8 días (Ley 19.983), interés penal máximo convencional y cobro de pisos mínimos contratados.
+     5. *Mantenimiento por Arrendador:* Mantención preventiva por pauta/horómetro y obligación del cliente de otorgar pases de faena.
+     6. *Mantenimiento por Arrendataria:* Revisión diaria (niveles, lubricación, baterías, neumáticos) y costo de reparaciones por mal uso o descuido.
+     7. *Responsabilidad Civil y Siniestros:* Indemnidad de la Arrendadora, obligación de denuncia inmediata en Carabineros y alcoholemia obligatoria ante accidentes.
+     8. *Lucro Cesante:* Exclusión explícita de lucro cesante reclamable por el cliente.
+     9. *Cesibilidad:* Prohibición absoluta de cesión del contrato sin autorización.
+     10. *Dominio y Prohibiciones:* Reconocimiento de dominio exclusivo de la Arrendadora; prohibición de subarriendo, gravámenes o modificaciones estructurales.
+     11. *Garantía de Cumplimiento:* Respaldo íntegro de las obligaciones contraídas.
+     12. *Vigencia:* Plazo convenido con renovación tácita hasta aviso formal con 10 días de anticipación.
+     13. *Término Anticipado:* Causales de resolución ipso facto por no pago o insolvencia/concurso con indemnización de rentas remanentes.
+     14. *Restitución de la Máquina:* Devolución conforme al Acta de Entrega y cobro por retraso o partes faltantes.
+   * **Pie de Página 3 (Comparecencia y Firmas):**
+     * Bloque Arrendador: Razón social, RUT, Representante Legal por defecto (**Luis Omar Ghisellini Jara**, C.I. **12.031.054-2**).
+     * Bloque Arrendatario: Razón social del mandante, RUT de la empresa, Representante Legal o Firmante Autorizado (Nombre y C.I.).
+
+2. **Página 4 — Anexo Contrato de Arrendamiento (Condiciones Particulares):**
+   * **Identificación Completa de las Partes:** Arrendador (Holding) y Arrendataria (Mandante) con direcciones fiscales y representantes.
+   * **Individualización de la Maquinaria:** Marca, Modelo, Año, N° de Serie, N° de Motor y Propietario.
+   * **Condiciones Económicas y Operacionales:** Fecha de inicio, fecha de término estimada, tipo de arriendo (Mensual, Semanal o Diario), tarifa pactada, horas mínimas acordadas, lugar físico de uso de la maquinaria y observaciones particulares.
+   * **Firma de Aceptación:** Recuadro de firma exclusiva del representante de la Arrendataria.
+
+### 15.3. Modelo de Datos Canónico (`tpry_proyecto.json_field.contrato`)
+Los metadatos de formalización se almacenan de forma estructurada en el expediente JSON de la oportunidad:
+
+```javascript
+{
+  contrato: {
+    folio: "CTR-2026-0256",
+    estado: "PENDIENTE_FIRMA", // BORRADOR | ENVIADO_FES | FIRMADO_DIGITAL | FIRMADO_FISICO
+    id_empresa_arrendador: 11, // 9: San Pablo, 11: Royal Rental, 7: Bestmaq, 8: Logística
+    arrendador: {
+      razon_social: "ARRIENDO ROYAL RENTAL LIMITADA",
+      rut: "78.254.535-3",
+      direccion: "Ruta S-30 Km 9.5 Labranza, Temuco",
+      representante_nombre: "LUIS OMAR GHISELLINI JARA",
+      representante_rut: "12.031.054-2"
+    },
+    arrendatario: {
+      razon_social: "CONSTRUCTORA POCURO SPA",
+      rut: "76.123.456-7",
+      direccion: "Ruta 5 Sur Km 450, Laja",
+      representante_nombre: "Juan Pérez González",
+      representante_rut: "15.432.876-5",
+      representante_cargo: "Administrador de Contrato",
+      email_contacto: "jperez@pocuro.cl",
+      telefono_contacto: "+56 9 8765 4321"
+    },
+    maquinaria: {
+      marca: "XCMG",
+      modelo: "XGA16E",
+      anio: 2026,
+      serie: "XUG0147ACSRL0132",
+      motor: "7RE8931",
+      propietario: "ARRIENDO ROYAL RENTAL LIMITADA"
+    },
+    condiciones: {
+      fecha_inicio: "2026-10-15",
+      fecha_termino: "2026-11-15",
+      tipo_arriendo: "MENSUAL", // MENSUAL | SEMANAL | DIARIO
+      tarifa_pactada: 1800000,
+      piso_minimo_horas: 180,
+      lugar_uso: "Faena Montaje Planta Laja",
+      mantenimiento_acordado: "Preventivo según pauta a cargo de Arrendadora",
+      observaciones: "Entrega sujeta a firma previa del presente instrumento"
+    },
+    // Trazabilidad FES / Firma
+    firma_digital: {
+      token_seguridad: "uuid-v4-token-de-un-solo-uso",
+      token_expiracion: "2026-10-18T12:00:00Z",
+      token_utilizado: false,
+      firmado_por_nombre: "Juan Pérez González",
+      firmado_por_rut: "15.432.876-5",
+      firmado_por_cargo: "Administrador de Contrato",
+      fecha_hora_firma: "2026-10-15T10:30:15-03:00",
+      ip_firmante: "190.161.45.22",
+      user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)...",
+      firma_png_base64: "data:image/png;base64,iVBORw0KGgo...",
+      hash_documento_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      url_pdf_firmado: "/documentos/contratos/CTR-2026-0256_firmado.pdf"
+    },
+    firma_fisica: {
+      cargado_por: "Wilson Navarrete",
+      fecha_carga: null,
+      url_pdf_escaneado: null
+    }
+  }
+}
+```
+
+### 15.4. Flujo A — Firma Digital Móvil (FES con Web Token de 1 Solo Uso)
+1. **Generación del Magic Link:**
+   * Desde la pestaña `Contrato & Formalización`, el comercial presiona `[📱 Generar Enlace de Firma Móvil]`.
+   * El backend crea un registro de token criptográfico único asociado al contrato con vigencia configurable (72 horas) y flag `token_utilizado: false`.
+   * Se proveen dos acciones inmediatas: `[💬 Compartir por WhatsApp]` (redacta mensaje automático con el enlace directo) y `[📋 Copiar Enlace]`.
+2. **Experiencia del Cliente (Portal Público Mobile-First):**
+   * El cliente accede a la ruta pública `/firmar-contrato?token=[TOKEN]` desde cualquier dispositivo móvil o de escritorio sin requerir autenticación ni cuenta de usuario.
+   * El portal valida en tiempo real: (a) que el token exista, (b) que no haya expirado y (c) que no haya sido utilizado previamente. Si no es válido, despliega pantalla de contingencia indicando que el enlace ha caducado o ya fue firmado.
+   * El cliente visualiza el contrato íntegro de 4 páginas mediante visor web responsive.
+   * **Formulario de Formalización:** El firmante confirma o ingresa:
+     - Nombre Completo del Representante.
+     - RUT del Representante.
+     - Cargo en la Empresa Mandante.
+     - Fecha de Firma (autocompletada al día actual).
+   * **Pad de Firma Táctil:** Canvas interactivo HTML5 para capturar el trazo de la firma manual con el dedo o puntero táctil (con botón de `[Borrar / Limpiar Trazo]`).
+   * **Casilla de Consentimiento:** Checkbox obligatorio: *"Declaro que tengo las facultades para representar a la Arrendataria y acepto íntegramente las Condiciones Generales y Particulares del Arriendo"*.
+   * **Botón de Acción:** `[🔒 Firmar y Formalizar Contrato]`.
+3. **Procesamiento y Sellado Determinístico:**
+   * El backend invalida el token (`token_utilizado: true`).
+   * Estampa la imagen de la firma y los metadatos en las coordenadas exactas de las Páginas 3 y 4 del PDF mediante `pdf-lib`.
+   * Incorpora al pie de página un sello de tiempo y trazabilidad con hash SHA-256, IP pública y User-Agent del dispositivo.
+   * Almacena el PDF final en el repositorio de archivos del proyecto (`contratos/CTR-[AÑO]-[FOLIO]_firmado.pdf`).
+   * Actualiza el estado del contrato en `GestorOportunidades.vue` a **`✅ Firmado Digitalmente (FES)`**.
+   * El cliente recibe confirmación en pantalla con botón para descargar su copia firmada de inmediato.
+
+### 15.5. Flujo B — Firma Física / Manual Tradicional
+1. Para clientes o contratos que requieran trámite presencial o firma en papel físico:
+   * Botón `[🖨️ Descargar PDF para Firma Física]`: Genera y descarga el PDF de 4 páginas con todos los campos pre-impresos, dejando vacías únicamente las líneas de firma manual y fecha.
+2. Cuando el cliente retorna el documento firmado:
+   * Botón `[📤 Subir Contrato Firmado]`: Permite al ejecutivo comercial adjuntar el PDF escaneado o fotografía legible del contrato suscrito.
+   * El sistema guarda el documento, registra al usuario interno que efectuó la carga y actualiza el estado a **`📁 Firmado Físico / Cargado Manualmente`**.
+
+### 15.6. Interfaz de Usuario en `GestorOportunidades.vue`
+La pestaña `Contrato & Formalización` presenta tres paneles coordinados:
+1. **Panel Superior (Control de Estado y Folio):**
+   * Folio del contrato, insignia de estado con código de color (Gris: *Borrador*, Ámbar: *Pendiente de Firma*, Verde: *Firmado Digitalmente*, Azul: *Firmado Físico*).
+2. **Panel Central (Ficha de las Partes y Maquinaria):**
+   * Cuadros comparativos del Arrendador y Arrendatario con opción de edición rápida de los datos del representante comercial.
+   * Resumen técnico de la maquinaria asignada (con enlace para previsualizar el PDF antes de despachar).
+3. **Panel Inferior (Acciones de Despacho y Auditoría):**
+   * Botones primarios de generación de enlace, envío por WhatsApp, descarga física y carga de escaneo.
+   * Si el documento ya fue firmado: renderiza la ficha de auditoría jurídica (Fecha/Hora exacta, Nombre del Firmante, RUT, Cargo, IP de origen, Hash SHA-256) y visor integrado del documento final suscrito.

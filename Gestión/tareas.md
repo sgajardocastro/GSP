@@ -850,6 +850,14 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Supresión de Régimen Urbano en Caso 5 (REQ-1036 / TSK-COT-03):** Ocultamiento de la cláusula urbana en el PDF para Caso 5 (Plataformas / Partidas Abiertas) y rotulación operacional de partidas especiales.
   - **Gobernanza y Hard Gate:** Versión `v1.0.130` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`).
 
+* [ ] **18. Módulo de Contrato de Arrendamiento y Formalización FES/Física en Preventa [REQ-1037 / TSK-COT-04 / Spec 16]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/16_crm_gestor_oportunidades_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/16_crm_gestor_oportunidades_spec.md) (Sección 15).
+  - **Sustitución de Pestaña Bitácora & Alertas:** Eliminación de la 5ª pestaña inerte en `GestorOportunidades.vue` y creación de `CONTRATO & FORMALIZACIÓN`.
+  - **Plantilla Multi-Empresa de 4 Páginas:** Generación del contrato oficial (Págs 1-3 Condiciones Generales con 14 cláusulas legales, Pág 4 Anexo Maquinaria y Condiciones Particulares) con logos y datos según emisor (Royal Rental `11`, San Pablo `9`, Bestmaq `7`, Logística `8`) y mandante.
+  - **Firma Digital Móvil (Magic Link de 1 Solo Uso):** Generación de enlace con token criptográfico para firma en celular con el dedo (nombre, RUT, cargo, fecha, canvas táctil, sellado `pdf-lib` y metadatos IP/timestamp).
+  - **Firma Física / Impresa Tradicional:** Descarga de PDF pre-llenado y carga de documento escaneado/fotografiado.
+  - **Gobernanza y Hard Gate:** Registro en `tcfg_backlog` y versión en `package.json` / `RELEASE_LOG.md`.
+
 
 
 
