@@ -1,6 +1,31 @@
 # 🏛️ REGISTRO DE LIBERACIONES Y MEJORAS (RELEASE LOG) - GRÚAS SAN PABLO (GSP)
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
+## [Portal Web GSP] - Versión 1.0.132
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 13:20:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1039` (TSK-COT-05 / SPEC-016)
+- **Especificación Técnica:** Portal Web GSP v1.0.132: Hotfix & Estabilidad Módulo de Contrato de Arriendo: Visor Completo de Documento (4 Páginas), Despacho Omnicanal Automático (Cliente + CC Ejecutivo + WhatsApp) y Sincronización de Esquema Backend:
+  1. **Visor Completo del Contrato en Portal Público Móvil (`FirmarContratoView.vue`):**
+     - Despliegue visual estructurado e íntegro de las 4 páginas del contrato de arrendamiento (Págs 1 a 3 con las 14 cláusulas legales exhaustivas y tabla comparativa; Pág 4 con Anexo de Condiciones Particulares y ficha técnica de la máquina) para lectura obligatoria del cliente antes de firmar.
+     - Incorporación de botón destacado `[📥 Descargar Borrador PDF]` para revisión legal externa previa.
+     - Casilla de verificación de consentimiento legal obligatorio: *"He leído atentamente y acepto íntegramente las 14 cláusulas del contrato de arrendamiento y sus condiciones particulares"*.
+  2. **Centro de Despacho Omnicanal Automático (`POST /api/proyectos/:id/contrato/despachar`):**
+     - Sustitución de copia manual de enlace por envío automatizado y simultáneo vía Nodemailer y microservicio WhatsApp Baileys:
+       - **Correo al Cliente:** Plantilla B2B formal con logo institucional del emisor, individualización de la maquinaria y botón `[ 📝 REVISAR Y FIRMAR CONTRATO DIGITAL ]`.
+       - **Copia al Ejecutivo Comercial (CC):** Despacho automático a la casilla del vendedor asignado (`crm.vendedor_email` o usuario logueado).
+       - **WhatsApp al Mandante:** Mensaje formal directo con enlace seguro al portal público de firma.
+       - **Respaldos de Contingencia:** Botones secundarios para apertura directa de WhatsApp Web y copiado de enlace al portapapeles.
+  3. **Auto-Sincronización en CRM Preventa (`GestorOportunidades.vue`):**
+     - Sincronización automática de Nombre, RUT, Cargo, ✉️ Correo Electrónico y 📱 Teléfono Móvil desde el contacto seleccionado en la oportunidad comercial.
+  4. **Alineación de Esquema y Módulos Backend:**
+     - Corrección de columnas SQL en consultas a `tpry_proyecto` (`codi_proyecto`, `nombre_proyecto`, `tpar_empresas`).
+     - Importación formal de módulos `path`, `fs`, `child_process.exec` y `archivoModel` en `proyectoModel.js` para firma FES determinista con `wkhtmltopdf`.
+     - Retorno de `html_contrato` en `obtenerContratoPorToken` para alimentación reactiva del visor público.
+  5. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `1.0.132` en `package.json`, registro en `Gestión/tareas.md` (Tarea 20 / `REQ-1039`) e inserción en `tcfg_backlog` y `tcfg_releases` (`sch_leangsp` y `sch_leangsp_prod`).
 
 ## [Portal Web GSP] - Versión 1.0.131
 - **Ambiente:** `prod` & `dev`
