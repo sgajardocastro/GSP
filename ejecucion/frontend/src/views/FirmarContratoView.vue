@@ -23,7 +23,7 @@
     </header>
 
     <!-- Contenedor Principal Responsive -->
-    <main class="flex-1 w-full max-w-lg mx-auto p-4 sm:p-6 relative z-10 flex flex-col justify-center">
+    <main class="flex-1 w-full max-w-3xl mx-auto p-4 sm:p-6 relative z-10 flex flex-col justify-center">
       
       <!-- ESTADO 1: Cargando -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-16 gap-3">
@@ -68,7 +68,7 @@
         </a>
       </div>
 
-      <!-- ESTADO 4: Formulario de Firma Móvil -->
+      <!-- ESTADO 4: Formulario de Firma Móvil con Lectura Obligatoria -->
       <div v-else class="space-y-4">
         
         <!-- Tarjeta Resumen del Negocio -->
@@ -85,12 +85,63 @@
             </a>
           </div>
 
-          <div class="space-y-1.5 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <p><strong class="text-slate-400">Empresa Mandante:</strong> <span class="text-white font-semibold">{{ proyecto.mandante_razon_social }}</span></p>
             <p><strong class="text-slate-400">RUT Mandante:</strong> <span class="text-slate-200 font-mono">{{ proyecto.mandante_rut }}</span></p>
             <p><strong class="text-slate-400">Equipo Arrendado:</strong> <span class="text-white">{{ contrato.equipo_nombre }}</span></p>
             <p><strong class="text-slate-400">Tarifa Pactada:</strong> <span class="text-emerald-400 font-bold">{{ contrato.tarifa_pactada }}</span></p>
           </div>
+        </div>
+
+        <!-- VISOR OFICIAL DEL CONTRATO COMPLETO (4 PÁGINAS) -->
+        <div class="bg-[#0f172a]/95 border border-white/10 rounded-2xl p-4 shadow-2xl space-y-3">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <span class="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              📜 Texto Íntegro del Contrato (4 Páginas)
+            </span>
+            <a 
+              v-if="contrato.url_pdf"
+              :href="resolverUrlPdf(contrato.url_pdf)" 
+              target="_blank" 
+              class="text-[11px] text-sky-400 hover:text-sky-300 font-bold underline flex items-center gap-1 cursor-pointer"
+            >
+              <Download class="w-3.5 h-3.5" /> Descargar Borrador PDF
+            </a>
+          </div>
+
+          <!-- Document Container Scrollable -->
+          <div class="bg-white rounded-xl shadow-inner border border-slate-300 overflow-hidden">
+            <iframe 
+              v-if="htmlContrato" 
+              :srcdoc="htmlContrato" 
+              class="w-full h-[520px] sm:h-[620px] border-0 bg-white"
+              sandbox="allow-same-origin"
+              title="Documento Oficial de Contrato de Arrendamiento"
+            ></iframe>
+            <div v-else class="text-center py-16 text-slate-500 text-xs">
+              <Loader2 class="w-6 h-6 animate-spin mx-auto text-amber-500 mb-2" />
+              Cargando documento completo para lectura...
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-400 text-center italic">
+            👆 Deslice verticalmente dentro del recuadro para leer las 14 cláusulas legales y el anexo técnico de condiciones particulares.
+          </p>
+        </div>
+
+        <!-- Casilla Legal de Aceptación Obligatoria -->
+        <div 
+          class="p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none"
+          :class="aceptoTerminos ? 'bg-amber-500/15 border-amber-500/50' : 'bg-black/40 border-white/10 hover:border-white/20'"
+          @click="aceptoTerminos = !aceptoTerminos"
+        >
+          <input 
+            type="checkbox" 
+            v-model="aceptoTerminos" 
+            class="mt-0.5 rounded text-amber-500 focus:ring-amber-500 cursor-pointer h-4 w-4"
+          />
+          <label class="text-xs text-slate-200 cursor-pointer leading-relaxed">
+            <strong class="text-amber-400">He leído atentamente y acepto íntegramente las 14 cláusulas y el anexo particular de este contrato</strong>, declarando contar con las facultades legales para representar a la arrendataria.
+          </label>
         </div>
 
         <!-- Formulario de Datos del Firmante -->
@@ -180,7 +231,7 @@
         <button 
           type="button" 
           @click="confirmarFirma"
-          :disabled="firmando || !form.nombre || !form.rut || !hasDrawn"
+          :disabled="firmando || !form.nombre || !form.rut || !hasDrawn || !aceptoTerminos"
           class="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs uppercase tracking-wider py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
         >
           <Loader2 v-if="firmando" class="w-4 h-4 animate-spin" />
@@ -213,6 +264,8 @@ const hasDrawn = ref(false)
 
 const proyecto = ref({})
 const contrato = ref({})
+const htmlContrato = ref('')
+const aceptoTerminos = ref(false)
 const form = ref({
   nombre: '',
   rut: '',
@@ -318,6 +371,7 @@ const cargarContrato = async () => {
     if (res.data.success) {
       proyecto.value = res.data.proyecto || {}
       contrato.value = res.data.contrato || {}
+      htmlContrato.value = res.data.html_contrato || ''
       form.value.nombre = contrato.value.representante_nombre || ''
       form.value.rut = contrato.value.representante_rut || ''
       form.value.cargo = contrato.value.representante_cargo || 'Representante Legal'
@@ -332,6 +386,7 @@ const cargarContrato = async () => {
     if (err.response?.data?.ya_firmado) {
       yaFirmado.value = true
       contrato.value = err.response.data.contrato || {}
+      htmlContrato.value = err.response.data.html_contrato || ''
     } else {
       errorMsg.value = err.response?.data?.error || 'Enlace inválido o expirado.'
     }
@@ -346,6 +401,10 @@ const cargarContrato = async () => {
 }
 
 const confirmarFirma = async () => {
+  if (!aceptoTerminos.value) {
+    alert('Debe marcar la casilla declarando haber leído y aceptado las 14 cláusulas del contrato antes de firmar.')
+    return
+  }
   if (!hasDrawn.value || !canvasRef.value) {
     alert('Por favor realice su firma en el recuadro antes de confirmar.')
     return
