@@ -1,4 +1,8 @@
 const pool = require("../config/postgresPool");
+const path = require("path");
+const fs = require("fs");
+const { exec } = require("child_process");
+const archivoModel = require("./archivoModel");
 
 class ProyectoModel {
   constructor() {
@@ -1751,6 +1755,7 @@ class ProyectoModel {
       const mandanteRepNombre = datosExtra.representante_nombre || contratoPrevio.representante_nombre || '................................................';
       const mandanteRepRut = datosExtra.representante_rut || contratoPrevio.representante_rut || '................................................';
       const mandanteRepCargo = datosExtra.representante_cargo || contratoPrevio.representante_cargo || 'Representante Autorizado';
+      const mandanteRepTelefono = datosExtra.representante_telefono || contratoPrevio.representante_telefono || '';
 
       // 4. Resolver Maquinaria y Condiciones
       const lineas = crm.lineas_servicio || [];
@@ -2014,7 +2019,8 @@ class ProyectoModel {
         fecha_emision: fechaEmision,
         representante_nombre: mandanteRepNombre,
         representante_rut: mandanteRepRut,
-        representante_cargo: mandanteRepCargo
+        representante_cargo: mandanteRepCargo,
+        representante_telefono: mandanteRepTelefono
       };
 
       crm.contrato = { ...(crm.contrato || {}), ...contratoResult };
