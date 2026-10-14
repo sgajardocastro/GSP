@@ -859,7 +859,7 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Firma Física / Impresa Tradicional:** Descarga de PDF pre-llenado y carga de documento escaneado/fotografiado.
   - **Gobernanza y Hard Gate:** Versión `v1.0.131` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
 
-* [ ] **19. Rediseño Modular PWA Taller (Patrón Operación), Google SSO Exclusivo, Eliminación de Surveys y Concurrencia de OTMs [REQ-1038 / SPEC-073 / PWA v1.0.42 / DEV & PROD]:**
+* [x] **19. Rediseño Modular PWA Taller (Patrón Operación), Google SSO Exclusivo, Eliminación de Surveys y Concurrencia de OTMs [REQ-1038 / SPEC-073 / PWA v1.0.42 / DEV & PROD]:**
   - **Especificación Canónica:** Formalización en [.agents/specs/73_pwa_taller_redesign_sso_and_concurrency_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/73_pwa_taller_redesign_sso_and_concurrency_spec.md) (SPEC-073).
   - **Priorización de Google SSO Corporativo en PWA:** Reestructuración de `Login.vue` con botón de acceso Google Workspace (`@arriendosanpablo.cl`) visible en primer plano y formulario clásico de usuario/contraseña subordinado y colapsable para contingencias.
   - **Rediseño Modular de Taller en 3 Bloques (Patrón Operación):** Transformación de `TallerHomeView.vue` adoptando la arquitectura canónica de `Surveys.vue` (Tarjeta 1: Apertura de Trabajos / Nueva OTM, Tarjeta 2: Alertas de Terreno / Aviso de Avería y Tarjeta 3: Trabajos en Curso / Bandeja de OTMs Activas).
@@ -874,6 +874,23 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Auto-Sincronización en Preventa CRM:** Captura y edición de Nombre, RUT, Cargo, ✉️ Correo Electrónico y 📱 Teléfono Móvil desde el contacto seleccionado en preventa.
   - **Corrección de Esquema y Módulos Backend:** Corrección de columnas SQL (`codi_proyecto`, `nombre_proyecto`, `tpar_empresas`), inclusión de módulos `path`, `fs`, `exec` y `archivoModel` en `proyectoModel.js`, y retorno de `html_contrato` en consulta pública de token.
   - **Gobernanza y Hard Gate:** Versión `v1.0.132` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
+
+* [x] **21. Estabilización Taller Enterprise: Resolución Multi-Esquema de Técnicos (42 Usuarios), Alerta Roja de Parada de Máquina en Terreno, Banner de Avisos en Bandeja de OTs y Auto-Refresco Reactivo en Consola Web [REQ-1040 / SPEC-074 / Web v1.0.133 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/74_taller_enterprise_tecnicos_y_avisos_web_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/74_taller_enterprise_tecnicos_y_avisos_web_spec.md) (SPEC-074).
+  - **Resolución Multi-Esquema y Carga de Técnicos en PWA y Web (`mantenimientoModel.js`):** Eliminación de esquema hardcodeado `sch_leangsp.` en `getTecnicos` y soporte inclusivo `(u.id_empresa = $1 OR u.id_empresa IS NULL)`, habilitando la carga y clasificación de los 42 mecánicos, supervisores y personal técnico de GSP en el selector de OTM.
+  - **Tira de Alerta Roja Superior (`MantenimientoView.vue`):** Detección reactiva de avisos de avería pendientes; si la criticidad es `PARADA_MAQUINA`, despliegue de banner rojo de urgencia máxima con botón de acción directa `[Atender Aviso ➔]`.
+  - **Banner en Bandeja de OTs:** Llamado a la acción visible sobre los filtros de OTs que alerta de avisos de terreno listos para ser convertidos en órdenes de trabajo.
+  - **Sincronización Reactiva Automática (Auto-Polling):** Inclusión de intervalo de 30 segundos en segundo plano en la consola web para reflejar incidencias y avances de taller en tiempo real sin recarga manual.
+  - **Gobernanza y Hard Gate:** Versión `v1.0.133` en `package.json`, sincronización en `RELEASE_LOG.md` y registro en `sch_leangsp` / `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`). Certificado en DEV y PROD con HTTP 200 OK.
+
+* [x] **22. Almacenamiento Canónico LG-Storage, Previsualización Resiliente Anti-Popups y Despacho Dual de Contratos [REQ-1041 / SPEC-076 / Web v1.0.134 / DEV & PROD]:**
+  - **Especificación Canónica:** Formalización en [.agents/specs/76_contrato_storage_standard_previsualizacion_y_despacho_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/76_contrato_storage_standard_previsualizacion_y_despacho_spec.md) (SPEC-76).
+  - **Almacenamiento Canónico LG-Storage (`proyectoModel.js`):** Compilación determinística de contratos en `/u05/LeanDocs/GSP/{env}/contratos/{YYYY}/{MM}/{folio}.pdf` utilizando `buildStoragePath('GSP', 'contratos')` e inserción en `tfmg_file` de la ruta relativa POSIX estándar.
+  - **Motor de Resolución Resiliente y Fallback Legacy (`storageConfig.js` y `archivoController.js`):** Soporte multi-directorio para resolver contratos tanto en `/u05/LeanDocs/` como en `public/contratos/` en entornos DEV y PROD, resolviendo el error 404 en `/api/archivo/ver/1467`.
+  - **Previsualización Resiliente Anti-Bloqueo de Popups (`GestorOportunidades.vue`):** Apertura preventiva de pestaña previa a la compilación asíncrona y feedback visual reactivo de carga en el botón `[ Previsualizar (4 Págs) ]`.
+  - **Despacho Dual y WhatsApp Web Directo:** Botón `[ 💬 WhatsApp Web ]` directamente utilizable para envío instantáneo sin advertencias de cifrado nativo de WhatsApp.
+  - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.134` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) y validación HTTP 200 OK.
+
 
 
 

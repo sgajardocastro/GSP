@@ -334,7 +334,24 @@ module.exports = {
           fullPath = directSubfolderPath;
           break;
         }
-        const publicPath = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', nameCandidate);
+        const directContratosDev = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', 'contratos', nameCandidate);
+        if (fs.existsSync(directContratosDev)) {
+          fullPath = directContratosDev;
+          break;
+        }
+        const directContratosProd = path.join('/home/nodeadmin/proyectos/lean-services-gsp-prod/public', 'contratos', nameCandidate);
+        if (fs.existsSync(directContratosProd)) {
+          fullPath = directContratosProd;
+          break;
+        }
+        const cwdContratos = path.join(process.cwd(), 'public', 'contratos', nameCandidate);
+        if (fs.existsSync(cwdContratos)) {
+          fullPath = cwdContratos;
+          break;
+        }
+        const cwdPublic = path.join(process.cwd(), 'public', nameCandidate);
+        const fallbackPublic = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', nameCandidate);
+        const publicPath = fs.existsSync(cwdPublic) ? cwdPublic : fallbackPublic;
         if (fs.existsSync(publicPath)) {
           fullPath = publicPath;
           break;
@@ -367,11 +384,11 @@ module.exports = {
                      e.name_empresa as cliente_nombre_empresa, e.rut as cliente_rut_empresa,
                      u_op.name_frst as op_nombre, u_op.apellido_pat as op_apellido,
                      u_rig.name_frst as rig_nombre, u_rig.apellido_pat as rig_apellido
-              FROM sch_leangsp.tedp_reporte_avance r
-              LEFT JOIN sch_leangsp.tpry_proyecto p ON r.id_proyecto = p.id_proyecto
-              LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa = e.id_empresa
-              LEFT JOIN sch_leangsp.tsec_users u_op ON r.id_user_operador = u_op.id_user
-              LEFT JOIN sch_leangsp.tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
+              FROM tedp_reporte_avance r
+              LEFT JOIN tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+              LEFT JOIN tpar_empresas e ON p.id_empresa = e.id_empresa
+              LEFT JOIN tsec_users u_op ON r.id_user_operador = u_op.id_user
+              LEFT JOIN tsec_users u_rig ON r.id_user_rigger = u_rig.id_user
               WHERE r.id_doc_pdf = $1
               LIMIT 1
             `, [archivo.id_doc]);
@@ -382,7 +399,7 @@ module.exports = {
               const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
 
               const validadorUser = rep.id_user_validador ? (await pool.query(
-                'SELECT id_user, name_frst, apellido_pat, rut, email FROM sch_leangsp.tsec_users WHERE id_user = $1',
+                'SELECT id_user, name_frst, apellido_pat, rut, email FROM tsec_users WHERE id_user = $1',
                 [rep.id_user_validador]
               )).rows[0] : null;
 
@@ -409,7 +426,7 @@ module.exports = {
                 },
                 validador: validadorUser || { name_frst: 'Analista', apellido_pat: 'Operaciones', rut: 'S/R' },
                 codigoFes: rep.codigo_validacion_fes || 'FES-VERIFICADO',
-                validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/lg-gsp-dev/validador-doc`
+                validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/${(process.env.APP_ENV === 'prod') ? 'lg-gsp-prod' : 'lg-gsp-dev'}/validador-doc`
               });
 
               const normRel = String(archivo.path_doc || buildStoragePath('GSP', 'reports')).replace(/[\\/]+/g, path.sep);

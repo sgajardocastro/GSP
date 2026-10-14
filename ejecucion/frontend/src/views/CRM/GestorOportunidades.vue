@@ -4901,8 +4901,10 @@
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button type="button" @click="previsualizarContrato" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
-                  <span>👁️</span> Previsualizar (4 Págs)
+                <button type="button" :disabled="generandoPdfContrato" @click="previsualizarContrato" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
+                  <span v-if="generandoPdfContrato" class="animate-spin">⏳</span>
+                  <span v-else>👁️</span>
+                  {{ generandoPdfContrato ? 'Generando PDF...' : 'Previsualizar (4 Págs)' }}
                 </button>
                 <button type="button" @click="descargarContratoPdf" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
                   <span>🖨️</span> Descargar PDF Físico
@@ -5003,7 +5005,7 @@
                       <span v-else>🚀</span>
                       {{ despachandoContrato ? 'Despachando Contrato...' : 'ENVIAR CONTRATO PARA FIRMA' }}
                     </button>
-                    <button v-if="contratoData.url_publica_firma" type="button" @click="compartirPorWhatsApp" title="Reenviar por WhatsApp Web manual" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-200 hover:text-white font-bold rounded text-xs transition-colors flex items-center gap-1 cursor-pointer">
+                    <button type="button" @click="compartirPorWhatsApp" :disabled="despachandoContrato || !contratoData.representante_telefono" title="Enviar enlace oficial directamente por WhatsApp Web" class="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed border border-emerald-500/40 text-emerald-200 hover:text-white font-bold rounded text-xs transition-colors flex items-center gap-1 cursor-pointer">
                       <span>💬</span> WhatsApp Web
                     </button>
                     <button v-if="contratoData.url_publica_firma" type="button" @click="copiarEnlaceFirma" title="Copiar enlace directo" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs transition-colors cursor-pointer flex items-center gap-1">
@@ -14617,8 +14619,12 @@ const generarEnlaceFirmaDigital = async () => {
   return despacharContratoDigital()
 }
 
-const compartirPorWhatsApp = () => {
+const compartirPorWhatsApp = async () => {
+  if (!contratoData.value.url_publica_firma) {
+    await despacharContratoDigital()
+  }
   if (!contratoData.value.url_publica_firma) return
+
   const clienteNombre = contratoData.value.representante_nombre || selectedClient.value?.razon_social || opportunity.value?.razon_social || 'Cliente'
   const empresaNombre = infoEmisorContrato.value.nombre
   const tel = contratoData.value.representante_telefono || opportunity.value?.contacto_telefono || ''
@@ -14627,8 +14633,9 @@ const compartirPorWhatsApp = () => {
     return
   }
   const cleanTel = tel.replace(/\D/g, '')
-  const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la firma digital del Contrato de Arrendamiento de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar y firmar en su celular.`)
-  window.open(`https://wa.me/${cleanTel}?text=${msg}`, '_blank')
+  const formattedTel = (cleanTel.length === 9 && cleanTel.startsWith('9')) ? `56${cleanTel}` : cleanTel
+  const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la revisión y firma digital del Contrato de Arrendamiento de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar para revisar las 14 cláusulas y firmar desde su celular (enlace válido por 72 hrs).`)
+  window.open(`https://wa.me/${formattedTel}?text=${msg}`, '_blank')
 }
 
 const copiarEnlaceFirma = () => {
@@ -14643,6 +14650,12 @@ const previsualizarContrato = async () => {
     alert('Debe guardar la oportunidad antes de generar el borrador del contrato.')
     return
   }
+
+  // Abrir ventana preventivamente antes del await para eludir bloqueo de popups del navegador
+  let previewTab = null
+  try {
+    previewTab = window.open('about:blank', '_blank')
+  } catch (_) {}
 
   generandoPdfContrato.value = true
   try {
@@ -14661,11 +14674,17 @@ const previsualizarContrato = async () => {
       const pdfFullUrl = data.contrato.url_pdf.startsWith('http') 
         ? data.contrato.url_pdf 
         : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${data.contrato.url_pdf}`
-      window.open(pdfFullUrl, '_blank')
+      if (previewTab && !previewTab.closed) {
+        previewTab.location.href = pdfFullUrl
+      } else {
+        window.open(pdfFullUrl, '_blank')
+      }
     } else {
+      if (previewTab && !previewTab.closed) previewTab.close()
       alert(data.error || 'Error al compilar el PDF del contrato.')
     }
   } catch (error) {
+    if (previewTab && !previewTab.closed) previewTab.close()
     console.error('Error al compilar contrato PDF:', error)
     alert('Error al generar PDF del contrato: ' + (error.response?.data?.error || error.message))
   } finally {

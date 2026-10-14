@@ -3,9 +3,10 @@ const fs = require('fs');
 
 const STORAGE_ROOT = process.env.STORAGE_ROOT || '/u05/LeanDocs';
 
-function buildStoragePath(tenant_code = 'GSP', modulo = 'general', app_env = 'dev') {
+function buildStoragePath(tenant_code = 'GSP', modulo = 'general', app_env = null) {
   const tCode = String(tenant_code || 'GSP').toUpperCase() === 'GSP' ? 'GSP' : String(tenant_code).toLowerCase();
-  const env = String(app_env || process.env.APP_ENV || process.env.NODE_ENV || 'dev').toLowerCase();
+  const resolvedEnv = app_env || process.env.APP_ENV || (process.env.NODE_ENV === 'production' ? 'prod' : 'dev');
+  const env = String(resolvedEnv).toLowerCase();
   const date = new Date();
   const yyyy = date.getFullYear().toString();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -21,13 +22,36 @@ function resolveStoragePath(path_relativo = '', filename = '') {
 
   // 1. Direct path check
   let target = path.join(STORAGE_ROOT, normRel, filename || '');
-  if (filename && fs.existsSync(target)) return target;
+  if (fs.existsSync(target)) return target;
+
+  if (normRel && fs.existsSync(path.join(STORAGE_ROOT, normRel))) {
+    return path.join(STORAGE_ROOT, normRel);
+  }
+
+  // Comprobar si normRel existe directamente dentro de public (fallback legacy)
+  if (normRel) {
+    const cwdDirect = path.join(process.cwd(), 'public', normRel);
+    if (fs.existsSync(cwdDirect)) return cwdDirect;
+    const devDirect = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', normRel);
+    if (fs.existsSync(devDirect)) return devDirect;
+    const prodDirect = path.join('/home/nodeadmin/proyectos/lean-services-gsp-prod/public', normRel);
+    if (fs.existsSync(prodDirect)) return prodDirect;
+  }
 
   const candidateDirs = [
     path.join(STORAGE_ROOT, normRel),
+    path.join(STORAGE_ROOT, 'GSP', 'dev', 'contratos'),
+    path.join(STORAGE_ROOT, 'GSP', 'prod', 'contratos'),
+    path.join(STORAGE_ROOT, 'GSP', 'dev', 'contratos', '2026', '10'),
+    path.join(STORAGE_ROOT, 'GSP', 'prod', 'contratos', '2026', '10'),
+    path.join(process.cwd(), 'public', 'contratos'),
+    path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', 'contratos'),
+    path.join('/home/nodeadmin/proyectos/lean-services-gsp-prod/public', 'contratos'),
     path.join(STORAGE_ROOT, 'GSP', 'dev', 'reports'),
     path.join(STORAGE_ROOT, 'GSP', 'prod', 'reports'),
     path.join(STORAGE_ROOT, 'GSP', 'dev', 'reports', '2026', '10'),
+    path.join(STORAGE_ROOT, 'GSP', 'dev', 'cotizaciones', '2026', '10'),
+    path.join(STORAGE_ROOT, 'GSP', 'prod', 'cotizaciones', '2026', '10'),
     path.join(STORAGE_ROOT, 'GSP', 'surveys'),
     path.join(STORAGE_ROOT, 'GSP', 'dev', 'surveys'),
     path.join(STORAGE_ROOT, 'GSP', 'prod', 'surveys'),
@@ -38,8 +62,12 @@ function resolveStoragePath(path_relativo = '', filename = '') {
     path.join(__dirname, '../../uploads'),
     path.join(__dirname, '../../uploads', normRel),
     STORAGE_ROOT,
+    path.join(process.cwd(), 'public'),
+    path.join(process.cwd(), 'public/archivo/transmac'),
     '/home/nodeadmin/proyectos/lean-services-gsp/public',
-    '/home/nodeadmin/proyectos/lean-services-gsp/public/archivo/transmac'
+    '/home/nodeadmin/proyectos/lean-services-gsp/public/archivo/transmac',
+    '/home/nodeadmin/proyectos/lean-services-gsp-prod/public',
+    '/home/nodeadmin/proyectos/lean-services-gsp-prod/public/archivo/transmac'
   ];
 
   if (filename) {

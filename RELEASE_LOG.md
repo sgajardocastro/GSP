@@ -1,6 +1,74 @@
 # 🏛️ REGISTRO DE LIBERACIONES Y MEJORAS (RELEASE LOG) - GRÚAS SAN PABLO (GSP)
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
+
+## [Portal Web GSP] - Versión 1.0.134
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 14:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1041` (SPEC-076)
+- **Especificación Técnica:** Portal Web GSP v1.0.134: Almacenamiento Canónico LG-Storage, Previsualización Resiliente Anti-Popups y Despacho Dual de Contratos:
+  1. **Almacenamiento Canónico LG-Storage (`proyectoModel.js`):**
+     - Integración de `buildStoragePath('GSP', 'contratos')` y `STORAGE_ROOT` (`/u05/LeanDocs/`).
+     - Almacenamiento físico de los contratos en `/u05/LeanDocs/GSP/{env}/contratos/{YYYY}/{MM}/{folio}.pdf` y registro en `tfmg_file.path_doc` con la ruta relativa POSIX estándar.
+     - Preservación de copia de seguridad local en `public/contratos/` para retrocompatibilidad total.
+  2. **Resolución Resiliente y Fallback Multi-Directorio (`storageConfig.js` y `archivoController.js`):**
+     - Incorporación de soporte y candidateDirs para contratos en DEV y PROD.
+     - Detección determinista de rutas físicas tanto bajo `/u05/LeanDocs/` como en `public/contratos/`, subsanando el error 404 en `/api/archivo/ver/1467`.
+  3. **Previsualización Resiliente Anti-Bloqueo de Popups (`GestorOportunidades.vue`):**
+     - Apertura preventiva de pestaña previa a la llamada asíncrona de compilación (`wkhtmltopdf`), evitando el bloqueo nativo de popups en Chrome/Safari.
+     - Feedback reactivo de carga en el botón `[ Previsualizar (4 Págs) ]` con spinner y estado disabled durante la generación.
+  4. **Despacho Dual y WhatsApp Web Directo:**
+     - Botón `[ 💬 WhatsApp Web ]` directamente interactivo con auto-despacho y sanitización telefónica E.164 (`569...`), permitiendo envío inmediato sin retrasos de cifrado E2E de WhatsApp.
+  5. **Gobernanza y Hard Gate:**
+     - Versión `v1.0.134` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1041`), sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y certificación HTTP 200 OK en DEV y PROD.
+
+## [Portal Web GSP] - Versión 1.0.133
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 14:20:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1040` (SPEC-074)
+- **Especificación Técnica:** Portal Web GSP v1.0.133: Estabilización Taller Enterprise: Resolución Multi-Esquema de Técnicos (42 Usuarios), Alerta Roja de Parada de Máquina en Terreno, Banner de Avisos en Bandeja de OTs y Auto-Refresco Reactivo en Consola Web:
+  1. **Resolución Multi-Esquema de Técnicos (`mantenimientoModel.js`):**
+     - Eliminación de prefijo hardcodeado `sch_leangsp.` en consulta `getTecnicos` y soporte multi-tenant `WHERE (u.id_empresa = $1 OR u.id_empresa IS NULL) AND u.activo = true`.
+     - Carga exitosa de los 42 miembros del equipo de GSP ordenados por categoría de taller en los selectores de OTM de la PWA móvil y consola web.
+  2. **Tira de Alerta Roja Superior en Consola Web (`MantenimientoView.vue`):**
+     - Detección inmediata de avisos de avería en terreno pendientes. Despliegue de banner rojo prioritario si existe `PARADA_MAQUINA` con botón de acción directa `[Atender Aviso ➔]`.
+  3. **Banner Informativo en Bandeja de OTs:**
+     - Callout destacado sobre los filtros de OTs que notifica de avisos pendientes listos para su conversión a orden de trabajo.
+  4. **Sincronización Reactiva Automática (Auto-Polling):**
+     - Ejecución en segundo plano cada 30 segundos (`setInterval`) para mantener la consola sincronizada en tiempo real con lo reportado en faena desde la PWA.
+  5. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.133` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1040`), registro en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y certificación HTTP 200 OK en DEV y PROD.
+
+## [PWA GSP] - Versión 1.0.42
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 13:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1038` (SPEC-073)
+- **Especificación Técnica:** PWA GSP v1.0.42: Rediseño Modular Taller Móvil (Patrón Operación), Acceso Prioritario Google Workspace SSO, Eliminación de Surveys Residuales, Habilitación de Concurrencia de OTMs en Flota y Migración DDL Mantenimiento Enterprise en Producción:
+  1. **Acceso Prioritario con Google Workspace SSO (`Login.vue`):**
+     - Botón corporativo oficial de inicio de sesión con Google Workspace (`@arriendosanpablo.cl`) colocado en primer plano protagónico.
+     - Formulario tradicional de usuario y contraseña subordinado y colapsable mediante enlace discreto para contingencias de conectividad o soporte técnico.
+  2. **Rediseño Modular Canónico en 3 Bloques (`TallerHomeView.vue`):**
+     - Adopción íntegra de la arquitectura visual de la pestaña Operación (`Surveys.vue`) estructurada en 3 tarjetas modulares con barra de acento superior, íconos temáticos y chips de estado:
+       - *Bloque 1: APERTURA DE TRABAJOS* ➔ **Nueva Orden de Trabajo (OTM)** (Botón ancho full-width `➕ Abrir Nueva Orden de Trabajo (OTM) ➔` con modal y autocompletado reactivo de flota).
+       - *Bloque 2: ALERTAS DE TERRENO* ➔ **Aviso de Avería / Falla** (Botón ancho full-width `🚨 Reportar Falla o Avería Urgente ➔` con captura fotográfica in situ).
+       - *Bloque 3: TRABAJOS EN CURSO* ➔ **Bandeja de OTMs Activas** (Buscador reactivo integrado por patente, código interno o síntoma, chips de estado `Todas`, `En Proceso` y `Abiertas`, y listado directo de órdenes con botón `Atender OT ➔`).
+  3. **Erradicación Total de Sección de Surveys Residuales:**
+     - Eliminación definitiva del bloque `"Inspecciones Obligatorias de Grúa (Surveys)"` (Checklists 501 y 502) que generaba confusión operativa.
+  4. **Habilitación de Concurrencia de OTMs en Backend (`mantenimientoModel.js`):**
+     - Supresión del error bloqueante `EQUIPO_CON_OT_ACTIVA` en `crearOt`. El sistema ahora permite registrar y gestionar múltiples órdenes de trabajo activas en paralelo para una misma máquina.
+  5. **Migración DDL Mantenimiento Enterprise en Producción (`sch_leangsp_prod`):**
+     - Creación de tablas operativas faltantes en Producción: `tmnt_aviso`, `tmnt_hallazgo`, `tmnt_pauta_tarea`, `tmnt_ot_estado_log`, `tmnt_ot_survey` y `tmnt_parametro`.
+     - Alteración de `tequ_equipo` y `tmnt_ot` con columnas operacionales (`tiene_doble_horometro`, `estado_mnt`, `prioridad`, `equipo_detenido`).
+     - Sincronización masiva de horómetros y odómetros en los 110 equipos de la flota productiva.
+  6. **Gobernanza y Hard Gate:**
+     - Bump a `v1.0.42` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1038`), sincronización en base de datos PostgreSQL (`sch_leangsp` y `sch_leangsp_prod`), compilación limpia Vite/Vue CLI (0 errores) y despliegue certificado con HTTP 200 OK en DEV y PROD.
+
 ## [Portal Web GSP] - Versión 1.0.132
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-14 13:20:00 (-03:00)

@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { exec } = require("child_process");
 const archivoModel = require("./archivoModel");
+const { buildStoragePath, STORAGE_ROOT } = require("../config/storageConfig");
 
 class ProyectoModel {
   constructor() {
@@ -2005,8 +2006,9 @@ class ProyectoModel {
       const dataContrato = await this.obtenerHtmlContratoArriendo(id_proyecto, datosExtra, client);
       const { htmlContent, p, jsonField, folioContrato, fechaEmision, mandanteRepNombre, mandanteRepRut, mandanteRepCargo, mandanteRepTelefono } = dataContrato;
 
-      // 7. Compilar a PDF con wkhtmltopdf
-      const targetDir = path.resolve(__dirname, '../../public/contratos');
+      // 7. Compilar a PDF con wkhtmltopdf en Storage Root Canónico (LG-Storage Standard)
+      const relDir = buildStoragePath('GSP', 'contratos', process.env.APP_ENV || 'dev');
+      const targetDir = path.join(STORAGE_ROOT, relDir);
       if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
       const fileName = `${folioContrato}.pdf`;
@@ -2025,14 +2027,23 @@ class ProyectoModel {
         });
       });
 
-      // 8. Registrar en Storage Engine
+      // Asegurar copia en public/contratos para retrocompatibilidad
+      try {
+        const legacyDir = path.resolve(__dirname, '../../public/contratos');
+        if (!fs.existsSync(legacyDir)) fs.mkdirSync(legacyDir, { recursive: true });
+        fs.copyFileSync(filepath, path.join(legacyDir, fileName));
+      } catch (errLeg) {
+        console.warn("Aviso: no se pudo escribir copia legacy en public/contratos:", errLeg.message);
+      }
+
+      // 8. Registrar en Storage Engine con ruta relativa POSIX estándar
       const archivoM = new archivoModel();
       const doc = await archivoM.insertarTfmgFile(
         'CONTRATO',
         'application/pdf',
         fileName,
         fileName,
-        `contratos/${fileName}`,
+        relDir,
         p.id_user_creacion || null,
         'A'
       );
