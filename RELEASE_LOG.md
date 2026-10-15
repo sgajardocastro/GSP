@@ -2,6 +2,44 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP] - Versión 1.0.139
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-15 07:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1046` (Spec 16 Sección 15.2)
+- **Especificación Técnica:** Portal Web GSP v1.0.139: Restauración 100% Literal del Texto Legal Validado por Abogados y Formato Original del Anexo de Contrato de Arrendamiento de Maquinaria (Plataforma) en 2 Páginas:
+  1. **Restauración 100% Literal e Íntegra de las 14 Cláusulas Legales (`proyectoModel.js`):**
+     - Restitución palabra por palabra y coma por coma de la totalidad del texto jurídico oficial validado por los abogados (`contrato ejemplo arriendo plataformas.Pdf`), en diagramación de 1 sola columna a ancho completo y con el cuadro de comparecencia original (`ARRENDATARIO` y `ARRENDADOR`) al pie de la Página 1.
+     - Compresión de espacios vacíos exclusivamente mediante CSS (`font-size: 6.85px`, `line-height: 1.16`, márgenes `7mm 9mm`) sin alterar ni resumir una sola palabra del instrumento legal.
+  2. **Restauración del Formato Original Exacto del Anexo (`proyectoModel.js`):**
+     - Reconstrucción fiel de la Página 2 conforme a la página 4 del documento original: barra negra `ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (PLATAFORMA)`, cajas superiores `FECHA` y `CONTRATO NUMERO`, recuadros `ARRENDADOR` y `ARRENDATARIA` con sus 5 filas originales (`RAZON SOCIAL`, `RUT`, `DIRECCION`, `REPRESENTADA POR SR.`, `RUT`), barra negra `CONDICIONES PARTICULARES` y recuadro contenedor con `1.- INDIVIDUALIZACION DE LA MAQUINARIA`, `B.- DURACION DEL CONTRATO`, `C.- RENTA DEL ARRENDAMIENTO`, `D.- LUGAR DE USO DE LA MAQUINARIA :`, `E.- MANTENIMIENTO POR ARRENDADOR :`, `F.- OBSERVACIONES 1 :` y `FIRMA REPRESENTANTE` al pie izquierdo.
+  3. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.139` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1046`), sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y verificación empírica del PDF de 2 páginas en DEV y PROD con HTTP 200 OK.
+
+## [Portal Web GSP] - Versión 1.0.138
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 22:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1045` (SPEC-079)
+- **Especificación Técnica:** Portal Web GSP v1.0.138: Gestión Dinámica de Parámetros Operacionales para Ciclos Preventivos (Horómetro / Odómetro / Radar):
+  1. **Configuración Dinámica de Parámetros Operacionales (`MantenimientoView.vue`):**
+     - Habilitación de la pestaña "PARÁMETROS OPERACIONALES" con panel de control para:
+       * **Intervalo Base Horómetro Grúas (`pm_intervalo_base_horas`):** Ciclo estándar configurable (default 250 hrs).
+       * **Anticipación Alerta Radar (`pm_ventana_alerta_horas`):** Ventana de advertencia previa (default 25 hrs antes) para activar semáforo amarillo (Próximo).
+       * **Intervalo Odómetro Carretera (`pm_intervalo_odometro_km`):** Ciclo de rodadura para camiones y ramplas (default 10.000 km).
+       * **Tarifa Mano de Obra HH (`tarifa_hh_default`):** Costo interno por hora hombre de mecánico (default $15.000 CLP).
+       * **Umbral Financiero OT (`umbral_costo_ot_clp`):** Límite presupuestario para notificaciones omnicanal (default $2.000.000 CLP).
+       * **Alerta Certificación Bureau Veritas / Dictuc (`cert_alerta_dias`):** Días de anticipación para advertir vencimiento de certificación técnica de izaje (default 30 días).
+     - Botón `[💾 Guardar Parámetros de Taller]` con actualización reactiva inmediata del Radar de Flota sin requerir recargar la página.
+  2. **Motor Backend Multi-Tenant y Alertas Dinámicas (`mantenimientoModel.js`, `mantenimientoController.js`, `mantenimientoAlertasService.js`):**
+     - `getRadarFlota()` consulta dinámicamente `tmnt_parametro` para calcular umbrales de alerta (`alerta_preventiva_horas = intervalo_base - ventana_alerta`).
+     - `actualizarParametro()` soporta actualización atómica en lote (`{ parametros: { ... } }`) bajo clave `id_empresa`.
+     - `ejecutarAlertasMantenimiento()` sincronizado con los parámetros institucionales persistidos en base de datos.
+  3. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.138` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1045`), sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD con HTTP 200 OK.
+
 ## [PWA GSP] - Versión 1.0.43
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-14 22:05:00 (-03:00)

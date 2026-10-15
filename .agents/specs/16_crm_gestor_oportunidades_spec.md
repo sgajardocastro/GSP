@@ -761,42 +761,53 @@ Durante las sesiones de validación operativa en vivo con Gerencia General y Ope
 
 ---
 
-## 15. Formalización Contractual de Arriendos (REQ-1037 / Sustitución de Bitácora & Alertas)
+## 15. Formalización Contractual de Arriendos de Plataformas (REQ-1036 / REQ-1037 / REQ-1038)
 
 ### 15.1. Objetivo y Deprecación de UI
 1. **Deprecación de Pestaña Inerte:** Se elimina de forma definitiva la pestaña `Bitácora & Alertas` de `GestorOportunidades.vue`, la cual operaba únicamente como un formulario testimonial sin integración con la base de datos ni con los flujos operativos.
 2. **Nueva Pestaña Oficial:** Se implementa en su lugar la pestaña **`CONTRATO & FORMALIZACIÓN`**, activa y accesible dentro del ciclo de preventa comercial.
-3. **Criterio de Aplicabilidad:** Aunque está disponible para cualquier oportunidad que requiera formalización jurídica, la pestaña se destaca de forma automática y prioritaria con un indicador visual cuando el servicio corresponde a **Arriendo de Maquinaria** (p. ej. Caso 5: Plataformas de Elevación / Alzahombres, arriendos mensuales o semanales de grúas y camiones pluma).
+3. **Criterio de Aplicabilidad y Parametrización Multi-Empresa (`REQ-1036`):**
+   * El contrato está diseñado específicamente para servicios de arriendo de **Plataformas**, pero sin bloquear por empresa emisora: permite seleccionar libremente como **Arrendador** a cualquiera de las 4 sociedades del holding (`11: Royal Rental`, `9: Grúas San Pablo`, `7: Bestmaq`, `8: Logística del Sur`). Esto resuelve los casos comerciales en que un cliente arrienda una plataforma pero solo posee línea de crédito o registro de proveedor activo con Grúas San Pablo o Bestmaq.
+   * El contrato adapta dinámicamente el Logo, Razón Social, RUT y Domicilio Legal de la sociedad Arrendadora elegida, así como todos los datos del Cliente Mandante (Arrendatario).
+4. **Identificación Explícita `(Plataforma)` en el Título (`REQ-1037`):**
+   * Tanto en la interfaz CRM, el portal público de firma digital FES, las notificaciones B2B como en el encabezado de las Páginas 1 y 2 del PDF, el título del instrumento debe explicitar entre paréntesis **`(Plataforma)`**: `CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (PLATAFORMA)` / `CONDICIONES GENERALES DE ARRIENDO (PLATAFORMA)` y `ANEXO CONTRATO DE ARRENDAMIENTO (PLATAFORMA)`.
 
-### 15.2. Estructura Documental y Template Canónico (4 Páginas)
-El contrato de arriendo se autocompila a partir del expediente de la oportunidad comercial y se estructura en un estándar formal de 4 páginas:
+### 15.2. Estructura Documental y Template Canónico (Texto Legal 100% Literal en 2 Páginas Continuas)
+El contrato de arriendo se autocompila a partir del expediente de la oportunidad comercial en 2 páginas exactas, manteniendo **100% intacto y literal (palabra por palabra, sin resumir ni parafrasear)** el texto validado por los abogados (`contrato ejemplo arriendo plataformas.Pdf`), comprimiendo únicamente los espacios vacíos mediante CSS (`font-size: 6.85px`, `line-height: 1.16`, márgenes `7mm 9mm` en 1 sola columna a ancho completo):
 
-1. **Páginas 1 a 3 — Condiciones Generales de Arriendo:**
-   * **Encabezado Paramétrico:** Incorpora el logo oficial de la empresa emisora del holding (según `id_empresa`: Royal Rental, Grúas San Pablo, Bestmaq o Logística del Sur), el número de contrato correlativo (`CTR-[AÑO]-[FOLIO]`) y la fecha de emisión.
-   * **14 Cláusulas Legales Canónicas:**
-     1. *Pago de arriendo:* Determinación del valor conforme a cotización aceptada previo al despacho.
-     2. *Entrega y Restitución:* Entrega en domicilio/faena, Acta de Entrega y Recepción, inicio del cómputo de cobro y exención de permisos viales para tránsito urbano no solicitado.
-     3. *Aplicación y Operación:* Uso estricto en faena declarada, operación con personal calificado y responsabilidad civil por negligencia o dolo.
-     4. *Renta, Plazo de Reclamo y Mora:* Pago a 30 días, plazo legal de reclamo de 8 días (Ley 19.983), interés penal máximo convencional y cobro de pisos mínimos contratados.
-     5. *Mantenimiento por Arrendador:* Mantención preventiva por pauta/horómetro y obligación del cliente de otorgar pases de faena.
-     6. *Mantenimiento por Arrendataria:* Revisión diaria (niveles, lubricación, baterías, neumáticos) y costo de reparaciones por mal uso o descuido.
-     7. *Responsabilidad Civil y Siniestros:* Indemnidad de la Arrendadora, obligación de denuncia inmediata en Carabineros y alcoholemia obligatoria ante accidentes.
-     8. *Lucro Cesante:* Exclusión explícita de lucro cesante reclamable por el cliente.
-     9. *Cesibilidad:* Prohibición absoluta de cesión del contrato sin autorización.
-     10. *Dominio y Prohibiciones:* Reconocimiento de dominio exclusivo de la Arrendadora; prohibición de subarriendo, gravámenes o modificaciones estructurales.
-     11. *Garantía de Cumplimiento:* Respaldo íntegro de las obligaciones contraídas.
-     12. *Vigencia:* Plazo convenido con renovación tácita hasta aviso formal con 10 días de anticipación.
-     13. *Término Anticipado:* Causales de resolución ipso facto por no pago o insolvencia/concurso con indemnización de rentas remanentes.
-     14. *Restitución de la Máquina:* Devolución conforme al Acta de Entrega y cobro por retraso o partes faltantes.
-   * **Pie de Página 3 (Comparecencia y Firmas):**
-     * Bloque Arrendador: Razón social, RUT, Representante Legal por defecto (**Luis Omar Ghisellini Jara**, C.I. **12.031.054-2**).
-     * Bloque Arrendatario: Razón social del mandante, RUT de la empresa, Representante Legal o Firmante Autorizado (Nombre y C.I.).
+1. **Página 1 — Condiciones Generales de Arriendo (Plataforma) y Comparecencia:**
+   * **Encabezado Paramétrico:** Incorpora el logo oficial de la empresa emisora del holding (según `id_empresa_arrendador`: Royal Rental, Grúas San Pablo, Bestmaq o Logística del Sur), el título `CONDICIONES GENERALES DE ARRIENDO (PLATAFORMA)`, `CONTRATO NUMERO` (`CTR-[AÑO]-[FOLIO]`) y `FECHA` (`DD-MM-YYYY`).
+   * **14 Cláusulas Legales Canónicas (100% Literales e Íntegras en 1 Sola Columna):**
+     1. *1.- Pago arriendo:* Texto literal íntegro sobre valor establecido en cotización aceptada antes del despacho.
+     2. *2.- Entrega de la máquina:* Texto literal íntegro sobre entrega en domicilio señalado en Cotización, transporte de cargo de la Arrendataria, firma del “Acta de Entrega y Recepción de Maquinaria” o por dos testigos, aceptación tácita a la sola firma del Acta y despacho, inicio de cobros y responsabilidad por permiso de circulación, multas y daños a terceros.
+     3. *3.- Aplicación:* Texto literal íntegro sobre uso exclusivo en lugar indicado en la Cotización, exención de garantía de aptitud, operación con personal idóneo y calificado, responsabilidad civil y penal por negligencia o dolo y autorización escrita para mover la máquina.
+     4. *4.- Renta y otros pagos:* Texto literal íntegro sobre pago a 30 días en domicilio de la Arrendadora, plazo de 08 días corridos para reclamar factura (artículo 3 N° 2 Ley 19.983), interés máximo convencional por mora, mera tolerancia, pago total aún por caso fortuito o fuerza mayor, prevalencia de Condiciones Generales y cobro mínimo de 1 mes (tarifa mensual) o 2 semanas mínimas (tarifa semanal).
+     5. *5.- Mantenimiento y reparaciones de cargo de la Arrendadora:* Texto literal íntegro sobre pautas de mantención, aviso de horas de operación, facilidades en terreno, cobro de traslados por falta de pases de ingreso a faena y pago de reparaciones por falta de aviso.
+     6. *6.- Mantenimiento y reparaciones de cargo de la Arrendataria:* Texto literal íntegro sobre mantención diaria, prohibición de terceros no autorizados, costo total de reparaciones (mano de obra, traslado y repuestos aún por caso fortuito o fuerza mayor), pinchazos/cortes/elementos de desgaste, visación en estado de pago y pago de renta completa durante reparación por mal uso.
+     7. *7- Responsabilidad:* Texto literal íntegro sobre responsabilidad civil desde la entrega hasta la restitución, prohibición absoluta de retención de la máquina, cobro de renta en caso de retención por autoridad o tercero, aviso de siniestro al día siguiente hábil, constancia en Carabineros o declaración jurada en notaría y obligación de alcoholemia.
+     8. *8.- Lucro cesante:* Texto literal íntegro sobre exclusión absoluta de responsabilidad de la Arrendadora por lucro cesante aún por caso fortuito o fuerza mayor.
+     9. *9.- Cesibilidad:* Texto literal íntegro sobre prohibición de ceder, enajenar o transferir los derechos del contrato.
+     10. *10.- Propiedad:* Texto literal íntegro sobre reconocimiento de dominio, obligaciones `1.` y `2.` (conservación, aviso de embargos/medidas precautorias y oposición judicial) y prohibiciones `A.`, `B.` y `C.` (modificaciones, subarriendo/comodato, gravámenes).
+     11. *11.- Garantía:* Texto literal íntegro sobre garantía del cumplimiento total y oportuno de todas y cada una de las obligaciones de la Arrendataria.
+     12. *12.- Vigencia:* Texto literal íntegro sobre vigencia por el plazo de las Condiciones Particulares, paso a indefinido hasta aviso escrito con 10 días de anticipación y cobro del período total en caso de devolución anticipada.
+     13. *13.- Término anticipado:* Texto literal íntegro sobre plazo de 10 días para subsanar incumplimiento, término unilateral de pleno derecho, causales `1.`, `2.` y `3.` (`A.`, `B.`, `C.`, `D.`), indemnización igual al total de rentas remanentes y costos de devolución.
+     14. *14.- Restitución de la máquina:* Texto literal íntegro sobre entrega a la fecha de término conforme al “Acta de Entrega y Recepción de Maquinaria”, firma por dos testigos, pago de partes/piezas/accesorios faltantes o dañados más instalación y cómputo del tiempo de mora como tiempo arrendado.
+   * **Pie de Página 1 (Comparecencia Original):**
+     * Columna Izquierda (`ARRENDATARIO`): `EMPRESA`, `RUT`, `Representada Por: Sr(a)` y `C.I.`.
+     * Columna Derecha (`ARRENDADOR`): `EMPRESA`, `RUT`, `Representada Por: Sr(a): LUIS OMAR GHISELLINI JARA` y `C.I.: 12.031.054-2`.
 
-2. **Página 4 — Anexo Contrato de Arrendamiento (Condiciones Particulares):**
-   * **Identificación Completa de las Partes:** Arrendador (Holding) y Arrendataria (Mandante) con direcciones fiscales y representantes.
-   * **Individualización de la Maquinaria:** Marca, Modelo, Año, N° de Serie, N° de Motor y Propietario.
-   * **Condiciones Económicas y Operacionales:** Fecha de inicio, fecha de término estimada, tipo de arriendo (Mensual, Semanal o Diario), tarifa pactada, horas mínimas acordadas, lugar físico de uso de la maquinaria y observaciones particulares.
-   * **Firma de Aceptación:** Recuadro de firma exclusiva del representante de la Arrendataria.
+2. **Página 2 — Anexo Contrato de Arrendamiento de Maquinaria (Plataforma) — Condiciones Particulares (Formato Original):**
+   * **Barra Negra Superior:** `ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (PLATAFORMA)` seguida de los recuadros `FECHA` (izquierda) y `CONTRATO NUMERO` (derecha).
+   * **Recuadros `ARRENDADOR` y `ARRENDATARIA`:** Cada uno con las 5 filas originales (`RAZON SOCIAL`, `RUT`, `DIRECCION`, `REPRESENTADA POR SR.`, `RUT`).
+   * **Barra Negra Central:** `CONDICIONES PARTICULARES`.
+   * **Recuadro Contenedor de Condiciones Particulares:**
+     * `1.- INDIVIDUALIZACION DE LA MAQUINARIA`: 3 cajas con borde (`NRO DE SERIE` / `NRO DE MOTOR`, `MODELO` / `AÑO`, `MARCA` / `PROPIETARIO`).
+     * `B.- DURACION DEL CONTRATO`: 2 cajas con borde (`FECHA DE INICIO` y `FECHA DE TERMINO` exacta conforme a `REQ-1038`).
+     * `C.- RENTA DEL ARRENDAMIENTO`: 2 cajas con borde (`TARIFA NORMAL` / `MAXIMO DE HORAS` y `TIPO DE ARRIENDO`).
+     * `D.- LUGAR DE USO DE LA MAQUINARIA :` con línea punteada.
+     * `E.- MANTENIMIENTO POR ARRENDADOR :` con línea punteada.
+     * `F.- OBSERVACIONES 1 :` con línea punteada.
+     * **Firma de Aceptación al Pie Izquierdo:** Línea punteada única con `FIRMA REPRESENTANTE` (e imagen de firma digital FES cuando ha sido suscrito electrónicamente).
 
 ### 15.3. Modelo de Datos Canónico (`tpry_proyecto.json_field.contrato`)
 Los metadatos de formalización se almacenan de forma estructurada en el expediente JSON de la oportunidad:

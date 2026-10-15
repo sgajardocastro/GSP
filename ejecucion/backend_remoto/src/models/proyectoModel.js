@@ -1701,7 +1701,7 @@ class ProyectoModel {
       const fechaFormateada = new Date(fechaEmision).toLocaleDateString('es-CL');
 
       // 2. Resolver Empresa Arrendadora (Holding)
-      const idEmisora = Number(datosExtra.id_empresa_arrendador || p.id_empresa || p.id_empresa_emisora || 11);
+      const idEmisora = Number(datosExtra.id_empresa_arrendador || contratoPrevio.id_empresa_arrendador || p.id_empresa || p.id_empresa_emisora || 11);
       const EMISORES = {
         11: {
           nombre: "ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)",
@@ -1750,9 +1750,9 @@ class ProyectoModel {
       }
 
       // 3. Resolver Datos del Mandante (Arrendataria)
-      const mandanteRazonSocial = p.nombre_cliente || crm.razon_social || 'MANDANTE SIN ESPECIFICAR';
-      const mandanteRut = p.rut_cliente || crm.rut_cliente || 'SIN RUT';
-      const mandanteDireccion = crm.obra_direccion || p.direccion_cliente || 'Dirección de faena';
+      const mandanteRazonSocial = p.nombre_cliente || crm.razon_social || crm.cliente_nombre || 'MANDANTE SIN ESPECIFICAR';
+      const mandanteRut = p.rut_cliente || crm.rut_cliente || crm.cliente_rut || 'SIN RUT';
+      const mandanteDireccion = p.direccion_cliente || crm.obra_direccion || 'Dirección de faena';
       const mandanteRepNombre = datosExtra.representante_nombre || contratoPrevio.representante_nombre || '................................................';
       const mandanteRepRut = datosExtra.representante_rut || contratoPrevio.representante_rut || '................................................';
       const mandanteRepCargo = datosExtra.representante_cargo || contratoPrevio.representante_cargo || 'Representante Autorizado';
@@ -1768,213 +1768,302 @@ class ProyectoModel {
       const maquiModelo = datosExtra.modelo || eqPrincipal.subcategoria || eqPrincipal.descripcion || 'XGA16E';
       const maquiMarca = datosExtra.marca || eqPrincipal.marca || 'XCMG';
       const maquiAnio = datosExtra.anio || '2026';
-      const fechaIni = datosExtra.fecha_inicio || crm.fecha_hora_inicio?.split('T')[0] || fechaEmision;
-      const fechaFin = datosExtra.fecha_termino || crm.fecha_hora_termino?.split('T')[0] || 'A CONVENIR';
+
+      // REQ-1038: Fecha de Inicio y Fecha de Término Explícita (Erradicación absoluta de 'A CONVENIR')
+      const normalizarIsoDate = (val) => {
+        if (!val) return null;
+        if (val instanceof Date && !isNaN(val.getTime())) return val.toISOString().split('T')[0];
+        const str = String(val).trim();
+        if (str.toUpperCase().includes('CONVENIR')) return null;
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+        if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+          const [d, m, y] = str.split('-');
+          return `${y}-${m}-${d}`;
+        }
+        const parsed = new Date(str.replace(/\s+GM$/, ' GMT'));
+        if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0];
+        return null;
+      };
+
+      const rawFechaIni = normalizarIsoDate(datosExtra.fecha_inicio) || normalizarIsoDate(contratoPrevio.fecha_inicio) || normalizarIsoDate(crm.fecha_hora_inicio) || normalizarIsoDate(p.fecha_plan_ini) || normalizarIsoDate(fechaEmision);
+      let rawFechaFin = normalizarIsoDate(datosExtra.fecha_termino) || normalizarIsoDate(contratoPrevio.fecha_termino) || normalizarIsoDate(crm.fecha_hora_termino) || normalizarIsoDate(p.fecha_plan_fin) || '';
+      if (!rawFechaFin) {
+        const baseDate = new Date(`${rawFechaIni}T12:00:00`);
+        if (!isNaN(baseDate.getTime())) {
+          const esMensual = String(eqPrincipal.unidad || '').toLowerCase().includes('mes');
+          const cantMeses = Number(eqPrincipal.cantidad_meses || eqPrincipal.cantidad || 1);
+          const cantDias = Number(eqPrincipal.cantidad_dias || eqPrincipal.cantidad || 1);
+          if (esMensual) {
+            baseDate.setMonth(baseDate.getMonth() + Math.max(1, cantMeses));
+          } else {
+            baseDate.setDate(baseDate.getDate() + Math.max(1, cantDias));
+          }
+          rawFechaFin = baseDate.toISOString().split('T')[0];
+        } else {
+          rawFechaFin = rawFechaIni;
+        }
+      }
+      const formatearFechaContrato = (fStr) => {
+        const iso = normalizarIsoDate(fStr);
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}-${m}-${y}`;
+      };
+      const fechaIni = formatearFechaContrato(rawFechaIni);
+      const fechaFin = formatearFechaContrato(rawFechaFin);
+      const fechaHeader = formatearFechaContrato(fechaEmision);
       const tipoArriendo = datosExtra.tipo_arriendo || (eqPrincipal.unidad?.includes('Mes') ? 'MENSUAL' : 'SEMANAL / MENSUAL');
       const tarifaTexto = formatCLP(Number(eqPrincipal.valor_unitario || eqPrincipal.valorUnitario || 0));
-      const lugarFaena = datosExtra.lugar_uso || crm.obra_nombre || crm.obra_ciudad || 'Temuco / Faena Mandante';
+      const maximoHoras = datosExtra.maximo_horas || contratoPrevio.maximo_horas || '';
+      const lugarFaena = datosExtra.lugar_uso || crm.obra_nombre || crm.obra_ciudad || '';
+      const mantencionArrendador = datosExtra.mantenimiento_arrendador || contratoPrevio.mantenimiento_arrendador || '';
+      const observacionesAnexo = datosExtra.observaciones || contratoPrevio.observaciones || '';
 
       // 5. Firma Digital o Puntos de Firma
       const firmaClienteDataUri = datosExtra.firma_cliente_base64 || contratoPrevio.firma_digital?.firma_png_base64 || '';
-      const bloqueFirmaCliente = firmaClienteDataUri
-        ? `<div style="text-align: center;"><img src="${firmaClienteDataUri}" style="max-height: 50px; max-width: 150px; display: block; margin: 0 auto 4px auto;" /><div style="font-size: 8px; color: #15803d; font-weight: bold;">FIRMADO DIGITALMENTE (FES)</div></div>`
-        : `<div style="height: 45px; border-bottom: 1px dotted #333; margin-bottom: 4px;"></div>`;
+      const bloqueFirmaAnexo = firmaClienteDataUri
+        ? `<div style="margin-bottom: 2px;"><img src="${firmaClienteDataUri}" style="max-height: 42px; max-width: 160px; display: block;" /><div style="font-size: 7.5px; color: #15803d; font-weight: bold;">FIRMADO DIGITALMENTE (FES)</div></div>`
+        : `<div style="height: 35px;"></div>`;
 
-      // 6. Template HTML Estructurado de 2 Páginas Exactas (Sin espacios vacíos)
+      // 6. Template HTML Canónico (Texto Legal 100% Literal + Formato Original en 2 Páginas)
       const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <style>
-          @page { size: A4 portrait; margin: 8mm 10mm; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 8px; line-height: 1.25; color: #111; margin: 0; padding: 0; }
+          @page { size: A4 portrait; margin: 7mm 9mm; }
+          body { font-family: Arial, Helvetica, sans-serif; font-size: 6.85px; line-height: 1.16; color: #000; margin: 0; padding: 0; }
           .page { page-break-after: always; position: relative; }
           .page:last-child { page-break-after: avoid; }
-          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 1.5px solid #222; padding-bottom: 4px; }
-          .header-table td { vertical-align: middle; }
-          .doc-title { font-size: 11px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
-          .meta-box { font-size: 8px; text-align: right; line-height: 1.3; font-weight: bold; }
-          
-          /* Grilla de dos columnas para cláusulas legales */
-          .clauses-container { column-count: 2; column-gap: 14px; text-align: justify; margin-bottom: 8px; }
-          .clause-p { margin-bottom: 4px; break-inside: avoid; font-size: 7.8px; line-height: 1.22; }
-          .clause-p strong { color: #000; font-size: 8px; }
-          
-          /* Cuadro de Firmas Página 1 */
-          .signature-box { border-top: 1.5px solid #000; margin-top: 6px; padding-top: 6px; }
-          .signature-table { width: 100%; border-collapse: collapse; }
-          .signature-cell { width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px; }
-          
-          /* Anexo Página 2 */
-          .banner-anexo { background: #000; color: #fff; text-align: center; font-weight: bold; font-size: 10.5px; padding: 4px; text-transform: uppercase; margin-bottom: 8px; }
-          .tabla-anexo { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-          .tabla-anexo td, .tabla-anexo th { border: 1px solid #333; padding: 4px 6px; font-size: 8px; line-height: 1.25; }
-          .tabla-anexo th { background: #f1f5f9; font-weight: bold; text-align: left; }
-          .section-banner { background: #334155; color: #fff; font-size: 8.5px; font-weight: bold; padding: 3px 6px; text-transform: uppercase; margin-bottom: 4px; margin-top: 6px; }
+
+          /* Encabezado Página 1 */
+          .header-p1 { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+          .header-p1 td { vertical-align: middle; }
+          .title-p1 { font-size: 11px; font-weight: bold; text-align: center; text-transform: uppercase; }
+          .meta-p1 { font-size: 8px; text-align: right; line-height: 1.35; }
+
+          /* Cláusulas 1 Columna (Formato Original) */
+          .clauses-p1 { text-align: justify; margin-bottom: 6px; }
+          .clause-item { margin-bottom: 3.5px; }
+
+          /* Comparecencia Página 1 (Formato Original) */
+          .comparecencia-box { border-top: 1.5px solid #000; padding-top: 5px; margin-top: 6px; }
+          .comparecencia-table { width: 100%; border-collapse: collapse; font-size: 7.8px; line-height: 1.35; font-weight: bold; }
+          .comparecencia-table td { width: 50%; vertical-align: top; }
+
+          /* Página 2: Anexo Formato Original */
+          .anexo-page { font-size: 9px; line-height: 1.3; }
+          .black-bar { background: #000; color: #fff; font-weight: bold; font-size: 11px; text-align: center; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+          .top-meta-row { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+          .top-meta-box { border: 1px solid #000; padding: 3px 8px; font-size: 8.5px; font-weight: bold; }
+          .party-box { width: 100%; border-collapse: collapse; margin-bottom: 6px; border: 1px solid #000; }
+          .party-box td { border: 1px solid #000; padding: 5px 8px; vertical-align: top; font-size: 8.8px; line-height: 1.38; }
+          .party-label { width: 24%; font-size: 10px; font-weight: normal; text-transform: uppercase; }
+          .party-fields-table { width: 100%; border-collapse: collapse; }
+          .party-fields-table td { border: none; padding: 1px 4px; font-size: 8.8px; }
+          .cond-outer-box { border: 1px solid #000; padding: 8px 10px; }
+          .sub-box-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          .sub-box { border: 1px solid #000; padding: 5px 7px; vertical-align: top; font-size: 8.8px; line-height: 1.45; }
+          .dotted-line { border-bottom: 1px dotted #000; display: inline-block; width: 100%; min-height: 13px; }
         </style>
       </head>
       <body>
 
-        <!-- PÁGINA 1: CONDICIONES GENERALES 1 A 14 Y COMPARECENCIA DE FIRMAS -->
+        <!-- PÁGINA 1: CONDICIONES GENERALES DE ARRIENDO (TEXTO ÍNTEGRO LITERAL) -->
         <div class="page">
-          <table class="header-table">
+          <table class="header-p1">
             <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
-              <td class="doc-title" style="width: 50%;">CONDICIONES GENERALES DE ARRIENDO</td>
-              <td class="meta-box" style="width: 25%;">
-                CONTRATO N°: ${folioContrato}<br>
-                FECHA: ${fechaFormateada}<br>
-                <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">PÁGINA 1 DE 2</span>
+              <td style="width: 28%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 36px; max-width: 140px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
+              <td class="title-p1" style="width: 47%;">
+                CONDICIONES GENERALES DE ARRIENDO (PLATAFORMA)
+              </td>
+              <td class="meta-p1" style="width: 25%;">
+                CONTRATO NUMERO &nbsp;&nbsp; <strong>${folioContrato}</strong><br>
+                FECHA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>${fechaHeader}</strong>
               </td>
             </tr>
           </table>
 
-          <div class="clauses-container">
-            <div class="clause-p"><strong>1.- Pago arriendo:</strong> El valor del arrendamiento por el período acordado, se establecerá en la cotización enviada por ${emisor.nombre}, la que deberá ser aceptada antes del despacho.</div>
-            <div class="clause-p"><strong>2.- Entrega de la máquina:</strong> La máquina será entregada en el domicilio de la Arrendataria señalado en la Cotización. Los gastos de transporte de la máquina hasta el lugar en que será utilizada, y los gastos del transporte para la restitución al término del contrato, serán de cargo de la Arrendataria. La entrega constará del documento "Acta de Entrega y Recepción de Maquinaria" que firmará la Arrendataria. Se deja constancia que los equipos no cuentan con permiso de circulación vial urbana a menos que sea expresamente convenido.</div>
-            <div class="clause-p"><strong>3.- Aplicación:</strong> La Arrendataria usará la máquina arrendada únicamente en el lugar indicado en la Cotización. La máquina sólo podrá destinarse a trabajos propios de su diseño, con sujeción estricta a las normas del fabricante. La Arrendataria se obliga a operar el equipo con personal idóneo y calificado, con sus documentos al día, asumiendo la completa responsabilidad civil y penal.</div>
-            <div class="clause-p"><strong>4.- Renta y otros pagos:</strong> La renta se pagará dentro de los 30 días contados desde la recepción de la factura. Conforme a la Ley 19.983, el plazo para reclamar el contenido de la factura es de 8 días corridos. La mora devengará el interés penal máximo convencional. Si se contrata arriendo mensual y el equipo es devuelto antes, se cobrará el mes completo pactado como piso mínimo.</div>
-            <div class="clause-p"><strong>5.- Mantenimiento Arrendadora:</strong> El mantenimiento preventivo en los períodos indicados en las pautas será realizado por la Arrendadora. La Arrendataria se obliga a dar facilidades de ingreso y pases de faena.</div>
-            <div class="clause-p"><strong>6.- Mantenimiento Arrendataria:</strong> La mantención diaria (engrase, niveles de fluidos, batería, neumáticos, limpieza de filtros e inspección visual) es de cargo exclusivo de la Arrendataria. Reparaciones por daño, negligencia o sobrecarga serán facturadas a la Arrendataria, devengando arriendo normal mientras dure la reparación.</div>
-            <div class="clause-p"><strong>7.- Responsabilidad:</strong> La Arrendataria asume la responsabilidad civil por daños a terceros durante la tenencia del bien. En caso de siniestro, deberá informar en un plazo no mayor a 24 horas hábiles y cursar la denuncia policial respectiva.</div>
-            <div class="clause-p"><strong>8.- Lucro cesante:</strong> Las partes acuerdan expresamente que la Arrendadora no responderá en caso alguno por lucro cesante, paralización de obras o pérdidas indirectas de la Arrendataria.</div>
-            <div class="clause-p"><strong>9.- Cesibilidad:</strong> Prohibición absoluta de ceder, transferir o subrogar los derechos de este contrato sin autorización previa y escrita.</div>
-            <div class="clause-p"><strong>10.- Propiedad:</strong> El dominio exclusivo pertenece a la Arrendadora. Queda prohibido a la Arrendataria introducir modificaciones estructurales, subarrendar, dar en comodato o constituir gravámenes sobre el bien.</div>
-            <div class="clause-p"><strong>11.- Garantía:</strong> Este instrumento garantiza el cumplimiento íntegro y oportuno de todas las obligaciones contraídas.</div>
-            <div class="clause-p"><strong>12.- Vigencia:</strong> Rige por el plazo previsto en las Condiciones Particulares y pasará a ser indefinido hasta aviso formal con 10 días de anticipación a la fecha de término.</div>
-            <div class="clause-p"><strong>13.- Término anticipado:</strong> La falta de pago o insolvencia concursal faculta a la Arrendadora a resolver de pleno derecho el contrato y exigir la restitución inmediata más rentas adeudadas.</div>
-            <div class="clause-p"><strong>14.- Restitución de la máquina:</strong> A la terminación, se restituirá la máquina conforme al Acta de Entrega en el mismo estado en que fue recibida, salvo desgaste legítimo.</div>
+          <div class="clauses-p1">
+            <div class="clause-item">1.- Pago arriendo: El valor del arrendamiento por el período acordado, se establecerá en la cotización enviada por ${emisor.nombre}, la que deberá ser aceptada antes del despacho</div>
+
+            <div class="clause-item">2.- Entrega de la máquina. La máquina será entregada en el domicilio de la Arrendataria señalado en la Cotización. Los gastos de transporte de la máquina hasta el lugar en que será utilizada, y los gastos del transporte para la restitución al término del contrato, serán de cargo de la Arrendataria. La entrega constará del documento “Acta de Entrega y Recepción de Maquinaria” que firmará la Arrendataria. A falta de dicha persona, la Arrendadora hará firmar el documento por dos personas en calidad de testigos. A la sola firma del Acta y el despacho de la máquina, se entenderá que la Arrendataria acepta las condiciones establecidas en las cotizaciones que han generado las Condiciones Particulares y Generales aquí establecidas, independiente de la firma del presente documento. La fecha de entrega establecida en el Acta de Entrega y Recepción dará inicio a los cobros de arrendamiento a la Arrendataria o, en su defecto, la fecha indicada en la respectiva guía de despacho. Se deja constancia que los equipos no cuentan con permiso de circulación, por lo que en caso que la Arrendataria requiera utilizar el equipo arrendado por la vía pública, deberá solicitarlo previamente a objeto de implementar lo necesario y verificar la entrega de un equipo con permiso de circulación (placa patente y luces), a costo de la Arrendataria. Si no fuere solicitado, la Arrendataria será responsable de las multas y demás sanciones legales que aplicare la autoridad, así como de los daños o perjuicios que pueda causar a terceros.</div>
+
+            <div class="clause-item">3.- Aplicación. La Arrendataria usará la máquina arrendada únicamente en el lugar indicado en la Cotizacion. La máquina sólo podrá destinarse a trabajos propios de su diseño, con sujeción estricta a las normas de empleo establecidas por el fabricante. La Arrendadora no garantiza que la máquina arrendada sea útil para los fines de la Arrendataria, quien declara que conoce la máquina y sus especificaciones por lo que asume la completa y total responsabilidad respecto de la aptitud de ella para el fin que se propone. Asimismo, la Arrendataria se obliga a operar el equipo con personal idóneo y calificado, con todos sus documentos al día. La Arrendataria es responsable civil y penalmente por el uso impropio de la máquina, sea por negligencia o dolo. Para mover la máquina de las instalaciones antes indicadas, la Arrendataria debe solicitar autorización por escrito a la Arrendadora.</div>
+
+            <div class="clause-item">4.- Renta y otros pagos. La renta y todos los pagos a que esté obligada la Arrendataria se pagarán en el domicilio de la Arrendadora, dentro de los 30 días contados a partir de la recepción por parte de la Arrendataria de las facturas correspondientes. En conformidad a lo preceptuado por el artículo 3 N° 2 de la ley 19.983, se acuerda que el plazo que tiene la Arrendataria para reclamar el contenido de las facturas emitidas por la Arrendadora en virtud de lo dispuesto en este contrato, es de 08 días corridos, siguientes a su recepción. Si la Arrendataria incurre en mora o simple retardo respecto del pago de la renta de arriendo a que esté obligada, la Arrendataria pagará por concepto de interés penal el interés máximo convencional vigente al momento del pago, sobre las cantidades que deba pagar, a contar de la fecha en que debió efectuar el pago y hasta que efectivamente lo haga. La circunstancia de que la Arrendadora acepte el pago retrasado de uno o más periodos de renta sin ejercer los derechos que le franquea la ley y el presente contrato, constituirá sólo un acto de mera tolerancia. La Arrendataria pagará la totalidad de las rentas de arrendamiento convenidas, no obstante que por cualquier motivo, incluidos los originados por caso fortuito o fuerza mayor, no use la máquina arrendada el tiempo al que conforme el contrato tiene derecho. Las condiciones de renta y otros pagos indicados en estas Condiciones Generales son válidas por sobre las indicadas en cualquier otro documento relacionado a esta operación. Si se contrata el arriendo por 1 mes con tarifa mensual y el equipo es devuelto antes, ${emisor.nombre} cobrará el mes completo; en caso que la devolución sea producto de una falla propia del equipo, se cobrará un proporcional de la tarifa. Para los equipos que poseen adicionalmente tarifa semanal, la modalidad de cobro será de la misma manera, si se contrata arriendo con tarifa por 2 semanas y el equipo es devuelto antes, ${emisor.nombre} cobrará las 2 semanas mínimas.</div>
+
+            <div class="clause-item">5.- Mantenimiento y reparaciones de cargo de la Arrendadora. Los trabajos de mantenimiento preventivo de la máquina en los períodos indicados en las Pautas de Mantención, serán realizados por la Arrendadora. Con el objeto de que la Arrendadora pueda llevar a efectos dichos trabajos, la Arrendataria se obliga a informar a la Arrendadora cada vez que la máquina haya cumplido con el número de horas de operación indicado en las Pautas de Mantención, poniendo el equipo a su disposición para este efecto. La Arrendataria dará las facilidades y el apoyo necesario a la Arrendadora para realizar el mantenimiento preventivo de las máquinas en terreno. En caso que la Arrendataria solicite por escrito el servicio de una máquina y el personal designado por la Arrendadora asista más de una vez sin poder ingresar por falta de pases de ingreso a la faena, suministrados por la Arrendataria, los gastos de traslado del personal de la Arrendadora, serán de cargo de la Arrendataria. Si la Arrendataria no proporciona la información antes referida, estará obligada a pagar a la Arrendadora el importe de las reparaciones que deban hacerse a la máquina como consecuencia de falta de mantenimiento preventivo.</div>
+
+            <div class="clause-item">6.- Mantenimiento y reparaciones de cargo de la Arrendataria. La mantención diaria, es decir, el engrase completo, revisión y relleno de niveles de refrigerante y lubricantes, revisión de presión de inflado de neumáticos, revisión y relleno de agua destilada para las baterías, revisión de fugas, limpieza y drenaje de filtros, corrección de fallas menores, cambio de ampolletas e inspección general de la máquina arrendada será de cuenta y cargo de la Arrendataria. La Arrendataria impedirá que personas no autorizadas por la Arrendadora realicen trabajos de reparación en la máquina arrendada y cualquier perjuicio que de ello se derive será responsabilidad de la Arrendataria. Reparaciones: El costo total de las reparaciones, que será determinado por la Arrendadora, incluidos la mano de obra y traslado de personal, y repuestos por deficiencias mecánicas, daños o descomposturas, causadas por deficiente operación, descuido o negligencia, y aun cuando se produzcan como consecuencia de caso fortuito o fuerza mayor, será de cargo de la Arrendataria. Los pinchazos, cortes laterales, impactos, cortes en banda por patinaje y similares en los neumáticos como también los elementos de desgaste, tales como dientes, adaptadores, cantoneras, cuchillas y similares, serán de responsabilidad y cargo de la Arrendataria. En caso de existir cobros por concepto de servicio técnico, estos serán incluidos dentro del estado de pago del periodo de liquidación para que sea visada por la Arrendataria. La Arrendadora deberá informar, de manera previa a la emisión de la factura, las causales del cobro. Si el daño o desperfecto de la máquina se debe al mal uso de esta por parte de la Arrendataria, será de cargo de la Arrendataria el pago de la totalidad de la renta de arrendamiento mientras dure su reparación.</div>
+
+            <div class="clause-item">7- Responsabilidad. La Arrendataria debe asumir la responsabilidad civil que resulte del uso, operación y transporte de la máquina arrendada durante todo el tiempo en que la tenga en su poder, entendiéndose que estará en su poder desde la entrega de la máquina y hasta que sea restituida en el domicilio de la Arrendadora. En consecuencia, en caso alguno la Arrendadora tendrá responsabilidad por los daños causados en los casos a que se refiere este número y el ejercicio de cualquier acción en contra de la Arrendataria jamás puede implicar la retención de la máquina. En el evento de ser retenida la máquina arrendada por la autoridad o cualquier tercero, todo el tiempo de retención será considerado como usado por la Arrendataria y dará lugar al cobro de la renta correspondiente. En caso de siniestro, daño o pérdida de la máquina arrendada, cualquiera sea su causa y gravedad, la Arrendataria deberá informar a la Arrendadora de inmediato o a más tardar el día siguiente hábil del accidente sobrevenido, indicando su fecha, lugar y circunstancias, así como la naturaleza y monto estimado de los daños. Igualmente la Arrendataria deberá dejar la constancia correspondiente en Carabineros de Chile para los casos que así sea requerido o bien una declaración jurada de lo sucedido en notaría. Para los casos donde la autoridad exija la alcoholemia, es obligación la realización de la misma, en caso que haya oposición por parte del conductor, no existirá cobertura del siniestro y por ende, la Arrendataria se hará responsable de todos los daños.</div>
+
+            <div class="clause-item">8.- Lucro cesante. Si por cualquier causa la Arrendataria no pudiese hacer el uso esperado de la máquina por cualquier circunstancia, aún por caso fortuito o fuerza mayor, cubierta o no por el seguro correspondiente, las partes desde ya acuerdan que la Arrendadora no tendrá responsabilidad alguna respecto al lucro cesante sufrido por la Arrendataria.</div>
+
+            <div class="clause-item">9.- Cesibilidad. La Arrendataria no podrá ceder, enajenar o transferir en ninguna forma a terceros, los derechos del presente contrato.</div>
+
+            <div class="clause-item">10.- Propiedad. La Arrendataria reconoce que el dominio de la máquina arrendada pertenece a la Arrendadora o a la entidad que indique en las Condiciones Particulares, por lo que se obliga: 1. A conservarla en buen estado de uso, funcionamiento y adecuado resguardo. 2. A comunicar por escrito todo hecho o acto de terceros de que tome conocimiento y que pudiere afectar el dominio de la Arrendadora sobre el bien arrendado, tales como embargos, medidas precautorias y cualquier otra turbación de hecho o de derecho que pudiere afectar la integridad física del bien o embarazar o amenazar los derechos que sobre éste tenga la Arrendadora. En todos estos casos la Arrendataria deberá formular oposición conforme a la ley y ejercer en su caso, con cargo a la Arrendadora, las competentes acciones y reclamaciones para acreditar el dominio de la Arrendadora. Queda prohibido a la Arrendataria: A. Introducir modificaciones, mejoras o alteraciones de cualquier clase en la estructura o funcionamiento de la máquina. B. Subarrendar, dar en comodato y en general ceder de cualquier forma el uso o goce de la máquina. C. Constituir gravámenes, o derechos a favor de terceros. Cualquier costo derivado del incumplimiento de esta cláusula será de cargo de la Arrendataria.</div>
+
+            <div class="clause-item">11.- Garantía. Este documento garantiza el cumplimiento total y oportuno de todas y cada una de las obligaciones que asume la Arrendataria por este contrato y cualquier obligación que tenga o pueda tener la Arrendataria con la Arrendadora.</div>
+
+            <div class="clause-item">12.- Vigencia. El contrato estará vigente por todo el plazo previsto en las Condiciones Particulares, y pasará a ser indefinido luego de ese plazo, hasta que la Arrendataria dé aviso por escrito a la Arrendadora con al menos 10 días de anticipación a la nueva fecha de término. En caso que la máquina sea devuelta antes de la fecha pactada, se considerará que el equipo ha sido arrendado por el período total de duración del contrato.</div>
+
+            <div class="clause-item">13.- Término anticipado. El incumplimiento de la Arrendataria de cualquiera de las obligaciones que le impone el presente contrato, sin que ésta haya dado remedio a dicho incumplimiento en el plazo de 10 días desde notificado por la Arrendadora, autoriza a la Arrendadora a poner término unilateralmente y de pleno derecho al contrato sin necesidad de declaración judicial, y especialmente en los siguientes casos: 1. La falta del pago oportuno de la renta de arrendamiento o de cualquiera otra cantidad que la Arrendataria deba pagar conforme a lo establecido en el contrato. 2. El uso de la máquina arrendada en lugares distintos o en trabajos diferentes a los expresados en las Condiciones Particulares. 3. La insolvencia de la Arrendataria, entendiéndose por tal; A. Si cualquiera de sus acreedores solicitan su liquidación forzosa; B. Formulan proposiciones de acuerdo de reorganización, y en ambos casos haya sido declarado judicialmente y publicado en el Boletín Concursal; C. Si por vía de medidas prejudiciales o precautorias se obtienen en su contra secuestros, retenciones o prohibiciones de celebrar actos o contratos respecto de parte significativa de sus bienes; D. El nombramiento de veedores o liquidadores, todos ellos declarados judicialmente. Si el incumplimiento se debe a causal imputable a la Arrendataria, el monto de la indemnización será igual al total de las rentas de arrendamiento que resten de devengarse desde la ocurrencia del hecho que origina la causal hasta que se hubiere producido en forma natural el término del contrato de arrendamiento. Todos los costos correspondientes a la devolución del equipo serán de cargo de la Arrendataria.</div>
+
+            <div class="clause-item">14.- Restitución de la máquina. A la terminación del contrato, por cualquier causa que sea, la Arrendataria deberá entregar la máquina arrendada a la Arrendadora a la fecha de término del contrato. La máquina deberá restituirse en el estado en que se encontraba al momento de la entrega, habida consideración del desgaste por su uso legítimo. La restitución constará en el documento “Acta de Entrega y Recepción de Maquinaria”. La máquina no se entenderá restituida mientras su devolución no se haga conforme al estado en que fue entregada y que consta en el Acta de Entrega y Recepcion. El Acta de Recepción la suscribirá la Arrendataria. A falta de dicha persona, la Arrendadora hará firmar el documento a dos personas en calidad de testigos, quienes podrán ser o no trabajadores de la Arrendadora. La Arrendataria pagará a la Arrendadora el importe de las partes, piezas y accesorios que falten o estén dañados, así como el costo de su instalación. Para estos efectos deberá atenerse a lo señalado en el “Acta de Entrega y Recepcion de Máquinaria”. Si por causas imputables a la Arrendataria, ésta no restituye la máquina arrendada en el plazo correspondiente, el tiempo de mora se considerará tiempo arrendado para todos los efectos legales.</div>
           </div>
 
-          <!-- Cuadro de Comparecencia y Firmas -->
-          <div class="signature-box">
-            <table class="signature-table">
+          <!-- Bloque Comparecencia Final Condiciones Generales (Formato Original Página 3) -->
+          <div class="comparecencia-box">
+            <table class="comparecencia-table">
               <tr>
-                <td class="signature-cell">
-                  <div style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">Arrendatario (Mandante)</div>
-                  <strong>EMPRESA:</strong> ${mandanteRazonSocial}<br>
-                  <strong>RUT:</strong> ${mandanteRut}<br>
-                  <strong>Representada Por:</strong> ${mandanteRepNombre} (C.I.: ${mandanteRepRut})<br>
-                  <strong>Cargo:</strong> ${mandanteRepCargo}<br>
-                  <div style="margin-top: 6px;">
-                    ${bloqueFirmaCliente}
-                  </div>
-                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDATARIO</div>
+                <td>
+                  ARRENDATARIO<br>
+                  EMPRESA: ${mandanteRazonSocial}<br>
+                  RUT: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${mandanteRut}<br><br>
+                  Representada Por:<br>
+                  Sr(a): &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${mandanteRepNombre}<br>
+                  C.I.: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${mandanteRepRut}
                 </td>
-                <td class="signature-cell">
-                  <div style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; text-transform: uppercase;">Arrendador (Propietario)</div>
-                  <strong>EMPRESA:</strong> ${emisor.nombre}<br>
-                  <strong>RUT:</strong> ${emisor.rut}<br>
-                  <strong>Representada Por:</strong> LUIS OMAR GHISELLINI JARA (C.I.: 12.031.054-2)<br>
-                  <strong>Cargo:</strong> Representante Legal<br>
-                  <div style="margin-top: 6px;">
-                    <div style="height: 38px; border-bottom: 1px dotted #333; margin-bottom: 2px;"></div>
-                  </div>
-                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDADOR</div>
+                <td>
+                  ARRENDADOR<br>
+                  EMPRESA: ${emisor.nombre}<br>
+                  RUT: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${emisor.rut}<br><br>
+                  Representada Por:<br>
+                  Sr(a): &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LUIS OMAR GHISELLINI JARA<br>
+                  C.I.: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 12.031.054-2
                 </td>
               </tr>
             </table>
           </div>
         </div>
 
-        <!-- PÁGINA 2: ANEXO CONTRATO - CONDICIONES PARTICULARES -->
-        <div class="page">
-          <table class="header-table">
+        <!-- PÁGINA 2: ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (FORMATO ORIGINAL PÁGINA 4) -->
+        <div class="page anexo-page">
+          <div style="margin-bottom: 8px;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 42px; max-width: 150px;" />` : `<strong>${emisor.nombre}</strong>`}
+          </div>
+
+          <div class="black-bar">ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (PLATAFORMA)</div>
+
+          <table class="top-meta-row">
             <tr>
-              <td style="width: 25%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; max-width: 120px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
-              <td class="doc-title" style="width: 50%;">ANEXO CONTRATO DE ARRIENDAMIENTO</td>
-              <td class="meta-box" style="width: 25%;">
-                CONTRATO N°: ${folioContrato}<br>
-                FECHA: ${fechaFormateada}<br>
-                <span style="font-size: 7.5px; color: #64748b; font-weight: normal;">PÁGINA 2 DE 2</span>
-              </td>
+              <td class="top-meta-box" style="width: 22%;">FECHA &nbsp;&nbsp;&nbsp; ${fechaHeader}</td>
+              <td style="width: 48%; border: none;"></td>
+              <td class="top-meta-box" style="width: 30%;">CONTRATO NUMERO &nbsp;&nbsp;&nbsp;&nbsp; ${folioContrato}</td>
             </tr>
           </table>
 
-          <div class="banner-anexo">CONDICIONES PARTICULARES DE ARRIENDO DE MAQUINARIA</div>
-
-          <table class="tabla-anexo">
+          <!-- Bloque ARRENDADOR -->
+          <table class="party-box">
             <tr>
-              <th style="width: 22%;">ARRENDADOR</th>
-              <td style="width: 78%;">
-                <strong>RAZÓN SOCIAL:</strong> ${emisor.nombre}<br>
-                <strong>RUT:</strong> ${emisor.rut} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>DIRECCIÓN:</strong> ${emisor.direccion}<br>
-                <strong>REPRESENTANTE LEGAL:</strong> LUIS OMAR GHISELLINI JARA (RUT: 12.031.054-2)
-              </td>
-            </tr>
-            <tr>
-              <th>ARRENDATARIO</th>
+              <td class="party-label">ARRENDADOR</td>
               <td>
-                <strong>RAZÓN SOCIAL:</strong> ${mandanteRazonSocial}<br>
-                <strong>RUT:</strong> ${mandanteRut} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>DIRECCIÓN:</strong> ${mandanteDireccion}<br>
-                <strong>REPRESENTANTE:</strong> ${mandanteRepNombre} (RUT: ${mandanteRepRut} · ${mandanteRepCargo})
+                <table class="party-fields-table">
+                  <tr><td style="width: 34%;">RAZON SOCIAL</td><td>${emisor.nombre}</td></tr>
+                  <tr><td>RUT</td><td>${emisor.rut}</td></tr>
+                  <tr><td>DIRECCION</td><td>${emisor.direccion}</td></tr>
+                  <tr><td>REPRESENTADA POR SR.</td><td>LUIS OMAR GHISELLINI JARA</td></tr>
+                  <tr><td>RUT</td><td>12.031.054-2</td></tr>
+                </table>
               </td>
             </tr>
           </table>
 
-          <div class="section-banner">1. INDIVIDUALIZACIÓN TÉCNICA DE LA MAQUINARIA</div>
-          <table class="tabla-anexo">
+          <!-- Bloque ARRENDATARIA -->
+          <table class="party-box">
             <tr>
-              <td style="width: 33%;"><strong>NRO DE SERIE:</strong> ${maquiSerie}</td>
-              <td style="width: 33%;"><strong>MODELO:</strong> ${maquiModelo}</td>
-              <td style="width: 34%;"><strong>MARCA:</strong> ${maquiMarca}</td>
-            </tr>
-            <tr>
-              <td><strong>NRO DE MOTOR:</strong> ${maquiMotor}</td>
-              <td><strong>AÑO FABRICACIÓN:</strong> ${maquiAnio}</td>
-              <td><strong>PROPIETARIO REGISTRAL:</strong> ${emisor.nombre}</td>
-            </tr>
-          </table>
-
-          <div class="section-banner">2. CONDICIONES OPERACIONALES, PLAZOS Y TARIFAS</div>
-          <table class="tabla-anexo">
-            <tr>
-              <th style="width: 25%;">DURACIÓN PACTADA</th>
-              <td style="width: 75%;">
-                <strong>FECHA INICIO:</strong> ${fechaIni} &nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>FECHA TÉRMINO:</strong> ${fechaFin}
-              </td>
-            </tr>
-            <tr>
-              <th>TARIFA Y MODALIDAD</th>
+              <td class="party-label">ARRENDATARIA</td>
               <td>
-                <strong>VALOR ARRIENDO:</strong> ${tarifaTexto} &nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>RÉGIMEN / MODALIDAD:</strong> ${tipoArriendo}
+                <table class="party-fields-table">
+                  <tr><td style="width: 34%;">RAZON SOCIAL</td><td>${mandanteRazonSocial}</td></tr>
+                  <tr><td>RUT</td><td>${mandanteRut}</td></tr>
+                  <tr><td>DIRECCION</td><td>${mandanteDireccion}</td></tr>
+                  <tr><td>REPRESENTADA POR SR.</td><td>${mandanteRepNombre !== '................................................' ? mandanteRepNombre : ''}</td></tr>
+                  <tr><td>RUT</td><td>${mandanteRepRut !== '................................................' ? mandanteRepRut : ''}</td></tr>
+                </table>
               </td>
-            </tr>
-            <tr>
-              <th>LUGAR DE DESTINO / FAENA</th>
-              <td>${lugarFaena}</td>
-            </tr>
-            <tr>
-              <th>MANTENIMIENTO ARRENDADOR</th>
-              <td>Mantenimiento preventivo periódico según pauta de fabricante por cuenta de la Arrendadora.</td>
-            </tr>
-            <tr>
-              <th>OBSERVACIONES OPERACIONALES</th>
-              <td>Entrega, cómputo de horómetros y estado de conservación regulados por Acta de Entrega y Recepción de Maquinaria.</td>
             </tr>
           </table>
 
-          <!-- Recuadro de Cierre del Anexo -->
-          <div style="margin-top: 25px; border-top: 1.5px solid #000; padding-top: 12px;">
-            <table style="width: 100%; border-collapse: collapse;">
+          <div class="black-bar" style="margin-top: 10px;">CONDICIONES PARTICULARES</div>
+
+          <div class="cond-outer-box">
+            <div style="margin-bottom: 6px; font-size: 9.5px;">1.- INDIVIDUALIZACION DE LA MAQUINARIA</div>
+
+            <table class="sub-box-table">
               <tr>
-                <td style="width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px;">
-                  <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 4px;">CONFORMIDAD ARRENDATARIO</div>
-                  Se suscribe el presente Anexo de Condiciones Particulares en señal de plena conformidad técnica y legal.<br><br>
-                  ${bloqueFirmaCliente}
-                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDATARIO</div>
+                <td class="sub-box" style="width: 33%;">
+                  NRO DE SERIE: &nbsp; ${maquiSerie}<br>
+                  NRO DE MOTOR: &nbsp; ${maquiMotor}
                 </td>
-                <td style="width: 50%; vertical-align: top; padding: 0 10px; font-size: 8px;">
-                  <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 4px;">CONFORMIDAD ARRENDADOR</div>
-                  Por ${emisor.nombre}:<br><br>
-                  <div style="height: 38px; border-bottom: 1px dotted #333; margin-bottom: 2px;"></div>
-                  <div style="text-align: center; font-size: 7.5px; color: #666; font-weight: bold;">FIRMA REPRESENTANTE ARRENDADOR</div>
+                <td class="sub-box" style="width: 29%;">
+                  MODELO: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${maquiModelo}<br>
+                  AÑO: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${maquiAnio}
+                </td>
+                <td class="sub-box" style="width: 38%;">
+                  MARCA: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${maquiMarca}<br>
+                  PROPIETARIO: &nbsp; LUIS OMAR GHISELLINI
                 </td>
               </tr>
             </table>
+
+            <!-- B.- DURACION DEL CONTRATO -->
+            <table class="sub-box-table">
+              <tr>
+                <td style="width: 33%; vertical-align: middle; font-size: 9px; padding-right: 6px;">
+                  B.- DURACION DEL CONTRATO
+                </td>
+                <td class="sub-box" style="width: 29%;">
+                  FECHA DE INICIO: &nbsp; <strong>${fechaIni}</strong>
+                </td>
+                <td class="sub-box" style="width: 38%;">
+                  FECHA DE TERMINO: &nbsp; <strong>${fechaFin}</strong>
+                </td>
+              </tr>
+            </table>
+
+            <!-- C.- RENTA DEL ARRENDAMIENTO -->
+            <table class="sub-box-table" style="margin-bottom: 14px;">
+              <tr>
+                <td style="width: 33%; vertical-align: middle; font-size: 9px; padding-right: 6px;">
+                  C.- RENTA DEL ARRENDAMIENTO
+                </td>
+                <td class="sub-box" style="width: 29%;">
+                  TARIFA NORMAL &nbsp; ${tarifaTexto}<br>
+                  MAXIMO DE HORAS &nbsp; ${maximoHoras}
+                </td>
+                <td class="sub-box" style="width: 38%;">
+                  TIPO DE ARRIENDO: &nbsp; ${tipoArriendo}
+                </td>
+              </tr>
+            </table>
+
+            <!-- D, E, F con líneas punteadas -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 9px;">
+              <tr>
+                <td style="width: 33%; padding: 6px 0; vertical-align: bottom;">D.- LUGAR DE USO DE LA<br>&nbsp;&nbsp;&nbsp;&nbsp;MAQUINARIA &nbsp;&nbsp;&nbsp;:</td>
+                <td style="width: 67%; padding: 6px 0; vertical-align: bottom;"><div class="dotted-line">${lugarFaena}</div></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; vertical-align: bottom;">E.- MANTENIMIENTO POR<br>ARRENDADOR :</td>
+                <td style="padding: 8px 0; vertical-align: bottom;"><div class="dotted-line">${mantencionArrendador}</div></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; vertical-align: bottom;">F.- OBSERVACIONES 1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</td>
+                <td style="padding: 8px 0; vertical-align: bottom;"><div class="dotted-line">${observacionesAnexo}</div></td>
+              </tr>
+            </table>
+
+            <!-- Firma Representante al pie izquierdo del Anexo -->
+            <div style="width: 220px; margin-top: 18px;">
+              ${bloqueFirmaAnexo}
+              <div style="border-top: 1px dotted #000; padding-top: 3px; font-size: 9.5px;">
+                FIRMA REPRESENTANTE
+              </div>
+            </div>
           </div>
 
         </div>
@@ -1995,6 +2084,9 @@ class ProyectoModel {
         mandanteRepRut,
         mandanteRepCargo,
         mandanteRepTelefono,
+        idEmisora,
+        rawFechaIni,
+        rawFechaFin,
         emisor
       };
     } finally {
@@ -2057,6 +2149,9 @@ class ProyectoModel {
         url_pdf: `/api/archivo/ver/${doc.id_doc}`,
         id_doc: doc.id_doc,
         fecha_emision: fechaEmision,
+        id_empresa_arrendador: dataContrato.idEmisora,
+        fecha_inicio: dataContrato.rawFechaIni,
+        fecha_termino: dataContrato.rawFechaFin,
         representante_nombre: mandanteRepNombre,
         representante_rut: mandanteRepRut,
         representante_cargo: mandanteRepCargo,
