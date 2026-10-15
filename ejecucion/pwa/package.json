@@ -1,10 +1,11 @@
 {
   "name": "gsp-pwa",
-  "version": "1.0.98",
+  "version": "1.0.43",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
+    "build:dev": "vue-cli-service build --mode dev",
     "lint": "vue-cli-service lint",
     "apk:prepare": "powershell -ExecutionPolicy Bypass -File scripts/prepare-apk.ps1",
     "env:qa": "node ../scripts/switch-env.mjs qa",

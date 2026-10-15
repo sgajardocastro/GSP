@@ -214,6 +214,17 @@ Este documento registra las tareas unitarias necesarias para armar y presentar l
 *   [ ] **[Sergio Gajardo] Persistencia en Base de Datos & Multi-Día (Hito 2 Días):** Conexión con PostgreSQL (`tits_*`), guardado incremental de avances diarios y supervisión colaborativa en tiempo real por folio.
 *   [ ] **[Sergio Gajardo] Despacho Omnicanal:** Envío de notificación automática con PDF adjunto por Correo y WhatsApp a Omar y Contabilidad.
 
+**Reunión 14-Oct-2026 (Contratos de Plataformas, Entrega/Retorno Operativo, Viáticos en ITS Final & Rectificación de Reportes):**
+*   [ ] **[Sergio Gajardo] Restringir contrato (Multi-Empresa / Cliente):** Agregar la restricción y adaptación dinámica del arrendador y arrendatario en el contrato según cliente y empresa emisora (San Pablo, Bestmaq, Royal Rental), dejándolo abierto para facturación cruzada por crédito.
+*   [ ] **[Sergio Gajardo] Ajustar título contrato (`(Plataforma)`):** Modificar el título del documento contractual para incluir explícitamente la palabra `(Plataforma)` entre paréntesis.
+*   [ ] **[Sergio Gajardo] Revisar contrato y Fecha de Término Explícita:** Ajustar contenido y formato del contrato para evitar sobre-simplificación y reemplazar glosas ambiguas ("a convenir") por la fecha de término exacta definida por el vendedor.
+*   [ ] **[Jorge Ponce] Enviar firma de Omar:** Enviar la firma digital de Omar en formato PDF para incorporarla automáticamente en el contrato y su anexo.
+*   [ ] **[Sergio Gajardo] Incorporar firma de Omar en PDF:** Estampar automáticamente la firma de Omar en el cuerpo del contrato y en el anexo técnico.
+*   [ ] **[Sergio Gajardo] Finalizar registro de entrega y retorno independiente:** Finalizar el módulo de entrega en obra con fotos, permitir agregar una línea independiente de flete de retorno en el asignador de recursos (otra patente/chofer meses después) y exigir inspección obligatoria de recuperación antes de iniciar el retorno.
+*   [x] **[Sergio Gajardo] Añadir viáticos en ITS Final [REQ-1040 / SPEC-078]:** Incorporar el tab de Viático Alimentación en la Sección 3 de costos del Informe Técnico de Servicio (ITS) final nativo con las mismas reglas del ITS de Transición.
+*   [x] **[Sergio Gajardo] Ajustar resumen ejecutivo ITS Final [REQ-1041 / SPEC-078]:** Modificar la estructura del resumen ejecutivo en el ITS final (Modal y PDF) para incluir la apertura detallada de costos operacionales y `% S/ VENTA` igual al ITS de Transición.
+*   [x] **[Sergio Gajardo] Corregir Operador/Rigger en reportes generados [REQ-1043 / SPEC-077]:** Implementar rectificación unitaria en visor de reporte diario, propagación por rango de fechas en asignación OT y refresco automático de tripulación en ITS (Caso Tensacon).
+
 ---
 
 ### Fase 10: Migración WMS-Lite e Inspecciones/OTs (Evolucionado a Spec 48 V3.0 Canónica)
@@ -897,11 +908,24 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **Actualización de Etiquetas UI (`GestorOportunidades.vue` y `FirmarContratoView.vue`):** Actualización de textos de botones y títulos a `Previsualizar (2 Págs)`, `Anexo Pág 2` y `Texto Íntegro del Contrato (2 Páginas)`.
   - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.135` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y verificación empírica de 2 páginas con HTTP 200 OK en DEV y PROD.
 
+* [x] **24. Rectificación de Operador/Rigger en Reportes Emitidos (Caso Tensacon), Tab Viático Alimentación y Apertura Detallada de Costos en Resumen Ejecutivo de ITS Final [REQ-1040 / REQ-1041 / REQ-1043 / SPEC-077 & SPEC-078 / Web v1.0.136 / DEV & PROD]:**
+  - **Especificaciones Canónicas:** Formalización en [.agents/specs/77_rectificacion_operador_rigger_reportes_ot_e_its_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/77_rectificacion_operador_rigger_reportes_ot_e_its_spec.md) (SPEC-077) y [.agents/specs/78_its_final_viaticos_alimentacion_y_resumen_ejecutivo_costos_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/78_its_final_viaticos_alimentacion_y_resumen_ejecutivo_costos_spec.md) (SPEC-078).
+  - **Rectificación de Operador y Rigger en Reportes, OT e ITS (`REQ-1043`):** Endpoints `PUT /api/reports/:idReporte/rectificar-personal` y `POST /api/reports/proyecto/:idProyecto/propagar-personal`, panel de rectificación en `ModalVisorReport.vue`, propagación retroactiva opcional por rango de fechas en `GestorOportunidades.vue`, y refresco dinámico de tripulación en `itsController.js` con bitácora de auditoría en `datos_operacion_json.historial_rectificaciones_personal`.
+  - **Tab Viático Alimentación en ITS Final (`REQ-1040`):** Incorporación del tab `Viático Alimentación` (`alimentacion` / `ALIMENTACION`) en la Sección 3 de `ModalITS.vue` (10 categorías auditables), con la misma estructura del ITS de Transición (`Fecha`, `Nombre Personal`, `Concepto`, `Monto ($)` y botón `Declarar Sin Costo`), manteniendo intacto el tab de `Pensiones`.
+  - **Apertura Detallada en Resumen Ejecutivo de ITS Final (`REQ-1041`):** Desglose completo de **A. Resumen de Ingresos Totales (Venta)** y **B. Resumen de Costos Operacionales (Egresos)** con monto (`$`) y `% s/ Venta` por categoría tanto en la Sección 4 de `ModalITS.vue` como en la Sección 2 del PDF oficial (`itsPdfService.js`).
+  - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.136` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en base de datos PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD.
 
+* [x] **25. Parametrización Multi-Empresa de Contrato de Plataformas, Título Explícito `(Plataforma)` y Fecha de Término Exacta (Erradicación de `"A CONVENIR"`) [REQ-1036 / REQ-1037 / REQ-1038 / Spec 16 Sección 15 / Web v1.0.137 / DEV & PROD]:**
+  - **Especificación Canónica:** Actualización de la Sección 15 en [.agents/specs/16_crm_gestor_oportunidades_spec.md](file:///d:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/.agents/specs/16_crm_gestor_oportunidades_spec.md).
+  - **Parametrización Multi-Empresa del Arrendador y del Cliente Arrendatario (`REQ-1036`):** Selector de empresa arrendadora del holding (`11: Royal Rental`, `9: Grúas San Pablo`, `7: Bestmaq`, `8: Logística del Sur`) en la pestaña `CONTRATO` de `GestorOportunidades.vue`, permitiendo emitir el contrato de plataforma bajo la razón social donde el cliente posea línea de crédito habilitada, con resolución dinámica de logo, razón social, RUT y domicilio en `proyectoModel.js` y `proyectosController.js`.
+  - **Título Explícito con `(Plataforma)` (`REQ-1037`):** Actualización de títulos en UI (`GestorOportunidades.vue`, `FirmarContratoView.vue`), notificaciones omnicanal (`proyectosController.js`) y PDF de 2 páginas (`proyectoModel.js`) a `CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (PLATAFORMA)`, `CONDICIONES GENERALES DE ARRIENDO (PLATAFORMA)`, `ANEXO CONTRATO DE ARRENDAMIENTO (PLATAFORMA)` y `CONDICIONES PARTICULARES DE ARRIENDO DE MAQUINARIA (PLATAFORMA)`.
+  - **Fecha de Término Explícita y Erradicación de `"A CONVENIR"` (`REQ-1038`):** Campos editables de `Fecha Inicio Arriendo` y `Fecha Término Exacta` en `GestorOportunidades.vue` auto-hidratados desde las fechas/plazos de la cotización con validación obligatoria antes de previsualizar o despachar, y eliminación definitiva de `'A CONVENIR'` en `proyectoModel.js` manteniendo intactas las 14 cláusulas contractuales.
+  - **Gobernanza y Hard Gate:** Elevación a Web `v1.0.137` en `package.json`, actualización en `RELEASE_LOG.md`, sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD.
 
-
-
-
-
-
+* [x] **26. Resiliencia Operativa Report Diario PWA: Hora de Inicio Rectificable en Terreno, Navegación Flexible a Momento 2 y Regularización de OT 16 en Producción [REQ-1044 / PWA v1.0.43 / DEV & PROD]:**
+  - **Incidencia Operativa:** Soporte en terreno caso Robert Rodríguez (OT 16 `GSP-2610-233-016`, Grúa `DZXL.21-0`), bloqueo de transición de Momento 1 a Momento 2 y rigidez en hora de llegada.
+  - **Hora de Inicio Rectificable en Terreno (`ReportDiarioIzaje.vue`):** Reemplazo de texto estático `form.hora_inicio` por campo interactivo `<input type="time">` con indicador `✏️ Hora Rectificable`, permitiendo al operador corregir en faena su hora real de llegada antes de firmar con el mandante.
+  - **Navegación Flexible a Momento 2 (`ReportDiarioIzaje.vue`):** Eliminación del bloqueo rígido en `irAMomento2()`. Si el horómetro de inicio no está registrado, se auto-hidrata con el `horometro_base` del equipo sin lanzar alertas bloqueantes.
+  - **Regularización Operativa Producción (`sch_leangsp_prod`):** Purga de registro huérfano ID 15, ajuste de correlativo ID 17 a `dia_correlativo = 2`, y asignación formal de grúa 33 y operador 49 a la OT 16 en `tpry_rel_equipo`, `tpry_rel_persona` y `tedp_reporte_avance`.
+  - **Gobernanza y Hard Gate:** Elevación SemVer a PWA `v1.0.43` en `package.json`, actualización en `RELEASE_LOG.md`, registro en `sch_leangsp` y `sch_leangsp_prod` (`tcfg_backlog` y `tcfg_releases`), y despliegue certificado en DEV y PROD.
 

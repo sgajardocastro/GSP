@@ -2,6 +2,60 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [PWA GSP] - Versión 1.0.43
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 22:05:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/pwa-gsp-prod` (URL: `https://servidor.leanglobal.cl/pwa-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1044` (Incidencia Terreno OT 16 / Soporte Robert Rodríguez)
+- **Especificación Técnica:** PWA GSP v1.0.43: Resiliencia Operativa Report Diario, Hora de Inicio Rectificable en Terreno y Navegación Flexible a Momento 2:
+  1. **Hora de Inicio Rectificable en Terreno (`ReportDiarioIzaje.vue`):**
+     - Sustitución del texto estático de solo lectura `form.hora_inicio` por un campo interactivo `<input type="time">` con badge visual `✏️ Hora Rectificable`.
+     - Permite al operador ajustar con exactitud su hora real de llegada a faena (p. ej. 08:30 hrs) al momento de cerrar la jornada vespertina, sin quedar atado a valores por defecto o discrepancias del inicio de faena.
+  2. **Navegación Flexible a Momento 2 sin Bloqueo de Horómetro Base (`ReportDiarioIzaje.vue`):**
+     - En `irAMomento2()`, si el horómetro de inicio no fue capturado o se desincronizó en el dispositivo, el sistema toma automáticamente el `horometro_base` del equipo seleccionado (`equipoSeleccionado.horometro_base`) en vez de bloquear al operador con advertencias de error, permitiéndole avanzar a Momento 2 y proceder a la captura del horómetro de término y firmas FES con el mandante.
+  3. **Regularización Operativa Base de Datos Producción (`sch_leangsp_prod`):**
+     - Eliminación de registro huérfano ID 15 y ajuste de correlativo del reporte emitido ID 17 a `dia_correlativo = 2` para la OT 16 (`GSP-2610-233-016`).
+     - Vinculación canónica del equipo `DZXL.21-0` (ID 33) y del operador Robert Rodríguez (ID 49) a la OT 16 en `tpry_rel_equipo`, `tpry_rel_persona` y `tedp_reporte_avance`, dejando la OT lista para emitir el Día 3 sin anomalías.
+  4. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.43` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1044`), sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD con HTTP 200 OK.
+
+## [Portal Web GSP] - Versión 1.0.137
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 20:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1036`, `REQ-1037`, `REQ-1038` (Spec 16 — Sección 15)
+- **Especificación Técnica:** Portal Web GSP v1.0.137: Parametrización Multi-Empresa de Contrato de Plataformas, Título Explícito `(Plataforma)` y Fecha de Término Exacta (Erradicación de `"A CONVENIR"`):
+  1. **Parametrización Multi-Empresa del Arrendador y del Cliente Arrendatario (`REQ-1036`):**
+     - Selector interactivo en pestaña `CONTRATO` de `GestorOportunidades.vue` para elegir libremente cualquiera de las 4 razones sociales del holding (`11: Royal Rental`, `9: Grúas San Pablo`, `7: Bestmaq`, `8: Logística del Sur`) sin restricción por empresa emisora original, permitiendo arrendar plataformas bajo la empresa donde el cliente posea línea de crédito o registro de proveedor activo.
+     - Resolución dinámica de logo en Base64, razón social, RUT y domicilio legal del arrendador y arrendatario en `proyectoModel.js` y `proyectosController.js`.
+  2. **Título Explícito con `(Plataforma)` en UI, PDF y Notificaciones (`REQ-1037`):**
+     - Actualización de encabezados en `GestorOportunidades.vue`, `FirmarContratoView.vue`, notificaciones por correo/WhatsApp (`proyectosController.js`) y PDF de 2 páginas (`proyectoModel.js`) a `CONTRATO DE ARRENDAMIENTO DE MAQUINARIA (PLATAFORMA)`, `CONDICIONES GENERALES DE ARRIENDO (PLATAFORMA)`, `ANEXO CONTRATO DE ARRENDAMIENTO (PLATAFORMA)` y `CONDICIONES PARTICULARES DE ARRIENDO DE MAQUINARIA (PLATAFORMA)`.
+  3. **Fecha de Término Explícita y Erradicación de `"A CONVENIR"` (`REQ-1038`):**
+     - Incorporación de selectores de `Fecha Inicio Arriendo` y `Fecha Término Exacta` en `GestorOportunidades.vue`, auto-hidratados desde las fechas y plazos (días/meses) de la cotización comercial, con validación obligatoria previa a previsualizar o despachar el contrato.
+     - Erradicación definitiva del literal `'A CONVENIR'` en `proyectoModel.js` y formateo explícito `DD-MM-YYYY`, resguardando íntegramente el rigor de las 14 cláusulas contractuales.
+  4. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.137` en `package.json`, registro en `Gestión/tareas.md`, sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD con HTTP 200 OK.
+
+## [Portal Web GSP] - Versión 1.0.136
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-14 18:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1040`, `REQ-1041`, `REQ-1043` (SPEC-077 & SPEC-078)
+- **Especificación Técnica:** Portal Web GSP v1.0.136: Rectificación de Operador/Rigger en Reportes Emitidos (Caso Tensacon), Tab Viático Alimentación y Apertura Detallada de Costos en Resumen Ejecutivo de ITS Final:
+  1. **Rectificación de Operador y Rigger en Reportes Diarios, Asignación OT e ITS (`REQ-1043` / SPEC-077):**
+     - **Rectificación Unitaria (`reportDiarioController.js`, `ModalVisorReport.vue`):** Endpoint `PUT /api/reports/:idReporte/rectificar-personal` y panel interactivo en el visor del reporte diario para corregir Operador y/o Rigger en un reporte específico con motivo de auditoría en `datos_operacion_json.historial_rectificaciones_personal`.
+     - **Propagación Masiva desde OT (`reportDiarioController.js`, `GestorOportunidades.vue`):** Endpoint `POST /api/reports/proyecto/:idProyecto/propagar-personal` y opción de propagación retroactiva por rango de fechas (`Desde` / `Hasta`) al guardar la asignación de recursos de la OT.
+     - **Refresco Automático en ITS (`itsController.js`):** Actualización de `id_user_operador` en jornadas existentes del ITS en estado `BORRADOR` / `RECHAZADO` al abrir la liquidación.
+  2. **Tab "Viático Alimentación" en Sección 3 de Costos del ITS Final (`REQ-1040` / SPEC-078):**
+     - Incorporación de la categoría `alimentacion` (`ALIMENTACION`) como primer tab de la Sección 3 de `ModalITS.vue` (10 categorías auditables), con formato idéntico al ITS de Transición (`Fecha`, `Nombre Personal`, `Concepto`, `Monto ($)` y `Declarar Sin Costo`), manteniendo intacto el tab de `Pensiones`.
+  3. **Apertura Detallada en Resumen Ejecutivo de ITS Final (`REQ-1041` / SPEC-078):**
+     - Desglose completo de **A. Resumen de Ingresos Totales (Venta)** y **B. Resumen de Costos Operacionales (Egresos)** con monto (`$`) y `% sobre la Venta` por cada categoría en la Sección 4 de `ModalITS.vue` y en la Sección 2 del PDF oficial (`itsPdfService.js`).
+  4. **Gobernanza y Hard Gate:**
+     - Elevación SemVer a `v1.0.136` en `package.json`, registro en `Gestión/tareas.md`, sincronización en PostgreSQL (`tcfg_backlog` y `tcfg_releases`) en `sch_leangsp` y `sch_leangsp_prod`, y despliegue certificado en DEV y PROD con HTTP 200 OK.
+
 ## [Portal Web GSP] - Versión 1.0.135
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-14 15:30:00 (-03:00)

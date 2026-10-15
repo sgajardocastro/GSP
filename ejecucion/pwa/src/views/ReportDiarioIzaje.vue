@@ -364,18 +364,27 @@
             </div>
           </div>
 
-          <!-- DATOS DE INICIO FIJOS -->
+          <!-- DATOS DE INICIO (HORA RECTIFICABLE EN TERRENO) -->
           <div class="p-3.5 bg-emerald-950/60 rounded-2xl border-2 border-emerald-500/60">
-            <div class="text-xs font-black text-emerald-400 uppercase tracking-wider mb-1.5">
-              ✅ Lecturas Registradas al Inicio de Faena:
+            <div class="d-flex align-center justify-space-between mb-1.5">
+              <div class="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                ✅ Lecturas al Inicio de Faena:
+              </div>
+              <span class="text-[10px] text-emerald-300 font-bold bg-emerald-900/80 px-2 py-0.5 rounded border border-emerald-400/40">
+                ✏️ Hora Rectificable
+              </span>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="grid grid-cols-2 gap-2 text-center items-center">
               <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
-                <span class="text-slate-300 text-xs font-bold uppercase d-block">🟢 Hora Entrada</span>
-                <span class="text-emerald-300 font-mono text-base font-black">{{ form.hora_inicio }} hrs</span>
+                <label class="text-slate-300 text-[10px] font-bold uppercase d-block mb-1">🟢 Hora Entrada</label>
+                <input
+                  v-model="form.hora_inicio"
+                  type="time"
+                  class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-emerald-300 font-mono text-base font-black text-center focus:outline-none focus:border-emerald-400"
+                />
               </div>
               <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
-                <span class="text-slate-300 text-xs font-bold uppercase d-block">⚙️ Horómetro Grúa Inicial</span>
+                <span class="text-slate-300 text-[10px] font-bold uppercase d-block mb-1">⚙️ Horómetro Inicial</span>
                 <span class="text-amber-300 font-mono text-base font-black">{{ form.horometro_inicio || 'N/A' }}</span>
               </div>
             </div>
@@ -711,7 +720,6 @@
             size="x-large"
             color="amber-darken-2"
             class="font-black text-uppercase rounded-2xl text-slate-950 py-4 min-h-[62px] text-lg shadow-xl shadow-amber-500/20 tracking-wider"
-            :disabled="!puedeAvanzarAReport"
             @click="irAReportMandante"
           >
             <span>🏁 Finalizar Jornada ➔ Proceder a Report Mandante ➔</span>
@@ -1199,22 +1207,6 @@ const puedeGuardarInicio = computed(() => {
   )
 })
 
-const puedeAvanzarAReport = computed(() => {
-  if (servicioConcluido.value) return false
-  const superOk = (
-    form.hora_termino &&
-    form.horometro_termino !== null &&
-    Number(form.horometro_termino) >= Number(form.horometro_inicio || 0) &&
-    estadoHorometroTermino.value.tipo !== 'ERROR_MENOR' &&
-    form.foto_tablero_termino
-  )
-  if (!superOk) return false
-  if (esGruaBimotor.value && form.horometro_chasis_termino) {
-    if (!form.foto_horometro_chasis_termino) return false
-  }
-  return true
-})
-
 const puedeEnviarReport = computed(() => {
   if (servicioConcluido.value) return false
   return (
@@ -1228,16 +1220,14 @@ const puedeEnviarReport = computed(() => {
 const irAMomento2 = () => {
   if (diaCorrelativo.value === 1) {
     if (!form.horometro_inicio || Number(form.horometro_inicio) <= 0) {
-      snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio en Momento 1'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
-    }
-    if (!form.foto_tablero_inicio) {
-      snackbar.text = '⚠️ La Foto del Horómetro al Inicio es OBLIGATORIA'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
+      if (equipoSeleccionado.value?.horometro_base) {
+        form.horometro_inicio = Number(equipoSeleccionado.value.horometro_base)
+      } else {
+        snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio en Momento 1'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
     }
   }
   faseVisual.value = 2
