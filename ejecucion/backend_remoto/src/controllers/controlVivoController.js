@@ -362,48 +362,34 @@ const controlVivoController = {
           else if (diaActualEq === totalDiasOTEq) tipoDiaEq = 'TERMINO';
           else tipoDiaEq = 'INTERMEDIO';
 
-          // Viaje del equipo
+          // Todos los viajes del equipo en la OT (orden cronológico)
           const viajeSql = `
             SELECT * FROM ${SCHEMA}.tequ_log_desplazamiento
             WHERE id_proyecto = $1 AND (id_equipo = $2 OR $2 = 0 OR id_equipo IS NULL)
-              AND (fecha_salida_patio::date = $3 OR fecha_programada::date = $3 OR fecha_registro::date = $3)
-            ORDER BY id_log_desplazamiento DESC LIMIT 1;
+            ORDER BY id_log_desplazamiento ASC;
           `;
-          const vRes = await pool.query(viajeSql, [p.id_proyecto, eq.id_equipo, fechaConsulta]);
-          const viajeHoy = vRes.rows[0] || null;
+          const vRes = await pool.query(viajeSql, [p.id_proyecto, eq.id_equipo]);
+          const viajesEq = vRes.rows;
 
-          // Inspección patio del equipo
+          // Todas las inspecciones patio del equipo
           const patioSql = `
             SELECT * FROM ${SCHEMA}.tsrv_survey
             WHERE ((id_proyecto = $1 AND (id_equipo = $2 OR $2 = 0)) OR (id_equipo = $2 AND $2 > 0))
-              AND (fecha_real_ini::date = $3 OR fecha_plan_ini::date = $3 OR created::date = $3)
               AND id_template IN (76, 79)
-            ORDER BY id_survey DESC LIMIT 1;
+            ORDER BY id_survey ASC;
           `;
-          const ptRes = await pool.query(patioSql, [p.id_proyecto, eq.id_equipo, fechaConsulta]);
-          const patioHoy = ptRes.rows[0] || null;
-
-          // Reporte de faena del día para este equipo
-          const reportHoy = eqHistReports.find(r => {
-            if (!r.fecha_reporte) return false;
-            const dStr = new Date(r.fecha_reporte).toISOString().split('T')[0];
-            return dStr === fechaConsulta || Number(r.dia_correlativo) === Number(diaActualEq);
-          }) || null;
+          const ptRes = await pool.query(patioSql, [p.id_proyecto, eq.id_equipo]);
+          const patioSurveysEq = ptRes.rows;
 
           const esEquipoFaena = ['GRUAS', 'GRUA', 'PLUMA', 'PLATAFORMA', 'ALZAHOMBRE', 'MANLIFT', 'ELEVADORA'].some(kw => 
             (eq.tipo_equipo || '').toUpperCase().includes(kw) || (eq.rol_equipo || '').toUpperCase().includes(kw)
           );
 
-          const getOverrideHito = (clave) => {
-            const byEq = p.json_field?.control_vivo_overrides?.[fechaConsulta]?.[String(eq.id_equipo)]?.[clave]
-                      || p.json_field?.control_vivo_overrides?.[fechaConsulta]?.[eq.id_equipo]?.[clave]
-                      || p.json_field?.control_vivo_overrides?.[fechaConsulta]?.['TODOS']?.[clave];
-            return byEq || null;
-          };
-
-          // Helper de evaluación de actividad para el equipo (con soporte de override administrativo)
-          const evalActividadEq = (clave, nombre, planHoraStr, realHoraStr, ejecutado) => {
-            const ovr = getOverrideHito(clave);
+          // Helper de evaluación de actividad para una fecha y clave dada (con soporte de override administrativo)
+          const evalActividadParaFecha = (fDia, clave, nombre, planHoraStr, realHoraStr, ejecutado) => {
+            const ovr = p.json_field?.control_vivo_overrides?.[fDia]?.[String(eq.id_equipo)]?.[clave]
+                     || p.json_field?.control_vivo_overrides?.[fDia]?.[eq.id_equipo]?.[clave]
+                     || p.json_field?.control_vivo_overrides?.[fDia]?.['TODOS']?.[clave];
             let esOverride = false;
             let modificadoPor = null;
             if (ovr && ovr.hora_real) {
@@ -432,7 +418,7 @@ const controlVivoController = {
                 desvioMins = realMins - planMins;
               }
             } else {
-              if (esHoy) {
+              if (fDia === fechaHoyChile) {
                 if (nowMinutos >= planMins) {
                   estado = 'rojo';
                   desvioMins = nowMinutos - planMins;
@@ -443,7 +429,7 @@ const controlVivoController = {
                   estado = 'azul';
                   desvioMins = planMins - nowMinutos;
                 }
-              } else if (fechaConsulta < fechaHoyChile) {
+              } else if (fDia < fechaHoyChile) {
                 estado = 'rojo';
                 desvioMins = 999;
               } else {
@@ -465,86 +451,148 @@ const controlVivoController = {
             };
           };
 
-          const actividadesEq = [];
-          if (tipoDiaEq === 'INICIO' || tipoDiaEq === 'UNICO') {
-            const inspPlan = ejec.preparacion_salida?.inspecciones_patio?.[eq.id_equipo]?.hora_inspeccion_plan || '07:30';
-            const inspReal = patioHoy ? (getHoraStrFromDate(patioHoy.fecha_real_ini) || getHoraStrFromDate(patioHoy.created)) : null;
-            const inspOk = patioHoy && ['COMPLETADO', 'FINALIZADO', 'EJECUTADO', 'APROBADO', 'VALIDADO'].includes(String(patioHoy.estado_srv).toUpperCase());
-            actividadesEq.push(evalActividadEq('INSPECCION_PATIO', 'Inspección de patio', inspPlan, inspReal, inspOk));
+          // Función para calcular actividades y estado de un día específico
+          const calcularActividadesDia = (diaNum, fDia, tDia) => {
+            const rDia = eqHistReports.find(r => {
+              if (!r.fecha_reporte) return false;
+              const dStr = new Date(r.fecha_reporte).toISOString().split('T')[0];
+              return dStr === fDia || Number(r.dia_correlativo) === Number(diaNum);
+            }) || null;
 
-            const salReal = viajeHoy ? (getHoraStrFromDate(viajeHoy.device_timestamp_salida) || getHoraStrFromDate(viajeHoy.fecha_salida_patio)) : null;
-            const salOk = viajeHoy && (viajeHoy.estado_trayecto === 'EN_RUTA' || viajeHoy.estado_trayecto === 'ARRIBADO' || !!viajeHoy.fecha_salida_patio);
-            actividadesEq.push(evalActividadEq('SALIDA_BASE', 'Salida patio (inicio viaje)', hSalidaPlan, salReal, salOk));
+            const vDiaIda = (tDia === 'INICIO' || tDia === 'UNICO')
+              ? (viajesEq.find(v => v.tipo_trayecto !== 'RETORNO') || null)
+              : null;
 
-            const llegReal = viajeHoy ? (getHoraStrFromDate(viajeHoy.device_timestamp_llegada) || getHoraStrFromDate(viajeHoy.fecha_llegada_faena)) : null;
-            const llegOk = viajeHoy && (viajeHoy.estado_trayecto === 'ARRIBADO' || !!viajeHoy.fecha_llegada_faena);
-            actividadesEq.push(evalActividadEq('LLEGADA_FAENA', 'Llegada faena (fin viaje)', hLlegadaPlan, llegReal, llegOk));
-          }
+            const vDiaRet = (tDia === 'TERMINO' || tDia === 'UNICO')
+              ? (viajesEq.find(v => v.tipo_trayecto === 'RETORNO') || null)
+              : null;
 
-          if (esEquipoFaena) {
-            const diaPlanObj = Array.isArray(ejec.plan_diario) ? ejec.plan_diario.find(d => d.fecha === fechaConsulta) : null;
-            const repIniPlan = diaPlanObj?.hora_inicio_jornada || (tipoDiaEq === 'INICIO' ? '10:00' : '08:00');
-            const repIniOk = reportHoy && (reportHoy.estado_jornada === 'JORNADA_EN_CURSO' || reportHoy.estado_jornada === 'FINALIZADA' || ['VALIDADO_ANALISTA', 'EMITIDO_SELLADO', 'CERRADO', 'REPORT_FIRMADO'].includes(reportHoy.estado_reporte));
-            const repIniReal = repIniOk ? (getHoraStrFromDate(reportHoy.fecha_inicio_servicio) || getHoraStrFromDate(reportHoy.device_timestamp) || getHoraStrFromDate(reportHoy.fecha_registro)) : null;
-            actividadesEq.push(evalActividadEq('REPORT_INICIO', 'Report inicio jornada', repIniPlan, repIniReal, repIniOk));
+            const ptDia = (tDia === 'INICIO' || tDia === 'UNICO')
+              ? (patioSurveysEq.find(pt => {
+                  const dIni = pt.fecha_real_ini ? new Date(pt.fecha_real_ini).toISOString().split('T')[0] : '';
+                  const dC = pt.created ? new Date(pt.created).toISOString().split('T')[0] : '';
+                  return dIni === fDia || dC === fDia;
+                }) || patioSurveysEq[0] || null)
+              : null;
 
-            const repFinPlan = diaPlanObj?.hora_termino_jornada || hFinPlan;
-            const repFinOk = reportHoy && (reportHoy.estado_jornada === 'FINALIZADA' || ['VALIDADO_ANALISTA', 'EMITIDO_SELLADO', 'CERRADO', 'REPORT_FIRMADO'].includes(reportHoy.estado_reporte));
-            const repFinReal = repFinOk ? (getHoraStrFromDate(reportHoy.fecha_termino_servicio) || getHoraStrFromDate(reportHoy.fecha_transmision_termino) || getHoraStrFromDate(reportHoy.device_timestamp) || getHoraStrFromDate(reportHoy.fecha_registro)) : null;
-            actividadesEq.push(evalActividadEq('REPORT_TERMINO', 'Report término jornada', repFinPlan, repFinReal, repFinOk));
-          }
+            const acts = [];
+            if (tDia === 'INICIO' || tDia === 'UNICO') {
+              const inspPlan = ejec.preparacion_salida?.inspecciones_patio?.[eq.id_equipo]?.hora_inspeccion_plan || '07:30';
+              const inspReal = ptDia ? (getHoraStrFromDate(ptDia.fecha_real_ini) || getHoraStrFromDate(ptDia.created)) : null;
+              const inspOk = ptDia && ['COMPLETADO', 'FINALIZADO', 'EJECUTADO', 'APROBADO', 'VALIDADO'].includes(String(ptDia.estado_srv).toUpperCase());
+              acts.push(evalActividadParaFecha(fDia, 'INSPECCION_PATIO', 'Inspección de patio', inspPlan, inspReal, inspOk));
 
-          if (tipoDiaEq === 'TERMINO' || tipoDiaEq === 'UNICO') {
-            const retPlan = '18:30';
-            const retReal = viajeHoy && viajeHoy.tipo_trayecto === 'RETORNO' ? (getHoraStrFromDate(viajeHoy.fecha_salida_patio) || null) : null;
-            const retOk = !!retReal;
-            actividadesEq.push(evalActividadEq('VIAJE_RETORNO', 'Viaje retorno a base', retPlan, retReal, retOk));
-          }
+              const salReal = vDiaIda ? (getHoraStrFromDate(vDiaIda.device_timestamp_salida) || getHoraStrFromDate(vDiaIda.fecha_salida_patio)) : null;
+              const salOk = vDiaIda && (vDiaIda.estado_trayecto === 'EN_RUTA' || vDiaIda.estado_trayecto === 'ARRIBADO' || !!vDiaIda.fecha_salida_patio);
+              acts.push(evalActividadParaFecha(fDia, 'SALIDA_BASE', 'Salida patio (inicio viaje)', hSalidaPlan, salReal, salOk));
 
-          let estadoEquipo = 'verde';
-          if (candadoActivoEq) {
-            estadoEquipo = 'terminado';
-          } else if (!fSalidaPlan) {
-            estadoEquipo = 'sinplan';
-          } else {
-            estadoEquipo = actividadesEq.reduce((peor, act) => {
-              return PRI_SEMAFORO[act.estado] > PRI_SEMAFORO[peor] ? act.estado : peor;
-            }, 'verde');
-          }
+              const llegReal = vDiaIda ? (getHoraStrFromDate(vDiaIda.device_timestamp_llegada) || getHoraStrFromDate(vDiaIda.fecha_llegada_faena)) : null;
+              const llegOk = vDiaIda && (vDiaIda.estado_trayecto === 'ARRIBADO' || !!vDiaIda.fecha_llegada_faena);
+              acts.push(evalActividadParaFecha(fDia, 'LLEGADA_FAENA', 'Llegada faena (fin viaje)', hLlegadaPlan, llegReal, llegOk));
+            }
 
-          // Franja multi-día del equipo
+            if (esEquipoFaena) {
+              const diaPlanObj = Array.isArray(ejec.plan_diario) ? ejec.plan_diario.find(d => d.fecha === fDia) : null;
+              const repIniPlan = diaPlanObj?.hora_inicio_jornada || (tDia === 'INICIO' ? '10:00' : '08:00');
+              const repIniOk = !!rDia && (
+                !!rDia.fecha_inicio_servicio ||
+                rDia.estado_jornada === 'JORNADA_EN_CURSO' ||
+                rDia.estado_jornada === 'CONCLUIDO' ||
+                rDia.estado_jornada === 'FINALIZADA' ||
+                ['PENDIENTE_VALIDACION', 'VALIDADO_ANALISTA', 'REGULARIZADO_MANUAL', 'EMITIDO_SELLADO', 'CERRADO', 'REPORT_FIRMADO'].includes(rDia.estado_reporte)
+              );
+              const repIniReal = repIniOk ? (getHoraStrFromDate(rDia.fecha_inicio_servicio) || getHoraStrFromDate(rDia.device_timestamp) || getHoraStrFromDate(rDia.fecha_registro)) : null;
+              acts.push(evalActividadParaFecha(fDia, 'REPORT_INICIO', 'Report inicio jornada', repIniPlan, repIniReal, repIniOk));
+
+              const repFinPlan = diaPlanObj?.hora_termino_jornada || hFinPlan;
+              const repFinOk = !!rDia && (
+                !!rDia.fecha_termino_servicio ||
+                rDia.estado_jornada === 'CONCLUIDO' ||
+                rDia.estado_jornada === 'FINALIZADA' ||
+                ['PENDIENTE_VALIDACION', 'VALIDADO_ANALISTA', 'REGULARIZADO_MANUAL', 'EMITIDO_SELLADO', 'CERRADO', 'REPORT_FIRMADO'].includes(rDia.estado_reporte)
+              );
+              const repFinReal = repFinOk ? (getHoraStrFromDate(rDia.fecha_termino_servicio) || getHoraStrFromDate(rDia.fecha_transmision_termino) || getHoraStrFromDate(rDia.device_timestamp) || getHoraStrFromDate(rDia.fecha_registro)) : null;
+              acts.push(evalActividadParaFecha(fDia, 'REPORT_TERMINO', 'Report término jornada', repFinPlan, repFinReal, repFinOk));
+            }
+
+            if (tDia === 'TERMINO' || tDia === 'UNICO') {
+              const retPlan = '18:30';
+              const retReal = vDiaRet ? (getHoraStrFromDate(vDiaRet.fecha_salida_patio) || getHoraStrFromDate(vDiaRet.fecha_salida_faena) || null) : null;
+              const retOk = !!retReal;
+              acts.push(evalActividadParaFecha(fDia, 'VIAJE_RETORNO', 'Viaje retorno a base', retPlan, retReal, retOk));
+            }
+
+            let stDia = 'verde';
+            if (candadoActivoEq && (diaNum === totalDiasOTEq)) {
+              stDia = 'terminado';
+            } else if (!fSalidaPlan) {
+              stDia = 'sinplan';
+            } else if (fDia > fechaHoyChile && !rDia) {
+              stDia = 'azul';
+            } else {
+              stDia = acts.reduce((peor, act) => {
+                return PRI_SEMAFORO[act.estado] > PRI_SEMAFORO[peor] ? act.estado : peor;
+              }, 'verde');
+            }
+
+            return {
+              actividades: acts,
+              estado: stDia,
+              report: rDia,
+              viaje: vDiaRet || vDiaIda
+            };
+          };
+
+          // Construcción de la Franja Multi-Día con desglose por cada jornada
           const franjaMultidiaEq = [];
           const cantDiasMostrar = Math.max(totalDiasOTEq, diasHabilesLista.length);
           for (let i = 0; i < cantDiasMostrar; i++) {
             const diaNum = i + 1;
             const fechaDia = diasHabilesLista[i] || `Día ${diaNum}`;
             const esDiaHoy = fechaDia === fechaConsulta || diaNum === diaActualEq;
-            let stDia = 'futuro';
-            let tieneRep = false;
+            const tDia = (cantDiasMostrar === 1) ? 'UNICO' : (diaNum === 1 ? 'INICIO' : (diaNum === cantDiasMostrar ? 'TERMINO' : 'INTERMEDIO'));
 
-            const rPrev = eqHistReports.find(hr => {
-              const fStr = hr.fecha_reporte ? new Date(hr.fecha_reporte).toISOString().split('T')[0] : '';
-              return fStr === fechaDia || Number(hr.dia_correlativo) === diaNum;
-            });
-
-            if (rPrev && rPrev.estado_reporte !== 'JORNADA_EN_CURSO') {
-              stDia = 'verde';
-              tieneRep = true;
-            } else if (esDiaHoy) {
-              stDia = estadoEquipo;
-              tieneRep = !!reportHoy;
-            } else if (fechaDia < fechaConsulta) {
-              stDia = 'rojo';
-            }
+            const evalDia = calcularActividadesDia(diaNum, fechaDia, tDia);
+            const rPrev = evalDia.report;
+            const vRepr = evalDia.viaje;
 
             franjaMultidiaEq.push({
               dia: diaNum,
               fecha: fechaDia,
-              estado: stDia,
+              tipo_dia: tDia,
+              estado: evalDia.estado,
               es_hoy: esDiaHoy,
-              tiene_report: tieneRep,
-              es_fin: i === cantDiasMostrar - 1
+              tiene_report: !!rPrev,
+              report_firmado: !!rPrev && ['EMITIDO_SELLADO', 'VALIDADO_ANALISTA', 'REGULARIZADO_MANUAL', 'CERRADO', 'REPORT_FIRMADO'].includes(rPrev.estado_reporte),
+              id_reporte_avance: rPrev ? rPrev.id_reporte_avance : null,
+              estado_reporte: rPrev ? rPrev.estado_reporte : null,
+              tiene_viaje: !!vRepr,
+              id_log_desplazamiento: vRepr ? vRepr.id_log_desplazamiento : null,
+              token_viaje: vRepr ? vRepr.token_viaje : null,
+              viaje_resumen: vRepr ? {
+                id_log_desplazamiento: vRepr.id_log_desplazamiento,
+                token_viaje: vRepr.token_viaje,
+                tipo_trayecto: vRepr.tipo_trayecto,
+                estado_trayecto: vRepr.estado_trayecto,
+                patente: vRepr.patente || eq.patente,
+                km_inicial: vRepr.km_inicial,
+                km_final: vRepr.km_final,
+                horometro_inicial: vRepr.horometro_inicial,
+                horometro_final: vRepr.horometro_final,
+                fecha_salida_patio: vRepr.fecha_salida_patio,
+                fecha_llegada_faena: vRepr.fecha_llegada_faena
+              } : null,
+              es_fin: i === cantDiasMostrar - 1,
+              actividades: evalDia.actividades
             });
+          }
+
+          // Actividades y estado activo para la fecha consultada (compatibilidad hacia atrás)
+          const diaConsultadoItem = franjaMultidiaEq.find(d => d.es_hoy) || franjaMultidiaEq[0];
+          const actividadesEq = diaConsultadoItem ? diaConsultadoItem.actividades : [];
+          let estadoEquipo = diaConsultadoItem ? diaConsultadoItem.estado : 'verde';
+          if (candadoActivoEq) {
+            estadoEquipo = 'terminado';
           }
 
           equiposEvaluados.push({

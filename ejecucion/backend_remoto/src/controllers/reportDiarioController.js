@@ -156,23 +156,64 @@ const reportDiarioController = {
         }
       }
 
-      // 1.3 Consultar personal / tripulación asignada (DEDUPLICADA por id_user)
+      // 1.3 Consultar personal / tripulación asignada (DEDUPLICADA por id_user, priorizando última asignación)
       const perSql = `
-        SELECT DISTINCT ON (rp.id_user)
-          rp.id_rel_persona,
-          rp.id_user,
-          rp.rol_asignado,
-          u.name_frst,
-          u.apellido_pat,
-          u.apellido_mat,
-          u.email,
-          u.rut
-        FROM tpry_rel_persona rp
-        JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1
-        ORDER BY rp.id_user, rp.id_rel_persona DESC;
+        SELECT * FROM (
+          SELECT DISTINCT ON (rp.id_user)
+            rp.id_rel_persona,
+            rp.id_user,
+            rp.rol_asignado,
+            u.name_frst,
+            u.apellido_pat,
+            u.apellido_mat,
+            u.email,
+            u.rut
+          FROM tpry_rel_persona rp
+          JOIN tsec_users u ON rp.id_user = u.id_user
+          WHERE rp.id_proyecto = $1
+          ORDER BY rp.id_user, rp.id_rel_persona DESC
+        ) sub
+        ORDER BY sub.id_rel_persona DESC;
       `;
       const perRes = await db.query(perSql, [id_proyecto]);
+      let personas = perRes.rows;
+
+      // Fallback 1: Si no hay personas asignadas en tpry_rel_persona, buscar en tequ_log_desplazamiento
+      if (personas.length === 0) {
+        const viajeChoferRes = await db.query(`
+          SELECT DISTINCT ON (u.id_user)
+            1 AS id_rel_persona,
+            u.id_user,
+            'OPERADOR' AS rol_asignado,
+            u.name_frst,
+            u.apellido_pat,
+            u.apellido_mat,
+            u.email,
+            u.rut
+          FROM tequ_log_desplazamiento d
+          JOIN tsec_users u ON d.id_user_chofer = u.id_user
+          WHERE d.id_proyecto = $1
+          ORDER BY u.id_user, d.id_log_desplazamiento DESC
+        `, [id_proyecto]);
+        if (viajeChoferRes.rows.length > 0) {
+          personas = viajeChoferRes.rows;
+        }
+      }
+
+      // Fallback 2: Si aun esta vacio, buscar en json_field.ejecucion_v1.tripulacion
+      if (personas.length === 0 && proyecto.json_field?.ejecucion_v1?.tripulacion) {
+        const trip = proyecto.json_field.ejecucion_v1.tripulacion;
+        for (const t of trip) {
+          const uid = t.id_user || t.id;
+          if (uid) {
+            const uRes = await db.query(
+              `SELECT 1 AS id_rel_persona, id_user, $2 AS rol_asignado, name_frst, apellido_pat, apellido_mat, email, rut FROM tsec_users WHERE id_user = $1`,
+              [uid, t.rol || 'OPERADOR']
+            );
+            if (uRes.rows.length > 0) personas.push(uRes.rows[0]);
+          }
+        }
+      }
 
       // 1.4 Consultar reports ya emitidos para esta OT
       const repSql = `
@@ -298,7 +339,7 @@ const reportDiarioController = {
           proyecto,
           equipos,
           id_equipo_seleccionado: targetIdEquipo,
-          personas: perRes.rows,
+          personas: personas,
           reports,
           reports_equipo: reportsDelEquipo,
           dia_sugerido: diaSugerido,
@@ -368,6 +409,28 @@ const reportDiarioController = {
       }
 
       const deviceTs = req.body.device_timestamp ? new Date(req.body.device_timestamp) : null;
+
+      // REQ-1012 / Spec 66: Invariante de Secuencia Cronológica Multi-Día (Fail-Closed)
+      if (Number(dia_correlativo) > 1) {
+        const diaPrevio = Number(dia_correlativo) - 1;
+        const prevSql = `
+          SELECT id_reporte_avance, estado_reporte, estado_jornada, horometro_final, horometro_grua_termino
+          FROM tedp_reporte_avance
+          WHERE id_proyecto = $1 
+            AND (id_equipo = $2 OR $2 IS NULL)
+            AND dia_correlativo = $3
+            AND (token_report IS NULL OR token_report NOT LIKE 'FLT-%')
+          ORDER BY id_reporte_avance DESC LIMIT 1;
+        `;
+        const prevRes = await db.query(prevSql, [id_proyecto, id_equipo || null, diaPrevio]);
+        if (prevRes.rows.length === 0 || prevRes.rows[0].estado_reporte === 'JORNADA_EN_CURSO') {
+          return res.status(409).json({
+            success: false,
+            codigo: 'DIA_PREVIO_PENDIENTE',
+            error: `Secuencia cronológica bloqueada: El reporte del Día ${diaPrevio} aún no ha sido concluido y firmado por el cliente mandante. Debe finalizar y sellar el Día ${diaPrevio} antes de iniciar la jornada del Día ${dia_correlativo}.`
+          });
+        }
+      }
 
       // Verificar si ya existe una jornada en curso para hoy y este equipo
       const existSql = `
@@ -514,6 +577,9 @@ const reportDiarioController = {
           r.longitud_termino_servicio,
           r.horas_operadas,
           r.horas_standby,
+          r.horas_standby_cliente,
+          r.horas_standby_gsp,
+          r.motivo_standby,
           r.horas_colacion,
           r.horas_minimas,
           r.horas_facturables,
@@ -573,6 +639,9 @@ const reportDiarioController = {
         SELECT 
           ra.id_reporte_avance,
           ra.id_proyecto,
+          ra.id_equipo,
+          ra.id_user_operador,
+          ra.id_user_rigger,
           ra.dia_correlativo,
           ra.fecha_reporte,
           ra.fecha_inicio_servicio,
@@ -900,7 +969,10 @@ const reportDiarioController = {
         cliente_firma_canvas_base64,
         latitud_inicio_servicio,
         longitud_inicio_servicio,
-        accuracy_firma
+        accuracy_firma,
+        horas_standby_cliente,
+        horas_standby_gsp,
+        motivo_standby
       } = req.body;
 
       // Normalización de campos alias desde Hoja de Ruta móvil
@@ -914,6 +986,9 @@ const reportDiarioController = {
       cliente_firma_canvas_base64 = cliente_firma_canvas_base64 || req.body.firma_mandante;
       observacion_trabajo = observacion_trabajo || req.body.maniobra_detalle || '';
       horas_operadas = horas_operadas !== undefined ? horas_operadas : (req.body.horas_efectivas || 0);
+      horas_standby_cliente = Number(horas_standby_cliente || req.body.horas_standby || 0);
+      horas_standby_gsp = Number(horas_standby_gsp || 0);
+      motivo_standby = motivo_standby || req.body.motivo_standby || null;
       if (horas_colacion === undefined && req.body.colacion_minutos !== undefined) {
         horas_colacion = Number((Number(req.body.colacion_minutos) / 60).toFixed(2));
       }
@@ -1021,10 +1096,11 @@ const reportDiarioController = {
       }
       horas_minimas = Number(horas_minimas || 8.0);
 
-      // Recalcular sobretiempo y facturables con base contractual fidedigna
-      if (horas_operadas !== undefined && Number(horas_operadas) > 0) {
-        horas_sobretiempo = Number(Math.max(0, Number(horas_operadas) - horas_minimas).toFixed(1));
-        horas_facturables = Number(Math.max(Number(horas_operadas), horas_minimas).toFixed(1));
+      // Recalcular sobretiempo y facturables con base contractual fidedigna (incluyendo Standby Cliente)
+      if (horas_operadas !== undefined && Number(horas_operadas) >= 0) {
+        const totalComputable = Number(horas_operadas) + horas_standby_cliente;
+        horas_sobretiempo = Number(Math.max(0, totalComputable - horas_minimas).toFixed(1));
+        horas_facturables = Number(Math.max(totalComputable, horas_minimas).toFixed(1));
       }
 
       let reportGuardado;
@@ -1063,11 +1139,15 @@ const reportDiarioController = {
             cliente_rut = $28,
             cliente_cargo = $29,
             cliente_firma_canvas_base64 = $30,
+            horas_standby = $31,
+            horas_standby_cliente = $32,
+            horas_standby_gsp = $33,
+            motivo_standby = $34,
             fecha_transmision_termino = CURRENT_TIMESTAMP,
-            device_timestamp = COALESCE($31, device_timestamp),
+            device_timestamp = COALESCE($35, device_timestamp),
             estado_reporte = 'PENDIENTE_VALIDACION',
             estado_jornada = 'FINALIZADA'
-          WHERE id_reporte_avance = $32
+          WHERE id_reporte_avance = $36
           RETURNING *;
         `;
         const upRes = await db.query(updateSql, [
@@ -1101,6 +1181,10 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
+          horas_standby_cliente,
+          horas_standby_cliente,
+          horas_standby_gsp,
+          motivo_standby,
           deviceTs,
           id_reporte_avance
         ]);
@@ -1142,6 +1226,10 @@ const reportDiarioController = {
             cliente_rut,
             cliente_cargo,
             cliente_firma_canvas_base64,
+            horas_standby,
+            horas_standby_cliente,
+            horas_standby_gsp,
+            motivo_standby,
             token_report,
             device_timestamp,
             fecha_transmision_termino,
@@ -1149,7 +1237,7 @@ const reportDiarioController = {
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
           )
           RETURNING *;
         `;
@@ -1187,6 +1275,10 @@ const reportDiarioController = {
           cliente_rut || '',
           cliente_cargo || 'Receptor en Obra',
           cliente_firma_canvas_base64,
+          horas_standby_cliente,
+          horas_standby_cliente,
+          horas_standby_gsp,
+          motivo_standby,
           token_report,
           deviceTs
         ]);
@@ -1344,6 +1436,13 @@ const reportDiarioController = {
       let nuevaFechaInicio = rep.fecha_inicio_servicio;
       let nuevaFechaTermino = rep.fecha_termino_servicio;
       let nuevoSobretiempo = parseFloat(rep.horas_sobretiempo || 0);
+      let nuevoIdOperador = rep.id_user_operador ? Number(rep.id_user_operador) : null;
+      let nuevoIdRigger = rep.id_user_rigger ? Number(rep.id_user_rigger) : null;
+      let nuevoOpNombre = rep.op_nombre || '';
+      let nuevoOpApellido = rep.op_apellido || '';
+      let nuevoOpEmail = rep.op_email || '';
+      let nuevoRigNombre = rep.rig_nombre || '';
+      let nuevoRigApellido = rep.rig_apellido || '';
       let payloadAjustes = rep.ajustes_analista || null;
 
       if (ajustes && typeof ajustes === 'object') {
@@ -1356,6 +1455,13 @@ const reportDiarioController = {
         const odoFin = ajustes.odometro_termino !== undefined && ajustes.odometro_termino !== null ? parseFloat(ajustes.odometro_termino) : null;
         const hFact = ajustes.horas_facturables !== undefined && ajustes.horas_facturables !== null ? parseFloat(ajustes.horas_facturables) : null;
         const hOper = ajustes.horas_operadas !== undefined && ajustes.horas_operadas !== null ? parseFloat(ajustes.horas_operadas) : null;
+        const reqOpId = ajustes.id_user_operador !== undefined && ajustes.id_user_operador !== null && ajustes.id_user_operador !== ''
+          ? Number(ajustes.id_user_operador)
+          : null;
+        const tieneAjusteRigger = Object.prototype.hasOwnProperty.call(ajustes, 'id_user_rigger');
+        const reqRigId = tieneAjusteRigger && ajustes.id_user_rigger !== null && ajustes.id_user_rigger !== ''
+          ? Number(ajustes.id_user_rigger)
+          : null;
 
         const parseHHMM = (val, def) => {
           if (!val) return def;
@@ -1387,13 +1493,45 @@ const reportDiarioController = {
         const difOdoFin = odoFin !== null && Math.abs(odoFin - nuevoOdometroTermino) > 0.1;
         const difFact = hFact !== null && Math.abs(hFact - nuevoHorasFacturables) > 0.01;
         const difOper = hOper !== null && Math.abs(hOper - nuevoHorasOperadas) > 0.01;
+        const difOperador = reqOpId !== null && reqOpId !== nuevoIdOperador;
+        const difRigger = tieneAjusteRigger && reqRigId !== nuevoIdRigger;
 
-        if (difHInicio || difHTermino || difCol || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper) {
+        if (difHInicio || difHTermino || difCol || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper || difOperador || difRigger) {
           huboAjustes = true;
 
           const fechaBase = rep.fecha_reporte ? (new Date(rep.fecha_reporte).toISOString().split('T')[0]) : (new Date().toISOString().split('T')[0]);
           if (hInicio) nuevaFechaInicio = `${fechaBase} ${hInicio}:00`;
           if (hTermino) nuevaFechaTermino = `${fechaBase} ${hTermino}:00`;
+
+          const origOperadorNombre = `${rep.op_nombre || ''} ${rep.op_apellido || ''}`.trim() || 'Sin Operador';
+          const origRiggerNombre = rep.id_user_rigger ? (`${rep.rig_nombre || ''} ${rep.rig_apellido || ''}`.trim() || 'Rigger') : 'Sin Rigger';
+
+          if (difOperador && reqOpId) {
+            const uOpRes = await db.query('SELECT id_user, name_frst, apellido_pat, email FROM tsec_users WHERE id_user = $1', [reqOpId]);
+            if (uOpRes.rows.length > 0) {
+              nuevoIdOperador = uOpRes.rows[0].id_user;
+              nuevoOpNombre = uOpRes.rows[0].name_frst || '';
+              nuevoOpApellido = uOpRes.rows[0].apellido_pat || '';
+              nuevoOpEmail = uOpRes.rows[0].email || '';
+            }
+          }
+          if (difRigger) {
+            if (reqRigId) {
+              const uRigRes = await db.query('SELECT id_user, name_frst, apellido_pat FROM tsec_users WHERE id_user = $1', [reqRigId]);
+              if (uRigRes.rows.length > 0) {
+                nuevoIdRigger = uRigRes.rows[0].id_user;
+                nuevoRigNombre = uRigRes.rows[0].name_frst || '';
+                nuevoRigApellido = uRigRes.rows[0].apellido_pat || '';
+              }
+            } else {
+              nuevoIdRigger = null;
+              nuevoRigNombre = '';
+              nuevoRigApellido = '';
+            }
+          }
+
+          const ajustadoOperadorNombre = `${nuevoOpNombre || ''} ${nuevoOpApellido || ''}`.trim() || 'Sin Operador';
+          const ajustadoRiggerNombre = nuevoIdRigger ? (`${nuevoRigNombre || ''} ${nuevoRigApellido || ''}`.trim() || 'Rigger') : 'Sin Rigger';
 
           payloadAjustes = {
             modificado: true,
@@ -1409,7 +1547,11 @@ const reportDiarioController = {
               horometro_inicio: nuevoHorometroInicio,
               horometro_termino: nuevoHorometroTermino,
               odometro_inicio: nuevoOdometroInicio,
-              odometro_termino: nuevoOdometroTermino
+              odometro_termino: nuevoOdometroTermino,
+              id_user_operador: rep.id_user_operador ? Number(rep.id_user_operador) : null,
+              operador_nombre: origOperadorNombre,
+              id_user_rigger: rep.id_user_rigger ? Number(rep.id_user_rigger) : null,
+              rigger_nombre: origRiggerNombre
             },
             valores_ajustados: {
               hora_inicio: hInicio || origHInicio,
@@ -1420,7 +1562,11 @@ const reportDiarioController = {
               horometro_inicio: horoIni !== null ? horoIni : nuevoHorometroInicio,
               horometro_termino: horoFin !== null ? horoFin : nuevoHorometroTermino,
               odometro_inicio: odoIni !== null ? odoIni : nuevoOdometroInicio,
-              odometro_termino: odoFin !== null ? odoFin : nuevoOdometroTermino
+              odometro_termino: odoFin !== null ? odoFin : nuevoOdometroTermino,
+              id_user_operador: nuevoIdOperador,
+              operador_nombre: ajustadoOperadorNombre,
+              id_user_rigger: nuevoIdRigger,
+              rigger_nombre: ajustadoRiggerNombre
             },
             observacion_ajuste: obs_validador || 'Ajustes validados por Control de Gestión'
           };
@@ -1461,8 +1607,10 @@ const reportDiarioController = {
           fecha_inicio_servicio = $11,
           fecha_termino_servicio = $12,
           horas_sobretiempo = $13,
-          ajustes_analista = $14
-        WHERE id_reporte_avance = $15
+          ajustes_analista = $14,
+          id_user_operador = $15,
+          id_user_rigger = $16
+        WHERE id_reporte_avance = $17
         RETURNING *;
       `;
 
@@ -1481,10 +1629,14 @@ const reportDiarioController = {
         nuevaFechaTermino,
         nuevoSobretiempo,
         payloadAjustes ? JSON.stringify(payloadAjustes) : null,
+        nuevoIdOperador,
+        nuevoIdRigger,
         id
       ]);
 
       const reportActualizado = result.rows[0];
+      reportActualizado.operador_nombre = `${nuevoOpNombre || ''} ${nuevoOpApellido || ''}`.trim() || 'Operador';
+      reportActualizado.rigger_nombre = nuevoIdRigger ? (`${nuevoRigNombre || ''} ${nuevoRigApellido || ''}`.trim() || null) : null;
 
       // 4.6 Generar PDF Oficial del Report Diario con Doble Firma (Mandante GPS + FES Analista)
       let idDocPdf = null;
@@ -1498,10 +1650,10 @@ const reportDiarioController = {
             ...reportActualizado,
             equipo_patente: rep.equipo_patente,
             equipo_modelo: rep.equipo_modelo,
-            op_nombre: rep.op_nombre,
-            op_apellido: rep.op_apellido,
-            rig_nombre: rep.rig_nombre,
-            rig_apellido: rep.rig_apellido,
+            op_nombre: nuevoOpNombre,
+            op_apellido: nuevoOpApellido,
+            rig_nombre: nuevoIdRigger ? nuevoRigNombre : null,
+            rig_apellido: nuevoIdRigger ? nuevoRigApellido : null,
             val_nombre: validadorUser.name_frst,
             val_apellido: validadorUser.apellido_pat,
             val_rut: validadorUser.rut,
@@ -2304,7 +2456,213 @@ const reportDiarioController = {
       console.error('[Regularizar Reporte Manual] Error:', err);
       res.status(500).json({ success: false, error: err.message });
     }
+  },
+
+  /**
+   * 16. Rectificación Retroactiva de Operador y Rigger desde Asignación de Recursos (SPEC-077 / REQ-1043)
+   * POST /api/operaciones/report/proyecto/:id_proyecto/rectificar-tripulacion
+   */
+  async rectificarTripulacionProyecto(req, res) {
+    try {
+      const { id_proyecto } = req.params;
+      const {
+        id_equipo,
+        id_user_operador_nuevo,
+        id_user_rigger_nuevo,
+        Alcance,
+        fecha_desde,
+        fecha_hasta,
+        id_user_autor,
+        motivo_rectificacion
+      } = req.body;
+
+      if (!id_proyecto || (!id_user_operador_nuevo && id_user_rigger_nuevo === undefined)) {
+        return res.status(400).json({ success: false, error: 'Se requiere id_proyecto y al menos un operador o rigger a rectificar.' });
+      }
+
+      let opInfo = null;
+      if (id_user_operador_nuevo) {
+        const uRes = await pool.query(`SELECT id_user, user_name, user_lastname, activo FROM tsec_users WHERE id_user = $1`, [id_user_operador_nuevo]);
+        if (uRes.rows.length > 0) {
+          if (uRes.rows[0].activo === false) {
+            return res.status(400).json({ success: false, error: 'El operador seleccionado se encuentra INACTIVO y no puede ser asignado.' });
+          }
+          opInfo = uRes.rows[0];
+        }
+      }
+      let rigInfo = null;
+      if (id_user_rigger_nuevo) {
+        const rRes = await pool.query(`SELECT id_user, user_name, user_lastname, activo FROM tsec_users WHERE id_user = $1`, [id_user_rigger_nuevo]);
+        if (rRes.rows.length > 0) {
+          if (rRes.rows[0].activo === false) {
+            return res.status(400).json({ success: false, error: 'El rigger seleccionado se encuentra INACTIVO y no puede ser asignado.' });
+          }
+          rigInfo = rRes.rows[0];
+        }
+      }
+
+      const params = [id_proyecto];
+      let whereClause = `ra.id_proyecto = $1`;
+      if (id_equipo) {
+        params.push(id_equipo);
+        whereClause += ` AND ra.id_equipo = $${params.length}`;
+      }
+      if (Alcance === 'RANGO_FECHAS' && fecha_desde && fecha_hasta) {
+        params.push(fecha_desde, fecha_hasta);
+        whereClause += ` AND ra.fecha_reporte::date BETWEEN $${params.length - 1}::date AND $${params.length}::date`;
+      } else if (Alcance === 'PENDIENTES') {
+        whereClause += ` AND ra.estado_reporte != 'VALIDADO_ANALISTA'`;
+      }
+
+      const repsRes = await pool.query(`
+        SELECT ra.*,
+               eq.codigo_interno, eq.patente, eq.marca, eq.modelo, eq.capacidad_ton,
+               u.user_name as op_nombre, u.user_lastname as op_apellido, u.email as op_email,
+               ur.user_name as rig_nombre, ur.user_lastname as rig_apellido,
+               val.user_name as val_nombre, val.user_lastname as val_apellido, val.email as val_email,
+               p.nombre_proyecto, p.codigo_proyecto, p.json_field as pry_json,
+               cli.razon_social as cliente_razon_social, cli.rut_empresa as cliente_rut
+        FROM tedp_reporte_avance ra
+        LEFT JOIN tlog_equipo eq ON ra.id_equipo = eq.id_equipo
+        LEFT JOIN tsec_users u ON ra.id_user_operador = u.id_user
+        LEFT JOIN tsec_users ur ON ra.id_user_rigger = ur.id_user
+        LEFT JOIN tsec_users val ON ra.id_user_validador_interno = val.id_user
+        LEFT JOIN tpry_proyecto p ON ra.id_proyecto = p.id_proyecto
+        LEFT JOIN tcrm_cliente cli ON p.id_cliente = cli.id_cliente
+        WHERE ${whereClause}
+        ORDER BY ra.fecha_reporte ASC, ra.id_reporte ASC
+      `, params);
+
+      let reportesActualizados = 0;
+      let pdfsRegenerados = 0;
+
+      for (const rep of repsRes.rows) {
+        const finalOpId = id_user_operador_nuevo ? Number(id_user_operador_nuevo) : rep.id_user_operador;
+        const finalRigId = id_user_rigger_nuevo !== undefined ? (id_user_rigger_nuevo ? Number(id_user_rigger_nuevo) : null) : rep.id_user_rigger;
+
+        const prevAjustes = typeof rep.ajustes_analista === 'object' && rep.ajustes_analista !== null ? rep.ajustes_analista : {};
+        const prevOriginales = prevAjustes.valores_originales || {
+          id_user_operador: rep.id_user_operador,
+          operador_nombre: `${rep.op_nombre || ''} ${rep.op_apellido || ''}`.trim() || null,
+          id_user_rigger: rep.id_user_rigger || null,
+          rigger_nombre: rep.rig_nombre ? `${rep.rig_nombre || ''} ${rep.rig_apellido || ''}`.trim() : null
+        };
+
+        const nuevoOpNombre = opInfo ? opInfo.user_name : rep.op_nombre;
+        const nuevoOpApellido = opInfo ? opInfo.user_lastname : rep.op_apellido;
+        const nuevoRigNombre = id_user_rigger_nuevo !== undefined ? (rigInfo ? rigInfo.user_name : null) : rep.rig_nombre;
+        const nuevoRigApellido = id_user_rigger_nuevo !== undefined ? (rigInfo ? rigInfo.user_lastname : null) : rep.rig_apellido;
+
+        const nuevoAjustes = {
+          ...prevAjustes,
+          fecha_rectificacion_tripulacion: new Date().toISOString(),
+          id_user_rectificador: id_user_autor || null,
+          motivo_rectificacion_tripulacion: motivo_rectificacion || 'Rectificación de Operador/Rigger desde Asignación de Recursos OT',
+          valores_originales: {
+            ...prevOriginales,
+            id_user_operador: prevOriginales.id_user_operador ?? rep.id_user_operador,
+            operador_nombre: prevOriginales.operador_nombre ?? (`${rep.op_nombre || ''} ${rep.op_apellido || ''}`.trim() || null),
+            id_user_rigger: prevOriginales.id_user_rigger !== undefined ? prevOriginales.id_user_rigger : (rep.id_user_rigger || null),
+            rigger_nombre: prevOriginales.rigger_nombre !== undefined ? prevOriginales.rigger_nombre : (rep.rig_nombre ? `${rep.rig_nombre || ''} ${rep.rig_apellido || ''}`.trim() : null)
+          },
+          valores_ajustados: {
+            ...(prevAjustes.valores_ajustados || {}),
+            id_user_operador: finalOpId,
+            operador_nombre: `${nuevoOpNombre || ''} ${nuevoOpApellido || ''}`.trim() || null,
+            id_user_rigger: finalRigId,
+            rigger_nombre: nuevoRigNombre ? `${nuevoRigNombre || ''} ${nuevoRigApellido || ''}`.trim() : null
+          }
+        };
+
+        let idDocPdf = rep.id_doc_pdf;
+        if (rep.estado_reporte === 'VALIDADO_ANALISTA') {
+          try {
+            const pryJson = rep.pry_json || {};
+            const comV1 = pryJson.comercial_v1 || {};
+            const pdfData = {
+              ...rep,
+              id_user_operador: finalOpId,
+              id_user_rigger: finalRigId,
+              op_nombre: nuevoOpNombre,
+              op_apellido: nuevoOpApellido,
+              rig_nombre: nuevoRigNombre,
+              rig_apellido: nuevoRigApellido,
+              ajustes_analista: nuevoAjustes,
+              id_user_validador_interno: rep.id_user_validador_interno || id_user_autor,
+              val_nombre: rep.val_nombre || 'Control Gestión',
+              val_apellido: rep.val_apellido || 'GSP',
+              val_email: rep.val_email || '',
+              fecha_validacion_interna: rep.fecha_validacion_interna || new Date().toISOString(),
+              comercial_faena: comV1.faena || pryJson.direccion_faena || rep.nombre_proyecto,
+              comercial_Modalidad: comV1.Modalidad_tarifa || 'Por Hora'
+            };
+
+            const pdfGen = await generarPdfReportDiario(pdfData);
+            if (pdfGen && pdfGen.filePath) {
+              const docRes = await pool.query(`
+                INSERT INTO tdoc_documento (
+                  nombre_archivo, ruta_almacenamiento, mime_type, tamano_bytes,
+                  id_user_creador, origen_cargado
+                ) VALUES ($1, $2, 'application/pdf', $3, $4, 'SISTEMA_FES')
+                RETURNING id_documento
+              `, [pdfGen.fileName, pdfGen.filePath, pdfGen.sizeBytes, id_user_autor || rep.id_user_validador_interno || 1]);
+              idDocPdf = docRes.rows[0].id_documento;
+              pdfsRegenerados++;
+
+              await pool.query(`
+                INSERT INTO trel_documento (id_documento, tabla_rel, id_registro_rel, tipo_relacion)
+                VALUES ($1, 'tpry_proyecto', $2, 'REPORT_DIARIO_FIRMADO')
+              `, [idDocPdf, rep.id_proyecto]);
+            }
+          } catch (pdfErr) {
+            console.error('[Rectificar Tripulación] Error regenerando PDF reporte', rep.id_reporte, pdfErr);
+          }
+        }
+
+        await pool.query(`
+          UPDATE tedp_reporte_avance
+          SET id_user_operador = $1,
+              id_user_rigger = $2,
+              ajustes_analista = $3::jsonb,
+              id_doc_pdf = $4
+          WHERE id_reporte = $5
+        `, [finalOpId, finalRigId, JSON.stringify(nuevoAjustes), idDocPdf, rep.id_reporte]);
+
+        reportesActualizados++;
+      }
+
+      // Sincronizar también despachos de flota (tlog_despacho_flota) si se rectificó el operador
+      let despachosActualizados = 0;
+      if (id_user_operador_nuevo) {
+        const despParams = [id_user_operador_nuevo, id_proyecto];
+        let despWhere = `id_proyecto = $2`;
+        if (id_equipo) {
+          despParams.push(id_equipo);
+          despWhere += ` AND id_equipo = $3`;
+        }
+        const despRes = await pool.query(`
+          UPDATE tlog_despacho_flota
+          SET id_user_operador = $1
+          WHERE ${despWhere}
+        `, despParams);
+        despachosActualizados = despRes.rowCount || 0;
+      }
+
+      return res.json({
+        success: true,
+        message: `Tripulación rectificada en ${reportesActualizados} reporte(s) (${pdfsRegenerados} PDFs regenerados) y ${despachosActualizados} registro(s) de despacho.`,
+        data: {
+          reportes_actualizados: reportesActualizados,
+          pdfs_regenerados: pdfsRegenerados,
+          despachos_actualizados: despachosActualizados
+        }
+      });
+    } catch (err) {
+      console.error('[rectificarTripulacionProyecto] Error:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
   }
 };
 
 module.exports = reportDiarioController;
+

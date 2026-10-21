@@ -1310,7 +1310,15 @@ const surveyLoading = ref(false);
 const loadedSurveyId = ref(null);
 let inFlightSurveyRequest = null;
 
-idSurvey.value = route.query.idInspeccion;
+idSurvey.value = route.query.id_survey || route.query.idInspeccion || route.query.idSurvey || null;
+
+watch(() => route.query, async (newQuery) => {
+  const incomingId = newQuery.id_survey || newQuery.idInspeccion || newQuery.idSurvey;
+  if (incomingId && String(incomingId) !== String(loadedSurveyId.value)) {
+    idSurvey.value = incomingId;
+    await getSurvey();
+  }
+}, { deep: true });
 
 const surveys = ref(null);
 
@@ -5380,15 +5388,11 @@ async function handleTerminarSurvey() {
     await terminarSurveyYExportar(current.id_survey)
 
     dialogLoading.value = false
-    const idTemplate = Number(surveyDetailStore.surveyDetail[0].id_template)
-    if (isTemplate101.value || [70, 80].includes(idTemplate)) {
-      router.push({
-        path: '/firmas',
-        query: { id_survey: surveyDetailStore.surveyDetail[0].id_survey }
-      })
-    } else {
-      dialogResultado.value = true
-    }
+    // Encadenamiento inmediato: todo survey que pasa a aprobación abre directamente el diálogo FES
+    router.push({
+      path: '/firmas',
+      query: { id_survey: String(surveyDetailStore.surveyDetail[0].id_survey) }
+    })
   } catch (error) {
     dialogLoading.value = false
     console.error('Error al terminar survey:', error)
@@ -5499,10 +5503,10 @@ const exportarInspeccion = async (idInspeccion) => {
   formData.append('tipo_doc', 'DOCUMENTO')
   formData.append('mimetype', 'application/pdf');
   formData.append('name_doc_orig', '')
-  formData.append('name_doc_interno', '')
-  formData.append('tenant_code', 'transmac')
-  formData.append('modulo', 'inspecciones')
-  formData.append('id_user', userDetailStore.userDetail.id_user)
+  const tenantCode = process.env.VUE_APP_TENANT_CODE || 'gsp';
+  formData.append('tenant_code', tenantCode);
+  formData.append('modulo', 'inspecciones');
+  formData.append('id_user', userDetailStore.userDetail.id_user);
   formData.append('estado', '1')
   try {
     const response = await apiAxios.post(
@@ -6866,10 +6870,11 @@ async function uploadFileFromBase64(base64Data, originalName, mimeType) {
   formData.append('archivo', file);
   formData.append('tipo_doc', 'DOCUMENTO');
   formData.append('mimetype', file.type);
-  formData.append('name_doc_orig', file.name);
-  formData.append('tenant_code', 'transmac');
+  const tenantCode = process.env.VUE_APP_TENANT_CODE || 'gsp';
+  formData.append('tenant_code', tenantCode);
   formData.append('modulo', 'inspecciones');
-  formData.append('id_user', 1);
+  const activeUserId = userDetailStore?.userDetail?.id_user || 1;
+  formData.append('id_user', activeUserId);
   formData.append('estado', '1');
 
   try {

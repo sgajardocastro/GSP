@@ -1,6 +1,7 @@
 const pool = require("../config/postgresPool");
 const MessageModel = require("./messageModel");
 const notfqueueModel = require("./notfqueueModel");
+const notificacionService = require("../services/notificacionService");
 const messageModel = new MessageModel();
 const notfModel = new notfqueueModel();
 const bcrypt = require("bcryptjs");
@@ -637,7 +638,7 @@ class SignatureModel {
             subtitulo: 'Tu proceso de enrolamiento y registro de firma ha sido completado.',
             contenido: contenidoEnrol,
             botonTexto: 'Acceder a la Plataforma',
-            botonUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/'
+            botonUrl: notificacionService.construirDeepLink({ tipoApp: 'WEB', ruta: 'dashboard' })
           });
         } else {
           const contenidoHTML = `
@@ -655,8 +656,12 @@ class SignatureModel {
             titulo: `¡Actualización de Protocolo!`,
             subtitulo: mensajeEstado,
             contenido: contenidoHTML,
-            botonTexto: 'Acceder a la Plataforma',
-            botonUrl: 'https://servidor.leanglobal.cl/lg-transmac-dev/'
+            botonTexto: 'Revisar Firma en PWA',
+            botonUrl: notificacionService.construirDeepLink({
+              tipoApp: 'PWA',
+              ruta: 'firmas',
+              params: datosProtocolo?.id_protocolo ? { id_survey: datosProtocolo.id_protocolo } : {}
+            })
           });
         }
 

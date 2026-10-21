@@ -1,6 +1,7 @@
 const pool = require('../config/postgresPool');
 const crypto = require('crypto');
 const MessageModel = require('../models/messageModel');
+const notificacionService = require('../services/notificacionService');
 const messageModel = new MessageModel();
 
 /**
@@ -99,8 +100,8 @@ const getVisitasProyecto = async (req, res) => {
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.estado_solicitud_visita,
                    p.id_empresa_cliente, e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
-            FROM sch_leangsp.tpry_proyecto p
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.id_proyecto = $1
         `, [Number(id_proyecto)]);
 
@@ -137,8 +138,8 @@ const getVisitasProyecto = async (req, res) => {
                 u.apellido_mat,
                 u.email as tecnico_email,
                 u.movil as tecnico_fono
-            FROM sch_leangsp.tsrv_survey s
-            LEFT JOIN sch_leangsp.tsec_users u ON s.id_user = u.id_user
+            FROM tsrv_survey s
+            LEFT JOIN tsec_users u ON s.id_user = u.id_user
             WHERE s.id_proyecto = $1 AND s.id_template = 80
             ORDER BY s.id_survey ASC
         `, [Number(id_proyecto)]);
@@ -236,8 +237,8 @@ const asignarVisitaWeb = async (req, res) => {
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.id_empresa_cliente,
                    e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
-            FROM sch_leangsp.tpry_proyecto p
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.id_proyecto = $1
         `, [Number(id_proyecto)]);
 
@@ -260,7 +261,7 @@ const asignarVisitaWeb = async (req, res) => {
         // 2. Obtener datos del técnico inspector
         const userRes = await pool.query(`
             SELECT id_user, name_frst, apellido_pat, apellido_mat, email, movil AS fono
-            FROM sch_leangsp.tsec_users
+            FROM tsec_users
             WHERE id_user = $1
         `, [Number(id_user_tecnico)]);
 
@@ -277,7 +278,7 @@ const asignarVisitaWeb = async (req, res) => {
         // Si no vino id_survey explícito, verificar si ya existe un survey PLANIFICADO/Creado para este proyecto
         if (!resolvedSurveyId) {
             const existingSrvRes = await pool.query(`
-                SELECT id_survey FROM sch_leangsp.tsrv_survey 
+                SELECT id_survey FROM tsrv_survey 
                 WHERE id_proyecto = $1 AND id_template = 80 AND estado_srv NOT IN ('EJECUTADO', 'CANCELADO')
                 ORDER BY id_survey DESC LIMIT 1
             `, [Number(id_proyecto)]);
@@ -295,7 +296,7 @@ const asignarVisitaWeb = async (req, res) => {
         if (resolvedSurveyId) {
             // Actualizar survey existente
             const srvRowRes = await pool.query(`
-                SELECT header_exec, body_exec FROM sch_leangsp.tsrv_survey WHERE id_survey = $1
+                SELECT header_exec, body_exec FROM tsrv_survey WHERE id_survey = $1
             `, [resolvedSurveyId]);
 
             let headerExec = {};
@@ -326,7 +327,7 @@ const asignarVisitaWeb = async (req, res) => {
             const bodyPoblado = preSembrarBodyTemplate80(bodyExec, pry, crm, contactoPayload, observaciones);
 
             await pool.query(`
-                UPDATE sch_leangsp.tsrv_survey
+                UPDATE tsrv_survey
                 SET id_user = $1,
                     estado_srv = 'PLANIFICADO',
                     fecha_plan_ini = $2,
@@ -345,7 +346,7 @@ const asignarVisitaWeb = async (req, res) => {
             // Crear nuevo registro tsrv_survey con template 80
             const tmplRes = await pool.query(`
                 SELECT body_seed, header_seed, approval_seed, id_flow_tmpl 
-                FROM sch_leangsp.tsrv_templates 
+                FROM tsrv_templates 
                 WHERE id_template = 80
             `);
 
@@ -382,7 +383,7 @@ const asignarVisitaWeb = async (req, res) => {
             const bodyPoblado = preSembrarBodyTemplate80(bodySeed, pry, crm, contactoPayload, observaciones);
 
             const insRes = await pool.query(`
-                INSERT INTO sch_leangsp.tsrv_survey (
+                INSERT INTO tsrv_survey (
                     id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
                     estado_srv, header_seed, body_seed, approval_seed, header_exec, body_exec, approval_exec,
                     fecha_plan_ini, fecha_plan_fin, latitud, longitud, id_proyecto, id_flow_tmpl
@@ -438,7 +439,7 @@ const asignarVisitaWeb = async (req, res) => {
         if (contacto_email) crm.contacto_email = contacto_email;
 
         await pool.query(`
-            UPDATE sch_leangsp.tpry_proyecto
+            UPDATE tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
                 token_visita = NULL,
                 json_field = $1
@@ -446,42 +447,52 @@ const asignarVisitaWeb = async (req, res) => {
         `, [JSON.stringify(jf), Number(id_proyecto)]);
 
         // 4. Despachar notificación por correo al técnico inspector
-        if (tecnico.email) {
-            try {
-                const dirObra = crm.obra_direccion || 'No especificada';
-                const fStr = new Date(fecha_programada).toLocaleString('es-CL');
-                const pwaUrl = `https://servidor.leanglobal.cl/pwa-gsp-dev/`;
+        // 4. Despachar notificación omnicanal (Email + WhatsApp) al técnico inspector con Deep Link PWA
+        try {
+            const dirObra = crm.obra_direccion || 'No especificada';
+            const fStr = new Date(fecha_programada).toLocaleString('es-CL');
 
-                const contenido = `
-                  <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${pry.cliente_nombre || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${pry.nombre_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${pry.codi_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto en Obra:</span> <span style="color: #ffffff;">${contactoPayload.nombre} (${contactoPayload.telefono})</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Dirección Obra:</span> <span style="color: #ffffff;">${dirObra}</span></div>
-                    ${observaciones ? `<div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Instrucciones:</span> <span style="color: #fbbf24;">${observaciones}</span></div>` : ''}
-                  </div>
-                  <p style="color: #94a3b8; font-size: 13px; text-align: center;">Ingresa a la aplicación móvil PWA para completar la encuesta técnica en terreno.</p>
-                `;
+            const contenido = `
+              <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${pry.cliente_nombre || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${pry.nombre_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${pry.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto en Obra:</span> <span style="color: #ffffff;">${contactoPayload.nombre} (${contactoPayload.telefono})</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Dirección Obra:</span> <span style="color: #ffffff;">${dirObra}</span></div>
+                ${observaciones ? `<div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Instrucciones:</span> <span style="color: #fbbf24;">${observaciones}</span></div>` : ''}
+              </div>
+              <p style="color: #94a3b8; font-size: 13px; text-align: center;">Ingresa a la aplicación móvil PWA para completar la encuesta técnica en terreno.</p>
+            `;
 
-                const cuerpoHTML = messageModel.obtenerPlantillaHTML({
+            const wspMensaje = `👷 *Grúas San Pablo — Nueva Visita Técnica Asignada*\n\n¡Hola ${tecnicoNombre}! Se te ha asignado una inspección en terreno:\n\n📋 *Cotización:* ${pry.codi_proyecto || pry.nombre_proyecto}\n🏢 *Cliente:* ${pry.cliente_nombre || 'N/A'}\n📍 *Obra:* ${dirObra}\n📅 *Fecha:* ${fStr}\n👤 *Contacto:* ${contactoPayload.nombre} (${contactoPayload.telefono})\n${observaciones ? `💬 *Instrucciones:* ${observaciones}\n` : ''}\n📲 *Ingresa directamente a tu inspección aquí:*`;
+
+            await notificacionService.despacharNotificacion({
+                evento: 'ASIGNACION_VISITA_TECNICA',
+                canales: ['EMAIL', 'WHATSAPP'],
+                destinatario: {
+                    nombre: tecnicoNombre,
+                    email: tecnico.email,
+                    telefono: tecnico.fono
+                },
+                deepLink: {
+                    tipoApp: 'PWA',
+                    ruta: 'inspeccion',
+                    params: { id_survey: resolvedSurveyId }
+                },
+                emailData: {
+                    asunto: `👷 Asignación de Visita a Terreno - ${pry.codi_proyecto || pry.nombre_proyecto}`,
                     titulo: "Nueva Visita Técnica Asignada",
                     subtitulo: `Estimado(a) ${tecnicoNombre}, se te ha asignado la inspección técnica en terreno para la siguiente obra:`,
                     contenido,
-                    botonTexto: "ABRIR SURVEY EN PWA",
-                    botonUrl: pwaUrl
-                });
-
-                await messageModel.enviarYRegistrarCorreo({
-                    para: tecnico.email,
-                    asunto: `👷 Asignación de Visita a Terreno - ${pry.codi_proyecto || pry.nombre_proyecto}`,
-                    cuerpo: cuerpoHTML,
-                    esHtml: true
-                });
-            } catch (mailErr) {
-                console.warn("[asignarVisitaWeb] No se pudo despachar correo al técnico:", mailErr.message);
-            }
+                    botonTexto: "ABRIR SURVEY EN PWA"
+                },
+                wspData: {
+                    mensaje: wspMensaje
+                }
+            });
+        } catch (mailErr) {
+            console.warn("[asignarVisitaWeb] Error despachando notificación omnicanal:", mailErr.message);
         }
 
         return res.status(200).json({
@@ -514,9 +525,9 @@ const reasignarVisita = async (req, res) => {
         const srvRes = await pool.query(`
             SELECT s.id_survey, s.id_proyecto, s.id_user, s.estado_srv, s.header_exec, s.fecha_plan_ini,
                    p.nombre_proyecto, p.codi_proyecto, p.json_field, e.razon_social as cliente_nombre
-            FROM sch_leangsp.tsrv_survey s
-            LEFT JOIN sch_leangsp.tpry_proyecto p ON s.id_proyecto = p.id_proyecto
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM tsrv_survey s
+            LEFT JOIN tpry_proyecto p ON s.id_proyecto = p.id_proyecto
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE s.id_survey = $1
         `, [Number(id_survey)]);
 
@@ -534,7 +545,7 @@ const reasignarVisita = async (req, res) => {
         // 2. Obtener datos del nuevo técnico inspector
         const userRes = await pool.query(`
             SELECT id_user, name_frst, apellido_pat, email, movil AS fono
-            FROM sch_leangsp.tsec_users
+            FROM tsec_users
             WHERE id_user = $1
         `, [Number(id_user_nuevo)]);
 
@@ -566,7 +577,7 @@ const reasignarVisita = async (req, res) => {
         // Actualizar survey
         const fechaIni = fecha_programada || survey.fecha_plan_ini;
         await pool.query(`
-            UPDATE sch_leangsp.tsrv_survey
+            UPDATE tsrv_survey
             SET id_user = $1,
                 fecha_plan_ini = $2,
                 fecha_plan_fin = $2,
@@ -596,43 +607,53 @@ const reasignarVisita = async (req, res) => {
                 }
 
                 await pool.query(`
-                    UPDATE sch_leangsp.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2
+                    UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2
                 `, [JSON.stringify(jf), Number(survey.id_proyecto)]);
             }
         }
 
-        // 4. Notificar por correo al nuevo técnico inspector
-        if (nuevoTecnico.email) {
-            try {
-                const fStr = fechaIni ? new Date(fechaIni).toLocaleString('es-CL') : 'A coordinar';
-                const contenido = `
-                  <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${survey.cliente_nombre || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${survey.nombre_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${survey.codi_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
-                    <div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Motivo Cambio:</span> <span style="color: #fbbf24;">${motivo || 'Reasignación operativa de faena'}</span></div>
-                  </div>
-                  <p style="color: #94a3b8; font-size: 13px; text-align: center;">Accede a la PWA para consultar los antecedentes de la inspección.</p>
-                `;
+        // 4. Despachar notificación omnicanal (Email + WhatsApp) al nuevo técnico inspector con Deep Link PWA
+        try {
+            const fStr = fechaIni ? new Date(fechaIni).toLocaleString('es-CL') : 'A coordinar';
+            const contenido = `
+              <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${survey.cliente_nombre || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${survey.nombre_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${survey.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
+                <div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Motivo Cambio:</span> <span style="color: #fbbf24;">${motivo || 'Reasignación operativa de faena'}</span></div>
+              </div>
+              <p style="color: #94a3b8; font-size: 13px; text-align: center;">Accede a la PWA para consultar los antecedentes de la inspección.</p>
+            `;
 
-                const cuerpoHTML = messageModel.obtenerPlantillaHTML({
+            const wspMensaje = `🔄 *Grúas San Pablo — Reasignación de Visita a Terreno*\n\n¡Hola ${nuevoTecnicoNombre}! Se te ha reasignado la siguiente inspección:\n\n📋 *Cotización:* ${survey.codi_proyecto || survey.nombre_proyecto}\n🏢 *Cliente:* ${survey.cliente_nombre || 'N/A'}\n📅 *Fecha:* ${fStr}\n⚠️ *Motivo:* ${motivo || 'Reasignación operativa de faena'}\n\n📲 *Ingresa directamente a tu inspección aquí:*`;
+
+            await notificacionService.despacharNotificacion({
+                evento: 'REASIGNACION_VISITA_TECNICA',
+                canales: ['EMAIL', 'WHATSAPP'],
+                destinatario: {
+                    nombre: nuevoTecnicoNombre,
+                    email: nuevoTecnico.email,
+                    telefono: nuevoTecnico.fono
+                },
+                deepLink: {
+                    tipoApp: 'PWA',
+                    ruta: 'inspeccion',
+                    params: { id_survey: id_survey }
+                },
+                emailData: {
+                    asunto: `🔄 Reasignación de Visita a Terreno - ${survey.codi_proyecto || survey.nombre_proyecto}`,
                     titulo: "Reasignación de Visita a Terreno",
                     subtitulo: `Estimado(a) ${nuevoTecnicoNombre}, se te ha reasignado la siguiente inspección técnica:`,
                     contenido,
-                    botonTexto: "ABRIR SURVEY EN PWA",
-                    botonUrl: "https://servidor.leanglobal.cl/pwa-gsp-dev/"
-                });
-
-                await messageModel.enviarYRegistrarCorreo({
-                    para: nuevoTecnico.email,
-                    asunto: `🔄 Reasignación de Visita a Terreno - ${survey.codi_proyecto || survey.nombre_proyecto}`,
-                    cuerpo: cuerpoHTML,
-                    esHtml: true
-                });
-            } catch (mErr) {
-                console.warn("[reasignarVisita] No se pudo enviar correo de reasignación:", mErr.message);
-            }
+                    botonTexto: "ABRIR SURVEY EN PWA"
+                },
+                wspData: {
+                    mensaje: wspMensaje
+                }
+            });
+        } catch (mErr) {
+            console.warn("[reasignarVisita] Error despachando notificación omnicanal:", mErr.message);
         }
 
         return res.status(200).json({
@@ -670,8 +691,8 @@ const crearVisitaOperaciones = async (req, res) => {
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.id_empresa_cliente,
                    e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
-            FROM sch_leangsp.tpry_proyecto p
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.id_proyecto = $1
         `, [Number(id_proyecto)]);
 
@@ -693,7 +714,7 @@ const crearVisitaOperaciones = async (req, res) => {
 
         // 2. Determinar número de visita consecutivo (1:N)
         const countRes = await pool.query(`
-            SELECT COUNT(*) as total FROM sch_leangsp.tsrv_survey 
+            SELECT COUNT(*) as total FROM tsrv_survey 
             WHERE id_proyecto = $1 AND id_template = 80
         `, [Number(id_proyecto)]);
 
@@ -702,7 +723,7 @@ const crearVisitaOperaciones = async (req, res) => {
         // 3. Obtener técnico inspector
         const userRes = await pool.query(`
             SELECT id_user, name_frst, apellido_pat, email, movil AS fono
-            FROM sch_leangsp.tsec_users
+            FROM tsec_users
             WHERE id_user = $1
         `, [Number(id_user_tecnico)]);
 
@@ -717,7 +738,7 @@ const crearVisitaOperaciones = async (req, res) => {
         // 4. Obtener Template 80
         const tmplRes = await pool.query(`
             SELECT body_seed, header_seed, approval_seed, id_flow_tmpl 
-            FROM sch_leangsp.tsrv_templates 
+            FROM tsrv_templates 
             WHERE id_template = 80
         `);
 
@@ -764,7 +785,7 @@ const crearVisitaOperaciones = async (req, res) => {
 
         // 5. Insertar nueva visita 1:N
         const insRes = await pool.query(`
-            INSERT INTO sch_leangsp.tsrv_survey (
+            INSERT INTO tsrv_survey (
                 id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
                 estado_srv, header_seed, body_seed, approval_seed, header_exec, body_exec, approval_exec,
                 fecha_plan_ini, fecha_plan_fin, latitud, longitud, id_proyecto, id_flow_tmpl
@@ -814,47 +835,57 @@ const crearVisitaOperaciones = async (req, res) => {
         });
 
         await pool.query(`
-            UPDATE sch_leangsp.tpry_proyecto
+            UPDATE tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
                 json_field = $1
             WHERE id_proyecto = $2
         `, [JSON.stringify(jf), Number(id_proyecto)]);
 
-        // 7. Notificar por correo al técnico inspector
-        if (tecnico.email) {
-            try {
-                const dirObra = crm.obra_direccion || 'No especificada';
-                const fStr = new Date(fecha_programada).toLocaleString('es-CL');
-                const contenido = `
-                  <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${pry.cliente_nombre || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${pry.nombre_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${pry.codi_proyecto || 'N/A'}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Tipo de Visita:</span> <span style="color: #38bdf8; font-weight: bold;">Visita #${nro_visita} (${tipoVisitaFinal})</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
-                    <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Dirección Obra:</span> <span style="color: #ffffff;">${dirObra}</span></div>
-                    ${justificacion ? `<div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Justificación:</span> <span style="color: #fbbf24;">${justificacion}</span></div>` : ''}
-                  </div>
-                  <p style="color: #94a3b8; font-size: 13px; text-align: center;">Ingresa a la aplicación móvil PWA para gestionar el formulario de inspección.</p>
-                `;
+        // 7. Despachar notificación omnicanal (Email + WhatsApp) al técnico inspector con Deep Link PWA
+        try {
+            const dirObra = crm.obra_direccion || 'No especificada';
+            const fStr = new Date(fecha_programada).toLocaleString('es-CL');
+            const contenido = `
+              <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${pry.cliente_nombre || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${pry.nombre_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${pry.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Tipo de Visita:</span> <span style="color: #38bdf8; font-weight: bold;">Visita #${nro_visita} (${tipoVisitaFinal})</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Dirección Obra:</span> <span style="color: #ffffff;">${dirObra}</span></div>
+                ${justificacion ? `<div style="margin-bottom: 0; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Justificación:</span> <span style="color: #fbbf24;">${justificacion}</span></div>` : ''}
+              </div>
+              <p style="color: #94a3b8; font-size: 13px; text-align: center;">Ingresa a la aplicación móvil PWA para gestionar el formulario de inspección.</p>
+            `;
 
-                const cuerpoHTML = messageModel.obtenerPlantillaHTML({
+            const wspMensaje = `👷 *Grúas San Pablo — Nueva Visita Técnica #${nro_visita}*\n\n¡Hola ${tecnicoNombre}! Operaciones ha programado una nueva inspección en faena:\n\n📋 *Cotización:* ${pry.codi_proyecto || pry.nombre_proyecto}\n🏢 *Cliente:* ${pry.cliente_nombre || 'N/A'}\n🔍 *Tipo:* Visita #${nro_visita} (${tipoVisitaFinal})\n📍 *Obra:* ${dirObra}\n📅 *Fecha:* ${fStr}\n${justificacion ? `💬 *Detalle:* ${justificacion}\n` : ''}\n📲 *Ingresa directamente a tu inspección aquí:*`;
+
+            await notificacionService.despacharNotificacion({
+                evento: 'ASIGNACION_VISITA_TECNICA',
+                canales: ['EMAIL', 'WHATSAPP'],
+                destinatario: {
+                    nombre: tecnicoNombre,
+                    email: tecnico.email,
+                    telefono: tecnico.fono
+                },
+                deepLink: {
+                    tipoApp: 'PWA',
+                    ruta: 'inspeccion',
+                    params: { id_survey: newSurveyId }
+                },
+                emailData: {
+                    asunto: `👷 Nueva Visita Técnica #${nro_visita} - ${pry.codi_proyecto || pry.nombre_proyecto}`,
                     titulo: `Nueva Visita Técnica Programada (#${nro_visita})`,
                     subtitulo: `Estimado(a) ${tecnicoNombre}, Operaciones ha agendado una nueva inspección técnica para faena:`,
                     contenido,
-                    botonTexto: "ABRIR SURVEY EN PWA",
-                    botonUrl: "https://servidor.leanglobal.cl/pwa-gsp-dev/"
-                });
-
-                await messageModel.enviarYRegistrarCorreo({
-                    para: tecnico.email,
-                    asunto: `👷 Nueva Visita Técnica #${nro_visita} - ${pry.codi_proyecto || pry.nombre_proyecto}`,
-                    cuerpo: cuerpoHTML,
-                    esHtml: true
-                });
-            } catch (mailErr) {
-                console.warn("[crearVisitaOperaciones] No se pudo enviar correo:", mailErr.message);
-            }
+                    botonTexto: "ABRIR SURVEY EN PWA"
+                },
+                wspData: {
+                    mensaje: wspMensaje
+                }
+            });
+        } catch (mailErr) {
+            console.warn("[crearVisitaOperaciones] Error despachando notificación omnicanal:", mailErr.message);
         }
 
         return res.status(201).json({
@@ -887,19 +918,22 @@ const solicitarVisita = async (req, res) => {
             obra_direccion,
             obra_ciudad,
             coordenadas_mapa,
-            detalle_servicio
+            detalle_servicio,
+            fecha_visita_plan,
+            hora_visita_plan,
+            fecha_programada,
+            fecha_visita,
+            hora_visita
         } = req.body;
 
         if (!id_proyecto) {
             return res.status(400).json({ error: "Falta id_proyecto" });
         }
 
-        const token = crypto.randomUUID();
-
         const pryRes = await pool.query(`
-            SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, e.razon_social as cliente_nombre
-            FROM sch_leangsp.tpry_proyecto p
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.token_visita, p.estado_solicitud_visita, e.razon_social as cliente_nombre
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
             WHERE p.id_proyecto = $1
         `, [id_proyecto]);
 
@@ -912,17 +946,47 @@ const solicitarVisita = async (req, res) => {
 
         if (!jsonField.crm_v1) jsonField.crm_v1 = {};
 
-        // Resolver id_coordinador si no viene directamente
+        // Idempotencia y Resiliencia de Tokens de Visita:
+        // Si el proyecto ya tiene un token_visita y su estado es PENDIENTE_ASIGNACION, se preserva el token.
+        let token = (proyecto.estado_solicitud_visita === 'PENDIENTE_ASIGNACION' && proyecto.token_visita)
+            ? proyecto.token_visita
+            : crypto.randomUUID();
+
+        // Respaldar en array de tokens válidos en json_field por máxima resiliencia ante reenvíos
+        if (!Array.isArray(jsonField.crm_v1.tokens_historicos)) {
+            jsonField.crm_v1.tokens_historicos = [];
+        }
+        if (proyecto.token_visita && !jsonField.crm_v1.tokens_historicos.includes(proyecto.token_visita)) {
+            jsonField.crm_v1.tokens_historicos.push(proyecto.token_visita);
+        }
+        if (!jsonField.crm_v1.tokens_historicos.includes(token)) {
+            jsonField.crm_v1.tokens_historicos.push(token);
+        }
+
+        // Resolver id_coordinador si no viene directamente y obtener datos para notificación omnicanal
         let resolvedCoordinadorId = id_coordinador ? Number(id_coordinador) : null;
-        if (!resolvedCoordinadorId && email_coordinador) {
+        let coordinadorFono = null;
+        let coordinadorNombre = 'Coordinador de Operaciones';
+        let resolvedEmail = (email_coordinador || '').trim();
+        if (resolvedCoordinadorId || email_coordinador) {
             const uRes = await pool.query(
-                `SELECT id_user FROM sch_leangsp.tsec_users 
-                 WHERE LOWER(email) = LOWER($1) 
+                `SELECT id_user, movil as fono, CONCAT(name_frst, ' ', apellido_pat) as nombre, email, email_alternativo 
+                 FROM tsec_users 
+                 WHERE id_user = $1 OR LOWER(email) = LOWER($2) 
                  LIMIT 1`,
-                [email_coordinador.trim()]
+                [resolvedCoordinadorId || 0, (email_coordinador || '').trim()]
             );
             if (uRes.rowCount > 0) {
                 resolvedCoordinadorId = uRes.rows[0].id_user;
+                coordinadorFono = uRes.rows[0].fono;
+                coordinadorNombre = uRes.rows[0].nombre?.trim() || coordinadorNombre;
+                const emailPrincipal = uRes.rows[0].email || email_coordinador;
+                const emailAlt = uRes.rows[0].email_alternativo;
+                if (emailAlt && emailAlt.includes('@') && emailAlt.toLowerCase() !== emailPrincipal.toLowerCase()) {
+                    resolvedEmail = `${emailPrincipal}, ${emailAlt}`;
+                } else if (emailPrincipal) {
+                    resolvedEmail = emailPrincipal;
+                }
             }
         }
 
@@ -936,16 +1000,24 @@ const solicitarVisita = async (req, res) => {
         if (coordenadas_mapa) jsonField.crm_v1.coordenadas_mapa = coordenadas_mapa;
         if (detalle_servicio) jsonField.crm_v1.detalle_servicio = detalle_servicio;
 
+        const fPlan = fecha_visita_plan || fecha_visita || (fecha_programada ? fecha_programada.split('T')[0] : null);
+        const hPlan = hora_visita_plan || hora_visita || (fecha_programada && fecha_programada.includes('T') ? fecha_programada.split('T')[1].substring(0, 5) : null);
+        if (fPlan) jsonField.crm_v1.fecha_visita_plan = fPlan;
+        if (hPlan) jsonField.crm_v1.hora_visita_plan = hPlan;
+        if (fecha_programada || (fPlan && hPlan)) {
+            jsonField.crm_v1.fecha_programada = fecha_programada || `${fPlan}T${hPlan}:00`;
+        }
+
         await pool.query(`
-            UPDATE sch_leangsp.tpry_proyecto
+            UPDATE tpry_proyecto
             SET token_visita = $1,
                 estado_solicitud_visita = 'PENDIENTE_ASIGNACION',
                 json_field = $2
             WHERE id_proyecto = $3
         `, [token, JSON.stringify(jsonField), id_proyecto]);
 
-        // Enviar correo B2B HTML al coordinador
-        if (email_coordinador) {
+        // Enviar notificación omnicanal (Email + WhatsApp) al coordinador
+        if (resolvedEmail) {
             const crm = jsonField.crm_v1 || {};
             const lat = coordenadas_mapa?.lat || crm.coordenadas_mapa?.lat;
             const lng = coordenadas_mapa?.lng || crm.coordenadas_mapa?.lng;
@@ -956,11 +1028,12 @@ const solicitarVisita = async (req, res) => {
 
             const titulo = "Solicitud de Visita a Terreno";
             const subtitulo = "Se ha solicitado asignar una visita a terreno para la siguiente cotización:";
-            const botonUrl = `https://servidor.leanglobal.cl/lg-gsp-dev/asignar-visita/${token}`;
             const descripcionServicio = detalle_servicio || crm.detalle_servicio || crm.descripcion || proyecto.nombre_proyecto || 'Sin descripción';
             const contactoNombreVal = contacto_nombre || crm.contacto_nombre || 'No especificado';
             const contactoTelefonoVal = (contacto_telefono || crm.contacto_telefono || '').trim();
             const contactoEmailVal = contacto_email || crm.contacto_email || 'No especificado';
+            const fechaPlanVal = fPlan || crm.fecha_visita_plan || 'Por coordinar';
+            const horaPlanVal = hPlan || crm.hora_visita_plan || '';
 
             const contactoDisplay = (contactoTelefonoVal && contactoTelefonoVal !== 'No especificado')
                 ? `${contactoNombreVal} (${contactoTelefonoVal})`
@@ -971,6 +1044,7 @@ const solicitarVisita = async (req, res) => {
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.cliente_nombre || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.nombre_proyecto || 'N/A'}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${proyecto.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #f59e0b; display: inline-block; width: 140px;">Fecha Sugerida:</span> <span style="color: #f59e0b; font-weight: bold;">${fechaPlanVal}${horaPlanVal ? ` a las ${horaPlanVal} hrs` : ''}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto Terreno:</span> <span style="color: #ffffff; font-weight: bold;">${contactoDisplay}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Correo Contacto:</span> <span style="color: #ffffff;">${contactoEmailVal}</span></div>
                 <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Descripción:</span> <span style="color: #ffffff;">${descripcionServicio}</span></div>
@@ -979,19 +1053,30 @@ const solicitarVisita = async (req, res) => {
               <p style="color: #94a3b8; font-size: 13px; text-align: center; margin-top: 15px;">Haga clic en el botón inferior para asignar al especialista y definir la fecha.</p>
             `;
 
-            const cuerpoHTML = messageModel.obtenerPlantillaHTML({
-                titulo,
-                subtitulo,
-                contenido,
-                botonTexto: "ASIGNAR VISITA",
-                botonUrl
-            });
+            const wspMensaje = `📌 *Grúas San Pablo — Solicitud de Visita a Terreno*\n\n¡Hola ${coordinadorNombre}! El área comercial solicita asignar una inspección técnica:\n\n📋 *Cotización:* ${proyecto.codi_proyecto || proyecto.nombre_proyecto}\n🏢 *Cliente:* ${proyecto.cliente_nombre || 'N/A'}\n📅 *Fecha Sugerida:* ${fechaPlanVal}${horaPlanVal ? ` a las ${horaPlanVal} hrs` : ''}\n📍 *Ubicación:* ${obra_direccion || crm.obra_direccion || 'No especificada'}\n👤 *Contacto:* ${contactoDisplay}\n\n📲 *Asigna el técnico y la fecha aquí:*`;
 
-            await messageModel.enviarYRegistrarCorreo({
-                para: email_coordinador,
-                asunto: `📌 Solicitud de Visita a Terreno - ${proyecto.codi_proyecto || proyecto.nombre_proyecto}`,
-                cuerpo: cuerpoHTML,
-                esHtml: true
+            await notificacionService.despacharNotificacion({
+                evento: 'SOLICITUD_VISITA_COORDINADOR',
+                canales: coordinadorFono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+                destinatario: {
+                    nombre: coordinadorNombre,
+                    email: resolvedEmail,
+                    telefono: coordinadorFono
+                },
+                deepLink: {
+                    tipoApp: 'PUBLIC',
+                    ruta: `asignar-visita/${token}`
+                },
+                emailData: {
+                    asunto: `📌 Solicitud de Visita a Terreno - ${proyecto.codi_proyecto || proyecto.nombre_proyecto}`,
+                    titulo,
+                    subtitulo,
+                    contenido,
+                    botonTexto: "ASIGNAR VISITA"
+                },
+                wspData: {
+                    mensaje: wspMensaje
+                }
             });
         }
 
@@ -1011,9 +1096,10 @@ const getDatosVisita = async (req, res) => {
 
         const pryRes = await pool.query(`
             SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.json_field, p.id_empresa_cliente, e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
-            FROM sch_leangsp.tpry_proyecto p
-            LEFT JOIN sch_leangsp.tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
-            WHERE p.token_visita = $1
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            WHERE (p.token_visita = $1)
+               OR (p.estado_solicitud_visita = 'PENDIENTE_ASIGNACION' AND (p.json_field->'crm_v1'->'tokens_historicos')::jsonb ? $1)
         `, [token]);
 
         if (pryRes.rowCount === 0) {
@@ -1028,7 +1114,7 @@ const getDatosVisita = async (req, res) => {
         if (crm.coordinador_visita) {
             const coordRes = await pool.query(`
                 SELECT id_user, email, CONCAT(name_frst, ' ', apellido_pat) as nombre
-                FROM sch_leangsp.tsec_users
+                FROM tsec_users
                 WHERE id_user = $1
             `, [crm.coordinador_visita]);
 
@@ -1068,9 +1154,12 @@ const asignarVisita = async (req, res) => {
 
         // 1. Obtener proyecto y resolver coordinador si no viene en el body
         const tokenPryRes = await pool.query(`
-            SELECT id_proyecto, nombre_proyecto, id_empresa_cliente, json_field 
-            FROM sch_leangsp.tpry_proyecto 
-            WHERE token_visita = $1
+            SELECT p.id_proyecto, p.nombre_proyecto, p.codi_proyecto, p.id_empresa_cliente, p.json_field,
+                   e.razon_social as cliente_nombre, e.rut_empresa as cliente_rut
+            FROM tpry_proyecto p
+            LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
+            WHERE (p.token_visita = $1)
+               OR (p.estado_solicitud_visita = 'PENDIENTE_ASIGNACION' AND (p.json_field->'crm_v1'->'tokens_historicos')::jsonb ? $1)
         `, [token]);
 
         if (tokenPryRes.rowCount === 0) {
@@ -1086,7 +1175,7 @@ const asignarVisita = async (req, res) => {
         // Fallback robusto: Si no viene en el body ni en json_field, resolver por el PIN hash FES del usuario
         if (!resolvedCoordId && fes_pin_hash) {
             const uPinRes = await pool.query(
-                `SELECT id_user FROM sch_leangsp.tsec_users WHERE pass_hash_fes = $1 LIMIT 1`,
+                `SELECT id_user FROM tsec_users WHERE pass_hash_fes = $1 LIMIT 1`,
                 [fes_pin_hash.trim()]
             );
             if (uPinRes.rowCount > 0) {
@@ -1102,7 +1191,7 @@ const asignarVisita = async (req, res) => {
         }
 
         // 2. Validar FES PIN del coordinador
-        const userRes = await pool.query(`SELECT pass_hash_fes FROM sch_leangsp.tsec_users WHERE id_user = $1`, [resolvedCoordId]);
+        const userRes = await pool.query(`SELECT pass_hash_fes, name_frst, apellido_pat FROM tsec_users WHERE id_user = $1`, [resolvedCoordId]);
         if (userRes.rowCount === 0) {
             return res.status(404).json({ error: "Usuario coordinador no encontrado." });
         }
@@ -1112,19 +1201,254 @@ const asignarVisita = async (req, res) => {
             return res.status(401).json({ error: "Firma Electrónica Simple inválida. PIN incorrecto." });
         }
 
-        // 3. Marcar token asignado y actualizar tpry_proyecto
+        const asignadoPor = `${userRes.rows[0].name_frst || ''} ${userRes.rows[0].apellido_pat || ''}`.trim() || 'Coordinador de Operaciones';
+
+        // 3. Obtener datos del especialista técnico asignado
+        const userEjecRes = await pool.query(`
+            SELECT id_user, name_frst, apellido_pat, apellido_mat, email, email_alternativo, movil AS fono
+            FROM tsec_users
+            WHERE id_user = $1
+        `, [Number(id_ejecutor)]);
+
+        if (userEjecRes.rowCount === 0) {
+            return res.status(404).json({ error: "Especialista técnico no encontrado" });
+        }
+
+        const tecnico = userEjecRes.rows[0];
+        const tecnicoNombre = `${tecnico.name_frst || ''} ${tecnico.apellido_pat || ''}`.trim();
+
+        // 4. Instanciar o actualizar survey tsrv_survey con template 80
+        let resolvedSurveyId = null;
+        const existingSrvRes = await pool.query(`
+            SELECT id_survey FROM tsrv_survey 
+            WHERE id_proyecto = $1 AND id_template = 80 AND estado_srv NOT IN ('EJECUTADO', 'CANCELADO')
+            ORDER BY id_survey DESC LIMIT 1
+        `, [Number(pryRow.id_proyecto)]);
+
+        if (existingSrvRes.rowCount > 0) {
+            resolvedSurveyId = existingSrvRes.rows[0].id_survey;
+        }
+
+        const contactoPayload = {
+            nombre: crm.contacto_nombre || '',
+            telefono: crm.contacto_telefono || '',
+            email: crm.contacto_email || ''
+        };
+
+        if (resolvedSurveyId) {
+            const srvRowRes = await pool.query(`
+                SELECT header_exec, body_exec FROM tsrv_survey WHERE id_survey = $1
+            `, [resolvedSurveyId]);
+
+            let headerExec = {};
+            let bodyExec = {};
+
+            if (srvRowRes.rowCount > 0) {
+                headerExec = srvRowRes.rows[0].header_exec;
+                if (typeof headerExec === 'string') {
+                    try { headerExec = JSON.parse(headerExec); } catch (_) { headerExec = {}; }
+                }
+                bodyExec = srvRowRes.rows[0].body_exec;
+            }
+
+            if (!headerExec || typeof headerExec !== 'object') headerExec = {};
+            if (!Array.isArray(headerExec.historial_asignaciones)) headerExec.historial_asignaciones = [];
+
+            headerExec.historial_asignaciones.push({
+                id_user: Number(id_ejecutor),
+                tecnico_nombre: tecnicoNombre,
+                fecha_asignacion: new Date().toISOString(),
+                asignado_por: asignadoPor,
+                tipo_accion: "ASIGNACION_TOKEN_PUBLICO"
+            });
+
+            headerExec.contacto_obra = contactoPayload;
+            headerExec.observaciones = comentarios_coordinador || headerExec.observaciones || '';
+
+            const bodyPoblado = preSembrarBodyTemplate80(bodyExec, pryRow, crm, contactoPayload, comentarios_coordinador);
+
+            await pool.query(`
+                UPDATE tsrv_survey
+                SET id_user = $1,
+                    estado_srv = 'Creado',
+                    fecha_plan_ini = $2,
+                    fecha_plan_fin = $2,
+                    header_exec = $3,
+                    body_exec = $4
+                WHERE id_survey = $5
+            `, [
+                Number(id_ejecutor),
+                fecha_visita,
+                JSON.stringify(headerExec),
+                JSON.stringify(bodyPoblado),
+                resolvedSurveyId
+            ]);
+        } else {
+            const tmplRes = await pool.query(`
+                SELECT body_seed, header_seed, approval_seed, id_flow_tmpl 
+                FROM tsrv_templates 
+                WHERE id_template = 80
+            `);
+
+            let bodySeed = { segmentos: [] };
+            let headerSeed = {};
+            let approvalSeed = {};
+            let idFlowTmpl = 1;
+
+            if (tmplRes.rowCount > 0) {
+                const t = tmplRes.rows[0];
+                bodySeed = typeof t.body_seed === 'string' ? JSON.parse(t.body_seed) : (t.body_seed || { segmentos: [] });
+                headerSeed = typeof t.header_seed === 'string' ? JSON.parse(t.header_seed) : (t.header_seed || {});
+                approvalSeed = typeof t.approval_seed === 'string' ? JSON.parse(t.approval_seed) : (t.approval_seed || {});
+                idFlowTmpl = Number(t.id_flow_tmpl) || 1;
+            }
+
+            const headerExec = {
+                nro_visita: 1,
+                tipo_visita: 'INICIAL',
+                origen: 'ASIGNACION_TOKEN_PUBLICO',
+                contacto_obra: contactoPayload,
+                observaciones: comentarios_coordinador || '',
+                historial_asignaciones: [
+                    {
+                        id_user: Number(id_ejecutor),
+                        tecnico_nombre: tecnicoNombre,
+                        fecha_asignacion: new Date().toISOString(),
+                        asignado_por: asignadoPor,
+                        tipo_accion: "CREACION_ASIGNACION_TOKEN_PUBLICO"
+                    }
+                ]
+            };
+
+            const bodyPoblado = preSembrarBodyTemplate80(bodySeed, pryRow, crm, contactoPayload, comentarios_coordinador);
+
+            const insRes = await pool.query(`
+                INSERT INTO tsrv_survey (
+                    id_tipo_srv, id_template, id_user, id_user_creacion, id_empresa_cliente,
+                    estado_srv, header_seed, body_seed, approval_seed, header_exec, body_exec, approval_exec,
+                    fecha_plan_ini, fecha_plan_fin, latitud, longitud, id_proyecto, id_flow_tmpl
+                ) VALUES (
+                    2, 80, $1, $2, $3,
+                    'Creado', $4, $5, $6, $7, $8, $9,
+                    $10, $11, $12, $13, $14, $15
+                ) RETURNING id_survey;
+            `, [
+                Number(id_ejecutor),
+                resolvedCoordId,
+                pryRow.id_empresa_cliente,
+                JSON.stringify(headerSeed),
+                JSON.stringify(bodySeed),
+                JSON.stringify(approvalSeed),
+                JSON.stringify(headerExec),
+                JSON.stringify(bodyPoblado),
+                JSON.stringify(approvalSeed),
+                fecha_visita,
+                fecha_visita,
+                crm.coordenadas_mapa?.lat || null,
+                crm.coordenadas_mapa?.lng || null,
+                Number(pryRow.id_proyecto),
+                idFlowTmpl
+            ]);
+
+            resolvedSurveyId = insRes.rows[0].id_survey;
+        }
+
+        // 5. Actualizar snapshot en tpry_proyecto
+        if (!jField.operaciones_v1) jField.operaciones_v1 = { visitas: [] };
+        if (!Array.isArray(jField.operaciones_v1.visitas)) jField.operaciones_v1.visitas = [];
+
+        const idxSnapshot = jField.operaciones_v1.visitas.findIndex(v => Number(v.id_survey) === Number(resolvedSurveyId));
+        const visitSnapshot = {
+            id_survey: resolvedSurveyId,
+            nro_visita: 1,
+            tipo_visita: 'INICIAL',
+            estado: 'Creado',
+            id_user: Number(id_ejecutor),
+            tecnico_nombre: tecnicoNombre,
+            fecha_programada: fecha_visita,
+            pdf_url: `/api/servicio/exportar/${resolvedSurveyId}`
+        };
+
+        if (idxSnapshot >= 0) {
+            jField.operaciones_v1.visitas[idxSnapshot] = visitSnapshot;
+        } else {
+            jField.operaciones_v1.visitas.push(visitSnapshot);
+        }
+
+        crm.visita_tecnico_asignado = Number(id_ejecutor);
+        crm.fecha_visita_programada = fecha_visita;
         if (comentarios_coordinador) {
             crm.comentarios_visita_coordinador = comentarios_coordinador;
         }
+
         await pool.query(`
-            UPDATE sch_leangsp.tpry_proyecto
+            UPDATE tpry_proyecto
             SET estado_solicitud_visita = 'ASIGNADA',
                 token_visita = NULL,
                 json_field = $1
             WHERE id_proyecto = $2
         `, [JSON.stringify(jField), pryRow.id_proyecto]);
 
-        return res.status(200).json({ message: "Visita asignada y firmada con éxito", id_proyecto: pryRow.id_proyecto });
+        // 6. Despachar notificación omnicanal (Email + WhatsApp) al técnico inspector
+        try {
+            const dirObra = crm.obra_direccion || 'No especificada';
+            const fStr = new Date(fecha_visita).toLocaleString('es-CL');
+
+            let resolvedEmailTecnico = (tecnico.email || '').trim();
+            const emailAlt = tecnico.email_alternativo;
+            if (emailAlt && emailAlt.includes('@') && emailAlt.toLowerCase() !== resolvedEmailTecnico.toLowerCase()) {
+                resolvedEmailTecnico = `${resolvedEmailTecnico}, ${emailAlt}`;
+            }
+
+            const contenido = `
+              <div style="background: #14171f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cliente:</span> <span style="color: #ffffff; font-weight: bold;">${pryRow.cliente_nombre || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Proyecto:</span> <span style="color: #ffffff; font-weight: bold;">${pryRow.nombre_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Cód. Cotización:</span> <span style="color: #ffffff; font-weight: bold;">${pryRow.codi_proyecto || 'N/A'}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Fecha Programada:</span> <span style="color: #34d399; font-weight: bold;">${fStr}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Ubicación:</span> <span style="color: #ffffff;">${dirObra}</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Contacto Terreno:</span> <span style="color: #ffffff;">${contactoPayload.nombre || 'No especificado'} (${contactoPayload.telefono || ''})</span></div>
+                <div style="margin-bottom: 12px; font-size: 14px;"><span style="font-weight: 700; color: #38bdf8; display: inline-block; width: 140px;">Observaciones:</span> <span style="color: #cbd5e1;">${comentarios_coordinador || 'Sin observaciones'}</span></div>
+              </div>
+              <p style="color: #94a3b8; font-size: 13px; text-align: center; margin-top: 15px;">La inspección técnica ya está disponible en su aplicación móvil PWA para iniciar el levantamiento.</p>
+            `;
+
+            const titulo = "Visita Técnica Asignada";
+            const subtitulo = `Se te ha asignado la inspección técnica para el proyecto "${pryRow.nombre_proyecto || 'S/N'}".`;
+            const wspMensaje = `🛠️ *Grúas San Pablo — Nueva Visita Técnica Asignada*\n\n¡Hola ${tecnicoNombre}! Se te ha asignado una inspección técnica en terreno:\n\n📋 *Cotización:* ${pryRow.codi_proyecto || pryRow.nombre_proyecto}\n🏢 *Cliente:* ${pryRow.cliente_nombre || 'N/A'}\n📅 *Fecha:* ${fStr}\n📍 *Ubicación:* ${dirObra}\n👤 *Contacto:* ${contactoPayload.nombre || 'N/A'} (${contactoPayload.telefono || ''})\n\n📲 *Abre la PWA para iniciar la inspección:*`;
+
+            await notificacionService.despacharNotificacion({
+                evento: 'VISITA_TECNICA_ASIGNADA',
+                canales: tecnico.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+                destinatario: {
+                    nombre: tecnicoNombre,
+                    email: resolvedEmailTecnico,
+                    telefono: tecnico.fono
+                },
+                deepLink: {
+                    tipoApp: 'PWA',
+                    ruta: 'surveys'
+                },
+                emailData: {
+                    asunto: `🛠️ Visita Técnica Asignada - ${pryRow.codi_proyecto || pryRow.nombre_proyecto}`,
+                    titulo,
+                    subtitulo,
+                    contenido,
+                    botonTexto: "ABRIR EN PWA"
+                },
+                wspData: {
+                    mensaje: wspMensaje
+                }
+            });
+        } catch (notifErr) {
+            console.error("Error al despachar notificación de visita técnica asignada:", notifErr);
+        }
+
+        return res.status(200).json({ 
+            message: "Visita asignada y firmada con éxito. Notificación enviada al especialista.", 
+            id_proyecto: pryRow.id_proyecto,
+            id_survey: resolvedSurveyId 
+        });
     } catch (err) {
         console.error("Error en asignarVisita:", err);
         return res.status(500).json({ error: err.message });

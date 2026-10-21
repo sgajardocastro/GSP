@@ -189,3 +189,26 @@ exports.eliminarDocumentoEmpresa = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar documento de empresa", error: error.message });
   }
 };
+
+// REQ-997 / Caso 1: Enrolamiento rápido de personal o rigger externo de faena
+exports.crearPersonalExterno = async (req, res) => {
+  try {
+    const { nombre, rut, movil, email, empresa_proveedora, cargo } = req.body;
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ status: "error", message: "El nombre completo es obligatorio." });
+    }
+    const nuevo = await acreditacionModel.crearPersonalExterno({
+      nombre,
+      rut,
+      movil,
+      email,
+      empresa_proveedora,
+      cargo: cargo || 'Rigger'
+    });
+    res.status(201).json({ status: "success", message: "Personal externo enrolado exitosamente", data: nuevo });
+  } catch (error) {
+    console.error("[ACREDITACION] Error creando personal externo:", error.message);
+    res.status(500).json({ status: "error", message: "Error al enrolar personal externo", error: error.message });
+  }
+};
+

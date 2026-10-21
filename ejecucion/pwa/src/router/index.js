@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import useProfileStore from '@/store/profile.js'
+import { verificarEsAdminOComercial } from '@/composables/usePermisosCotizador'
 
 // TRANSAMAC_REMOVE_CONEXION_20260428: rutas CNX/vehiculos desactivadas temporalmente.
 // Para volver atras, reponer las rutas marcadas en el bloque comentado al final de este archivo.
@@ -90,6 +91,39 @@ const routes = [
       requireAuth: true
     }
   },
+  {
+    path: '/cotizador-express',
+    name: 'CotizadorExpress',
+    component: () => import('@/views/CotizadorExpress.vue'),
+    meta: {
+      requireAuth: true,
+      requireAdminOrCom: true
+    }
+  },
+  {
+    path: '/taller',
+    name: 'TallerMantenimiento',
+    component: () => import('@/views/taller/TallerHomeView.vue'),
+    meta: {
+      requireAuth: true
+    }
+  },
+  {
+    path: '/taller/ot/:id',
+    name: 'TallerOtDetalle',
+    component: () => import('@/views/taller/TallerOtDetalleView.vue'),
+    meta: {
+      requireAuth: true
+    }
+  },
+  {
+    path: '/bodega',
+    name: 'BodegaScanner',
+    component: () => import('@/views/inventario/BodegaScannerView.vue'),
+    meta: {
+      requireAuth: true
+    }
+  },
 
   {
     path: '/logout',
@@ -127,7 +161,22 @@ router.beforeEach((to, from, next) => {
   }
 
   if (needAuth && !auth) {
-    next({ path: '/login' })
+    next({ path: '/login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  // Protección exclusiva: Solo Admin o Comercial pueden entrar al Cotizador Express
+  if (to.meta.requireAdminOrCom) {
+    const esAdminCom = verificarEsAdminOComercial()
+    if (!esAdminCom) {
+      next({ path: '/surveys' })
+      return
+    }
+  }
+
+  if ((to.path === '/' || to.path === '/login') && auth) {
+    const target = to.query.redirect || '/surveys'
+    next(target)
   } else {
     next()
   }

@@ -102,6 +102,12 @@ const itsController = {
           ra.odometro_termino,
           ra.id_doc_pdf,
           ra.ajustes_analista,
+          ra.id_user_operador,
+          ra.id_user_rigger,
+          COALESCE(uop.name_frst, uop.user_name, '') AS op_nombre,
+          COALESCE(uop.apellido_pat, uop.user_lastname, '') AS op_apellido,
+          COALESCE(urig.name_frst, urig.user_name, '') AS rig_nombre,
+          COALESCE(urig.apellido_pat, urig.user_lastname, '') AS rig_apellido,
           COALESCE(e.patente, 'S/P') AS patente,
           COALESCE(e.modelo, '') AS equipo_modelo,
           COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
@@ -109,6 +115,8 @@ const itsController = {
           TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
         FROM tedp_reporte_avance ra
         LEFT JOIN tequ_equipo e ON ra.id_equipo = e.id_equipo
+        LEFT JOIN tsec_users uop ON ra.id_user_operador = uop.id_user
+        LEFT JOIN tsec_users urig ON ra.id_user_rigger = urig.id_user
         WHERE ra.id_proyecto = $1
         ORDER BY ra.fecha_reporte ASC, ra.id_reporte_avance ASC;
       `, [id_proyecto]);
@@ -124,6 +132,7 @@ const itsController = {
       let its = null;
       let jornadas = [];
       let costos = {
+        alimentacion: [],
         peajes: [],
         pensiones: [],
         personal_externo: [],
@@ -227,7 +236,8 @@ const itsController = {
 
         cosRes.rows.forEach(c => {
           const catKey = c.categoria.toLowerCase();
-          if (catKey === 'peajes') costos.peajes.push(c);
+          if (catKey === 'alimentacion' || catKey === 'viaticos_alimentacion') costos.alimentacion.push(c);
+          else if (catKey === 'peajes') costos.peajes.push(c);
           else if (catKey === 'pensiones') costos.pensiones.push(c);
           else if (catKey === 'personal_externo') costos.personal_externo.push(c);
           else if (catKey === 'feriados') costos.feriados.push(c);
@@ -398,11 +408,17 @@ const itsController = {
             .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
             .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
 
+          const repOpRow = repRes.rows.find(r => r.id_user_operador && `${r.op_nombre || ''} ${r.op_apellido || ''}`.trim());
+          const opRealNombre = repOpRow
+            ? `${repOpRow.op_nombre || ''} ${repOpRow.op_apellido || ''}`.trim().toUpperCase()
+            : 'JORGE PONCE';
+          const opRealId = repOpRow ? repOpRow.id_user_operador : 19;
+
           if (costos.costo_hora_operador.length > 0) {
             costos.costo_hora_operador.forEach(cho => {
-              if (cho.nombre_personal === 'NICOLAS CEBALLOS' || !cho.nombre_personal) {
-                cho.nombre_personal = 'JORGE PONCE';
-                cho.id_personal = 19;
+              if (cho.nombre_personal === 'NICOLAS CEBALLOS' || !cho.nombre_personal || (repOpRow && cho.id_personal !== opRealId)) {
+                cho.nombre_personal = opRealNombre;
+                cho.id_personal = opRealId;
               }
               cho.patente = cho.patente || 'VCTR.81-9';
               cho.precio_unitario = 10000;
@@ -589,13 +605,19 @@ const itsController = {
 
         // Sugerir Costo Hora Operador estándar ($10.000)
         if (sumHrs > 0) {
+          const repOpInit = repRes.rows.find(r => r.id_user_operador && `${r.op_nombre || ''} ${r.op_apellido || ''}`.trim());
+          const opInitNombre = repOpInit
+            ? `${repOpInit.op_nombre || ''} ${repOpInit.op_apellido || ''}`.trim().toUpperCase()
+            : 'JORGE PONCE';
+          const opInitId = repOpInit ? repOpInit.id_user_operador : 19;
+
           costos.costo_hora_operador.push({
             id_costo_item: null,
             id_its: null,
             categoria: 'COSTO_HORA_OPERADOR',
             fecha: repRes.rows[0]?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
-            id_personal: 19,
-            nombre_personal: 'JORGE PONCE',
+            id_personal: opInitId,
+            nombre_personal: opInitNombre,
             id_equipo: repRes.rows[0]?.id_equipo || null,
             patente: repRes.rows[0]?.patente || 'VCTR.81-9',
             numero_oc: null,
@@ -705,7 +727,7 @@ const itsController = {
       equiposAsignados = eqAsigRes.rows;
 
       const perAsigRes = await pool.query(`
-        SELECT 
+        SELECT DISTINCT ON (rp.id_user)
           rp.id_user,
           u.name_frst,
           u.apellido_pat,
@@ -713,9 +735,26 @@ const itsController = {
           rp.rol_asignado AS rol_personal
         FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1;
+        WHERE rp.id_proyecto = $1
+        ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `, [id_proyecto]);
-      personalAsignado = perAsigRes.rows;
+
+      // Filtrar por tripulación activa en ejecucion_v1 o en los reports rectificados para excluir operadores reemplazados
+      const ejTrip = Array.isArray(proyecto.json_field?.ejecucion_v1?.tripulacion_asignada)
+        ? proyecto.json_field.ejecucion_v1.tripulacion_asignada
+        : [];
+      const activeTripIds = new Set();
+      ejTrip.forEach(t => {
+        if (t.id_user || t.id_usuario) activeTripIds.add(Number(t.id_user || t.id_usuario));
+      });
+      repRes.rows.forEach(r => {
+        if (r.id_user_operador) activeTripIds.add(Number(r.id_user_operador));
+        if (r.id_user_rigger) activeTripIds.add(Number(r.id_user_rigger));
+      });
+
+      personalAsignado = activeTripIds.size > 0
+        ? perAsigRes.rows.filter(p => activeTripIds.has(Number(p.id_user)))
+        : perAsigRes.rows;
 
       // Fallback a json_field.operaciones_v1 si las tablas relacionales aún no se poblaron
       const opV1 = proyecto.json_field?.operaciones_v1;
@@ -918,6 +957,7 @@ const itsController = {
 
       if (costos && typeof costos === 'object') {
         const catMapping = [
+          { key: 'alimentacion', dbCat: 'ALIMENTACION', calc: 'MONTO_DIRECTO' },
           { key: 'peajes', dbCat: 'PEAJES', calc: 'MONTO_DIRECTO' },
           { key: 'pensiones', dbCat: 'PENSIONES', calc: 'DESGLOSE_PENSION' },
           { key: 'personal_externo', dbCat: 'PERSONAL_EXTERNO', calc: 'MONTO_DIRECTO' },
@@ -1072,6 +1112,1076 @@ const itsController = {
     } catch (error) {
       console.error('[ITS] Error generando preview PDF:', error);
       return res.status(500).json({ success: false, message: 'Error interno generando PDF', error: error.message });
+    }
+  },
+
+  // 3.1 Compilación de PDF de ITS en servidor con wkhtmltopdf (Estándar Canónico de Cotizaciones)
+  async compilarPdfHtml(req, res) {
+    try {
+      const {
+        htmlContent,
+        folio = 'ITS-0209',
+        numero_cotizacion = 'SN',
+        modulo = 'ITS-TRANSICION',
+        tenant_code = 'GSP',
+        app_env = 'dev'
+      } = req.body;
+
+      if (!htmlContent) {
+        return res.status(400).json({ success: false, message: 'htmlContent es requerido' });
+      }
+
+      const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
+      const archivoModel = require('../models/archivoModel');
+      const { exec } = require('child_process');
+      const { v4: uuidv4 } = require('uuid');
+      const fs = require('fs');
+      const path = require('path');
+
+      const path_relativo = buildStoragePath(tenant_code, modulo, app_env);
+      const targetDir = path.join(STORAGE_ROOT, path_relativo);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      const uuid = uuidv4();
+      const fileName = `${uuid}.pdf`;
+      const filepath = path.join(targetDir, fileName);
+      const tempHtmlPath = path.join(targetDir, `${uuid}_temp.html`);
+      fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+      await new Promise((resolve, reject) => {
+        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
+        exec(cmd, (error, stdout, stderr) => {
+          try {
+            if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath);
+          } catch (e) {}
+
+          if (error && !fs.existsSync(filepath)) {
+            console.error('[ITS wkhtmltopdf] Error:', error, stderr);
+            return reject(new Error('Fallo al compilar con wkhtmltopdf: ' + error.message));
+          }
+          resolve();
+        });
+      });
+
+      const archivoM = new archivoModel();
+      const doc = await archivoM.insertarTfmgFile(
+        'ITS-TRANSICION',
+        'application/pdf',
+        `${folio}_COT_${numero_cotizacion}.pdf`,
+        fileName,
+        path_relativo,
+        req.body.id_user || null,
+        'EMITIDO'
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id_doc: doc.id_doc,
+          path_relativo: doc.path_doc,
+          name_doc_interno: doc.name_doc_interno,
+          name_doc_orig: doc.name_doc_orig,
+          url_view: `/api/v1/storage/view/${doc.id_doc}`
+        }
+      });
+    } catch (err) {
+      console.error('[ITS compilarPdfHtml] Error:', err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 3.2 Listar historial de ITS Transición (Bandeja unificada persistente)
+  async listarItsTransicion(req, res) {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          th.id_transicion,
+          th.folio_its,
+          th.numero_cotizacion,
+          th.version,
+          th.cliente_nombre,
+          th.cliente_rut,
+          th.empresa_facturacion,
+          th.ejecutivo_comercial,
+          th.ciudad_obra,
+          TO_CHAR(th.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
+          TO_CHAR(th.fecha_termino, 'YYYY-MM-DD') AS fecha_termino,
+          th.total_venta,
+          th.total_costos,
+          th.utilidad_bruta,
+          th.margen,
+          th.estado,
+          th.id_doc,
+          th.data_json,
+          th.fecha_guardado,
+          th.fecha_actualizacion,
+          th.firmas_fes,
+          th.historial_observaciones,
+          th.id_usuario_elaborador,
+          th.id_usuario_verificador,
+          th.id_usuario_aprobador,
+          COALESCE(TRIM(u_elab.name_frst || ' ' || COALESCE(u_elab.apellido_pat, '')), th.data_json->>'nombre_elaborador', 'Operaciones') AS nombre_elaborador,
+          COALESCE(TRIM(u_verif.name_frst || ' ' || COALESCE(u_verif.apellido_pat, '')), th.data_json->>'nombre_verificador') AS nombre_verificador,
+          COALESCE(TRIM(u_aprob.name_frst || ' ' || COALESCE(u_aprob.apellido_pat, '')), th.data_json->>'nombre_aprobador') AS nombre_aprobador,
+          f.name_doc_orig,
+          f.name_doc_interno,
+          f.path_doc,
+          CASE 
+            WHEN th.id_doc IS NOT NULL THEN ('/api/v1/storage/view/' || th.id_doc) 
+            ELSE NULL 
+          END AS url_view
+        FROM tits_transicion_historial th
+        LEFT JOIN tsec_users u_elab ON th.id_usuario_elaborador = u_elab.id_user
+        LEFT JOIN tsec_users u_verif ON th.id_usuario_verificador = u_verif.id_user
+        LEFT JOIN tsec_users u_aprob ON th.id_usuario_aprobador = u_aprob.id_user
+        LEFT JOIN tfmg_file f ON th.id_doc = f.id_doc
+        ORDER BY th.fecha_actualizacion DESC, th.id_transicion DESC;
+      `);
+
+      return res.status(200).json({
+        success: true,
+        data: result.rows
+      });
+    } catch (err) {
+      console.error('[ITS listarItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al listar historial de ITS transición', error: err.message });
+    }
+  },
+
+  // 3.3 Guardar o actualizar registro de ITS Transición (Borrador, Emitido, Aprobado)
+  async guardarItsTransicion(req, res) {
+    try {
+      const {
+        folio_its,
+        numero_cotizacion,
+        version = 1,
+        cliente_nombre,
+        cliente_rut,
+        empresa_facturacion,
+        ejecutivo_comercial,
+        ciudad_obra,
+        fecha_inicio,
+        fecha_termino,
+        total_venta = 0,
+        total_costos = 0,
+        utilidad_bruta = 0,
+        margen = 0,
+        estado = 'BORRADOR',
+        id_doc = null,
+        data_json = {},
+        firmas_fes = null,
+        historial_observaciones = null,
+        id_usuario_elaborador = null,
+        id_usuario_verificador = null,
+        id_usuario_aprobador = null
+      } = req.body;
+
+      // Preservar nombre legible del elaborador en data_json para trazabilidad inmediata
+      if (req.body.nombre_elaborador && data_json) {
+        data_json.nombre_elaborador = req.body.nombre_elaborador;
+      }
+
+      if (!folio_its || !numero_cotizacion) {
+        return res.status(400).json({ success: false, message: 'folio_its y numero_cotizacion son obligatorios' });
+      }
+
+      // Sanitizar y validar existencia de id_doc en tfmg_file para prevenir violación de FK (23503)
+      let validIdDoc = null;
+      if (id_doc && estado !== 'BORRADOR') {
+        const docCheck = await pool.query('SELECT id_doc FROM tfmg_file WHERE id_doc = $1', [parseInt(id_doc)]);
+        if (docCheck.rows.length > 0) {
+          validIdDoc = parseInt(id_doc);
+        } else {
+          console.warn(`[ITS guardarItsTransicion] id_doc (${id_doc}) no existe en tfmg_file. Se asigna null.`);
+        }
+      }
+
+      const upsertQuery = `
+        INSERT INTO tits_transicion_historial (
+          folio_its,
+          numero_cotizacion,
+          version,
+          cliente_nombre,
+          cliente_rut,
+          empresa_facturacion,
+          ejecutivo_comercial,
+          ciudad_obra,
+          fecha_inicio,
+          fecha_termino,
+          total_venta,
+          total_costos,
+          utilidad_bruta,
+          margen,
+          estado,
+          id_doc,
+          data_json,
+          firmas_fes,
+          historial_observaciones,
+          id_usuario_elaborador,
+          id_usuario_verificador,
+          id_usuario_aprobador,
+          fecha_actualizacion
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (folio_its, version) DO UPDATE SET
+          numero_cotizacion = EXCLUDED.numero_cotizacion,
+          cliente_nombre = EXCLUDED.cliente_nombre,
+          cliente_rut = EXCLUDED.cliente_rut,
+          empresa_facturacion = EXCLUDED.empresa_facturacion,
+          ejecutivo_comercial = EXCLUDED.ejecutivo_comercial,
+          ciudad_obra = EXCLUDED.ciudad_obra,
+          fecha_inicio = EXCLUDED.fecha_inicio,
+          fecha_termino = EXCLUDED.fecha_termino,
+          total_venta = EXCLUDED.total_venta,
+          total_costos = EXCLUDED.total_costos,
+          utilidad_bruta = EXCLUDED.utilidad_bruta,
+          margen = EXCLUDED.margen,
+          estado = EXCLUDED.estado,
+          id_doc = COALESCE(EXCLUDED.id_doc, tits_transicion_historial.id_doc),
+          data_json = EXCLUDED.data_json,
+          firmas_fes = COALESCE(EXCLUDED.firmas_fes, tits_transicion_historial.firmas_fes),
+          historial_observaciones = COALESCE(EXCLUDED.historial_observaciones, tits_transicion_historial.historial_observaciones),
+          id_usuario_elaborador = COALESCE(EXCLUDED.id_usuario_elaborador, tits_transicion_historial.id_usuario_elaborador),
+          id_usuario_verificador = COALESCE(EXCLUDED.id_usuario_verificador, tits_transicion_historial.id_usuario_verificador),
+          id_usuario_aprobador = COALESCE(EXCLUDED.id_usuario_aprobador, tits_transicion_historial.id_usuario_aprobador),
+          fecha_actualizacion = CURRENT_TIMESTAMP
+        RETURNING *;
+      `;
+
+      const vals = [
+        folio_its,
+        String(numero_cotizacion),
+        parseInt(version) || 1,
+        cliente_nombre || '',
+        cliente_rut || '',
+        empresa_facturacion || 'BESTMAQ',
+        ejecutivo_comercial || '',
+        ciudad_obra || '',
+        fecha_inicio || null,
+        fecha_termino || null,
+        parseFloat(total_venta) || 0,
+        parseFloat(total_costos) || 0,
+        parseFloat(utilidad_bruta) || 0,
+        isFinite(parseFloat(margen)) ? parseFloat(margen) : 0,
+        estado || 'BORRADOR',
+        validIdDoc,
+        data_json || {},
+        firmas_fes ? JSON.stringify(firmas_fes) : null,
+        historial_observaciones ? JSON.stringify(historial_observaciones) : null,
+        id_usuario_elaborador ? parseInt(id_usuario_elaborador) : null,
+        id_usuario_verificador ? parseInt(id_usuario_verificador) : null,
+        id_usuario_aprobador ? parseInt(id_usuario_aprobador) : null
+      ];
+
+      const result = await pool.query(upsertQuery, vals);
+
+      return res.status(200).json({
+        success: true,
+        message: 'ITS Transición guardado exitosamente',
+        data: result.rows[0]
+      });
+    } catch (err) {
+      console.error('[ITS guardarItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al guardar ITS transición', error: err.message });
+    }
+  },
+
+  // 3.4 Firmar Elaborador (Rol Secretaria o Analista) -> Pasa a PENDIENTE_VERIFICACION
+  async firmarElaboradorItsTransicion(req, res) {
+    try {
+      const { id_transicion, payload_actualizado } = req.body;
+      if (!id_transicion) {
+        return res.status(400).json({ success: false, message: 'id_transicion es requerido' });
+      }
+
+      const userId = req.body.id_user || req.body.id_usuario || req.user?.id_user || null;
+      const rutFirmante = req.body.firmante_rut;
+      const pinFes = req.body.pin_fes || req.body.pin_hash || req.body.pin;
+
+      let userRes;
+      if (userId) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data,
+                 COALESCE(r.name_rol, 'SECRETARIA') AS name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.id_user = $1
+          LIMIT 1;
+        `, [userId]);
+      }
+
+      if ((!userRes || userRes.rows.length === 0) && rutFirmante) {
+        const rutLimpio = String(rutFirmante).replace(/[^0-9kK]/g, '').toUpperCase();
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data,
+                 COALESCE(r.name_rol, 'SECRETARIA') AS name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') ILIKE $1
+          LIMIT 1;
+        `, [rutLimpio]);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data,
+                 COALESCE(r.name_rol, 'SECRETARIA') AS name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.email ILIKE '%yiara%' OR u.name_frst ILIKE '%yiara%' OR u.id_user = 65
+          LIMIT 1;
+        `);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
+      const usuario = userRes.rows[0];
+
+      if (pinFes) {
+        const pinHash = String(pinFes).length === 64 ? pinFes : crypto.createHash('sha256').update(String(pinFes)).digest('hex');
+        if (usuario.pass_hash_fes && usuario.pass_hash_fes !== pinHash) {
+          return res.status(401).json({ success: false, message: 'PIN FES incorrecto' });
+        }
+      }
+
+      const itsRes = await pool.query(`SELECT * FROM tits_transicion_historial WHERE id_transicion = $1;`, [id_transicion]);
+      if (itsRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Registro de ITS Transición no encontrado' });
+      }
+      const its = itsRes.rows[0];
+
+      const uuidFes = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+      const codigoFes = `FES-GSP-ELAB-${uuidFes}`;
+      const nombreCompleto = `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.trim() || usuario.email;
+      const cargo = (usuario.json_data && usuario.json_data.cargo) || (usuario.name_rol === 'GSP_PROG' ? 'Analista de Operaciones' : 'Secretaria de Operaciones');
+
+      const firmaElab = {
+        id_usuario: usuario.id_user,
+        nombre: nombreCompleto,
+        rut: usuario.rut || '',
+        cargo: cargo,
+        rol: usuario.name_rol || 'ELABORADOR',
+        codigo_fes: codigoFes,
+        timestamp: new Date().toISOString(),
+        ip: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      };
+
+      const firmasActuales = (its.firmas_fes && typeof its.firmas_fes === 'object') ? its.firmas_fes : {};
+      firmasActuales.elaborador = firmaElab;
+
+      let updateSql = `
+        UPDATE tits_transicion_historial SET
+          estado = 'PENDIENTE_VERIFICACION',
+          firmas_fes = $1::jsonb,
+          id_usuario_elaborador = $2,
+          fecha_actualizacion = CURRENT_TIMESTAMP
+      `;
+      const updateVals = [JSON.stringify(firmasActuales), usuario.id_user];
+
+      if (payload_actualizado && typeof payload_actualizado === 'object') {
+        if (payload_actualizado.total_venta !== undefined) {
+          updateSql += `, total_venta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_venta) || 0);
+        }
+        if (payload_actualizado.total_costos !== undefined) {
+          updateSql += `, total_costos = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_costos) || 0);
+        }
+        if (payload_actualizado.utilidad_bruta !== undefined) {
+          updateSql += `, utilidad_bruta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.utilidad_bruta) || 0);
+        }
+        if (payload_actualizado.margen !== undefined) {
+          updateSql += `, margen = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.margen) || 0);
+        }
+        if (payload_actualizado.data_json) {
+          updateSql += `, data_json = $${updateVals.length + 1}`;
+          updateVals.push(JSON.stringify(payload_actualizado.data_json));
+        }
+      }
+
+      updateSql += ` WHERE id_transicion = $${updateVals.length + 1} RETURNING *;`;
+      updateVals.push(id_transicion);
+
+      const updRes = await pool.query(updateSql, updateVals);
+      const itsActualizado = updRes.rows[0];
+
+      // Notificación Omnicanal a Rol ADMINISTRADOR
+      try {
+        const adminUsers = await pool.query(`
+          SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat
+          FROM tsec_users u
+          JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE r.name_rol IN ('Admin', 'ADMINISTRADOR', 'GSP_ADMIN') AND COALESCE(u.activo, true) = true;
+        `);
+
+        for (const adm of adminUsers.rows) {
+          const nombreAdm = `${adm.name_frst || ''} ${adm.apellido_pat || ''}`.trim() || 'Administrador';
+          const wspMsg = `📋 *GRÚAS SAN PABLO — Verificación Operativa Requerida*\n\n¡Hola ${nombreAdm}! El informe *${itsActualizado.folio_its}* (Cotización #${itsActualizado.numero_cotizacion}) ha sido elaborado y firmado por *${nombreCompleto}* (${cargo}).\n\n🏢 *Cliente:* ${itsActualizado.cliente_nombre || 'N/A'}\n💰 *Venta Neta:* $${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP\n📊 *Margen:* ${itsActualizado.margen || 0}%\n\n📲 *Revisa, edita o visa con tu PIN FES aquí:*`;
+
+          await notificacionService.despacharNotificacion({
+            evento: 'ITS_TRANSICION_PENDIENTE_VERIFICACION',
+            canales: adm.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+            destinatario: {
+              nombre: nombreAdm,
+              email: adm.email,
+              telefono: adm.fono
+            },
+            deepLink: {
+              tipoApp: 'WEB',
+              ruta: 'its-transicion',
+              params: { folio: itsActualizado.folio_its, cot: itsActualizado.numero_cotizacion, id: itsActualizado.id_transicion }
+            },
+            emailData: {
+              asunto: `Verificación Operativa Requerida: ITS ${itsActualizado.folio_its} - ${itsActualizado.cliente_nombre || ''}`,
+              titulo: `Verificación Operativa de ITS Requerida`,
+              subtitulo: `Elaborado por ${nombreCompleto} (${cargo})`,
+              contenido: `<p>Se ha completado la liquidación de transición para la cotización <strong>#${itsActualizado.numero_cotizacion}</strong> (${itsActualizado.cliente_nombre || ''}).</p><p>Venta Total: <strong>$${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP</strong><br>Margen Operacional: <strong>${itsActualizado.margen || 0}%</strong></p>`,
+              botonTexto: `Revisar y Validar ITS`
+            },
+            wspData: { mensaje: wspMsg }
+          });
+        }
+      } catch (errNotif) {
+        console.warn('[ITS firmarElaborador] Error despachando notificaciones:', errNotif.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Firma FES de elaboración registrada exitosamente. Enviado a Verificación.',
+        data: itsActualizado
+      });
+    } catch (err) {
+      console.error('[ITS firmarElaboradorItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error procesando firma de elaboración', error: err.message });
+    }
+  },
+
+  // 3.5 Devolver con Observaciones (Administrador o Contabilidad)
+  async devolverItsTransicion(req, res) {
+    try {
+      const { id_transicion, motivo, observaciones, id_user } = req.body;
+      if (!id_transicion || !observaciones || String(observaciones).trim().length < 5) {
+        return res.status(400).json({ success: false, message: 'id_transicion y observaciones (mín. 5 caracteres) son requeridos' });
+      }
+
+      const itsRes = await pool.query(`SELECT * FROM tits_transicion_historial WHERE id_transicion = $1;`, [id_transicion]);
+      if (itsRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Registro no encontrado' });
+      }
+      const its = itsRes.rows[0];
+
+      const userId = id_user || 1;
+      const userRes = await pool.query(`
+        SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, r.name_rol
+        FROM tsec_users u
+        LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+        LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+        WHERE u.id_user = $1 LIMIT 1;
+      `, [userId]);
+      const usuario = userRes.rows[0] || { id_user: userId, name_frst: 'Usuario', email: 'sistema' };
+      const nombreUsuario = `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.trim() || usuario.email;
+
+      let nuevoEstado = 'OBSERVADO_ADMIN';
+      let rolDevuelve = 'ADMINISTRADOR';
+      if (its.estado === 'PENDIENTE_CONTABILIDAD') {
+        nuevoEstado = 'OBSERVADO_CONTABILIDAD';
+        rolDevuelve = 'CONTABILIDAD';
+      }
+
+      const obsEntry = {
+        id_devolucion: Date.now(),
+        etapa: its.estado,
+        estado_origen: its.estado,
+        estado_destino: nuevoEstado,
+        id_usuario: usuario.id_user,
+        nombre_usuario: nombreUsuario,
+        rol: rolDevuelve,
+        motivo: motivo || 'Observaciones en liquidación',
+        observaciones: String(observaciones).trim(),
+        fecha: new Date().toISOString()
+      };
+
+      const obsHist = Array.isArray(its.historial_observaciones) ? its.historial_observaciones : [];
+      obsHist.push(obsEntry);
+
+      const updRes = await pool.query(`
+        UPDATE tits_transicion_historial SET
+          estado = $1,
+          historial_observaciones = $2::jsonb,
+          fecha_actualizacion = CURRENT_TIMESTAMP
+        WHERE id_transicion = $3
+        RETURNING *;
+      `, [nuevoEstado, JSON.stringify(obsHist), id_transicion]);
+
+      const itsActualizado = updRes.rows[0];
+
+      // Notificar al Elaborador
+      try {
+        const elabId = its.id_usuario_elaborador || 65;
+        const elabRes = await pool.query(`SELECT email, movil as fono, name_frst, apellido_pat FROM tsec_users WHERE id_user = $1;`, [elabId]);
+        if (elabRes.rows.length > 0) {
+          const elab = elabRes.rows[0];
+          const nombreElab = `${elab.name_frst || ''} ${elab.apellido_pat || ''}`.trim() || 'Elaborador';
+          const wspMsg = `⚠️ *GRÚAS SAN PABLO — ITS Observado / Devuelto*\n\n¡Hola ${nombreElab}! El informe *${its.folio_its}* (Cotización #${its.numero_cotizacion}) fue devuelto por *${nombreUsuario}* (${rolDevuelve}).\n\n📌 *Motivo:* ${obsEntry.motivo}\n📝 *Observaciones:* ${obsEntry.observaciones}\n\n📲 *Ingresa a corregir y reenviar aquí:*`;
+
+          await notificacionService.despacharNotificacion({
+            evento: 'ITS_TRANSICION_OBSERVADO',
+            canales: elab.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+            destinatario: {
+              nombre: nombreElab,
+              email: elab.email,
+              telefono: elab.fono
+            },
+            deepLink: {
+              tipoApp: 'WEB',
+              ruta: 'its-transicion',
+              params: { folio: its.folio_its, cot: its.numero_cotizacion, id: its.id_transicion }
+            },
+            emailData: {
+              asunto: `⚠️ ITS Observado: ${its.folio_its} - Cotización #${its.numero_cotizacion}`,
+              titulo: `Informe Devuelto con Observaciones`,
+              subtitulo: `Devuelto por ${nombreUsuario} (${rolDevuelve})`,
+              contenido: `<p>El informe de término de servicio <strong>${its.folio_its}</strong> requiere correcciones antes de continuar el flujo.</p><p style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px;"><strong>Motivo:</strong> ${obsEntry.motivo}<br><strong>Observaciones:</strong> ${obsEntry.observaciones}</p>`,
+              botonTexto: `Corregir ITS en Plataforma`
+            },
+            wspData: { mensaje: wspMsg }
+          });
+        }
+      } catch (errNotif) {
+        console.warn('[ITS devolver] Error despachando notificaciones:', errNotif.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `Informe devuelto con éxito a estado ${nuevoEstado}`,
+        data: itsActualizado
+      });
+    } catch (err) {
+      console.error('[ITS devolverItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al devolver informe', error: err.message });
+    }
+  },
+
+  // 3.6 Validar Administrador (Rol Administrador) -> Pasa a PENDIENTE_CONTABILIDAD
+  async validarAdminItsTransicion(req, res) {
+    try {
+      const { id_transicion, payload_actualizado } = req.body;
+      if (!id_transicion) {
+        return res.status(400).json({ success: false, message: 'id_transicion es requerido' });
+      }
+
+      const userId = req.body.id_user || req.body.id_usuario || req.user?.id_user || null;
+      const rutFirmante = req.body.firmante_rut;
+      const pinFes = req.body.pin_fes || req.body.pin_hash || req.body.pin;
+
+      let userRes;
+      if (userId) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.id_user = $1 LIMIT 1;
+        `, [userId]);
+      }
+
+      if ((!userRes || userRes.rows.length === 0) && rutFirmante) {
+        const rutLimpio = String(rutFirmante).replace(/[^0-9kK]/g, '').toUpperCase();
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') ILIKE $1 LIMIT 1;
+        `, [rutLimpio]);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.email ILIKE '%jponce%' OR u.email ILIKE '%admin%' OR u.name_frst ILIKE '%jorge%' OR u.id_user = 3
+          LIMIT 1;
+        `);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
+      const usuario = userRes.rows[0];
+
+      if (pinFes) {
+        const pinHash = String(pinFes).length === 64 ? pinFes : crypto.createHash('sha256').update(String(pinFes)).digest('hex');
+        if (usuario.pass_hash_fes && usuario.pass_hash_fes !== pinHash) {
+          return res.status(401).json({ success: false, message: 'PIN FES de Administrador incorrecto' });
+        }
+      }
+
+      const itsRes = await pool.query(`SELECT * FROM tits_transicion_historial WHERE id_transicion = $1;`, [id_transicion]);
+      if (itsRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Registro no encontrado' });
+      }
+      const its = itsRes.rows[0];
+
+      const uuidFes = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+      const codigoFes = `FES-GSP-VERIF-${uuidFes}`;
+      const nombreCompleto = `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.trim() || usuario.email;
+
+      const firmaVerif = {
+        id_usuario: usuario.id_user,
+        nombre: nombreCompleto,
+        rut: usuario.rut || '',
+        cargo: (usuario.json_data && usuario.json_data.cargo) || 'Administrador',
+        rol: 'ADMINISTRADOR',
+        codigo_fes: codigoFes,
+        timestamp: new Date().toISOString(),
+        ip: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      };
+
+      const firmasActuales = (its.firmas_fes && typeof its.firmas_fes === 'object') ? its.firmas_fes : {};
+      firmasActuales.verificador = firmaVerif;
+
+      let updateSql = `
+        UPDATE tits_transicion_historial SET
+          estado = 'PENDIENTE_CONTABILIDAD',
+          firmas_fes = $1::jsonb,
+          id_usuario_verificador = $2,
+          fecha_actualizacion = CURRENT_TIMESTAMP
+      `;
+      const updateVals = [JSON.stringify(firmasActuales), usuario.id_user];
+
+      if (payload_actualizado && typeof payload_actualizado === 'object') {
+        if (payload_actualizado.total_venta !== undefined) {
+          updateSql += `, total_venta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_venta) || 0);
+        }
+        if (payload_actualizado.total_costos !== undefined) {
+          updateSql += `, total_costos = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_costos) || 0);
+        }
+        if (payload_actualizado.utilidad_bruta !== undefined) {
+          updateSql += `, utilidad_bruta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.utilidad_bruta) || 0);
+        }
+        if (payload_actualizado.margen !== undefined) {
+          updateSql += `, margen = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.margen) || 0);
+        }
+        if (payload_actualizado.data_json) {
+          updateSql += `, data_json = $${updateVals.length + 1}`;
+          updateVals.push(JSON.stringify(payload_actualizado.data_json));
+        }
+      }
+
+      updateSql += ` WHERE id_transicion = $${updateVals.length + 1} RETURNING *;`;
+      updateVals.push(id_transicion);
+
+      const updRes = await pool.query(updateSql, updateVals);
+      const itsActualizado = updRes.rows[0];
+
+      // Notificar a CONTABILIDAD
+      try {
+        const contaUsers = await pool.query(`
+          SELECT DISTINCT u.id_user, u.email, u.movil as fono, u.name_frst, u.apellido_pat
+          FROM tsec_users u
+          JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE r.name_rol IN ('GSP_CONTA', 'CONTABILIDAD') AND COALESCE(u.activo, true) = true;
+        `);
+
+        for (const cnt of contaUsers.rows) {
+          const nombreCnt = `${cnt.name_frst || ''} ${cnt.apellido_pat || ''}`.trim() || 'Contabilidad';
+          const wspMsg = `💰 *GRÚAS SAN PABLO — V°B° Contable de ITS Requerido*\n\n¡Hola ${nombreCnt}! El Administrador *${nombreCompleto}* ha verificado el informe *${itsActualizado.folio_its}* (Cotización #${itsActualizado.numero_cotizacion}).\n\n🏢 *Cliente:* ${itsActualizado.cliente_nombre || 'N/A'}\n💰 *Venta Neta:* $${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP\n📊 *Margen:* ${itsActualizado.margen || 0}%\n\n📲 *Revisa y aprueba con tu PIN FES aquí:*`;
+
+          await notificacionService.despacharNotificacion({
+            evento: 'ITS_TRANSICION_PENDIENTE_CONTABILIDAD',
+            canales: cnt.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+            destinatario: {
+              nombre: nombreCnt,
+              email: cnt.email,
+              telefono: cnt.fono
+            },
+            deepLink: {
+              tipoApp: 'WEB',
+              ruta: 'its-transicion',
+              params: { folio: itsActualizado.folio_its, cot: itsActualizado.numero_cotizacion, id: itsActualizado.id_transicion }
+            },
+            emailData: {
+              asunto: `V°B° Contable Requerido: ITS ${itsActualizado.folio_its} - ${itsActualizado.cliente_nombre || ''}`,
+              titulo: `V°B° Contable de ITS Requerido`,
+              subtitulo: `Verificado por ${nombreCompleto} (Administrador)`,
+              contenido: `<p>El informe <strong>${itsActualizado.folio_its}</strong> cuenta con V°B° Operativo del Administrador y se encuentra a la espera de aprobación contable.</p><p>Venta Total: <strong>$${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP</strong><br>Margen: <strong>${itsActualizado.margen || 0}%</strong></p>`,
+              botonTexto: `Revisar y Aprobar ITS`
+            },
+            wspData: { mensaje: wspMsg }
+          });
+        }
+      } catch (errNotif) {
+        console.warn('[ITS validarAdmin] Error despachando notificaciones:', errNotif.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Validación de administración registrada exitosamente. Enviado a Contabilidad.',
+        data: itsActualizado
+      });
+    } catch (err) {
+      console.error('[ITS validarAdminItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error procesando validación', error: err.message });
+    }
+  },
+
+  // 3.7 Aprobar Contabilidad (Rol Contabilidad) -> Pasa a APROBADO
+  async aprobarContabilidadItsTransicion(req, res) {
+    try {
+      const { id_transicion, payload_actualizado, id_doc } = req.body;
+      if (!id_transicion) {
+        return res.status(400).json({ success: false, message: 'id_transicion es requerido' });
+      }
+
+      const userId = req.body.id_user || req.body.id_usuario || req.user?.id_user || null;
+      const rutFirmante = req.body.firmante_rut;
+      const pinFes = req.body.pin_fes || req.body.pin_hash || req.body.pin;
+      let userRes;
+      if (userId) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.id_user = $1 LIMIT 1;
+        `, [userId]);
+      }
+
+      if ((!userRes || userRes.rows.length === 0) && rutFirmante) {
+        const rutLimpio = String(rutFirmante).replace(/[^0-9kK]/g, '').toUpperCase();
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') ILIKE $1 LIMIT 1;
+        `, [rutLimpio]);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        userRes = await pool.query(`
+          SELECT u.id_user, u.email, u.name_frst, u.apellido_pat, u.rut, u.pass_hash_fes, u.json_data, r.name_rol
+          FROM tsec_users u
+          LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+          LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
+          WHERE u.email ILIKE '%maritza%' OR u.email ILIKE '%conta%' OR u.name_frst ILIKE '%maritza%' OR r.name_rol IN ('GSP_CONTA', 'CONTABILIDAD')
+          LIMIT 1;
+        `);
+      }
+
+      if (!userRes || userRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
+      const usuario = userRes.rows[0];
+
+      if (pin_fes) {
+        const pinHash = String(pin_fes).length === 64 ? pin_fes : crypto.createHash('sha256').update(String(pin_fes)).digest('hex');
+        if (usuario.pass_hash_fes && usuario.pass_hash_fes !== pinHash) {
+          return res.status(401).json({ success: false, message: 'PIN FES de Contabilidad incorrecto' });
+        }
+      }
+
+      const itsRes = await pool.query(`SELECT * FROM tits_transicion_historial WHERE id_transicion = $1;`, [id_transicion]);
+      if (itsRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Registro no encontrado' });
+      }
+      const its = itsRes.rows[0];
+
+      const uuidFes = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+      const codigoFes = `FES-GSP-APROB-${uuidFes}`;
+      const nombreCompleto = `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.trim() || usuario.email;
+
+      const firmaAprob = {
+        id_usuario: usuario.id_user,
+        nombre: nombreCompleto,
+        rut: usuario.rut || '',
+        cargo: (usuario.json_data && usuario.json_data.cargo) || 'Jefa de Contabilidad',
+        rol: 'CONTABILIDAD',
+        codigo_fes: codigoFes,
+        timestamp: new Date().toISOString(),
+        ip: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      };
+
+      const firmasActuales = (its.firmas_fes && typeof its.firmas_fes === 'object') ? its.firmas_fes : {};
+      firmasActuales.aprobador = firmaAprob;
+
+      let updateSql = `
+        UPDATE tits_transicion_historial SET
+          estado = 'APROBADO',
+          firmas_fes = $1::jsonb,
+          id_usuario_aprobador = $2,
+          fecha_actualizacion = CURRENT_TIMESTAMP
+      `;
+      const updateVals = [JSON.stringify(firmasActuales), usuario.id_user];
+
+      if (id_doc) {
+        updateSql += `, id_doc = $${updateVals.length + 1}`;
+        updateVals.push(parseInt(id_doc));
+      }
+
+      if (payload_actualizado && typeof payload_actualizado === 'object') {
+        if (payload_actualizado.total_venta !== undefined) {
+          updateSql += `, total_venta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_venta) || 0);
+        }
+        if (payload_actualizado.total_costos !== undefined) {
+          updateSql += `, total_costos = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.total_costos) || 0);
+        }
+        if (payload_actualizado.utilidad_bruta !== undefined) {
+          updateSql += `, utilidad_bruta = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.utilidad_bruta) || 0);
+        }
+        if (payload_actualizado.margen !== undefined) {
+          updateSql += `, margen = $${updateVals.length + 1}`;
+          updateVals.push(parseFloat(payload_actualizado.margen) || 0);
+        }
+        if (payload_actualizado.data_json) {
+          updateSql += `, data_json = $${updateVals.length + 1}`;
+          updateVals.push(JSON.stringify(payload_actualizado.data_json));
+        }
+      }
+
+      updateSql += ` WHERE id_transicion = $${updateVals.length + 1} RETURNING *;`;
+      updateVals.push(id_transicion);
+
+      const updRes = await pool.query(updateSql, updateVals);
+      const itsActualizado = updRes.rows[0];
+
+      // Notificar a todos los actores: Elaborador, Administrador y Contabilidad
+      try {
+        const destUsers = await pool.query(`
+          SELECT DISTINCT u.email, u.movil as fono, u.name_frst, u.apellido_pat
+          FROM tsec_users u
+          WHERE u.id_user IN ($1, $2, $3) OR u.email IN ('mseguel@arriendosanpablo.cl', 'controlflota@arriendosanpablo.cl')
+        `, [itsActualizado.id_usuario_elaborador || 65, itsActualizado.id_usuario_verificador || 2, usuario.id_user]);
+
+        for (const dst of destUsers.rows) {
+          const wspMsg = `🎉 *GRÚAS SAN PABLO — ITS Aprobado y Sellado FES Definitivo*\n\nEl informe *${itsActualizado.folio_its}* (Cotización #${itsActualizado.numero_cotizacion}) ha sido *APROBADO* por Contabilidad (*${nombreCompleto}*).\n\n🏢 *Cliente:* ${itsActualizado.cliente_nombre || 'N/A'}\n💰 *Venta Neta:* $${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP\n📊 *Margen:* ${itsActualizado.margen || 0}%\n\n📄 *El informe ha quedado devengado y disponible para facturación:*`;
+
+          await notificacionService.despacharNotificacion({
+            evento: 'ITS_TRANSICION_APROBADO_FINAL',
+            canales: dst.fono ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'],
+            destinatario: {
+              nombre: `${dst.name_frst || ''} ${dst.apellido_pat || ''}`.trim() || 'Colaborador GSP',
+              email: dst.email,
+              telefono: dst.fono
+            },
+            deepLink: {
+              tipoApp: 'WEB',
+              ruta: 'its-transicion',
+              params: { folio: itsActualizado.folio_its, cot: itsActualizado.numero_cotizacion, id: itsActualizado.id_transicion }
+            },
+            emailData: {
+              asunto: `✅ ITS Aprobado Conforme: ${itsActualizado.folio_its} - ${itsActualizado.cliente_nombre || ''}`,
+              titulo: `ITS Aprobado y Sellado FES Conforme`,
+              subtitulo: `Aprobado por ${nombreCompleto} (Contabilidad)`,
+              contenido: `<p>El informe de término de servicio <strong>${itsActualizado.folio_its}</strong> ha completado su circuito de triple firma FES y ha sido aprobado para facturación.</p><p>Venta Neta: <strong>$${Number(itsActualizado.total_venta || 0).toLocaleString('es-CL')} CLP</strong><br>Margen: <strong>${itsActualizado.margen || 0}%</strong></p>`,
+              botonTexto: `Ver ITS y Descargar PDF`
+            },
+            wspData: { mensaje: wspMsg }
+          });
+        }
+      } catch (errNotif) {
+        console.warn('[ITS aprobarContabilidad] Error despachando notificaciones:', errNotif.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'ITS Aprobado formalmente por Contabilidad. Circuito FES Concluido.',
+        data: itsActualizado
+      });
+    } catch (err) {
+      console.error('[ITS aprobarContabilidadItsTransicion] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error aprobando ITS', error: err.message });
+    }
+  },
+
+  // 3.8 Obtener planillas activas de GeraldSoft para precarga persistente (SPEC-068)
+  async obtenerPlanillasActivas(req, res) {
+    try {
+      const result = await pool.query(`
+        SELECT DISTINCT ON (tipo_planilla)
+          p.id_planilla,
+          p.tipo_planilla,
+          p.nombre_archivo,
+          p.total_registros,
+          p.fecha_carga,
+          p.data_json,
+          p.id_usuario,
+          p.modo_carga,
+          p.registros_nuevos,
+          p.registros_actualizados,
+          COALESCE(u.name_frst || ' ' || COALESCE(u.apellido_pat, ''), u.email, 'Usuario') AS usuario_nombre
+        FROM tits_geraldsoft_planillas p
+        LEFT JOIN tsec_users u ON p.id_usuario = u.id_user
+        WHERE p.activo = true
+        ORDER BY p.tipo_planilla, p.fecha_carga DESC;
+      `);
+
+      const controles = result.rows.find(r => r.tipo_planilla === 'CONTROLES') || null;
+      const ordenes = result.rows.find(r => r.tipo_planilla === 'ORDENES') || null;
+
+      return res.status(200).json({
+        success: true,
+        controles,
+        ordenes
+      });
+    } catch (err) {
+      console.error('[ITS obtenerPlanillasActivas] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al obtener planillas activas', error: err.message });
+    }
+  },
+
+  // 3.9 Subir y persistir planilla GeraldSoft en el servidor con soporte incremental (SPEC-068 / SPEC-070)
+  async subirPlanillaPersistente(req, res) {
+    try {
+      const { tipo_planilla, nombre_archivo, data_json, id_user, modo = 'incremental' } = req.body;
+      if (!tipo_planilla || !nombre_archivo || !data_json) {
+        return res.status(400).json({ success: false, message: 'tipo_planilla, nombre_archivo y data_json son requeridos' });
+      }
+
+      let datosFinales = Array.isArray(data_json) ? data_json : [];
+      let regsNuevos = 0;
+      let regsActualizados = 0;
+
+      if (modo === 'incremental') {
+        const prevRes = await pool.query(`
+          SELECT id_planilla, data_json, total_registros
+          FROM tits_geraldsoft_planillas
+          WHERE tipo_planilla = $1 AND activo = true
+          ORDER BY fecha_carga DESC
+          LIMIT 1;
+        `, [tipo_planilla]);
+
+        if (prevRes.rows.length > 0 && Array.isArray(prevRes.rows[0].data_json) && prevRes.rows[0].data_json.length > 0) {
+          const prevList = prevRes.rows[0].data_json;
+          const mapaPrev = new Map();
+
+          const generarClave = (r) => {
+            if (tipo_planilla === 'CONTROLES') {
+              const cot = String(r.cotizacion || r.COTIZACION || '').trim();
+              const ot = String(r.orden || r.ORDEN || '').trim();
+              const fecha = String(r.fecha || r.FECHA || r.__EMPTY || r.FECHA_SERVICIO || '').trim();
+              const pat = String(r.patente || r.PATENTE || '').trim();
+              const item = String(r.item || r.ITEM || r.nro_control || r.__EMPTY_1 || '').trim();
+              return `${cot}_${ot}_${fecha}_${pat}_${item}`.toLowerCase();
+            } else {
+              const ot = String(r.ORDEN || r.orden || '').trim();
+              const cot = String(r['Nro Cotizacion'] || r.cotizacion || '').trim();
+              return `${ot}_${cot}`.toLowerCase();
+            }
+          };
+
+          prevList.forEach((r, idx) => {
+            const k = generarClave(r);
+            mapaPrev.set(k, { item: r, idx });
+          });
+
+          datosFinales = [...prevList];
+
+          data_json.forEach((nuevo) => {
+            const k = generarClave(nuevo);
+            if (mapaPrev.has(k)) {
+              const targetIdx = mapaPrev.get(k).idx;
+              datosFinales[targetIdx] = { ...datosFinales[targetIdx], ...nuevo };
+              regsActualizados++;
+            } else {
+              datosFinales.push(nuevo);
+              mapaPrev.set(k, { item: nuevo, idx: datosFinales.length - 1 });
+              regsNuevos++;
+            }
+          });
+        } else {
+          regsNuevos = datosFinales.length;
+        }
+      } else {
+        regsNuevos = datosFinales.length;
+      }
+
+      // 1. Marcar registros anteriores del mismo tipo como inactivos
+      await pool.query(`
+        UPDATE tits_geraldsoft_planillas SET activo = false WHERE tipo_planilla = $1;
+      `, [tipo_planilla]);
+
+      // 2. Insertar nueva versión activa consolidada
+      const totalRegs = datosFinales.length;
+      const insRes = await pool.query(`
+        INSERT INTO tits_geraldsoft_planillas (
+          tipo_planilla, nombre_archivo, total_registros, data_json, id_usuario, activo, modo_carga, registros_nuevos, registros_actualizados
+        ) VALUES ($1, $2, $3, $4::jsonb, $5, true, $6, $7, $8)
+        RETURNING id_planilla, tipo_planilla, nombre_archivo, total_registros, fecha_carga, modo_carga, registros_nuevos, registros_actualizados;
+      `, [
+        tipo_planilla,
+        nombre_archivo,
+        totalRegs,
+        JSON.stringify(datosFinales),
+        id_user ? parseInt(id_user) : null,
+        modo.toUpperCase(),
+        regsNuevos,
+        regsActualizados
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: `Planilla ${tipo_planilla} guardada y consolidada exitosamente (${modo.toUpperCase()})`,
+        data: insRes.rows[0],
+        estadisticas: {
+          total_anterior: datosFinales.length - regsNuevos,
+          total_actual: totalRegs,
+          nuevos: regsNuevos,
+          actualizados: regsActualizados
+        }
+      });
+    } catch (err) {
+      console.error('[ITS subirPlanillaPersistente] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al persistir planilla', error: err.message });
+    }
+  },
+
+  // 3.10 Obtener historial de cargas de planillas GeraldSoft (SPEC-070)
+  async obtenerHistorialPlanillas(req, res) {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          p.id_planilla,
+          p.tipo_planilla,
+          p.nombre_archivo,
+          p.total_registros,
+          p.fecha_carga,
+          p.activo,
+          p.modo_carga,
+          p.registros_nuevos,
+          p.registros_actualizados,
+          COALESCE(u.name_frst || ' ' || COALESCE(u.apellido_pat, ''), u.email, 'Usuario') AS usuario_nombre
+        FROM tits_geraldsoft_planillas p
+        LEFT JOIN tsec_users u ON p.id_usuario = u.id_user
+        ORDER BY p.fecha_carga DESC
+        LIMIT 20;
+      `);
+      return res.status(200).json({ success: true, data: result.rows });
+    } catch (err) {
+      console.error('[ITS obtenerHistorialPlanillas] Error:', err);
+      return res.status(500).json({ success: false, message: 'Error al obtener historial', error: err.message });
     }
   },
 
@@ -1444,6 +2554,26 @@ const itsController = {
             WHERE id_its = $4;
           `, [nuevoEstadoIts, id_user, codigoValidacionFmt, id_its]);
 
+          // Sincronizar estado en tpry_proyecto: Si está < 6, elevar a 6 (Cierre Operacional / Liquidación) y actualizar snapshot
+          await client.query(`
+            UPDATE tpry_proyecto SET
+              id_proyecto_estado = GREATEST(id_proyecto_estado, 6),
+              json_field = jsonb_set(
+                jsonb_set(
+                  COALESCE(json_field, '{}'::jsonb),
+                  '{its_v1}',
+                  $1::jsonb
+                ),
+                '{estado_its}',
+                to_jsonb($2::text)
+              )
+            WHERE id_proyecto = $3;
+          `, [
+            JSON.stringify({ id_its, folio_its: its.folio_its, estado: nuevoEstadoIts, fecha_aprobado_operaciones: new Date().toISOString() }),
+            nuevoEstadoIts,
+            id_proyecto
+          ]);
+
           // Notificar a Contabilidad (Maritza) + Analista + Gerencia
           try {
             const destRes = await client.query(`
@@ -1525,6 +2655,26 @@ const itsController = {
               fecha_actualizacion = CURRENT_TIMESTAMP
             WHERE id_its = $4;
           `, [nuevoEstadoIts, id_user, codigoValidacionFmt, id_its]);
+
+          // Sincronizar estado en tpry_proyecto: Asegurar que pase a id_proyecto_estado >= 6 y guardar snapshot its_v1 concluido
+          await client.query(`
+            UPDATE tpry_proyecto SET
+              id_proyecto_estado = GREATEST(id_proyecto_estado, 6),
+              json_field = jsonb_set(
+                jsonb_set(
+                  COALESCE(json_field, '{}'::jsonb),
+                  '{its_v1}',
+                  $1::jsonb
+                ),
+                '{estado_its}',
+                to_jsonb($2::text)
+              )
+            WHERE id_proyecto = $3;
+          `, [
+            JSON.stringify({ id_its, folio_its: its.folio_its, estado: nuevoEstadoIts, fecha_recibido_contabilidad: new Date().toISOString() }),
+            nuevoEstadoIts,
+            id_proyecto
+          ]);
 
           // Notificar únicamente a los 4 roles canónicos definidos:
           // 1. Analista elaborador (its.id_user_elaborado)

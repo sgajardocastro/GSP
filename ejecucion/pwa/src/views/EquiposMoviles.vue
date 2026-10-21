@@ -288,8 +288,7 @@ const API_BASE = (process.env.VUE_APP_API_BASE_URL || '').replace(/\/$/, '')
 const WEB_BASE_URL = (
   process.env.VUE_APP_BASE_URL ||
   process.env.VITE_APP_BASE_URL ||
-  'https://servidor.leanglobal.cl/pwa-transmac-dev/' ||
-  `${window.location.origin}${window.location.pathname}`
+  (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '')
 ).replace(/\/$/, '')
 
 const docTypes = [
@@ -438,8 +437,8 @@ function getDocPreviewUrl(doc) {
   const nameOrig = meta?.name_doc_orig || doc?.json_data?.name_doc_orig || doc?.name_doc_orig
   const nameInterno = meta?.name_doc_interno
 
-  if (!isImageFile(nameOrig) || !nameInterno || !API_BASE) return ''
-  return `${API_BASE}/archivo/transmac/${nameInterno}`
+  if (!nameInterno || !API_BASE) return ''
+  return `${API_BASE}/archivo/ver/${idDoc}`
 }
 
 function openImagePreview(doc) {

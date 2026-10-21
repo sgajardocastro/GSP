@@ -15,6 +15,8 @@ function decryptToken(encryptedToken, secret) {
   }
 }
 
+const pool = require('../config/postgresPool');
+
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   if (!authHeader) {
@@ -33,12 +35,29 @@ const verifyToken = (req, res, next) => {
     return res.status(401).json({ message: 'Fallo al desencriptar el token.' });
   }
 
-  jwt.verify(decryptedToken, jwtSecret, (err, decoded) => {
+  jwt.verify(decryptedToken, jwtSecret, async (err, decoded) => {
     if (err) {
       return res.status(401).json({ message: 'Token expirado o inválido.', error: err.message });
     }
     // Inyecta el usuario decodificado (con su id_empresa) en el request
     req.user = decoded;
+
+    // Asegurar que req.user.roles esté siempre disponible (fallback dinámico)
+    if (!req.user.roles && req.user.id_user) {
+      try {
+        const { rows } = await pool.query(
+          `SELECT r.name_rol 
+           FROM tsec_user_roles ur 
+           JOIN tsec_roles r ON ur.id_rol = r.id_rol 
+           WHERE ur.id_user = $1 AND (r.activo IS NULL OR r.activo = true)`,
+          [req.user.id_user]
+        );
+        req.user.roles = rows.map(r => r.name_rol);
+      } catch (e) {
+        req.user.roles = [];
+      }
+    }
+
     next();
   });
 };

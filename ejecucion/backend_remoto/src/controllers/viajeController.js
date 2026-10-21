@@ -21,7 +21,21 @@ const viajeController = {
   async registrarSalida(req, res) {
     try {
       const { token } = req.params;
-      const { km_inicial, horometro_inicial, combustible_salida, foto_salida, pin_hash, latitud, longitud, id_proyecto, id_equipo, id_user_chofer, device_timestamp } = req.body;
+      const {
+        km_inicial,
+        horometro_inicial,
+        combustible_salida,
+        foto_salida,
+        foto_odometro_salida,
+        foto_horometro_salida,
+        pin_hash,
+        latitud,
+        longitud,
+        id_proyecto,
+        id_equipo,
+        id_user_chofer,
+        device_timestamp
+      } = req.body;
 
       if (!km_inicial || !pin_hash) {
         return res.status(400).json({ error: 'Odómetro y PIN son requeridos para iniciar salida' });
@@ -36,6 +50,8 @@ const viajeController = {
         horometro_inicial,
         combustible_salida,
         foto_salida,
+        foto_odometro_salida,
+        foto_horometro_salida,
         pin_hash,
         latitud,
         longitud,
@@ -89,7 +105,22 @@ const viajeController = {
   async registrarLlegada(req, res) {
     try {
       const { token } = req.params;
-      const { km_final, horometro_final, horometro_grua, horometro_grua_inicial, combustible_llegada, foto_llegada, pin_hash, latitud, longitud, obs_termino, device_timestamp } = req.body;
+      const {
+        km_final,
+        horometro_final,
+        horometro_grua,
+        horometro_grua_inicial,
+        combustible_llegada,
+        foto_llegada,
+        foto_odometro_llegada,
+        foto_horometro_camion_llegada,
+        foto_horometro_grua_llegada,
+        pin_hash,
+        latitud,
+        longitud,
+        obs_termino,
+        device_timestamp
+      } = req.body;
 
       if (!km_final || !pin_hash) {
         return res.status(400).json({ error: 'Odómetro de llegada y PIN son requeridos' });
@@ -104,6 +135,9 @@ const viajeController = {
         horometro_grua_inicial: hGrua,
         combustible_llegada,
         foto_llegada,
+        foto_odometro_llegada,
+        foto_horometro_camion_llegada,
+        foto_horometro_grua_llegada,
         pin_hash,
         latitud,
         longitud,
@@ -339,13 +373,16 @@ const viajeController = {
         const horaLleg = actualizado.fecha_llegada_faena 
           ? new Date(actualizado.fecha_llegada_faena).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) 
           : '08:30';
+        const fGrua = actualizado.foto_horometro_grua_llegada_path || null;
         
         await db.query(`
           UPDATE tedp_reporte_avance
-          SET horometro_inicio = $1, hora_inicio_faena = COALESCE(hora_inicio_faena, $2)
+          SET horometro_inicio = $1,
+              hora_inicio_faena = COALESCE(hora_inicio_faena, $2),
+              foto_tablero_inicio = COALESCE(foto_tablero_inicio, $6)
           WHERE id_proyecto = $3 AND id_equipo = $4 AND fecha_reporte = $5 AND (token_report IS NULL OR token_report NOT LIKE 'FLT-%');
-        `, [Number(actualizado.horometro_grua_inicial), horaLleg, idPry, actualizado.id_equipo, fechaHoy]);
-        console.log(`[Handoff Traslado] Horómetro Inicial de Grúa pre-cargado: ${actualizado.horometro_grua_inicial} hrs en OT ${idPry}`);
+        `, [Number(actualizado.horometro_grua_inicial), horaLleg, idPry, actualizado.id_equipo, fechaHoy, fGrua]);
+        console.log(`[Handoff Traslado] Horómetro Inicial de Grúa pre-cargado: ${actualizado.horometro_grua_inicial} hrs con foto en OT ${idPry}`);
       } catch (errRep) {
         console.warn('[Handoff Traslado] Advertencia pre-cargando horómetro de grúa:', errRep.message);
       }

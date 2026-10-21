@@ -36,7 +36,15 @@ const crearAsignacionPersona = async (req, res) => {
     try {
         const { id } = req.params;
         const { id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, turnos_plan, horas_plan, estado_real, id_user_creacion, observaciones } = req.body;
-        
+
+        const userCheck = await pool.query(
+            `SELECT activo, name_frst, apellido_pat FROM tsec_users WHERE id_user = $1`,
+            [id_user]
+        );
+        if (userCheck.rowCount === 0 || userCheck.rows[0].activo === false) {
+            return res.status(400).json({ error: 'No se puede asignar un usuario inactivo o inexistente.' });
+        }
+
         const existente = await pool.query(
             `SELECT id_rel_persona FROM tpry_rel_persona 
              WHERE id_proyecto = $1 AND id_user = $2 AND estado_real = 'PROGRAMADO'`,

@@ -209,7 +209,7 @@
           <div class="mb-4">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) <span v-if="diaCorrelativo === 1">*</span>
+                ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
               </label>
               <span v-if="diaCorrelativo > 1" class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
                 Heredado Día {{ diaCorrelativo - 1 }}
@@ -229,16 +229,13 @@
             <div class="d-flex align-center justify-space-between mb-2">
               <label class="text-lg sm:text-xl font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-2">
                 <span>📸 Foto Horómetro Superestructura</span>
-                <span v-if="diaCorrelativo === 1" class="text-red-400 font-black">*</span>
+                <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
               </label>
               <span v-if="form.foto_tablero_inicio" class="text-base font-black text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-500">
                 ✅ Foto Cargada
               </span>
-              <span v-else-if="diaCorrelativo > 1" class="text-xs font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded-lg">
-                Opcional en Día > 1
-              </span>
-              <span v-else class="text-base font-black text-amber-400 bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-500">
-                ⚠️ Obligatoria
+              <span v-else class="text-xs font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded-lg">
+                Opcional
               </span>
             </div>
             <p class="text-base text-slate-300 mb-4 font-medium">
@@ -472,6 +469,21 @@
               </div>
             </div>
 
+            <div v-if="calculoHoras.standbyCliente > 0 || calculoHoras.standbyGsp > 0" class="mt-3 p-2.5 bg-slate-900/90 rounded-xl border border-white/10 text-xs font-mono">
+              <div class="d-flex justify-space-between mb-1" v-if="calculoHoras.standbyCliente > 0">
+                <span class="text-amber-400 font-bold">Standby Cliente (Aceptado):</span>
+                <span class="text-white font-bold">+{{ calculoHoras.standbyCliente }} hrs</span>
+              </div>
+              <div class="d-flex justify-space-between mb-1" v-if="calculoHoras.standbyGsp > 0">
+                <span class="text-red-400 font-bold">Standby San Pablo (Deducible):</span>
+                <span class="text-white font-bold">-{{ calculoHoras.standbyGsp }} hrs</span>
+              </div>
+              <div class="d-flex justify-space-between border-t border-white/10 pt-1 text-emerald-400 font-bold">
+                <span>Total Facturable / Computable:</span>
+                <span>{{ calculoHoras.facturables }} hrs</span>
+              </div>
+            </div>
+
             <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm font-black text-amber-200 bg-amber-950/90 py-2 px-3 rounded-xl border border-amber-500/50">
               ⚡ <strong>Sobretiempo Devengado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Total a Facturar: {{ calculoHoras.facturables }} hrs).
             </div>
@@ -480,11 +492,60 @@
             </div>
           </div>
 
-          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OBLIGATORIO) -->
+          <!-- GESTIÓN DE HORAS STANDBY / DETENCIONES EN FAENA (REQ JORGE PONCE) -->
+          <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
+                🛑 HORAS STANDBY / DETENCIONES EN FAENA
+              </label>
+              <span class="text-xs text-slate-400 font-bold">Opcional</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs font-bold text-amber-400 block mb-1">
+                  Standby Cliente (Aceptado / Cobrable)
+                </label>
+                <input
+                  v-model.number="form.horas_standby_cliente"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="0.0 hrs"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold text-center"
+                />
+                <span class="text-[10px] text-slate-400 block mt-1">Espera de carga, viento, permisos. Cuenta en facturación.</span>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-red-400 block mb-1">
+                  Standby San Pablo (Falla GSP / Sin Cobro)
+                </label>
+                <input
+                  v-model.number="form.horas_standby_gsp"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="0.0 hrs"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold text-center"
+                />
+                <span class="text-[10px] text-slate-400 block mt-1">Falla técnica o falta de anemómetro. NO se cobra y se deduce.</span>
+              </div>
+            </div>
+            <div v-if="form.horas_standby_cliente > 0 || form.horas_standby_gsp > 0">
+              <label class="text-xs font-bold text-slate-300 block mb-1">Motivo de la detención / Standby *</label>
+              <input
+                v-model="form.motivo_standby"
+                type="text"
+                placeholder="Ej: Falta de anemómetro para medición de viento / Espera de maniobra cliente"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"
+              />
+            </div>
+          </div>
+
+          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OPCIONAL) -->
           <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *
+                ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
               </label>
               <button
                 v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
@@ -535,13 +596,13 @@
               <div class="d-flex align-center justify-space-between mb-1.5">
                 <label class="text-xs font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
                   <span>📸 Foto Tablero Superestructura (Término)</span>
-                  <span class="text-red-400 font-black">*</span>
+                  <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
                 </label>
                 <span v-if="form.foto_tablero_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
                   ✅ Foto Cargada
                 </span>
-                <span v-else class="text-[11px] font-black text-amber-400 bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-500">
-                  ⚠️ Obligatoria
+                <span v-else class="text-[11px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg">
+                  Opcional
                 </span>
               </div>
 
@@ -800,6 +861,21 @@
               </div>
             </div>
 
+            <div v-if="calculoHoras.standbyCliente > 0 || calculoHoras.standbyGsp > 0" class="mt-2.5 pt-2 border-t border-white/20 text-xs font-mono space-y-1">
+              <div v-if="calculoHoras.standbyCliente > 0" class="text-amber-300 flex justify-between">
+                <span>Standby Mandante:</span>
+                <span class="font-bold">{{ calculoHoras.standbyCliente }} hrs</span>
+              </div>
+              <div v-if="calculoHoras.standbyGsp > 0" class="text-red-400 flex justify-between">
+                <span>Standby San Pablo (Descontado):</span>
+                <span class="font-bold">-{{ calculoHoras.standbyGsp }} hrs</span>
+              </div>
+              <div class="text-emerald-400 flex justify-between font-bold border-t border-white/10 pt-1">
+                <span>Total Facturable:</span>
+                <span>{{ calculoHoras.facturables }} hrs</span>
+              </div>
+            </div>
+
             <div v-if="calculoHoras.sobretiempo > 0" class="mt-2.5 text-sm font-black text-yellow-300 text-center">
               (Incluye +{{ calculoHoras.sobretiempo }} hrs de sobretiempo sobre base contractual)
             </div>
@@ -999,6 +1075,9 @@ const form = reactive({
   horometro_inicio: null,
   horometro_termino: null,
   horometro_chasis_termino: null,
+  horas_standby_cliente: 0,
+  horas_standby_gsp: 0,
+  motivo_standby: '',
   odometro_inicio: null,
   odometro_termino: null,
   foto_tablero_inicio: null,
@@ -1030,18 +1109,24 @@ const equipoSeleccionado = computed(() => {
 })
 
 const operadorNombre = computed(() => {
-  const op = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))
+  const op = personas.value.find(p => {
+    const r = (p.rol_asignado || p.cargo || '').toUpperCase()
+    return r.includes('OPERADOR') || r.includes('CHOFER') || r.includes('CONDUCTOR') || r.includes('MAQUINISTA')
+  })
   if (op) return `${op.name_frst || ''} ${op.apellido_pat || ''}`.trim()
-  return 'Operador Asignado'
+  if (personas.value.length > 0) {
+    return `${personas.value[0].name_frst || ''} ${personas.value[0].apellido_pat || ''}`.trim()
+  }
+  return proyecto.value.operador_nombre || localStorage.getItem('usuario_nombre') || 'Operador Asignado'
 })
 
 const riggerNombre = computed(() => {
-  const rig = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))
+  const rig = personas.value.find(p => (p.rol_asignado || p.cargo || '').toUpperCase().includes('RIGGER'))
   if (rig) {
     const nom = `${rig.name_frst || ''} ${rig.apellido_pat || ''}`.trim()
     return nom || null
   }
-  return null
+  return proyecto.value.rigger_nombre || null
 })
 
 const horasColacionFormateadas = computed(() => {
@@ -1126,7 +1211,7 @@ const comprimirYAsignar = (event, callback) => {
 // Cálculo reactivo en vivo de horas
 const calculoHoras = computed(() => {
   if (!form.hora_inicio || !form.hora_termino) {
-    return { efectivas: 0, facturables: horasMinimas.value, sobretiempo: 0 }
+    return { efectivas: 0, facturables: horasMinimas.value, sobretiempo: 0, standbyCliente: 0, standbyGsp: 0 }
   }
 
   const [hIni, mIni] = form.hora_inicio.split(':').map(Number)
@@ -1135,12 +1220,30 @@ const calculoHoras = computed(() => {
   let minutosTotales = (hFin * 60 + mFin) - (hIni * 60 + mIni)
   if (minutosTotales < 0) minutosTotales += 24 * 60
 
-  const minutosEfectivos = Math.max(0, minutosTotales - form.minutos_colacion)
-  const efectivas = Number((minutosEfectivos / 60).toFixed(1))
-  const facturables = Number(Math.max(efectivas, horasMinimas.value).toFixed(1))
-  const sobretiempo = Number(Math.max(0, efectivas - horasMinimas.value).toFixed(1))
+  const stbyCliente = Number(form.horas_standby_cliente || 0)
+  const stbyGsp = Number(form.horas_standby_gsp || 0)
 
-  return { efectivas, facturables, sobretiempo }
+  const minutosEfectivosBrutos = Math.max(0, minutosTotales - form.minutos_colacion)
+  const horasBrutas = minutosEfectivosBrutos / 60
+
+  // Horas netas computables al mandante (Faena - Colación - Standby GSP)
+  const totalComputable = Number(Math.max(0, horasBrutas - stbyGsp).toFixed(1))
+
+  // Horas de operación real de izaje (Horas netas - Standby Cliente)
+  const efectivas = Number(Math.max(0, totalComputable - stbyCliente).toFixed(1))
+
+  // Facturables: base contractual o total computable
+  const facturables = Number(Math.max(totalComputable, horasMinimas.value).toFixed(1))
+  const sobretiempo = Number(Math.max(0, totalComputable - horasMinimas.value).toFixed(1))
+
+  return {
+    efectivas,
+    facturables,
+    sobretiempo,
+    totalComputable,
+    standbyCliente: stbyCliente,
+    standbyGsp: stbyGsp
+  }
 })
 
 // Horómetro Propuesto y Diagnóstico de Consistencia
@@ -1197,14 +1300,7 @@ watch(() => calculoHoras.value.efectivas, (newEf) => {
 const puedeGuardarInicio = computed(() => {
   if (servicioConcluido.value) return false
   if (!form.fecha_reporte || !form.hora_inicio || enviandoInicio.value) return false
-  if (diaCorrelativo.value > 1) {
-    return true
-  }
-  return (
-    form.horometro_inicio !== null &&
-    Number(form.horometro_inicio) > 0 &&
-    form.foto_tablero_inicio
-  )
+  return true
 })
 
 const puedeEnviarReport = computed(() => {
@@ -1218,18 +1314,6 @@ const puedeEnviarReport = computed(() => {
 })
 
 const irAMomento2 = () => {
-  if (diaCorrelativo.value === 1) {
-    if (!form.horometro_inicio || Number(form.horometro_inicio) <= 0) {
-      if (equipoSeleccionado.value?.horometro_base) {
-        form.horometro_inicio = Number(equipoSeleccionado.value.horometro_base)
-      } else {
-        snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio en Momento 1'
-        snackbar.color = 'warning'
-        snackbar.show = true
-        return
-      }
-    }
-  }
   faseVisual.value = 2
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -1241,27 +1325,15 @@ const irAReportMandante = () => {
     snackbar.show = true
     return
   }
-  if (!form.horometro_termino || Number(form.horometro_termino) <= 0) {
-    snackbar.text = '⚠️ Debes ingresar el Horómetro de Término'
-    snackbar.color = 'warning'
-    snackbar.show = true
-    return
-  }
-  if (estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
+  if (form.horometro_termino && estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
     snackbar.text = estadoHorometroTermino.value.mensaje
     snackbar.color = 'error'
     snackbar.show = true
     return
   }
-  if (estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
+  if (form.horometro_termino && estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
     const confirma = window.confirm(`⚠️ Advertencia de Horómetro Motor:\n\nEl horómetro final (${form.horometro_termino}) genera un incremento de +${estadoHorometroTermino.value.diff} hrs de motor en una jornada de ${calculoHoras.value.efectivas} hrs.\n\n¿Estás seguro de que este valor es correcto y no corresponde al kilometraje/odómetro?`)
     if (!confirma) return
-  }
-  if (!form.foto_tablero_termino) {
-    snackbar.text = '⚠️ La Foto del Horómetro de Superestructura al Término es OBLIGATORIA'
-    snackbar.color = 'warning'
-    snackbar.show = true
-    return
   }
   if (esGruaBimotor.value && form.horometro_chasis_termino && !form.foto_horometro_chasis_termino) {
     snackbar.text = '⚠️ La Foto del Horómetro de Chasis al Término es OBLIGATORIA'
@@ -1396,21 +1468,6 @@ const cargarContexto = async (idEqParam = null) => {
 // Guardar Momento 1 (Inicio de Jornada)
 const guardarInicioJornada = async () => {
   try {
-    if (diaCorrelativo.value === 1) {
-      if (!form.horometro_inicio || Number(form.horometro_inicio) <= 0) {
-        snackbar.text = '⚠️ Debes ingresar el Horómetro de Inicio'
-        snackbar.color = 'warning'
-        snackbar.show = true
-        return
-      }
-      if (!form.foto_tablero_inicio) {
-        snackbar.text = '⚠️ La Foto del Horómetro al Inicio es OBLIGATORIA'
-        snackbar.color = 'warning'
-        snackbar.show = true
-        return
-      }
-    }
-
     enviandoInicio.value = true
     const payload = {
       id_proyecto: Number(idProyecto.value),
@@ -1515,6 +1572,9 @@ const sellarYTransmitirReport = async () => {
       horas_minimas: horasMinimas.value,
       horas_facturables: calculoHoras.value.facturables,
       horas_sobretiempo: calculoHoras.value.sobretiempo,
+      horas_standby_cliente: Number(form.horas_standby_cliente || 0),
+      horas_standby_gsp: Number(form.horas_standby_gsp || 0),
+      motivo_standby: form.motivo_standby || null,
       horometro_inicio: form.horometro_inicio,
       horometro_termino: form.horometro_termino,
       horometro_chasis_termino: form.horometro_chasis_termino || null,

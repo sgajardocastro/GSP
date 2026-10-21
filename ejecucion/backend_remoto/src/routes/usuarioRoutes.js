@@ -9,6 +9,7 @@ router.post('/', usuarioController.postUsuario);
 // ⚠️ IMPORTANTE: estas 3 ANTES de `/:id` de PUT
 router.put('/enrolamiento', usuarioController.putEnrolamiento);
 router.post('/inicioEnrolamiento', usuarioController.postInicioEnrolamiento);
+router.post('/reenviarEnrolamiento', usuarioController.postReenviarEnrolamiento);
 router.put('/updPassFes', usuarioController.putCambiarPassFes);
 router.post('/updUsuario', usuarioController.postUpdUsuario);
 

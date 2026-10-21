@@ -15,6 +15,53 @@ async function crearConsentimientoEnrolamiento({ id_user, rut }) {
   try {
     await client.query("BEGIN");
 
+    // 0) IDEMPOTENCIA: Verificar si el usuario ya tiene un survey de consentimiento activo o pendiente
+    const { rows: existingSurveys } = await client.query(`
+      SELECT 
+        s.id_survey,
+        s.estado_srv,
+        f.id_flow,
+        fs.id_flow_stp,
+        fs.id_doc_in,
+        fs.id_rol,
+        fs.flag_equipo,
+        fs.estado as estado_paso,
+        fmg.name_doc_interno as name_doc_interno_in,
+        fmg.name_doc_orig as name_doc_orig_in
+      FROM tsrv_survey s
+      JOIN tflw_flows f ON s.id_survey = f.id_survey
+      JOIN tflw_flow_steps fs ON f.id_flow = fs.id_flow
+      LEFT JOIN tfmg_file fmg ON fs.id_doc_in = fmg.id_doc
+      WHERE s.id_user = $1 AND s.id_template = 500
+      ORDER BY s.id_survey DESC
+      LIMIT 1
+    `, [id_user]);
+
+    if (existingSurveys.length > 0) {
+      const existing = existingSurveys[0];
+      // Si ya está APROBADO o tiene un paso pendiente reutilizable:
+      if (existing.estado_srv === 'APROBADO' || existing.estado_paso === 'PENDIENTE') {
+        await client.query("COMMIT");
+        console.log(`ℹ️ [crearConsentimientoEnrolamiento] Idempotencia: Reutilizando survey existente #${existing.id_survey} (estado: ${existing.estado_srv}) para user #${id_user}`);
+        return {
+          id_survey: existing.id_survey,
+          id_flow: existing.id_flow,
+          detalles: [
+            {
+              id_flow_stp: existing.id_flow_stp,
+              id_flow: existing.id_flow,
+              id_doc_in: existing.id_doc_in,
+              name_doc_interno_in: existing.name_doc_interno_in,
+              name_doc_orig_in: existing.name_doc_orig_in,
+              id_rol: existing.id_rol,
+              flag_equipo: existing.flag_equipo,
+              estado: existing.estado_paso,
+            },
+          ],
+        };
+      }
+    }
+
     // 1) Buscar template de consentimiento (En Transmac es el 500)
     const { rows: tmplRows } = await client.query(`
       SELECT 

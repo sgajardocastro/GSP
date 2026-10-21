@@ -19,6 +19,7 @@ const sstRouter = require('./sstRoutes.js');
 const templateRouter = require('./templateRoutes.js');
 const empresasRouter = require('./empresasRoutes.js');
 const acreditacionRouter = require('./acreditacionRoutes.js');
+const aprobacionGerenciaRouter = require('./aprobacionGerenciaRoutes.js');
 
 function routerApi(app) {
     app.use('/api/usuarios', usuariosRouter);
@@ -55,6 +56,36 @@ function routerApi(app) {
     app.use('/api/patio', require('./patioRoutes.js'));
     app.use('/api/operaciones/its', require('./itsRoutes.js'));
     app.use('/api/its', require('./itsRoutes.js'));
+    app.use('/api/visitas', require('./visitaTerrenoRoutes.js'));
+    app.use('/api/backlog', require('./backlogRoutes.js'));
+    app.use('/api/operaciones/control-vivo', require('./controlVivoRoutes.js'));
+    app.use('/api/mantenimiento', require('./mantenimientoRoutes.js'));
+    app.use('/api/inventario', require('./inventarioRoutes.js'));
+    app.use('/api/operaciones/acta-plataforma', require('./actaPlataformaRoutes.js'));
+    app.use('/api/actas-plataforma', require('./actaPlataformaRoutes.js'));
+
+    // Spec 87: Aprobador Móvil Gerencia (Web Token 1 Solo Uso)
+    app.use('/api/aprobaciones-gerencia', aprobacionGerenciaRouter);
+    app.use('/api/aprobacion-gerencia', aprobacionGerenciaRouter);
+
+    // Spec 87: Módulo de Compras / Solicitudes de Pedido / OCs Multi-Empresa (Resiliente)
+    try {
+        const comprasRouter = require('./comprasRoutes.js');
+        app.use('/api/compras', comprasRouter);
+        app.use('/api/ordenes-compra', comprasRouter);
+    } catch (errCompras) {
+        console.warn('[routes/index] Aviso: comprasRoutes en carga diferida:', errCompras.message);
+        const lazyComprasMiddleware = (req, res, next) => {
+            try {
+                const dynamicComprasRouter = require('./comprasRoutes.js');
+                return dynamicComprasRouter(req, res, next);
+            } catch (e) {
+                return res.status(503).json({ error: 'Módulo de compras en inicialización: ' + e.message });
+            }
+        };
+        app.use('/api/compras', lazyComprasMiddleware);
+        app.use('/api/ordenes-compra', lazyComprasMiddleware);
+    }
 }
 
 module.exports = routerApi;

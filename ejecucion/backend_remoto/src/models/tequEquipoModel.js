@@ -19,6 +19,13 @@ class TequEquipoModel {
           b.nombre_marca,
           emp.name_empresa,
           emp.razon_social,
+          (
+            SELECT COUNT(DISTINCT srv.id_survey)
+            FROM tsrv_survey srv
+            WHERE srv.id_equipo = e.id_equipo 
+               OR (srv.body_exec->>'patente' IS NOT NULL AND UPPER(TRIM(srv.body_exec->>'patente')) = UPPER(TRIM(e.patente)))
+               OR (srv.header_exec->>'patente' IS NOT NULL AND UPPER(TRIM(srv.header_exec->>'patente')) = UPPER(TRIM(e.patente)))
+          ) AS cant_inspecciones,
           CASE 
             WHEN COUNT(ce.id_certificado) FILTER (WHERE tc.nombre_tipo IN ('Permiso de Circulación', 'Revisión Técnica', 'SOAP')) = 0 THEN 'empty'
             WHEN COUNT(ce.id_certificado) FILTER (WHERE tc.nombre_tipo IN ('Permiso de Circulación', 'Revisión Técnica', 'SOAP') AND ce.fecha_vencimiento < CURRENT_DATE) > 0 THEN 'error'

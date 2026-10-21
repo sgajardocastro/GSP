@@ -29,4 +29,17 @@ router.post('/costos', estadoPagoController.imputarCostoServicio);
 // 7. Visor 360 Margen Operacional
 router.get('/proyectos/:id/visor-360', estadoPagoController.getVisor360Proyecto);
 
+// 8. Ajustes Exclusivos de Tesorería (Pamela) y Administrador (Spec 57 / Spec 59)
+router.post('/ajustes-tesoreria', estadoPagoController.guardarAjustesTesoreria);
+
+// 9. Firma FES y Despacho Condicional del Comercial (Spec 57 / REQ-028)
+router.post('/firmar-comercial', estadoPagoController.firmarComercialEdp);
+
+// 10. Requerimiento de Cambio / RFC de EDP y Notificación Omnicanal (Spec 59 / REQ-037)
+router.post('/solicitar-modificacion', estadoPagoController.solicitarModificacionEDP);
+router.post('/resolver-solicitud-modificacion', estadoPagoController.resolverSolicitudModificacionEDP);
+
+// 11. Soporte Documental: OC y Factura con Adjuntos (Spec 60 / REQ-038)
+router.post('/soporte-documental', estadoPagoController.guardarSoporteDocumentalEDP);
+
 module.exports = router;

@@ -44,57 +44,120 @@
         Puedes seguir usando la app con los datos locales.
       </v-alert>
 
-      <!-- Bloque Login -->
-      <div class="login-section">
-      <v-form @submit.prevent="login">
-        <div class="text-subtitle-1 text-medium-emphasis">
-          Usuario / Email *
+      <!-- ⚠️ Aviso destacado: Fin de Marcha Blanca / Redirección a Producción -->
+      <v-alert
+        v-if="esAmbienteDev"
+        color="amber-darken-4"
+        variant="elevated"
+        class="mb-5 text-white"
+        icon="mdi-alert-decagram"
+        prominent
+      >
+        <div class="text-subtitle-2 font-weight-black mb-1">
+          ⚠️ AMBIENTE DE PRUEBAS
         </div>
-
-        <v-text-field
-          v-model="username"
-          density="compact"
-          placeholder="Ingresar Usuario"
-          variant="outlined"
-          autocomplete="username"
-          hide-details="auto"
-          :disabled="!isOnline && !tieneSesionLocal"
-        ></v-text-field>
-
-        <div
-          class="text-subtitle-1 text-medium-emphasis d-flex align-center justify-space-between mt-4"
-        >
-          Contraseña *
+        <div class="text-caption mb-3" style="line-height: 1.4;">
+          La marcha blanca ha concluido. Si eres conductor u operador de Grúas San Pablo, debes ingresar y registrar tus operaciones en la aplicación oficial de Producción.
         </div>
-
-        <v-text-field
-          v-model="password"
-          :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
-          :type="visible ? 'text' : 'password'"
-          density="compact"
-          placeholder="Ingresar Contraseña"
-          variant="outlined"
-          autocomplete="current-password"
-          hide-details="auto"
-          @click:append-inner="visible = !visible"
-          :disabled="!isOnline && !tieneSesionLocal"
-        ></v-text-field>
-
         <v-btn
           block
-          color="#2A3C67"
-          class="mt-4 mb-4 access-btn"
-          size="large"
-          type="submit"
-          :disabled="(!isOnline && !tieneSesionLocal) || !username || (!password && !esLoginBypass)"
+          color="white"
+          class="text-amber-darken-4 font-weight-black text-none"
+          variant="flat"
+          size="default"
+          prepend-icon="mdi-rocket-launch"
+          @click="irAProduccion"
         >
-          Acceder
+          Ir a la App Oficial de Producción ➔
         </v-btn>
-      </v-form>
+      </v-alert>
 
-      <div class="d-flex justify-center google-login-wrapper">
-        <div ref="googleBtnRef"></div>
-      </div>
+      <!-- Bloque Login Prioritario con Google Workspace SSO -->
+      <div class="login-section">
+        <div class="text-center mb-4">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Acceso Corporativo GSP
+          </div>
+          <div class="d-flex justify-center google-login-wrapper py-2">
+            <div ref="googleBtnRef"></div>
+          </div>
+          <div class="text-[11px] text-slate-500 mt-2 font-medium">
+            Ingreso oficial para operadores, mecánicos y personal de Grúas San Pablo con cuenta @arriendosanpablo.cl
+          </div>
+        </div>
+
+        <!-- Separador para acceso clásico secundario -->
+        <div class="d-flex align-center my-4">
+          <v-divider class="border-opacity-25"></v-divider>
+          <span class="text-caption text-medium-emphasis px-3 font-mono text-[10px] text-uppercase">o bien</span>
+          <v-divider class="border-opacity-25"></v-divider>
+        </div>
+
+        <!-- Botón para desplegar acceso clásico de contingencia -->
+        <div v-if="!mostrarLoginClasico" class="text-center">
+          <v-btn
+            variant="text"
+            density="compact"
+            size="small"
+            class="text-caption text-medium-emphasis text-none font-weight-medium"
+            prepend-icon="mdi-shield-key-outline"
+            @click="mostrarLoginClasico = true"
+          >
+            Ingresar con usuario y contraseña clásicos
+          </v-btn>
+        </div>
+
+        <!-- Formulario Clásico (Desplegable) -->
+        <v-expand-transition>
+          <div v-if="mostrarLoginClasico" class="bg-slate-900/40 p-4 rounded-xl border border-white/10 mt-2">
+            <div class="d-flex justify-space-between align-center mb-2">
+              <span class="text-caption font-bold text-amber-400 uppercase">Credenciales del Sistema</span>
+              <v-btn icon="mdi-close" size="x-small" variant="text" @click="mostrarLoginClasico = false"></v-btn>
+            </div>
+            <v-form @submit.prevent="login">
+              <div class="text-caption text-medium-emphasis mb-1">
+                Usuario / Email *
+              </div>
+              <v-text-field
+                v-model="username"
+                density="compact"
+                placeholder="Ingresar Usuario"
+                variant="outlined"
+                autocomplete="username"
+                hide-details="auto"
+                class="mb-3"
+                :disabled="!isOnline && !tieneSesionLocal"
+              ></v-text-field>
+
+              <div class="text-caption text-medium-emphasis mb-1">
+                Contraseña *
+              </div>
+              <v-text-field
+                v-model="password"
+                :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
+                :type="visible ? 'text' : 'password'"
+                density="compact"
+                placeholder="Ingresar Contraseña"
+                variant="outlined"
+                autocomplete="current-password"
+                hide-details="auto"
+                @click:append-inner="visible = !visible"
+                :disabled="!isOnline && !tieneSesionLocal"
+              ></v-text-field>
+
+              <v-btn
+                block
+                color="#2A3C67"
+                class="mt-4 access-btn font-bold text-none"
+                size="default"
+                type="submit"
+                :disabled="(!isOnline && !tieneSesionLocal) || !username || (!password && !esLoginBypass)"
+              >
+                Acceder con Clave
+              </v-btn>
+            </v-form>
+          </div>
+        </v-expand-transition>
       </div>
 
       <!-- Bloque Descarga deshabilitado temporalmente
@@ -139,6 +202,7 @@ import { useRouter } from 'vue-router'
 import apiAxios from '@/services/api'
 import { useUserDetailStore } from '@/store/userDetail'
 import useProfileStore from '@/store/profile'
+import { ADMIN_EMAILS, COMERCIAL_EMAILS } from '@/composables/usePermisosCotizador'
 
 /* eslint-disable */
 const userDetailStore = useUserDetailStore()
@@ -153,6 +217,7 @@ const JWT = ref('')
 const usuariosRoles = ref(null)
 const googleBtnRef = ref(null)
 const dialogSync = ref(false) // 🔹 nuevo
+const mostrarLoginClasico = ref(false)
 
 const { isOnline } = useNetworkStatus()
 const apkFile = 'app-release-signed-2.0.22.apk'
@@ -173,6 +238,24 @@ const esLoginBypass = computed(() => {
   const email = String(username.value || '').trim().toLowerCase()
   return BYPASS_LOGIN_EMAILS.some((allowedEmail) => allowedEmail.toLowerCase() === email)
 })
+
+/* ---------- ambiente DEV / Fin de Marcha Blanca ---------- */
+const esAmbienteDev = computed(() => {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname || ''
+    if (path.startsWith('/pwa-gsp-prod') || path.startsWith('/lg-gsp-prod')) {
+      return false
+    }
+    if (path.startsWith('/pwa-gsp-dev') || path.startsWith('/lg-gsp-dev')) {
+      return true
+    }
+  }
+  return process.env.VUE_APP_BASE_URL === '/pwa-gsp-dev/'
+})
+
+const irAProduccion = () => {
+  window.location.href = 'https://servidor.leanglobal.cl/pwa-gsp-prod/'
+}
 
 const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '961053663096-s2a3uhics25fg1h0b20ocmqlqi3tvvdu.apps.googleusercontent.com'
 
@@ -482,6 +565,22 @@ async function obtenerUsuarioByEmail(email) {
 
 function guardarSesionLocal(userData) {
   const fallbackEmail = String(userData?.email || userData?.correo_user || DEFAULT_BYPASS_LOGIN_EMAIL).trim()
+  const emailLower = fallbackEmail.toLowerCase()
+
+  let idRolCalculado = Number(userData?.id_rol || 0)
+  let nombreRolCalculado = String(userData?.nombre_rol || '')
+  let nombrePerfilCalculado = String(userData?.nombre_perfil || 'TRANSMAC')
+
+  if (ADMIN_EMAILS.some(e => e.toLowerCase() === emailLower) || emailLower.endsWith('@leanglobal.cl')) {
+    idRolCalculado = 1
+    nombreRolCalculado = 'Admin'
+    nombrePerfilCalculado = 'ADMIN'
+  } else if (COMERCIAL_EMAILS.some(e => e.toLowerCase() === emailLower)) {
+    idRolCalculado = 36
+    nombreRolCalculado = 'COMERCIAL'
+    nombrePerfilCalculado = 'COMERCIAL'
+  }
+
   const perfil = {
     ID_USUARIO: userData?.id_user || BYPASS_USER_ID,
     CODI_USUARIO: userData?.rut_user || userData?.rut || fallbackEmail,
@@ -499,12 +598,12 @@ function guardarSesionLocal(userData) {
     TELEFONO: userData?.telefono_user || userData?.telefono || '',
     CELULAR: userData?.celular_user || userData?.celular || '',
     CORREO: fallbackEmail,
-    ID_ROL: userData?.id_rol || 0,
-    NOMBRE_ROL: userData?.nombre_rol || '',
+    ID_ROL: idRolCalculado,
+    NOMBRE_ROL: nombreRolCalculado,
     CODI_GRUPO_BASE_ROL: userData?.codi_grupo_base_rol || null,
     ID_PERFIL: userData?.id_perfil || 0,
     CODI_GRUPO_BASE_PERFIL: userData?.codi_grupo_base_perfil || ' ',
-    NOMBRE_PERFIL: userData?.nombre_perfil || 'TRANSMAC',
+    NOMBRE_PERFIL: nombrePerfilCalculado,
     ESTADO: userData?.estado || userData?.estado_user || 'A',
     ID_EMPRESA: userData?.id_empresa || 0,
     NOMBRE_EMPRESA: userData?.nombre_empresa || '',

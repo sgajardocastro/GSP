@@ -107,6 +107,22 @@ async function verificarOutlook(email, password) {
   }
 }
 
+async function obtenerRolesUsuario(id_user) {
+  try {
+    const rolesRes = await db.query(
+      `SELECT r.name_rol 
+       FROM tsec_user_roles ur 
+       JOIN tsec_roles r ON ur.id_rol = r.id_rol 
+       WHERE ur.id_user = $1 AND (r.activo IS NULL OR r.activo = true)`,
+      [id_user]
+    );
+    return rolesRes.rows.map(r => r.name_rol);
+  } catch (err) {
+    console.error("[ROLES] Error al obtener roles del usuario:", err.message);
+    return [];
+  }
+}
+
 exports.login = async (req, res) => {
   const identifier = req.body.username || req.body.email;
   const { password } = req.body;
@@ -137,13 +153,16 @@ exports.login = async (req, res) => {
     }
     await verificarPOP3(user.codi_user || email, password);
 
+    const roles = await obtenerRolesUsuario(user.id_user);
+
     const payload = {
       rut: user.rut,
       email: user.email,
       nombre: `${user.name_frst} ${user.apellido_pat}`,
       id_user: user.id_user,
       id_empresa: user.id_empresa,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: tokenExpiresIn });
@@ -159,7 +178,8 @@ exports.login = async (req, res) => {
       rut: user.rut,
       name_frst: user.name_frst,
       apellido_pat: user.apellido_pat,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     res.status(200).json({ token: encryptedToken, user: safeUser });
@@ -197,13 +217,16 @@ exports.loginPorEmail = async (req, res) => {
     }
     await verificarPOP3(email, password);
 
+    const roles = await obtenerRolesUsuario(user.id_user);
+
     const payload = {
       rut: user.rut,
       email: user.email,
       nombre: `${user.name_frst} ${user.apellido_pat}`,
       id_user: user.id_user,
       id_empresa: user.id_empresa,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: tokenExpiresIn });
@@ -219,7 +242,8 @@ exports.loginPorEmail = async (req, res) => {
       rut: user.rut,
       name_frst: user.name_frst,
       apellido_pat: user.apellido_pat,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     res.status(200).json({ token: encryptedToken, user: safeUser });
@@ -334,13 +358,16 @@ exports.loginGoogle = async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
+    const roles = await obtenerRolesUsuario(user.id_user);
+
     const jwtPayload = {
       rut: user.rut,
       email: user.email,
       nombre: `${user.name_frst} ${user.apellido_pat}`,
       id_user: user.id_user,
       id_empresa: user.id_empresa,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     const signedToken = jwt.sign(jwtPayload, jwtSecret, { expiresIn: tokenExpiresIn });
@@ -356,7 +383,8 @@ exports.loginGoogle = async (req, res) => {
       rut: user.rut,
       name_frst: user.name_frst,
       apellido_pat: user.apellido_pat,
-      flag_proc_enrol: user.flag_proc_enrol
+      flag_proc_enrol: user.flag_proc_enrol,
+      roles: roles
     };
 
     res.status(200).json({

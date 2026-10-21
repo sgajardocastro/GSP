@@ -19,7 +19,7 @@ const normalizeDocsFilePath = (filePath) => {
 };
 
 // URL donde el usuario puede ir a validar el documento
-const VALIDATION_URL = `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/validador-doc`;
+const VALIDATION_URL = `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/${(process.env.APP_ENV === 'prod') ? 'lg-gsp-prod' : 'lg-gsp-dev'}/validador-doc`;
 
 // Servicio TSA (FreeTSA)
 const { obtenerSelloTiempo } = require('../services/tsaService');

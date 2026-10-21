@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const pool = require("../config/postgresPool");
 const MessageModel = require("./messageModel");
+const notificacionService = require("../services/notificacionService");
 const messageModel = new MessageModel();
 const { crearConsentimientoEnrolamiento } = require("../services/enrolamientoService");
 
@@ -123,7 +124,11 @@ class Usuario {
         subtitulo: 'Se ha iniciado tu proceso de enrolamiento oficial en Grúas San Pablo.',
         contenido: contenidoHTML,
         botonTexto: 'Completar Enrolamiento',
-        botonUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/enrolamiento'
+        botonUrl: notificacionService.construirDeepLink({
+          tipoApp: 'WEB',
+          ruta: 'enrolamiento',
+          params: { email: correo, rut: rutNorm }
+        })
       });
 
       try {
@@ -140,6 +145,93 @@ class Usuario {
       return { id_user, status: "success" };
     } catch (err) {
       console.error("Error iniciarEnrolamiento:", err);
+      throw err;
+    }
+  }
+
+  async reenviarEnrolamiento(id_user) {
+    try {
+      console.log(`[Enrolamiento] Reenviando invitación para id_user: ${id_user}`);
+      const { rows } = await this.pool.query(
+        'SELECT id_user, rut, email, name_frst, apellido_pat, movil, flag_proc_enrol, pass_hash_fes FROM tsec_users WHERE id_user = $1',
+        [id_user]
+      );
+      if (!rows.length) {
+        throw new Error(`Usuario con ID ${id_user} no encontrado.`);
+      }
+      const user = rows[0];
+      if (!user.email) {
+        throw new Error(`El usuario ${user.name_frst || ''} ${user.apellido_pat || ''} (RUT: ${user.rut}) no tiene correo electrónico registrado.`);
+      }
+
+      // Asegurar flag_proc_enrol = true si aún no tiene pass_hash_fes
+      if (!user.pass_hash_fes) {
+        await this.pool.query(
+          'UPDATE tsec_users SET flag_proc_enrol = true, fecha_actualizacion = NOW() WHERE id_user = $1',
+          [id_user]
+        );
+      }
+
+      const rutNorm = String(user.rut || '').trim().toUpperCase();
+      const nombreCompleto = `${user.name_frst || ''} ${user.apellido_pat || ''}`.trim() || 'Colaborador';
+      const telefonoDest = user.movil || null;
+      const canales = telefonoDest ? ['EMAIL', 'WHATSAPP'] : ['EMAIL'];
+
+      const contenidoHTML = `
+        <p style="margin: 0; color: #94a3b8; font-size: 14px; line-height: 1.6;">
+          Se ha generado un nuevo enlace oficial para completar tu <strong>Enrolamiento y Firma Electrónica Simple (FES)</strong> en la plataforma de <strong>Grúas San Pablo</strong>.
+        </p>
+        <p style="margin: 20px 0 10px 0; color: #ffffff; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+          Pasos requeridos para completar el proceso:
+        </p>
+        <div style="background: #101217; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); margin-bottom: 20px;">
+          <ol style="margin: 0; padding-left: 20px; color: #94a3b8; font-size: 13.5px; line-height: 1.6;">
+            <li style="margin-bottom: 8px;">Haz clic en el botón <strong>"Completar Enrolamiento"</strong> abajo.</li>
+            <li style="margin-bottom: 8px;">Valida tus antecedentes personales y teléfono de contacto.</li>
+            <li>Crea tu PIN secreto de 4 dígitos para firmar documentos y checklists en faena.</li>
+          </ol>
+        </div>
+        <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5;">
+          Si ya habías configurado tu PIN previamente, puedes actualizarlo o confirmar tu enrolamiento desde este enlace.
+        </p>
+      `;
+
+      const dispatchResult = await notificacionService.despacharNotificacion({
+        evento: 'EVT-01_REENVIO_ENROLAMIENTO',
+        canales: canales,
+        destinatario: {
+          nombre: nombreCompleto,
+          email: user.email,
+          telefono: telefonoDest
+        },
+        deepLink: {
+          tipoApp: 'WEB',
+          ruta: 'enrolamiento',
+          params: { email: user.email, rut: rutNorm }
+        },
+        emailData: {
+          asunto: 'Recordatorio de Enrolamiento y Firma Electrónica (FES) — Grúas San Pablo',
+          titulo: `¡Hola, ${nombreCompleto}!`,
+          subtitulo: 'Accede a tu enlace oficial para enrolamiento en Grúas San Pablo.',
+          contenido: contenidoHTML,
+          botonTexto: 'COMPLETAR ENROLAMIENTO'
+        },
+        wspData: {
+          mensaje: `🔐 *Grúas San Pablo — Enlace de Enrolamiento FES*\n\n¡Hola *${nombreCompleto}*! Se ha emitido tu enlace oficial para activar tu cuenta y configurar tu PIN de firma electrónica (FES):\n\n🆔 *RUT:* ${rutNorm}\n📧 *Correo:* ${user.email}\n\n📲 *Accede y completa tu enrolamiento aquí:*`
+        }
+      });
+
+      return {
+        success: true,
+        id_user,
+        nombre: nombreCompleto,
+        email: user.email,
+        telefono: telefonoDest,
+        canales,
+        dispatchResult
+      };
+    } catch (err) {
+      console.error('Error reenviarEnrolamiento:', err);
       throw err;
     }
   }
@@ -189,7 +281,7 @@ class Usuario {
          subtitulo: `Hola ${name_frst} ${apellido_pat}, tu firma electrónica simple ha sido activada.`,
          contenido: contenidoHTML,
          botonTexto: 'Acceder a la Plataforma',
-         botonUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/'
+         botonUrl: notificacionService.construirDeepLink({ tipoApp: 'WEB', ruta: 'dashboard' })
        });
 
        try {
@@ -244,13 +336,13 @@ class Usuario {
         subtitulo: `Hola ${updatedUser.name_frst} ${updatedUser.apellido_pat}, tu clave PIN de firma ha sido modificada.`,
         contenido: contenidoHTML,
         botonTexto: 'Acceder a la Plataforma',
-        botonUrl: 'https://servidor.leanglobal.cl/lg-transmac-dev/'
+        botonUrl: notificacionService.construirDeepLink({ tipoApp: 'WEB', ruta: 'dashboard' })
       });
 
       try {
         await messageModel.enviarYRegistrarCorreo({
           para: updatedUser.email,
-          asunto: 'Actualización de clave FES - Transmac SST',
+          asunto: 'Actualización de clave FES - Grúas San Pablo Operaciones',
           cuerpo: cuerpoMensaje,
           esHtml: true
         });

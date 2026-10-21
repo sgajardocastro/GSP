@@ -1,221 +1,550 @@
 <template>
-  <v-container class="surveys-page">
-    <!-- 1️⃣ 🚧 ACCESO RÁPIDO: CONTROL DE PORTÓN & PATIO (INSPECCIÓN AUTÓNOMA) -->
+  <v-container class="surveys-page pa-3">
+    <!-- 🍏 HEADER DE PANTALLA ESTILO APPLE iOS -->
+    <div class="px-1 pt-1 pb-3">
+      <div class="d-flex align-center justify-space-between mb-1">
+        <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">
+          CONSOLA DE OPERACIONES EN TERRENO • GSP
+        </span>
+        <v-chip size="x-small" color="primary" variant="flat" class="font-bold font-mono">
+          {{ userDetailStore.userDetail?.codi_user || 'OPERADOR' }}
+        </v-chip>
+      </div>
+      <div class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+        Panel Operativo de Campo
+      </div>
+    </div>
+
+    <!-- 📊 RESUMEN RÁPIDO DE PENDIENTES (3 BADGES INFORMATIVOS GRANDES) -->
+    <v-row dense class="mb-3">
+      <v-col cols="4">
+        <v-card
+          class="pa-2.5 rounded-xl text-center border cursor-pointer"
+          :class="tieneViajeEnCurso ? 'bg-blue-50 border-blue-400 text-blue-900 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'"
+          @click="tieneViajeEnCurso ? abrirViajeNativo(viajeActivo.token_viaje) : null"
+        >
+          <div class="text-[10px] font-bold uppercase tracking-wider">Viajes</div>
+          <div class="text-sm font-black mt-0.5">
+            {{ tieneViajeEnCurso ? (viajeActivo.estado_trayecto === 'EN_RUTA' ? 'En Ruta' : 'Asignado') : 'Al Día' }}
+          </div>
+        </v-card>
+      </v-col>
+
+      <v-col cols="4">
+        <v-card
+          class="pa-2.5 rounded-xl text-center border cursor-pointer"
+          :class="reportsPendientes.length > 0 ? 'bg-amber-50 border-amber-400 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-300' : 'bg-emerald-50 border-emerald-400 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-300'"
+          @click="abrirReportDiario(reportPrincipalPendiente?.id_proyecto, reportPrincipalPendiente?.id_equipo)"
+        >
+          <div class="text-[10px] font-bold uppercase tracking-wider">Reports</div>
+          <div class="text-sm font-black mt-0.5">
+            {{ reportsPendientes.length > 0 ? `${reportsPendientes.length} Pendiente` : 'Al Día' }}
+          </div>
+        </v-card>
+      </v-col>
+
+      <v-col cols="4">
+        <v-card
+          class="pa-2.5 rounded-xl text-center border cursor-pointer"
+          :class="filteredSurveys.length > 0 ? 'bg-purple-50 border-purple-400 text-purple-900 dark:bg-purple-950/40 dark:border-purple-700 dark:text-purple-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'"
+        >
+          <div class="text-[10px] font-bold uppercase tracking-wider">Checklists</div>
+          <div class="text-sm font-black mt-0.5">
+            {{ filteredSurveys.length > 0 ? `${filteredSurveys.length} Asignados` : 'Al Día' }}
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 🔧 ACCESO RÁPIDO A TALLER & MANTENIMIENTO MÓVIL (SPEC 67) -->
     <v-card
-      class="mb-4 rounded-xl border border-amber-500/30 text-white pa-3"
-      style="background: linear-gradient(135deg, #0b1426 0%, #17264a 100%);"
+      v-if="esUsuarioTaller"
+      class="mb-3 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 shadow-sm overflow-hidden cursor-pointer"
+      @click="router.push('/taller')"
     >
-      <div class="d-flex align-center justify-space-between flex-wrap ga-2">
-        <div class="d-flex align-center ga-2">
-          <span class="text-2xl">🚧</span>
+      <div class="h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
+      <div class="pa-3.5 d-flex align-center justify-space-between">
+        <div class="d-flex align-center ga-3">
+          <div class="pa-2 rounded-xl bg-amber-500/20 text-amber-400 d-flex align-center justify-center">
+            <v-icon size="24">mdi-wrench-clock</v-icon>
+          </div>
           <div>
-            <div class="text-xs font-black text-amber-400 text-uppercase tracking-wider">
-              Control de Portón & Patio
+            <div class="text-[10px] font-black text-amber-400 uppercase tracking-widest font-mono">
+              TALLER & MANTENIMIENTO
             </div>
-            <div class="text-xs text-slate-300">
-              Inspección Autónoma de Equipos (Entrada / Salida)
+            <div class="text-sm font-black text-white leading-tight">
+              OTs de Taller & Avisos de Falla
             </div>
           </div>
+        </div>
+        <v-btn size="small" color="amber-darken-2" variant="flat" class="font-bold text-[11px] rounded-lg">
+          Entrar ➔
+        </v-btn>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 0.5 BANNER DISTINTIVO: ORDEN DE MOVIMIENTO INTERNO GSP (SPEC 87)          -->
+    <!-- ========================================================================= -->
+    <v-card
+      v-if="esViajeInternoActivo"
+      class="mb-3 rounded-2xl border-2 border-amber-400 bg-amber-950/90 text-white shadow-md overflow-hidden"
+      style="border-style: dashed !important;"
+    >
+      <div class="pa-3.5">
+        <div class="d-flex align-center justify-space-between flex-wrap ga-1 mb-1">
+          <span class="text-xs font-black text-amber-300 uppercase tracking-wider font-mono">
+            🔁 ORDEN DE MOVIMIENTO INTERNO GSP (NO FACTURABLE)
+          </span>
+          <v-chip size="x-small" color="amber-accent-3" variant="flat" class="font-bold font-mono text-black">
+            {{ viajeActivo?.codi_proyecto || reportPrincipalPendiente?.codi_proyecto || 'INT-GSP' }}
+          </v-chip>
+        </div>
+        <div class="text-xs font-mono font-bold text-white">
+          📍 {{ viajeActivo?.sucursal_origen || viajeActivo?.origen_nombre || 'Base Origen GSP' }} ➔ {{ viajeActivo?.sucursal_destino || viajeActivo?.obra_nombre || reportPrincipalPendiente?.obra_nombre || 'Sucursal Destino GSP' }}
+        </div>
+        <div class="text-[11px] text-amber-200/90 mt-1">
+          Traslado de costo propio entre sucursales/taller. No exige firma de cliente externo al arribar a destino.
+        </div>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 1️⃣ BLOQUE A: REGISTRO DE TRASLADO & VIAJE (SOLO CUANDO ESTÁ EN CURSO)      -->
+    <!-- ========================================================================= -->
+    <v-card
+      v-if="tieneViajeEnCurso"
+      class="mb-4 rounded-2xl border bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
+      :class="esViajeInternoActivo ? 'border-amber-400 dark:border-amber-500' : (viajeActivo ? 'border-blue-400 dark:border-blue-600' : 'border-slate-200 dark:border-zinc-700')"
+    >
+      <div class="h-1 bg-gradient-to-r" :class="esViajeInternoActivo ? 'from-amber-400 to-orange-500' : 'from-blue-500 to-cyan-500'"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center ga-2.5">
+            <div
+              class="pa-2 rounded-xl d-flex align-center justify-center"
+              :class="esViajeInternoActivo ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'"
+            >
+              <v-icon size="22">mdi-navigation-variant-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold uppercase tracking-wider" :class="esViajeInternoActivo ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'">
+                {{ esViajeInternoActivo ? '🔁 ORDEN INTERNA GSP · COSTO PROPIO' : (viajeActivo?.tipo_trayecto === 'RETORNO' ? 'Retorno a Base / Patio' : 'Desplazamiento & Traslado') }}
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                {{ esViajeInternoActivo ? 'Traslado Interno entre Sucursales / Taller' : (viajeActivo?.tipo_trayecto === 'RETORNO' ? 'Registro de Viaje de Retorno' : 'Registro de Viaje en Ruta') }}
+              </div>
+            </div>
+          </div>
+
+          <v-chip
+            size="small"
+            :color="esViajeInternoActivo ? 'amber-darken-3' : (viajeActivo ? (viajeActivo.tipo_trayecto === 'RETORNO' ? 'indigo-darken-2' : 'info') : 'grey')"
+            variant="flat"
+            class="font-bold text-[10px] uppercase text-white"
+          >
+            {{ viajeActivo ? `${viajeActivo.tipo_trayecto === 'RETORNO' ? 'RETORNO: ' : ''}${viajeActivo.estado_trayecto || 'EN TRAYECTO'}` : 'Sin viaje activo' }}
+          </v-chip>
+        </div>
+
+        <!-- Cuerpo del Viaje -->
+        <div v-if="viajeActivo" class="rounded-xl pa-3 mb-3 border" :class="esViajeInternoActivo ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50' : 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/40'">
+          <div class="d-flex align-center justify-space-between text-xs text-slate-700 dark:text-slate-300 mb-1">
+            <span class="font-bold">{{ esViajeInternoActivo ? '🔁 Folio Interno' : 'OT' }} {{ viajeActivo.codi_proyecto }}</span>
+            <v-chip size="x-small" :color="esViajeInternoActivo ? 'amber-darken-3' : 'primary'" variant="outlined" class="font-mono font-bold">
+              {{ viajeActivo.patente }}
+            </v-chip>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-400 truncate">
+            📍 {{ esViajeInternoActivo ? `${viajeActivo.sucursal_origen || viajeActivo.origen_nombre || 'Origen GSP'} ➔ ` : 'Destino: ' }}<strong>{{ viajeActivo.tipo_trayecto === 'RETORNO' ? 'Base / Patio GSP' : (viajeActivo.sucursal_destino || viajeActivo.obra_nombre || 'Faena') }}</strong>
+            <span v-if="viajeActivo.marca || viajeActivo.modelo" class="ml-1">• {{ [viajeActivo.marca, viajeActivo.modelo].filter(Boolean).join(' ') }}</span>
+          </div>
+        </div>
+        <div v-else class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Control de trayecto con odómetro inicial/final, horómetros y telemetría GPS para salidas de base y traslados a faena.
+        </div>
+
+        <v-btn
+          color="info"
+          variant="flat"
+          class="w-100 font-bold text-none rounded-xl py-3 elevation-0"
+          prepend-icon="mdi-navigation-variant-outline"
+          :disabled="!viajeActivo?.token_viaje && !tokenViajePlataformaActivo"
+          @click="abrirViajeNativo(viajeActivo?.token_viaje || tokenViajePlataformaActivo)"
+        >
+          {{
+            viajeActivo?.tipo_trayecto === 'RETORNO'
+              ? (viajeActivo?.estado_trayecto === 'ASIGNADO'
+                  ? 'Iniciar Viaje de Retorno a Patio (Hoja de Ruta) ➔'
+                  : 'Registrar Llegada a Patio (Cierre) ➔')
+              : (viajeActivo?.estado_trayecto === 'ASIGNADO'
+                  ? 'Iniciar Viaje de Traslado (Hoja de Ruta) ➔'
+                  : viajeActivo?.estado_trayecto === 'EN_RUTA'
+                    ? 'Registrar Llegada a Obra (Hoja de Ruta) ➔'
+                    : (viajeActivo || tokenViajePlataformaActivo)
+                      ? 'Abrir Hoja de Ruta de Viaje ➔'
+                      : 'Sin Viaje Activo Asignado')
+          }}
+        </v-btn>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 1.5 BLOQUE BSM: PLATAFORMAS — ACTA ENTREGA 360° Y ACTA RETIRO 360°        -->
+    <!-- ========================================================================= -->
+    <v-card
+      v-if="tienePlataformaAsignada"
+      class="mb-4 rounded-2xl border border-teal-400 dark:border-teal-600 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
+    >
+      <div class="h-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center ga-2.5">
+            <div class="pa-2 rounded-xl bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300 d-flex align-center justify-center">
+              <v-icon size="22">mdi-elevator-passenger-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+                Bestmaq (BSM) • Royal Rental • Arriendo Sin Operador
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                Acta de Entrega y Retiro de Plataformas 360°
+              </div>
+            </div>
+          </div>
+          <v-chip
+            size="small"
+            :color="estadoPlataformaBsm.retiroSellado ? 'success' : (estadoPlataformaBsm.entregaSellada ? 'amber-darken-2' : (viajeIdaPlataformaCompletado ? 'teal-darken-2' : 'warning'))"
+            variant="flat"
+            class="font-bold text-[10px] text-white"
+          >
+            {{
+              estadoPlataformaBsm.retiroSellado
+                ? 'RETIRO SELLADO'
+                : estadoPlataformaBsm.entregaSellada
+                  ? 'ENTREGA SELLADA'
+                  : viajeIdaPlataformaCompletado
+                    ? 'LISTO PARA ENTREGA'
+                    : 'PENDIENTE VIAJE IDA'
+            }}
+          </v-chip>
+        </div>
+
+        <!-- Resumen del Viaje de Traslado de Plataforma y Candado Operativo -->
+        <div
+          v-if="viajeProyectoBsm || formBsm.equipo_codigo"
+          class="rounded-xl pa-3 mb-3 border text-xs"
+          :class="viajeIdaPlataformaCompletado ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-slate-700 dark:text-slate-200' : 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/60 text-slate-800 dark:text-slate-200'"
+        >
+          <div class="d-flex align-center justify-space-between flex-wrap ga-1 mb-1">
+            <span class="font-bold">
+              Plataforma: {{ formBsm.equipo_codigo || 'Asignada' }} ({{ formBsm.equipo_modelo || 'BSM' }})
+            </span>
+            <v-chip size="x-small" :color="viajeIdaPlataformaCompletado ? 'success' : 'warning'" variant="flat" class="font-bold">
+              Viaje Camión {{ viajeProyectoBsm?.patente || viajeActivo?.patente || '' }}: {{ viajeProyectoBsm?.estado_trayecto || (viajeIdaPlataformaCompletado ? 'ARRIBADO' : 'ASIGNADO') }}
+            </v-chip>
+          </div>
+          <div v-if="!viajeIdaPlataformaCompletado" class="font-bold text-amber-900 dark:text-amber-300 mt-1">
+            🔒 Candado Operativo: Debe registrar primero la llegada del camión en la Hoja de Ruta superior (Salida de Base y Llegada a Obra) antes de abrir el Acta de Entrega 360°.
+          </div>
+          <div v-else class="text-emerald-800 dark:text-emerald-300 font-medium mt-1">
+            ✅ Viaje de traslado arribado a obra. Acta de Entrega 360° desbloqueada.
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-600 dark:text-slate-400 mb-3">
+          Inspección 360° en obra (19 ítems oficiales, 4 fotografías 360° y firma manual del cliente) para la <strong>Entrega (Columna ENTREGA)</strong> y el <strong>Retiro / Recuperación (Columna RECEPCIÓN)</strong>.
+        </div>
+
+        <div class="d-flex ga-2 flex-wrap">
+          <v-btn
+            :color="estadoPlataformaBsm.entregaSellada ? 'teal-darken-3' : 'teal-darken-1'"
+            variant="flat"
+            class="flex-1 font-bold text-none rounded-xl py-2.5 text-white"
+            :prepend-icon="estadoPlataformaBsm.entregaSellada ? 'mdi-file-pdf-box' : 'mdi-clipboard-check-outline'"
+            :disabled="!viajeIdaPlataformaCompletado"
+            @click="estadoPlataformaBsm.entregaSellada && urlPdfEntregaBsm ? verPdfActa(urlPdfEntregaBsm) : abrirModalPlataformaBsm('ENTREGA')"
+          >
+            {{
+              estadoPlataformaBsm.entregaSellada
+                ? '✓ 1. Ver Acta Entrega (PDF)'
+                : (viajeIdaPlataformaCompletado ? '1. Acta Entrega 360° ➔' : '🔒 1. Acta Entrega 360° (Requiere Viaje)')
+            }}
+          </v-btn>
+          <v-btn
+            :color="estadoPlataformaBsm.retiroSellado ? 'deep-purple-darken-3' : 'deep-purple-darken-1'"
+            variant="flat"
+            class="flex-1 font-bold text-none rounded-xl py-2.5 text-white"
+            :prepend-icon="estadoPlataformaBsm.retiroSellado ? 'mdi-file-pdf-box' : 'mdi-lock-check-outline'"
+            :disabled="!estadoPlataformaBsm.entregaSellada"
+            @click="estadoPlataformaBsm.retiroSellado && urlPdfFinalBsm ? verPdfActa(urlPdfFinalBsm) : abrirModalPlataformaBsm('RETIRO')"
+          >
+            {{
+              estadoPlataformaBsm.retiroSellado
+                ? '✓ 2. Ver Acta Retiro (PDF)'
+                : (estadoPlataformaBsm.entregaSellada ? '2. Acta Retiro 360° ➔' : '🔒 2. Acta Retiro (Requiere Entrega)')
+            }}
+          </v-btn>
+        </div>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 2️⃣ BLOQUE B: REPORTS DIARIOS DE IZAJE (SIEMPRE VISIBLE)                    -->
+    <!-- ========================================================================= -->
+    <v-card
+      class="mb-4 rounded-2xl border bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
+      :class="reportsPendientes.length > 0 ? 'border-amber-400 dark:border-amber-600' : 'border-emerald-300 dark:border-emerald-700'"
+    >
+      <div class="h-1 bg-gradient-to-r" :class="reportsPendientes.length > 0 ? 'from-amber-500 to-orange-500' : 'from-emerald-500 to-teal-500'"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center ga-2.5">
+            <div
+              class="pa-2 rounded-xl d-flex align-center justify-center"
+              :class="reportsPendientes.length > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'"
+            >
+              <v-icon size="22">mdi-file-document-edit-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Operación en Faena
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                Report Diario de Izaje
+              </div>
+            </div>
+          </div>
+
+          <v-chip
+            size="small"
+            :color="reportsPendientes.length > 0 ? 'warning' : 'success'"
+            variant="flat"
+            class="font-bold text-[10px] uppercase"
+          >
+            {{ reportsPendientes.length > 0 ? `${reportsPendientes.length} PENDIENTE` : 'AL DÍA' }}
+          </v-chip>
+        </div>
+
+        <!-- Cuerpo del Report -->
+        <div v-if="reportPrincipalPendiente" class="bg-amber-50/60 dark:bg-amber-950/30 rounded-xl pa-3 mb-3 border border-amber-100 dark:border-amber-900/40">
+          <div class="d-flex align-center justify-space-between text-xs text-slate-800 dark:text-slate-200 mb-1">
+            <span class="font-bold">OT {{ reportPrincipalPendiente.codi_proyecto }} • Día {{ reportPrincipalPendiente.dia_a_reportar }}</span>
+            <v-chip size="x-small" color="warning" variant="outlined" class="font-mono font-bold">
+              {{ reportPrincipalPendiente.patente }}
+            </v-chip>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-400 truncate">
+            Faena: <strong>{{ reportPrincipalPendiente.obra_nombre }}</strong>
+          </div>
+          <div class="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
+            {{ reportPrincipalPendiente.jornada_en_curso ? '⏳ Jornada iniciada. Registra horómetro final y firma supervisor.' : '⏱️ Listo para iniciar jornada de izaje.' }}
+          </div>
+        </div>
+        <div v-else class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Registro diario de horas máquina efectivas, esperas operacionales y sellado con firma digital FES junto al supervisor mandante.
+        </div>
+
+        <v-btn
+          :color="reportsPendientes.length > 0 ? 'warning' : 'success'"
+          variant="flat"
+          class="w-100 font-bold text-none rounded-xl py-3 elevation-0"
+          :class="reportsPendientes.length > 0 ? 'text-black' : 'text-white'"
+          prepend-icon="mdi-file-document-edit-outline"
+          @click="abrirReportDiario(reportPrincipalPendiente?.id_proyecto, reportPrincipalPendiente?.id_equipo)"
+        >
+          {{ reportsPendientes.length > 0 ? `Completar y Firmar Report Día ${reportPrincipalPendiente.dia_a_reportar} ➔` : 'Abrir / Ver Historial de Reports ➔' }}
+        </v-btn>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 3️⃣ BLOQUE C: CONTROL DE PORTÓN & PATIO                                    -->
+    <!-- ========================================================================= -->
+    <v-card class="mb-4 rounded-2xl border border-amber-300 dark:border-amber-700/60 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden">
+      <div class="h-1 bg-gradient-to-r from-amber-400 to-yellow-500"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center ga-2.5">
+            <div class="pa-2 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 d-flex align-center justify-center">
+              <v-icon size="22">mdi-boom-gate-up-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Portería & Base Central
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                Control de Portón & Patio
+              </div>
+            </div>
+          </div>
+
+          <v-chip size="small" color="amber-darken-3" variant="flat" class="font-bold text-[10px] text-white">
+            ENTRADA / SALIDA
+          </v-chip>
+        </div>
+
+        <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Checklist preoperacional autónomo para recepción y despacho de grúas móviles y camiones pluma.
+        </div>
+
+        <v-btn
+          color="amber-darken-2"
+          variant="flat"
+          class="w-100 font-bold text-none rounded-xl py-3 elevation-0 text-black"
+          prepend-icon="mdi-clipboard-check-outline"
+          @click="abrirModalPatio"
+        >
+          Nueva Inspección Entrada / Salida ➔
+        </v-btn>
+      </div>
+    </v-card>
+
+    <!-- 🛠️ BLOQUE TALLER MÓVIL & MANTENIMIENTO -->
+    <v-card
+      v-if="esUsuarioTaller"
+      class="mb-4 rounded-2xl border border-amber-400 dark:border-amber-600 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
+    >
+      <div class="h-1 bg-gradient-to-r from-amber-500 to-orange-500"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center ga-2.5">
+            <div class="pa-2 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 d-flex align-center justify-center">
+              <v-icon size="22">mdi-wrench-clock</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Mantenimiento de Flota
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                🛠️ Taller Móvil & OTs
+              </div>
+            </div>
+          </div>
+          <v-chip size="small" color="amber-darken-3" variant="flat" class="font-bold text-[10px] text-white">
+            SPEC 67
+          </v-chip>
+        </div>
+        <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Ejecución in-situ de pautas preventivas (PM), imputación de HH de mecánicos, repuestos y cierre supervisado FES.
         </div>
         <v-btn
           color="amber-darken-2"
           variant="flat"
-          class="font-black text-xs text-black"
-          prepend-icon="mdi-clipboard-check-outline"
-          @click="abrirModalPatio"
+          class="w-100 font-bold text-none rounded-xl py-3 elevation-0 text-black"
+          prepend-icon="mdi-wrench"
+          to="/taller"
         >
-          Nueva Inspección ➔
+          Ingresar al Taller Móvil ➔
         </v-btn>
       </div>
     </v-card>
 
     <!-- ========================================================================= -->
-    <!-- 🌟 CONSOLA MAESTRA DE FLUJO EN TERRENO: VIAJE (IDA) ➔ REPORT ➔ RETORNO   -->
+    <!-- 4️⃣ BLOQUE D: INSPECCIONES TÉCNICAS & SEGURIDAD EN TERRENO                 -->
     <!-- ========================================================================= -->
-    <v-card
-      v-if="servicioOperativoActivo"
-      class="mb-4 rounded-2xl border-2 border-amber-500/40 text-white pa-4 shadow-2xl overflow-hidden"
-      style="background: linear-gradient(135deg, #070d1e 0%, #0f1c3f 100%);"
-    >
-      <!-- Cabecera del Servicio Activo -->
-      <div class="d-flex align-center justify-space-between flex-wrap ga-2 border-b border-white/10 pb-3 mb-3">
-        <div class="d-flex align-center ga-2.5">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">
-            🚜
-          </div>
-          <div>
-            <div class="d-flex align-center ga-2">
-              <span class="text-xs font-mono font-black text-amber-400 uppercase tracking-wider">
-                OT {{ servicioOperativoActivo.codi_proyecto }}
-              </span>
-              <v-chip size="x-small" color="amber-darken-2" variant="flat" class="font-black text-[9px] px-2">
-                {{ servicioOperativoActivo.tipo_equipo }}
-              </v-chip>
-            </div>
-            <div class="text-base font-black text-white font-mono leading-tight mt-0.5">
-              {{ servicioOperativoActivo.patente }} <span class="text-xs font-normal text-slate-300 font-sans">• {{ servicioOperativoActivo.modelo }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="text-right">
-          <span class="text-[10px] text-slate-400 uppercase font-mono block">Faena Mandante</span>
-          <span class="text-xs font-bold text-white block truncate max-w-[200px]">
-            📍 {{ servicioOperativoActivo.obra_nombre }}
-          </span>
-        </div>
+    <div class="mb-4">
+      <div class="d-flex align-center justify-space-between px-1 mb-2">
+        <span class="text-xs font-black text-slate-500 uppercase tracking-wider">
+          Inspecciones Técnicas & Seguridad
+        </span>
+        <span class="text-[11px] text-slate-400 font-medium">Protocolos de Faena</span>
       </div>
 
-      <!-- STEPPER DIDÁCTICO DE 3 HITOS (HILO CONTINUO 1-2-3) -->
-      <div class="bg-black/40 border border-white/10 rounded-xl p-3 mb-3">
-        <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-          <!-- Paso 1: Viaje Ida -->
-          <div
-            class="p-2 rounded-lg border transition-all"
-            :class="estadoPaso1ViajeIda === 'COMPLETADO' 
-              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300' 
-              : estadoPaso1ViajeIda === 'EN_RUTA' 
-                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 animate-pulse font-black' 
-                : 'bg-amber-950/60 border-amber-500/60 text-amber-300 font-bold'"
-          >
-            <div class="text-base mb-0.5">
-              {{ estadoPaso1ViajeIda === 'COMPLETADO' ? '✅' : '🚛' }}
+      <!-- Tarjeta 1: AST -->
+      <v-card class="mb-3 rounded-2xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 pa-3.5 shadow-sm">
+        <div class="d-flex align-center justify-space-between mb-1.5">
+          <div class="d-flex align-center ga-2">
+            <div class="pa-1.5 rounded-lg bg-emerald-600 text-white d-flex align-center justify-center">
+              <v-icon size="18">mdi-shield-check-outline</v-icon>
             </div>
-            <div class="text-[10px] uppercase font-bold">1. Viaje a Faena</div>
-            <div class="text-[9px] opacity-80">
-              {{ estadoPaso1ViajeIda === 'COMPLETADO' ? 'Arribado' : estadoPaso1ViajeIda === 'EN_RUTA' ? 'En Ruta' : 'Pendiente' }}
+            <div class="text-sm font-black text-slate-900 dark:text-white">
+              AST — Charla de Seguridad de 5 Minutos
             </div>
           </div>
-
-          <!-- Paso 2: Report Faena -->
-          <div
-            class="p-2 rounded-lg border transition-all"
-            :class="estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' 
-              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300'
-              : estadoPaso2ReportFaena === 'JORNADA_EN_CURSO'
-                ? 'bg-amber-950/80 border-amber-400 text-amber-200 animate-pulse font-black'
-                : estadoPaso2ReportFaena === 'PENDIENTE_INICIO'
-                  ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-bold'
-                  : 'bg-black/50 border-white/10 text-slate-500 opacity-60'"
-          >
-            <div class="text-base mb-0.5">
-              {{ estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' ? '✅' : estadoPaso2ReportFaena === 'BLOQUEADO' ? '🔒' : '📋' }}
-            </div>
-            <div class="text-[10px] uppercase font-bold">2. Report Faena</div>
-            <div class="text-[9px] opacity-80">
-              {{ estadoPaso2ReportFaena === 'CONCLUIDO_TOTAL' ? 'Firmado' : estadoPaso2ReportFaena === 'JORNADA_EN_CURSO' ? 'En Curso' : estadoPaso2ReportFaena === 'BLOQUEADO' ? 'En espera' : 'Pendiente' }}
-            </div>
-          </div>
-
-          <!-- Paso 3: Retorno Base -->
-          <div
-            class="p-2 rounded-lg border transition-all"
-            :class="estadoPaso3ViajeRetorno === 'COMPLETADO' 
-              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300'
-              : estadoPaso3ViajeRetorno === 'EN_RUTA'
-                ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 animate-pulse font-black'
-                : estadoPaso3ViajeRetorno === 'PENDIENTE_SALIDA'
-                  ? 'bg-purple-950/80 border-purple-400 text-purple-200 font-bold'
-                  : 'bg-black/50 border-white/10 text-slate-500 opacity-60'"
-          >
-            <div class="text-base mb-0.5">
-              {{ estadoPaso3ViajeRetorno === 'COMPLETADO' ? '✅' : estadoPaso3ViajeRetorno === 'BLOQUEADO' ? '🔒' : '🏁' }}
-            </div>
-            <div class="text-[10px] uppercase font-bold">3. Retorno Base</div>
-            <div class="text-[9px] opacity-80">
-              {{ estadoPaso3ViajeRetorno === 'COMPLETADO' ? 'En Patio' : estadoPaso3ViajeRetorno === 'EN_RUTA' ? 'En Ruta' : estadoPaso3ViajeRetorno === 'BLOQUEADO' ? 'En espera' : 'Por salir' }}
-            </div>
-          </div>
+          <v-chip size="x-small" color="success" variant="flat" class="font-bold text-[9px]">
+            SEGURIDAD
+          </v-chip>
         </div>
-      </div>
-
-      <!-- BOTÓN MAESTRO DE ACCIÓN RÁPIDA (CALL TO ACTION PRINCIPAL) -->
-      <div v-if="proximaAccionFlujo" class="space-y-2">
-        <div class="text-[10px] font-mono text-amber-300 uppercase tracking-widest font-black flex items-center ga-1">
-          <span>👉</span>
-          <span>TU PRÓXIMA ACCIÓN:</span>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+          Análisis de Seguridad en el Trabajo y matriz de riesgos críticos antes de operar en terreno.
         </div>
-
         <v-btn
-          block
-          size="x-large"
-          :color="proximaAccionFlujo.color"
-          :class="[
-            'font-black text-sm rounded-2xl py-4 h-auto shadow-2xl tracking-wider',
-            proximaAccionFlujo.colorTexto,
-            proximaAccionFlujo.pulsar ? 'animate-pulse' : ''
-          ]"
-          :prepend-icon="proximaAccionFlujo.icono"
-          :disabled="proximaAccionFlujo.deshabilitado"
-          @click="proximaAccionFlujo.accion"
-        >
-          {{ proximaAccionFlujo.titulo }}
-        </v-btn>
-        
-        <p class="text-center text-xs text-slate-300 font-medium">
-          {{ proximaAccionFlujo.subtitulo }}
-        </p>
-      </div>
-
-      <!-- BOTONES DE ACCESO DIRECTO SECUNDARIOS -->
-      <div class="d-flex align-center justify-space-between pt-3 mt-3 border-t border-white/10 text-xs">
-        <v-btn
-          v-if="viajeActivo"
-          variant="text"
-          color="blue-lighten-3"
+          color="success"
+          variant="tonal"
           size="small"
-          class="font-bold text-[11px]"
-          prepend-icon="mdi-map-search-outline"
-          @click="abrirViajeNativo(viajeActivo.token_viaje)"
+          class="font-bold text-none rounded-xl w-100"
+          @click="abrirModalRegistrarProtocolo"
         >
-          Ver Hoja de Ruta
+          Iniciar AST de Terreno ➔
         </v-btn>
+      </v-card>
 
+      <!-- Tarjeta 2: Plan de Izaje -->
+      <v-card class="mb-3 rounded-2xl border border-indigo-300 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 pa-3.5 shadow-sm">
+        <div class="d-flex align-center justify-space-between mb-1.5">
+          <div class="d-flex align-center ga-2">
+            <div class="pa-1.5 rounded-lg bg-indigo-600 text-white d-flex align-center justify-center">
+              <v-icon size="18">mdi-ruler-square</v-icon>
+            </div>
+            <div class="text-sm font-black text-slate-900 dark:text-white">
+              Plan de Izaje & Rigging
+            </div>
+          </div>
+          <v-chip size="x-small" color="indigo" variant="flat" class="font-bold text-[9px] text-white">
+            INGENIERÍA
+          </v-chip>
+        </div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+          Configuración técnica de pluma telescópica, radios de trabajo, contrapesos y tablas de carga.
+        </div>
         <v-btn
-          v-if="reportPrincipalPendiente || reportsConcluidos.length > 0"
-          variant="text"
-          color="emerald-lighten-3"
+          color="indigo"
+          variant="tonal"
           size="small"
-          class="font-bold text-[11px]"
-          prepend-icon="mdi-file-document-outline"
-          @click="abrirReportDiario(servicioOperativoActivo.id_proyecto, servicioOperativoActivo.id_equipo)"
+          class="font-bold text-none rounded-xl w-100"
+          @click="abrirModalRegistrarProtocolo"
         >
-          Historial / Reports
+          Registrar / Ver Plan de Izaje ➔
         </v-btn>
-      </div>
+      </v-card>
 
-      <!-- Selector de múltiples OTs si aplica -->
-      <div v-if="reportsPendientes.length > 1" class="w-100 d-flex align-center ga-1.5 mt-2 pt-2 border-t border-white/10 flex-wrap">
-        <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Cambiar OT:</span>
-        <v-chip
-          v-for="(rp, idx) in reportsPendientes"
-          :key="rp.id_proyecto"
-          size="x-small"
-          :color="indiceReportSeleccionado === idx ? 'emerald-darken-1' : 'grey-darken-3'"
-          variant="flat"
-          class="cursor-pointer font-bold text-[9.5px]"
-          @click="indiceReportSeleccionado = idx"
+      <!-- Tarjeta 3: Visita a Terreno -->
+      <v-card class="mb-3 rounded-2xl border border-orange-300 dark:border-orange-800/60 bg-orange-50/30 dark:bg-orange-950/20 pa-3.5 shadow-sm">
+        <div class="d-flex align-center justify-space-between mb-1.5">
+          <div class="d-flex align-center ga-2">
+            <div class="pa-1.5 rounded-lg bg-orange-600 text-white d-flex align-center justify-center">
+              <v-icon size="18">mdi-map-marker-radius-outline</v-icon>
+            </div>
+            <div class="text-sm font-black text-slate-900 dark:text-white">
+              Visita Técnica a Terreno
+            </div>
+          </div>
+          <v-chip size="x-small" color="warning" variant="flat" class="font-bold text-[9px] text-black">
+            ESTUDIO
+          </v-chip>
+        </div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+          Inspección de accesos viales, radio de giro y capacidad portante del suelo para estabilizadores.
+        </div>
+        <v-btn
+          color="warning"
+          variant="tonal"
+          size="small"
+          class="font-bold text-none rounded-xl w-100"
+          @click="abrirModalRegistrarProtocolo"
         >
-          OT {{ rp.codi_proyecto }} (Día {{ rp.dia_a_reportar }}/{{ rp.total_dias }})
-        </v-chip>
-      </div>
-    </v-card>
-
-    <!-- CASO SIN SERVICIOS OPERATIVOS ASIGNADOS -->
-    <v-card
-      v-else
-      class="mb-4 rounded-xl border border-white/10 text-white pa-4 text-center bg-slate-900/80"
-    >
-      <div class="text-3xl mb-1">🟢</div>
-      <div class="text-sm font-black uppercase text-slate-200">Sin Servicios Operativos Pendientes</div>
-      <div class="text-xs text-slate-400 mt-0.5">No tienes viajes ni reportes de izaje asignados para hoy.</div>
-    </v-card>
+          Nueva Visita Técnica ➔
+        </v-btn>
+      </v-card>
+    </div>
 
     <!-- 🚧 MODAL DE INSPECCIÓN DE PATIO -->
     <v-dialog v-model="dialogPatio" max-width="540">
       <v-card class="bg-[#0f172a] text-white border border-slate-700 rounded-xl">
         <v-card-title class="d-flex align-center ga-2 text-subtitle-1 font-weight-black text-amber-400 border-b border-slate-800 pa-4">
-          <span>🚧</span> Inspección de Entrada / Salida de Patio
+          <v-icon color="amber-darken-2" size="24">mdi-boom-gate-up-outline</v-icon>
+          <span>Inspección de Entrada / Salida de Patio</span>
         </v-card-title>
         <v-card-text class="pa-4">
           <v-row dense>
@@ -299,6 +628,777 @@
             🚀 Iniciar Checklist
           </v-btn>
         </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL BSM: ENTREGA 360°, RETIRO Y RETORNO ASÍNCRONO DE PLATAFORMAS (81)   -->
+    <!-- ========================================================================= -->
+    <v-dialog v-model="dialogPlataformaBsm" max-width="680" scrollable content-class="modal-acta-bsm-dialog">
+      <v-card
+        class="modal-acta-bsm-opaque rounded-2xl"
+        style="background-color: #0b1120 !important; color: #f8fafc !important; border: 1px solid rgba(20, 184, 166, 0.45) !important; opacity: 1 !important;"
+      >
+        <v-card-title
+          class="d-flex align-center justify-space-between pa-4"
+          style="background-color: #060a14 !important; border-bottom: 1px solid #1e293b !important;"
+        >
+          <div class="d-flex align-center ga-2">
+            <v-icon color="teal-accent-3" size="24">mdi-elevator-passenger-outline</v-icon>
+            <div>
+              <div class="text-xs font-black text-teal-400 uppercase tracking-wider">
+                BESTMAQ (BSM) • ROYAL RENTAL • SPEC-081
+              </div>
+              <div class="text-subtitle-2 font-weight-black text-white">
+                Acta de Entrega y Recepción de Maquinaria 360°
+              </div>
+            </div>
+          </div>
+          <v-btn icon="mdi-close" variant="text" size="small" color="white" @click="dialogPlataformaBsm = false" />
+        </v-card-title>
+
+        <!-- SELECTOR DE MODO: 1. ACTA ENTREGA 360° vs 2. ACTA RETIRO 360° -->
+        <div class="px-4 pt-3 pb-2" style="background-color: #0b1120 !important; border-bottom: 1px solid #1e293b !important;">
+          <div class="d-flex ga-2 mb-2">
+            <v-btn
+              class="flex-1 font-black text-xs py-2.5 rounded-xl text-none"
+              :color="modoPlataformaBsm === 'ENTREGA' ? 'teal-darken-1' : 'grey-darken-4'"
+              :variant="modoPlataformaBsm === 'ENTREGA' ? 'flat' : 'outlined'"
+              @click="cambiarModoPlataformaBsm('ENTREGA')"
+            >
+              1. Acta de Entrega 360° (Obra)
+            </v-btn>
+            <v-btn
+              class="flex-1 font-black text-xs py-2.5 rounded-xl text-none"
+              :color="modoPlataformaBsm === 'RETIRO' ? 'deep-purple-accent-3' : 'grey-darken-4'"
+              :variant="modoPlataformaBsm === 'RETIRO' ? 'flat' : 'outlined'"
+              :disabled="!estadoPlataformaBsm.entregaSellada"
+              @click="cambiarModoPlataformaBsm('RETIRO')"
+            >
+              2. Acta de Retiro 360° (Obra)
+            </v-btn>
+          </div>
+        </div>
+
+        <v-card-text class="pa-4 space-y-4" style="max-height: 76vh; overflow-y: auto; background-color: #0b1120 !important;">
+          <!-- CABECERA OFICIAL: DATOS REALES DEL SERVICIO / OT (SOLO N° CONTRATO MANUAL) -->
+          <div
+            class="pa-3 rounded-xl"
+            style="background-color: #111827 !important; border: 1px solid #334155 !important;"
+          >
+            <div class="d-flex align-center justify-space-between mb-2 flex-wrap ga-2">
+              <span class="text-xs font-black text-teal-300 uppercase tracking-wider">
+                Cabecera Oficial • Datos Reales del Servicio
+              </span>
+              <v-chip size="x-small" color="teal" variant="flat" class="font-mono font-bold text-white">
+                {{ formBsm.numero_contrato ? `Contrato: ${formBsm.numero_contrato}` : 'Ingrese N° Contrato' }}
+              </v-chip>
+            </div>
+
+            <!-- Selector de Servicio / OT Real si existen múltiples proyectos activos -->
+            <div v-if="proyectosPlataformaDisponibles.length > 0" class="mb-3">
+              <v-select
+                v-model="idProyectoBsmSeleccionado"
+                :items="proyectosPlataformaDisponibles"
+                item-title="label"
+                item-value="id_proyecto"
+                label="Servicio / OT Asignada (Datos Reales)"
+                variant="outlined"
+                density="compact"
+                hide-details
+                bg-color="#060a14"
+                @update:model-value="onSeleccionarProyectoBsm"
+              />
+            </div>
+
+            <v-row dense>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  :model-value="formBsm.arrendatario || 'Sin cliente asignado'"
+                  label="Arrendatario / Cliente (Dato Real OT)"
+                  variant="outlined"
+                  density="compact"
+                  readonly
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  :model-value="formBsm.rut_arrendatario || 'S/I'"
+                  label="RUT Cliente (Real)"
+                  variant="outlined"
+                  density="compact"
+                  readonly
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  v-model="formBsm.numero_contrato"
+                  label="N° Contrato (Manual) *"
+                  placeholder="Ej: CTR-2026-001"
+                  persistent-placeholder
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#0f2926"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  :model-value="formBsm.direccion_obra || 'Sin dirección registrada'"
+                  label="Obra / Dirección de Entrega (Real)"
+                  variant="outlined"
+                  density="compact"
+                  readonly
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  :model-value="formBsm.equipo_modelo || 'Plataforma según OT'"
+                  label="Equipo / Modelo (Real)"
+                  variant="outlined"
+                  density="compact"
+                  readonly
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  :model-value="formBsm.equipo_codigo || 'Según asignación'"
+                  label="Cód. Interno / Patente (Real)"
+                  variant="outlined"
+                  density="compact"
+                  readonly
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+            </v-row>
+          </div>
+
+          <!-- ================================================================= -->
+          <!-- MODO 1: ACTA DE ENTREGA 360° EN OBRA (COLUMNA ENTREGA)            -->
+          <!-- ================================================================= -->
+          <template v-if="modoPlataformaBsm === 'ENTREGA'">
+            <!-- CANDADO SI NO SE HA COMPLETADO EL VIAJE DE TRASLADO A OBRA -->
+            <div
+              v-if="!viajeIdaPlataformaCompletado"
+              class="pa-4 rounded-xl mb-3"
+              style="background-color: #2a1215 !important; border: 1px solid #ef4444 !important;"
+            >
+              <div class="text-xs font-black text-red-300 uppercase mb-1">
+                🔒 Candado Operativo: Viaje de Traslado Pendiente
+              </div>
+              <div class="text-xs text-slate-200 mb-3">
+                No puede realizar ni sellar el Acta de Entrega 360° sin haber registrado antes el <strong>Viaje de Traslado (Salida de Base y Llegada a Faena)</strong> en la Hoja de Ruta del camión asignado.
+              </div>
+              <v-btn
+                v-if="tokenViajePlataformaActivo"
+                color="info"
+                variant="flat"
+                class="w-100 font-black text-none rounded-xl py-2.5 text-white"
+                prepend-icon="mdi-truck-fast-outline"
+                @click="abrirViajeNativo(tokenViajePlataformaActivo)"
+              >
+                Ir a la Hoja de Ruta para Realizar el Viaje de Traslado ➔
+              </v-btn>
+            </div>
+
+            <div
+              class="pa-3 rounded-xl"
+              style="background-color: #111827 !important; border: 1px solid rgba(20, 184, 166, 0.45) !important;"
+              :style="!viajeIdaPlataformaCompletado ? 'opacity: 0.45; pointer-events: none;' : ''"
+            >
+              <div class="d-flex align-center justify-space-between mb-2">
+                <span class="text-xs font-black text-teal-300 uppercase tracking-wider">
+                  Registro de Entrega de Plataforma en Obra (Columna ENTREGA)
+                </span>
+                <v-chip size="x-small" :color="estadoPlataformaBsm.entregaSellada ? 'success' : (viajeIdaPlataformaCompletado ? 'warning' : 'error')" variant="flat" class="font-bold text-black">
+                  {{ estadoPlataformaBsm.entregaSellada ? 'ACTA SELLADA' : (viajeIdaPlataformaCompletado ? 'REQUERIDO' : 'BLOQUEADO POR VIAJE') }}
+                </v-chip>
+              </div>
+
+              <!-- HOROM. IN Y NIVEL DE PETRÓLEO / BATERÍA -->
+              <v-row dense class="mb-2">
+                <v-col cols="6">
+                  <v-text-field
+                    v-model="formBsm.horometro_in"
+                    type="number"
+                    step="0.1"
+                    label="HOROM. IN (Horómetro Entrada) *"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    bg-color="#060a14"
+                  />
+                </v-col>
+                <v-col cols="6">
+                  <v-select
+                    v-model="formBsm.combustible_in"
+                    :items="opcionesCombustibleBsm"
+                    label="Estanque Petróleo / Batería IN (%) *"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    bg-color="#060a14"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- 19 ÍTEMS OFICIALES DEL ACTA BSM (COLUMNA ENTREGA) -->
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <span class="text-[11px] font-bold text-white">
+                  19 Ítems Oficiales BSM / Royal Rental (Columna ENTREGA)
+                </span>
+                <v-btn size="x-small" color="teal" variant="flat" class="text-none font-bold text-white" @click="marcarTodosItemsBsm('ENTREGA', 'SI')">
+                  ✓ Marcar Todos [SI]
+                </v-btn>
+              </div>
+
+              <div
+                class="rounded-lg mb-3"
+                style="background-color: #060a14 !important; border: 1px solid #334155 !important;"
+              >
+                <div
+                  v-for="(item, idx) in itemsChecklistBsm"
+                  :key="`ent-${idx}`"
+                  class="px-2.5 py-1.5 d-flex align-center justify-space-between ga-2"
+                  style="border-bottom: 1px solid #1e293b !important;"
+                >
+                  <div class="text-xs font-medium text-white flex-1">
+                    <span class="text-slate-400 font-mono mr-1">{{ idx + 1 }}.</span>{{ item.nombre }}
+                  </div>
+                  <div class="d-flex ga-1">
+                    <v-btn
+                      v-for="val in ['SI', 'NO', 'NA']"
+                      :key="val"
+                      size="x-small"
+                      :color="item.entrega === val ? (val === 'SI' ? 'success' : (val === 'NO' ? 'error' : 'grey')) : 'grey-darken-3'"
+                      :variant="item.entrega === val ? 'flat' : 'outlined'"
+                      class="font-bold px-2"
+                      style="min-width: 34px;"
+                      @click="item.entrega = val"
+                    >
+                      {{ val }}
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
+
+              <!-- EVIDENCIA FOTOGRÁFICA 360° DE ENTREGA (MÍNIMO 6 + ADICIONALES) -->
+              <div class="mb-3">
+                <div class="mb-1.5">
+                  <span class="text-[11px] font-bold text-teal-300 uppercase">
+                    📸 Evidencia Fotográfica 360° (6 base obligatorias + {{ fotosAdicionalesEntrega.length }} extras • Total: {{ conteoFotosEntregaBsm }}) *
+                  </span>
+                </div>
+                <v-row dense>
+                  <v-col cols="6" sm="4" md="2" v-for="(slot, sIdx) in slotsFotos360" :key="`foto-ent-${sIdx}`">
+                    <div
+                      class="pa-2 rounded-lg text-center"
+                      :style="formBsm.fotos_entrega[slot.key] ? 'background-color: #062c22 !important; border: 1px solid #10b981 !important;' : 'background-color: #060a14 !important; border: 1px solid #334155 !important;'"
+                    >
+                      <div class="text-[10px] font-bold text-white truncate mb-1">{{ slot.label }}</div>
+                      <img v-if="formBsm.fotos_entrega[slot.key]" :src="formBsm.fotos_entrega[slot.key]" class="w-100 rounded mb-1" style="height: 56px; object-fit: cover;" />
+                      <v-btn
+                        size="x-small"
+                        :color="formBsm.fotos_entrega[slot.key] ? 'success' : 'teal-darken-1'"
+                        variant="flat"
+                        class="w-100 text-none font-bold text-[10px] text-white"
+                        @click="seleccionarFoto360('ENTREGA', slot.key)"
+                      >
+                        {{ formBsm.fotos_entrega[slot.key] ? '✓ Tomada' : '📷 Capturar' }}
+                      </v-btn>
+                    </div>
+                  </v-col>
+
+                  <!-- Fotos Adicionales Dinámicas -->
+                  <v-col cols="6" sm="4" md="2" v-for="(extra, xIdx) in fotosAdicionalesEntrega" :key="`foto-ent-extra-${xIdx}`">
+                    <div
+                      class="pa-2 rounded-lg text-center"
+                      style="background-color: #062c22 !important; border: 1px solid #10b981 !important;"
+                    >
+                      <div class="d-flex align-center justify-space-between text-[10px] font-bold text-white truncate mb-1">
+                        <span class="truncate">{{ extra.label || `Extra ${xIdx + 1}` }}</span>
+                        <v-btn icon="mdi-close" size="18" density="compact" variant="text" color="red-lighten-2" @click="eliminarFotoAdicional('ENTREGA', xIdx)" />
+                      </div>
+                      <img :src="extra.data" class="w-100 rounded mb-1" style="height: 56px; object-fit: cover;" />
+                      <div class="text-[9px] text-emerald-300 font-bold">✓ Adjunta</div>
+                    </div>
+                  </v-col>
+
+                  <!-- Tarjeta Directa en Grilla para Agregar Más Fotos -->
+                  <v-col cols="6" sm="4" md="2">
+                    <div
+                      class="pa-2 rounded-lg text-center d-flex flex-column align-center justify-center cursor-pointer h-100"
+                      style="background-color: #060a14 !important; border: 1px dashed #14b8a6 !important; min-height: 92px;"
+                      @click="agregarFotoAdicional('ENTREGA')"
+                    >
+                      <v-icon color="teal-accent-4" size="22" class="mb-1">mdi-camera-plus-outline</v-icon>
+                      <div class="text-[10px] font-bold text-teal-300">+ Agregar Otra Foto</div>
+                    </div>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <v-textarea
+                v-model="formBsm.observaciones_entrega"
+                label="Observaciones / Estado de Entrega en Obra"
+                variant="outlined"
+                density="compact"
+                rows="2"
+                hide-details
+                bg-color="#060a14"
+                class="mb-3"
+              />
+
+              <!-- FIRMA MANUAL DEL CLIENTE (RECIBIDO POR: NOMBRE, RUT Y CARGO) -->
+              <div
+                class="pa-3 rounded-xl"
+                style="background-color: #060a14 !important; border: 1px solid rgba(20, 184, 166, 0.35) !important;"
+              >
+                <div class="text-xs font-black text-teal-300 uppercase mb-2">
+                  ✍️ Recepción Conforme del Cliente (Recibido por: Nombre, RUT, Cargo y Firma Manual) *
+                </div>
+                <v-row dense>
+                  <v-col cols="12" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_entrega_nombre"
+                      label="Nombre Completo Cliente *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_entrega_rut"
+                      label="RUT Receptor *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_entrega_cargo"
+                      label="Cargo en Obra *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                </v-row>
+
+                <div class="d-flex align-center justify-space-between mb-1">
+                  <span class="text-[11px] text-white">Dibuje la firma manual del cliente en la pantalla:</span>
+                  <div class="d-flex ga-2">
+                    <v-btn size="x-small" variant="text" color="error" class="text-none font-bold" @click="limpiarCanvasFirma('ENTREGA')">
+                      Limpiar Firma
+                    </v-btn>
+                  </div>
+                </div>
+                <div class="bg-white rounded-lg overflow-hidden" style="border: 1px solid #475569;">
+                  <canvas
+                    ref="canvasEntregaRef"
+                    width="560"
+                    height="120"
+                    style="width: 100%; height: 110px; touch-action: none; cursor: crosshair; display: block; background-color: #ffffff;"
+                    @pointerdown="iniciarTrazoCanvas($event, 'ENTREGA')"
+                    @pointermove="dibujarTrazoCanvas($event, 'ENTREGA')"
+                    @pointerup="finalizarTrazoCanvas('ENTREGA')"
+                  ></canvas>
+                </div>
+              </div>
+
+              <!-- PIN de Firma Electrónica Simple (FES) Conductor / Operador -->
+              <div
+                class="rounded-xl p-3 my-3"
+                style="background-color: #060a14 !important; border: 1px solid rgba(20, 184, 166, 0.4) !important;"
+              >
+                <label class="block text-xs font-bold text-teal-300 mb-1">
+                  PIN del Conductor / Operador (4 Dígitos) *
+                </label>
+                <input
+                  type="password"
+                  maxlength="4"
+                  v-model="formBsm.pin_entrega"
+                  placeholder="••••"
+                  class="w-full bg-[#050810] border border-teal-500/40 rounded-xl px-3 py-3 text-center text-xl tracking-[0.5em] text-white font-mono font-black outline-none focus:border-teal-400"
+                />
+                <p class="text-[10px] text-slate-400 mt-1 text-center">Firma digital FES de conformidad de entrega de plataforma.</p>
+              </div>
+
+              <!-- Indicador reactivo de requisitos pendientes Entrega -->
+              <div v-if="!esActaEntregaValida && !estadoPlataformaBsm.entregaSellada" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-center text-xs space-y-1 my-3">
+                <p class="font-bold text-amber-300">Requisitos para autorizar y firmar entrega:</p>
+                <div class="flex flex-wrap items-center justify-center gap-2 text-[11px]">
+                  <span :class="formBsm.horometro_in ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ formBsm.horometro_in ? '✓' : '⚠️' }} Horómetro IN</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="conteoFotosEntregaBsm >= 6 ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ conteoFotosEntregaBsm >= 6 ? '✓' : '⚠️' }} Fotos 360° ({{ conteoFotosEntregaBsm }}/6)</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="(formBsm.receptor_entrega_nombre && formBsm.receptor_entrega_rut && formBsm.firma_entrega_base64) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ (formBsm.receptor_entrega_nombre && formBsm.receptor_entrega_rut && formBsm.firma_entrega_base64) ? '✓' : '⚠️' }} Firma Mandante</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="(formBsm.pin_entrega && formBsm.pin_entrega.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ (formBsm.pin_entrega && formBsm.pin_entrega.length === 4) ? '✓' : '⚠️' }} PIN ({{ formBsm.pin_entrega ? formBsm.pin_entrega.length : 0 }}/4)</span>
+                </div>
+              </div>
+
+              <v-alert
+                v-if="mensajeExitoBsm"
+                :type="mensajeExitoBsm.startsWith('Error') ? 'error' : 'success'"
+                density="compact"
+                variant="flat"
+                class="mt-3 text-xs font-bold"
+              >
+                {{ mensajeExitoBsm }}
+              </v-alert>
+
+              <button
+                v-if="!estadoPlataformaBsm.entregaSellada"
+                type="button"
+                :disabled="guardandoActaBsm || !esActaEntregaValida"
+                @click="sellarActaEntregaBsm"
+                class="w-full min-h-[54px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer mt-3"
+              >
+                <span v-if="guardandoActaBsm">⏳ Firmando y Generando Acta...</span>
+                <span v-else>🟢 EMITIR Y FIRMAR ACTA DE ENTREGA (FES) ➔</span>
+              </button>
+
+              <v-btn
+                v-if="estadoPlataformaBsm.entregaSellada && urlPdfEntregaBsm"
+                color="teal-darken-3"
+                variant="flat"
+                class="w-100 mt-2 font-bold text-white text-none rounded-xl py-2.5"
+                prepend-icon="mdi-file-pdf-box"
+                @click="verPdfActa(urlPdfEntregaBsm)"
+              >
+                📄 Ver Acta de Entrega Oficial (PDF)
+              </v-btn>
+            </div>
+          </template>
+
+          <!-- ================================================================= -->
+          <!-- MODO 2: CANDADO DE ACTA DE RETIRO / RECUPERACIÓN 360° (RECEPCIÓN) -->
+          <!-- ================================================================= -->
+          <template v-else>
+            <div
+              class="pa-3 rounded-xl"
+              style="background-color: #111827 !important; border: 1px solid rgba(245, 158, 11, 0.55) !important;"
+            >
+              <div class="d-flex align-center justify-space-between mb-2">
+                <span class="text-xs font-black text-amber-300 uppercase tracking-wider">
+                  Candado Previo al Retorno: Acta de Recuperación / Retiro 360° (Columna RECEPCIÓN)
+                </span>
+                <v-chip size="x-small" :color="estadoPlataformaBsm.retiroSellado ? 'success' : 'warning'" variant="flat" class="font-bold text-black">
+                  {{ estadoPlataformaBsm.retiroSellado ? 'CANDADO LIBERADO' : 'CANDADO ACTIVO' }}
+                </v-chip>
+              </div>
+
+              <!-- HOROM. OUT Y COMBUSTIBLE SALIDA -->
+              <v-row dense class="mb-2">
+                <v-col cols="4">
+                  <v-text-field
+                    :model-value="formBsm.horometro_in || 'S/I'"
+                    label="HOROM. IN (Entrega)"
+                    variant="outlined"
+                    density="compact"
+                    readonly
+                    hide-details
+                    bg-color="#060a14"
+                  />
+                </v-col>
+                <v-col cols="4">
+                  <v-text-field
+                    v-model="formBsm.horometro_out"
+                    type="number"
+                    step="0.1"
+                    label="HOROM. OUT (Retiro) *"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    bg-color="#060a14"
+                  />
+                </v-col>
+                <v-col cols="4">
+                  <v-select
+                    v-model="formBsm.combustible_out"
+                    :items="opcionesCombustibleBsm"
+                    label="Petróleo / Batería OUT (%) *"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    bg-color="#060a14"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- 19 ÍTEMS OFICIALES DEL ACTA BSM (COLUMNA RECEPCIÓN) -->
+              <div class="d-flex align-center justify-space-between mb-1.5">
+                <span class="text-[11px] font-bold text-white">
+                  19 Ítems Oficiales BSM / Royal Rental (Columna RECEPCIÓN vs ENTREGA)
+                </span>
+                <v-btn size="x-small" color="deep-purple-lighten-1" variant="flat" class="text-none font-bold text-white" @click="marcarTodosItemsBsm('RECEPCION', 'SI')">
+                  ✓ Marcar Todos [SI]
+                </v-btn>
+              </div>
+
+              <div
+                class="rounded-lg mb-3"
+                style="background-color: #060a14 !important; border: 1px solid #334155 !important;"
+              >
+                <div
+                  v-for="(item, idx) in itemsChecklistBsm"
+                  :key="`rec-${idx}`"
+                  class="px-2.5 py-1.5 d-flex align-center justify-space-between ga-2"
+                  style="border-bottom: 1px solid #1e293b !important;"
+                >
+                  <div class="text-xs font-medium text-white flex-1">
+                    <span class="text-slate-400 font-mono mr-1">{{ idx + 1 }}.</span>{{ item.nombre }}
+                    <span class="text-[10px] text-teal-400 ml-1">(Ent: {{ item.entrega }})</span>
+                  </div>
+                  <div class="d-flex ga-1">
+                    <v-btn
+                      v-for="val in ['SI', 'NO', 'NA']"
+                      :key="val"
+                      size="x-small"
+                      :color="item.recepcion === val ? (val === 'SI' ? 'success' : (val === 'NO' ? 'error' : 'grey')) : 'grey-darken-3'"
+                      :variant="item.recepcion === val ? 'flat' : 'outlined'"
+                      class="font-bold px-2"
+                      style="min-width: 34px;"
+                      @click="item.recepcion = val"
+                    >
+                      {{ val }}
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
+
+              <!-- EVIDENCIA FOTOGRÁFICA 360° DE RETIRO (MÍNIMO 6 + ADICIONALES) -->
+              <div class="mb-3">
+                <div class="mb-1.5">
+                  <span class="text-[11px] font-bold text-amber-300 uppercase">
+                    📸 Evidencia Fotográfica 360° de Retiro (6 base obligatorias + {{ fotosAdicionalesRetiro.length }} extras • Total: {{ conteoFotosRetiroBsm }}) *
+                  </span>
+                </div>
+                <v-row dense>
+                  <v-col cols="6" sm="4" md="2" v-for="(slot, sIdx) in slotsFotos360" :key="`foto-ret-${sIdx}`">
+                    <div
+                      class="pa-2 rounded-lg text-center"
+                      :style="formBsm.fotos_retiro[slot.key] ? 'background-color: #062c22 !important; border: 1px solid #10b981 !important;' : 'background-color: #060a14 !important; border: 1px solid #334155 !important;'"
+                    >
+                      <div class="text-[10px] font-bold text-white truncate mb-1">{{ slot.label }}</div>
+                      <img v-if="formBsm.fotos_retiro[slot.key]" :src="formBsm.fotos_retiro[slot.key]" class="w-100 rounded mb-1" style="height: 56px; object-fit: cover;" />
+                      <v-btn
+                        size="x-small"
+                        :color="formBsm.fotos_retiro[slot.key] ? 'success' : 'amber-darken-2'"
+                        variant="flat"
+                        class="w-100 text-none font-bold text-[10px] text-white"
+                        @click="seleccionarFoto360('RETIRO', slot.key)"
+                      >
+                        {{ formBsm.fotos_retiro[slot.key] ? '✓ Tomada' : '📷 Capturar' }}
+                      </v-btn>
+                    </div>
+                  </v-col>
+
+                  <!-- Fotos Adicionales Dinámicas Retiro -->
+                  <v-col cols="6" sm="4" md="2" v-for="(extra, xIdx) in fotosAdicionalesRetiro" :key="`foto-ret-extra-${xIdx}`">
+                    <div
+                      class="pa-2 rounded-lg text-center"
+                      style="background-color: #062c22 !important; border: 1px solid #10b981 !important;"
+                    >
+                      <div class="d-flex align-center justify-space-between text-[10px] font-bold text-white truncate mb-1">
+                        <span class="truncate">{{ extra.label || `Extra ${xIdx + 1}` }}</span>
+                        <v-btn icon="mdi-close" size="18" density="compact" variant="text" color="red-lighten-2" @click="eliminarFotoAdicional('RETIRO', xIdx)" />
+                      </div>
+                      <img :src="extra.data" class="w-100 rounded mb-1" style="height: 56px; object-fit: cover;" />
+                      <div class="text-[9px] text-emerald-300 font-bold">✓ Adjunta</div>
+                    </div>
+                  </v-col>
+
+                  <!-- Tarjeta Directa en Grilla para Agregar Más Fotos -->
+                  <v-col cols="6" sm="4" md="2">
+                    <div
+                      class="pa-2 rounded-lg text-center d-flex flex-column align-center justify-center cursor-pointer h-100"
+                      style="background-color: #060a14 !important; border: 1px dashed #fbbf24 !important; min-height: 92px;"
+                      @click="agregarFotoAdicional('RETIRO')"
+                    >
+                      <v-icon color="amber-accent-4" size="22" class="mb-1">mdi-camera-plus-outline</v-icon>
+                      <div class="text-[10px] font-bold text-amber-300">+ Agregar Otra Foto</div>
+                    </div>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <v-textarea
+                v-model="formBsm.observaciones_retiro"
+                label="Observaciones de Retiro / Daños o Faltantes Detectados"
+                variant="outlined"
+                density="compact"
+                rows="2"
+                hide-details
+                bg-color="#060a14"
+                class="mb-3"
+              />
+
+              <!-- FIRMA MANUAL DEL CLIENTE EN RETIRO (ENTREGADO POR: NOMBRE, RUT Y CARGO) -->
+              <div
+                class="pa-3 rounded-xl"
+                style="background-color: #060a14 !important; border: 1px solid rgba(245, 158, 11, 0.4) !important;"
+              >
+                <div class="text-xs font-black text-amber-300 uppercase mb-2">
+                  ✍️ Devolución del Cliente en Obra (Entregado por: Nombre, RUT, Cargo y Firma Manual) *
+                </div>
+                <v-row dense>
+                  <v-col cols="12" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_retiro_nombre"
+                      label="Nombre Cliente que Entrega *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_retiro_rut"
+                      label="RUT Cliente *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                  <v-col cols="6" sm="4">
+                    <v-text-field
+                      v-model="formBsm.receptor_retiro_cargo"
+                      label="Cargo en Obra *"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      bg-color="#111827"
+                      class="mb-2"
+                    />
+                  </v-col>
+                </v-row>
+
+                <div class="d-flex align-center justify-space-between mb-1">
+                  <span class="text-[11px] text-white">Dibuje la firma manual del cliente que entrega la plataforma:</span>
+                  <div class="d-flex ga-2">
+                    <v-btn size="x-small" variant="text" color="error" class="text-none font-bold" @click="limpiarCanvasFirma('RETIRO')">
+                      Limpiar Firma
+                    </v-btn>
+                  </div>
+                </div>
+                <div class="bg-white rounded-lg overflow-hidden" style="border: 1px solid #475569;">
+                  <canvas
+                    ref="canvasRetiroRef"
+                    width="560"
+                    height="120"
+                    style="width: 100%; height: 110px; touch-action: none; cursor: crosshair; display: block; background-color: #ffffff;"
+                    @pointerdown="iniciarTrazoCanvas($event, 'RETIRO')"
+                    @pointermove="dibujarTrazoCanvas($event, 'RETIRO')"
+                    @pointerup="finalizarTrazoCanvas('RETIRO')"
+                  ></canvas>
+                </div>
+              </div>
+
+              <!-- PIN de Firma Electrónica Simple (FES) Conductor / Operador en Retiro -->
+              <div
+                class="rounded-xl p-3 my-3"
+                style="background-color: #060a14 !important; border: 1px solid rgba(245, 158, 11, 0.4) !important;"
+              >
+                <label class="block text-xs font-bold text-amber-400 mb-1">
+                  PIN del Conductor / Operador (4 Dígitos) *
+                </label>
+                <input
+                  type="password"
+                  maxlength="4"
+                  v-model="formBsm.pin_retiro"
+                  placeholder="••••"
+                  class="w-full bg-[#050810] border border-amber-500/40 rounded-xl px-3 py-3 text-center text-xl tracking-[0.5em] text-white font-mono font-black outline-none focus:border-amber-400"
+                />
+                <p class="text-[10px] text-slate-400 mt-1 text-center">Firma digital FES de conformidad de retiro y recuperación de plataforma.</p>
+              </div>
+
+              <!-- Indicador reactivo de requisitos pendientes Retiro -->
+              <div v-if="!esActaRetiroValida && !estadoPlataformaBsm.retiroSellado" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-center text-xs space-y-1 my-3">
+                <p class="font-bold text-amber-300">Requisitos para autorizar y firmar retiro:</p>
+                <div class="flex flex-wrap items-center justify-center gap-2 text-[11px]">
+                  <span :class="(formBsm.horometro_out && Number(formBsm.horometro_out) >= Number(formBsm.horometro_in || 0)) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ (formBsm.horometro_out && Number(formBsm.horometro_out) >= Number(formBsm.horometro_in || 0)) ? '✓' : '⚠️' }} Horómetro OUT</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="conteoFotosRetiroBsm >= 6 ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ conteoFotosRetiroBsm >= 6 ? '✓' : '⚠️' }} Fotos 360° ({{ conteoFotosRetiroBsm }}/6)</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="(formBsm.receptor_retiro_nombre && formBsm.receptor_retiro_rut && formBsm.firma_retiro_base64) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ (formBsm.receptor_retiro_nombre && formBsm.receptor_retiro_rut && formBsm.firma_retiro_base64) ? '✓' : '⚠️' }} Firma Mandante</span>
+                  <span class="text-slate-600">•</span>
+                  <span :class="(formBsm.pin_retiro && formBsm.pin_retiro.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">{{ (formBsm.pin_retiro && formBsm.pin_retiro.length === 4) ? '✓' : '⚠️' }} PIN ({{ formBsm.pin_retiro ? formBsm.pin_retiro.length : 0 }}/4)</span>
+                </div>
+              </div>
+
+              <v-alert
+                v-if="mensajeExitoBsm"
+                :type="mensajeExitoBsm.startsWith('Error') ? 'error' : 'success'"
+                density="compact"
+                variant="flat"
+                class="mt-3 text-xs font-bold"
+              >
+                {{ mensajeExitoBsm }}
+              </v-alert>
+
+              <button
+                v-if="!estadoPlataformaBsm.retiroSellado"
+                type="button"
+                :disabled="guardandoActaBsm || !esActaRetiroValida"
+                @click="sellarActaRetiroBsm"
+                class="w-full min-h-[54px] bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer mt-3"
+              >
+                <span v-if="guardandoActaBsm">⏳ Firmando y Generando Acta...</span>
+                <span v-else>🏁 EMITIR Y FIRMAR ACTA DE RETIRO (FES) ➔</span>
+              </button>
+
+              <v-btn
+                v-if="estadoPlataformaBsm.retiroSellado && urlPdfFinalBsm"
+                color="deep-purple-darken-3"
+                variant="flat"
+                class="w-100 mt-2 font-bold text-white text-none rounded-xl py-2.5"
+                prepend-icon="mdi-file-pdf-box"
+                @click="verPdfActa(urlPdfFinalBsm)"
+              >
+                📄 Ver Acta de Retiro y Cierre Oficial (PDF)
+              </v-btn>
+
+              <v-btn
+                v-if="estadoPlataformaBsm.retiroSellado"
+                color="info"
+                variant="flat"
+                class="w-100 mt-2 font-black text-white text-none rounded-xl py-3"
+                @click="iniciarViajeRetornoPlataformaBsm"
+              >
+                🚛 Ir a la Hoja de Ruta Oficial para Registrar el Viaje de Retorno ➔
+              </v-btn>
+            </div>
+          </template>
+        </v-card-text>
       </v-card>
     </v-dialog>
 
@@ -549,6 +1649,24 @@
           </v-col>
         </v-row>
       </v-col>
+
+      <!-- Encabezado de Checklists Asignados -->
+      <v-col cols="12" class="d-flex align-center justify-space-between px-1 mb-1">
+        <span class="text-xs font-black text-slate-500 uppercase tracking-wider">
+          Checklists & Protocolos Asignados ({{ filteredSurveys.length }})
+        </span>
+        <span v-if="filteredSurveys.length > 0" class="text-[11px] text-amber-600 font-bold">
+          {{ filteredSurveys.length }} pendiente{{ filteredSurveys.length > 1 ? 's' : '' }}
+        </span>
+      </v-col>
+
+      <!-- Estado vacío si no hay checklists -->
+      <v-col cols="12" v-if="filteredSurveys.length === 0">
+        <v-card class="pa-4 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-center text-slate-500 text-xs">
+          <v-icon size="24" color="success" class="mb-1 d-block mx-auto">mdi-check-circle-outline</v-icon>
+          No tienes checklists pendientes asignados para hoy.
+        </v-card>
+      </v-col>
       
       <v-col cols="12" v-for="survey in filteredSurveys" :key="survey.id_survey">
         <div
@@ -633,62 +1751,92 @@
           </div>
         </div>
 
+        <!-- 🍏 TARJETA DE CHECKLIST / INSPECCIÓN ESTILO APPLE iOS -->
         <v-card
           v-else
           @click="goToInspeccion(survey, notifPrimaryId(survey.id_survey))"
-          class="mx-auto sombra-resaltada"
-          :class="{ 'conexion-card': isConexionSurvey(survey) }"
-          :subtitle="`${survey.name_empresa_cliente} / ${survey.nombre_proyecto}`"
-          :title="`${survey.desc_template_srv }: ${survey.name_template_srv}`"
+          class="rounded-2xl border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden pa-4 cursor-pointer hover:border-blue-400 transition-colors"
         >
-          <template #append>
-            <v-icon
-              v-if="hasNotif(survey.id_survey)"
-              color="red-darken-2"
-              icon="mdi-bell-ring"
-              size="22"
-            />
-          </template>
-
-          <v-chip
-            v-if="!isConexionSurvey(survey)"
-            :color="getEstadoColor(survey.estado_srv).color"
-            label
-            size="large"
-            class="ml-2 text-white"
-            variant="flat"
-          >
-            {{ getEstadoColor(survey.estado_srv).texto }}
-          </v-chip>
-
-          <v-card-text v-if="isConexionSurvey(survey)" class="conexion-card__body">
-            <div class="conexion-card__panel">
-              <div class="conexion-card__grid">
-                <div
-                  v-for="field in getConexionCardFields(survey)"
-                  :key="`${survey.id_survey}-${field.label}`"
-                  class="conexion-card__field"
-                  :class="{ 'conexion-card__field--full': field.full }"
-                >
-                  <div class="conexion-card__label">{{ field.label }}</div>
-                  <div class="conexion-card__value" :class="{ 'conexion-card__value--inline': field.metaTag }">
-                    <span>{{ field.value }}</span>
-                    <span v-if="field.metaTag" class="conexion-card__mini-tag">{{ field.metaTag }}</span>
-                  </div>
+          <div class="d-flex align-center justify-space-between mb-2">
+            <div class="d-flex align-center ga-2.5 min-w-0">
+              <div class="pa-2 rounded-xl bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-slate-200 d-flex align-center justify-center">
+                <v-icon size="20">mdi-clipboard-check-outline</v-icon>
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {{ survey.name_template_srv || survey.desc_template_srv || 'Checklist de Terreno' }}
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {{ survey.name_empresa_cliente }} • {{ survey.nombre_proyecto }}
                 </div>
               </div>
             </div>
-          </v-card-text>
 
-          <v-card-text v-else>
-            {{ `${survey.codi_template_srv} (Id ${survey.id_survey})` }}<br>
-            Fecha Planificada de Ejecución: {{ survey.fecha_plan_ini }}<br>
-            Estado: {{ survey.estado_srv }}
-          </v-card-text>
+            <div class="d-flex align-center ga-1 pl-2">
+              <v-icon
+                v-if="hasNotif(survey.id_survey)"
+                color="red-darken-2"
+                icon="mdi-bell-ring"
+                size="18"
+                class="mr-1"
+              />
+              <v-chip
+                :color="getEstadoColor(survey.estado_srv).color"
+                size="small"
+                variant="tonal"
+                class="font-bold text-xs"
+              >
+                {{ getEstadoColor(survey.estado_srv).texto }}
+              </v-chip>
+            </div>
+          </div>
+
+          <div class="d-flex align-center justify-space-between pt-2.5 mt-1 border-t border-slate-100 dark:border-zinc-700 text-xs text-slate-500 dark:text-slate-400">
+            <span>Fecha Planificada: <strong>{{ survey.fecha_plan_ini || 'Hoy' }}</strong></span>
+            <span class="text-primary font-bold d-flex align-center ga-1">
+              Abrir Inspección <v-icon size="16">mdi-chevron-right</v-icon>
+            </span>
+          </div>
         </v-card>
       </v-col>
-
     </v-row>
+
+    <!-- ========================================================================= -->
+    <!-- 4️⃣ ⚡ HERRAMIENTA COMERCIAL (EXCLUSIVO PERFILES ADMIN O COMERCIALES)      -->
+    <!-- ========================================================================= -->
+    <div v-if="esAdminOComercial" class="mt-6 mb-4">
+      <div class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
+        Módulo Comercial
+      </div>
+      <v-card
+        class="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-gradient-to-r from-blue-50/70 to-indigo-50/70 dark:from-zinc-800 dark:to-zinc-800 shadow-sm pa-4 cursor-pointer"
+        @click="$router.push('/cotizador-express')"
+      >
+        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+          <div class="d-flex align-center ga-3">
+            <div class="pa-2.5 rounded-xl bg-blue-600 text-white d-flex align-center justify-center">
+              <v-icon size="20">mdi-calculator-variant-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                Cotizador Express en Terreno
+              </div>
+              <div class="text-xs text-slate-500 dark:text-slate-400">
+                Presupuesto formal y cubicación de grúas en 60s
+              </div>
+            </div>
+          </div>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            class="font-bold text-none rounded-xl"
+          >
+            Cotizar ➔
+          </v-btn>
+        </div>
+      </v-card>
+    </div>
   </v-container>
 </template>
 
@@ -698,6 +1846,7 @@ import apiAxios from '@/services/api'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserDetailStore } from '@/store/userDetail'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
+import { verificarEsAdminOComercial } from '@/composables/usePermisosCotizador'
 
 /* eslint-disable */
 
@@ -709,9 +1858,38 @@ const { isOnline } = useNetworkStatus()
 // id_user seguro (no rompe si userDetail es null)
 const idUser = computed(() => userDetailStore.userDetail?.id_user ?? null)
 
+// Acceso a cotizador express exclusivo para perfiles Admin o Comerciales
+const esAdminOComercial = computed(() => {
+  return verificarEsAdminOComercial(userDetailStore.userDetail?.usuarioRoles)
+})
+
+// Evaluación de rol Taller / Mecánico para segmentar la interfaz del operador en terreno
+const esUsuarioTaller = computed(() => {
+  const roles = userDetailStore.userDetail?.usuarioRoles || []
+  return roles.some(r => {
+    const name = (r.name_rol || r.nombre || r.rol || '').toUpperCase()
+    return name.includes('MECANICO') || name.includes('TALLER') || name.includes('MANTENCION') || name.includes('ADMIN')
+  })
+})
+
 // --- MÓDULO DE VIAJE CONVOY / CHOFER PWA ---
 const viajeActivo = ref(null)
 const cargandoViajeActivo = ref(false)
+
+// Detección de Requerimiento Interno GSP (Spec 87: Folio INT- o flag es_interno)
+const esViajeInternoActivo = computed(() => {
+  const v = viajeActivo.value
+  const r = reportPrincipalPendiente.value
+  const codV = String(v?.codi_proyecto || '').toUpperCase().trim()
+  const codR = String(r?.codi_proyecto || '').toUpperCase().trim()
+  return Boolean(
+    v?.es_interno === true ||
+    v?.es_requerimiento_interno === true ||
+    codV.startsWith('INT-') ||
+    r?.es_interno === true ||
+    codR.startsWith('INT-')
+  )
+})
 
 // --- MÓDULO DE REPORTS DIARIOS DISCRIMINADOS PWA (Spec 57 / REQ-025) ---
 const reportsPendientes = ref([])
@@ -785,7 +1963,7 @@ const estadoPaso3ViajeRetorno = computed(() => {
   if (v && v.tipo_trayecto === 'RETORNO') {
     if (v.estado_trayecto === 'ASIGNADO') return 'PENDIENTE_SALIDA'
     if (v.estado_trayecto === 'EN_RUTA') return 'EN_RUTA'
-    if (v.estado_trayecto === 'ARRIBADO' || v.estado_trayecto === 'LLEGADO') return 'COMPLETADO'
+    if (v.estado_trayecto === 'ARRIBADO' || v.estado_trayecto === 'LLEGADO' || v.estado_trayecto === 'CONCLUIDO') return 'COMPLETADO'
   }
 
   if (p2 === 'CONCLUIDO_TOTAL') {
@@ -932,6 +2110,23 @@ const proximaAccionFlujo = computed(() => {
   return null
 })
 
+const expandirOperacion = ref(false)
+
+const proximaAccionBotonCorto = computed(() => {
+  const p = proximaAccionFlujo.value
+  if (!p) return 'Ver Operación ➔'
+  switch (p.paso) {
+    case 1:
+      return p.badge === 'EN TRAYECTO' ? 'Llegada ➔' : 'Iniciar Viaje ➔'
+    case 2:
+      return p.badge === 'FAENA EN CURSO' ? 'Firmar Report ➔' : 'Iniciar Faena ➔'
+    case 3:
+      return p.badge === 'RETORNO EN TRAYECTO' ? 'Llegada Base ➔' : 'Iniciar Retorno ➔'
+    default:
+      return 'Continuar ➔'
+  }
+})
+
 // --- MÓDULO DE INSPECCIÓN AUTÓNOMA DE PATIO (TEMPLATE 79) ---
 const dialogPatio = ref(false)
 const cargandoEquiposPatio = ref(false)
@@ -1060,17 +2255,811 @@ const iniciarChecklistPatio = async () => {
   }
 }
 
+// =========================================================================
+// MÓDULO BSM: ENTREGA 360°, RETIRO Y RETORNO ASÍNCRONO DE PLATAFORMAS (81)
+// =========================================================================
+const STORAGE_KEY_BSM_81 = 'gsp_plataforma_bsm_spec81_v2'
+try { localStorage.removeItem('gsp_plataforma_bsm_spec81_v1') } catch (_) {}
+const dialogPlataformaBsm = ref(false)
+const modoPlataformaBsm = ref('ENTREGA')
+const guardandoActaBsm = ref(false)
+const mensajeExitoBsm = ref('')
+const canvasEntregaRef = ref(null)
+const canvasRetiroRef = ref(null)
+const dibujandoFirmaBsm = ref(false)
+const proyectosPlataformaDisponibles = ref([])
+const idProyectoBsmSeleccionado = ref(null)
+const equiposCatalogoBsm = ref([])
+const viajeProyectoBsm = ref(null)
+const viajesProyectoListaBsm = ref([])
+
+const slotsFotos360 = [
+  { key: 'frontal', label: '1. Vista Frontal' },
+  { key: 'posterior', label: '2. Vista Posterior' },
+  { key: 'lateral_izq', label: '3. Lateral Izquierdo' },
+  { key: 'lateral_der', label: '4. Lateral Derecho' },
+  { key: 'mandos_canastillo', label: '5. Mandos / Canastillo' },
+  { key: 'horometro_placa', label: '6. Horómetro / Placa' }
+]
+
+const fotosAdicionalesEntrega = ref([])
+const fotosAdicionalesRetiro = ref([])
+const urlPdfEntregaBsm = ref('')
+const urlPdfFinalBsm = ref('')
+
+const opcionesCombustibleBsm = [
+  '100% (Lleno)',
+  '90%',
+  '80%',
+  '75% (3/4)',
+  '70%',
+  '60%',
+  '50% (1/2)',
+  '40%',
+  '30%',
+  '25% (1/4)',
+  '20%',
+  '15%',
+  '10% (Reserva)',
+  '5%'
+]
+
+const CATALOGO_19_ITEMS_BSM = [
+  'Alarma Traslación',
+  'Baterías',
+  'Arrancador Motor Aéreo y Tierra',
+  'Interruptor de Parada de Emergencia',
+  'Llave de Contacto',
+  'Perillas de Tablero Control Bastidor',
+  'Perillas de Tablero Control Canastillo',
+  'Estado de Mangueras Hidráulicas',
+  'Estado General de la Pluma',
+  'Pintura de Equipo',
+  'Pintura de Canastillo',
+  'Puerta Canastillo',
+  'Estado de Capot',
+  'Estado de Neumáticos',
+  'Estado de Joystick',
+  'Baliza',
+  'Tapa de Combustible',
+  'Chapa de Contacto',
+  'Otros'
+]
+
+const itemsChecklistBsm = ref(
+  CATALOGO_19_ITEMS_BSM.map(nombre => ({
+    nombre,
+    entrega: 'SI',
+    recepcion: 'SI',
+    comentario: ''
+  }))
+)
+
+const estadoPlataformaBsm = reactive({
+  viajeIdaConcluido: false,
+  entregaSellada: false,
+  retiroSellado: false,
+  viajeRetornoConcluido: false,
+  timestampEntrega: null,
+  timestampRetiro: null,
+  timestampRetorno: null
+})
+
+const formBsm = reactive({
+  arrendatario: '',
+  rut_arrendatario: '',
+  numero_contrato: '',
+  id_equipo: null,
+  direccion_obra: '',
+  equipo_modelo: '',
+  equipo_codigo: '',
+  horometro_in: '',
+  combustible_in: '100% (Lleno)',
+  fotos_entrega: {
+    frontal: '',
+    posterior: '',
+    lateral_izq: '',
+    lateral_der: '',
+    mandos_canastillo: '',
+    horometro_placa: ''
+  },
+  observaciones_entrega: '',
+  receptor_entrega_nombre: '',
+  receptor_entrega_rut: '',
+  receptor_entrega_cargo: '',
+  firma_entrega_base64: '',
+  pin_entrega: '',
+  horometro_out: '',
+  combustible_out: '100% (Lleno)',
+  fotos_retiro: {
+    frontal: '',
+    posterior: '',
+    lateral_izq: '',
+    lateral_der: '',
+    mandos_canastillo: '',
+    horometro_placa: ''
+  },
+  observaciones_retiro: '',
+  receptor_retiro_nombre: '',
+  receptor_retiro_rut: '',
+  receptor_retiro_cargo: '',
+  firma_retiro_base64: '',
+  pin_retiro: ''
+})
+
+const tieneViajeEnCurso = computed(() => {
+  if (!viajeActivo.value) return false
+  const est = String(viajeActivo.value.estado_trayecto || '').toUpperCase()
+  return ['ASIGNADO', 'EN_RUTA'].includes(est)
+})
+
+const viajeIdaPlataformaCompletado = computed(() => {
+  if (estadoPlataformaBsm.entregaSellada) return true
+  const v = viajeProyectoBsm.value || (
+    Number(viajeActivo.value?.id_proyecto) === Number(idProyectoBsmSeleccionado.value)
+      ? viajeActivo.value
+      : null
+  )
+  if (!v) return false
+  const est = String(v.estado_trayecto || '').toUpperCase()
+  const tipo = String(v.tipo_trayecto || '').toUpperCase()
+  return ['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(est) || Boolean(v.fecha_llegada_faena) || tipo === 'RETORNO'
+})
+
+const tokenViajePlataformaActivo = computed(() =>
+  viajeProyectoBsm.value?.token_viaje || viajeActivo.value?.token_viaje || null
+)
+
+const actasPlataformaConcluidas = computed(() =>
+  Boolean(estadoPlataformaBsm.entregaSellada && estadoPlataformaBsm.retiroSellado)
+)
+
+const tienePlataformaAsignada = computed(() => {
+  if (!idProyectoBsmSeleccionado.value) return false
+  if (actasPlataformaConcluidas.value) return false
+  const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
+  const v = viajeProyectoBsm.value || viajeActivo.value
+  const esChoferDelViaje = v && Number(v.id_proyecto) === Number(idProyectoBsmSeleccionado.value) && (Number(v.id_user_chofer) === uid || [53, 59].includes(uid))
+  const tieneActaEnCurso = Boolean(estadoPlataformaBsm.entregaSellada && !estadoPlataformaBsm.retiroSellado)
+  const prySel = proyectosPlataformaDisponibles.value.find(p => Number(p.id_proyecto) === Number(idProyectoBsmSeleccionado.value))
+  const jf = prySel?.raw ? (typeof prySel.raw.json_field === 'string' ? JSON.parse(prySel.raw.json_field) : (prySel.raw.json_field || {})) : {}
+  const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
+  const asignadoEnExtras = extras.some(ex => Number(ex.chofer_id) === uid)
+  const asignadoEnEjec = Number(jf.ejecucion_v1?.chofer_id) === uid || Number(jf.ejecucion_v1?.operador_id) === uid
+  return Boolean(esChoferDelViaje || tieneActaEnCurso || asignadoEnExtras || asignadoEnEjec || route.query?.id_proyecto)
+})
+
+const conteoFotosEntregaBsm = computed(() =>
+  Object.values(formBsm.fotos_entrega).filter(Boolean).length + fotosAdicionalesEntrega.value.length
+)
+
+const conteoFotosRetiroBsm = computed(() =>
+  Object.values(formBsm.fotos_retiro).filter(Boolean).length + fotosAdicionalesRetiro.value.length
+)
+
+const esActaEntregaValida = computed(() =>
+  viajeIdaPlataformaCompletado.value &&
+  Boolean(formBsm.numero_contrato?.trim()) &&
+  Boolean(formBsm.horometro_in) &&
+  conteoFotosEntregaBsm.value >= 6 &&
+  Boolean(formBsm.receptor_entrega_nombre?.trim()) &&
+  Boolean(formBsm.receptor_entrega_rut?.trim()) &&
+  Boolean(formBsm.receptor_entrega_cargo?.trim()) &&
+  Boolean(formBsm.firma_entrega_base64) &&
+  Boolean(formBsm.pin_entrega && formBsm.pin_entrega.length === 4)
+)
+
+const esActaRetiroValida = computed(() =>
+  estadoPlataformaBsm.entregaSellada &&
+  Boolean(formBsm.horometro_out) &&
+  Number(formBsm.horometro_out) >= Number(formBsm.horometro_in || 0) &&
+  conteoFotosRetiroBsm.value >= 6 &&
+  Boolean(formBsm.receptor_retiro_nombre?.trim()) &&
+  Boolean(formBsm.receptor_retiro_rut?.trim()) &&
+  Boolean(formBsm.receptor_retiro_cargo?.trim()) &&
+  Boolean(formBsm.firma_retiro_base64) &&
+  Boolean(formBsm.pin_retiro && formBsm.pin_retiro.length === 4)
+)
+
+const agregarFotoAdicional = (etapa) => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.capture = 'environment'
+  input.onchange = (ev) => {
+    const file = ev.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const lista = etapa === 'ENTREGA' ? fotosAdicionalesEntrega : fotosAdicionalesRetiro
+      lista.value.push({
+        label: `Foto Extra ${lista.value.length + 1}`,
+        data: String(reader.result)
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+const eliminarFotoAdicional = (etapa, index) => {
+  const lista = etapa === 'ENTREGA' ? fotosAdicionalesEntrega : fotosAdicionalesRetiro
+  lista.value.splice(index, 1)
+}
+
+const verPdfActa = (url) => {
+  if (!url) return
+  if (url.startsWith('http')) {
+    window.open(url, '_blank')
+    return
+  }
+  const baseApi = (apiAxios.defaults.baseURL || 'https://servidor.leanglobal.cl/lg-gsp-dev/api').replace(/\/+$/, '')
+  const cleanPath = url.replace(/^\/api/, '')
+  window.open(`${baseApi}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`, '_blank')
+}
+
+const persistirEstadoPlataformaBsm = () => {
+  try {
+    const key = idProyectoBsmSeleccionado.value
+      ? `${STORAGE_KEY_BSM_81}_pry_${idProyectoBsmSeleccionado.value}`
+      : STORAGE_KEY_BSM_81
+    localStorage.setItem(key, JSON.stringify({
+      estado: { ...estadoPlataformaBsm },
+      form: { ...formBsm },
+      items: itemsChecklistBsm.value
+    }))
+  } catch (e) {
+    console.warn('No se pudo persistir estado BSM en localStorage:', e)
+  }
+}
+
+const restaurarEstadoPlataformaBsm = () => {
+  try {
+    const key = idProyectoBsmSeleccionado.value
+      ? `${STORAGE_KEY_BSM_81}_pry_${idProyectoBsmSeleccionado.value}`
+      : STORAGE_KEY_BSM_81
+    const raw = localStorage.getItem(key)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (parsed?.form) Object.assign(formBsm, parsed.form)
+    if (Array.isArray(parsed?.items) && parsed.items.length === 19) {
+      itemsChecklistBsm.value = parsed.items
+    }
+  } catch (e) {
+    console.warn('No se pudo restaurar estado BSM:', e)
+  }
+}
+
+const hidratarCabeceraDesdeProyecto = async (pry) => {
+  if (!pry) return
+  const jf = typeof pry.json_field === 'string' ? JSON.parse(pry.json_field) : (pry.json_field || {})
+  const crm = jf.crm_v1 || {}
+  const ejec = jf.ejecucion_v1 || {}
+  const ctr = jf.contrato_arriendo || crm.contrato_arriendo || crm.contrato || {}
+  const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
+
+  // Resetear estado antes de hidratar el proyecto seleccionado
+  estadoPlataformaBsm.viajeIdaConcluido = false
+  estadoPlataformaBsm.entregaSellada = false
+  estadoPlataformaBsm.retiroSellado = false
+  estadoPlataformaBsm.viajeRetornoConcluido = false
+  estadoPlataformaBsm.timestampEntrega = null
+  estadoPlataformaBsm.timestampRetiro = null
+  estadoPlataformaBsm.timestampRetorno = null
+  urlPdfEntregaBsm.value = ''
+  urlPdfFinalBsm.value = ''
+
+  // Buscar línea de plataforma o equipo principal
+  const lineaPlat = lineas.find(l => {
+    const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
+    return txt.includes('PLATAFORMA') || txt.includes('ALZA') || txt.includes('MANLIFT') || txt.includes('TIJERA') || txt.includes('ARTICULAD')
+  }) || lineas.find(l => !String(l.tipo || '').toUpperCase().includes('TRASLADO')) || lineas[0] || {}
+
+  const eqId = lineaPlat.equipo_asignado_id || ejec.equipo_id || null
+  const eqObj = eqId ? equiposCatalogoBsm.value.find(e => Number(e.id_equipo) === Number(eqId)) : null
+
+  formBsm.id_equipo = eqId || eqObj?.id_equipo || null
+  formBsm.arrendatario = pry.razon_social || pry.nombre_cliente || crm.razon_social || viajeActivo.value?.cliente_nombre || ''
+  formBsm.rut_arrendatario = pry.rut_cliente || crm.rut_cliente || ctr.representante_rut || ''
+  formBsm.direccion_obra = [crm.obra_nombre || pry.nombre_proyecto, crm.obra_direccion, crm.obra_ciudad].filter(Boolean).join(' • ') || viajeActivo.value?.obra_nombre || ''
+  const marcaModelo = eqObj ? [eqObj.marca, eqObj.modelo].filter(Boolean).join(' ') : ''
+  formBsm.equipo_modelo = marcaModelo || eqObj?.nombre_equipo || lineaPlat.descripcion || lineaPlat.subcategoria || lineaPlat.tipo || ''
+  formBsm.equipo_codigo = eqObj?.patente || eqObj?.codigo_interno || (eqId ? `ID-${eqId}` : '') || ''
+  formBsm.numero_contrato = ctr.folio || ''
+
+  // Si el proyecto ya tiene borrador en json_field, hidratar campos del formulario (el estado de sellado manda únicamente la tabla tope_acta_plataforma)
+  const actaGuardada = ejec.acta_plataforma_360
+  if (actaGuardada) {
+    if (actaGuardada.form) {
+      formBsm.numero_contrato = actaGuardada.form.numero_contrato || formBsm.numero_contrato
+      formBsm.horometro_in = actaGuardada.form.horometro_in || ''
+      formBsm.combustible_in = (actaGuardada.form.combustible_in && actaGuardada.form.combustible_in.includes('%')) ? actaGuardada.form.combustible_in : '100% (Lleno)'
+      formBsm.observaciones_entrega = actaGuardada.form.observaciones_entrega || ''
+      formBsm.receptor_entrega_nombre = actaGuardada.form.receptor_entrega_nombre || ''
+      formBsm.receptor_entrega_rut = actaGuardada.form.receptor_entrega_rut || ''
+      formBsm.receptor_entrega_cargo = actaGuardada.form.receptor_entrega_cargo || ''
+      formBsm.firma_entrega_base64 = actaGuardada.form.firma_entrega_base64 || ''
+      if (actaGuardada.form.fotos_entrega) Object.assign(formBsm.fotos_entrega, actaGuardada.form.fotos_entrega)
+      formBsm.horometro_out = actaGuardada.form.horometro_out || ''
+      formBsm.combustible_out = (actaGuardada.form.combustible_out && actaGuardada.form.combustible_out.includes('%')) ? actaGuardada.form.combustible_out : '100% (Lleno)'
+      formBsm.observaciones_retiro = actaGuardada.form.observaciones_retiro || ''
+      formBsm.receptor_retiro_nombre = actaGuardada.form.receptor_retiro_nombre || ''
+      formBsm.receptor_retiro_rut = actaGuardada.form.receptor_retiro_rut || ''
+      formBsm.receptor_retiro_cargo = actaGuardada.form.receptor_retiro_cargo || ''
+      formBsm.firma_retiro_base64 = actaGuardada.form.firma_retiro_base64 || ''
+      if (actaGuardada.form.fotos_retiro) Object.assign(formBsm.fotos_retiro, actaGuardada.form.fotos_retiro)
+    }
+    if (Array.isArray(actaGuardada.items) && actaGuardada.items.length === 19) {
+      itemsChecklistBsm.value = actaGuardada.items
+    }
+  }
+
+  // Consultar acta oficial en BD (sch_leangsp.tope_acta_plataforma) — Única fuente de verdad del sellado
+  try {
+    const resActa = await apiAxios.get(`/operaciones/acta-plataforma/proyecto/${pry.id_proyecto}`).catch(() => null)
+    if (resActa?.data?.success && resActa?.data?.acta) {
+      const a = resActa.data.acta
+      urlPdfEntregaBsm.value = resActa.data.url_pdf_entrega || (a.id_file_pdf_entrega ? `/api/archivo/ver/${a.id_file_pdf_entrega}` : '')
+      urlPdfFinalBsm.value = resActa.data.url_pdf_final || (a.id_file_pdf_final ? `/api/archivo/ver/${a.id_file_pdf_final}` : '')
+      const estBd = String(a.estado || a.estado_acta || '').toUpperCase()
+      if (estBd === 'ENTREGADA' || estBd === 'RECIBIDA_CONFORME' || estBd === 'EMITIDA_ENTREGA' || estBd === 'CERRADA_FINAL') {
+        estadoPlataformaBsm.entregaSellada = true
+      }
+      if (estBd === 'RECIBIDA_CONFORME' || estBd === 'CERRADA_FINAL') {
+        estadoPlataformaBsm.retiroSellado = true
+      }
+      if (a.horometro_in) formBsm.horometro_in = a.horometro_in
+      if (a.combustible_in) formBsm.combustible_in = a.combustible_in.includes('%') ? a.combustible_in : '100% (Lleno)'
+      if (a.horometro_out) formBsm.horometro_out = a.horometro_out
+      if (a.combustible_out) formBsm.combustible_out = a.combustible_out.includes('%') ? a.combustible_out : '100% (Lleno)'
+    }
+  } catch (err) {
+    console.warn('No se pudo cargar acta de BD:', err)
+  }
+}
+
+const cargarViajeDeProyectoBsm = async (idPry, rawPry = null) => {
+  if (!idPry) return
+  try {
+    let res = await apiAxios.get(`/viajes/proyecto/${idPry}`).catch(() => ({ data: { data: [] } }))
+    let lista = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
+
+    // Si el proyecto tiene camión asignado en equipos_extra con chofer_id y aún no existe fila en tlog_desplazamiento, crearla automáticamente
+    if (lista.length === 0 && rawPry) {
+      const jf = typeof rawPry.json_field === 'string' ? JSON.parse(rawPry.json_field) : (rawPry.json_field || {})
+      const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
+      const cam = extras.find(ex => ex.id_equipo && ex.chofer_id)
+      if (cam) {
+        await apiAxios.post('/operaciones/viaje/asignar', {
+          id_proyecto: Number(idPry),
+          id_equipo: Number(cam.id_equipo),
+          id_user_chofer: Number(cam.chofer_id),
+          tipo_trayecto: 'IDA'
+        }).catch(() => null)
+        res = await apiAxios.get(`/viajes/proyecto/${idPry}`).catch(() => ({ data: { data: [] } }))
+        lista = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
+      }
+    }
+
+    viajesProyectoListaBsm.value = lista
+    const vIda = lista.find(v => String(v.tipo_trayecto || 'IDA').toUpperCase() === 'IDA') || lista[0] || null
+    const vActivo = lista.find(v => ['ASIGNADO', 'EN_RUTA'].includes(String(v.estado_trayecto || '').toUpperCase())) || vIda
+
+    if (vActivo) {
+      const jf = rawPry ? (typeof rawPry.json_field === 'string' ? JSON.parse(rawPry.json_field) : (rawPry.json_field || {})) : {}
+      const crm = jf.crm_v1 || {}
+      const enriquecido = {
+        ...vActivo,
+        codi_proyecto: vActivo.codi_proyecto || rawPry?.codi_proyecto || `OT-${idPry}`,
+        obra_nombre: vActivo.obra_nombre || crm.obra_nombre || rawPry?.nombre_proyecto || 'Faena',
+        cliente_nombre: vActivo.cliente_nombre || rawPry?.razon_social || crm.razon_social || ''
+      }
+      viajeProyectoBsm.value = enriquecido
+      estadoPlataformaBsm.viajeIdaConcluido = ['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(String(enriquecido.estado_trayecto || '').toUpperCase()) || Boolean(enriquecido.fecha_llegada_faena)
+
+      // Si viajeActivo está vacío o apunta a un viaje antiguo ya ARRIBADO de otro proyecto menor, priorizar el viaje activo de este proyecto
+      const estActual = String(viajeActivo.value?.estado_trayecto || '').toUpperCase()
+      const estNuevo = String(enriquecido.estado_trayecto || '').toUpperCase()
+      if (
+        !viajeActivo.value ||
+        (['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(estActual) && Number(viajeActivo.value?.id_proyecto) < Number(idPry) && ['ASIGNADO', 'EN_RUTA'].includes(estNuevo))
+      ) {
+        viajeActivo.value = enriquecido
+      }
+    } else {
+      viajeProyectoBsm.value = null
+    }
+  } catch (e) {
+    console.warn('Error consultando viajes del proyecto BSM:', e)
+  }
+}
+
+const onSeleccionarProyectoBsm = async (idPry) => {
+  const found = proyectosPlataformaDisponibles.value.find(p => Number(p.id_proyecto) === Number(idPry))
+  if (found?.raw) {
+    await hidratarCabeceraDesdeProyecto(found.raw)
+    await cargarViajeDeProyectoBsm(idPry, found.raw)
+  }
+}
+
+const cargarDatosRealesPlataformaBsm = async () => {
+  try {
+    const [resPry, resEq] = await Promise.all([
+      apiAxios.get('/proyectos').catch(() => ({ data: [] })),
+      apiAxios.get('/tequ-equipos').catch(() => ({ data: [] }))
+    ])
+    const listaEq = Array.isArray(resEq.data?.data)
+      ? resEq.data.data
+      : (Array.isArray(resEq.data) ? resEq.data : (resEq.data?.equipos || []))
+    equiposCatalogoBsm.value = listaEq
+
+    const listaPry = Array.isArray(resPry.data) ? resPry.data : (resPry.data?.proyectos || [])
+    // Filtrar proyectos con plataformas/arriendo y ordenar del más reciente al más antiguo
+    const candidatos = listaPry.filter(p => {
+      if (Number(p.id_proyecto_estado) === 99) return false
+      const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
+      const crm = jf.crm_v1 || {}
+      const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
+      const tienePlat = lineas.some(l => {
+        const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
+        return txt.includes('PLATAFORMA') || txt.includes('ALZA') || txt.includes('MANLIFT') || txt.includes('TIJERA') || txt.includes('ARTICULAD')
+      })
+      return tienePlat || Number(crm.tipo_caso) === 5 || Number(p.id_empresa) === 11 || String(p.codi_proyecto || '').toUpperCase().startsWith('BMQ')
+    }).sort((a, b) => Number(b.id_proyecto) - Number(a.id_proyecto))
+
+    proyectosPlataformaDisponibles.value = candidatos.map(p => {
+      const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
+      const crm = jf.crm_v1 || {}
+      const cod = p.codi_proyecto || `OT-${p.id_proyecto}`
+      const cli = p.razon_social || crm.razon_social || 'Cliente'
+      const obra = crm.obra_nombre || p.nombre_proyecto || 'Obra'
+      return {
+        id_proyecto: p.id_proyecto,
+        label: `${cod} • ${cli} (${obra})`,
+        raw: p
+      }
+    })
+
+    const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
+    const queryPryId = route.query?.id_proyecto ? Number(route.query.id_proyecto) : null
+    const activeIsCandidate = viajeActivo.value?.id_proyecto && candidatos.some(c => Number(c.id_proyecto) === Number(viajeActivo.value.id_proyecto))
+
+    // Buscar si el usuario actual tiene asignación específica en alguno de los proyectos de plataforma
+    const candidatoAsignado = candidatos.find(c => {
+      if (viajeActivo.value?.id_proyecto && Number(c.id_proyecto) === Number(viajeActivo.value.id_proyecto)) {
+        return true
+      }
+      const jf = typeof c.json_field === 'string' ? JSON.parse(c.json_field) : (c.json_field || {})
+      const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
+      if (extras.some(ex => Number(ex.chofer_id) === uid)) return true
+      if (Number(jf.ejecucion_v1?.chofer_id) === uid || Number(jf.ejecucion_v1?.operador_id) === uid) return true
+      return false
+    })
+
+    const targetId = queryPryId || (activeIsCandidate ? viajeActivo.value.id_proyecto : null) || candidatoAsignado?.id_proyecto || (idProyectoBsmSeleccionado.value && candidatos.some(c => Number(c.id_proyecto) === Number(idProyectoBsmSeleccionado.value)) ? idProyectoBsmSeleccionado.value : null)
+    if (targetId) {
+      idProyectoBsmSeleccionado.value = Number(targetId)
+      const sel = proyectosPlataformaDisponibles.value.find(x => Number(x.id_proyecto) === Number(targetId))
+      if (sel?.raw) {
+        await hidratarCabeceraDesdeProyecto(sel.raw)
+        await cargarViajeDeProyectoBsm(targetId, sel.raw)
+        // Si el retiro ya está sellado y no hay viaje de retorno activo, asegurar su creación inmediata
+        if (estadoPlataformaBsm.retiroSellado && (!viajeActivo.value || viajeActivo.value.tipo_trayecto !== 'RETORNO')) {
+          try {
+            const vBase = viajeProyectoBsm.value || viajeActivo.value || {}
+            await apiAxios.post('/operaciones/viaje/asignar', {
+              id_proyecto: Number(targetId),
+              id_equipo: Number(vBase.id_equipo || formBsm.id_equipo || 1),
+              id_user_chofer: Number(vBase.id_user_chofer || uid),
+              tipo_trayecto: 'RETORNO'
+            })
+            await consultarViajeActivo()
+          } catch (_) {}
+        }
+      }
+    } else {
+      idProyectoBsmSeleccionado.value = null
+    }
+  } catch (e) {
+    console.warn('Error cargando proyectos reales para Acta BSM:', e)
+  }
+}
+
+const iniciarViajeRetornoPlataformaBsm = async () => {
+  const pId = idProyectoBsmSeleccionado.value || viajeProyectoBsm.value?.id_proyecto || viajeActivo.value?.id_proyecto
+  if (!pId) return
+  try {
+    // Verificar si ya existe un viaje de RETORNO para este proyecto
+    const existenteRetorno = viajesProyectoListaBsm.value.find(v => String(v.tipo_trayecto || '').toUpperCase() === 'RETORNO')
+    if (existenteRetorno?.token_viaje) {
+      abrirViajeNativo(existenteRetorno.token_viaje)
+      return
+    }
+    const vBase = viajeProyectoBsm.value || viajeActivo.value
+    if (vBase?.id_equipo && vBase?.id_user_chofer) {
+      const { data } = await apiAxios.post('/operaciones/viaje/asignar', {
+        id_proyecto: Number(pId),
+        id_equipo: Number(vBase.id_equipo),
+        id_user_chofer: Number(vBase.id_user_chofer),
+        tipo_trayecto: 'RETORNO'
+      })
+      if (data?.token_viaje) {
+        abrirViajeNativo(data.token_viaje)
+        return
+      }
+    }
+    if (tokenViajePlataformaActivo.value) {
+      abrirViajeNativo(tokenViajePlataformaActivo.value)
+    }
+  } catch (e) {
+    console.warn('Error iniciando viaje de retorno de plataforma:', e)
+    if (tokenViajePlataformaActivo.value) {
+      abrirViajeNativo(tokenViajePlataformaActivo.value)
+    }
+  }
+}
+
+const abrirModalPlataformaBsm = async (modo = 'ENTREGA') => {
+  await cargarDatosRealesPlataformaBsm()
+  if (modo === 'ENTREGA' && !viajeIdaPlataformaCompletado.value) {
+    modoPlataformaBsm.value = 'ENTREGA'
+    mensajeExitoBsm.value = ''
+    dialogPlataformaBsm.value = true
+    return
+  }
+  modoPlataformaBsm.value = modo
+  mensajeExitoBsm.value = ''
+  dialogPlataformaBsm.value = true
+}
+
+const cambiarModoPlataformaBsm = (modo) => {
+  if (modo === 'RETIRO' && !estadoPlataformaBsm.entregaSellada) return
+  modoPlataformaBsm.value = modo
+  mensajeExitoBsm.value = ''
+}
+
+const marcarTodosItemsBsm = (columna, valor) => {
+  itemsChecklistBsm.value.forEach(it => {
+    if (columna === 'ENTREGA') it.entrega = valor
+    else it.recepcion = valor
+  })
+}
+
+const seleccionarFoto360 = (etapa, slotKey) => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.capture = 'environment'
+  input.onchange = (ev) => {
+    const file = ev.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (etapa === 'ENTREGA') formBsm.fotos_entrega[slotKey] = String(reader.result)
+      else formBsm.fotos_retiro[slotKey] = String(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+const iniciarTrazoCanvas = (e, etapa) => {
+  const canvas = etapa === 'ENTREGA' ? canvasEntregaRef.value : canvasRetiroRef.value
+  if (!canvas) return
+  dibujandoFirmaBsm.value = true
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  const ctx = canvas.getContext('2d')
+  ctx.strokeStyle = '#0f172a'
+  ctx.lineWidth = 2.6
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY)
+}
+
+const dibujarTrazoCanvas = (e, etapa) => {
+  if (!dibujandoFirmaBsm.value) return
+  const canvas = etapa === 'ENTREGA' ? canvasEntregaRef.value : canvasRetiroRef.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
+  const ctx = canvas.getContext('2d')
+  ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY)
+  ctx.stroke()
+}
+
+const finalizarTrazoCanvas = (etapa) => {
+  if (!dibujandoFirmaBsm.value) return
+  dibujandoFirmaBsm.value = false
+  const canvas = etapa === 'ENTREGA' ? canvasEntregaRef.value : canvasRetiroRef.value
+  if (!canvas) return
+  const dataUrl = canvas.toDataURL('image/png')
+  if (etapa === 'ENTREGA') formBsm.firma_entrega_base64 = dataUrl
+  else formBsm.firma_retiro_base64 = dataUrl
+}
+
+const limpiarCanvasFirma = (etapa) => {
+  const canvas = etapa === 'ENTREGA' ? canvasEntregaRef.value : canvasRetiroRef.value
+  if (canvas) {
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
+  if (etapa === 'ENTREGA') formBsm.firma_entrega_base64 = ''
+  else formBsm.firma_retiro_base64 = ''
+}
+
+const guardarActaEnProyectoBackend = async () => {
+  const pId = idProyectoBsmSeleccionado.value || viajeActivo.value?.id_proyecto
+  if (!pId) return
+  try {
+    const { data } = await apiAxios.get(`/proyectos/${pId}`)
+    const pry = data?.proyecto || data
+    if (!pry) return
+    const jf = typeof pry.json_field === 'string' ? JSON.parse(pry.json_field) : (pry.json_field || {})
+    if (!jf.ejecucion_v1) jf.ejecucion_v1 = {}
+    jf.ejecucion_v1.acta_plataforma_360 = {
+      estado: { ...estadoPlataformaBsm },
+      form: { ...formBsm },
+      items: itemsChecklistBsm.value,
+      updated_at: new Date().toISOString()
+    }
+    await apiAxios.put(`/proyectos/${pId}`, {
+      ...pry,
+      json_field: jf
+    })
+  } catch (err) {
+    console.warn('No se pudo sincronizar acta_plataforma_360 en backend:', err)
+  }
+}
+
+const sellarActaEntregaBsm = async () => {
+  if (!viajeIdaPlataformaCompletado.value || !esActaEntregaValida.value) return
+  guardandoActaBsm.value = true
+  try {
+    const pId = Number(idProyectoBsmSeleccionado.value || viajeActivo.value?.id_proyecto)
+    const vObj = viajeProyectoBsm.value || viajeActivo.value || {}
+
+    // Compilar fotos base (6 slots obligatorios) + fotos adicionales
+    const fotosPayload = [
+      { label: 'Frontal', data: formBsm.fotos_entrega.frontal },
+      { label: 'Posterior', data: formBsm.fotos_entrega.posterior },
+      { label: 'Lateral Izquierdo', data: formBsm.fotos_entrega.lateral_izq },
+      { label: 'Lateral Derecho', data: formBsm.fotos_entrega.lateral_der },
+      { label: 'Mandos / Canastillo', data: formBsm.fotos_entrega.mandos_canastillo },
+      { label: 'Horómetro / Placa', data: formBsm.fotos_entrega.horometro_placa },
+      ...fotosAdicionalesEntrega.value.map(f => ({ label: f.label || 'Foto Extra', data: f.data }))
+    ].filter(f => Boolean(f.data))
+
+    const payload = {
+      id_proyecto: pId,
+      id_equipo: Number(formBsm.id_equipo || vObj.id_equipo || 1),
+      id_camion: Number(vObj.id_equipo || null),
+      id_desplazamiento_ida: Number(vObj.id_desplazamiento || null),
+      numero_contrato: formBsm.numero_contrato,
+      horometro_in: formBsm.horometro_in,
+      combustible_in: formBsm.combustible_in,
+      checklist_entrega: itemsChecklistBsm.value.map(it => ({ id: it.id, item: it.nombre, valor: it.entrega })),
+      fotos_entrega: fotosPayload,
+      obs_entrega: formBsm.observaciones_entrega,
+      receptor_entrega_nombre: formBsm.receptor_entrega_nombre,
+      receptor_entrega_rut: formBsm.receptor_entrega_rut,
+      receptor_entrega_cargo: formBsm.receptor_entrega_cargo,
+      firma_entrega_base64: formBsm.firma_entrega_base64,
+      pin: formBsm.pin_entrega
+    }
+
+    const { data } = await apiAxios.post('/operaciones/acta-plataforma/guardar-entrega', payload)
+    if (data?.success) {
+      urlPdfEntregaBsm.value = data.url_pdf || (data.acta?.id_file_pdf_entrega ? `/api/archivo/ver/${data.acta.id_file_pdf_entrega}` : '')
+      estadoPlataformaBsm.entregaSellada = true
+      estadoPlataformaBsm.timestampEntrega = new Date().toISOString()
+      persistirEstadoPlataformaBsm()
+      await guardarActaEnProyectoBackend()
+      mensajeExitoBsm.value = `¡Acta de Entrega ${data.acta?.folio_acta || ''} emitida y guardada con éxito! La plataforma queda EN ARRIENDO ACTIVO en obra.`
+      setTimeout(() => {
+        dialogPlataformaBsm.value = false
+      }, 1200)
+    }
+  } catch (err) {
+    console.error('Error al sellar acta de entrega BSM:', err)
+    mensajeExitoBsm.value = `Error al guardar acta en servidor: ${err.response?.data?.error || err.message}`
+  } finally {
+    guardandoActaBsm.value = false
+  }
+}
+
+const sellarActaRetiroBsm = async () => {
+  if (!esActaRetiroValida.value) return
+  guardandoActaBsm.value = true
+  try {
+    const pId = Number(idProyectoBsmSeleccionado.value || viajeActivo.value?.id_proyecto)
+    const vObj = viajeProyectoBsm.value || viajeActivo.value || {}
+
+    // Compilar fotos base de retiro (6 slots obligatorios) + fotos adicionales
+    const fotosPayload = [
+      { label: 'Frontal', data: formBsm.fotos_retiro.frontal },
+      { label: 'Posterior', data: formBsm.fotos_retiro.posterior },
+      { label: 'Lateral Izquierdo', data: formBsm.fotos_retiro.lateral_izq },
+      { label: 'Lateral Derecho', data: formBsm.fotos_retiro.lateral_der },
+      { label: 'Mandos / Canastillo', data: formBsm.fotos_retiro.mandos_canastillo },
+      { label: 'Horómetro / Placa', data: formBsm.fotos_retiro.horometro_placa },
+      ...fotosAdicionalesRetiro.value.map(f => ({ label: f.label || 'Foto Extra', data: f.data }))
+    ].filter(f => Boolean(f.data))
+
+    const payload = {
+      id_proyecto: pId,
+      id_desplazamiento_retorno: Number(vObj.id_desplazamiento || null),
+      horometro_out: formBsm.horometro_out,
+      combustible_out: formBsm.combustible_out,
+      checklist_retiro: itemsChecklistBsm.value.map(it => ({ id: it.id, item: it.nombre, valor: it.recepcion })),
+      fotos_retiro: fotosPayload,
+      obs_retiro: formBsm.observaciones_retiro,
+      receptor_retiro_nombre: formBsm.receptor_retiro_nombre,
+      receptor_retiro_rut: formBsm.receptor_retiro_rut,
+      receptor_retiro_cargo: formBsm.receptor_retiro_cargo,
+      firma_retiro_base64: formBsm.firma_retiro_base64,
+      pin: formBsm.pin_retiro
+    }
+
+    const { data } = await apiAxios.post('/operaciones/acta-plataforma/guardar-retiro', payload)
+    if (data?.success) {
+      urlPdfFinalBsm.value = data.url_pdf || (data.acta?.id_file_pdf_final ? `/api/archivo/ver/${data.acta.id_file_pdf_final}` : '')
+      estadoPlataformaBsm.retiroSellado = true
+      estadoPlataformaBsm.timestampRetiro = new Date().toISOString()
+      persistirEstadoPlataformaBsm()
+      await guardarActaEnProyectoBackend()
+
+      // Habilitar de inmediato el viaje de retorno en el Bloque A superior
+      try {
+        const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
+        const vBase = viajeProyectoBsm.value || viajeActivo.value || {}
+        await apiAxios.post('/operaciones/viaje/asignar', {
+          id_proyecto: Number(pId),
+          id_equipo: Number(vBase.id_equipo || formBsm.id_equipo || 1),
+          id_user_chofer: Number(vBase.id_user_chofer || uid),
+          tipo_trayecto: 'RETORNO'
+        })
+        await consultarViajeActivo()
+      } catch (errViaje) {
+        console.warn('Error auto-asignando viaje de retorno:', errViaje)
+      }
+
+      mensajeExitoBsm.value = `¡Acta de Recuperación y Cierre ${data.acta?.folio_acta || ''} emitida con éxito! Viaje de Retorno a Patio habilitado en su Hoja de Ruta.`
+      setTimeout(() => {
+        dialogPlataformaBsm.value = false
+      }, 1200)
+    }
+  } catch (err) {
+    console.error('Error al sellar acta de retiro BSM:', err)
+    mensajeExitoBsm.value = `Error al guardar acta de retiro en servidor: ${err.response?.data?.error || err.message}`
+  } finally {
+    guardandoActaBsm.value = false
+  }
+}
+
 const consultarViajeActivo = async () => {
-  const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
+  const perfilLocal = JSON.parse(localStorage.getItem('perfil') || '{}')
+  const uid = idUser.value || perfilLocal?.id_user
   if (!uid) return
   try {
     cargandoViajeActivo.value = true
     const { data } = await apiAxios.get('/viajes/usuario/activo', { params: { id_user: uid } })
-    if (data?.activo && data?.data) {
-      viajeActivo.value = data.data
-    } else {
-      viajeActivo.value = null
+    let viajeEncontrado = (data?.activo && data?.data) ? data.data : null
+
+    // Si el usuario es lguser (existe duplicado id_user 53 y 59 en DEV), consultar también el homólogo
+    const uInfo = userDetailStore.userDetail || perfilLocal || {}
+    const uStr = `${uInfo.nombre_user || ''} ${uInfo.email || ''} ${uInfo.codi_user || ''}`.toLowerCase()
+    if (!viajeEncontrado && (Number(uid) === 53 || uStr.includes('lguser'))) {
+      const altId = Number(uid) === 53 ? 59 : 53
+      const resAlt = await apiAxios.get('/viajes/usuario/activo', { params: { id_user: altId } }).catch(() => null)
+      if (resAlt?.data?.activo && resAlt?.data?.data) {
+        viajeEncontrado = resAlt.data.data
+      }
     }
+
+    viajeActivo.value = viajeEncontrado
   } catch (err) {
     console.warn('No se pudo consultar viaje activo:', err)
   } finally {
@@ -1571,7 +3560,13 @@ onMounted(async () => {
   await getSurvey()
   await cargarNotificaciones()
   await consultarViajeActivo()
+  await cargarDatosRealesPlataformaBsm()
   await consultarReportsPendientes()
+
+  const abrirModo = String(route.query?.abrir_acta_bsm || '').toUpperCase()
+  if (abrirModo === 'ENTREGA' || abrirModo === 'RETIRO') {
+    await abrirModalPlataformaBsm(abrirModo)
+  }
 })
 
 watch(() => route.path, async () => {
@@ -1581,12 +3576,14 @@ watch(() => route.path, async () => {
   }
   await getSurvey()
   await consultarViajeActivo()
+  await cargarDatosRealesPlataformaBsm()
   await consultarReportsPendientes()
 })
 
 watch(() => idUser.value, async (newVal) => {
   if (newVal) {
     await consultarViajeActivo()
+    await cargarDatosRealesPlataformaBsm()
     await consultarReportsPendientes()
   }
 })
@@ -3885,5 +5882,31 @@ tbody tr:nth-of-type(odd) {
 .flow-step-unassigned :deep(.v-label.v-field-label) {
   color: #c62828 !important;
   font-weight: 600;
+}
+:deep(.modal-acta-bsm-dialog .v-overlay__content),
+:deep(.modal-acta-bsm-dialog .v-card),
+.modal-acta-bsm-opaque {
+  background-color: #0b1120 !important;
+  background: #0b1120 !important;
+  color: #f8fafc !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+.modal-acta-bsm-opaque :deep(.v-card-text),
+.modal-acta-bsm-opaque :deep(.v-window),
+.modal-acta-bsm-opaque :deep(.v-window-item) {
+  background-color: #0b1120 !important;
+  color: #f8fafc !important;
+  opacity: 1 !important;
+}
+.modal-acta-bsm-opaque :deep(.v-field) {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+.modal-acta-bsm-opaque :deep(.v-field__input),
+.modal-acta-bsm-opaque :deep(.v-label) {
+  color: #f1f5f9 !important;
+  opacity: 1 !important;
 }
 </style>

@@ -1,8 +1,20 @@
 // src/services/api.js
 import axios from 'axios'
 
+const resolveApiBase = () => {
+  if (typeof window !== 'undefined') {
+    if (window.location.pathname.startsWith('/pwa-gsp-prod') || window.location.pathname.startsWith('/lg-gsp-prod')) {
+      return 'https://servidor.leanglobal.cl/lg-gsp-prod/api'
+    }
+    if (window.location.pathname.startsWith('/pwa-gsp-dev') || window.location.pathname.startsWith('/lg-gsp-dev')) {
+      return 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
+    }
+  }
+  return process.env.VUE_APP_API_BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
+}
+
 const api = axios.create({
-  baseURL: process.env.VUE_APP_API_BASE_URL
+  baseURL: resolveApiBase()
 })
 
 // TRANSAMAC_REMOVE_CONEXION_20260428: desactiva llamadas realtime de conexion.

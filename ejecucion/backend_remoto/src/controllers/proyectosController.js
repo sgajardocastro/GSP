@@ -128,7 +128,7 @@ module.exports = {
   createProyecto: async (req, res) => {
     try {
       let codi_proyecto = req.body.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_empresa = req.body.id_empresa || req.user?.id_empresa;
         const id_cliente = req.body.id_empresa_cliente || null;
@@ -163,7 +163,7 @@ module.exports = {
       }
 
       let codi_proyecto = req.body.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_cliente = req.body.id_empresa_cliente || null;
         codi_proyecto = await proyecto.generarCodigoTransaccional(id_empresa, id_cliente);
@@ -196,7 +196,7 @@ module.exports = {
       }
 
       let codi_proyecto = req.body.codi_proyecto || existing.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_empresa = req.body.id_empresa || existing.id_empresa || req.user?.id_empresa;
         const id_cliente = req.body.id_empresa_cliente || existing.id_empresa_cliente || null;
@@ -534,7 +534,7 @@ module.exports = {
   generarTokenFirmaContrato: async (req, res) => {
     try {
       const { id } = req.params;
-      const { representante_nombre, representante_rut, representante_cargo, representante_telefono, representante_email } = req.body || {};
+      const { representante_nombre, representante_rut, representante_cargo, representante_telefono, representante_email, id_empresa_arrendador, fecha_inicio, fecha_termino } = req.body || {};
       const crypto = require('crypto');
       const token = crypto.randomBytes(24).toString('hex');
       const client = await pool.connect();
@@ -560,6 +560,9 @@ module.exports = {
         if (representante_cargo) contrato.representante_cargo = representante_cargo;
         if (representante_telefono) contrato.representante_telefono = representante_telefono;
         if (representante_email) contrato.representante_email = representante_email;
+        if (id_empresa_arrendador) contrato.id_empresa_arrendador = Number(id_empresa_arrendador);
+        if (fecha_inicio) contrato.fecha_inicio = fecha_inicio;
+        if (fecha_termino) contrato.fecha_termino = fecha_termino;
 
         crm.contrato = contrato;
         jsonField.crm_v1 = crm;
@@ -589,7 +592,10 @@ module.exports = {
         representante_cargo, 
         representante_telefono, 
         representante_email, 
-        vendedor_email 
+        vendedor_email,
+        id_empresa_arrendador,
+        fecha_inicio,
+        fecha_termino
       } = req.body || {};
 
       const crypto = require('crypto');
@@ -618,6 +624,9 @@ module.exports = {
         if (representante_cargo) contrato.representante_cargo = representante_cargo;
         if (representante_telefono) contrato.representante_telefono = representante_telefono;
         if (representante_email) contrato.representante_email = representante_email;
+        if (id_empresa_arrendador) contrato.id_empresa_arrendador = Number(id_empresa_arrendador);
+        if (fecha_inicio) contrato.fecha_inicio = fecha_inicio;
+        if (fecha_termino) contrato.fecha_termino = fecha_termino;
         contrato.estado = 'ENVIADO_FES';
 
         crm.contrato = contrato;
@@ -649,11 +658,11 @@ module.exports = {
           const resMail = await notificacionService.despacharEmailSmtp({
             para: emailDestino,
             cc: (emailEjecutivo && emailEjecutivo.includes('@') && emailEjecutivo !== emailDestino) ? emailEjecutivo : undefined,
-            asunto: `Contrato de Arrendamiento de Maquinaria - Folio ${folio}`,
-            titulo: 'Firma Digital de Contrato de Arriendo',
+            asunto: `Contrato de Arrendamiento de Maquinaria (Plataforma) - Folio ${folio}`,
+            titulo: 'Firma Digital de Contrato de Arrendamiento (Plataforma)',
             subtitulo: `Estimado(a) ${representante_nombre || 'Cliente'}:`,
             contenido: `
-              <p>Le compartimos el enlace oficial para la revisión íntegra y firma digital (FES) del Contrato de Arrendamiento correspondiente a <strong>${p.nombre_proyecto || folio}</strong>.</p>
+              <p>Le compartimos el enlace oficial para la revisión íntegra y firma digital (FES) del Contrato de Arrendamiento de Maquinaria (Plataforma) correspondiente a <strong>${p.nombre_proyecto || folio}</strong>.</p>
               <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 15px 0;">
                 <strong>Folio Contrato:</strong> ${folio}<br>
                 <strong>Representante Mandante:</strong> ${representante_nombre || 'Representante Autorizado'}<br>
@@ -679,7 +688,7 @@ module.exports = {
       const telDestino = representante_telefono || p.json_field?.crm_v1?.contacto_telefono;
       if (telDestino) {
         try {
-          const msgWsp = `Estimado(a) ${representante_nombre || 'Cliente'}, le compartimos el enlace oficial para revisar y firmar digitalmente el Contrato de Arrendamiento ${folio}:\n\n${urlFirma}\n\nFavor ingresar para leer las 14 cláusulas y firmar en su celular (vigencia: 72 horas).`;
+          const msgWsp = `Estimado(a) ${representante_nombre || 'Cliente'}, le compartimos el enlace oficial para revisar y firmar digitalmente el Contrato de Arrendamiento de Maquinaria (Plataforma) ${folio}:\n\n${urlFirma}\n\nFavor ingresar para leer las 14 cláusulas y firmar en su celular (vigencia: 72 horas).`;
           const resWsp = await notificacionService.despacharWhatsAppHttp({
             telefono: telDestino,
             mensaje: msgWsp
@@ -771,12 +780,15 @@ module.exports = {
             id_proyecto: p.id_proyecto,
             codi_proyecto: p.codi_proyecto,
             nombre_proyecto: p.nombre_proyecto,
-            mandante_razon_social: p.mandante_razon_social || crm.razon_social || 'Cliente Mandante',
-            mandante_rut: p.mandante_rut || crm.rut_cliente || 'Sin RUT'
+            mandante_razon_social: p.mandante_razon_social || crm.razon_social || crm.cliente_nombre || 'Cliente Mandante',
+            mandante_rut: p.mandante_rut || crm.rut_cliente || crm.cliente_rut || 'Sin RUT'
           },
           contrato: {
             folio: contrato.folio,
             estado: contrato.estado,
+            id_empresa_arrendador: contrato.id_empresa_arrendador || null,
+            fecha_inicio: contrato.fecha_inicio || '',
+            fecha_termino: contrato.fecha_termino || '',
             representante_nombre: contrato.representante_nombre || '',
             representante_rut: contrato.representante_rut || '',
             representante_cargo: contrato.representante_cargo || 'Representante Legal',
@@ -871,6 +883,74 @@ module.exports = {
       });
     } catch (err) {
       console.error("Error en firmarContratoPublico:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // =========================================================================
+  // SPEC 87: REQUERIMIENTOS INTERNOS (INT-YYMM-XXX) Y V°B° GERENCIA (OMAR)
+  // =========================================================================
+
+  crearRequerimientoInterno: async (req, res) => {
+    try {
+      const body = req.body || {};
+      const currentUser = req.user || {};
+      const nombreSolicita = body.solicitante_nombre || body.nombre_solicita || (currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : 'Coordinación Operaciones');
+
+      const result = await proyecto.crearRequerimientoInterno({
+        ...body,
+        id_empresa: body.id_empresa || currentUser.id_empresa || 9,
+        id_usuario_creacion: body.id_usuario_creacion ?? body.id_user_creacion ?? currentUser.id_user ?? null,
+        solicitante_nombre: nombreSolicita
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Requerimiento Interno creado exitosamente en Preparación Operaciones",
+        proyecto: result.proyecto,
+        folio: result.proyecto.codi_proyecto,
+        token: result.token || null,
+        url_aprobacion: result.url_aprobacion || null
+      });
+    } catch (err) {
+      console.error("Error en crearRequerimientoInterno:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  solicitarVbGerencia: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id || Number(id) <= 0) {
+        return res.status(400).json({ success: false, error: "id_proyecto inválido" });
+      }
+
+      const body = req.body || {};
+      const currentUser = req.user || {};
+      const nombreSolicita = body.nombre_solicita || body.solicitante_nombre || (currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : 'Ejecutivo GSP');
+
+      const result = await proyecto.solicitarVbGerencia(Number(id), {
+        ...body,
+        id_usuario_solicita: body.id_usuario_solicita ?? currentUser.id_user ?? null,
+        nombre_solicita: nombreSolicita
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Solicitud de V°B° enviada a Gerencia (Omar) con enlace de 1 solo uso",
+        proyecto: result.proyecto,
+        token: result.token,
+        token_uuid: result.token_uuid,
+        url_aprobacion: result.url_aprobacion,
+        url_completa: result.url_completa
+      });
+    } catch (err) {
+      console.error("Error en solicitarVbGerencia:", err);
+      return res.status(err.status || 500).json({ success: false, error: err.message });
+    }
+  },
+  _noopFirmarLog: (res, err) => {
+    if (false) {
       return res.status(500).json({ success: false, error: err.message });
     }
   }

@@ -1,12 +1,22 @@
 const os = require('os');
 const fs = require('fs').promises;
 const path = require('path');
-const puppeteer = require('puppeteer');
-const TRANSMAC_DOCS_DIR = process.env.STORAGE_ROOT || '/u05/LeanDocs';
+let puppeteer;
+try {
+  puppeteer = require('puppeteer');
+} catch (e) {
+  try {
+    puppeteer = require('puppeteer-core');
+  } catch (e2) {
+    console.warn('Puppeteer no disponible en entorno local');
+  }
+}
+const TRANSMAC_DOCS_DIR = process.env.STORAGE_PATH || process.env.STORAGE_ROOT || '/u05/LeanDocs';
 
 function resolveBaseWebUrl() {
-  const raw = String(process.env.BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp-dev').trim();
-  return raw.replace(/\/+$/, '');
+  if (process.env.BASE_URL) return String(process.env.BASE_URL).trim().replace(/\/+$/, '');
+  const prefix = (process.env.APP_ENV === 'prod') ? '/lg-gsp-prod' : '/lg-gsp-dev';
+  return `https://servidor.leanglobal.cl${prefix}`;
 }
 
 async function generarPDF(idInspeccion) {

@@ -95,7 +95,7 @@ module.exports = {
 
       res.setHeader('Content-Disposition', `attachment; filename="${archivo.name_doc_orig}"`);
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.sendFile(fullPath);
+      res.sendFile(path.resolve(fullPath));
     } catch (err) {
       console.error("Error en download:", err);
       res.status(500).send("Error al descargar archivo: " + err.message);

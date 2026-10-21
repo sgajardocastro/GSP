@@ -324,35 +324,35 @@ module.exports = {
       let fullPath = '';
       for (const nameCandidate of possibleNames) {
         const candidatePath = resolveStoragePath(archivo.path_doc || '', nameCandidate);
-        if (fs.existsSync(candidatePath)) {
+        if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
           fullPath = candidatePath;
           break;
         }
         const cleanSubfolder = String(archivo.path_doc || '').replace(/^gsp\/?/i, '');
         const directSubfolderPath = path.join(STORAGE_ROOT, cleanSubfolder, nameCandidate);
-        if (fs.existsSync(directSubfolderPath)) {
+        if (fs.existsSync(directSubfolderPath) && fs.statSync(directSubfolderPath).isFile()) {
           fullPath = directSubfolderPath;
           break;
         }
         const directContratosDev = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', 'contratos', nameCandidate);
-        if (fs.existsSync(directContratosDev)) {
+        if (fs.existsSync(directContratosDev) && fs.statSync(directContratosDev).isFile()) {
           fullPath = directContratosDev;
           break;
         }
         const directContratosProd = path.join('/home/nodeadmin/proyectos/lean-services-gsp-prod/public', 'contratos', nameCandidate);
-        if (fs.existsSync(directContratosProd)) {
+        if (fs.existsSync(directContratosProd) && fs.statSync(directContratosProd).isFile()) {
           fullPath = directContratosProd;
           break;
         }
         const cwdContratos = path.join(process.cwd(), 'public', 'contratos', nameCandidate);
-        if (fs.existsSync(cwdContratos)) {
+        if (fs.existsSync(cwdContratos) && fs.statSync(cwdContratos).isFile()) {
           fullPath = cwdContratos;
           break;
         }
         const cwdPublic = path.join(process.cwd(), 'public', nameCandidate);
         const fallbackPublic = path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', nameCandidate);
         const publicPath = fs.existsSync(cwdPublic) ? cwdPublic : fallbackPublic;
-        if (fs.existsSync(publicPath)) {
+        if (fs.existsSync(publicPath) && fs.statSync(publicPath).isFile()) {
           fullPath = publicPath;
           break;
         }

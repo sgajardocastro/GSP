@@ -434,7 +434,118 @@ const acreditacionModel = {
     `;
     const { rowCount } = await db.query(sql, [id_doc, id_empresa]);
     return rowCount > 0;
+  },
+
+  // REQ-997 / Caso 1: Enrolar especialista o rigger externo de faena rápidamente en tsec_users
+  async crearPersonalExterno(data) {
+    const { nombre, rut, movil, email, empresa_proveedora, cargo = 'Rigger' } = data;
+    const partes = (nombre || '').trim().split(/\s+/);
+    const name_frst = partes[0] || 'Personal';
+    const apellido_pat = partes.slice(1).join(' ') || 'Externo';
+
+    let rutFinal = (rut || '').trim().toUpperCase();
+    if (!rutFinal) {
+      rutFinal = 'EXT-' + Math.floor(100000 + Math.random() * 900000);
+    }
+
+    const cleanRut = rutFinal.replace(/[^0-9kK]/g, '').toUpperCase();
+    const existing = await db.query(
+      `SELECT id_user, name_frst, apellido_pat, rut, email, movil, json_data 
+       FROM tsec_users 
+       WHERE UPPER(REGEXP_REPLACE(rut, '[^0-9kK]', '', 'g')) = $1`,
+      [cleanRut]
+    );
+
+    const proveedorFinal = (empresa_proveedora || '').trim() || 'Subcontratista Externo';
+    const movilFinal = (movil || '').trim() || null;
+    const emailFinal = (email || '').trim().toLowerCase() || `rigger.ext.${Date.now()}@arriendosanpablo.cl`;
+
+    if (existing.rows.length > 0) {
+      const row = existing.rows[0];
+      const jsonAct = typeof row.json_data === 'object' && row.json_data !== null ? row.json_data : {};
+      jsonAct.cargo = cargo;
+      jsonAct.is_externo = true;
+      jsonAct.empresa_proveedora = proveedorFinal;
+
+      await db.query(
+        `UPDATE tsec_users 
+         SET activo = true,
+             movil = COALESCE($2, movil),
+             json_data = $3,
+             fecha_actualizacion = NOW()
+         WHERE id_user = $1`,
+        [row.id_user, movilFinal, JSON.stringify(jsonAct)]
+      );
+
+      const nombreCompleto = `${row.name_frst} ${row.apellido_pat}`.trim();
+      return {
+        id_user: row.id_user,
+        nombre_user: nombreCompleto,
+        name_user: nombreCompleto,
+        name_frst: row.name_frst,
+        apellido_pat: row.apellido_pat,
+        rut: row.rut,
+        email: row.email,
+        movil: movilFinal || row.movil,
+        cargo,
+        activo: true,
+        is_externo: true,
+        empresa_proveedora: proveedorFinal
+      };
+    }
+
+    const jsonData = {
+      cargo,
+      is_externo: true,
+      empresa_proveedora: proveedorFinal,
+      fecha_registro: new Date().toISOString()
+    };
+
+    const sql = `
+      INSERT INTO tsec_users (
+        name_frst,
+        apellido_pat,
+        rut,
+        email,
+        movil,
+        id_empresa,
+        activo,
+        flag_proc_enrol,
+        codi_user,
+        json_data,
+        fecha_creacion,
+        fecha_actualizacion
+      ) VALUES ($1, $2, $3, $4, $5, 9, true, false, $3, $6, NOW(), NOW())
+      RETURNING id_user, name_frst, apellido_pat, rut, email, movil, id_empresa, activo, json_data
+    `;
+
+    const res = await db.query(sql, [
+      name_frst,
+      apellido_pat,
+      rutFinal,
+      emailFinal,
+      movilFinal,
+      JSON.stringify(jsonData)
+    ]);
+
+    const row = res.rows[0];
+    const nombreCompleto = `${row.name_frst} ${row.apellido_pat}`.trim();
+    return {
+      id_user: row.id_user,
+      nombre_user: nombreCompleto,
+      name_user: nombreCompleto,
+      name_frst: row.name_frst,
+      apellido_pat: row.apellido_pat,
+      rut: row.rut,
+      email: row.email,
+      movil: row.movil,
+      cargo,
+      activo: true,
+      is_externo: true,
+      empresa_proveedora: proveedorFinal
+    };
   }
 };
 
 module.exports = acreditacionModel;
+

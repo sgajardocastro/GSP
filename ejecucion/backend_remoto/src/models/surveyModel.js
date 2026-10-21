@@ -1,6 +1,7 @@
 const pool = require("../config/postgresPool");
 const MessageModel = require("./messageModel"); // ajusta el path si está en otro lugar
 const flujoModel = require('../models/flujoModel');
+const notificacionService = require('../services/notificacionService');
 const messageModel = new MessageModel();
 
 const flujoM = new flujoModel();
@@ -282,8 +283,12 @@ class surveyModel {
       titulo: '¡Nuevo Protocolo Asignado!',
       subtitulo: `El siguiente protocolo acaba de ser asignado a ti para tu gestión. Por favor considéralo en tu planificación.`,
       contenido: contenidoHTML,
-      botonTexto: 'Gestionar en Plataforma',
-      botonUrl: 'https://servidor.leanglobal.cl/pwa-gsp-dev/'
+      botonTexto: 'Gestionar en Plataforma PWA',
+      botonUrl: notificacionService.construirDeepLink({
+        tipoApp: 'PWA',
+        ruta: 'inspeccion',
+        params: { id_survey: datosProtocolo.id_protocolo }
+      })
     });
 
     console.log('XXXXXXXXXXXXXXXXXXXXX para: ', user.email);
@@ -364,7 +369,7 @@ async updateSurveyPlanFields(id_survey, data) {
     const fechaFin = new Date(fecha_plan_fin).toLocaleDateString('es-CL');
         const contenidoHTML = `
       <div class="content-item"><span class="label">Id Protocolo:</span><span class="value">${datosProtocolo.id_protocolo}</span></div>
-      <div class="content-item"><span class="label">Cliente:</span><span class="value">Transmac Ltda</span></div>
+      <div class="content-item"><span class="label">Cliente:</span><span class="value">Grúas San Pablo SpA</span></div>
       <div class="content-item"><span class="label">Proyecto:</span><span class="value">${datosProtocolo.proyecto}</span></div>
       <div class="content-item"><span class="label">Familia:</span><span class="value">${datosProtocolo.familia}</span></div>
       <div class="content-item"><span class="label">Área:</span><span class="value">${datosProtocolo.area}</span></div>
@@ -376,8 +381,12 @@ async updateSurveyPlanFields(id_survey, data) {
       titulo: '¡Nuevo Protocolo Asignado!',
       subtitulo: `El siguiente protocolo acaba de ser asignado a ti para tu gestión. Por favor considéralo en tu planificación.`,
       contenido: contenidoHTML,
-      botonTexto: 'Gestionar en Plataforma',
-      botonUrl: 'https://servidor.leanglobal.cl/pwa-gsp-dev/'
+      botonTexto: 'Gestionar en Plataforma PWA',
+      botonUrl: notificacionService.construirDeepLink({
+        tipoApp: 'PWA',
+        ruta: 'inspeccion',
+        params: { id_survey: datosProtocolo.id_protocolo }
+      })
     });
 
     console.log('XXXXXXXXXXXXXXXXXXXXX para: ', user.email);

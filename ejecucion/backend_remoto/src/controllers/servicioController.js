@@ -93,11 +93,11 @@ function parseSQL(base, servicio, queryParams = {}) {
  * Agrega condiciones dinámicas (como id_survey=...) al WHERE del SQL
  */
 function agregarFiltrosExtras(sql, queryParams = {}) {
-  // Excluir estos porque ya se usaron en replaces anteriores
-  const exclude = ['fecha_desde', 'fecha_hasta', 'flag', 'filtro', 'teratrib', 'secatrib', 'in', 'limit', 'offset'];
+  // Excluir estos porque ya se usaron en replaces anteriores o son metadatos (_id_empresa, timestamp, etc.)
+  const exclude = ['fecha_desde', 'fecha_hasta', 'flag', 'filtro', 'teratrib', 'secatrib', 'in', 'limit', 'offset', '_id_empresa', '_'];
 
   const filtrosExtras = Object.keys(queryParams)
-    .filter(key => !exclude.includes(key) && queryParams[key] !== undefined && queryParams[key] !== null && queryParams[key] !== '')
+    .filter(key => !key.startsWith('_') && !exclude.includes(key) && queryParams[key] !== undefined && queryParams[key] !== null && queryParams[key] !== '')
     .map(key => `${key} = ${isNaN(queryParams[key]) ? `'${queryParams[key]}'` : queryParams[key]}`);
 
   if (filtrosExtras.length === 0) {

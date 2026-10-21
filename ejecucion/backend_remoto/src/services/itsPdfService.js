@@ -142,6 +142,10 @@ function buildItsHtml(data) {
   const totalCostos = Number(its?.total_costos_operacionales) || 0;
   const utilidadBruta = Number(its?.utilidad_bruta) || (totalIngresos - totalCostos);
   const margenPct = Number(its?.margen_porcentaje) || (totalIngresos > 0 ? (utilidadBruta / totalIngresos) * 100 : 0);
+  const totalIngHoras = Number(its?.total_ingresos_horas) || (totalHoras * valorHora);
+  const totalIngFletes = Number(its?.total_ingresos_fletes) || valorFlete;
+  const sumCat = (arr) => (arr || []).reduce((acc, it) => acc + (Number(it.monto_total) || 0), 0);
+  const pctVenta = (val) => totalIngresos > 0 ? ((Number(val || 0) / totalIngresos) * 100).toFixed(1) + '%' : '0.0%';
 
   // Semáforo de Margen
   let badgeMargenClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
@@ -221,15 +225,16 @@ function buildItsHtml(data) {
   };
 
   const costosHtml = `
-    ${renderCostosCat('combustible', costos?.combustible, '1. Combustible en Ruta y Faena')}
-    ${renderCostosCat('movilizacion', costos?.movilizacion, '2. Gastos de Movilización (Pasajes / Uber / Taxi)')}
-    ${renderCostosCat('peajes', costos?.peajes, '3. Peajes y TAG de Ruta')}
-    ${renderCostosCat('pensiones', costos?.pensiones, '4. Pensiones y Alojamiento Faena')}
-    ${renderCostosCat('personal_externo', costos?.personal_externo, '5. Personal Externo / Riggers')}
-    ${renderCostosCat('feriados', costos?.feriados, '6. Pago Feriados y Bonos')}
-    ${renderCostosCat('subcontratacion_flete', costos?.subcontratacion_flete, '7. Subcontratación Fletes')}
-    ${renderCostosCat('gastos_extraordinarios', costos?.gastos_extraordinarios, '8. Gastos Extraordinarios')}
-    ${renderCostosCat('costo_hora_operador', costos?.costo_hora_operador, '9. Costo Valor Hora Operador')}
+    ${renderCostosCat('alimentacion', costos?.alimentacion, '1. Viático Alimentación Personal')}
+    ${renderCostosCat('combustible', costos?.combustible, '2. Combustible en Ruta y Faena')}
+    ${renderCostosCat('movilizacion', costos?.movilizacion, '3. Gastos de Movilización (Pasajes / Uber / Taxi)')}
+    ${renderCostosCat('peajes', costos?.peajes, '4. Peajes y TAG de Ruta')}
+    ${renderCostosCat('pensiones', costos?.pensiones, '5. Pensiones y Alojamiento Faena')}
+    ${renderCostosCat('personal_externo', costos?.personal_externo, '6. Personal Externo / Riggers')}
+    ${renderCostosCat('feriados', costos?.feriados, '7. Pago Feriados y Bonos')}
+    ${renderCostosCat('subcontratacion_flete', costos?.subcontratacion_flete, '8. Subcontratación Fletes')}
+    ${renderCostosCat('gastos_extraordinarios', costos?.gastos_extraordinarios, '9. Gastos Extraordinarios')}
+    ${renderCostosCat('costo_hora_operador', costos?.costo_hora_operador, '10. Costo Valor Hora Operador')}
   `;
 
   // Firmas FES (Paso 1, Paso 2, Paso 3)
@@ -440,7 +445,7 @@ function buildItsHtml(data) {
       <div class="bg-white p-2 rounded border border-slate-200">
         <span class="text-[9px] text-slate-500 uppercase font-mono block">Costos Directos Terreno</span>
         <strong class="text-sm font-mono text-rose-700 block">${formatCLP(totalCostos)}</strong>
-        <span class="text-[9px] text-slate-500 font-mono">9 Categorías Consolidadas</span>
+        <span class="text-[9px] text-slate-500 font-mono">10 Categorías Consolidadas</span>
       </div>
 
       <div class="bg-white p-2 rounded border border-slate-200">
@@ -457,6 +462,46 @@ function buildItsHtml(data) {
           ${margenPct.toFixed(1)}%
         </strong>
         <span class="text-[9px] text-slate-500 font-mono">Rentabilidad Faena</span>
+      </div>
+    </div>
+
+    <!-- APERTURA DETALLADA RESUMEN EJECUTIVO (A. INGRESOS / B. EGRESOS) -->
+    <div class="grid grid-cols-2 gap-3 mt-2.5 pt-2.5 border-t border-slate-200 text-[10px] font-mono">
+      <div class="bg-white p-2.5 rounded border border-slate-200 space-y-1">
+        <div class="font-bold text-slate-700 uppercase text-[9px] border-b border-slate-100 pb-1 mb-1">
+          A. Resumen de Ingresos Totales (Venta)
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">1. Ingresos Horas Trabajadas (${totalHoras.toFixed(1)}h × ${formatCLP(valorHora)}):</span>
+          <strong class="text-slate-900">${formatCLP(totalIngHoras)} (${pctVenta(totalIngHoras)})</strong>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">2. Ingreso Fletes / Traslados:</span>
+          <strong class="text-slate-900">${formatCLP(totalIngFletes)} (${pctVenta(totalIngFletes)})</strong>
+        </div>
+        <div class="flex justify-between font-bold text-emerald-700 border-t border-slate-200 pt-1 mt-1">
+          <span>TOTAL INGRESOS FACTURABLES:</span>
+          <span>${formatCLP(totalIngresos)} (100%)</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-2.5 rounded border border-slate-200 space-y-0.5">
+        <div class="font-bold text-slate-700 uppercase text-[9px] border-b border-slate-100 pb-1 mb-1">
+          B. Resumen de Costos Operacionales (Egresos)
+        </div>
+        <div class="flex justify-between"><span class="text-slate-600">1. Viáticos Alimentación:</span><span>${formatCLP(sumCat(costos?.alimentacion))} (${pctVenta(sumCat(costos?.alimentacion))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">2. Combustible en Ruta y Faena:</span><span>${formatCLP(sumCat(costos?.combustible))} (${pctVenta(sumCat(costos?.combustible))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">3. Peajes y Tag:</span><span>${formatCLP(sumCat(costos?.peajes))} (${pctVenta(sumCat(costos?.peajes))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">4. Pensiones y Alojamiento:</span><span>${formatCLP(sumCat(costos?.pensiones))} (${pctVenta(sumCat(costos?.pensiones))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">5. Movilización Personal:</span><span>${formatCLP(sumCat(costos?.movilizacion))} (${pctVenta(sumCat(costos?.movilizacion))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">6. Personal Ext. y Feriados:</span><span>${formatCLP(sumCat(costos?.personal_externo) + sumCat(costos?.feriados))} (${pctVenta(sumCat(costos?.personal_externo) + sumCat(costos?.feriados))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">7. Subcontratación Flete:</span><span>${formatCLP(sumCat(costos?.subcontratacion_flete))} (${pctVenta(sumCat(costos?.subcontratacion_flete))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">8. Gastos Extraordinarios:</span><span>${formatCLP(sumCat(costos?.gastos_extraordinarios))} (${pctVenta(sumCat(costos?.gastos_extraordinarios))})</span></div>
+        <div class="flex justify-between"><span class="text-slate-600">9. Costo Valor Hora Operador:</span><span>${formatCLP(sumCat(costos?.costo_hora_operador))} (${pctVenta(sumCat(costos?.costo_hora_operador))})</span></div>
+        <div class="flex justify-between font-bold text-rose-700 border-t border-slate-200 pt-1 mt-1">
+          <span>TOTAL COSTOS OPERACIONALES:</span>
+          <span>${formatCLP(totalCostos)} (${pctVenta(totalCostos)})</span>
+        </div>
       </div>
     </div>
   </div>

@@ -1832,40 +1832,40 @@ class ProyectoModel {
       <head>
         <meta charset="utf-8">
         <style>
-          @page { size: A4 portrait; margin: 7mm 9mm; }
-          body { font-family: Arial, Helvetica, sans-serif; font-size: 6.85px; line-height: 1.16; color: #000; margin: 0; padding: 0; }
+          @page { size: A4 portrait; margin: 8mm 10mm; }
+          body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; line-height: 1.38; color: #000; margin: 0; padding: 0; }
           .page { page-break-after: always; position: relative; }
           .page:last-child { page-break-after: avoid; }
 
-          /* Encabezado Página 1 */
-          .header-p1 { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+          /* Encabezado Condiciones Generales */
+          .header-p1 { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
           .header-p1 td { vertical-align: middle; }
-          .title-p1 { font-size: 11px; font-weight: bold; text-align: center; text-transform: uppercase; }
-          .meta-p1 { font-size: 8px; text-align: right; line-height: 1.35; }
+          .title-p1 { font-size: 12px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.4px; }
+          .meta-p1 { font-size: 9.5px; text-align: right; line-height: 1.4; }
 
-          /* Cláusulas 1 Columna (Formato Original) */
-          .clauses-p1 { text-align: justify; margin-bottom: 6px; }
-          .clause-item { margin-bottom: 3.5px; }
+          /* Cláusulas 1 Columna (10px Legible en Móvil y Escritorio) */
+          .clauses-p1 { text-align: justify; margin-bottom: 8px; }
+          .clause-item { margin-bottom: 6px; text-align: justify; line-height: 1.38; page-break-inside: avoid; }
 
-          /* Comparecencia Página 1 (Formato Original) */
-          .comparecencia-box { border-top: 1.5px solid #000; padding-top: 5px; margin-top: 6px; }
-          .comparecencia-table { width: 100%; border-collapse: collapse; font-size: 7.8px; line-height: 1.35; font-weight: bold; }
+          /* Comparecencia Final Condiciones Generales */
+          .comparecencia-box { border-top: 1.5px solid #000; padding-top: 8px; margin-top: 12px; page-break-inside: avoid; }
+          .comparecencia-table { width: 100%; border-collapse: collapse; font-size: 9.5px; line-height: 1.4; font-weight: bold; }
           .comparecencia-table td { width: 50%; vertical-align: top; }
 
-          /* Página 2: Anexo Formato Original */
-          .anexo-page { font-size: 9px; line-height: 1.3; }
-          .black-bar { background: #000; color: #fff; font-weight: bold; font-size: 11px; text-align: center; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+          /* Anexo: Condiciones Particulares (Página 3 Canónica) */
+          .anexo-page { font-size: 10px; line-height: 1.35; page-break-before: always; }
+          .black-bar { background: #000; color: #fff; font-weight: bold; font-size: 11.5px; text-align: center; padding: 4px 0; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 8px; }
           .top-meta-row { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-          .top-meta-box { border: 1px solid #000; padding: 3px 8px; font-size: 8.5px; font-weight: bold; }
-          .party-box { width: 100%; border-collapse: collapse; margin-bottom: 6px; border: 1px solid #000; }
-          .party-box td { border: 1px solid #000; padding: 5px 8px; vertical-align: top; font-size: 8.8px; line-height: 1.38; }
-          .party-label { width: 24%; font-size: 10px; font-weight: normal; text-transform: uppercase; }
+          .top-meta-box { border: 1px solid #000; padding: 4px 8px; font-size: 9.5px; font-weight: bold; }
+          .party-box { width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1px solid #000; }
+          .party-box td { border: 1px solid #000; padding: 5px 8px; vertical-align: top; font-size: 9.5px; line-height: 1.38; }
+          .party-label { width: 24%; font-size: 10px; font-weight: bold; text-transform: uppercase; }
           .party-fields-table { width: 100%; border-collapse: collapse; }
-          .party-fields-table td { border: none; padding: 1px 4px; font-size: 8.8px; }
-          .cond-outer-box { border: 1px solid #000; padding: 8px 10px; }
+          .party-fields-table td { border: none; padding: 1.5px 4px; font-size: 9.5px; }
+          .cond-outer-box { border: 1px solid #000; padding: 8px 10px; font-size: 9.5px; }
           .sub-box-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-          .sub-box { border: 1px solid #000; padding: 5px 7px; vertical-align: top; font-size: 8.8px; line-height: 1.45; }
-          .dotted-line { border-bottom: 1px dotted #000; display: inline-block; width: 100%; min-height: 13px; }
+          .sub-box { border: 1px solid #000; padding: 5px 7px; vertical-align: top; font-size: 9.5px; line-height: 1.45; }
+          .dotted-line { border-bottom: 1px dotted #000; display: inline-block; width: 100%; min-height: 14px; }
         </style>
       </head>
       <body>
@@ -1897,7 +1897,25 @@ class ProyectoModel {
             <div class="clause-item">5.- Mantenimiento y reparaciones de cargo de la Arrendadora. Los trabajos de mantenimiento preventivo de la máquina en los períodos indicados en las Pautas de Mantención, serán realizados por la Arrendadora. Con el objeto de que la Arrendadora pueda llevar a efectos dichos trabajos, la Arrendataria se obliga a informar a la Arrendadora cada vez que la máquina haya cumplido con el número de horas de operación indicado en las Pautas de Mantención, poniendo el equipo a su disposición para este efecto. La Arrendataria dará las facilidades y el apoyo necesario a la Arrendadora para realizar el mantenimiento preventivo de las máquinas en terreno. En caso que la Arrendataria solicite por escrito el servicio de una máquina y el personal designado por la Arrendadora asista más de una vez sin poder ingresar por falta de pases de ingreso a la faena, suministrados por la Arrendataria, los gastos de traslado del personal de la Arrendadora, serán de cargo de la Arrendataria. Si la Arrendataria no proporciona la información antes referida, estará obligada a pagar a la Arrendadora el importe de las reparaciones que deban hacerse a la máquina como consecuencia de falta de mantenimiento preventivo.</div>
 
             <div class="clause-item">6.- Mantenimiento y reparaciones de cargo de la Arrendataria. La mantención diaria, es decir, el engrase completo, revisión y relleno de niveles de refrigerante y lubricantes, revisión de presión de inflado de neumáticos, revisión y relleno de agua destilada para las baterías, revisión de fugas, limpieza y drenaje de filtros, corrección de fallas menores, cambio de ampolletas e inspección general de la máquina arrendada será de cuenta y cargo de la Arrendataria. La Arrendataria impedirá que personas no autorizadas por la Arrendadora realicen trabajos de reparación en la máquina arrendada y cualquier perjuicio que de ello se derive será responsabilidad de la Arrendataria. Reparaciones: El costo total de las reparaciones, que será determinado por la Arrendadora, incluidos la mano de obra y traslado de personal, y repuestos por deficiencias mecánicas, daños o descomposturas, causadas por deficiente operación, descuido o negligencia, y aun cuando se produzcan como consecuencia de caso fortuito o fuerza mayor, será de cargo de la Arrendataria. Los pinchazos, cortes laterales, impactos, cortes en banda por patinaje y similares en los neumáticos como también los elementos de desgaste, tales como dientes, adaptadores, cantoneras, cuchillas y similares, serán de responsabilidad y cargo de la Arrendataria. En caso de existir cobros por concepto de servicio técnico, estos serán incluidos dentro del estado de pago del periodo de liquidación para que sea visada por la Arrendataria. La Arrendadora deberá informar, de manera previa a la emisión de la factura, las causales del cobro. Si el daño o desperfecto de la máquina se debe al mal uso de esta por parte de la Arrendataria, será de cargo de la Arrendataria el pago de la totalidad de la renta de arrendamiento mientras dure su reparación.</div>
+          </div>
+        </div>
 
+        <!-- PÁGINA 2: CONDICIONES GENERALES (CONTINUACIÓN Y COMPARECENCIA) -->
+        <div class="page">
+          <table class="header-p1">
+            <tr>
+              <td style="width: 28%;">${logoBase64 ? `<img src="${logoBase64}" style="max-height: 36px; max-width: 140px;" />` : `<strong>${emisor.nombre}</strong>`}</td>
+              <td class="title-p1" style="width: 47%;">
+                CONDICIONES GENERALES DE ARRIENDO (CONTINUACIÓN)
+              </td>
+              <td class="meta-p1" style="width: 25%;">
+                CONTRATO NUMERO &nbsp;&nbsp; <strong>${folioContrato}</strong><br>
+                FECHA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>${fechaHeader}</strong>
+              </td>
+            </tr>
+          </table>
+
+          <div class="clauses-p1">
             <div class="clause-item">7- Responsabilidad. La Arrendataria debe asumir la responsabilidad civil que resulte del uso, operación y transporte de la máquina arrendada durante todo el tiempo en que la tenga en su poder, entendiéndose que estará en su poder desde la entrega de la máquina y hasta que sea restituida en el domicilio de la Arrendadora. En consecuencia, en caso alguno la Arrendadora tendrá responsabilidad por los daños causados en los casos a que se refiere este número y el ejercicio de cualquier acción en contra de la Arrendataria jamás puede implicar la retención de la máquina. En el evento de ser retenida la máquina arrendada por la autoridad o cualquier tercero, todo el tiempo de retención será considerado como usado por la Arrendataria y dará lugar al cobro de la renta correspondiente. En caso de siniestro, daño o pérdida de la máquina arrendada, cualquiera sea su causa y gravedad, la Arrendataria deberá informar a la Arrendadora de inmediato o a más tardar el día siguiente hábil del accidente sobrevenido, indicando su fecha, lugar y circunstancias, así como la naturaleza y monto estimado de los daños. Igualmente la Arrendataria deberá dejar la constancia correspondiente en Carabineros de Chile para los casos que así sea requerido o bien una declaración jurada de lo sucedido en notaría. Para los casos donde la autoridad exija la alcoholemia, es obligación la realización de la misma, en caso que haya oposición por parte del conductor, no existirá cobertura del siniestro y por ende, la Arrendataria se hará responsable de todos los daños.</div>
 
             <div class="clause-item">8.- Lucro cesante. Si por cualquier causa la Arrendataria no pudiese hacer el uso esperado de la máquina por cualquier circunstancia, aún por caso fortuito o fuerza mayor, cubierta o no por el seguro correspondiente, las partes desde ya acuerdan que la Arrendadora no tendrá responsabilidad alguna respecto al lucro cesante sufrido por la Arrendataria.</div>
@@ -1940,7 +1958,7 @@ class ProyectoModel {
           </div>
         </div>
 
-        <!-- PÁGINA 2: ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (FORMATO ORIGINAL PÁGINA 4) -->
+        <!-- PÁGINA 3: ANEXO CONTRATO DE ARRIENDAMIENTO DE MAQUINARIA (FORMATO ORIGINAL PÁGINA 4) -->
         <div class="page anexo-page">
           <div style="margin-bottom: 8px;">
             ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 42px; max-width: 150px;" />` : `<strong>${emisor.nombre}</strong>`}
@@ -2177,5 +2195,443 @@ class ProyectoModel {
     }
   }
 }
+
+// =========================================================================
+// SPEC 87: REQUERIMIENTOS INTERNOS (INT-YYMM-XXX) Y SOLICITUD V°B° GERENCIA
+// =========================================================================
+
+ProyectoModel.prototype.generarCodigoRequerimientoInterno = async function(providedClient = null) {
+  const client = providedClient || await this.pool.connect();
+  const localTransaction = !providedClient;
+
+  try {
+    if (localTransaction) await client.query('BEGIN');
+
+    const date = new Date();
+    const yy = String(date.getFullYear()).slice(-2);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const anio_mes = `${yy}${mm}`;
+    const prefijo = 'INT';
+
+    await client.query(`
+      INSERT INTO tpry_correlativos (prefijo, anio_mes, ultimo_valor)
+      VALUES ($1, $2, 0)
+      ON CONFLICT (prefijo, anio_mes) DO NOTHING;
+    `, [prefijo, anio_mes]);
+
+    const result = await client.query(`
+      UPDATE tpry_correlativos
+      SET ultimo_valor = ultimo_valor + 1
+      WHERE prefijo = $1 AND anio_mes = $2
+      RETURNING ultimo_valor;
+    `, [prefijo, anio_mes]);
+
+    const correlativo = String(result.rows[0].ultimo_valor).padStart(3, '0');
+    const codigo = `INT-${anio_mes}-${correlativo}`;
+
+    if (localTransaction) await client.query('COMMIT');
+    return codigo;
+  } catch (error) {
+    if (localTransaction) await client.query('ROLLBACK');
+    throw new Error(`Error al generar folio interno: ${error.message}`);
+  } finally {
+    if (localTransaction) client.release();
+  }
+};
+
+ProyectoModel.prototype.crearRequerimientoInterno = async function(data = {}) {
+  const AprobacionGerenciaModel = require('./aprobacionGerenciaModel');
+  const client = await this.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const id_empresa = Number(data.id_empresa || 9);
+    const codi_proyecto = await this.generarCodigoRequerimientoInterno(client);
+    const tipo_movimiento_interno = String(data.tipo_movimiento_interno || 'TRASLADO_SUCURSAL').trim();
+    const sucursal_origen = String(data.sucursal_origen || data.origen || 'Temuco').trim();
+    const sucursal_destino = String(data.sucursal_destino || data.destino || 'Valdivia').trim();
+    const modalidad_trayecto = String(data.modalidad_trayecto || 'IDA_Y_VUELTA').trim();
+    const requiere_vb_gerencia = false;
+    const estado_vb_gerencia = 'NO_REQUERIDO';
+
+    const nombre_proyecto = String(
+      data.nombre_proyecto ||
+      `Movimiento Interno: ${sucursal_origen} ➔ ${sucursal_destino}`
+    ).trim();
+
+    const fecha_plan_ini = data.fecha_plan_ini || (data.fecha_hora_salida ? String(data.fecha_hora_salida).slice(0, 10) : new Date().toISOString().slice(0, 10));
+    const fecha_plan_fin = data.fecha_plan_fin || fecha_plan_ini;
+    const motivo = String(data.motivo || data.justificacion || data.objetivo_proyecto || 'Requerimiento Interno de Operaciones').trim();
+    const solicitante = String(data.solicitante_nombre || data.nombre_solicita || 'Coordinación Operaciones').trim();
+    const id_usuario_creacion = data.id_usuario_creacion ?? data.id_user_creacion ?? null;
+
+    const rawJson = (typeof data.json_field === 'object' && data.json_field !== null) ? data.json_field : {};
+    const crmPrev = (typeof rawJson.crm_v1 === 'object' && rawJson.crm_v1 !== null) ? rawJson.crm_v1 : {};
+    const ejecPrev = (typeof rawJson.ejecucion_v1 === 'object' && rawJson.ejecucion_v1 !== null) ? rawJson.ejecucion_v1 : {};
+
+    const categoriaReq = String(data.categoria_requerida || crmPrev.categoria_requerida || 'GRUAS TELESCOPICAS').trim();
+    const subcategoriaReq = String(data.subcategoria_requerida || crmPrev.subcategoria_requerida || 'GRÚA TELESCÓPICA').trim();
+    const modalidadLabel = modalidad_trayecto === 'SOLO_IDA' ? 'Solo Ida' : 'Ida y Vuelta';
+
+    const lineasPrev = Array.isArray(crmPrev.lineas_servicio) && crmPrev.lineas_servicio.length > 0
+      ? crmPrev.lineas_servicio
+      : [{
+          id: 1,
+          _uid: `int-base-${Date.now()}`,
+          is_linea_base: true,
+          tipo: categoriaReq === 'TRASLADOS' ? 'CAMIONES' : categoriaReq,
+          subcategoria: subcategoriaReq,
+          descripcion: `Movimiento Sucursal ${sucursal_origen} ➔ ${sucursal_destino} (${modalidadLabel})`,
+          cantidad: 1,
+          unidad: modalidadLabel,
+          valor_unitario: 0,
+          valorUnitario: 0,
+          subtotal: 0,
+          equipo_asignado_id: '',
+          operador_asignado_id: '',
+          fecha_plan_ini,
+          fecha_plan_fin
+        }];
+
+    const json_field = {
+      ...rawJson,
+      crm_v1: {
+        ...crmPrev,
+        es_requerimiento_interno: true,
+        es_interno: true,
+        no_facturable: true,
+        tipo_movimiento_interno,
+        modalidad_trayecto,
+        sucursal_origen,
+        sucursal_destino,
+        obra_nombre: `Sucursal ${sucursal_destino}`,
+        obra_direccion: `Sucursal GSP ${sucursal_destino}`,
+        obra_ciudad: sucursal_destino,
+        distancia_km: Number(data.distancia_km ?? crmPrev.distancia_km ?? 0),
+        fecha_hora_salida: data.fecha_hora_salida || fecha_plan_ini,
+        motivo_interno: motivo,
+        solicitante_nombre: solicitante,
+        requiere_vb_gerencia: false,
+        estado_vb_gerencia: 'NO_REQUERIDO',
+        requiere_acreditacion: false,
+        requiere_oc_hes: false,
+        monto_neto: 0,
+        total_neto: 0,
+        condicion_pago: 'NO FACTURABLE (C. COSTO INTERNO)',
+        lineas_servicio: lineasPrev
+      },
+      ejecucion_v1: {
+        ...ejecPrev,
+        es_requerimiento_interno: true,
+        estado_requerimiento: 'APROBADO',
+        decision: 'APROBADO',
+        subtab_activa: 'asignacion',
+        sucursal_origen,
+        sucursal_destino,
+        modalidad_trayecto,
+        fecha_salida_plan: fecha_plan_ini,
+        hora_salida_plan: '08:00',
+        fecha_fin_plan: fecha_plan_fin,
+        hora_fin_plan: '18:00'
+      }
+    };
+
+    const insertQ = `
+      INSERT INTO tpry_proyecto (
+        id_empresa,
+        nombre_proyecto,
+        codi_proyecto,
+        id_proyecto_estado,
+        fecha_plan_ini,
+        fecha_plan_fin,
+        objetivo_proyecto,
+        observacion_proyecto,
+        id_usuario_creacion,
+        fecha_creacion,
+        es_interno,
+        tipo_movimiento_interno,
+        sucursal_origen,
+        sucursal_destino,
+        estado_vb_gerencia,
+        json_field
+      )
+      VALUES (
+        $1, $2, $3, 4, $4,
+        $5, $6, $7, $8, NOW(),
+        true, $9, $10, $11, $12, $13
+      )
+      RETURNING *;
+    `;
+
+    const { rows } = await client.query(insertQ, [
+      id_empresa,
+      nombre_proyecto,
+      codi_proyecto,
+      fecha_plan_ini,
+      fecha_plan_fin,
+      motivo,
+      data.observacion_proyecto || data.observaciones || motivo,
+      id_usuario_creacion,
+      tipo_movimiento_interno,
+      sucursal_origen,
+      sucursal_destino,
+      estado_vb_gerencia,
+      JSON.stringify(json_field)
+    ]);
+
+    const nuevoProyecto = rows[0];
+
+    await client.query('COMMIT');
+
+    return {
+      proyecto: nuevoProyecto,
+      token: null,
+      url_aprobacion: null
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+ProyectoModel.prototype.solicitarVbGerencia = async function(id_proyecto, data = {}) {
+  const AprobacionGerenciaModel = require('./aprobacionGerenciaModel');
+
+  // 0. Asegurar que existan los PDFs actualizados de Cotización y de Orden de Trabajo (OT con recursos asignados)
+  // Se ejecuta antes de abrir la transacción FOR UPDATE para evitar bloqueos con generarOTVersion / generarCotizacionVersion
+  try {
+    const preCheck = await this.pool.query('SELECT es_interno, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+    if (preCheck.rowCount > 0) {
+      const pPre = preCheck.rows[0];
+      let jfPre = pPre.json_field;
+      if (typeof jfPre === 'string') {
+        try { jfPre = JSON.parse(jfPre); } catch (_) { jfPre = {}; }
+      }
+      const cotsPre = Array.isArray(jfPre?.crm_v1?.cotizaciones_historicas) ? jfPre.crm_v1.cotizaciones_historicas : [];
+      if (!pPre.es_interno && cotsPre.length === 0) {
+        await this.generarCotizacionVersion(id_proyecto, data.monto_neto || jfPre?.crm_v1?.total_neto || 0);
+      }
+      await this.generarOTVersion(id_proyecto);
+    }
+  } catch (genErr) {
+    console.warn('[solicitarVbGerencia] Aviso generando PDF previo de Cotización/OT:', genErr.message);
+  }
+
+  const client = await this.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const pryRes = await client.query(`
+      SELECT 
+        p.*,
+        cli.razon_social AS nombre_cliente,
+        cli.rut_empresa AS rut_cliente,
+        emp.razon_social AS empresa_emisora_nombre
+      FROM tpry_proyecto p
+      LEFT JOIN tpar_empresas cli ON p.id_empresa_cliente = cli.id_empresa
+      LEFT JOIN tpar_empresas emp ON p.id_empresa = emp.id_empresa
+      WHERE p.id_proyecto = $1
+      FOR UPDATE OF p;
+    `, [id_proyecto]);
+
+    if (pryRes.rowCount === 0) {
+      const err = new Error('Proyecto no encontrado');
+      err.status = 404;
+      throw err;
+    }
+
+    const p = pryRes.rows[0];
+    let jf = p.json_field;
+    if (typeof jf === 'string') {
+      try { jf = JSON.parse(jf); } catch (_) { jf = {}; }
+    }
+    if (!jf || typeof jf !== 'object') jf = {};
+    if (!jf.crm_v1 || typeof jf.crm_v1 !== 'object') jf.crm_v1 = {};
+    const crm = jf.crm_v1;
+
+    // Consultar equipos y personal asignados a la OT
+    let equiposAsignados = Array.isArray(data.equipos_asignados) ? data.equipos_asignados : [];
+    let personalAsignado = Array.isArray(data.personal_asignado) ? data.personal_asignado : [];
+    try {
+      const eqRes = await client.query(`
+        SELECT re.id_equipo, re.rol_equipo, eq.patente, eq.nombre_equipo, eq.marca, eq.modelo
+        FROM tpry_rel_equipo re
+        LEFT JOIN tequ_equipo eq ON re.id_equipo = eq.id_equipo
+        WHERE re.id_proyecto = $1
+        ORDER BY re.id_rel_equipo ASC
+      `, [id_proyecto]);
+      if (eqRes.rows.length > 0) {
+        equiposAsignados = eqRes.rows.map(r => ({
+          id_equipo: r.id_equipo,
+          patente: r.patente || `EQ-${r.id_equipo}`,
+          nombre_equipo: r.nombre_equipo || `${r.marca || ''} ${r.modelo || ''}`.trim() || r.rol_equipo || 'Equipo',
+          rol: r.rol_equipo || 'Equipo Asignado'
+        }));
+      }
+
+      const perRes = await client.query(`
+        SELECT rp.id_user, rp.rol_asignado, u.name_frst, u.apellido_pat
+        FROM tpry_rel_persona rp
+        LEFT JOIN tsec_users u ON rp.id_user = u.id_user
+        WHERE rp.id_proyecto = $1
+        ORDER BY rp.id_rel_persona ASC
+      `, [id_proyecto]);
+      if (perRes.rows.length > 0) {
+        personalAsignado = perRes.rows.map(r => ({
+          id_user: r.id_user,
+          nombre: `${r.name_frst || ''} ${r.apellido_pat || ''}`.trim() || `Usuario #${r.id_user}`,
+          rol: r.rol_asignado || 'Tripulación'
+        }));
+      }
+    } catch (relQErr) {
+      console.warn('[solicitarVbGerencia] Aviso consultando recursos asignados:', relQErr.message);
+    }
+
+    const equiposAsignadosTexto = data.equipos_asignados_texto ||
+      (equiposAsignados.length > 0
+        ? equiposAsignados.map(e => `${e.patente || ''} (${e.nombre_equipo || e.rol || 'Equipo'})`.trim()).join(' · ')
+        : '');
+
+    const personalAsignadoTexto = data.personal_asignado_texto ||
+      (personalAsignado.length > 0
+        ? personalAsignado.map(per => `${per.nombre} (${per.rol || 'Tripulante'})`).join(' · ')
+        : '');
+
+    const esInterno = Boolean(
+      p.es_interno ||
+      crm.es_requerimiento_interno ||
+      crm.es_interno ||
+      String(p.codi_proyecto || '').startsWith('INT-')
+    );
+
+    const tipo_entidad = esInterno ? 'REQUERIMIENTO_INTERNO' : 'NEGOCIO_COMERCIAL';
+    const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : [];
+    const lineaPrincipal = lineas[0] || {};
+    const lineaFlete = lineas.find(l => String(l.unidad || '').toLowerCase().includes('traslado') || String(l.tipo || '').toLowerCase().includes('flete')) || null;
+
+    let montoCalculado = Number(data.monto_neto ?? crm.total_neto ?? crm.monto_neto ?? 0);
+    if (!montoCalculado && lineas.length > 0 && !esInterno) {
+      montoCalculado = lineas.reduce((acc, l) => {
+        const price = Number(l.valor_unitario ?? l.valorUnitario ?? 0);
+        const u = String(l.unidad || '');
+        if (u === 'Horas Diarias Minimas') {
+          return acc + (Number(l.cantidad_dias ?? l.cantidad ?? 1) * Number(l.cantidad_horas ?? l.pisoMinimo ?? 8) * price);
+        }
+        if (u.includes('Mes')) {
+          return acc + (Number(l.cantidad_meses ?? l.cantidad ?? 1) * Number(l.cantidad_horas ?? l.pisoMinimo ?? 180) * price);
+        }
+        return acc + (Number(l.cantidad ?? 1) * price);
+      }, 0);
+    }
+
+    const es_monetario = data.es_monetario !== undefined
+      ? Boolean(data.es_monetario)
+      : (!esInterno && montoCalculado > 0 && !crm.es_no_monetario);
+
+    const solicitante = data.nombre_solicita || data.solicitante_nombre || crm.vendedor_nombre || 'Operaciones GSP';
+    const valorHora = Number(data.valor_hora ?? lineaPrincipal.valor_unitario ?? lineaPrincipal.valorUnitario ?? crm.tarifa_hora ?? 0);
+    const pisoMinimo = data.piso_minimo || (lineaPrincipal.cantidad_horas || lineaPrincipal.pisoMinimo ? `${lineaPrincipal.cantidad_horas || lineaPrincipal.pisoMinimo} hrs mín. (${lineaPrincipal.unidad || 'Diario'})` : '8 hrs mín.');
+    const costoFlete = Number(data.costo_flete ?? (lineaFlete ? (Number(lineaFlete.cantidad || 1) * Number(lineaFlete.valor_unitario || lineaFlete.valorUnitario || 0)) : (crm.costo_flete || 0)));
+    const distanciaKm = Number(data.distancia_km ?? crm.distancia_km ?? 0);
+
+    const resumen_variables = {
+      clasificacion_badge: esInterno
+        ? 'REQUERIMIENTO INTERNO'
+        : (es_monetario ? 'NEGOCIO MONETARIO' : 'NEGOCIO NO MONETARIO / ESPECIAL'),
+      folio: p.codi_proyecto || `PRY-${p.id_proyecto}`,
+      nombre_proyecto: p.nombre_proyecto,
+      cliente_nombre: esInterno
+        ? 'MOVIMIENTO INTERNO GSP (COSTO PROPIO)'
+        : (p.nombre_cliente || crm.razon_social || crm.cliente_nombre || 'Cliente Mandante'),
+      cliente_rut: esInterno ? 'INTERNO' : (p.rut_cliente || crm.rut_cliente || '—'),
+      condicion_pago: esInterno
+        ? 'NO FACTURABLE (C. COSTO INTERNO)'
+        : (data.condicion_pago || crm.tipo_pago || crm.condicion_pago || 'Crédito 30 días'),
+      requiere_oc_hes: Boolean(crm.requiere_oc_hes),
+      ubicacion_obra: esInterno
+        ? `${p.sucursal_origen || crm.sucursal_origen || 'Origen'} ➔ ${p.sucursal_destino || crm.sucursal_destino || 'Destino'}`
+        : (crm.obra_nombre || crm.obra_direccion || crm.obra_ciudad || p.nombre_proyecto || 'Terreno Cliente'),
+      fecha_servicio: p.fecha_plan_ini || crm.fecha_servicio || new Date().toISOString().slice(0, 10),
+      duracion_estimada: data.duracion_estimada || crm.duracion_estimada || (lineaPrincipal.cantidad_dias ? `${lineaPrincipal.cantidad_dias} día(s)` : 'Según servicio'),
+      equipo_categoria: equiposAsignadosTexto || data.equipo_categoria || lineaPrincipal.subcategoria || lineaPrincipal.descripcion || crm.equipo_requerido || p.nombre_proyecto || 'Grúa / Equipo',
+      equipos_asignados: equiposAsignados,
+      equipos_asignados_texto: equiposAsignadosTexto,
+      personal_asignado: personalAsignado,
+      personal_asignado_texto: personalAsignadoTexto,
+      valor_hora: valorHora,
+      piso_minimo: pisoMinimo,
+      costo_flete: costoFlete,
+      modalidad_flete: data.modalidad_flete || crm.modalidad_flete || (distanciaKm > 30 ? 'Ida y Vuelta (Rural)' : 'Urbano (≤ 30 km)'),
+      distancia_km: distanciaKm,
+      combustible_cargo: data.combustible_cargo || crm.combustible_cargo || 'GSP',
+      alojamiento_viatico_cargo: data.alojamiento_viatico_cargo || crm.alojamiento_viatico_cargo || 'Cliente / Según cotización',
+      monto_neto_total: esInterno ? 0 : montoCalculado,
+      motivo_solicitud: data.motivo || data.observacion || crm.motivo_interno || p.objetivo_proyecto || '',
+      solicitante,
+      lineas_servicio: lineas.slice(0, 10)
+    };
+
+    const tokenCreated = await AprobacionGerenciaModel.crearToken({
+      id_empresa: p.id_empresa || 9,
+      tipo_entidad,
+      id_entidad_ref: p.id_proyecto,
+      folio_referencia: p.codi_proyecto || `PRY-${p.id_proyecto}`,
+      es_monetario,
+      monto_neto_ref: esInterno ? 0 : montoCalculado,
+      resumen_variables,
+      id_usuario_solicita: data.id_usuario_solicita || null,
+      nombre_solicita: solicitante,
+      enviar_notificacion: data.enviar_notificacion !== false
+    }, client);
+
+    jf.crm_v1.aprobacion_gerencia = {
+      id_token: tokenCreated.id_token,
+      token_uuid: tokenCreated.token_uuid,
+      url_aprobacion: tokenCreated.url_aprobacion,
+      url_completa: tokenCreated.url_completa,
+      url_cotizacion: tokenCreated.url_cotizacion,
+      url_cotizacion_completa: tokenCreated.url_cotizacion_completa,
+      url_ot: tokenCreated.url_ot,
+      url_ot_completa: tokenCreated.url_ot_completa,
+      estado: 'PENDIENTE',
+      observacion: null,
+      fecha_solicitud: new Date().toISOString(),
+      solicitado_por: solicitante
+    };
+
+    const updRes = await client.query(`
+      UPDATE tpry_proyecto
+      SET estado_vb_gerencia = 'PENDIENTE',
+          observacion_vb_gerencia = NULL,
+          json_field = $1,
+          fecha_modificacion = NOW()
+      WHERE id_proyecto = $2
+      RETURNING *;
+    `, [JSON.stringify(jf), p.id_proyecto]);
+
+    await client.query('COMMIT');
+
+    return {
+      proyecto: updRes.rows[0],
+      token: tokenCreated,
+      token_uuid: tokenCreated.token_uuid,
+      url_aprobacion: tokenCreated.url_aprobacion,
+      url_completa: tokenCreated.url_completa,
+      url_cotizacion: tokenCreated.url_cotizacion,
+      url_cotizacion_completa: tokenCreated.url_cotizacion_completa,
+      url_ot: tokenCreated.url_ot,
+      url_ot_completa: tokenCreated.url_ot_completa
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
 
 module.exports = ProyectoModel;

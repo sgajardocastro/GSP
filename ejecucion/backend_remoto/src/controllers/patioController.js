@@ -111,7 +111,7 @@ const patioController = {
         }
       }
 
-      // 2.4 Resolver proyecto y empresa cliente (Patrón Operaciones Internas)
+      // 2.4 Resolver proyecto y empresa cliente (Spec 63 / REQ-042: Vincular portón template 79 a OT)
       const proyRes = await pool.query(`
         SELECT id_proyecto, id_empresa_cliente 
         FROM tpry_proyecto 
@@ -120,7 +120,39 @@ const patioController = {
         LIMIT 1
       `);
       const idProyectoBase = proyRes.rows.length > 0 ? proyRes.rows[0].id_proyecto : 94;
-      const idEmpresaCliente = equipoInfo.id_empresa || (proyRes.rows.length > 0 ? proyRes.rows[0].id_empresa_cliente : 9) || 9;
+
+      let idProyectoAsignado = null;
+      let idEmpresaFinal = null;
+
+      if (req.body.id_proyecto) {
+        idProyectoAsignado = Number(req.body.id_proyecto);
+      } else if (ot_referencia) {
+        const otRes = await pool.query('SELECT id_proyecto, id_empresa_cliente FROM tpry_proyecto WHERE codi_proyecto ILIKE $1 LIMIT 1', [`%${ot_referencia.trim()}%`]);
+        if (otRes.rows.length > 0) {
+          idProyectoAsignado = otRes.rows[0].id_proyecto;
+          idEmpresaFinal = otRes.rows[0].id_empresa_cliente;
+        }
+      }
+
+      if (!idProyectoAsignado && (equipoInfo.id_equipo || id_equipo)) {
+        const eqIdTarget = equipoInfo.id_equipo || id_equipo;
+        const otEqRes = await pool.query(`
+          SELECT p.id_proyecto, p.id_empresa_cliente
+          FROM tpry_proyecto p
+          LEFT JOIN tpry_rel_equipo re ON p.id_proyecto = re.id_proyecto
+          WHERE (re.id_equipo = $1 OR (p.json_field->'ejecucion_v1'->>'id_equipo')::text = $1::text)
+            AND p.id_proyecto_estado IN (4, 5)
+            AND CURRENT_DATE BETWEEN COALESCE(p.fecha_plan_ini::date, CURRENT_DATE) AND COALESCE(p.fecha_plan_fin::date, CURRENT_DATE + interval '1 day')
+          ORDER BY p.id_proyecto DESC LIMIT 1;
+        `, [eqIdTarget]);
+        if (otEqRes.rows.length > 0) {
+          idProyectoAsignado = otEqRes.rows[0].id_proyecto;
+          idEmpresaFinal = otEqRes.rows[0].id_empresa_cliente;
+        }
+      }
+
+      const idProyectoFinal = idProyectoAsignado || idProyectoBase;
+      const idEmpresaCliente = idEmpresaFinal || equipoInfo.id_empresa || (proyRes.rows.length > 0 ? proyRes.rows[0].id_empresa_cliente : 9) || 9;
 
       const headerExec = {
         tipo_movimiento,
@@ -128,6 +160,7 @@ const patioController = {
         id_equipo: equipoInfo.id_equipo || id_equipo || null,
         nombre_operador: operadorNombre,
         ot_referencia: ot_referencia || null,
+        id_proyecto_vinculado: idProyectoFinal,
         creado_en: new Date().toISOString()
       };
 
@@ -171,7 +204,7 @@ const patioController = {
         JSON.stringify(headerExec),
         JSON.stringify(bodyData),
         JSON.stringify(tmpl.approval_seed || {}),
-        idProyectoBase,
+        idProyectoFinal,
         tmpl.id_flow_tmpl || 1
       ];
 

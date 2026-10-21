@@ -16,6 +16,9 @@ router.post('/express/cotizar', cotizacionExpressController.cotizarExpress);
 router.get('/contrato/public/:token', proyectoController.obtenerContratoPorToken);
 router.post('/contrato/public/:token/firmar', proyectoController.firmarContratoPublico);
 
+// Spec 87: Crear Requerimiento Interno de Operaciones (INT-YYMM-XXX)
+router.post('/requerimiento-interno', proyectoController.crearRequerimientoInterno);
+
 // Obtener todos los proyectos
 router.get('/', proyectoController.getProyectos);
 
@@ -39,6 +42,10 @@ router.post('/:id/generar-cotizacion', proyectoController.generarCotizacion);
 router.post('/:id/generar-ot', proyectoController.generarOT);
 router.post('/:id/enviar-ot', proyectoController.enviarOT);
 router.post('/:id/reversar-a-cotizacion', proyectoController.reversarACotizacion);
+
+// Spec 87: Solicitar V°B° Móvil de Gerencia (Omar - Web Token 1 Solo Uso)
+router.post('/:id/solicitar-vb-gerencia', proyectoController.solicitarVbGerencia);
+router.post('/:id/vb-gerencia', proyectoController.solicitarVbGerencia);
 
 // Rutas Internas de Gestión de Contrato
 router.post('/:id/contrato/generar-pdf', proyectoController.generarContratoPdf);

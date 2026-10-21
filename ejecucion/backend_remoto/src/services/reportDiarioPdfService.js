@@ -679,7 +679,7 @@ function buildReportDiarioHtml(data) {
     <!-- 8. PIE DE PÁGINA Y TRAZABILIDAD -->
     <div class="footer-legal">
       Este documento es una copia oficial generada y archivada en el Dossier Operacional del Proyecto ${codiOT} en la plataforma LeanGlobal / Grúas San Pablo S.A.<br>
-      Verificación de validez y descarga oficial en: <strong>${validacionUrl || 'https://servidor.leanglobal.cl/lg-gsp-dev/validador-doc'}</strong>
+      Verificación de validez y descarga oficial en: <strong>${validacionUrl || ((process.env.APP_ENV === 'prod') ? 'https://servidor.leanglobal.cl/lg-gsp-prod/validador-doc' : 'https://servidor.leanglobal.cl/lg-gsp-dev/validador-doc')}</strong>
     </div>
 
   </body>

@@ -58,7 +58,8 @@ export function useFlujoAprobacion() {
     formData.append('mimetype', 'application/pdf')
     formData.append('name_doc_orig', '')
     formData.append('name_doc_interno', '')
-    formData.append('tenant_code', 'transmac')
+    const tenantCode = process.env.VUE_APP_TENANT_CODE || 'gsp'
+    formData.append('tenant_code', tenantCode)
     formData.append('modulo', 'inspecciones')
     formData.append('id_user', userDetailStore.userDetail.id_user)
     formData.append('estado', '1')

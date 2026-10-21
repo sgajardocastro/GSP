@@ -1,109 +1,128 @@
 <!-- FirmaElectronica.vue -->
 <template>
   <v-container>
-    <!-- TABS -->
-    <v-row dense class="mb-2">
-      <v-col cols="12">
-        <v-tabs v-model="tab" grow>
-          <v-tab value="firmas">Firmas</v-tab>
-          <v-tab value="cierres">Cierre Docs. Colectivos</v-tab>
-        </v-tabs>
+    <!-- CABECERA DE FIRMAS -->
+    <v-card
+      class="mb-4 rounded-xl border border-purple-500/30 text-white pa-3"
+      style="background: linear-gradient(135deg, #0b1426 0%, #1c1936 100%);"
+    >
+      <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+        <div class="d-flex align-center ga-2">
+          <span class="text-2xl">🖋️</span>
+          <div>
+            <div class="text-xs font-black text-purple-400 text-uppercase tracking-wider">
+              Firmas Electrónicas Simples (FES)
+            </div>
+            <div class="text-xs text-slate-300">
+              Documentos laborales y actas de seguridad pendientes de firma
+            </div>
+          </div>
+        </div>
+        <v-btn
+          color="deep-purple-accent-4"
+          variant="flat"
+          size="small"
+          class="font-black text-xs text-white"
+          prepend-icon="mdi-refresh"
+          @click="obtenerFlujos"
+        >
+          Actualizar
+        </v-btn>
+      </div>
+    </v-card>
+
+    <v-row dense style="padding: 10px;">
+      <!-- Estado vacío cuando no hay firmas pendientes -->
+      <v-col cols="12" v-if="!flujosDocumentos || flujosDocumentos.length === 0">
+        <v-card class="pa-8 text-center bg-[#0b1426] border border-slate-800 rounded-xl">
+          <v-icon size="48" color="emerald-accent-4" class="mb-2">mdi-check-decagram-outline</v-icon>
+          <div class="text-subtitle-1 text-white font-weight-black">
+            ¡Estás al día!
+          </div>
+          <div class="text-xs text-slate-400 mt-1">
+            No tienes documentos laborales, actas ni inspecciones pendientes de firma electrónica.
+          </div>
+        </v-card>
+      </v-col>
+
+      <v-col
+        cols="12"
+        md="4"
+        xl="3"
+        v-for="survey in flujosDocumentos"
+        :key="survey.id_survey"
+      >
+        <v-card
+          class="mx-auto sombra-resaltada"
+          :subtitle="`${survey.name_empresa_cliente} / ${survey.nombre_proyecto}`"
+          :title="`${survey.desc_template_srv}: ${survey.name_template_srv}`"
+        >
+          <template #append>
+            <v-icon
+              v-if="hasNotif(survey.id_survey)"
+              color="red-darken-2"
+              icon="mdi-bell-ring"
+              size="30"
+            />
+          </template>
+
+          <v-chip
+            :color="getEstadoColor(survey.estado_srv).color"
+            label
+            size="large"
+            class="ml-2 text-white"
+            variant="flat"
+          >
+            {{ getEstadoColor(survey.estado_srv).texto }}
+          </v-chip>
+
+          <v-card-text>
+            <div class="d-flex justify-space-between">
+              <!-- Texto izquierdo -->
+              <div>
+                {{ `${survey.name_area} - ${survey.name_tipo_srv}` }}<br>
+                {{ `${survey.codi_template_srv} (Id ${survey.id_survey})` }}<br>
+                Fecha Plan Fin: {{ survey.fecha_plan_ini }}
+              </div>
+
+              <!-- Acciones derecha: PDF arriba, FIRMAR abajo -->
+              <div class="d-flex flex-column align-end">
+                <!-- Botón PDF pequeño -->
+                <v-btn
+                  icon
+                  variant="text"
+                  color="red-darken-2"
+                  @click="abrirPdf(survey)"
+                  :disabled="!tieneDocumento(survey) || !isOnline"
+                >
+                  <v-icon>mdi-file-pdf-box</v-icon>
+                </v-btn>
+
+                <!-- Botón FIRMAR morado -->
+                <v-btn
+                  color="deep-purple-accent-4"
+                  variant="outlined"
+                  size="small"
+                  class="text-uppercase font-weight-bold"
+                  @click="abrirModal(survey, notifPrimaryId(survey.id_survey))"
+                >
+                  <v-icon start>mdi-pen</v-icon>
+                  {{ textoBotonFirmar(survey) }}
+                </v-btn>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
 
-    <!-- CONTENIDO DE LOS TABS -->
-    <v-window v-model="tab">
-      <!-- TAB FIRMAS -->
-      <v-window-item value="firmas">
-        <v-row dense style="padding: 10px;">
-          <v-col
-            cols="12"
-            md="4"
-            xl="3"
-            v-for="survey in flujosDocumentos"
-            :key="survey.id_survey"
-          >
-            <v-card
-              class="mx-auto sombra-resaltada"
-              :subtitle="`${survey.name_empresa_cliente} / ${survey.nombre_proyecto}`"
-              :title="`${survey.desc_template_srv}: ${survey.name_template_srv}`"
-            >
-              <template #append>
-                <v-icon
-                  v-if="hasNotif(survey.id_survey)"
-                  color="red-darken-2"
-                  icon="mdi-bell-ring"
-                  size="30"
-                />
-              </template>
-
-              <v-chip
-                :color="getEstadoColor(survey.estado_srv).color"
-                label
-                size="large"
-                class="ml-2 text-white"
-                variant="flat"
-              >
-                {{ getEstadoColor(survey.estado_srv).texto }}
-              </v-chip>
-
-              <v-card-text>
-                <div class="d-flex justify-space-between">
-                  <!-- Texto izquierdo -->
-                  <div>
-                    {{ `${survey.name_area} - ${survey.name_tipo_srv}` }}<br>
-                    {{ `${survey.codi_template_srv} (Id ${survey.id_survey})` }}<br>
-                    Fecha Plan Fin: {{ survey.fecha_plan_ini }}
-                  </div>
-
-                  <!-- Acciones derecha: PDF arriba, FIRMAR abajo -->
-                  <div class="d-flex flex-column align-end">
-                    <!-- Botón PDF pequeño -->
-                    <v-btn
-                      icon
-                      variant="text"
-                      color="red-darken-2"
-                      @click="abrirPdf(survey)"
-                      :disabled="!tieneDocumento(survey) || !isOnline"
-                    >
-                      <v-icon>mdi-file-pdf-box</v-icon>
-                    </v-btn>
-
-                    <!-- Botón FIRMAR morado -->
-                    <v-btn
-                      color="deep-purple-accent-4"
-                      variant="outlined"
-                      size="small"
-                      class="text-uppercase font-weight-bold"
-                      @click="abrirModal(survey, notifPrimaryId(survey.id_survey))"
-                    >
-                      <v-icon start>mdi-pen</v-icon>
-                      {{ textoBotonFirmar(survey) }}
-                    </v-btn>
-                  </div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <!-- DIALOG DE FIRMA REUTILIZABLE -->
-        <FirmaDialog
-          v-model="dialogFirma"
-          :pdf-url="pdfUrlFirma"
-          :detalle-flujo="detalleCrearFirma"
-          @firmado="onFirmado"
-        />
-      </v-window-item>
-
-      <!-- TAB CIERRES -->
-      <v-window-item value="cierres">
-        <CierreFirmas
-          :flujos="flujos"
-          @refrescarFlujos="obtenerFlujos"
-        />
-      </v-window-item>
-    </v-window>
+    <!-- DIALOG DE FIRMA REUTILIZABLE -->
+    <FirmaDialog
+      v-model="dialogFirma"
+      :pdf-url="pdfUrlFirma"
+      :detalle-flujo="detalleCrearFirma"
+      @firmado="onFirmado"
+    />
   </v-container>
 </template>
 
@@ -113,7 +132,6 @@ import { useRoute, useRouter } from 'vue-router'
 import apiAxios from '@/services/api'
 import { useUserDetailStore } from '@/store/userDetail'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
-import CierreFirmas from '@/components/CierreFirmas.vue'
 import FirmaDialog from '@/components/FirmaDialog.vue'
 
 /* eslint-disable */
@@ -152,17 +170,26 @@ const dialogFirma = ref(false)
 const pdfUrlFirma = ref('')
 const detalleCrearFirma = ref(null)
 
-// ✅ Función dedicada para auto-open (más confiable que depender solo del watcher)
+// ✅ Función dedicada para auto-open con reintentos resilientes
+let intentosAutoOpen = 0
 async function tryAutoOpenFromUrl () {
   if (autoOpenDone.value) return
 
   const sid = idSurveyFromUrl.value
   if (!sid) return
 
-  // si aún no hay data, no hacemos nada
+  // si aún no hay data, reintentar
   const docs = flujosDocumentos.value || []
   const all  = flujos.value || []
-  if (!docs.length && !all.length) return
+  if (!docs.length && !all.length) {
+    if (intentosAutoOpen < 5) {
+      intentosAutoOpen++
+      setTimeout(() => {
+        tryAutoOpenFromUrl()
+      }, 500)
+    }
+    return
+  }
 
   // siempre fuerza a tab firmas
   tab.value = 'firmas'
@@ -176,7 +203,15 @@ async function tryAutoOpenFromUrl () {
   }
 
   if (!detalle) {
-    console.warn('[Firmas] id_survey en URL no encontrado en flujos/flujosDocumentos:', sid)
+    if (intentosAutoOpen < 5) {
+      intentosAutoOpen++
+      setTimeout(async () => {
+        await obtenerFlujos()
+        tryAutoOpenFromUrl()
+      }, 700)
+    } else {
+      console.warn('[Firmas] id_survey en URL no encontrado en flujos tras reintentos:', sid)
+    }
     return
   }
 

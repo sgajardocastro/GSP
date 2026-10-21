@@ -347,9 +347,9 @@ exports.guardarAjustesTesoreria = async (req, res) => {
     // Validar rol de Tesorería (Pamela / GSP_CONTA) o Administrador (Sergio Gajardo / Admin)
     const uRes = await db.query(`
       SELECT u.id_user, u.name_frst, u.apellido_pat, u.email, ur.id_rol, r.name_rol
-      FROM sch_leangsp.tsec_users u
-      LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
-      LEFT JOIN sch_leangsp.tsec_roles r ON ur.id_rol = r.id_rol
+      FROM tsec_users u
+      LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+      LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
       WHERE u.id_user = $1;
     `, [id_user]);
 
@@ -387,7 +387,7 @@ exports.guardarAjustesTesoreria = async (req, res) => {
     };
 
     const updSql = `
-      UPDATE sch_leangsp.tpry_proyecto
+      UPDATE tpry_proyecto
       SET json_field = jsonb_set(
         COALESCE(json_field, '{}'::jsonb),
         '{edp_ajustes_v1}',
@@ -422,8 +422,8 @@ exports.solicitarModificacionEDP = async (req, res) => {
     const pRes = await db.query(`
       SELECT p.id_proyecto, p.codi_proyecto, p.nombre_proyecto, p.json_field,
              COALESCE(clt.razon_social, clt.name_empresa, 'Cliente Mandante') AS cliente_nombre
-      FROM sch_leangsp.tpry_proyecto p
-      LEFT JOIN sch_leangsp.tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
+      FROM tpry_proyecto p
+      LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
       WHERE p.id_proyecto = $1;
     `, [id_proyecto]);
 
@@ -435,9 +435,9 @@ exports.solicitarModificacionEDP = async (req, res) => {
     // 2. Obtener datos del solicitante
     const uRes = await db.query(`
       SELECT u.id_user, u.name_frst, u.apellido_pat, u.email, r.name_rol
-      FROM sch_leangsp.tsec_users u
-      LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
-      LEFT JOIN sch_leangsp.tsec_roles r ON ur.id_rol = r.id_rol
+      FROM tsec_users u
+      LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+      LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
       WHERE u.id_user = $1
       LIMIT 1;
     `, [id_user]);
@@ -466,7 +466,7 @@ exports.solicitarModificacionEDP = async (req, res) => {
     jsonActual.edp_solicitudes_ajuste = listaSolicitudes;
 
     await db.query(`
-      UPDATE sch_leangsp.tpry_proyecto
+      UPDATE tpry_proyecto
       SET json_field = $1
       WHERE id_proyecto = $2;
     `, [JSON.stringify(jsonActual), id_proyecto]);
@@ -481,8 +481,8 @@ exports.solicitarModificacionEDP = async (req, res) => {
       const adminTesoRes = await db.query(`
         SELECT DISTINCT u.id_user, u.email, u.movil as telefono, 
                TRIM(u.name_frst || ' ' || COALESCE(u.apellido_pat, '')) as nombre
-        FROM sch_leangsp.tsec_users u
-        LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
+        FROM tsec_users u
+        LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
         WHERE (ur.id_rol IN (1, 6) OR u.email IN ('sgajardoc@gmail.com', 'mseguel@arriendosanpablo.cl'))
           AND COALESCE(u.activo, true) = true
           AND u.email IS NOT NULL;
@@ -595,9 +595,9 @@ exports.resolverSolicitudModificacionEDP = async (req, res) => {
 
     const uRes = await db.query(`
       SELECT u.id_user, u.name_frst, u.apellido_pat, u.email, ur.id_rol, r.name_rol
-      FROM sch_leangsp.tsec_users u
-      LEFT JOIN sch_leangsp.tsec_user_roles ur ON u.id_user = ur.id_user
-      LEFT JOIN sch_leangsp.tsec_roles r ON ur.id_rol = r.id_rol
+      FROM tsec_users u
+      LEFT JOIN tsec_user_roles ur ON u.id_user = ur.id_user
+      LEFT JOIN tsec_roles r ON ur.id_rol = r.id_rol
       WHERE u.id_user = $1;
     `, [id_user]);
 
@@ -617,7 +617,7 @@ exports.resolverSolicitudModificacionEDP = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Solo Tesorería o Administración pueden resolver solicitudes de modificación' });
     }
 
-    const pRes = await db.query(`SELECT json_field FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
+    const pRes = await db.query(`SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
     if (pRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
@@ -636,7 +636,7 @@ exports.resolverSolicitudModificacionEDP = async (req, res) => {
 
     jsonField.edp_solicitudes_ajuste = solicitudes;
 
-    await db.query(`UPDATE sch_leangsp.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`, [JSON.stringify(jsonField), id_proyecto]);
+    await db.query(`UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`, [JSON.stringify(jsonField), id_proyecto]);
 
     res.status(200).json({
       success: true,
@@ -667,7 +667,7 @@ exports.firmarComercialEdp = async (req, res) => {
     // 1. Validar usuario y PIN FES
     const uRes = await db.query(`
       SELECT id_user, name_frst, apellido_pat, email, rut, pass_hash_fes
-      FROM sch_leangsp.tsec_users
+      FROM tsec_users
       WHERE id_user = $1;
     `, [id_user]);
 
@@ -690,8 +690,8 @@ exports.firmarComercialEdp = async (req, res) => {
              COALESCE(c.razon_social, c.name_empresa, p.json_field->'crm_v1'->>'cliente_nombre', 'Cliente Mandante') AS cliente_nombre,
              COALESCE(c.rut_empresa, p.json_field->'crm_v1'->>'cliente_rut', '') AS cliente_rut,
              COALESCE(p.json_field->'crm_v1'->>'contacto_email', p.json_field->>'cliente_email', '') AS cliente_email
-      FROM sch_leangsp.tpry_proyecto p
-      LEFT JOIN sch_leangsp.tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
+      FROM tpry_proyecto p
+      LEFT JOIN tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
       WHERE p.id_proyecto = $1;
     `, [id_proyecto]);
 
@@ -718,7 +718,7 @@ exports.firmarComercialEdp = async (req, res) => {
 
     // 4. Guardar firma en tpry_proyecto.json_field.edp_firma_comercial
     await db.query(`
-      UPDATE sch_leangsp.tpry_proyecto
+      UPDATE tpry_proyecto
       SET json_field = jsonb_set(
         COALESCE(json_field, '{}'::jsonb),
         '{edp_firma_comercial}',
@@ -730,7 +730,8 @@ exports.firmarComercialEdp = async (req, res) => {
 
     // 5. Bifurcación Condicional de Notificaciones
     const baseUrl = process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl';
-    const edpPdfUrl = `${baseUrl}/lg-gsp-dev/api/operaciones/edp/proyecto/${id_proyecto}/pdf`;
+    const envPrefix = (process.env.APP_ENV === 'prod') ? '/lg-gsp-prod' : '/lg-gsp-dev';
+    const edpPdfUrl = `${baseUrl}${envPrefix}/api/operaciones/edp/proyecto/${id_proyecto}/pdf`;
 
     const ccInstitucionales = [
       'omar.ghiselini@arriendosanpablo.cl',
@@ -812,7 +813,7 @@ exports.guardarSoporteDocumentalEDP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'id_proyecto es requerido' });
     }
 
-    const pRes = await db.query('SELECT id_proyecto, json_field, id_proyecto_estado FROM sch_leangsp.tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+    const pRes = await db.query('SELECT id_proyecto, json_field, id_proyecto_estado FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
     if (pRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
@@ -872,7 +873,7 @@ exports.guardarSoporteDocumentalEDP = async (req, res) => {
 
     // Persistir en BD
     await db.query(`
-      UPDATE sch_leangsp.tpry_proyecto
+      UPDATE tpry_proyecto
       SET id_proyecto_estado = $1,
           json_field = $2
       WHERE id_proyecto = $3;

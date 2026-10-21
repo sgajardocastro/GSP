@@ -22,9 +22,29 @@ function resolveStoragePath(path_relativo = '', filename = '') {
 
   // 1. Direct path check
   let target = path.join(STORAGE_ROOT, normRel, filename || '');
-  if (fs.existsSync(target)) return target;
+  if (fs.existsSync(target) && (!filename || fs.statSync(target).isFile())) return target;
 
-  if (normRel && fs.existsSync(path.join(STORAGE_ROOT, normRel))) {
+  // 1b. Resiliencia Mayúsculas/Minúsculas en Linux para Maestros de Flota y Personal
+  if (filename) {
+    const caseVariants = [
+      path.join(STORAGE_ROOT, normRel.replace(/equipos/i, 'Equipos'), filename),
+      path.join(STORAGE_ROOT, normRel.replace(/equipos/i, 'equipos'), filename),
+      path.join(STORAGE_ROOT, normRel.replace(/personal/i, 'Personal'), filename),
+      path.join(STORAGE_ROOT, normRel.replace(/personal/i, 'personal'), filename),
+      path.join(STORAGE_ROOT, 'GSP', 'Equipos', filename),
+      path.join(STORAGE_ROOT, 'GSP', 'equipos', filename),
+      path.join(STORAGE_ROOT, 'GSP', 'personal', filename),
+      path.join(STORAGE_ROOT, 'GSP', 'Personal', filename)
+    ];
+    for (const vPath of caseVariants) {
+      if (fs.existsSync(vPath) && fs.statSync(vPath).isFile()) {
+        return vPath;
+      }
+    }
+  }
+
+  // Si no se especificó nombre de archivo y solo se pide la carpeta base
+  if (!filename && normRel && fs.existsSync(path.join(STORAGE_ROOT, normRel))) {
     return path.join(STORAGE_ROOT, normRel);
   }
 

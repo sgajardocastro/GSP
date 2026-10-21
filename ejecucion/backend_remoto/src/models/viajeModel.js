@@ -73,6 +73,11 @@ const viajeModel = {
         v.horometro_final,
         v.foto_tablero_salida_path,
         v.foto_tablero_llegada_path,
+        v.foto_odometro_salida_path,
+        v.foto_horometro_salida_path,
+        v.foto_odometro_llegada_path,
+        v.foto_horometro_camion_llegada_path,
+        v.foto_horometro_grua_llegada_path,
         v.estado_trayecto,
         v.token_viaje,
         v.obs_termino,
@@ -82,6 +87,11 @@ const viajeModel = {
         p.json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio,
         p.nombre_proyecto,
         p.codi_proyecto,
+        COALESCE(p.es_interno, (p.json_field->'crm_v1'->>'es_requerimiento_interno')::boolean, false) AS es_interno,
+        COALESCE(p.sucursal_origen, p.json_field->'crm_v1'->>'sucursal_origen') AS sucursal_origen,
+        COALESCE(p.sucursal_destino, p.json_field->'crm_v1'->>'sucursal_destino') AS sucursal_destino,
+        COALESCE(p.tipo_movimiento_interno, p.json_field->'crm_v1'->>'tipo_movimiento_interno') AS tipo_movimiento_interno,
+        COALESCE(p.json_field->'crm_v1'->>'modalidad_trayecto', 'IDA_Y_VUELTA') AS modalidad_trayecto,
         COALESCE(
           p.json_field->'crm_v1'->'siteVisit'->>'obra_nombre',
           p.json_field->'crm_v1'->'opportunity'->>'nombre_obra',
@@ -148,15 +158,15 @@ const viajeModel = {
       }
 
       if (viaje.tipo_trayecto === 'RETORNO') {
-        viaje.destino_nombre = 'Patio Central San Pablo - Base GSP';
-        viaje.destino_direccion = 'Panamericana Norte #1020, Santiago';
-        viaje.origen_nombre = viaje.obra_nombre || 'Faena Mandante';
-        viaje.origen_direccion = viaje.obra_direccion || 'Dirección de Faena';
+        viaje.destino_nombre = viaje.sucursal_origen ? `Sucursal GSP ${viaje.sucursal_origen}` : 'Sucursal Temuco - Base GSP';
+        viaje.destino_direccion = viaje.sucursal_origen ? `Base Operativa ${viaje.sucursal_origen}` : 'Camino Labranza KM 9.5, Temuco';
+        viaje.origen_nombre = viaje.sucursal_destino ? `Sucursal GSP ${viaje.sucursal_destino}` : (viaje.obra_nombre || 'Faena Mandante');
+        viaje.origen_direccion = viaje.sucursal_destino ? `Base Operativa ${viaje.sucursal_destino}` : (viaje.obra_direccion || 'Dirección de Faena');
       } else {
-        viaje.origen_nombre = 'Patio Central San Pablo - Base GSP';
-        viaje.origen_direccion = 'Panamericana Norte #1020, Santiago';
-        viaje.destino_nombre = viaje.obra_nombre;
-        viaje.destino_direccion = viaje.obra_direccion;
+        viaje.origen_nombre = viaje.sucursal_origen ? `Sucursal GSP ${viaje.sucursal_origen}` : 'Sucursal Temuco - Base GSP';
+        viaje.origen_direccion = viaje.sucursal_origen ? `Base Operativa ${viaje.sucursal_origen}` : 'Camino Labranza KM 9.5, Temuco';
+        viaje.destino_nombre = viaje.sucursal_destino ? `Sucursal GSP ${viaje.sucursal_destino}` : viaje.obra_nombre;
+        viaje.destino_direccion = viaje.sucursal_destino ? `Base Operativa ${viaje.sucursal_destino}` : viaje.obra_direccion;
       }
 
       return viaje;
@@ -170,6 +180,11 @@ const viajeModel = {
           p.id_proyecto,
           p.nombre_proyecto,
           p.codi_proyecto,
+          COALESCE(p.es_interno, (p.json_field->'crm_v1'->>'es_requerimiento_interno')::boolean, false) AS es_interno,
+          COALESCE(p.sucursal_origen, p.json_field->'crm_v1'->>'sucursal_origen') AS sucursal_origen,
+          COALESCE(p.sucursal_destino, p.json_field->'crm_v1'->>'sucursal_destino') AS sucursal_destino,
+          COALESCE(p.tipo_movimiento_interno, p.json_field->'crm_v1'->>'tipo_movimiento_interno') AS tipo_movimiento_interno,
+          COALESCE(p.json_field->'crm_v1'->>'modalidad_trayecto', 'IDA_Y_VUELTA') AS modalidad_trayecto,
           COALESCE(
             p.json_field->'crm_v1'->'siteVisit'->>'obra_nombre',
             p.json_field->'crm_v1'->'opportunity'->>'nombre_obra',
@@ -238,8 +253,17 @@ const viajeModel = {
           pings_ruta: [],
           nombre_proyecto: row.nombre_proyecto,
           codi_proyecto: row.codi_proyecto,
+          es_interno: row.es_interno,
+          sucursal_origen: row.sucursal_origen,
+          sucursal_destino: row.sucursal_destino,
+          tipo_movimiento_interno: row.tipo_movimiento_interno,
+          modalidad_trayecto: row.modalidad_trayecto,
           obra_nombre: row.obra_nombre,
           obra_direccion: row.obra_direccion,
+          origen_nombre: row.sucursal_origen ? `Sucursal GSP ${row.sucursal_origen}` : 'Sucursal Temuco - Base GSP',
+          origen_direccion: row.sucursal_origen ? `Base Operativa ${row.sucursal_origen}` : 'Camino Labranza KM 9.5, Temuco',
+          destino_nombre: row.sucursal_destino ? `Sucursal GSP ${row.sucursal_destino}` : row.obra_nombre,
+          destino_direccion: row.sucursal_destino ? `Base Operativa ${row.sucursal_destino}` : row.obra_direccion,
           chofer_nombre: row.chofer_nombre || 'Sergio Gajardo',
           tipo_equipo: row.tipo_equipo,
           modelo: row.modelo,
@@ -256,7 +280,7 @@ const viajeModel = {
   },
 
   // 2. Registrar Salida de Patio (Paso 1 - Con Creación/Insert Garantizado)
-  async registrarSalida({ token_viaje, id_proyecto, id_equipo, id_user_chofer, km_inicial, horometro_inicial, combustible_salida, foto_salida, pin_hash, latitud, longitud, device_timestamp }) {
+  async registrarSalida({ token_viaje, id_proyecto, id_equipo, id_user_chofer, km_inicial, horometro_inicial, combustible_salida, foto_salida, foto_odometro_salida, foto_horometro_salida, pin_hash, latitud, longitud, device_timestamp }) {
     if (!token_viaje) throw new Error('token_viaje requerido');
 
     const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
@@ -272,7 +296,9 @@ const viajeModel = {
         SET 
           km_inicial = $1,
           horometro_inicial = $2,
-          foto_tablero_salida_path = $3,
+          foto_tablero_salida_path = COALESCE($3, $10, foto_tablero_salida_path),
+          foto_odometro_salida_path = COALESCE($10, $3, foto_odometro_salida_path),
+          foto_horometro_salida_path = COALESCE($11, foto_horometro_salida_path),
           pin_hash = $4,
           fecha_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_salida_patio ELSE CURRENT_TIMESTAMP END,
           fecha_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN CURRENT_TIMESTAMP ELSE fecha_salida_faena END,
@@ -295,7 +321,9 @@ const viajeModel = {
         latitud || null,
         longitud || null,
         combustible_salida ? JSON.stringify(combustible_salida) : null,
-        token_viaje
+        token_viaje,
+        foto_odometro_salida || null,
+        foto_horometro_salida || null
       ]);
       const viajeActualizado = res.rows[0];
 
@@ -368,6 +396,8 @@ const viajeModel = {
           horometro_inicial,
           combustible_salida,
           foto_tablero_salida_path,
+          foto_odometro_salida_path,
+          foto_horometro_salida_path,
           pin_hash,
           fecha_salida_patio,
           device_timestamp_salida,
@@ -376,7 +406,7 @@ const viajeModel = {
           pings_ruta
         ) VALUES (
           $1, $2, $3, $4, 'IDA', 'EN_RUTA', $5,
-          $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, COALESCE($11, CURRENT_TIMESTAMP), $12, $13, '[]'::jsonb
+          $6, $7, $8, COALESCE($9, $14), COALESCE($14, $9), $15, $10, CURRENT_TIMESTAMP, COALESCE($11, CURRENT_TIMESTAMP), $12, $13, '[]'::jsonb
         ) RETURNING *;
       `;
       const res = await db.query(insertSql, [
@@ -392,7 +422,9 @@ const viajeModel = {
         pin_hash || null,
         deviceTs,
         latitud || null,
-        longitud || null
+        longitud || null,
+        foto_odometro_salida || null,
+        foto_horometro_salida || null
       ]);
       const viajeNuevo = res.rows[0];
 
@@ -444,14 +476,32 @@ const viajeModel = {
   },
 
   // 4. Registrar Llegada a Faena o Llegada a Patio (Paso 3)
-  async registrarLlegada({ token_viaje, km_final, horometro_final, horometro_grua_inicial, combustible_llegada, foto_llegada, pin_hash, latitud, longitud, obs_termino, device_timestamp }) {
+  async registrarLlegada({
+    token_viaje,
+    km_final,
+    horometro_final,
+    horometro_grua_inicial,
+    combustible_llegada,
+    foto_llegada,
+    foto_odometro_llegada,
+    foto_horometro_camion_llegada,
+    foto_horometro_grua_llegada,
+    pin_hash,
+    latitud,
+    longitud,
+    obs_termino,
+    device_timestamp
+  }) {
     const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
     const sql = `
       UPDATE tequ_log_desplazamiento
       SET 
         km_final = $1,
         horometro_final = $2,
-        foto_tablero_llegada_path = $3,
+        foto_tablero_llegada_path = COALESCE($3, $12, foto_tablero_llegada_path),
+        foto_odometro_llegada_path = COALESCE($12, $3, foto_odometro_llegada_path),
+        foto_horometro_camion_llegada_path = COALESCE($13, foto_horometro_camion_llegada_path),
+        foto_horometro_grua_llegada_path = COALESCE($14, foto_horometro_grua_llegada_path),
         pin_hash = $4,
         fecha_llegada_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_llegada_faena ELSE CURRENT_TIMESTAMP END,
         fecha_llegada_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN CURRENT_TIMESTAMP ELSE fecha_llegada_patio END,
@@ -478,7 +528,10 @@ const viajeModel = {
       obs_termino || 'Arribo verificado con éxito',
       combustible_llegada ? JSON.stringify(combustible_llegada) : null,
       horometro_grua_inicial || null,
-      token_viaje
+      token_viaje,
+      foto_odometro_llegada || null,
+      foto_horometro_camion_llegada || null,
+      foto_horometro_grua_llegada || null
     ]);
     if (res.rows.length === 0) throw new Error('Viaje no encontrado para registrar llegada');
     const viajeTerminado = res.rows[0];
@@ -663,7 +716,7 @@ const viajeModel = {
         CASE 
           WHEN v.tipo_trayecto = 'RETORNO' AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA') THEN 1
           WHEN v.tipo_trayecto = 'IDA' AND v.estado_trayecto IN ('ASIGNADO', 'EN_RUTA') THEN 2
-          WHEN v.tipo_trayecto = 'RETORNO' AND v.estado_trayecto = 'LLEGADO' THEN 4
+          WHEN v.tipo_trayecto = 'RETORNO' AND v.estado_trayecto IN ('LLEGADO', 'ARRIBADO', 'CONCLUIDO') THEN 4
           ELSE 3
         END ASC,
         v.id_log_desplazamiento DESC

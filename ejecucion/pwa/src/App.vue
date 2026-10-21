@@ -12,6 +12,11 @@
         v{{ version }}
       </span>
 
+      <!-- Botón Manuales Operativos -->
+      <v-btn icon @click="abrirManualOperador" class="mr-1" size="small" title="Manual del Operador en Terreno">
+        <v-icon color="amber-darken-2">mdi-book-open-page-variant</v-icon>
+      </v-btn>
+
       <!-- Theme Toggle -->
       <v-btn icon @click="toggleTheme" class="mr-4" size="small">
         <v-icon>{{ currentTheme === 'dark' ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}</v-icon>
@@ -23,39 +28,83 @@
       Estás sin conexión. Algunos cambios se enviarán cuando vuelvas a estar online.
     </v-alert>
 
+    <!-- ⚠️ Banner permanente de Marcha Blanca Finalizada / Ambiente DEV -->
+    <v-banner
+      v-if="esAmbienteDev"
+      color="amber-darken-3"
+      lines="two"
+      density="comfortable"
+      elevation="2"
+      class="bg-amber-darken-4 text-white"
+    >
+      <template #prepend>
+        <v-icon icon="mdi-alert-decagram" color="white" size="large"></v-icon>
+      </template>
+      <v-banner-text class="font-weight-medium text-body-2 text-white">
+        <strong>Ambiente de Pruebas:</strong> La marcha blanca ha finalizado. Para registrar operaciones oficiales ingresa a la app de Producción.
+      </v-banner-text>
+      <template #actions>
+        <v-btn
+          color="white"
+          variant="flat"
+          class="text-amber-darken-4 font-weight-black text-none"
+          size="small"
+          prepend-icon="mdi-rocket-launch"
+          @click="irAProduccion"
+        >
+          Ir a Producción Oficial ➔
+        </v-btn>
+      </template>
+    </v-banner>
+
     <v-main>
       <router-view />
     </v-main>
 
-    <!-- 📱 Barra de Navegación Inferior Fija (Estilo App Nativa) -->
+    <!-- 📱 Barra de Navegación Inferior Fija (Apple iOS Native Tab Bar) -->
     <v-bottom-navigation
       v-if="estaLogueado"
       grow
-      color="primary"
-      class="pb-safe"
-      elevation="4"
-      mode="shift"
+      class="ios-tab-bar pb-safe"
+      elevation="0"
     >
-      <v-btn to="/surveys" value="surveys">
+      <v-btn to="/surveys" value="surveys" class="ios-tab-btn">
         <v-badge :content="fmt(counts.calidad)" :model-value="counts.calidad > 0" color="error" floating>
-          <v-icon>mdi-clipboard-text-multiple</v-icon>
+          <v-icon size="22">mdi-view-dashboard-outline</v-icon>
         </v-badge>
-        <span class="text-caption font-weight-bold">Inspecciones</span>
+        <span class="ios-tab-label">Operación</span>
       </v-btn>
 
-      <v-btn to="/firmas" value="firmas">
+      <v-btn to="/firmas" value="firmas" class="ios-tab-btn">
         <v-badge :content="fmt(counts.documentos)" :model-value="counts.documentos > 0" color="error" floating>
-          <v-icon>mdi-signature-freehand</v-icon>
+          <v-icon size="22">mdi-file-sign</v-icon>
         </v-badge>
-        <span class="text-caption font-weight-bold">Firmas</span>
+        <span class="ios-tab-label">Firmas</span>
       </v-btn>
 
-      <v-btn id="perfil-btn" value="perfil">
-        <v-icon>mdi-account-circle</v-icon>
-        <span class="text-caption font-weight-bold">Mi Perfil</span>
+      <v-btn to="/taller" value="taller" class="ios-tab-btn">
+        <v-icon size="22" color="amber-darken-2">mdi-wrench-clock</v-icon>
+        <span class="ios-tab-label">Taller</span>
+      </v-btn>
+
+      <!-- Bodega / Pañol WMS para perfiles autorizados (Bodega / Taller / Admin) -->
+      <v-btn v-if="esBodegaOTaller" to="/bodega" value="bodega" class="ios-tab-btn">
+        <v-icon size="22" color="amber-darken-2">mdi-warehouse</v-icon>
+        <span class="ios-tab-label">Bodega</span>
+      </v-btn>
+
+      <!-- Cotizador solo para perfiles autorizados (Comercial / Admin) -->
+      <v-btn v-if="esAdminOComercial" to="/cotizador-express" value="cotizador" class="ios-tab-btn">
+        <v-icon size="22" color="amber-darken-2">mdi-calculator-variant-outline</v-icon>
+        <span class="ios-tab-label">Cotizador</span>
+      </v-btn>
+
+      <v-btn id="perfil-btn" value="perfil" class="ios-tab-btn">
+        <v-icon size="22">mdi-account-circle-outline</v-icon>
+        <span class="ios-tab-label">Mi Perfil</span>
 
         <v-menu activator="#perfil-btn" location="top end">
-          <v-card min-width="260" class="d-flex flex-column rounded-xl border border-white/5">
+          <v-card min-width="260" class="d-flex flex-column rounded-2xl border border-white/10 shadow-xl">
             <v-card-title class="py-3">
               <div class="text-subtitle-1 font-weight-bold">
                 {{ userName || 'Usuario' }}
@@ -66,7 +115,7 @@
             </v-card-title>
             <v-divider />
             <v-card-text class="py-3">
-              <div class="text-caption text-medium-emphasis mb-1">Roles</div>
+              <div class="text-caption text-medium-emphasis mb-1">Roles Asignados</div>
               <div v-if="userRolesList.length">
                 <v-chip v-for="(rol, idx) in userRolesList" :key="idx" size="small" class="ma-1" color="primary" variant="outlined">
                   {{ rol.name_rol }}
@@ -75,8 +124,32 @@
               <div v-else class="text-caption text-medium-emphasis">Sin roles asignados</div>
             </v-card-text>
             <v-divider />
+            <v-card-text class="py-2">
+              <div class="text-caption text-medium-emphasis mb-2 font-weight-bold">Documentación Oficial</div>
+              <v-btn
+                variant="tonal"
+                color="amber-darken-3"
+                size="small"
+                class="w-100 mb-2 text-none font-weight-bold"
+                prepend-icon="mdi-book-open-page-variant"
+                @click="abrirManualOperador"
+              >
+                Manual Operador en Terreno
+              </v-btn>
+              <v-btn
+                variant="tonal"
+                color="blue-darken-2"
+                size="small"
+                class="w-100 text-none font-weight-bold"
+                prepend-icon="mdi-file-document-check"
+                @click="abrirManualPlataformas"
+              >
+                Manual Plataformas 360°
+              </v-btn>
+            </v-card-text>
+            <v-divider />
             <v-card-actions class="py-2">
-              <v-btn variant="text" color="red-lighten-2" prepend-icon="mdi-logout" class="text-capitalize w-100" @click="logout">
+              <v-btn variant="text" color="red-lighten-2" prepend-icon="mdi-logout" class="text-capitalize w-100 font-bold" @click="logout">
                 Cerrar sesión
               </v-btn>
             </v-card-actions>
@@ -99,6 +172,7 @@ import useProfileStore from '@/store/profile.js'
 import { useUserDetailStore } from '@/store/userDetail'
 import { useApiWatcher } from '@/useApiWatcher.js'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
+import { verificarEsAdminOComercial } from '@/composables/usePermisosCotizador'
 
 /* eslint-disable */
 
@@ -244,6 +318,24 @@ function isActiveRoute(path) {
 
 const fmt = (n) => (n > 99 ? '99+' : String(n))
 
+/* ---------- ambiente DEV / Fin de Marcha Blanca ---------- */
+const esAmbienteDev = computed(() => {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname || ''
+    if (path.startsWith('/pwa-gsp-prod') || path.startsWith('/lg-gsp-prod')) {
+      return false
+    }
+    if (path.startsWith('/pwa-gsp-dev') || path.startsWith('/lg-gsp-dev')) {
+      return true
+    }
+  }
+  return process.env.VUE_APP_BASE_URL === '/pwa-gsp-dev/'
+})
+
+const irAProduccion = () => {
+  window.location.href = 'https://servidor.leanglobal.cl/pwa-gsp-prod/'
+}
+
 const esSup = computed(() => {
   const u = userDetailStore.userDetail
   const roles = u?.usuarioRoles
@@ -347,6 +439,18 @@ const userRolesList = computed(() => {
   return Array.from(unique.values())
 })
 
+const esAdminOComercial = computed(() => {
+  return verificarEsAdminOComercial(userRolesList.value)
+})
+
+const esBodegaOTaller = computed(() => {
+  const roles = userRolesList.value || []
+  return roles.some(r => {
+    const name = String(r.name_rol || '').toUpperCase()
+    return name.includes('ADMIN') || name.includes('BODEGA') || name.includes('TALLER') || name.includes('PAÑOL')
+  })
+})
+
 const hasCnxRole = computed(() => {
   return !DISABLE_CNX_SURFACES && false
 })
@@ -358,6 +462,20 @@ watch(
   },
   { immediate: true }
 )
+
+const abrirManualOperador = () => {
+  const isDev = window.location.pathname.includes('-dev') || window.location.port === '8085'
+  const prefix = isDev ? '/lg-gsp-dev' : '/lg-gsp-prod'
+  const origin = window.location.port === '8085' ? 'http://localhost:5173' : window.location.origin
+  window.open(`${origin}${prefix}/manual_operador_terreno_gsp.html`, '_blank')
+}
+
+const abrirManualPlataformas = () => {
+  const isDev = window.location.pathname.includes('-dev') || window.location.port === '8085'
+  const prefix = isDev ? '/lg-gsp-dev' : '/lg-gsp-prod'
+  const origin = window.location.port === '8085' ? 'http://localhost:5173' : window.location.origin
+  window.open(`${origin}${prefix}/manual_entrega_y_retorno_plataformas_bsm.html`, '_blank')
+}
 
 const logout = () => {
   // Limpia autenticación sin tocar datos offline de inspecciones
@@ -435,5 +553,50 @@ const logout = () => {
 
 .alerta-offline {
   margin-top: 100px !important;
+}
+
+/* =========================================================================
+ * 🍏 APPLE iOS NATIVE TAB BAR STYLES
+ * ========================================================================= */
+.ios-tab-bar {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+  height: 60px !important;
+}
+
+:deep(.v-theme--dark) .ios-tab-bar,
+.dark .ios-tab-bar {
+  background: rgba(24, 24, 27, 0.88) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ios-tab-btn {
+  letter-spacing: -0.2px !important;
+  min-width: 64px !important;
+  opacity: 0.65;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.ios-tab-btn:hover {
+  opacity: 0.9;
+}
+
+.ios-tab-btn.v-btn--active {
+  opacity: 1 !important;
+  color: #007AFF !important;
+}
+
+:deep(.ios-tab-btn.v-btn--active .v-icon) {
+  color: #007AFF !important;
+}
+
+.ios-tab-label {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  margin-top: 2px !important;
 }
 </style>

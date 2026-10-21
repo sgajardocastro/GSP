@@ -37,4 +37,8 @@ router.post('/sla/ejecutar-alertas', reportDiarioController.ejecutarAlertasSLA);
 router.post('/:id/adjuntar-respaldo-fisico', reportDiarioController.adjuntarRespaldoFisico);
 router.post('/regularizar-manual', reportDiarioController.regularizarReporteManual);
 
+// 9. Rectificación Retroactiva de Operador y Rigger (SPEC-077 / REQ-1043)
+router.post('/proyecto/:id_proyecto/rectificar-tripulacion', reportDiarioController.rectificarTripulacionProyecto);
+
 module.exports = router;
+

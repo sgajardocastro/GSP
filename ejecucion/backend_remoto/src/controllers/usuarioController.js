@@ -128,8 +128,26 @@ module.exports = {
       console.error("Error en postInicioEnrolamiento:", err);
       return res.status(500).json({ error: err.message });
     }
-  }
-  ,
+  },
+
+  postReenviarEnrolamiento: async (req, res) => {
+    try {
+      const id_user = req.body && req.body.id_user;
+      if (!id_user) {
+        return res.status(400).json({ success: false, message: "Falta el id_user requerido." });
+      }
+
+      const resultado = await usuario.reenviarEnrolamiento(id_user);
+      return res.status(200).json({
+        success: true,
+        message: "Enlace de enrolamiento reenviado exitosamente.",
+        data: resultado,
+      });
+    } catch (err) {
+      console.error("Error en postReenviarEnrolamiento:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  },
   putEnrolamiento: async (req, res) => {
     try {
       const {

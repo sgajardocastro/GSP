@@ -124,7 +124,7 @@ class Flujo {
           idFlow,
           step.id_flow_tmpl_step,
           step.flow_tmpl_step_orden,
-          (stepIndex === 0 && idDocIn) ? 'PENDIENTE' : step.flow_tmpl_step_fase,
+          (stepIndex === 0 && idDocIn) ? 'PENDIENTE' : (step.flow_tmpl_step_fase === 'CIERRE AUTONOMO' ? 'EN ESPERA' : step.flow_tmpl_step_fase),
           idUserToUse,
           step.id_rol,
           idDocInToUse,

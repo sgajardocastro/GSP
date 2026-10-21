@@ -5,6 +5,7 @@ const acreditacionController = require('../controllers/acreditacionController');
 router.get('/', acreditacionController.getAcreditacionesKanban);
 router.get('/tipos', acreditacionController.getTiposCertificadoPersona);
 router.get('/personal', acreditacionController.getPersonalAcreditacion);
+router.post('/personal/externo', acreditacionController.crearPersonalExterno);
 router.get('/personal/rut/:rut', acreditacionController.getPersonalByRut);
 router.get('/personal/:id', acreditacionController.getPersonalDetail);
 router.put('/personal/:id', acreditacionController.updatePersonalDetail);
