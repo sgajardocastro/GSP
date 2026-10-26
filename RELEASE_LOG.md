@@ -4,6 +4,44 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [Portal Web GSP] - Versión 1.0.167 / [PWA GSP] - Versión 1.0.55
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 20:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/pwa-gsp-dev` & `/var/www/html/pwa-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1077` (`SPEC-092 v1.1`, `SPEC-006 v1.1`, `SPEC-095 v1.1`, `SPEC-096 v1.1`)
+- **Especificación Técnica:** Compromisos Reunión Seguimiento Inventario y Mantenimiento (Bloque 1 — Buscador Predictivo en Recepción WMS, Diferencias `Δ` de Medidores en Vista 360°, Segregación de Valorización Taller vs. Bodega e Impresión de OTM en 1 Sola Página A4):
+  1. **Buscador Predictivo en Recepción de Materiales (Paso 3) y Claridad Compra en Terreno (Paso 1) (`RecepcionMaterialesView.vue` / `SPEC-092 v1.1`):**
+     - Incorporación de buscador predictivo en tiempo real en cada línea del Paso 3 de Recepción WMS, permitiendo buscar entre los 2.854 ítems del catálogo por nombre, SKU o familia con visualización de unidad, stock actual y PMP vigente, más botón `[Cambiar]` para rectificar selección.
+     - Clarificación explícita del botón `Compra en Terreno / Proveedor Directo` y creación rápida de proveedor inline en el Paso 1.
+  2. **Cálculo Automático de Diferencias (`Δ`) de Horómetros y Odómetros en Vista 360° (`tequEquipoModel.js` & `Vista360.vue` / `SPEC-006 v1.1`):**
+     - Cálculo en SQL (`LEFT JOIN LATERAL` sobre `tope_horometros` y `tmnt_orden_trabajo`) de `horometro_grua_anterior`, `delta_horometro_grua`, `horometro_chasis_anterior`, `delta_horometro_chasis`, `odometro_anterior`, `delta_odometro_km` y `ultimo_horometro_service`.
+     - Despliegue visual de píldoras de incremento (`Δ +X hrs` y `Δ +X km`) con tooltip de lectura anterior en la tabla de Gestión de Flota y en la Ficha 360° del equipo.
+  3. **Segregación de Valorización (`$ CLP`) entre Taller y Adquisiciones/Bodega (`MantenimientoView.vue` & `TallerOtDetalleView.vue` / `SPEC-095 v1.1`):**
+     - Eliminación del input manual `Costo Unitario CLP (Neto)` en la solicitud/registro de repuestos y compras en terreno desde Taller (Web y PWA), delegando la valorización neta y registro de factura/OC exclusivamente a Adquisiciones/Bodega (`adquisiciones@arriendosanpablo.cl`).
+  4. **Ajuste de Impresión de Orden de Trabajo (OTM) a 1 Sola Página A4 (`MantenimientoView.vue` / `SPEC-096 v1.1`):**
+     - Eliminación del salto de página forzado (`page-break-before: always`) y compactación integral de `#printable-pauta-ot` (`@page { size: A4 portrait; margin: 7mm; }`) para que cabecera, triple medidor, pauta de actividades, líneas de hallazgos en terreno, repuestos y firmas quepan en **1 sola hoja A4**.
+
+## [Portal Web GSP] - Versión 1.0.166
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 20:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1076` (`SPEC-103 v1.1`)
+- **Especificación Técnica:** Desacople Total del Circuito de Firmas FES del Estado de Pago (2 Hitos: Control de Gestión ➔ Despacho Comercial con Liberación Directa de Facturación):
+  1. **Erradicación Definitiva de la 2° Firma Contable en el Circuito EDP:**
+     - Eliminación de la firma obligatoria de Maritza Seguel en `firmarPasoEdp` (`estadoPagoController.js`).
+     - Al visar Control de Gestión (Yara) con su Firma FES (Hito 1), el EDP se libera de forma automática e inmediata:
+       * **A Facturación:** `habilitado_facturar = true` (si el servicio no requiere OC o ya cuenta con OC cargada), notificando por correo a Contabilidad (`mseguel@arriendosanpablo.cl`) para emitir la factura DTE sin bloqueos de firmas.
+       * **A Comercial:** Habilitación directa para firmar y despachar formalmente el EDP al Mandante (`paso_actual = 2`).
+  2. **Actualización de Sección 4 en PDF Oficial del EDP (`edpPdfService.js`):**
+     - Transición de 4 columnas a **3 columnas canónicas**:
+       * Columna 1 (33%): `1. Control de Gestión` (Conciliación de Reports y Emisión FES).
+       * Columna 2 (33%): `2. Despacho Comercial` (V°B° Comercial y Envío Oficial FES).
+       * Columna 3 (34%): `3. Conformidad Mandante` (Cliente Mandante y Respaldo OC/HES).
+     - Erradicación total del recuadro "2. Validación Contable" en el pie de firmas impreso.
+  3. **Simplificación Visual en Interfaz Web (`ModalCaratulaEDP.vue` y `Torre.vue`):**
+     - En `ModalCaratulaEDP.vue`: Rediseño de la cabecera de hitos a 2 Hitos FES (`Hito 1 • Control de Gestión` ➔ `Hito 2 • Despacho Comercial`) más tarjeta desacoplada informativa de estado de facturación contable (`🟢 Listo para Facturar DTE` vs `⏳ Falta OC`).
+     - En `Torre.vue`: Homologación de píldoras a `1° Ctl.Gest ➔ 2° Despacho` y evaluación de condición de facturación vinculada a la firma de Control de Gestión.
+
 ## [Portal Web GSP] - Versión 1.0.165
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-10-26 19:20:00 (-03:00)

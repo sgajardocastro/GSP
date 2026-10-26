@@ -1150,12 +1150,17 @@ exports.firmarPasoEdp = async (req, res) => {
       // HITO 1: Yara (Control de Gestión) da el OK de reports y genera el EDP con su firma FES
       flujoActual.firma_1_analista = datosFirma;
       flujoActual.observacion_devolucion = null;
-      flujoActual.estado = 'EN_REVISION_CONTABILIDAD';
-      flujoActual.paso_actual = 2;
+
+      // Desacople total (Acuerdo Maritza Seguel / Jorge Ponce):
+      // Al validar Control de Gestión, el EDP queda liberado automáticamente para Facturación
+      // y Despacho Comercial sin requerir una 2° firma contable.
+      const habilitadoFacturarInmediato = !requiereOc || tieneOc;
+      flujoActual.estado = habilitadoFacturarInmediato ? 'LIBERADO_FACTURAR' : 'ESPERANDO_OC_CLIENTE';
+      flujoActual.paso_actual = 2; // Pasa directo al Despacho Comercial
       flujoActual.requiere_oc = requiereOc;
       flujoActual.tiene_oc = tieneOc;
-      flujoActual.habilitado_facturar = false;
-      flujoActual.estado_facturacion_inmediata = 'PENDIENTE_FIRMA_CONTABILIDAD';
+      flujoActual.habilitado_facturar = habilitadoFacturarInmediato;
+      flujoActual.estado_facturacion_inmediata = habilitadoFacturarInmediato ? 'HABILITADO_FACTURAR' : 'ESPERANDO_OC_CLIENTE';
       if (monto_edp_neto !== undefined) flujoActual.monto_edp_neto = Number(monto_edp_neto) || 0;
 
       flujoActual.historial.unshift({
@@ -1170,135 +1175,76 @@ exports.firmarPasoEdp = async (req, res) => {
       jf.edp_flujo_v1 = flujoActual;
       await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
 
-      // Notificar inmediatamente a Contabilidad para que valide y firme el EDP
+      // Notificar a Contabilidad: EDP Liberado para Facturar (o retenido por OC)
       const badgeOcHtml = !requiereOc
-        ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">NO REQUIERE OC (Facturación Directa tras Firma Contable)</span>`
+        ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">NO REQUIERE OC (Facturación Inmediata Habilitada)</span>`
         : (tieneOc
           ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">REQUIERE OC — OC YA CARGADA (#${jf.oc_v1?.numero_oc || ordenesCompra[0]?.numero_oc})</span>`
           : `<span style="background:#78350f; color:#fde68a; padding:4px 8px; border-radius:4px; font-weight:bold;">REQUIERE OC — PENDIENTE RECEPCIÓN DE OC DEL CLIENTE</span>`);
 
+      const asuntoConta = habilitadoFacturarInmediato
+        ? `[GSP] 🟢 LISTO PARA FACTURAR: ${proyecto.codi_proyecto} — ${proyecto.cliente_nombre}`
+        : `[GSP] ⏳ EDP Liberado (${proyecto.codi_proyecto}) — Esperando OC Comercial`;
+
       notificacionService.despacharEmailSmtp({
         para: 'mseguel@arriendosanpablo.cl',
         cc: 'omar.ghiselini@arriendosanpablo.cl, logistica@arriendosanpablo.cl',
-        asunto: `[GSP] 📊 EDP Generado por Control de Gestión (${proyecto.codi_proyecto}) — Pendiente Validación Contable`,
-        titulo: `Estado de Pago Listo para Validación Contable: ${proyecto.codi_proyecto}`,
-        subtitulo: `Elaborado y firmado con FES por ${nombreUsuario} (Control de Gestión)`,
-        contenido: `<p><strong>Control de Gestión (${nombreUsuario})</strong> ha verificado el 100% de los Reports Diarios del servicio <strong>${proyecto.codi_proyecto}</strong> y ha generado el Estado de Pago Oficial con su Firma FES (<code>${codigoFes}</code>).</p>
+        asunto: asuntoConta,
+        titulo: `Estado de Pago Liberado: ${proyecto.codi_proyecto}`,
+        subtitulo: `Validado por ${nombreUsuario} (Control de Gestión) — Facturación Desacoplada`,
+        contenido: `<p><strong>Control de Gestión (${nombreUsuario})</strong> ha validado el 100% de los Reports Diarios del servicio <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) y ha emitido el EDP con Firma FES (<code>${codigoFes}</code>).</p>
         <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px; margin:14px 0; color:#e2e8f0;">
           <p style="margin:4px 0;"><strong>Cliente Mandante:</strong> ${proyecto.cliente_nombre} (${proyecto.cliente_rut || 'S/R'})</p>
           <p style="margin:4px 0;"><strong>Obra / Faena:</strong> ${crmV1.obra_nombre || proyecto.nombre_proyecto || 'Faena'}</p>
-          <p style="margin:8px 0 4px 0;"><strong>Condición de Orden de Compra (OC / HES):</strong> ${badgeOcHtml}</p>
+          <p style="margin:8px 0 4px 0;"><strong>Condición de Orden de Compra:</strong> ${badgeOcHtml}</p>
         </div>
-        <p><strong>Siguiente Paso (Hito 2):</strong> Ingrese a la Carátula del EDP para validar tarifas y estampar la <strong>Firma de Contabilidad</strong> (o devolver con observaciones si requiere ajuste).</p>`,
-        botonTexto: 'REVISAR Y FIRMAR EDP EN CONTABILIDAD',
-        botonUrl: edpPdfUrl
+        <p>${habilitadoFacturarInmediato ? '<strong>Acción Contable:</strong> El servicio se encuentra habilitado para subir la Factura DTE oficial sin esperar firmas adicionales.' : '<strong>Estado:</strong> A la espera de que Comercial cargue la Orden de Compra.'}</p>`,
+        botonTexto: 'ABRIR BANDEJA CONTABLE',
+        botonUrl: torreUrl
       }).catch(e => console.warn('[EDP Mail Paso 1 -> Contabilidad]', e.message));
 
-      return res.status(200).json({
-        success: true,
-        message: 'EDP generado y firmado por Control de Gestión. Se ha notificado a Contabilidad para su validación.',
-        codigo_fes: codigoFes,
-        edp_flujo_v1: flujoActual
-      });
-    }
-
-    if (pasoNum === 2) {
-      // HITO 2: Contabilidad valida y firma el EDP -> Pasa al Comercial para envío al cliente y evalúa Facturación Inmediata
-      const habilitadoFacturar = !requiereOc || tieneOc;
-      flujoActual.firma_2_contabilidad = datosFirma;
-      flujoActual.observacion_devolucion = null;
-      flujoActual.estado = 'VALIDADO_CONTABILIDAD';
-      flujoActual.paso_actual = 3;
-      flujoActual.requiere_oc = requiereOc;
-      flujoActual.tiene_oc = tieneOc;
-      flujoActual.monto_total_ocs = montoTotalOcs;
-      flujoActual.habilitado_facturar = habilitadoFacturar;
-      flujoActual.estado_facturacion_inmediata = habilitadoFacturar ? 'HABILITADO_FACTURAR' : 'ESPERANDO_OC_CLIENTE';
-      if (monto_edp_neto !== undefined) flujoActual.monto_edp_neto = Number(monto_edp_neto) || flujoActual.monto_edp_neto || 0;
-
-      flujoActual.historial.unshift({
-        paso: 2,
-        accion: 'FIRMAR_CONTABILIDAD',
-        usuario: nombreUsuario,
-        codigo_fes: codigoFes,
-        fecha: ahoraIso,
-        observaciones: datosFirma.observaciones
-      });
-
-      jf.edp_flujo_v1 = flujoActual;
-      await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
-
-      // Notificación A: Al Comercial responsable para que firme y envíe el EDP al cliente
+      // Notificar al Ejecutivo Comercial para despacho al cliente
       const emailComercial = crmV1.vendedor_email || proyecto.creador_email || 'omar.ghiselini@arriendosanpablo.cl';
       notificacionService.despacharEmailSmtp({
         para: emailComercial,
         cc: 'mseguel@arriendosanpablo.cl, logistica@arriendosanpablo.cl',
-        asunto: `[GSP] ✅ EDP Validado por Contabilidad (${proyecto.codi_proyecto}) — Listo para Enviar al Cliente`,
-        titulo: `EDP Validado por Contabilidad: ${proyecto.codi_proyecto}`,
-        subtitulo: `Visado por ${nombreUsuario} (${codigoFes}) — Disponible para Despacho Comercial`,
-        contenido: `<p>El área de <strong>Contabilidad (${nombreUsuario})</strong> ha validado y firmado el Estado de Pago del servicio <strong>${proyecto.codi_proyecto}</strong> para el cliente <strong>${proyecto.cliente_nombre}</strong>.</p>
-        <div style="background:#1e293b; border:1px solid #3b82f6; border-radius:8px; padding:14px; margin:14px 0; color:#e2e8f0;">
-          <p style="margin:4px 0;">✅ <strong>Hito 1 (Control de Gestión):</strong> ${flujoActual.firma_1_analista?.nombre_firmante || 'Validado'}</p>
-          <p style="margin:4px 0;">✅ <strong>Hito 2 (Contabilidad):</strong> ${nombreUsuario} (<code>${codigoFes}</code>)</p>
-          <p style="margin:4px 0;">⏳ <strong>Hito 3 (Comercial):</strong> Pendiente su firma y envío formal al cliente mandante.</p>
-          ${requiereOc && !tieneOc ? `<p style="margin:8px 0 0 0; color:#fbbf24;">⚠️ <strong>Atención Comercial:</strong> Este servicio requiere Orden de Compra (OC / HES). Recuerde cargarla en el sistema apenas el cliente la emita para habilitar la facturación.</p>` : ''}
-        </div>`,
-        botonTexto: 'VER DOSSIER EDP OFICIAL',
+        asunto: `[GSP] 📑 EDP Disponible para Despacho al Cliente: ${proyecto.codi_proyecto}`,
+        titulo: `EDP Listo para Despacho: ${proyecto.codi_proyecto}`,
+        subtitulo: `Validado por Control de Gestión (${codigoFes})`,
+        contenido: `<p>El Estado de Pago del servicio <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) ha sido emitido por Control de Gestión y se encuentra disponible para su firma y despacho formal al mandante.</p>
+        ${requiereOc && !tieneOc ? `<div style="background:#451a03; border:1px solid #f59e0b; border-radius:8px; padding:12px; margin:12px 0; color:#fef3c7;"><strong>⚠️ ATENCIÓN COMERCIAL:</strong> Este servicio requiere Orden de Compra. Por favor cárguela en la plataforma para destrabar la facturación en Contabilidad.</div>` : ''}`,
+        botonTexto: 'VER Y DESPACHAR EDP AL CLIENTE',
         botonUrl: edpPdfUrl
-      }).catch(e => console.warn('[EDP Mail Paso 2 -> Comercial]', e.message));
-
-      // Notificación B: Si ya cumple condición de facturación inmediata (!requiereOc || tieneOc), disparar alerta verde de Facturación Inmediata
-      if (habilitadoFacturar) {
-        const razonHabilitacion = !requiereOc
-          ? 'Servicio marcado SIN requisito de Orden de Compra + EDP Validado'
-          : `Servicio con Orden de Compra disponible (#${jf.oc_v1?.numero_oc || ordenesCompra[0]?.numero_oc}) + EDP Validado`;
-
-        notificacionService.despacharEmailSmtp({
-          para: 'mseguel@arriendosanpablo.cl',
-          cc: 'omar.ghiselini@arriendosanpablo.cl',
-          asunto: `[GSP] 🟢 LISTO PARA FACTURAR INMEDIATAMENTE: ${proyecto.codi_proyecto} — ${proyecto.cliente_nombre}`,
-          titulo: `🟢 Habilitado para Facturación Inmediata: ${proyecto.codi_proyecto}`,
-          subtitulo: razonHabilitacion,
-          contenido: `<p>El servicio <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) ha completado todas las condiciones comerciales y contables para su <strong>Facturación DTE Inmediata</strong> (sin esperar el cierre interno del ITS):</p>
-          <div style="background:#064e3b; border:1px solid #10b981; border-radius:8px; padding:14px; margin:14px 0; color:#ecfdf5;">
-            <p style="margin:4px 0;">🟢 <strong>Estado de Facturación:</strong> HABILITADO PARA FACTURAR INMEDIATAMENTE</p>
-            <p style="margin:4px 0;">📄 <strong>Condición Comercial:</strong> ${razonHabilitacion}</p>
-            ${tieneOc ? `<p style="margin:4px 0;">📎 <strong>Monto Neto OC Registrada:</strong> $${Number(montoTotalOcs).toLocaleString('es-CL')}</p>` : ''}
-            <p style="margin:4px 0;">🔐 <strong>Código FES Contabilidad:</strong> ${codigoFes}</p>
-          </div>`,
-          botonTexto: 'DESCARGAR EDP OFICIAL Y FACTURAR',
-          botonUrl: edpPdfUrl
-        }).catch(e => console.warn('[EDP Mail Facturación Inmediata]', e.message));
-      }
+      }).catch(e => console.warn('[EDP Mail Paso 1 -> Comercial]', e.message));
 
       return res.status(200).json({
         success: true,
-        message: habilitadoFacturar
-          ? 'EDP validado por Contabilidad. El servicio está HABILITADO PARA FACTURAR INMEDIATAMENTE y se notificó al Comercial.'
-          : 'EDP validado por Contabilidad y enviado al Comercial. Queda a la espera de la recepción de la OC del cliente para facturar.',
+        message: 'EDP generado y firmado por Control de Gestión. Liberado automáticamente para facturación y despacho comercial.',
         codigo_fes: codigoFes,
         edp_flujo_v1: flujoActual
       });
     }
 
-    if (pasoNum === 3) {
-      // HITO 3: Comercial firma y despacha el EDP al Cliente Mandante
+    if (pasoNum === 2 || pasoNum === 3) {
+      // HITO COMERCIAL: Comercial firma y despacha el EDP al Cliente Mandante (Paso 2 o 3)
       const estadoDespacho = es_pago_anticipado ? 'INTERNO_PAGO_PREVIO' : 'DESPACHADO_CLIENTE';
       const firmaComercial = {
         ...datosFirma,
+        paso: 2,
+        cargo: 'Ejecutivo Comercial Responsable',
         es_pago_anticipado: !!es_pago_anticipado,
         estado_despacho: estadoDespacho
       };
 
       flujoActual.firma_3_comercial = firmaComercial;
       flujoActual.estado = estadoDespacho;
-      flujoActual.paso_actual = 4;
+      flujoActual.paso_actual = 3;
       flujoActual.requiere_oc = requiereOc;
       flujoActual.tiene_oc = tieneOc;
       flujoActual.habilitado_facturar = !requiereOc || tieneOc;
 
       flujoActual.historial.unshift({
-        paso: 3,
+        paso: 2,
         accion: es_pago_anticipado ? 'FIRMAR_COMERCIAL_INTERNO' : 'FIRMAR_Y_DESPACHAR_CLIENTE',
         usuario: nombreUsuario,
         codigo_fes: codigoFes,
@@ -1307,7 +1253,7 @@ exports.firmarPasoEdp = async (req, res) => {
       });
 
       jf.edp_flujo_v1 = flujoActual;
-      jf.edp_firma_comercial = firmaComercial; // Retrocompatibilidad con vistas existentes
+      jf.edp_firma_comercial = firmaComercial;
 
       await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
 

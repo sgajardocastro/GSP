@@ -582,10 +582,10 @@ function buildEdpHtml(data) {
     <span class="section-tag" style="color: #475569;">4. CONFORMIDAD Y CERTIFICACIÓN DE ESTADO DE PAGO (CIRCUITO DE VALIDACIÓN FES)</span>
     <table class="w-full" style="margin-top: 6px;">
       <tr>
-        <td style="width: 24%; text-align: center; vertical-align: bottom; padding: 4px; border-right: 1px dashed #cbd5e1;">
+        <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 6px; border-right: 1px dashed #cbd5e1;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
             ${f1Analista?.codigo_fes ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ FIRMADO FES (HITO 1)</div>
+              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ EMISIÓN FES (CONTROL GESTIÓN)</div>
               <div style="font-size: 8.5px; color: #0f172a;"><strong>${f1Analista.nombre_firmante}</strong></div>
               <div class="font-mono text-muted" style="font-size: 7.5px;">${f1Analista.codigo_fes}</div>
               <div class="font-mono text-muted" style="font-size: 7.5px;">${formatDateCL(f1Analista.fecha_firma)}</div>
@@ -596,24 +596,10 @@ function buildEdpHtml(data) {
           <div class="font-bold text-dark" style="font-size: 9px;">1. Control de Gestión</div>
           <div class="text-muted" style="font-size: 7.5px;">Conciliación de Reports y Emisión</div>
         </td>
-        <td style="width: 24%; text-align: center; vertical-align: bottom; padding: 4px; border-right: 1px dashed #cbd5e1;">
-          <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
-            ${f2Contabilidad?.codigo_fes ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ FIRMADO FES (HITO 2)</div>
-              <div style="font-size: 8.5px; color: #0f172a;"><strong>${f2Contabilidad.nombre_firmante}</strong></div>
-              <div class="font-mono text-muted" style="font-size: 7.5px;">${f2Contabilidad.codigo_fes}</div>
-              <div class="font-mono text-muted" style="font-size: 7.5px;">${formatDateCL(f2Contabilidad.fecha_firma)}</div>
-            ` : `
-              <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">V°B° Contabilidad</div>
-            `}
-          </div>
-          <div class="font-bold text-dark" style="font-size: 9px;">2. Validación Contable</div>
-          <div class="text-muted" style="font-size: 7.5px;">Revisión de Tarifas y Facturación</div>
-        </td>
-        <td style="width: 24%; text-align: center; vertical-align: bottom; padding: 4px; border-right: 1px dashed #cbd5e1;">
+        <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 6px; border-right: 1px dashed #cbd5e1;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
             ${f3Comercial?.codigo_fes ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ FIRMADO FES (HITO 3)</div>
+              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ DESPACHO COMERCIAL FES</div>
               <div style="font-size: 8.5px; color: #0f172a;"><strong>${f3Comercial.nombre_firmante}</strong></div>
               <div class="font-mono text-muted" style="font-size: 7.5px;">${f3Comercial.codigo_fes}</div>
               <div class="font-mono text-muted" style="font-size: 7.5px;">${formatDateCL(f3Comercial.fecha_firma)}</div>
@@ -621,21 +607,21 @@ function buildEdpHtml(data) {
               <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">V°B° Comercial GSP</div>
             `}
           </div>
-          <div class="font-bold text-dark" style="font-size: 9px;">3. Despacho Comercial</div>
+          <div class="font-bold text-dark" style="font-size: 9px;">2. Despacho Comercial</div>
           <div class="text-muted" style="font-size: 7.5px;">Envío Oficial a Mandante</div>
         </td>
-        <td style="width: 28%; text-align: center; vertical-align: bottom; padding: 4px;">
+        <td style="width: 34%; text-align: center; vertical-align: bottom; padding: 6px;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
             ${oc_mandante?.numero_oc ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">RESPALDO OC / HES MANDANTE</div>
+              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ RESPALDO OC / HES MANDANTE</div>
               <div class="font-mono text-dark" style="font-size: 9.5px;"><strong>${oc_mandante.numero_oc}</strong></div>
               ${oc_mandante.monto_neto ? `<div class="font-mono text-muted" style="font-size: 7.5px;">Neto: ${formatCLP(oc_mandante.monto_neto)}</div>` : ''}
             ` : `
               <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">Recepción Mandante / OC</div>
             `}
           </div>
-          <div class="font-bold text-dark" style="font-size: 9px;">${clienteNombre}</div>
-          <div class="text-muted" style="font-size: 7.5px;">Mandante • Conformidad y OC / HES</div>
+          <div class="font-bold text-dark" style="font-size: 9px;">3. Conformidad Mandante</div>
+          <div class="text-muted" style="font-size: 7.5px;">${clienteNombre} • OC / HES</div>
         </td>
       </tr>
     </table>
