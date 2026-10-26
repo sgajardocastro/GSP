@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual Oficial: Perspectiva Contabilidad, BI Financiero &amp; Facturación Multi-DTE | Grúas San Pablo</title>
+  <!-- Tailwind CSS & Lucide Icons via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.mermaid) {
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: 'dark',
+          themeVariables: {
+            darkMode: true,
+            background: '#070c1a',
+            primaryColor: '#1e293b',
+            primaryTextColor: '#f8fafc',
+            primaryBorderColor: '#3b82f6',
+            lineColor: '#60a5fa',
+            secondaryColor: '#0f172a',
+            tertiaryColor: '#1e1b4b',
+            noteBkgColor: '#0f172a',
+            noteTextColor: '#fbbf24',
+            noteBorderColor: '#d97706',
+            actorBkg: '#0f172a',
+            actorBorder: '#3b82f6',
+            actorTextColor: '#f8fafc',
+            signalColor: '#38bdf8',
+            signalTextColor: '#f8fafc'
+          }
+        });
+      }
+    });
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              blue: '#2563eb',
+              blueDark: '#1e3a8a',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #030712;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased pb-20">
+
+  <!-- =================================================================== -->
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN Y ACCIONES                             -->
+  <!-- =================================================================== -->
+  <header class="no-print sticky top-0 z-50 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center font-black">
+        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black uppercase tracking-wider text-white font-mono">Perspectiva Contabilidad &amp; BI Financiero</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold">SPEC-100 &amp; SPEC-101</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">PROD v1.0.160</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Embudo E2E &bull; Bandeja Contable Inteligente &bull; Cero Vistas Web (Solo PDFs) &bull; Parser DTE Laudus/SII &bull; Multi-Factura</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Centro de Docs</span>
+      </a>
+      <button onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-lg shadow-amber-500/10 cursor-pointer">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span>Imprimir Manual A4</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- =================================================================== -->
+  <!-- CONTENIDO PRINCIPAL                                                 -->
+  <!-- =================================================================== -->
+  <main class="max-w-7xl mx-auto px-4 md:px-8 pt-8 space-y-10">
+
+    <!-- HERO / PORTADA -->
+    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#0a1024] to-blue-950/60 border border-blue-500/30 p-6 md:p-10 shadow-2xl print-card">
+      <div class="max-w-4xl space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono font-semibold">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+          <span>SISTEMA EN PRODUCCIÓN &bull; TORRE DE CONTROL &bull; REQ-1069 / REQ-1070</span>
+        </div>
+        <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight leading-tight">
+          Perspectiva Contabilidad, Embudo Financiero E2E, Bandeja Inteligente y Facturación Multi-DTE
+        </h1>
+        <p class="text-sm md:text-base text-slate-300 leading-relaxed">
+          Este manual constituye la <strong>doctrina oficial de operación y auditoría contable</strong> para el área de <strong>Contabilidad y Tesorería (Maritza Seguel)</strong>, <strong>Control de Gestión (Yiara)</strong> y la <strong>Gerencia General</strong>. Documenta la arquitectura de la 4ª Perspectiva en la Torre de Control, el modelo del Embudo Financiero de 5 variables, la supresión de vistas web por acceso exclusivo a <strong>documentos oficiales PDF firmados</strong>, el algoritmo de la <strong>Bandeja Contable Inteligente</strong> y el motor de <strong>reconocimiento automático de Facturas PDF</strong> (Laudus ERP y Portal SII MIPYME).
+        </p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+            <div class="text-[10px] font-mono uppercase text-slate-400">Embudo E2E</div>
+            <div class="text-base font-black text-blue-400 font-mono mt-0.5">5 Variables Clave</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+            <div class="text-[10px] font-mono uppercase text-slate-400">Acceso Documental</div>
+            <div class="text-base font-black text-emerald-400 font-mono mt-0.5">100% PDFs Oficiales</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+            <div class="text-[10px] font-mono uppercase text-slate-400">Parser Tributario DTE</div>
+            <div class="text-base font-black text-amber-400 font-mono mt-0.5">Laudus ERP &bull; SII</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+            <div class="text-[10px] font-mono uppercase text-slate-400">Modelo Facturación</div>
+            <div class="text-base font-black text-purple-400 font-mono mt-0.5">1 OT &rarr; N Facturas</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 1: PRINCIPIO FUNDAMENTAL Y FILOSOFÍA CONTABLE -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+        <i data-lucide="compass" class="w-4 h-4"></i>
+        <span>1. Principio Fundamental y Filosofía del Módulo Contable</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Auditoría Cero-Confianza y Liquidación Basada en Respaldos Certificados</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          En los sistemas ERP y BI de alto estándar industrial, Contabilidad <strong>no es un operador de faena ni un digitador de formularios</strong>. Su función institucional es actuar como la <strong>estación de control, conciliación y auditoría tributaria</strong>. Por ello, la perspectiva se rige por cuatro mandatos inquebrantables:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div class="bg-[#070b14] border border-blue-500/25 rounded-xl p-4 space-y-2">
+            <div class="flex items-center gap-2 text-blue-300 font-bold text-sm">
+              <i data-lucide="file-check" class="w-4 h-4"></i>
+              <span>Cero Vistas Web: Solo PDFs Oficiales</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Queda estrictamente prohibido que al consultar un Estado de Pago o Report Diario se abra un formulario web editable. Contabilidad audita <strong>documentos formalmente emitidos y timbrados con firmas FES</strong>. Todo clic emite y abre directamente el PDF legal en una nueva pestaña.
+            </p>
+          </div>
+
+          <div class="bg-[#070b14] border border-amber-500/25 rounded-xl p-4 space-y-2">
+            <div class="flex items-center gap-2 text-amber-300 font-bold text-sm">
+              <i data-lucide="filter" class="w-4 h-4"></i>
+              <span>Bandeja Contable Inteligente por Defecto</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              No tiene sentido cargar a Contabilidad con cientos de cotizaciones u OTs con $0 devengo que no han tenido movimiento. Por defecto, la perspectiva opera en modo <strong>⚡ Bandeja Contable</strong>, silenciando el ruido y mostrando solo procesos con faena, devengo o listos para facturar.
+            </p>
+          </div>
+
+          <div class="bg-[#070b14] border border-emerald-500/25 rounded-xl p-4 space-y-2">
+            <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm">
+              <i data-lucide="scan" class="w-4 h-4"></i>
+              <span>Reconocimiento Automático de DTEs</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Elimina los errores de digitación de folios, montos netos, IVA y OCs. El usuario simplemente suelta el PDF de la factura (emitido por Laudus ERP o el Portal SII) y el motor analiza y autocompleta el formulario en menos de 200 ms.
+            </p>
+          </div>
+
+          <div class="bg-[#070b14] border border-purple-500/25 rounded-xl p-4 space-y-2">
+            <div class="flex items-center gap-2 text-purple-300 font-bold text-sm">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+              <span>Cuenta Corriente Multi-Factura</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Una OT no siempre se factura en un solo documento. Permite asociar <strong>N facturas</strong> a un servicio para soportar anticipos, cuotas parciales o arriendos mensuales continuos, recalculando el saldo pendiente en tiempo real.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: LAS 5 ETAPAS DEL EMBUDO FINANCIERO E2E -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">
+        <i data-lucide="git-commit" class="w-4 h-4"></i>
+        <span>2. Arquitectura del Embudo Financiero E2E (Las 5 Variables)</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-6 print-card">
+        <div>
+          <h2 class="text-lg font-bold text-white">Traza Financiera Completa desde la Adjudicación hasta el Cobro</h2>
+          <p class="text-sm text-slate-300 mt-1">
+            Cada proceso comercial transita por un embudo estricto donde cada variable representa una realidad operativa y jurídica distinta:
+          </p>
+        </div>
+
+        <!-- DIAGRAMA OFICIAL DE SECUENCIA Y GOBERNANZA FES -->
+        <div class="bg-[#070c1a] border border-cyan-500/30 rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <span class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-2">
+              <i data-lucide="git-merge" class="w-4 h-4"></i>
+              Diagrama de Secuencia Oficial: Circuito de 3 Firmas FES y Segregación de Funciones
+            </span>
+            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
+              NORMATIVA AUDITORÍA GSP
+            </span>
+          </div>
+          <div class="mermaid overflow-x-auto flex justify-center py-2 text-xs">
+sequenceDiagram
+    autonumber
+    actor OP as Operación en Faena
+    actor CG as Analista Control Gestión (Yara)
+    actor CO as Contabilidad
+    actor CM as Jefatura Comercial
+    actor CL as Cliente Mandante
+
+    OP->>CG: Cierran Reports Diarios en Terreno (Firmas FES)
+    Note over CG: Confección y Liquidación Técnica
+    CG->>CG: Cierra y Valida ITS (Horas, Equipos, Costos Directos)
+    CG->>CG: Confecciona Expediente EDP + Estampa 1° Firma FES
+    Note over CO: Validación Tributaria y Tarifaria
+    CG->>CO: Envía Expediente EDP para V°B° Contable
+    CO->>CO: Audita OC Mandante, Precios y Estampa 2° Firma FES
+    Note over CM: Conformidad Comercial
+    CO->>CM: Pasa a V°B° Comercial
+    CM->>CM: Estampa 3° Firma FES y Despacha al Cliente
+    Note over CO: Emisión Tributaria y Cierre
+    CO->>CO: Sube Factura DTE (Laudus / SII) y Calza Financieramente
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <!-- 1. COMPROMETIDO -->
+          <div class="bg-[#070b14] border border-blue-500/40 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase text-blue-400 font-bold tracking-wider">1. Comprometido</div>
+              <div class="text-xs text-slate-400 mt-1">Cotización Ganada / OT</div>
+              <div class="text-xs text-slate-300 mt-2 font-mono">
+                Monto neto pactado comercialmente. Base 100% de la proyección.
+              </div>
+            </div>
+            <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-blue-300">
+              Origen: <code class="text-white">crm_v1.totales</code>
+            </div>
+          </div>
+
+          <!-- 2. DEVENGADO -->
+          <div class="bg-[#070b14] border border-cyan-500/40 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase text-cyan-400 font-bold tracking-wider">2. Devengado</div>
+              <div class="text-xs text-slate-400 mt-1">Reports Diarios Terreno</div>
+              <div class="text-xs text-slate-300 mt-2 font-mono">
+                Horas reales operadas y valorizadas según tarifa en faena.
+              </div>
+            </div>
+            <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-cyan-300">
+              Origen: <code class="text-white">tedp_reporte_avance</code>
+            </div>
+          </div>
+
+          <!-- 3. CERRADO EN ITS -->
+          <div class="bg-[#070b14] border border-indigo-500/40 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase text-indigo-400 font-bold tracking-wider">3. Cerrado en ITS</div>
+              <div class="text-xs text-slate-400 mt-1">Informe Término Servicio</div>
+              <div class="text-xs text-slate-300 mt-2 font-mono">
+                Ingresos facturables auditados vs. costos operacionales directos.
+              </div>
+            </div>
+            <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-indigo-300">
+              Origen: <code class="text-white">tits_informe_termino</code>
+            </div>
+          </div>
+
+          <!-- 4. EMITIDO EN EDP -->
+          <div class="bg-[#070b14] border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase text-amber-400 font-bold tracking-wider">4. Emitido en EDP</div>
+              <div class="text-xs text-slate-400 mt-1">Prefactura con 3 Firmas FES</div>
+              <div class="text-xs text-slate-300 mt-2 font-mono">
+                Expediente formal visado por Control Gestión, Conta y Comercial.
+              </div>
+            </div>
+            <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-amber-300">
+              Origen: <code class="text-white">edp_flujo_v1</code>
+            </div>
+          </div>
+
+          <!-- 5. FACTURADO DTE -->
+          <div class="bg-[#070b14] border border-emerald-500/40 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase text-emerald-400 font-bold tracking-wider">5. Facturado DTE</div>
+              <div class="text-xs text-slate-400 mt-1">Facturas Electrónicas SII</div>
+              <div class="text-xs text-slate-300 mt-2 font-mono">
+                Suma de facturas timbradas. Revela la brecha por facturar.
+              </div>
+            </div>
+            <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-emerald-300">
+              Origen: <code class="text-white">facturas_dte: []</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIMETRÍA 1 A 1 CON EL GRÁFICO TEMPORAL -->
+        <div class="bg-[#070b14] border border-white/10 rounded-xl p-4">
+          <div class="flex items-center gap-2 text-white font-bold text-xs uppercase font-mono mb-2">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400"></i>
+            <span>Simetría 1 a 1: Tarjetas Superiores &harr; Gráfico Temporal Interactivo</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            El gráfico BI ubicado inmediatamente debajo de las tarjetas ejecutivas replica con exactitud los mismos 5 colores y variables. Cuenta con <strong>dimensión temporal dual</strong>:
+          </p>
+          <ul class="text-xs text-slate-400 list-disc list-inside mt-2 space-y-1 font-mono">
+            <li><strong class="text-slate-200">1. Últimos 6 Meses (Mensual):</strong> Muestra la evolución global mes a mes. Al hacer clic sobre cualquier columna mensual, la perspectiva se enfoca en dicho mes.</li>
+            <li><strong class="text-slate-200">2. Mes Seleccionado (Semanal):</strong> Desglosa el mes en curso en <strong>Semana 1 a Semana 5</strong>, permitiendo ver qué semana generó el devengo o concentró la facturación.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: BANDEJA CONTABLE INTELIGENTE (FILTRO POR DEFECTO) -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+        <i data-lucide="sliders" class="w-4 h-4"></i>
+        <span>3. Especificación de la Bandeja Contable Inteligente</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Eliminación de Cotizaciones en $0 y Foco en Procesos con Trabajo Real</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          En la parte superior de la tabla de procesos existe un selector con recuento en vivo:
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3 py-2">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold font-mono">
+            <span>⚡ Bandeja Contable (Solo con Trabajo)</span>
+            <span class="text-[10px] bg-amber-400/20 px-1.5 py-0.5 rounded">POR DEFECTO</span>
+          </div>
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono">
+            <span>🌐 Todas las OTs (Cartera Completa)</span>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-4 space-y-3">
+          <h3 class="text-sm font-bold text-white font-mono">Regla Booleana Determinista: ¿Qué OTs ingresan a la Bandeja Contable?</h3>
+          <p class="text-xs text-slate-300">
+            Una OT califica para la Bandeja Contable si cumple <strong>al menos una</strong> de las siguientes condiciones:
+          </p>
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3 font-mono text-[11px] text-slate-300 space-y-1">
+            <div><span class="text-emerald-400">✔</span> Monto devengado en reports diario > $0 o cantidad de reports > 0.</div>
+            <div><span class="text-emerald-400">✔</span> Estado de Pago (EDP) emitido formalmente.</div>
+            <div><span class="text-emerald-400">✔</span> Proceso marcado como 🟢 <strong>Listo para Facturar Inmediato</strong> (3/3 firmas FES y OC completa).</div>
+            <div><span class="text-emerald-400">✔</span> Proceso con una o más facturas DTE asociadas (cierre total o facturación parcial).</div>
+            <div><span class="text-emerald-400">✔</span> Informe de Término de Servicio (ITS) cerrado o con monto > $0.</div>
+            <div><span class="text-emerald-400">✔</span> Proceso que requiere OC Mandante, no la tiene, y ya registra faena devengada.</div>
+            <div><span class="text-emerald-400">✔</span> Proceso de prueba institucional de LeanGlobal SpA.</div>
+          </div>
+        </div>
+
+        <!-- ORDENAMIENTO POR PRIORIDAD -->
+        <div class="border-t border-slate-800 pt-4 space-y-2">
+          <h3 class="text-sm font-bold text-white font-mono">Algoritmo de Ordenamiento en Tabla</h3>
+          <p class="text-xs text-slate-300">
+            Las OTs no se ordenan simplemente por fecha de creación. La tabla prioriza según la <strong>urgencia de facturación</strong>:
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-xs">
+            <div class="bg-[#070b14] border border-emerald-500/30 p-2.5 rounded-lg text-emerald-300">
+              <strong>1° Prioridad (Top):</strong><br/>Listos para Facturar Inmediato (3/3 FES + OC) &bull; Proceso de prueba.
+            </div>
+            <div class="bg-[#070b14] border border-purple-500/30 p-2.5 rounded-lg text-purple-300">
+              <strong>2° Prioridad:</strong><br/>Facturación Parcial (DTEs previos con saldo pendiente de cobro).
+            </div>
+            <div class="bg-[#070b14] border border-blue-500/30 p-2.5 rounded-lg text-blue-300">
+              <strong>3° Prioridad:</strong><br/>EDP en firmas FES y OTs con faena devengando en terreno.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: PROTOCOLO DE APERTURA DIRECTA DE PDFS OFICIALES -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>4. Protocolo de Acceso Directo a Documentos PDF Oficiales</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Cero Modales Web: Cada Clic Abre el Documento Legal Vinculante</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Para garantizar que Contabilidad trabaje exclusivamente con documentos certificados, la tabla enlaza cada celda directamente al generador oficial de PDF en nueva pestaña:
+        </p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse font-mono text-xs">
+            <thead>
+              <tr class="bg-[#070b14] border-b border-white/10 text-slate-400 uppercase text-[10px]">
+                <th class="py-2.5 px-3">Columna Tabla</th>
+                <th class="py-2.5 px-3">Elemento Visual Clickeable</th>
+                <th class="py-2.5 px-3">Endpoint PDF Servidor</th>
+                <th class="py-2.5 px-3">Resultado en Pantalla</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-slate-300">
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">0. Proceso</td>
+                <td class="py-2.5 px-3 text-amber-400 font-bold">GSP-XXXX-XXXX ↗</td>
+                <td class="py-2.5 px-3 text-slate-400">/api/operaciones/edp/proyecto/:id/pdf</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial Carátula EDP con las 3 firmas FES.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">1. Comprometido</td>
+                <td class="py-2.5 px-3 text-blue-300 font-bold">📎 OC-12990 ↗</td>
+                <td class="py-2.5 px-3 text-slate-400">resolverUrlArchivo(p.oc_archivo)</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF escaneado de la Orden de Compra Cliente.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">2. Devengado</td>
+                <td class="py-2.5 px-3 text-cyan-300 font-bold">📋 Report PDF ↗</td>
+                <td class="py-2.5 px-3 text-slate-400">/api/operaciones/report/:id/pdf</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial Report con odómetro/horómetro y FES.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">3. Cerrado ITS</td>
+                <td class="py-2.5 px-3 text-indigo-300 font-bold">📊 ITS-XXXX ↗</td>
+                <td class="py-2.5 px-3 text-slate-400">/api/operaciones/its/preview-pdf/:id</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial ITS con ingresos y costos operacionales.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">4. Emitido EDP</td>
+                <td class="py-2.5 px-3 text-amber-300 font-bold">📑 EDP-X ↗</td>
+                <td class="py-2.5 px-3 text-slate-400">/api/operaciones/edp/proyecto/:id/pdf</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial de Prefacturación timbrado.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">5. Facturado DTE</td>
+                <td class="py-2.5 px-3 text-emerald-300 font-bold">📄 PDF</td>
+                <td class="py-2.5 px-3 text-slate-400">resolverUrlArchivo(dte.archivo_url)</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF original de la Factura Laudus o Portal SII.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: MOTOR PARSER DETERMINISTA DE FACTURAS DTE -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-purple-400">
+        <i data-lucide="cpu" class="w-4 h-4"></i>
+        <span>5. Motor Parser Determinista de Facturas PDF (Laudus ERP &amp; Portal SII)</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Descompresión RFC 1951 (zlib) y Extracción de Metadatos Tributarios</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          El servicio de backend <code class="text-amber-400 font-mono text-xs">dtePdfParserService.js</code> procesa archivos PDF en memoria sin recurrir a OCR lento ni dependencias externas pesadas. Descomprime los streams binarios del PDF mediante <code class="text-cyan-300 font-mono text-xs">zlib.inflateSync</code> y analiza los bloques tipográficos:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <!-- PLANTILLA 1: LAUDUS ERP -->
+          <div class="bg-[#070b14] border border-blue-500/30 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-blue-300 font-bold font-mono text-xs">Plantilla 1: Laudus ERP</span>
+              <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">Grúas San Pablo</span>
+            </div>
+            <div class="text-xs text-slate-300 space-y-1 font-mono">
+              <div><strong class="text-slate-400">RUT Emisor:</strong> 52.004.162-1 (id_empresa: 9)</div>
+              <div><strong class="text-slate-400">Razón Social:</strong> LUIS GHISELLINI J. ARREND. MAQ... EIRL</div>
+              <div><strong class="text-slate-400">Patrón Folio:</strong> FACTURA ELECTRONICA N° [0-9]+</div>
+              <div><strong class="text-slate-400">Cajas Monto:</strong> TOTAL NETO / 19% IVA / TOTAL</div>
+              <div><strong class="text-slate-400">OC Referenciada:</strong> Bloque "Orden de Compra: XXXXX"</div>
+            </div>
+          </div>
+
+          <!-- PLANTILLA 2: PORTAL SII -->
+          <div class="bg-[#070b14] border border-emerald-500/30 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-emerald-300 font-bold font-mono text-xs">Plantilla 2: Portal SII MIPYME</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Bestmaq &bull; Log. del Sur &bull; Royal Rental</span>
+            </div>
+            <div class="text-xs text-slate-300 space-y-1 font-mono">
+              <div><strong class="text-slate-400">Bestmaq:</strong> 76.209.534-3 (id_empresa: 7)</div>
+              <div><strong class="text-slate-400">Logística del Sur:</strong> 76.218.576-8 (id_empresa: 8)</div>
+              <div><strong class="text-slate-400">Royal Rental:</strong> 78.254.535-3 (id_empresa: 11)</div>
+              <div><strong class="text-slate-400">Patrón Folio:</strong> R.U.T.: ... FACTURA ELECTRONICA N° [0-9]+</div>
+              <div><strong class="text-slate-400">Tabla Tributaria:</strong> MONTO NETO / IVA 19% / TOTAL</div>
+              <div><strong class="text-slate-400">OC Referenciada:</strong> Referencias Doc 801 (Orden de Compra)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#070b14] border border-white/10 rounded-lg p-3 text-xs text-slate-300 flex items-center gap-2">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400 shrink-0"></i>
+          <span>
+            <strong>Ajuste Inteligente de Modalidad:</strong> Si el monto neto de la factura cubre el 95% o más del saldo exigible del proceso, el sistema selecciona automáticamente la modalidad <code class="text-emerald-400 font-mono">CIERRE_TOTAL</code>; en caso contrario, selecciona <code class="text-purple-400 font-mono">PARCIAL_CUOTA</code>.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 6: MODELO DE CUENTA CORRIENTE MULTI-FACTURA -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-pink-400">
+        <i data-lucide="receipt" class="w-4 h-4"></i>
+        <span>6. Modelo de Cuenta Corriente Multi-Factura (1 OT &rarr; N Facturas DTE)</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Soporte Dinámico para Cuotas, Anticipos y Arriendos Mensuales Continuos</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          En operaciones complejas de izaje o faenas mineras continuas, una orden de trabajo puede recibir múltiples facturas. El sistema mantiene una <strong>cuenta corriente por proceso</strong> alojada en <code class="text-amber-400 font-mono text-xs">tpry_proyecto.json_field.facturas_dte</code>:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div class="bg-[#070b14] border border-purple-500/30 rounded-xl p-3.5 space-y-1">
+            <span class="text-purple-300 font-bold font-mono text-xs">🌗 Cuota / Pago Parcial</span>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Mantiene la OT abierta y recalcula el saldo restante: <code class="text-slate-100">Saldo = Base - Sum(Facturas)</code>.
+            </p>
+          </div>
+          <div class="bg-[#070b14] border border-blue-500/30 rounded-xl p-3.5 space-y-1">
+            <span class="text-blue-300 font-bold font-mono text-xs">📅 Arriendo Mensual</span>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Facturación por corte de mes en arriendos de largo plazo; no concluye el proceso al completar el valor mensual.
+            </p>
+          </div>
+          <div class="bg-[#070b14] border border-emerald-500/30 rounded-xl p-3.5 space-y-1">
+            <span class="text-emerald-300 font-bold font-mono text-xs">✅ Cierre Total</span>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              Declara la OT 100% liquidada. Si el saldo es $0, actualiza el estado a <code class="text-emerald-400">id_proyecto_estado = 7</code> (Facturado).
+            </p>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3 text-xs text-slate-300 space-y-2">
+          <h4 class="font-bold text-white font-mono">Gestión de Facturas en la Modal DTE:</h4>
+          <p>
+            Al hacer clic en <code class="text-emerald-400 font-mono">🧾 DTE #XXXX</code> o <code class="text-emerald-400 font-mono">+ DTE</code>, el usuario accede al historial de todas las facturas asociadas a esa OT, con visualización de folio, empresa holding, monto neto, IVA, total bruto, enlace directo al PDF original y un botón de desvinculación (<code class="text-rose-400 font-mono">🗑️</code>) que recalcula inmediatamente el saldo pendiente si una factura fue asociada erróneamente.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 7: LOS 3 SUBMENÚS Y EXPORTACIÓN A EXCEL -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+        <i data-lucide="sheet" class="w-4 h-4"></i>
+        <span>7. Tres Submenús Operativos y Exportación Nativa a Excel (.xlsx)</span>
+      </div>
+      <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
+        <h2 class="text-lg font-bold text-white">Sábanas de Datos y Reportes Financieros en Tiempo Real</h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          La perspectiva integra tres vistas operativas especializadas, cada una con su botón <code class="text-emerald-400 font-mono text-xs">📥 Exportar Excel (.xlsx)</code> generado en cliente sin bloqueos:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <!-- SUBMENÚ 1 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-amber-300 uppercase">Submenú 1</span>
+              <h3 class="text-sm font-bold text-white mt-1">📑 Avance y Calce por Proceso</h3>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">
+                Cuadratura proceso por proceso con las 5 variables, variación de calce ($ EDP vs $ Cotizado), condición de OC, firmas FES y mini-gráfico vertical de 5 barras.
+              </p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+              Archivo: GSP_Contabilidad_Procesos_*.xlsx
+            </div>
+          </div>
+
+          <!-- SUBMENÚ 2 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-cyan-300 uppercase">Submenú 2</span>
+              <h3 class="text-sm font-bold text-white mt-1">👷 Horas Operadores / Riggers</h3>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">
+                Sábana de HH normales, sobretiempo y totales por trabajador, más desglose diario por report. Incluye viáticos operacionales reportados.
+              </p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+              Archivo: 2 Hojas (Consolidado + Detalle_Jornadas)
+            </div>
+          </div>
+
+          <!-- SUBMENÚ 3 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-purple-300 uppercase">Submenú 3</span>
+              <h3 class="text-sm font-bold text-white mt-1">🚜 Ventas por Grúa / Equipo</h3>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">
+                Facturación por patente y modelo: horas facturables, monto comprometido, devengado, facturado, costos directos ITS y margen de contribución (CLP y %).
+              </p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+              Archivo: Ventas_Por_Equipo_*.xlsx
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 8: GUÍA PASO A PASO (CASO REAL LEANGLOBAL SPA) -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+        <i data-lucide="play-circle" class="w-4 h-4"></i>
+        <span>8. Guía Rápida Paso a Paso: Verificación en Vivo (Caso LeanGlobal SpA)</span>
+      </div>
+      <div class="bg-[#0b1324] border border-emerald-500/30 rounded-xl p-6 space-y-5 print-card">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-white">Procedimiento de Carga y Calce de Factura Real DTE</h2>
+            <p class="text-xs text-slate-400">Sigue este protocolo para comprobar el funcionamiento del sistema en DEV o PRODUCCIÓN:</p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold">
+            OT: GSP-2610-4851-001 (ID 1 PROD / ID 105 DEV)
+          </span>
+        </div>
+
+        <div class="space-y-3 font-mono text-xs">
+          <!-- PASO 1 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
+            <div>
+              <strong class="text-white">Ingresar a Torre de Control &rarr; Perspectiva Contabilidad:</strong>
+              <p class="text-slate-400 mt-0.5 font-sans">
+                En el menú lateral, selecciona <strong>Torre de Control</strong> y haz clic en la 4ª pestaña <strong>💼 Perspectiva Contabilidad</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- PASO 2 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
+            <div>
+              <strong class="text-white">Verificar el Proceso de Prueba LeanGlobal SpA en Primer Lugar:</strong>
+              <p class="text-slate-400 mt-0.5 font-sans">
+                Gracias a la <strong>Bandeja Contable Inteligente</strong>, la OT <code class="text-amber-300">GSP-2610-4851-001</code> aparece primera con estado <code class="text-emerald-400 font-bold">🟢 Listo para Facturar Inmediato</code>, monto exigible de <code class="text-slate-200 font-bold">$1.820.000 neto</code>, OC <code class="text-blue-300 font-bold">12990</code> y 3/3 firmas FES.
+              </p>
+            </div>
+          </div>
+
+          <!-- PASO 3 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
+            <div>
+              <strong class="text-white">Abrir Modal de Facturación:</strong>
+              <p class="text-slate-400 mt-0.5 font-sans">
+                En la Columna 5 de esa fila, haz clic en el botón verde <code class="text-emerald-300 font-bold">💳 + Subir DTE PDF</code>.
+              </p>
+            </div>
+          </div>
+
+          <!-- PASO 4 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">4</span>
+            <div>
+              <strong class="text-white">Arrastrar o Seleccionar la Factura Real:</strong>
+              <p class="text-slate-400 mt-0.5 font-sans">
+                Suelta en el recuadro el archivo <code class="text-amber-300">DTE 14664 de LUIS GHISELLINI...pdf</code> (Laudus ERP) o <code class="text-amber-300">Fact. 2907...pdf</code> (Portal SII). En menos de 200 ms, el sistema identificará la empresa emisora, folio, fecha, monto neto ($1.820.000), IVA ($345.800), total bruto ($2.165.800) y la OC referenciada.
+              </p>
+            </div>
+          </div>
+
+          <!-- PASO 5 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3.5 flex items-start gap-3">
+            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">5</span>
+            <div>
+              <strong class="text-white">Confirmar y Guardar:</strong>
+              <p class="text-slate-400 mt-0.5 font-sans">
+                Haz clic en <code class="text-emerald-400 font-bold">🧾 Guardar y Asociar Factura DTE al Servicio</code>. El modal confirmará la asociación, el saldo pendiente de la OT caerá exactamente a <code class="text-emerald-400 font-bold">$0</code> y el semáforo cambiará a <code class="text-emerald-400 font-bold">100% Facturado (DTE #14664)</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PIE DE PÁGINA INSTITUCIONAL -->
+  <footer class="no-print mt-16 border-t border-slate-800 py-6 text-center text-xs text-slate-500 font-mono">
+    Grúas San Pablo &bull; Ecosistema Digital LeanGlobal &bull; Módulo Oficial de Contabilidad &amp; BI Financiero (SPEC-100 &amp; SPEC-101 / v1.0.160)
+  </footer>
+
+  <script>
+    // Inicializar iconos Lucide
+    lucide.createIcons();
+  </script>
+</body>
+</html>

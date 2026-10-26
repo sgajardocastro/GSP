@@ -4,6 +4,24 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [Portal Web GSP] - Versión 1.0.162
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-26 14:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1073` (`SPEC-102`)
+- **Especificación Técnica:** Rediseño UX/UI de Perspectiva Contabilidad — Bandejas Operativas por Tarea, Primary Call-to-Action y Diagrama de Secuencia Oficial en Web Documental:
+  1. **Bandejas de Trabajo por Tarea (Task Buckets con Contadores Reactivos):**
+     - Sustitución de los filtros planos por 5 pestañas operativas: `[ 🟢 Por Facturar (X) ]`, `[ 🟡 Mi Firma EDP (Y) ]`, `[ ⏳ Esperando OC (Z) ]`, `[ ✅ Facturadas (W) ]` y `[ 🌐 Todas (N) ]`.
+     - Permite que el usuario de Contabilidad visualice instantáneamente sus obligaciones pendientes de cobro y visación en menos de 2 segundos.
+  2. **Rediseño de la Tabla de Procesos a 5 Columnas con Primary Call to Action:**
+     - Columna 1: Proceso, mandante, semana y mini-gráfico de 5 barras con enlace a Cotización PDF.
+     - Columna 2: Compromiso vs Devengo con horas de operación y acceso a Reports Diarios FES.
+     - Columna 3: Respaldo Documental con micro-indicadores compactos de salud para OC Mandante, ITS, Expediente EDP y circuito de 3 firmas FES.
+     - Columna 4: Saldo neto por facturar y variación porcentual vs cotizado.
+     - Columna 5: **ACCIÓN REQUERIDA (1 CLIC)**: Botón primario sólido destacado por estado (`[ 🧾 Subir Factura DTE ($X.XXX.XXX) ]`, `[ ✍️ Visar EDP (2° Firma) ]`, `[ ⚠️ Cargar OC Mandante ]` o `[ ✅ 100% Facturado ]`).
+  3. **Incorporación del Diagrama de Secuencia Oficial en la Web Documental:**
+     - Inclusión del diagrama de secuencia Mermaid oficial de segregación de funciones (Faena ➔ Control de Gestión ➔ Contabilidad ➔ Comercial ➔ Mandante) en `manual_contabilidad_edp_y_facturacion_gsp.html` y `manual_perspectiva_contabilidad_bi_y_facturacion_gsp.html` con renderizado SVG dinámico.
+
 ## [Portal Web GSP] - Versión 1.0.161
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-10-26 13:30:00 (-03:00)

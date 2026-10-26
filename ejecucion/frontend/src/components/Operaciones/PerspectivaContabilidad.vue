@@ -325,34 +325,52 @@
           </button>
         </div>
 
-        <div v-if="submenuActivo === 'procesos'" class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-[11px] gap-1">
-          <button
-            @click="filtroEstadoDoc = 'TODOS'"
-            :class="filtroEstadoDoc === 'TODOS' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-white/5'"
-            class="px-2 py-1 rounded font-bold cursor-pointer"
-          >
-            Todos
-          </button>
+        <!-- Pestañas de Trabajo por Tarea (Task Buckets) con Contadores Dinámicos -->
+        <div v-if="submenuActivo === 'procesos'" class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-[11px] gap-1 flex-wrap">
           <button
             @click="filtroEstadoDoc = 'LISTO_FACTURAR'"
-            :class="filtroEstadoDoc === 'LISTO_FACTURAR' ? 'bg-blue-600 text-white' : 'text-emerald-400 hover:bg-white/5'"
-            class="px-2 py-1 rounded font-bold cursor-pointer"
+            :class="filtroEstadoDoc === 'LISTO_FACTURAR' ? 'bg-emerald-600 text-white font-black shadow-md' : 'text-emerald-400 hover:bg-white/5 font-semibold'"
+            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
+            title="OTs con EDP visado listas para emitir Factura DTE"
           >
-            🟢 Listos Facturar
+            <span>🟢 Por Facturar</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countPorFacturar }}</span>
+          </button>
+          <button
+            @click="filtroEstadoDoc = 'FIRMA_CONTABILIDAD'"
+            :class="filtroEstadoDoc === 'FIRMA_CONTABILIDAD' ? 'bg-amber-500 text-slate-950 font-black shadow-md' : 'text-amber-300 hover:bg-white/5 font-semibold'"
+            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
+            title="OTs emitidas por Control de Gestión esperando 2° Firma de Contabilidad"
+          >
+            <span>🟡 Mi Firma EDP</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFirmaContable }}</span>
           </button>
           <button
             @click="filtroEstadoDoc = 'FALTA_OC'"
-            :class="filtroEstadoDoc === 'FALTA_OC' ? 'bg-blue-600 text-white' : 'text-amber-300 hover:bg-white/5'"
-            class="px-2 py-1 rounded font-bold cursor-pointer"
+            :class="filtroEstadoDoc === 'FALTA_OC' ? 'bg-orange-600 text-white font-black shadow-md' : 'text-orange-300 hover:bg-white/5 font-semibold'"
+            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
+            title="OTs terminadas que no tienen Orden de Compra del mandante"
           >
-            📎 Falta OC
+            <span>⏳ Esperando OC</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFaltaOc }}</span>
           </button>
           <button
             @click="filtroEstadoDoc = 'FACTURADO'"
-            :class="filtroEstadoDoc === 'FACTURADO' ? 'bg-blue-600 text-white' : 'text-blue-300 hover:bg-white/5'"
-            class="px-2 py-1 rounded font-bold cursor-pointer"
+            :class="filtroEstadoDoc === 'FACTURADO' ? 'bg-blue-600 text-white font-black shadow-md' : 'text-blue-300 hover:bg-white/5 font-semibold'"
+            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
+            title="OTs con DTE emitido en el SII"
           >
-            🧾 Con DTE
+            <span>✅ Facturadas</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFacturado }}</span>
+          </button>
+          <button
+            @click="filtroEstadoDoc = 'TODOS'"
+            :class="filtroEstadoDoc === 'TODOS' ? 'bg-slate-700 text-white font-black shadow-md' : 'text-slate-300 hover:bg-white/5'"
+            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
+            title="Cartera completa del periodo"
+          >
+            <span>🌐 Todas</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ procesosFiltradosPeriodo.length }}</span>
           </button>
         </div>
 
@@ -384,18 +402,19 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-[#070b14] border-b border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-              <th class="py-3 px-3.5">Proceso / Periodo / Cliente</th>
-              <th class="py-3 px-3 text-right">1. Comprometido<br/><span class="text-[9px] text-blue-400 font-normal">Cotización &amp; Acceso OC</span></th>
-              <th class="py-3 px-3 text-right">2. Devengado<br/><span class="text-[9px] text-cyan-400 font-normal">Reports &amp; Horas</span></th>
-              <th class="py-3 px-3 text-right">3. Cerrado ITS<br/><span class="text-[9px] text-indigo-400 font-normal">Ingreso, Costo &amp; Doc ITS</span></th>
-              <th class="py-3 px-3 text-right">4. Emitido EDP &amp; FE<br/><span class="text-[9px] text-amber-400 font-normal">Prefactura &amp; 3 Firmas FES</span></th>
-              <th class="py-3 px-3 text-right">5. Facturado DTE<br/><span class="text-[9px] text-emerald-400 font-normal">Factura SII &amp; Saldo</span></th>
-              <th class="py-3 px-3.5 text-center">Calce Financiero<br/><span class="text-[9px] text-slate-500 font-normal">Devengado vs Cotizado</span></th>
+              <th class="py-3 px-3.5">Proceso / Periodo / Mandante</th>
+              <th class="py-3 px-3 text-right">1. Compromiso vs Operado<br/><span class="text-[9px] text-blue-400 font-normal">Cotización &amp; Reports Diarios</span></th>
+              <th class="py-3 px-3 text-center">2. Respaldo Documental<br/><span class="text-[9px] text-indigo-400 font-normal">OC Mandante &bull; ITS &bull; Circuito FES</span></th>
+              <th class="py-3 px-3 text-right">3. Saldo por Facturar<br/><span class="text-[9px] text-amber-400 font-normal">Neto Pendiente &bull; Desviación</span></th>
+              <th class="py-3 px-3.5 text-center min-w-[220px] bg-slate-900/60 border-l border-white/10">
+                <span class="text-emerald-400 font-extrabold">⚡ ACCIÓN REQUERIDA (1 CLIC)</span><br/>
+                <span class="text-[9px] text-slate-400 font-normal">Call to Action de Contabilidad</span>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5 text-xs">
             <tr v-if="procesosFiltradosTabla.length === 0">
-              <td colspan="7" class="py-10 text-center text-slate-400 font-mono">
+              <td colspan="5" class="py-10 text-center text-slate-400 font-mono">
                 No se encontraron procesos para los filtros seleccionados.
               </td>
             </tr>
@@ -404,7 +423,7 @@
               :key="p.id_proyecto"
               class="hover:bg-white/[0.02] transition-colors align-top"
             >
-              <!-- Columna 0: Datos del Proceso + Mini-Gráfico de 5 Barras en el espacio vacío -->
+              <!-- Columna 1: Datos del Proceso + Mini-Gráfico de 5 Barras -->
               <td class="py-3 px-3.5">
                 <div class="flex items-center justify-between gap-4">
                   <div class="min-w-0">
@@ -452,7 +471,7 @@
                       ></div>
                     </div>
 
-                    <!-- Tooltip flotante estilo Highcharts al pasar el mouse -->
+                    <!-- Tooltip flotante al pasar el mouse -->
                     <div class="hidden group-hover:block absolute left-full ml-2 top-1/2 -translate-y-1/2 z-40 w-60 bg-[#070b14] border border-slate-700 rounded-lg p-2.5 shadow-2xl text-[10px] font-mono pointer-events-none">
                       <div class="font-bold text-white mb-1 border-b border-white/10 pb-1">{{ p.codi_proyecto }}</div>
                       <div class="flex justify-between text-slate-300">
@@ -480,48 +499,12 @@
                 </div>
               </td>
 
-              <!-- Columna 1: Comprometido + Acceso a OC Cliente y OCs Proveedor -->
+              <!-- Columna 2: Compromiso vs Operado -->
               <td class="py-3 px-3 text-right font-mono">
-                <div class="font-bold text-white">{{ fmtCLP(p.monto_comprometido) }}</div>
-                <div class="flex items-center justify-end gap-1 mt-1.5 flex-wrap">
-                  <span
-                    v-if="!p.requiere_oc_hes && !p.tiene_oc"
-                    @click="abrirModalDoc('OC', p)"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 cursor-pointer"
-                    title="Registrar OC opcional"
-                  >
-                    Exenta OC
-                  </span>
-                  <button
-                    v-else-if="p.tiene_oc"
-                    @click="abrirPdfOC(p)"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-colors cursor-pointer"
-                    title="Ver Orden de Compra del Cliente"
-                  >
-                    📎 {{ p.numero_oc || 'OC Cliente' }} ↗
-                  </button>
-                  <button
-                    v-else
-                    @click="abrirModalDoc('OC', p)"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer"
-                  >
-                    ⚠️ + Cargar OC
-                  </button>
-
-                  <button
-                    v-if="p.ocs_proveedor && p.ocs_proveedor.length > 0"
-                    @click="abrirModalDoc('OC_PROV', p)"
-                    class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-purple-500/15 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 transition-colors cursor-pointer"
-                    title="Ver Órdenes de Compra de Proveedores asociadas a la OT"
-                  >
-                    🛒 {{ p.ocs_proveedor.length }} OC Costo
-                  </button>
+                <div class="font-bold text-white" title="Monto Comprometido en Cotización">{{ fmtCLP(p.monto_comprometido) }}</div>
+                <div class="text-[11px] text-cyan-300 font-semibold mt-0.5" title="Monto Devengado en Reports Diarios">
+                  Dev: {{ fmtCLP(p.monto_devengado_reports) }}
                 </div>
-              </td>
-
-              <!-- Columna 2: Devengado (Reports) -->
-              <td class="py-3 px-3 text-right font-mono">
-                <div class="font-bold text-cyan-300">{{ fmtCLP(p.monto_devengado_reports) }}</div>
                 <div class="text-[10px] text-slate-400">{{ p.horas_facturables }} hrs operadas</div>
                 <div class="mt-1 flex items-center justify-end gap-1">
                   <button
@@ -544,158 +527,173 @@
                 </div>
               </td>
 
-              <!-- Columna 3: Cerrado en ITS -->
-              <td class="py-3 px-3 text-right font-mono">
-                <template v-if="p.id_its">
-                  <div class="font-bold text-indigo-300">{{ fmtCLP(p.monto_its_neto) }}</div>
-                  <div class="text-[10px] text-slate-400">Costo: {{ fmtCLP(p.monto_its_costos) }}</div>
-                  <div class="flex items-center justify-end gap-1 mt-1">
+              <!-- Columna 3: Respaldo Documental (OC Mandante, ITS, Expediente EDP, Firmas FES) -->
+              <td class="py-3 px-3 text-center font-mono">
+                <div class="flex flex-col items-center gap-1.5">
+                  <!-- Fila 1: OC Mandante & ITS -->
+                  <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                    <span
+                      v-if="!p.requiere_oc_hes && !p.tiene_oc"
+                      @click="abrirModalDoc('OC', p)"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 cursor-pointer"
+                      title="Cliente no exige OC / Facturación directa"
+                    >
+                      Exenta OC
+                    </span>
                     <button
+                      v-else-if="p.tiene_oc"
+                      @click="abrirPdfOC(p)"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-colors cursor-pointer"
+                      title="Ver Orden de Compra del Cliente"
+                    >
+                      📎 {{ p.numero_oc || 'OC Mandante' }} ↗
+                    </button>
+                    <button
+                      v-else
+                      @click="abrirModalDoc('OC', p)"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer"
+                      title="Cargar Orden de Compra del Cliente"
+                    >
+                      ⚠️ Falta OC
+                    </button>
+
+                    <button
+                      v-if="p.id_its"
                       @click="abrirPdfOficialIts(p)"
                       class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer flex items-center gap-1"
                       title="Abrir PDF Oficial de Término de Servicio (ITS)"
                     >
                       📊 {{ p.folio_its || `ITS-${p.id_its}` }} ↗
                     </button>
+                    <span v-else class="px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-600 bg-white/[0.02] border border-white/5">
+                      S/ITS
+                    </span>
+
+                    <button
+                      v-if="p.ocs_proveedor && p.ocs_proveedor.length > 0"
+                      @click="abrirModalDoc('OC_PROV', p)"
+                      class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-purple-500/15 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 transition-colors cursor-pointer"
+                      title="Ver Órdenes de Compra de Proveedores asociadas a la OT"
+                    >
+                      🛒 {{ p.ocs_proveedor.length }} OC Costo
+                    </button>
                   </div>
-                </template>
-                <template v-else>
-                  <div class="text-slate-500 font-bold">$0</div>
-                  <div class="text-[10px] text-slate-500">Sin ITS cerrado</div>
-                  <div class="mt-1">
-                    <span class="text-[10px] font-mono text-slate-600">S/ITS</span>
+
+                  <!-- Fila 2: Expediente EDP y Circuito FES 1° / 2° / 3° -->
+                  <div class="flex items-center justify-center gap-1 flex-wrap text-[9px]">
+                    <button
+                      @click="abrirPdfOficialEdp(p)"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                      title="Abrir Expediente PDF Oficial de Estado de Pago con Firmas FES"
+                    >
+                      📑 EDP-{{ p.id_proyecto }} ↗
+                    </button>
+                    <span
+                      @click="abrirModalDoc('FE', p)"
+                      :class="p.firma_1_analista ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
+                      class="px-1.5 py-0.2 rounded border cursor-pointer"
+                      title="1° Firma FES: Control de Gestión (Yara)"
+                    >
+                      1°Ctl {{ p.firma_1_analista ? '✓' : '·' }}
+                    </span>
+                    <span
+                      @click="abrirModalDoc('FE', p)"
+                      :class="p.firma_2_contabilidad ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
+                      class="px-1.5 py-0.2 rounded border cursor-pointer"
+                      title="2° Firma FES: Contabilidad / Tesorería"
+                    >
+                      2°Con {{ p.firma_2_contabilidad ? '✓' : '·' }}
+                    </span>
+                    <span
+                      @click="abrirModalDoc('FE', p)"
+                      :class="p.firma_3_comercial ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
+                      class="px-1.5 py-0.2 rounded border cursor-pointer"
+                      title="3° Firma FES: Conformidad Comercial"
+                    >
+                      3°Com {{ p.firma_3_comercial ? '✓' : '·' }}
+                    </span>
                   </div>
-                </template>
+                </div>
               </td>
 
-              <!-- Columna 4: Emitido en EDP & 3 Sellos FE -->
+              <!-- Columna 4: Saldo por Facturar & Desviación -->
               <td class="py-3 px-3 text-right font-mono">
-                <div class="font-bold text-amber-300">
-                  {{ p.monto_edp_neto > 0 ? fmtCLP(p.monto_edp_neto) : fmtCLP(p.monto_edp_referencia) }}
+                <div v-if="p.facturado && p.saldo_pendiente_facturar <= 0">
+                  <div class="font-bold text-emerald-400">100% Facturado</div>
+                  <div class="text-[10px] text-slate-400">{{ fmtCLP(p.monto_facturado_neto) }}</div>
                 </div>
-                <div class="flex items-center justify-end gap-1 mt-1">
-                  <button
-                    @click="abrirPdfOficialEdp(p)"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
-                    title="Abrir Expediente PDF Oficial de Estado de Pago con Firmas FES"
-                  >
-                    📑 EDP-{{ p.id_proyecto }} ↗
-                  </button>
-                  <button
-                    @click="abrirModalDoc('FE', p)"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition-colors cursor-pointer"
-                    title="Inspeccionar Circuito de 3 Firmas Electrónicas FES"
-                  >
-                    🔏 FE ({{ contarFirmasEdp(p) }}/3)
-                  </button>
+                <div v-else>
+                  <div class="font-bold text-amber-300 text-sm">
+                    {{ fmtCLP(p.saldo_pendiente_facturar) }}
+                  </div>
+                  <div class="text-[10px] text-slate-400">
+                    {{ p.facturado ? `Facturado: ${fmtCLP(p.monto_facturado_neto)}` : 'Por facturar' }}
+                  </div>
                 </div>
-                <div class="flex items-center justify-end gap-1 mt-1 text-[9px] font-mono">
-                  <span
-                    @click="abrirModalDoc('FE', p)"
-                    :class="p.firma_1_analista ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
-                    class="px-1 py-0.2 rounded border cursor-pointer"
-                  >
-                    1°Ctl {{ p.firma_1_analista ? '✓' : '·' }}
-                  </span>
-                  <span
-                    @click="abrirModalDoc('FE', p)"
-                    :class="p.firma_2_contabilidad ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
-                    class="px-1 py-0.2 rounded border cursor-pointer"
-                  >
-                    2°Con {{ p.firma_2_contabilidad ? '✓' : '·' }}
-                  </span>
-                  <span
-                    @click="abrirModalDoc('FE', p)"
-                    :class="p.firma_3_comercial ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'"
-                    class="px-1 py-0.2 rounded border cursor-pointer"
-                  >
-                    3°Com {{ p.firma_3_comercial ? '✓' : '·' }}
-                  </span>
-                </div>
-              </td>
 
-              <!-- Columna 5: Facturado DTE (Soporte Multi-Factura: Parcial, Cuotas, Mensual) -->
-              <td class="py-3 px-3 text-right font-mono">
-                <template v-if="p.facturado">
-                  <div class="font-bold text-emerald-400">{{ fmtCLP(p.monto_facturado_neto) }}</div>
-                  <div class="text-[10px]" :class="p.saldo_pendiente_facturar > 0 ? 'text-amber-300 font-semibold' : 'text-slate-400'">
-                    {{ p.saldo_pendiente_facturar > 0 ? `Por facturar: ${fmtCLP(p.saldo_pendiente_facturar)}` : '100% Facturado' }}
-                  </div>
-                  <div class="flex items-center justify-end gap-1 mt-1 flex-wrap">
-                    <button
-                      @click="abrirModalDoc('DTE', p)"
-                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition-colors cursor-pointer"
-                      :title="`Folio(s): ${p.factura_numero}`"
-                    >
-                      🧾 {{ (p.facturas_count || 1) > 1 ? `${p.facturas_count} DTEs (${p.factura_numero})` : `DTE #${p.factura_numero || 'Emitido'}` }} ↗
-                    </button>
-                    <button
-                      v-if="p.facturacion_parcial || p.saldo_pendiente_facturar > 0"
-                      @click="abrirModalDoc('DTE', p)"
-                      class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-500/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-colors cursor-pointer"
-                      title="Agregar otra factura (Cuota / Mensualidad) a este servicio"
-                    >
-                      + DTE
-                    </button>
-                  </div>
-                </template>
-                <template v-else>
-                  <div class="text-slate-500 font-bold">$0</div>
-                  <div class="text-[10px] text-amber-300">Por facturar: {{ fmtCLP(p.saldo_pendiente_facturar) }}</div>
-                  <div class="mt-1">
-                    <button
-                      @click="abrirModalDoc('DTE', p)"
-                      :class="p.habilitado_facturar ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow' : 'bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10'"
-                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                    >
-                      💳 {{ p.habilitado_facturar ? '+ Subir DTE PDF' : 'Asociar DTE PDF' }}
-                    </button>
-                  </div>
-                </template>
-              </td>
-
-              <!-- Columna 6: Calce Financiero -->
-              <td class="py-3 px-3.5 text-center">
-                <div>
-                  <span
-                    v-if="p.facturacion_parcial"
-                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30"
-                  >
-                    🌗 Parcial ({{ p.facturas_count || 1 }} DTE)
-                  </span>
-                  <span
-                    v-else-if="p.facturado"
-                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30"
-                  >
-                    ✅ 100% Facturado
-                  </span>
-                  <span
-                    v-else-if="p.habilitado_facturar"
-                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                  >
-                    🟢 Listo Facturar
-                  </span>
-                  <span
-                    v-else-if="p.semaforo_contable === 'FALTA_OC'"
-                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30"
-                  >
-                    🟡 Falta OC Cliente
-                  </span>
-                  <span
-                    v-else
-                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"
-                  >
-                    🔵 {{ p.semaforo_label }}
-                  </span>
-                </div>
                 <div
-                  class="text-[10px] font-mono mt-1.5"
-                  :class="p.variacion_edp_vs_cotizado > 0 ? 'text-cyan-300 font-bold' : (p.variacion_edp_vs_cotizado < 0 ? 'text-amber-300' : 'text-slate-400')"
+                  class="text-[10px] font-mono mt-1"
+                  :class="p.variacion_edp_vs_cotizado > 0 ? 'text-cyan-300 font-bold' : (p.variacion_edp_vs_cotizado < 0 ? 'text-amber-300' : 'text-slate-500')"
                 >
                   {{ p.variacion_edp_vs_cotizado !== 0
                     ? (p.variacion_edp_vs_cotizado > 0 ? '+' : '') + fmtCLP(p.variacion_edp_vs_cotizado) + ` (${p.variacion_pct}%)`
-                    : '$0 Desviación (Calce 100%)'
+                    : '$0 Desviación'
                   }}
+                </div>
+              </td>
+
+              <!-- Columna 5: ACCIÓN REQUERIDA (1 CLIC) - PRIMARY CALL TO ACTION -->
+              <td class="py-3 px-3.5 bg-slate-900/40 border-l border-white/5 align-middle">
+                <!-- Caso 1: Listo para Facturar (Acción Primaria Verde Esmeralda Sólida) -->
+                <button
+                  v-if="p.habilitado_facturar && (!p.facturado || p.saldo_pendiente_facturar > 0)"
+                  @click="abrirModalDoc('DTE', p)"
+                  class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-950/70 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Subir y asociar Factura PDF oficial (Laudus / SII)"
+                >
+                  <span>🧾</span>
+                  <span>Subir Factura DTE ({{ fmtCLP(p.saldo_pendiente_facturar) }})</span>
+                </button>
+
+                <!-- Caso 2: Mi Firma Contable Pendiente (Acción Primaria Ámbar Sólida) -->
+                <button
+                  v-else-if="!p.firma_2_contabilidad && p.firma_1_analista && !p.facturado"
+                  @click="abrirModalDoc('FE', p)"
+                  class="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/70 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Validar y Firmar Estado de Pago con PIN FES (2° Firma)"
+                >
+                  <span>✍️</span>
+                  <span>Visar EDP (2° Firma FES)</span>
+                </button>
+
+                <!-- Caso 3: Esperando OC Mandante -->
+                <button
+                  v-else-if="p.requiere_oc_hes && !p.tiene_oc && !p.facturado"
+                  @click="abrirModalDoc('OC', p)"
+                  class="w-full py-1.5 px-2.5 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-300 border border-orange-500/40 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  title="Cargar Orden de Compra del Cliente"
+                >
+                  <span>⚠️</span>
+                  <span>Cargar OC Mandante</span>
+                </button>
+
+                <!-- Caso 4: 100% Facturado Conforme -->
+                <button
+                  v-else-if="p.facturado && p.saldo_pendiente_facturar <= 0"
+                  @click="abrirModalDoc('DTE', p)"
+                  class="w-full py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-300 hover:text-white border border-emerald-500/30 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  title="Ver factura(s) asociadas y descargar PDF"
+                >
+                  <span>✅</span>
+                  <span>DTE #{{ p.factura_numero || 'Emitido' }} ↗</span>
+                </button>
+
+                <!-- Caso 5: En Faena / Conciliación Reports -->
+                <div v-else class="text-center py-1">
+                  <span class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 text-[10px] font-mono border border-white/5 inline-flex items-center gap-1">
+                    <span>⏱️</span>
+                    <span>En Faena / Conciliación</span>
+                  </span>
                 </div>
               </td>
             </tr>
@@ -1440,6 +1438,22 @@ const countBandejaContable = computed(() => {
   return procesosFiltradosPeriodo.value.filter(tieneTrabajoContable).length;
 });
 
+const countPorFacturar = computed(() => {
+  return procesosFiltradosPeriodo.value.filter(p => p.habilitado_facturar && (!p.facturado || p.saldo_pendiente_facturar > 0)).length;
+});
+
+const countFirmaContable = computed(() => {
+  return procesosFiltradosPeriodo.value.filter(p => !p.firma_2_contabilidad && p.firma_1_analista && !p.facturado).length;
+});
+
+const countFaltaOc = computed(() => {
+  return procesosFiltradosPeriodo.value.filter(p => p.requiere_oc_hes && !p.tiene_oc && !p.facturado).length;
+});
+
+const countFacturado = computed(() => {
+  return procesosFiltradosPeriodo.value.filter(p => p.facturado || (p.facturas_dte && p.facturas_dte.length > 0)).length;
+});
+
 // Procesos filtrados además por el toggle de Bandeja Contable y filtros documentales
 const procesosFiltradosTabla = computed(() => {
   let lista = procesosFiltradosPeriodo.value;
@@ -1449,7 +1463,9 @@ const procesosFiltradosTabla = computed(() => {
   }
 
   if (filtroEstadoDoc.value === 'LISTO_FACTURAR') {
-    lista = lista.filter(p => p.habilitado_facturar && !p.facturado);
+    lista = lista.filter(p => p.habilitado_facturar && (!p.facturado || p.saldo_pendiente_facturar > 0));
+  } else if (filtroEstadoDoc.value === 'FIRMA_CONTABILIDAD') {
+    lista = lista.filter(p => !p.firma_2_contabilidad && p.firma_1_analista && !p.facturado);
   } else if (filtroEstadoDoc.value === 'FALTA_OC') {
     lista = lista.filter(p => p.requiere_oc_hes && !p.tiene_oc && !p.facturado);
   } else if (filtroEstadoDoc.value === 'FACTURADO') {
