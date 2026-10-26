@@ -4,6 +4,38 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [Portal Web GSP] - Versión 1.0.165
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 19:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1075` (`SPEC-103`)
+- **Especificación Técnica:** Desacople Total del Estado de Pago, Cuadre Tensacon (Erradicación ST $65.000) y Regla de Protección Comercial Horas Mínimas en PDF:
+  1. **Erradicación del Defecto Tensacon (`GSP-2610-233-004`):**
+     - Eliminación definitiva de tarifa quemada `$65.000` y doble cobro de sobretiempo en `estadoPagoController.js`.
+     - Cuadre matemático exacto: 38 hrs a $150.000/hr ($5.700.000) + traslado ($950.000) = $6.650.000 Neto, calzando 100% con el ITS ($0 descalce).
+  2. **Regla de Protección Comercial en PDF (`edpPdfService.js`):**
+     - Si alguna jornada registra horas trabajadas < horas mínimas pactadas (`horas_operadas < horas_minimas`), el PDF del cliente oculta el desglose horario de turnos y despliega certificación ejecutiva de liquidación a piso mínimo contratado.
+     - Inclusión visible del Ejecutivo Comercial (`vendedor_nombre`) en la carátula oficial del EDP.
+  3. **Desacople de Facturación y SoD Contable (`PerspectivaContabilidad.vue`):**
+     - Eliminación de la pestaña `[ 🟡 Mi Firma EDP ]` y del botón de visación contable en Columna 5.
+     - Consolidación en 4 bandejas operativas limpias: `[ 🟢 Por Facturar ]`, `[ ⏳ Retenidas por OC ]`, `[ ✅ Facturadas ]` y `[ 🌐 Todas las OTs ]`.
+     - Inclusión de la columna `Ejecutivo Comercial` en la exportación Excel para liquidación de comisiones.
+
+## [Portal Web GSP] - Versión 1.0.164
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 16:40:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1071` (`SPEC-096`, `SPEC-097`, `CASO-20261026-01`)
+- **Especificación Técnica:** Sincronización Omnicanal E2E de Triple Medidor (Horómetro Grúa, Horómetro Chasis y Odómetro), Rediseño Full-Workspace de OTM y Habilitación de Flota Completa Multi-Empresa (110 Activos y Camionetas) en Radar de Taller:
+  1. **Sincronización Multi-Fuente de Triple Medidor en BD (`sch_leangsp_prod` y `sch_leangsp`):**
+     - Corrección de `fn_sync_equipo_odohoro()` sin esquema en duro y vinculación de las 5 fuentes operativas (`tedp_reporte_avance`, `tequ_log_desplazamiento`, `tmnt_ot`, `tmnt_aviso` y `tsrv_survey`) hacia `tequ_equipo` (`horometro_grua_acumulado`, `horometro_chasis_acumulado`, `odometro_acumulado`, `fecha_ultima_lectura`, `fuente_ultima_lectura`).
+  2. **Despliegue Visual del Triple Medidor (`Vista360.vue`, `MantenimientoView.vue`, `HojaVidaEquipoView.vue`):**
+     - Visualización diferenciada de Horómetro Grúa, Horómetro Chasis y Odómetro (km) más fuente y fecha de última lectura en el Inventario Maestro 360°, Radar de Flota y Hoja de Vida del Equipo.
+  3. **Habilitación de Flota Completa Multi-Empresa y Camionetas (`mantenimientoModel.js` — `CASO-20261026-01`):**
+     - Eliminación del filtro restrictivo `WHERE e.id_empresa = $1` en `getRadarFlota`, `getHojaVidaEquipo` y `getKpis`, habilitando los 110 equipos corporativos (incluyendo las camionetas `CTA-214` a `CTA-226` registradas en `CERRO DOROTEA LTDA` `4852`, más activos de `LOGISTICA DEL SUR`, `BESTMAQ` y `ROYAL RENTAL`) con etiqueta descriptiva enriquecida (`código · subcategoría · marca modelo`).
+  4. **Rediseño Full-Workspace Modal OTM, Inspección de Salida y Usuario Creador Real (`MantenimientoView.vue`, `mantenimientoController.js`):**
+     - Ampliación de la OTM a modal de pantalla completa (`SPEC-097`), pestaña de Inspección de Salida & Liberación, registro web de Averías y atribución del `id_user` autenticado real en la creación de OTs.
+
 ## [Portal Web GSP] - Versión 1.0.163
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-26 15:30:00 (-03:00)

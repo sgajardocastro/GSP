@@ -279,18 +279,21 @@ exports.generarPdfEdp = async (req, res) => {
         });
       });
 
-      const montoST = ajustesTesoreria?.sobretiempo_override !== null && ajustesTesoreria?.sobretiempo_override !== undefined
+      // Erradicación de tarifa quemada ($65.000) y doble cobro. Las horas facturables consolidadas
+      // (totalHorasFact) ya incluyen las horas de sobretiempo a la tarifa unitaria pactada.
+      // Únicamente se aplica un recargo adicional si existe un override explícito de Tesorería.
+      const montoST = (ajustesTesoreria?.sobretiempo_override !== null && ajustesTesoreria?.sobretiempo_override !== undefined)
         ? Number(ajustesTesoreria.sobretiempo_override)
-        : (totalST > 0 ? Math.round(totalST * 65000) : 0);
+        : 0;
 
       if (montoST > 0) {
         subtotalBase += montoST;
         detalles_adicionales.push({
           concepto: 'Recargo Horas Sobretiempo / Extensión de Jornada',
-          subtitulo: 'Horas adicionales autorizadas en faena',
-          unidad_cobro: 'Horas ST',
-          cantidad: `${totalST.toFixed(1)} hrs`,
-          precio_unitario: totalST > 0 ? Math.round(montoST / totalST) : montoST,
+          subtitulo: 'Ajuste de sobretiempo autorizado por Tesorería',
+          unidad_cobro: 'GL',
+          cantidad: 1,
+          precio_unitario: Math.round(montoST),
           monto_subtotal: Math.round(montoST)
         });
       }
@@ -375,6 +378,8 @@ exports.generarPdfEdp = async (req, res) => {
         obra_direccion: crmV1.obra_direccion || jf.obra_direccion || crmV1.direccion_faena || 'En Faena',
         obra_comuna: crmV1.obra_comuna || '',
         contacto_nombre: crmV1.contacto_nombre || jf.datos_generales?.contacto_nombre || 'Administración de Obra',
+        vendedor_nombre: crmV1.vendedor_nombre || jf.vendedor_nombre || jf.cotizaciones_historicas?.[0]?.evento_envio?.usuario_envio || 'Ejecutivo Comercial',
+        vendedor_email: crmV1.vendedor_email || '',
         empresa_razon_social: proyecto.empresa_razon_social,
         empresa_rut: proyecto.empresa_rut,
         empresa_giro: proyecto.empresa_giro,
@@ -2055,11 +2060,13 @@ exports.getPerspectivaContabilidad = async (req, res) => {
               subDev += Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
             }
           }
-          if (horasSobretiempoPry > 0) {
-            const tarifaSt = montoEquiposCotizado > 0 && horasFacturablesPry > 0
-              ? (montoEquiposCotizado / horasFacturablesPry) * 1.5
-              : 65000;
-            subDev += Math.round(horasSobretiempoPry * tarifaSt);
+          // Erradicación de sobretiempo hardcodeado ($65.000). Las horas facturables (horasFacturablesPry)
+          // ya incorporan la totalidad de horas operadas y de sobretiempo liquidables.
+          const stOverride = (jf.edp_ajustes_v1?.sobretiempo_override !== null && jf.edp_ajustes_v1?.sobretiempo_override !== undefined)
+            ? Number(jf.edp_ajustes_v1.sobretiempo_override)
+            : 0;
+          if (stOverride > 0) {
+            subDev += stOverride;
           }
         }
         montoDevengadoReports = subDev > 0 ? Math.round(subDev) : montoComprometido;
@@ -2116,8 +2123,10 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       const f2Contabilidad = edpFlujo?.firma_2_contabilidad || null;
       const f3Comercial = edpFlujo?.firma_3_comercial || jf.edp_firma_comercial || null;
 
+      // Desacople Contabilidad (Acuerdo Maritza Seguel / Jorge Ponce):
+      // Al validar los reports de terreno o emitir el EDP, queda liberado para facturación sin exigir 2° firma contable.
       const edpEmitido = Boolean(f1Analista || f2Contabilidad || f3Comercial || tieneFacturasEmitidas || p.estado_its === 'CONCLUIDO');
-      const edpValidadoConta = Boolean(f2Contabilidad || f1Analista || tieneFacturasEmitidas || p.estado_its === 'CONCLUIDO');
+      const edpLiberado = Boolean(totalReports > 0 || edpEmitido || tieneFacturasEmitidas || p.estado_its === 'CONCLUIDO');
 
       // Monto EDP de referencia (con ajustes de tesorería si existen)
       const descuentoTesoreria = Number(jf.edp_ajustes_v1?.descuento_tesoreria || 0);
@@ -2164,7 +2173,7 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       );
       const esFacturacionParcial = Boolean(tieneFacturasEmitidas && !esCierreTotalFacturado);
       const facturado = tieneFacturasEmitidas;
-      const habilitadoFacturar = Boolean(!esCierreTotalFacturado && edpValidadoConta && (!requiereOcHes || tieneOc));
+      const habilitadoFacturar = Boolean(!esCierreTotalFacturado && edpLiberado && (!requiereOcHes || tieneOc));
 
       // Estado / Semáforo Contable
       let semaforoContable = 'ADJUDICADO_SIN_REPORTS';
@@ -2181,9 +2190,9 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       } else if (habilitadoFacturar) {
         semaforoContable = 'LISTO_FACTURAR';
         semaforoLabel = 'Listo para Facturar Inmediato';
-      } else if (edpValidadoConta && requiereOcHes && !tieneOc) {
+      } else if (edpLiberado && requiereOcHes && !tieneOc) {
         semaforoContable = 'FALTA_OC';
-        semaforoLabel = 'EDP Validado — Esperando OC Cliente';
+        semaforoLabel = 'EDP Liberado — Esperando OC Cliente';
       } else if (edpEmitido) {
         semaforoContable = 'EN_CIRCUITO_EDP';
         semaforoLabel = 'En Circuito de Firmas EDP';

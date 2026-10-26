@@ -315,15 +315,6 @@
             <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countPorFacturar }}</span>
           </button>
           <button
-            @click="filtroEstadoDoc = 'FIRMA_CONTABILIDAD'"
-            :class="filtroEstadoDoc === 'FIRMA_CONTABILIDAD' ? 'bg-amber-500 text-slate-950 font-black shadow-md' : 'text-amber-300 hover:bg-white/5 font-semibold'"
-            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
-            title="OTs emitidas por Control de Gestión esperando 2° Firma de Contabilidad"
-          >
-            <span>🟡 Mi Firma EDP</span>
-            <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFirmaContable }}</span>
-          </button>
-          <button
             @click="filtroEstadoDoc = 'FALTA_OC'"
             :class="filtroEstadoDoc === 'FALTA_OC' ? 'bg-orange-600 text-white font-black shadow-md' : 'text-orange-300 hover:bg-white/5 font-semibold'"
             class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
@@ -629,17 +620,6 @@
                 >
                   <span>🧾</span>
                   <span>Cargar Factura DTE ({{ fmtCLP(p.saldo_pendiente_facturar) }})</span>
-                </button>
-
-                <!-- Caso 2: Mi Firma Contable Pendiente (Acción Primaria Ámbar Sólida) -->
-                <button
-                  v-else-if="!p.firma_2_contabilidad && p.firma_1_analista && !p.facturado"
-                  @click="abrirModalDoc('FE', p)"
-                  class="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/70 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="Validar y Firmar Estado de Pago con PIN FES (2° Firma)"
-                >
-                  <span>✍️</span>
-                  <span>Visar EDP (2° Firma FES)</span>
                 </button>
 
                 <!-- Caso 3: Esperando OC que debe subir Comercial (Bloqueo Informativo para Contabilidad) -->
@@ -1997,6 +1977,7 @@ function exportarExcelActivo() {
       'Empresa Holding': p.empresa_emisora,
       'Cliente': p.cliente_nombre,
       'RUT Cliente': p.cliente_rut,
+      'Ejecutivo Comercial': p.vendedor_nombre || 'Sin Asignar',
       'Obra / Faena': p.obra_nombre,
       'Fecha Inicio': p.fecha_inicio || '',
       '1. Comprometido Neto ($)': p.monto_comprometido,
