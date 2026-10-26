@@ -46,5 +46,6 @@ router.post('/parsear-dte-pdf', estadoPagoController.parsearFacturaDtePdfEndpoin
 router.post('/soporte-documental', estadoPagoController.guardarSoporteDocumentalEDP);
 router.post('/proyecto/:id_proyecto/soporte-documental', estadoPagoController.guardarSoporteDocumentalEDP);
 router.delete('/proyecto/:id_proyecto/dte/:id_dte', estadoPagoController.eliminarFacturaDteEDP);
+router.get('/proyecto/:id_proyecto/cotizacion-pdf', estadoPagoController.descargarPdfCotizacionProyecto);
 
 module.exports = router;

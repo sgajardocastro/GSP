@@ -1513,31 +1513,31 @@ exports.guardarSoporteDocumentalEDP = async (req, res) => {
 
     // 2. Procesar Factura DTE (Soporte Multi-Factura: Cuotas, Parciales o Mensuales)
     if (factura && (factura.factura_numero || factura.folio_dte)) {
-      const RUTS_HOLDING = {
-        '52004162-1': { id: 9, nombre: 'Grúas San Pablo' },
-        '76209534-3': { id: 7, nombre: 'Bestmaq' },
-        '76218576-8': { id: 8, nombre: 'Logística del Sur' },
-        '78254535-3': { id: 11, nombre: 'Royal Rental' }
+      const RUTS_HOLDING_CLEAN = {
+        '520041621': { id: 9, nombre: 'Grúas San Pablo' },
+        '762095343': { id: 7, nombre: 'Bestmaq' },
+        '762185768': { id: 8, nombre: 'Logística del Sur' },
+        '782545353': { id: 11, nombre: 'Royal Rental' }
       };
 
       const limpiarRutKey = r => String(r || '').replace(/[^0-9kK]/g, '').toUpperCase();
 
-      // Validación 1 (R-2): Emisor debe pertenecer al Holding GSP
+      // Validación 1 (R-2 Fail-Closed): Emisor debe pertenecer al Holding GSP
       const rutEmisorLimpio = limpiarRutKey(factura.rut_emisor);
-      if (rutEmisorLimpio && !RUTS_HOLDING[rutEmisorLimpio]) {
+      if (!rutEmisorLimpio || !RUTS_HOLDING_CLEAN[rutEmisorLimpio]) {
         return res.status(400).json({
           success: false,
-          message: `Rechazo Contable: El emisor de la factura (RUT ${factura.rut_emisor}) no pertenece al holding autorizado (Grúas San Pablo, Bestmaq, Logística del Sur, Royal Rental).`
+          message: `Rechazo Contable: El emisor de la factura (${factura.empresa_facturadora || 'Desconocido'}, RUT ${factura.rut_emisor || 'No especificado'}) no pertenece al holding autorizado (Grúas San Pablo, Bestmaq, Logística del Sur, Royal Rental).`
         });
       }
 
-      // Validación 2 (R-1): Calce Mandante Receptor (RUT DTE vs RUT Cliente OT)
+      // Validación 2 (R-1 Fail-Closed): Calce Mandante Receptor Obligatorio
       const rutReceptorLimpio = limpiarRutKey(factura.cliente_receptor_rut);
       const rutClienteOtLimpio = limpiarRutKey(proyecto.cliente_rut);
-      if (rutReceptorLimpio && rutClienteOtLimpio && rutReceptorLimpio !== rutClienteOtLimpio) {
+      if (!rutReceptorLimpio || !rutClienteOtLimpio || rutReceptorLimpio !== rutClienteOtLimpio) {
         return res.status(400).json({
           success: false,
-          message: `Rechazo Contable: La factura N° ${factura.folio_dte || factura.factura_numero} está emitida al RUT ${factura.cliente_receptor_rut} (${factura.cliente_receptor_nombre || 'Desconocido'}), pero este servicio corresponde al cliente ${proyecto.cliente_nombre} (RUT ${proyecto.cliente_rut}). No se permite asociar DTEs de clientes ajenos.`
+          message: `Rechazo Contable: La factura N° ${factura.folio_dte || factura.factura_numero} está emitida al RUT ${factura.cliente_receptor_rut || 'Desconocido'} (${factura.cliente_receptor_nombre || 'Desconocido'}), pero este servicio corresponde al cliente ${proyecto.cliente_nombre} (RUT ${proyecto.cliente_rut || 'No definido'}). No se permite asociar DTEs incongruentes o de clientes ajenos.`
         });
       }
 
@@ -2605,5 +2605,47 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       message: 'Error al consolidar Perspectiva Contabilidad',
       error: error.message
     });
+  }
+};
+
+// 13. Descargar PDF Oficial de la Cotización Comercial para Perspectiva Contabilidad
+exports.descargarPdfCotizacionProyecto = async (req, res) => {
+  try {
+    const { id_proyecto } = req.params;
+    if (!id_proyecto) return res.status(400).send('id_proyecto es requerido');
+
+    const pRes = await db.query('SELECT id_proyecto, codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+    if (pRes.rows.length === 0) return res.status(404).send('Proyecto no encontrado');
+
+    const proyecto = pRes.rows[0];
+    const jf = typeof proyecto.json_field === 'string' ? JSON.parse(proyecto.json_field || '{}') : (proyecto.json_field || {});
+    const crm = jf.crm_v1 || {};
+    const cotizVig = crm.cotizacion_v1 || crm.cotizacion || (Array.isArray(crm.cotizaciones_historicas) && crm.cotizaciones_historicas.length > 0 ? crm.cotizaciones_historicas[crm.cotizaciones_historicas.length - 1] : null);
+
+    let idDoc = cotizVig?.id_doc || cotizVig?.id_doc_pdf;
+    if (!idDoc && cotizVig?.url && cotizVig.url.includes('/api/archivo/ver/')) {
+      idDoc = cotizVig.url.split('/api/archivo/ver/').pop();
+    }
+
+    const archivoController = require('./archivoController');
+
+    if (idDoc) {
+      req.params.id = String(idDoc);
+      return await archivoController.verArchivoById(req, res);
+    }
+
+    const proyectoModel = require('../models/proyectoModel');
+    const pModel = new proyectoModel();
+    const result = await pModel.generarCotizacionVersion(id_proyecto, crm.total_neto || 0);
+    const nuevoIdDoc = result?.cotizacion?.id_doc;
+    if (nuevoIdDoc) {
+      req.params.id = String(nuevoIdDoc);
+      return await archivoController.verArchivoById(req, res);
+    }
+
+    return res.status(404).send('No se encontró archivo de cotización para este proyecto.');
+  } catch (err) {
+    console.error('[descargarPdfCotizacionProyecto] Error:', err);
+    return res.status(500).send('Error interno al obtener PDF de cotización: ' + err.message);
   }
 };

@@ -2,6 +2,342 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+
+
+## [Portal Web GSP] - Versión 1.0.161
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 13:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1070` (`SPEC-101`), `REQ-078` (`SPEC-078`)
+- **Especificación Técnica:** Portal Web GSP v1.0.161: Apertura Directa de Cotización Comercial en PDF Certificado, Blindaje Fail-Closed Anti-Descalce Tributario en DTE e Integración Maestra de Tarifas de Operador en ITS:
+  1. **Apertura de Cotización Comercial PDF Oficial (`PerspectivaContabilidad.vue`, `estadoPagoRoutes.js`, `estadoPagoController.js`):**
+     - Al hacer clic en el código de la OT (`GSP-XXXX-XXXX-XXX`) en la primera columna de la Perspectiva Contabilidad, se abre directamente en una nueva pestaña el PDF oficial de la Cotización Comercial con membresía, sellos y condiciones pactadas (`GET /api/operaciones/edp/proyecto/:id/cotizacion-pdf`), cumpliendo el estándar de solo PDFs certificados (cero vistas web).
+  2. **Blindaje Fail-Closed Anti-Descalce Tributario (`dtePdfParserService.js`, `estadoPagoController.js`, `PerspectivaContabilidad.vue`):**
+     - Normalización estricta de RUTs sin puntos ni guiones para validación cruzada.
+     - Bloqueo determinista (HTTP 400 y alerta modal) si el emisor no pertenece al holding autorizado (Grúas San Pablo `52.004.162-1`, Bestmaq `76.209.534-3`, Logística del Sur `76.218.576-8`, Royal Rental `78.254.535-3`).
+     - Bloqueo determinista (HTTP 400 y alerta modal) si el RUT receptor del DTE no calza exactamente con el RUT cliente de la OT.
+     - Eliminación de fallbacks ciegos y persistencia con `cliente_receptor_rut`.
+  3. **Integración de Tarifas Maestras de Operadores en ITS (`tarifasOperadorService.js`, `itsController.js`, `ModalITS.vue`):**
+     - Precarga automática de 19 tarifas horarias maestras según tipo de grúa y tonelaje (70t a \$6.000/hr, traslado a misma tarifa del servicio).
+     - Auditoría con banner ámbar (`⚠️ Tarifa Modificada por Control de Gestión` / `Auditoría: Yara`) ante cualquier ajuste manual.
+
+## [Portal Web GSP] - Versión 1.0.160
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-25 23:10:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1070` (`SPEC-101`)
+- **Especificación Técnica:** Portal Web GSP v1.0.160: Reconocimiento Automático de Facturas PDF (Laudus ERP / Portal SII), Facturación Múltiple por Proceso (`1 OT -> N Facturas DTE`), Gestión de Cuotas y Arriendos Mensuales:
+  1. **Motor de Reconocimiento Automático de Facturas PDF (`dtePdfParserService.js`):**
+     - Parser determinista nativo con inflado zlib en Node.js (0 dependencias externas pesadas).
+     - Identificación automática de la empresa emisora del holding por RUT (`52.004.162-1` Grúas San Pablo / Laudus ERP; `76.209.534-3` Bestmaq / Portal SII; `76.218.576-8` Logística del Sur / Portal SII; `78.254.535-3` Royal Rental / Portal SII).
+     - Extracción precisa de Folio DTE, Fecha de Emisión, Fecha de Vencimiento, Monto Exento, Neto, IVA 19%, Monto Total Bruto, OCs referenciadas, Reports y OTs citadas.
+  2. **Facturación Múltiple por Proceso (`1 OT -> N Facturas DTE`):**
+     - Soporte para asociar múltiples DTEs a una misma OT para cubrir anticipos, pagos parciales en cuotas o cortes mensuales de arriendo continuo.
+     - Modalidades admitidas: `PARCIAL_CUOTA`, `MENSUALIDAD`, `CIERRE_TOTAL`.
+     - Recálculo dinámico en cuenta corriente del proyecto: Monto comprometido, devengado en reports, exigible en EDP, facturado neto acumulado y saldo restante por facturar.
+  3. **Perspectiva Contabilidad en Torre de Control (`PerspectivaContabilidad.vue`):**
+     - Dropzone de carga inteligente de facturas PDF con autocompletado y validación de campos.
+     - Tabla de historial de facturas asociadas a cada OT con enlace directo al PDF original y opción de desvinculación con recálculo en vivo.
+     - Indicadores visuales en la tabla de procesos (`100% Cierre`, `Parcial (X DTEs)`, `Arriendo Mensual`).
+
+## [Portal Web GSP] - Versión 1.0.159
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-25 19:05:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1069` (`SPEC-100`)
+- **Especificación Técnica:** Portal Web GSP v1.0.159: Nueva Perspectiva Contabilidad en Torre de Control (`Torre.vue` y `PerspectivaContabilidad.vue`), Embudo Financiero E2E de 5 Variables, Gráficos Ejecutivos y 3 Submenús con Exportación Nativa Multi-Hoja a Excel (`.xlsx`):
+  1. **Nuevo Contexto `💼 Perspectiva Contabilidad` en `Torre.vue`:** Cuarta perspectiva ejecutiva integrada en el selector superior de la Torre de Control junto a *Tablero Kanban*, *Matriz PMO* y *Perspectiva Temporal (Flota Gantt)*.
+  2. **Cabecera Ejecutiva con los 5 KPIs del Embudo Financiero E2E (`GET /api/operaciones/edp/perspectiva-contabilidad`):**
+     - `① Comprometido (Cotizaciones Ganadas / OTs)` ($ CLP neto + cantidad de OTs adjudicadas).
+     - `② Devengado en Terreno (Reports Diarios)` ($ CLP neto + N° reports emitidos/validados + horas operadas).
+     - `③ Cerrado en ITS (Gestión Interna)` ($ CLP neto ingresos + costos internos + N° ITS concluidos/revisión).
+     - `④ Emitido en EDP (Prefactura Cliente)` ($ CLP neto + cuántos están `🟢 Listos para Facturar`).
+     - `⑤ Facturado DTE (SII) & Brecha` ($ CLP facturado + saldo pendiente por facturar).
+  3. **Bloque Gráfico Ejecutivo:**
+     - **Gráfico 1:** Cascada / Embudo de Conversión Financiera E2E (`Comprometido ➔ Devengado Reports ➔ Cerrado ITS ➔ Emitido EDP ➔ Facturado DTE`) con barras proporcionales y % de conversión sobre lo comprometido.
+     - **Gráfico 2:** Distribución interactiva por Estado Contable de Procesos (*Listos para Facturar Inmediatamente*, *EDP Validado — Esperando OC*, *Devengando en Faena / Circuito EDP*, *Facturados Conforme*).
+  4. **3 Submenús Operativos con Exportación Nativa a Excel (`.xlsx`):**
+     - **Submenú 1 — `📑 1. Avance y Calce por Proceso`:** Tabla de cuadratura proceso por proceso mostrando simultáneamente las 5 variables, las 3 firmas FES del EDP (`① Ctl.G`, `② Conta`, `③ Com.`), condición de OC, variación de calce (`$ EDP vs $ Cotizado`), acciones directas (`📑 EDP`, `📄 PDF`, `📊 ITS`, `💳 Facturar`) y exportación a Excel (`Calce_Procesos_Contabilidad_GSP_*.xlsx`).
+     - **Submenú 2 — `👷 2. Reporte de Horas de Operadores / Riggers`:** Sábana consolidada por trabajador y detalle diario por report (`horas_normales`, `horas_sobretiempo`, `horas_totales`, `viaticos_clp`) con descarga de Excel de 2 hojas (`Resumen_Trabajadores` y `Detalle_Jornadas_Diarias`).
+     - **Submenú 3 — `🚜 3. Reporte de Ventas por Grúa / Equipo`:** Sábana de facturación y rendimiento por activo de la flota (`patente`, `modelo`, `ots_atendidas`, `horas_facturables`, `venta_comprometida_neto`, `venta_devengada_neto`, `venta_edp_neto`, `venta_facturada_neto`, `costos_directos_its`, `margen_contribucion`) con descarga de Excel de 2 hojas (`Resumen_Ventas_Equipos` y `Detalle_Equipos_Por_OT`).
+
+## [Portal Web GSP] - Versión 1.0.158
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-25 16:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1068` (`SPEC-099`)
+- **Especificación Técnica:** Portal Web GSP v1.0.158: Desacoplamiento Estructural ITS/EDP, Circuito de 3 Hitos de Firma FES del Estado de Pago, Carga de OC por Comercial con Constancia a Contabilidad y Homologación de Distancia / Pensiones:
+  1. **Homologación de Distancia Estimada (`distancia_km`) y Pensiones (Cotización -> OT -> ITS):** Propagación y visualización explícita de los kilómetros estimados comerciales y la cláusula de responsabilidad de alojamiento/alimentación (Cliente vs GSP) en Cotización (PDF), OT (PDF y vista operativa) e ITS (PDF y `ModalITS.vue`).
+  2. **Desacoplamiento Estructural entre ITS (Costos Internos) y EDP (Prefactura Comercial):** Eliminación del bloqueo que exigía `estado_its === 'CONCLUIDO'` o `itsAprobadoPorOperaciones` para abrir la Carátula del EDP, emitir el PDF del EDP o registrar la Factura DTE en `GestorOportunidades.vue`, `Torre.vue` y `estadoPagoController.js`.
+  3. **Circuito de 3 Hitos de Firma FES del Estado de Pago (`POST /api/operaciones/edp/firmar-paso`):**
+     - **Hito 1 — Control de Gestión (Yara):** Verifica que estén todos los Reports Diarios registrados y genera el EDP con su Firma FES (`firma_1_analista`), notificando a Contabilidad.
+     - **Hito 2 — Contabilidad (Maritza / Tesorería):** Revisa tarifas/valores del EDP, puede devolver con observaciones a Control de Gestión (`accion = 'DEVOLVER'`) o validar y firmar con PIN FES (`firma_2_contabilidad`), notificando al Comercial responsable.
+     - **Hito 3 — Comercial Responsable:** Recibe el EDP validado por Contabilidad y lo firma y despacha al Cliente Mandante (`firma_3_comercial`).
+     - **PDF Oficial del EDP (`edpPdfService.js`):** Estampa las 4 columnas de certificación en la Sección 4 (*1. Control de Gestión*, *2. Validación Contable*, *3. Despacho Comercial*, *4. Respaldo OC / Mandante*).
+  4. **Carga de Orden de Compra (OC / HES) por el Comercial con Constancia Automática a Contabilidad:** Habilitación del Paso 3 (`③ Respaldo OC`) en `GestorOportunidades.vue` y del Bloque 1 en `ModalCaratulaEDP.vue` para que el Comercial suba la OC con su archivo PDF, enviando automáticamente copia/constancia por correo a Contabilidad (`mseguel@arriendosanpablo.cl`).
+  5. **Regla Determinista de Habilitación Inmediata para Facturar (Doble Gatillo):** Evalúa `habilitado_facturar = Boolean(edpValidado && (!requiere_oc_hes || tiene_oc))` y dispara alerta inmediata `🟢 LISTO PARA FACTURAR INMEDIATAMENTE` a Contabilidad apenas se cumplen ambas condiciones.
+  6. **Nuevo Segmento en el Centro de Documentación Oficial (`manual_contabilidad_edp_y_facturacion_gsp.html`, `centro_documentacion_gsp.html` y `DocumentacionView.vue`):** Incorporación del Módulo 10 interactivo e imprimible en A4 sobre Desacoplamiento ITS/EDP, Circuito de 3 Hitos FES, Carga de OC con Copia a Contabilidad y Matriz del Doble Gatillo de Facturación, con botón de acceso rápido `💳 Contabilidad & EDP` en la barra superior de Documentación.
+
+## [Portal Web GSP] - Versión 1.0.157
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-24 17:10:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1067` (`SPEC-098`)
+- **Especificación Técnica:** Portal Web GSP v1.0.157: Disponibilidad E2E de Archivos PDF para Reportes Diarios de Izaje (Emisión Automática en App, Sello FES y Acceso Directo en Gestor Documental y CRM):
+  1. **Acceso Directo a PDF en Gestor Documental (`Documentos.vue`):** El botón principal "Abrir ↗" y el clic sobre el nombre del reporte abren directamente el archivo PDF binario en una nueva pestaña del navegador (`window.open`). Incorporación de botón secundario `✏️ Formulario Web` para auditoría interactiva mediante `ModalVisorReport`.
+  2. **Acceso Directo en CRM Operaciones (`GestorOportunidades.vue`):** En la columna de acciones del cronograma de reports (Pestaña 6), el botón principal pasa a ser `📄 PDF` (apertura directa de documento oficial) y el botón secundario `👁️ Auditar` (apertura de modal web).
+  3. **Backend Motor de Emisión PDF en Terreno (`reportDiarioPdfService.js`):** Soporte visual para Nivel 1 (Faena / Terreno con membrete "REGISTRO OPERATIVO DE FAENA — PENDIENTE DE AUDITORÍA PMO" y firma táctil) y Nivel 2 (Oficina PMO con sello verde criptográfico FES y hash SHA-256).
+  4. **Backend Transaccional Inmediato (`reportDiarioController.js`):** Compilación y archivado inmediato del PDF en `guardarReportDiario` (PWA) vinculando `id_doc_pdf` a `tedp_reporte_avance` en Momento 2.
+  5. **Endpoint Canónico de Auto-Reparación y Streaming (`reportDiarioRoutes.js`):** Exposición de ruta `GET /api/operaciones/report/:id/pdf` para entrega garantizada de PDF con auto-reparación transparente.
+  6. **Auditoría y Regularización en Base de Datos:** Backfill retroactivo de 100% de los reportes históricos en `sch_leangsp_prod` (23/23) y `sch_leangsp` (35/35), garantizando 0 reportes sin PDF.
+
+## [Portal Web GSP] - Versión 1.0.156
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-22 00:10:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1066` (`SPEC-094`)
+- **Especificación Técnica:** Portal Web GSP v1.0.156: Reingeniería Enterprise de Traspasos & Traslados entre Bodegas (`TraspasosTrasladosView.vue`) y Erradicación Total de Alertas en Mantenimiento (`MantenimientoView.vue`):
+  1. **Reingeniería Integral de Traspasos entre Bodegas (`TraspasosTrasladosView.vue`):** Erradicación absoluta de datos mock (`TRP-0007`, `TRP-0006`, etc.) y alertas `alert(...)`. Conexión nativa con backend transaccional y tablas PostgreSQL `tinv_traspaso` y `tinv_traspaso_linea`.
+  2. **4 KPIs Ejecutivos en Tiempo Real:** Guías en Tránsito Activo, Traspasos Recibidos Conforme, Unidades en Ruta y Carga Valorizada ($ CLP al PMP oficial).
+  3. **Trazabilidad de Ruta y Stepper de 4 Etapas:** Visualización clara de etapas: Preparado en Pañol ➔ Despachado con GDI ➔ En Tránsito (Transporte en ruta con chofer y patente) ➔ Recibido y Ubicado en Destino.
+  4. **Modal Centrado de Emisión de Guías GDI:** Selector de bodega origen, tipo de traspaso (Interbodega vs Interempresa), bodega/empresa destino, chofer, patente, y grilla interactiva para agregar repuestos desde casilleros con stock físico disponible validado.
+  5. **Modal Centrado de Recepción Física en Destino:** Asignación individual del casillero de estantería receptora (`tinv_ubicacion`) para cada ítem, con incremento atómico de stock e inserción de asiento `ENTRADA_TRASPASO` en Kardex inmutable.
+  6. **Extensión DDL No Destructiva en BD:** Secuencia de folios `seq_tinv_traspaso_folio`, columnas para número de guía (`GDI-XXXX`), transportista, patente y fechas de trazabilidad. Creación de ubicaciones de recepción en Bodega 2 (Antofagasta) y Bodega 3 (Móvil San Bernardo).
+  7. **Pulido Enterprise en Mantenimiento (`MantenimientoView.vue`):** Erradicación de los 14 cuadros emergentes `alert(...)` del navegador (medidores, fotos 360°, hallazgos, insumos WMS y compra directa), sustituidos por el sistema de toasts no bloqueantes (`mostrarToast`). Cero alteraciones a la lógica operativa de OTs, medidores o BD.
+
+## [Portal Web GSP] - Versión 1.0.155
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-21 22:15:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1065` (`SPEC-093`)
+- **Especificación Técnica:** Portal Web GSP v1.0.155: Reingeniería Enterprise de Despacho a OT & Devolución de Sobrantes WMS Outbound (`DespachoConsumoView.vue`):
+  1. **Erradicación del Simulador de Smartphone:** Eliminación definitiva de la maqueta de teléfono Android simulado en vista de escritorio, suprimiendo animaciones, emojis y alerts de navegador.
+  2. **Supresión Absoluta de Datos Mock y Banners Internos:** Eliminación de los arrays mock `otsReservas`, `pwaSteps`, `devolucionQty * 6900` y de los carteles técnicos `Resuelve: M5, M6, C6`.
+  3. **Tarjetas de KPIs Ejecutivos en Tiempo Real:** 4 indicadores clave en cabecera: OTs en Taller Activas (`tmnt_ot`), Líneas Despachadas Hoy (Kardex `SALIDA_OT`), Costo Imputado a Flota ($ CLP) y Sobrantes Devueltos ($ CLP).
+  4. **Pestaña 1 · Salida a OT (Picking & Imputación Real):** Selector lateral de OTs de taller activas, ficha del activo con horómetros y técnico, grilla de repuestos entregados, y Modal Centrado de Despacho desde Racks con búsqueda de repuestos, selección de casillero con stock físico disponible (`tinv_stock`) e imputación transaccional con Kardex inmutable.
+  5. **Pestaña 2 · Devolución de Sobrantes a Bodega (Crédito a OT):** Bitácora de repuestos despachados desde pañol WMS, y Modal Centrado de Devolución con selector de casillero de reingreso, crédito contable automático que rebaja el costo total de la OT y asiento `DEVOLUCION_OT`.
+  6. **Blindaje de Backend (`inventarioModel.js` & `inventarioRoutes.js`):** Corrección de columna `estado` en vez de `estado_despacho`, recálculo de `costo_total` en `tmnt_ot_repuesto`, y nuevo endpoint `GET /api/inventario/consumos-ot`.
+
+## [Portal Web GSP] - Versión 1.0.154
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-21 21:40:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1062` (`SPEC-090`)
+- **Especificación Técnica:** Portal Web GSP v1.0.154: Reingeniería Enterprise del Maestro de Existencias & Catálogo (`ProductosView.vue` & `Sidebar.vue`):
+  1. **Supresión Definitiva del Drawer Lateral:** Erradicación total de la ventana deslizante lateral derecha, reemplazada por el **Modal Enterprise Centrado del Formulario Único de Existencias · Expediente Maestro 360°**, 100% alineado con la experiencia de usuario del resto del sistema.
+  2. **Tarjetas de KPIs Ejecutivos Superiores:** Incorporación de 5 indicadores en tiempo real: Total SKUs en Catálogo, Familias Activas, Existencias Físicas Totales consolidadas, Valorización Total del Inventario ($ CLP PMP) y Artículos con Saldo Cero / Quiebre.
+  3. **Barra de Búsqueda y Filtros Enterprise:** Reemplazo de la botonera horizontal desbordada por una barra ejecutiva con buscador universal (SKU, nombre, legado, OEM), dropdown de Familias, dropdown de Criticidad y segmented control de stock (`[ Con Existencias (> 0) ]` | `[ Sin Stock (0 UN) ]` | `[ Todo el Catálogo ]`).
+  4. **Alineación de Nomenclatura en Menú (`Sidebar.vue`):** Renombrado canónico de la opción 2 a `2. Maestro de Existencias` y de la opción 1 a `1. Bodegas & Ubicaciones`.
+  5. **Depuración de Textos de Desarrollo:** Eliminación de notas internas de desarrollo en pantallas operativas visibles para usuarios finales.
+
+## [Portal Web GSP] - Versión 1.0.153
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-21 19:35:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1062` (`SPEC-090`)
+- **Especificación Técnica:** Portal Web GSP v1.0.153: Reingeniería Enterprise de Experiencia de Usuario en Inventario & WMS (Navegación Persistente, Auditoría de Racks, Dualidad de QRs y Expediente 360° de Existencias):
+  1. **Navegación Persistente y Erradicación de "Lite" (`Sidebar.vue` & `navStore.js`):** Menú renombrado oficialmente a `Inventario & WMS`. Persistencia de estado expandido en `localStorage` (`gsp_sidebar_collapsed`) e interactividad permanente de grupos desplegados (`isGroupOpen`), erradicando el autocierre accidental durante tareas de almacén.
+  2. **Reingeniería del Mapa de Bodegas (`BodegasView.vue`):** Supresión definitiva de la pestaña técnica "Migración de Ubicaciones Legadas". Dualidad de QRs: cada repuesto en la celda del rack cuenta con botón individual para imprimir su etiqueta térmica adhesiva (`[ 🏷️ SKU ]`), y la sección inferior rotula con precisión la etiqueta física de viga del casillero (`UB:E1-C2`).
+  3. **Expediente 360° de la Existencia:** Modal interactivo accesible al hacer clic sobre cualquier repuesto en rack o tabla, con desglose de saldos (Físico, Reservado para OTs, Disponible Neto, PMP) y línea de tiempo histórica del Kardex inmutable (`tinv_movimiento`).
+  4. **Formateo Humano de Cantidades:** Supresión de decimales absurdos en unidades discretas (`formatCantidad`: `7 UN`, `0 UN` en vez de `7.0000 UN`), filtros operativos `[ Con Stock Físico (> 0) ]` vs `[ Todo el Catálogo ]`, y tablas 100% interactivas con cursor pointer.
+
+## [Portal Web GSP] - Versión 1.0.152 & [PWA GSP] - Versión 1.0.54 (Backend `mantenimientoController.js` & `mantenimientoModel.js`)
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-21 08:50:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev`, `/var/www/html/pwa-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1061` (`SPEC-089`)
+- **Especificación Técnica:** Portal Web GSP v1.0.152 & PWA GSP v1.0.54: Integración Híbrida Mantenimiento Flota e Inventario WMS-Lite (Descuento Atómico de Stock, Kardex inmutable `SALIDA_OT` / `DEVOLUCION_OT`, Compra Directa Local en Terreno y Escáner QR PWA):
+  1. **Modelo Híbrido Transaccional en Base de Datos (`sch_leangsp.tmnt_ot_repuesto`):** Extensión no destructiva agregando `origen_insumo` (`BODEGA_WMS` vs `COMPRA_DIRECTA`), `id_ubicacion`, `id_movimiento_kardex` y `numero_documento_compra`. Soporta de manera nativa la coexistencia de repuestos oficiales de pañol central con compras directas de faena/terreno.
+  2. **Máquina Transaccional Atómica y Kardex Inmutable (`mantenimientoModel.js` & `mantenimientoController.js`):** En modo `BODEGA_WMS`, validación estricta de saldo físico en `tinv_stock` (retorna `400 STOCK_INSUFICIENTE` si saldo < requerido), decremento atómico de cantidad física, e inserción inmutable en `tinv_movimiento` (`SALIDA_OT`, documento `OT-<id_ot>`). Al eliminar un insumo de bodega, reversión automática con incremento de stock físico y emisión de asiento `DEVOLUCION_OT` enlazando el ID de movimiento original reversado. En modo `COMPRA_DIRECTA`, imputación directa de costo sin alterar Kardex.
+  3. **Consola Web (`MantenimientoView.vue`):** Modal de repuesto híbrido con selector superior `[ 📦 Desde Bodega WMS ]` vs `[ 📝 Compra Directa / Faena ]`, buscador reactivo con debounce conectado a `/api/inventario/productos`, ficha de stock en pañol en tiempo real y costo PMP vigente protegido, más badges de procedencia en la grilla de materiales de la OT.
+  4. **App PWA Móvil (`TallerOtDetalleView.vue`):** Segmented control táctil en Tab 3 Insumos, integración directa con `QrBarcodeScannerModal` para lectura de etiquetas de repuestos QR/código de barras, buscador con autocompletado y validación de stock máximo, y registro diferenciado de insumos con badges semánticos `[📦 BODEGA WMS: SKU]` y `[📝 COMPRA LOCAL]`.
+  5. **Verificación Empírica Automatizada (`scripts/test_hibrido_backend_dev.cjs`):** Suite completa validada contra DEV con 100% de éxito en control de saldo insuficiente, consumo de bodega con rebaja de stock y asiento Kardex, imputación de compra directa externa, detalle enriquecido de OT y reversión/devolución limpia de existencias.
+
+## [PWA GSP] - Versión 1.0.53 (Backend `reportDiarioController.js`)
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-20 22:35:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/pwa-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Ruta de Despliegue Prod:** `/var/www/html/pwa-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1060` (`SPEC-088`, `CASO-20261020-01`)
+- **Especificación Técnica:** PWA GSP v1.0.53: Máquina de Estados Canónica y Resolución Determinista de Jornada Activa E2E en Report Diario de Izaje (`ReportDiarioIzaje.vue`, `Surveys.vue` y `reportDiarioController.js`):
+  1. **Función Canónica Única `resolverJornadaActiva` en Backend (`reportDiarioController.js`):** Unificación de la resolución de equipo y jornada abierta en los 4 endpoints del ciclo (`getReportContexto`, `getReportsPendientesUsuario`, `guardarInicioJornada` y `guardarReportDiario`) con validación estricta de pertenencia del equipo a las grúas de la OT (`tpry_rel_equipo` / `lineas_servicio`), autocorrigiendo la desalineación entre el equipo del viaje de traslado (`tequ_log_desplazamiento`) y la grúa asignada a la OT (`id_equipo_seleccionado`, `equipo_corregido: true`).
+  2. **Ignorado Determinista de Huérfanos Confirmados y Zona Horaria Local (`America/Santiago`):** Los registros en `JORNADA_EN_CURSO` de fechas anteriores para los cuales ya existe un reporte cerrado en la misma OT, equipo y fecha son ignorados automáticamente, erradicando el reciclaje infinito de registros huérfanos en `guardarInicioJornada` y bloqueando con `409 JORNADA_ANTERIOR_ABIERTA` la sobreescritura silenciosa de jornadas legítimamente no cerradas.
+  3. **Adopción de Jornada Abierta en Cierre y Cero Fallbacks Silenciosos:** En `guardarReportDiario`, si el payload llega sin `id_reporte_avance`, se busca y adopta mediante `UPDATE` la jornada abierta de hoy antes de insertar, impidiendo duplicados y nuevos huérfanos. Se eliminan por completo los fallbacks silenciosos (`|| 1`, `|| 55`, `SELECT ... FROM tequ_equipo ORDER BY id_equipo ASC LIMIT 1` y patentes hardcodeadas).
+  4. **Sincronización Canónica y Respaldo Local en PWA (`ReportDiarioIzaje.vue` y `Surveys.vue`):** Navegación con `id_reporte_avance` desde `Surveys.vue`, adopción obligatoria de `d.id_equipo_seleccionado` y `router.replace` en `ReportDiarioIzaje.vue`, respaldo local `gsp_jornada_activa_<id_proyecto>` en `localStorage`, bloqueo del paso a Momento 2 sin `id_reporte_avance` confirmado por servidor, y tarjeta de reintento explícita ante error de red al cargar contexto.
+  5. **Hard Gate QA E2E (`scripts/qa_e2e_jornada_req1060.cjs`):** Suite automatizada de 14 casos de prueba E2E (`TC-01` a `TC-14`) ejecutada contra DEV con resultado **14/14 PASA (100%)** previo a la promoción a Producción.
+
+## [Portal Web GSP] - Versión 1.0.151 & [PWA GSP] - Versión 1.0.52
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-20 21:30:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` & `/var/www/html/pwa-gsp-dev`
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` & `/var/www/html/pwa-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1059` (`SPEC-087`)
+- **Especificación Técnica:** Portal Web GSP v1.0.151 & PWA GSP v1.0.52: Requerimientos Internos, Aprobador Móvil de Gerencia con Links a Cotización/OT, Módulo de Compras Multi-Empresa, Filtro Transversal de Usuarios Activos y Homologación Integral en Producción:
+  1. **Requerimientos Internos (`INT-YYMM-XXX`):** Ingreso directo al Kanban de Operaciones (Columna 3) desde `ModalRequerimientoInterno.vue` con campo abierto para detalle de movimiento ("Otro") y ruta de origen/destino en texto libre. Distinción visual ámbar en `Torre.vue`, `ViajeConductor.vue` y `Surveys.vue`.
+  2. **Aprobación Gerencial Complementaria al Confirmar Asignación OT:** Disparo automático al confirmar la asignación de recursos (`Confirmar Asignación OT ➔ Preparación de Salida`), enviando Web Token de 1 solo uso a Gerencia con enlaces directos a la Cotización y a la OT asignada (`APROBADO`, `APROBADO_CON_OBS`, `RECHAZADO`).
+  3. **Módulo de Compras Multi-Empresa (`ComprasOcView.vue`):** Solicitudes de pedido (`SP-YYMM-XXXX`), emisión de Órdenes de Compra por las 4 Razones Sociales (`OC-GSP`, `OC-RYL`, `OC-BMQ`, `OC-LDS`), visación móvil de Gerencia e imputación a ITS / Laudus ERP.
+  4. **Filtro Transversal de Usuarios Activos:** Bloqueo de selección y asignación de usuarios inactivos (`activo = false`) en todos los selectores operativos y endpoints de asignación.
+  5. **Homologación Integral en Producción (`sch_leangsp_prod`):** Sincronización completa de DDL (126 tablas, 0 diferencias de columnas y secuencias), catálogos maestros (bodegas, ubicaciones, 2.854 productos, 286 acreditaciones de personal, roles y templates de taller) y despliegue certificado en DEV y PROD.
+
+## [Portal Web GSP] - Versión 1.0.150
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-19 12:35:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1058` (`SPEC-066 Master`)
+- **Especificación Técnica:** Portal Web GSP v1.0.150: Soporte Mono-Equipo y Pareo Resiliente de Patentes en Cálculo de Ingresos y Mano de Obra en ITS Transición (`ItsTransicionView.vue`):
+  1. **Asociación Determinista Mono-Equipo:** Cuando el servicio tiene 1 solo equipo asignado (como en la Cotización 11308 de Tracto Camión), el total de horas reportadas de todas las jornadas registradas se multiplica directamente por la tarifa horaria del equipo (`valor_hora`), garantizando que no se pierdan los ingresos facturables si la celda de patente en las jornadas quedó en blanco o con diferencias tipográficas.
+  2. **Pareo Resiliente y Normalizado para Multi-Equipo:** Para servicios con más de una máquina, se normalizan las patentes (removiendo espacios, guiones y caracteres no alfanuméricos) y se implementa una tarifa fallback (primer equipo con tarifa > 0) para jornadas sin patente explícita.
+  3. **Homologación en Costo de Operador y Generador Oficial de PDF:** Se replica la misma resiliencia en el cómputo de mano de obra (`manoObraCalculada`) y en la exportación de documentos oficiales en PDF (`generarHtmlDocumentoOficial`), asegurando coherencia al 100% entre pantalla, balance de utilidad y PDF descargable.
+  4. **Gobernanza y Hard Gate:** Elevación SemVer a Web `v1.0.150` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1058`), sincronización en PostgreSQL (`sch_leangsp` y `sch_leangsp_prod`), y despliegue certificado en DEV y PROD.
+
+## [Portal Web GSP] - Versión 1.0.149
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-10-18 14:55:00 (-03:00)
+- **Ruta de Despliegue Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Ruta de Despliegue Prod:** `/var/www/html/lg-gsp-prod` (URL: `https://servidor.leanglobal.cl/lg-gsp-prod/`)
+- **Requerimientos Asociados:** `REQ-1057` (`SPEC-086 Rev. 2`)
+- **Especificación Técnica:** Portal Web GSP v1.0.149: Reestructuración Canónica del Expediente E2E de Procesos y OTs en Gestor Documental (`Documentos.vue`):
+  1. **Alineación con el Ciclo Real de Izaje Industrial (5 Etapas Canónicas):** Normalización de la estructura documental en 5 fases operativas deterministas: (1) Comercial & Preventa (cotizaciones y visitas a terreno), (2) Asignación de Recursos & Orden de Trabajo (OTs formales con asignación de grúa y tripulación), (3) Logística, Despacho y Acreditaciones (hojas de ruta, odómetros, y acreditaciones técnicas de flota y laborales de personas), (4) Operación en Faena (reportes diarios de izaje firmados en terreno y respaldos físicos escaneados), y (5) Cierre Técnico, Liquidación & Facturación (informes ITS, carátulas de EDP y facturas DTE).
+  2. **Condicionalidad Estricta de Arriendo de Plataformas (Etapa 6):** Desacoplamiento conceptual entre Izaje y Arriendo puro de maquinaria. La etapa `6. Arriendo de Plataformas & Contratos Especiales` (Contratos de arriendo FES y Actas 360° de Entrega y Retiro) queda estrictamente oculta para proyectos de izaje, mostrándose únicamente si la OT registra efectivamente arriendo de plataformas o maquinaria sin operador.
+  3. **Jerarquía Limpia en Lista de Clientes (Nivel 1):** Presentación minimalista y sin sobrecarga de cómputo en el primer nivel del árbol (`X procesos` por cliente) sin forzar conteo errático ni apertura prematura de documentos antes del clic del usuario.
+  4. **Contadores Dinámicos de Etapas:** Sustitución de etiquetas fijas de "7 Etapas" por indicador adaptativo `X de Y Etapas Activas` (donde Y es 5 para izaje regular o 6 cuando se activan contratos/actas de plataformas).
+  5. **Gobernanza y Hard Gate:** Elevación SemVer a Web `v1.0.149` en `package.json`, registro en `Gestión/tareas.md` (`REQ-1057`), sincronización de catálogo en PostgreSQL (`sch_leangsp` y `sch_leangsp_prod`), compilación limpia Vite (`build:dev` y `build:prod`) y despliegue certificado con HTTP 200 OK en DEV y PROD.
+
+## [Portal Web GSP] - Versión 1.0.148 & [PWA GSP] - Versión 1.0.51
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-17 18:50:00 (-03:00)
+- **Rutas de Despliegue:** `/var/www/html/lg-gsp-dev` y `/var/www/html/pwa-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1056` (`SPEC-085`)
+- **Especificación Técnica:** Portal Web GSP v1.0.148 & PWA GSP v1.0.51: Integración Multicanal del Centro de Documentación y Manuales Oficiales del Ecosistema GSP:
+  1. **Matriz Oficial de Marcadores en Documentación Web (`manual_operador_terreno_gsp.html`):** Actualización de la matriz canónica con las 5 columnas estándar (`reg-horom equipo`, `rego odo equipo`, `reg odo superestructura`, `reg combustible equipo`, `reg combuslible superestructura`) para los 6 hitos de viaje y report diario con reglas de obligatoriedad, standby y balance de patio.
+  2. **Visor Responsivo Embebido en Web CRM (`DocumentacionView.vue` y `router/index.js`):** Nueva ruta `/documentacion` con visor iframe integrado, selector rápido de documentos y botón de apertura externa maximizada.
+  3. **Acceso Canónico en Barra Lateral (`Sidebar.vue`):** Incorporación del ítem de primer nivel `Centro de Documentación` con ícono `BookOpen` de Lucide.
+  4. **Accesos Directos en PWA Móvil del Operador (`App.vue`):** Botón táctil en barra superior y sección de "Documentación Oficial" en tarjeta de Mi Perfil para acceder de inmediato al Manual del Operador en Terreno y Manual de Plataformas 360°.
+  5. **Asistencia Contextual en Hoja de Ruta (`ViajeConductor.vue`):** Enlace dinámico `[ 📖 ¿Dudas con los marcadores? Ver Matriz Oficial ]` en bloques de registro de Salida y Llegada.
+  6. **Despliegue Certificado de 15 Manuales (`deploy_docs.cjs`):** Sincronización completa de los 15 manuales y guías interactivas en el servidor DEV con HTTP 200 OK.
+
+## [Portal Web GSP] - Versión 1.0.147
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 17:15:00 (-03:00)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1054` (`SPEC-083`)
+- **Especificación Técnica:** Portal Web GSP v1.0.147: Normalización Global de Almacenamiento (LG-Storage Standard), Saneamiento de Base de Datos DEV/PROD, Regla Canónica de Gobernanza y Doble Indexación en Biblioteca Documental (`Documentos.vue`):
+  1. **Saneamiento Absoluto de Esquemas SQL (`actaPlataformaModel.js` y `actaPlataformaController.js`):** Eliminación total del prefijo hardcodeado `sch_leangsp.`, delegando la resolución de tablas exclusivamente al `search_path` que inyecta `postgresPool.js` para garantizar paridad y prevenir contaminación cruzada o fallos 500 al migrar a Producción (`sch_leangsp_prod`).
+  2. **Normalización de Módulos de Almacenamiento:** Normalización canónica de `relDir` a `buildStoragePath('GSP', 'actas')` sin anidar IDs de proyecto dentro del nombre de módulo.
+  3. **Regla Canónica Permanente de Gobernanza (`.agents/rules/storage_and_database_governance.md`):** Establecimiento formal de los 3 candados duros: Prohibición de esquemas hardcodeados en SQL, catálogo cerrado de módulos en `buildStoragePath`, y contrato de doble indexación en la biblioteca.
+  4. **Doble Indexación en Biblioteca Documental (`Documentos.vue`):** Enriquecimiento de la Dimensión Flota & Equipos (`dim-equipos`) para que cada máquina liste sus certificados, actas 360° (Entrega y Retiro) y contratos de arriendo; integración de actas relacionales (`tope_acta_plataforma`) en la Dimensión Procesos OTs (`dim-procesos`); y carga reactiva de reports diarios (`reportsProyectosCache`).
+  5. **Verificación Empírica:** Despliegue en DEV verificado empíricamente con HTTP 200 OK en `https://servidor.leanglobal.cl/lg-gsp-dev/` y en `https://servidor.leanglobal.cl/lg-gsp-dev/api/operaciones/acta-plataforma`.
+
+## [Portal Web GSP] - Versión 1.0.146
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 14:35:00 (-03:00)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1052` (`SPEC-082`)
+- **Especificación Técnica:** Portal Web GSP v1.0.146: Perspectiva Web de Plataformas, Contrato Legal en 3 Páginas a 10px, Visibilidad Transversal del Estado Contractual, Historial de Versiones, Bloque B de Actas 360° en CRM e Indexación en Biblioteca Documental:
+  1. **Contrato Legal en 3 Páginas a 10px (`proyectoModel.js`):** Diagramación natural a 3 carillas con tipografía exacta a 10px legible en smartphones sin reducción forzada (`smart-shrinking` neutralizado). Pág 1: Cláusulas 1 a 6; Pág 2: Cláusulas 7 a 14 y Comparecencia; Pág 3: Anexo y Firmas.
+  2. **Visibilidad y Semáforo Contractual Transversal (`GestorOportunidades.vue`):** Badge interactivo de estado de contrato en el Cockpit Header y botón permanente `[ 📜 Contrato & Actas 360° ]` en la barra superior transversal (`SUBTABS BAR`) accesible en Preventa y Operaciones.
+  3. **Historial de Versiones del Contrato (`GestorOportunidades.vue`):** Visualizador de versiones (v1, v2...) con folio, semáforo de estado (FIRMADO DIGITAL FES / PENDIENTE / BORRADOR), receptor/firmante y enlace directo al PDF oficial.
+  4. **Bloque B: Actas 360° de Terreno (`GestorOportunidades.vue`):** Integración de módulo de Actas de Entrega y Retiro dentro del tab de Contratos con horómetros, combustible, checklist, firmas, fotos y enlaces de descarga.
+  5. **Indexación en Biblioteca Documental (`Documentos.vue`):** Registro dimensional automático de contratos (con sus versiones) y de Actas 360° de Plataformas (Entrega y Retiro) en el árbol por Proyecto y en el buscador global.
+
+## [Portal Web GSP] - Versión 1.0.145
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 11:55:00 (-03:00)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1051` (`SPEC-081 Sección 6`)
+- **Especificación Técnica:** Portal Web GSP v1.0.145: Homologación del Modelo Canónico de Actas en Hoja de Ruta (`ViajeConductor.vue`), Desbloqueo Dinámico del Candado SPEC-081 y Reconocimiento de Estados PostgreSQL (`RECIBIDA_CONFORME` y `CERRADA_FINAL`):
+  1. **Alineación con Contrato de Datos de la API (`consultarEstadoActaBsm`):** Corrección en el desempaquetado del payload de `/operaciones/acta-plataforma/proyecto/:id_proyecto` leyendo directamente el objeto `resp.acta`.
+  2. **Reconocimiento de Estados de Sellado:** Mapeo estricto contra los estados canónicos de base de datos (`sch_leangsp.tope_acta_plataforma`), validando `retiro_sellado = true` ante `RECIBIDA_CONFORME`, `CERRADA_FINAL` o existencia de PDF final firmado (`id_file_pdf_final`), liberando inmediatamente el candado y habilitando el botón de inicio de retorno a patio.
+
+## [Portal Web GSP] - Versión 1.0.144
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 11:45:00 (-03:00)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1051` (`SPEC-081 Sección 6`)
+- **Especificación Técnica:** Portal Web GSP v1.0.144: Corrección de Excepción No Controlada en Hoja de Ruta de Retorno (`ViajeConductor.vue`), Declaración e Inicialización Reactiva de Candado BSM y Sincronización Automática de Actas:
+  1. **Prevención de `TypeError` en Renderizado:** Sustitución de accesos directos por encadenamiento opcional (`!actaBsm?.retiro_sellado`) en la alerta del candado y en la directiva `:disabled` del botón de inicio de retorno a patio.
+  2. **Inicialización Reactiva de `actaBsm`:** Declaración explícita del objeto reactivo `actaBsm` (`ref({ entrega_sellada: false, retiro_sellado: false })`) en `<script setup>`, evitando fallos fatales en tiempo de ejecución de Vue 3 compilado para producción.
+  3. **Consulta Asíncrona de Estado de Actas (`consultarEstadoActaBsm`):** Implementación de consulta automática al endpoint `/operaciones/acta-plataforma/proyecto/:id_proyecto` durante el ciclo de vida `onMounted` para proyectos con servicios de plataformas, garantizando que el candado de seguridad SPEC-081 se evalúe con el estado real del acta en servidor.
+
+## [PWA GSP] - Versión 1.0.50
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 11:10:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1051` (`SPEC-081 Sección 6`)
+- **Especificación Técnica:** PWA GSP v1.0.50: Minimalismo Operativo, Desaparición Automática de Actas Concluidas y Coherencia de Viaje de Retorno en Bloque A:
+  1. **Desaparición Automática de Tarjeta BSM (`Surveys.vue`):** Se implementó `actasPlataformaConcluidas = entregaSellada && retiroSellado`. Al estar ambas actas concluidas en el servidor, el módulo de actas desaparece completamente de la pantalla principal de la PWA, manteniendo la consola de operaciones limpia de documentos finalizados.
+  2. **Unificación de Trayectos en Bloque A (`Surveys.vue`):** Se suprimió definitivamente el botón redundante de viaje dentro de la tarjeta de actas. El viaje de retorno a patio (`tipo_trayecto = 'RETORNO'`) se inicializa automáticamente y se renderiza en la tarjeta superior de Desplazamiento & Traslado (`viajeActivo`), con destino "Base / Patio GSP" y botón de acción coherente `Iniciar Viaje de Retorno a Patio (Hoja de Ruta) ➔`.
+
+## [PWA GSP] - Versión 1.0.49
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 10:35:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1050` (`SPEC-081 Sección 5`)
+- **Especificación Técnica:** PWA GSP v1.0.49: Visibilidad Condicional de Módulo BSM por Asignación, Higiene Visual en Galería de Fotos y Corrección Tipográfica de Labels en Horómetros:
+  1. **Visibilidad Condicional de Tarjeta BSM (`Surveys.vue`):** Se incorporó `v-if="tienePlataformaAsignada"`. El módulo de Plataformas 360° solo se renderiza si el operador o chofer cuenta con una OT de plataformas asignada (`id_proyecto` con equipo tipo plataforma o acta previa), suprimiéndose completamente para operadores de grúas o faenas sin arriendo de maquinaria.
+  2. **Higiene de UX en Galería de Fotos (`Surveys.vue`):** Eliminación del botón verde superior redundante `[+ Agregar Foto Adicional]` tanto en Entrega como en Retiro, concentrando la experiencia de carga exclusivamente en los 6 slots base y en la tarjeta dinámica inferior al pie de las miniaturas.
+  3. **Corrección de Sobreposición en Horómetros (`Surveys.vue`):** Supresión de placeholders redundantes en `horometro_in` y `horometro_out`, evitando el choque visual con la etiqueta flotante de reposo en Vuetify 3, e incorporación de `persistent-placeholder` en `numero_contrato`.
+
+## [PWA GSP] - Versión 1.0.48
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-16 10:15:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1049` (`SPEC-081`)
+- **Especificación Técnica:** PWA GSP v1.0.48: Unificación UX de Viajes de Traslado, Ocultamiento Automático de Tarjeta de Desplazamiento al Arribar a Faena y Sincronización Reactiva de Contadores Operativos:
+  1. **Ocultamiento de Tarjeta Superior al Completar Arribo (`Surveys.vue`):** Se implementó el computed `tieneViajeEnCurso` que valida estrictamente estados `ASIGNADO` y `EN_RUTA`. Al registrar el chofer la llegada a obra (`ARRIBADO`), la tarjeta de *Desplazamiento & Traslado* desaparece automáticamente de la pantalla principal, dejando despejada la interfaz para las operaciones en faena (Acta de Entrega 360° y Reports Diarios).
+  2. **Actualización Reactiva del Contador de Cabecera (`Surveys.vue`):** El badge superior de *Viajes* pasa inmediatamente al estado verde `Al Día` una vez arribado el camión en lugar de permanecer en `Asignado`.
+  3. **Eliminación de Acción Duplicada en Bloque BSM (`Surveys.vue`):** Supresión definitiva del botón de viaje redundante dentro de la tarjeta de arriendo de plataformas, centralizando el ciclo de actas 360° y habilitando en verde `1. Acta Entrega 360° ➔` en forma determinista.
+
+## [PWA GSP] - Versión 1.0.47 & [Portal Web GSP] - Versión 1.0.143
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-15 18:25:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1048` (`SPEC-081`)
+- **Especificación Técnica:** PWA GSP v1.0.47 & Portal Web GSP v1.0.143: Persistencia Relacional en PostgreSQL (`tope_acta_plataforma`), Generador Oficial de PDF A4 Puppeteer (`actaPlataformaPdfService.js`), Checklist de 19 Ítems 100% Visible, Galería 360° con 6 Slots Base + Fotos Dinámicas Ilimitadas y Tarjeta de Descarga en Torre de Control:
+  1. **Persistencia Relacional y Servicio PDF en Backend (`sch_leangsp.tope_acta_plataforma`):** Creación de tabla oficial con FKs, índices y constraints en PostgreSQL. Microservicio `actaPlataformaPdfService.js` con Puppeteer para compilar PDF A4 oficial con logos dinámicos (Bestmaq, Royal Rental, GSP, Logística del Sur), matriz de 19 ítems con badges `[SI] [NO] [NA]`, galería de evidencias, firmas y registro en `tfmg_file`.
+  2. **Checklist 360° de 19 Ítems sin Scroll Forzado (`Surveys.vue`):** Desbloqueo de contenedor CSS que limitaba la visualización a 5 ítems (`overflow-hidden` y `max-height: 230px`), garantizando la visibilidad completa de los 19 ítems del acta oficial.
+  3. **Registro Fotográfico 360° con 6 Vistas Base + Extras Dinámicos (`Surveys.vue`):** Reemplazo de las 4 fotos genéricas por 6 slots obligatorios (`Frontal`, `Posterior`, `Lateral Izquierdo`, `Lateral Derecho`, `Mandos / Canastillo`, `Horómetro / Placa`) más botón dinámico `+ Agregar Foto Adicional` sin límite de capturas.
+  4. **Emisión Directa y Enlaces a PDF Oficial (`Surveys.vue` y `GestorOportunidades.vue`):** Rediseño de botones a `💾 Emitir y Guardar Acta de Entrega 360°` y `💾 Emitir y Guardar Acta de Retiro 360°`, despacho al backend, hidratación automática en recarga y botones de acceso directo `📄 Ver Acta Oficial (PDF)` tanto en la PWA como en el Portal Web de Torre de Control (Sub-tab 6 Reports).
+
+## [PWA GSP] - Versión 1.0.46 & [Portal Web GSP] - Versión 1.0.142
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-15 16:30:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1047` (`SPEC-081`)
+- **Especificación Técnica:** PWA GSP v1.0.46 & Portal Web GSP v1.0.142: Creación y Sincronización Automática del Viaje de Traslado de Camión de Apoyo, Candado Operacional Estricto sobre el Acta de Entrega 360° hasta Completar el Viaje de Ida, y Adaptación Limpia del Registro de Viaje Nativo (`ViajeConductor.vue`) para Traslado de Plataformas:
+  1. **Sincronización Automática de Viajes en Asignación de OT (`GestorOportunidades.vue`):** Al confirmar la asignación de recursos (`confirmarAsignacionOT` / `finalizarPreparacionSalida`), se invoca automáticamente `POST /operaciones/viaje/asignar` para cada equipo o camión de apoyo con chofer asignado en `ejecucion_v1.equipos_extra`, creando el registro en `tlog_desplazamiento` sin requerir pasos manuales adicionales. Asimismo, `getOperadorAsignadoAEquipo()` retorna `null` para líneas de Plataformas sin heredar el `operador_id` general.
+  2. **Detección del Viaje del Proyecto Activo y Creación Automática Resiliente en PWA (`Surveys.vue`):** `cargarDatosRealesPlataformaBsm()` se ejecuta automáticamente en `onMounted`, consulta `/tequ-equipos` (resolviendo `PAD-22` / `JLG 450 AJ` y `DXGG.17-7` / `VOLVO FH`), prioriza la OT más reciente (`BMQ-2610-4851-001`, ID `111`), y obtiene/auto-provisiona el viaje de traslado del proyecto (`GET /viajes/proyecto/:id` + fallback `POST /operaciones/viaje/asignar`), superando la duplicidad de IDs de `lguser` en DEV (`id_user = 53` vs `59`).
+  3. **Candado Estricto Pre-Entrega y Secuencia Operacional Obligatoria (`Surveys.vue`):** El botón y el formulario del **Paso 2 (Acta de Entrega 360°)** permanecen estrictamente bloqueados (`:disabled="!viajeIdaPlataformaCompletado"`) mientras el **Paso 1 (Viaje de Traslado de Ida en Camión `DXGG.17-7`)** no haya registrado su **Llegada a Faena (`ARRIBADO`)**. Una vez sellada el Acta de Entrega 360°, se habilita el **Paso 3 (Acta de Retiro 360°)**, y tras sellar el Acta de Retiro se habilita el **Paso 4 (Viaje de Retorno en Camión)**.
+  4. **Adaptación Limpia de `ViajeConductor.vue` para Camión de Traslado de Plataforma:** Eliminación de la barra superior duplicada de formularios; detección automática de `esServicioPlataformaBsm` para omitir la exigencia de `Horómetro Grúa (Superestructura)` y no disparar el modal de Reporte Diario de Izaje al arribar a faena, mostrando en su lugar el botón directo `PASO 2: COMPLETAR ACTA DE ENTREGA 360° DE PLATAFORMA (PWA) ➔`.
+
+## [PWA GSP] - Versión 1.0.45 & [Portal Web GSP] - Versión 1.0.141
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-15 15:40:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1047` (`SPEC-081`)
+- **Especificación Técnica:** PWA GSP v1.0.45 & Portal Web GSP v1.0.141: Corrección Integral de Estructurador (`Valor Fijo` sin pedir unidades), Visor de Contrato Firmado FES + Biblioteca Documental, Asignación de Plataformas sin Operador, Reutilización del Registro de Viaje Nativo (`/viaje/:token`), Cabecera de Acta 360° con Datos Reales (solo `N° Contrato` manual) y Modal 100% Opaco en PWA:
+  1. **Estructurador (`Valor Fijo` Suma Alzada sin pedir cantidad):** En `GestorOportunidades.vue`, cuando la unidad de cobro es `Valor Fijo`, se oculta el campo `Cantidad` (mostrando `Suma Alzada (Valor Fijo)`), fijando `cantidad = 1` y `Subtotal = Valor Unitario`.
+  2. **Contrato de Arrendamiento Firmado FES y Biblioteca Documental (`GestorOportunidades.vue` y `Documentos.vue`):** Hidratación y preservación de `json_field.contrato_arriendo` al cargar y guardar la OT; botón directo `📄 Ver Contrato Firmado (PDF)` y refresco automático al abrir la pestaña `CONTRATO`; e incorporación de `1B. Contrato de Arrendamiento de Maquinaria (Firmado FES o Emitido)` en la Biblioteca Documental (`4. Dimensión Clientes & Procesos Comerciales OTs`).
+  3. **Asignación de Recursos OT — Plataformas sin Operador (`GestorOportunidades.vue`):** Las líneas de servicio correspondientes a Plataformas (`ALZA HOMBRE` / `PLATAFORMA` / `MANLIFT` / `TIJERA` / `ARTICULADA`) se arriendan sin operador, ocultando el selector de operador y excluyéndolas de la exigencia de tripulación.
+  4. **Reutilización Exclusiva del Registro de Viaje Existente (`Surveys.vue` y `ViajeConductor.vue`):** Eliminación total de formularios paralelos inventados (`Paso 1A` / `Paso 2B`) en `Surveys.vue`, vinculando el botón directamente al Registro de Viaje existente (`abrirViajeNativo(viajeActivo.token_viaje)`).
+  5. **Cabecera del Acta 360° con Datos Reales y Modal 100% Opaco (`Surveys.vue` y `ViajeConductor.vue`):** Eliminación de todos los textos placeholder ficticios; carga automática de `Arrendatario / Cliente`, `RUT`, `Obra / Dirección`, `Equipo / Modelo` y `Patente / Código` en modo solo lectura desde la OT real, dejando únicamente `N° Contrato` como campo de ingreso manual, y aplicación de estilos sólidos opacos (`#0b1120 !important; opacity: 1 !important;`) en Vuetify 3.
+
+## [PWA GSP] - Versión 1.0.44 & [Portal Web GSP] - Versión 1.0.140
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-15 14:35:00 (-03:00)
+- **Ruta de Despliegue PWA Dev:** `/var/www/html/pwa-gsp-dev` (URL: `https://servidor.leanglobal.cl/pwa-gsp-dev/`)
+- **Ruta de Despliegue Web Dev:** `/var/www/html/lg-gsp-dev` (URL: `https://servidor.leanglobal.cl/lg-gsp-dev/`)
+- **Requerimientos Asociados:** `REQ-1047` (`SPEC-081`)
+- **Especificación Técnica:** PWA GSP v1.0.44 & Portal Web GSP v1.0.140: Registro de Entrega de Plataformas BSM 360°, Retorno Asíncrono y Candado Obligatorio de Acta de Recuperación 360° (`Surveys.vue` y `ViajeConductor.vue`):
+  1. **Flujo de Viaje de Ida y Acta de Entrega 360° (`Surveys.vue` y `ViajeConductor.vue`):**
+     - Al concluir el viaje de traslado de ida (`ARRIBADO_FAENA`), el chofer levanta el **Acta de Entrega de Plataforma 360°** con lectura de `HOROM. IN`, nivel de combustible/batería (`0` a `4/4`), evaluación de los **19 ítems oficiales BSM / Royal Rental** en columna `ENTREGA` (`SI`, `NO`, `NA`), **4 fotografías 360° obligatorias** (`Frontal`, `Posterior`, `Lateral Izquierdo`, `Lateral Derecho / Canastillo`) y **Firma Manual en Canvas del Cliente** con **Nombre, RUT y Cargo** (`Recibido por`).
+  2. **Candado Obligatorio Previo al Viaje de Retorno Asíncrono (`Surveys.vue` y `ViajeConductor.vue`):**
+     - En el retiro de la plataforma, la activación del **Viaje de Retorno (`Iniciar Retorno / Salida de Faena`)** permanece bloqueada hasta completar y sellar el **Acta de Recuperación / Retiro 360°** (`HOROM. OUT`, nivel de combustible/batería, 19 ítems en columna `RECEPCIÓN`, 4 fotografías 360° y Firma Manual del Cliente con Nombre, RUT y Cargo).
+
 ## [Portal Web GSP] - Versión 1.0.139
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-10-15 07:15:00 (-03:00)

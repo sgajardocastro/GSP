@@ -410,9 +410,9 @@
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                       <span
-                        @click="abrirPdfOficialEdp(p)"
+                        @click="abrirPdfOficialCotizacion(p)"
                         class="font-mono font-bold text-amber-400 hover:underline cursor-pointer inline-flex items-center gap-1"
-                        title="Abrir Expediente PDF Oficial con Carátula y Firmas FES"
+                        title="Abrir PDF Oficial de la Cotización Comercial"
                       >
                         {{ p.codi_proyecto }} ↗
                       </span>
@@ -1784,28 +1784,36 @@ async function onSeleccionarPdfFactura(ev) {
       const p = modalDoc.value.proceso;
 
       const limpiarRut = r => String(r || '').replace(/[^0-9kK]/g, '').toUpperCase();
+      const RUTS_HOLDING_VALIDOS = ['520041621', '762095343', '762185768', '782545353'];
 
-      // Validación R-1: Cliente Mandante (Anti-Descalce)
-      const rutDte = limpiarRut(d.cliente_receptor_rut);
-      const rutOt = limpiarRut(p.cliente_rut);
-      if (rutDte && rutOt && rutDte !== rutOt) {
-        alert(`❌ INCONGRUENCIA DE CLIENTE MANDANTE\n\n` +
-              `La factura subida (N° ${d.folio_dte}) fue emitida a:\n` +
-              `• Cliente: ${d.cliente_receptor_nombre || 'No identificado'}\n` +
-              `• RUT: ${d.cliente_receptor_rut}\n\n` +
-              `Sin embargo, este servicio (${p.codi_proyecto}) corresponde a:\n` +
-              `• Cliente: ${p.cliente_nombre}\n` +
-              `• RUT: ${p.cliente_rut}\n\n` +
-              `Por seguridad contable y auditoría tributaria, no se permite asociar una factura emitida a un cliente distinto.`);
+      // Validación R-2 Fail-Closed: Pertenencia al Holding Obligatoria
+      const rutEmisor = limpiarRut(d.rut_emisor);
+      if (!rutEmisor || !RUTS_HOLDING_VALIDOS.includes(rutEmisor)) {
+        alert(`❌ RECHAZO TRIBUTARIO: EMISOR NO PERTENECE AL HOLDING GSP\n\n` +
+              `El documento subido indica como emisor: ${d.empresa_facturadora || 'No identificada'} (RUT: ${d.rut_emisor || 'No detectado'}).\n\n` +
+              `Por seguridad contable, solo se admiten facturas emitidas por empresas oficiales del holding:\n` +
+              `• Grúas San Pablo (52.004.162-1)\n` +
+              `• Bestmaq (76.209.534-3)\n` +
+              `• Logística del Sur (76.218.576-8)\n` +
+              `• Royal Rental (78.254.535-3)\n\n` +
+              `Este archivo fue rechazado y no se asociará al servicio.`);
+        if (ev.target) ev.target.value = '';
         return;
       }
 
-      // Validación R-2: Pertenencia al Holding
-      const RUTS_HOLDING = ['52004162-1', '76209534-3', '76218576-8', '78254535-3'];
-      const rutEmisor = limpiarRut(d.rut_emisor);
-      if (rutEmisor && !RUTS_HOLDING.includes(rutEmisor)) {
-        alert(`❌ EMISOR NO PERTENECE AL HOLDING GSP\n\n` +
-              `La factura subida fue emitida por ${d.empresa_facturadora} (RUT ${d.rut_emisor}), el cual no corresponde a ninguna de las razones sociales del holding autorizado (Grúas San Pablo, Bestmaq, Logística del Sur, Royal Rental).`);
+      // Validación R-1 Fail-Closed: Cliente Mandante Obligatorio (Anti-Descalce)
+      const rutDte = limpiarRut(d.cliente_receptor_rut);
+      const rutOt = limpiarRut(p.cliente_rut);
+      if (!rutDte || !rutOt || rutDte !== rutOt) {
+        alert(`❌ RECHAZO CONTABLE: INCONGRUENCIA DE CLIENTE MANDANTE\n\n` +
+              `La factura subida (N° ${d.folio_dte || 'S/N'}) fue emitida a:\n` +
+              `• Receptor: ${d.cliente_receptor_nombre || 'No identificado'}\n` +
+              `• RUT Receptor: ${d.cliente_receptor_rut || 'No detectado'}\n\n` +
+              `Sin embargo, este servicio (${p.codi_proyecto}) corresponde a:\n` +
+              `• Cliente OT: ${p.cliente_nombre}\n` +
+              `• RUT Cliente OT: ${p.cliente_rut || 'Sin RUT en OT'}\n\n` +
+              `Por seguridad contable y auditoría tributaria, queda estrictamente bloqueada la asociación de facturas emitidas a clientes ajenos.`);
+        if (ev.target) ev.target.value = '';
         return;
       }
 
@@ -1819,6 +1827,8 @@ async function onSeleccionarPdfFactura(ev) {
         id_empresa_emisora: d.id_empresa_emisora || 9,
         empresa_facturadora: d.empresa_facturadora || 'Grúas San Pablo',
         rut_emisor: d.rut_emisor || '52.004.162-1',
+        cliente_receptor_rut: d.cliente_receptor_rut || '',
+        cliente_receptor_nombre: d.cliente_receptor_nombre || '',
         factura_numero: d.folio_dte || '',
         fecha_facturacion: d.fecha_emision || formSoporte.value.fecha_facturacion,
         fecha_vencimiento: d.fecha_vencimiento || '',
@@ -1840,6 +1850,12 @@ async function onSeleccionarPdfFactura(ev) {
     reconociendoPdf.value = false;
     if (ev.target) ev.target.value = '';
   }
+}
+
+function abrirPdfOficialCotizacion(p) {
+  const base = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
+  const id = p.id_proyecto || p.id;
+  window.open(`${base}/api/operaciones/edp/proyecto/${id}/cotizacion-pdf`, '_blank');
 }
 
 function abrirPdfOficialEdp(p) {
@@ -1910,6 +1926,8 @@ async function guardarFacturaDte() {
         id_empresa_emisora: formSoporte.value.id_empresa_emisora,
         empresa_facturadora: formSoporte.value.empresa_facturadora,
         rut_emisor: formSoporte.value.rut_emisor,
+        cliente_receptor_rut: formSoporte.value.cliente_receptor_rut || '',
+        cliente_receptor_nombre: formSoporte.value.cliente_receptor_nombre || '',
         fecha_emision: formSoporte.value.fecha_facturacion,
         fecha_facturacion: formSoporte.value.fecha_facturacion,
         fecha_vencimiento: formSoporte.value.fecha_vencimiento || null,
