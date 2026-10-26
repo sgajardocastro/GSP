@@ -1,5 +1,6 @@
 const pool = require('../config/postgresPool');
 const itsPdfService = require('../services/itsPdfService');
+const { resolverTarifaOperador, resolverTarifaTraslado } = require('../services/tarifasOperadorService');
 const MessageModel = require('../models/messageModel');
 const notificacionService = require('../services/notificacionService');
 const crypto = require('crypto');
@@ -76,7 +77,10 @@ const itsController = {
         }
       });
 
-      const tipoContexto = (crmV1.regimen_operacional || (parseFloat(crmV1.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
+      const distanciaKmComercial = parseFloat(crmV1.distancia_km ?? crmV1.snapshot_comercial?.distancia_km) || (crmV1.incluye_flete ? 35 : 0);
+      const tipoContexto = (crmV1.regimen_operacional || (distanciaKmComercial > 30 ? 'RURAL' : 'URBANO')).toUpperCase();
+      proyecto.distancia_km = distanciaKmComercial;
+      proyecto.crm_pensiones = crmV1.pensiones || crmV1.snapshot_comercial?.pensiones || {};
 
       // Consultar todos los reports diarios de terreno desde tedp_reporte_avance con respaldos
       const repRes = await pool.query(`
@@ -104,12 +108,15 @@ const itsController = {
           ra.ajustes_analista,
           ra.id_user_operador,
           ra.id_user_rigger,
-          COALESCE(uop.name_frst, uop.user_name, '') AS op_nombre,
-          COALESCE(uop.apellido_pat, uop.user_lastname, '') AS op_apellido,
-          COALESCE(urig.name_frst, urig.user_name, '') AS rig_nombre,
-          COALESCE(urig.apellido_pat, urig.user_lastname, '') AS rig_apellido,
+          COALESCE(uop.name_frst, '') AS op_nombre,
+          COALESCE(uop.apellido_pat, '') AS op_apellido,
+          COALESCE(urig.name_frst, '') AS rig_nombre,
+          COALESCE(urig.apellido_pat, '') AS rig_apellido,
           COALESCE(e.patente, 'S/P') AS patente,
           COALESCE(e.modelo, '') AS equipo_modelo,
+          COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
+          COALESCE(e.capacidad_maxima, 0) AS capacidad_maxima,
+          COALESCE(e.unidad_capacidad, 'T') AS unidad_capacidad,
           COALESCE(e.id_equipo, ra.id_equipo) AS id_equipo,
           TO_CHAR(ra.fecha_inicio_servicio, 'HH24:MI') AS hora_inicio,
           TO_CHAR(ra.fecha_termino_servicio, 'HH24:MI') AS hora_termino
@@ -186,8 +193,8 @@ const itsController = {
             ra.id_doc_pdf,
             ra.ajustes_analista,
             CASE 
+              WHEN ra.cliente_firma_canvas_base64 IS NOT NULL OR ra.codigo_validacion_fes IS NOT NULL THEN 'DIGITAL_FES' 
               WHEN ra.id_doc_pdf IS NOT NULL OR ra.ajustes_analista->>'regularizado_manual' = 'true' THEN 'FISICO_MANUAL' 
-              WHEN ra.codigo_validacion_fes IS NOT NULL OR ra.cliente_firma_canvas_base64 IS NOT NULL THEN 'DIGITAL_FES' 
               ELSE 'PENDIENTE' 
             END AS tipo_respaldo,
             CASE 
@@ -202,6 +209,42 @@ const itsController = {
           ORDER BY jd.orden ASC, jd.fecha ASC, jd.id_jornada ASC;
         `, [its.id_its, its.valor_hora_pactado || valorHoraPactado]);
         jornadas = jorRes.rows;
+
+        // Enriquecer respaldos de firma de terreno (cliente_firma_canvas_base64) cuando id_reporte_avance quedó nulo en tits_jornada_detalle
+        if (Array.isArray(repRes.rows) && repRes.rows.length > 0) {
+          const usedReportIds = new Set(jornadas.map(j => j.id_reporte_avance).filter(Boolean).map(Number));
+          jornadas.forEach((j, idx) => {
+            if (!j.cliente_firma_canvas_base64) {
+              let matchRep = repRes.rows.find(r => j.id_reporte_avance && Number(r.id_reporte_avance) === Number(j.id_reporte_avance));
+              if (!matchRep && j.numero_report) {
+                matchRep = repRes.rows.find(r => r.token_report && (r.token_report === j.numero_report || r.token_report.startsWith(j.numero_report)));
+              }
+              if (!matchRep && j.fecha) {
+                matchRep = repRes.rows.find(r => !usedReportIds.has(Number(r.id_reporte_avance)) && r.fecha_reporte_fmt === j.fecha);
+              }
+              if (!matchRep && repRes.rows[idx] && !usedReportIds.has(Number(repRes.rows[idx].id_reporte_avance))) {
+                matchRep = repRes.rows[idx];
+              }
+              if (matchRep) {
+                usedReportIds.add(Number(matchRep.id_reporte_avance));
+                j.id_reporte_avance = j.id_reporte_avance || matchRep.id_reporte_avance;
+                j.cliente_firma_canvas_base64 = matchRep.cliente_firma_canvas_base64 || j.cliente_firma_canvas_base64;
+                j.cliente_nombre = j.cliente_nombre || matchRep.cliente_nombre;
+                j.cliente_cargo = j.cliente_cargo || matchRep.cliente_cargo;
+                j.codigo_validacion_fes = j.codigo_validacion_fes || matchRep.codigo_validacion_fes;
+                j.accuracy_firma = j.accuracy_firma || matchRep.accuracy_firma;
+                j.horometro_inicio = j.horometro_inicio || matchRep.horometro_inicio;
+                j.horometro_termino = j.horometro_termino || matchRep.horometro_termino;
+                if (!j.numero_report && matchRep.token_report) {
+                  j.numero_report = matchRep.token_report.slice(0, 16);
+                }
+                if (matchRep.cliente_firma_canvas_base64 || matchRep.codigo_validacion_fes) {
+                  j.tipo_respaldo = 'DIGITAL_FES';
+                }
+              }
+            }
+          });
+        }
 
         // Cargar costos relacionales con fechas formateadas en YYYY-MM-DD
         const cosRes = await pool.query(`
@@ -243,7 +286,23 @@ const itsController = {
           else if (catKey === 'feriados') costos.feriados.push(c);
           else if (catKey === 'subcontrato_flete') costos.subcontratacion_flete.push(c);
           else if (catKey === 'gastos_extra') costos.gastos_extraordinarios.push(c);
-          else if (catKey === 'costo_hora_operador') costos.costo_hora_operador.push(c);
+          else if (catKey === 'costo_hora_operador') {
+            if (c.concepto_detalle && c.concepto_detalle.includes('<!--AUDIT:')) {
+              try {
+                const match = c.concepto_detalle.match(/<!--AUDIT:(.*?)-->/);
+                if (match && match[1]) {
+                  const auditInfo = JSON.parse(match[1]);
+                  c.tarifa_sugerida = auditInfo.tarifa_sugerida;
+                  c.tarifa_modificada = Boolean(auditInfo.tarifa_modificada);
+                  c.modificado_por = auditInfo.modificado_por || 'Yara';
+                  c.concepto_detalle = c.concepto_detalle.replace(/\s*<!--AUDIT:.*?-->/g, '').trim();
+                }
+              } catch (e) {
+                console.warn('Error parsing audit metadata from concepto_detalle:', e.message);
+              }
+            }
+            costos.costo_hora_operador.push(c);
+          }
           else if (catKey === 'combustible') costos.combustible.push(c);
           else if (catKey === 'movilizacion') costos.movilizacion.push(c);
         });
@@ -403,9 +462,13 @@ const itsController = {
             });
           }
 
-          // 4. Conciliar costo hora operador: estándar $10.000 por hora operada para tripulación real
+          // 4. Conciliar costo hora operador con tarifas maestras y preservación de auditoría (Yara)
           const sumHrsOperadas = jornadas
-            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || (!j.tipo_servicio.toLowerCase().includes('flete') && !j.tipo_servicio.toLowerCase().includes('traslado'))))
+            .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+
+          const sumHrsTraslado = jornadas
+            .filter(j => !j.es_oculta && (j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('flete') || j.tipo_servicio.toLowerCase().includes('traslado'))))
             .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
 
           const repOpRow = repRes.rows.find(r => r.id_user_operador && `${r.op_nombre || ''} ${r.op_apellido || ''}`.trim());
@@ -414,16 +477,39 @@ const itsController = {
             : 'JORGE PONCE';
           const opRealId = repOpRow ? repOpRow.id_user_operador : 19;
 
+          const eqRef = repRes.rows[0] || {};
+          const tarifaSugerida = resolverTarifaOperador(eqRef.tipo_equipo || eqRef.equipo_modelo, eqRef.capacidad_maxima);
+
           if (costos.costo_hora_operador.length > 0) {
             costos.costo_hora_operador.forEach(cho => {
               if (cho.nombre_personal === 'NICOLAS CEBALLOS' || !cho.nombre_personal || (repOpRow && cho.id_personal !== opRealId)) {
                 cho.nombre_personal = opRealNombre;
                 cho.id_personal = opRealId;
               }
-              cho.patente = cho.patente || 'VCTR.81-9';
-              cho.precio_unitario = 10000;
-              cho.cantidad_unidades = sumHrsOperadas || 28;
-              cho.monto_total = cho.cantidad_unidades * cho.precio_unitario;
+              cho.patente = cho.patente || eqRef.patente || 'VCTR.81-9';
+
+              const esTraslado = cho.concepto_detalle && (cho.concepto_detalle.toLowerCase().includes('traslado') || cho.concepto_detalle.toLowerCase().includes('flete'));
+              const precioActual = parseFloat(cho.precio_unitario);
+              
+              cho.tarifa_sugerida = cho.tarifa_sugerida !== undefined && cho.tarifa_sugerida !== null
+                ? parseFloat(cho.tarifa_sugerida)
+                : tarifaSugerida;
+
+              if (cho.tarifa_modificada === true || (!isNaN(precioActual) && precioActual > 0 && precioActual !== cho.tarifa_sugerida && precioActual !== 10000)) {
+                cho.tarifa_modificada = true;
+                cho.modificado_por = cho.modificado_por || 'Yara';
+                cho.precio_unitario = precioActual;
+              } else {
+                cho.tarifa_modificada = false;
+                cho.modificado_por = null;
+                cho.precio_unitario = cho.tarifa_sugerida;
+              }
+
+              if (!cho.cantidad_unidades || parseFloat(cho.cantidad_unidades) === 0) {
+                cho.cantidad_unidades = esTraslado ? (sumHrsTraslado || 2) : (sumHrsOperadas || 28);
+              }
+              cho.monto_total = (parseFloat(cho.cantidad_unidades) || 0) * (parseFloat(cho.precio_unitario) || 0);
+
               if (cho.fecha && typeof cho.fecha === 'string' && cho.fecha.includes('T')) {
                 cho.fecha = cho.fecha.split('T')[0];
               }
@@ -603,14 +689,26 @@ const itsController = {
           });
         }
 
-        // Sugerir Costo Hora Operador estándar ($10.000)
+        // Sugerir Costo Hora Operador con tarifas maestras oficiales (Contabilidad 2026-10-26)
         if (sumHrs > 0) {
           const repOpInit = repRes.rows.find(r => r.id_user_operador && `${r.op_nombre || ''} ${r.op_apellido || ''}`.trim());
           const opInitNombre = repOpInit
             ? `${repOpInit.op_nombre || ''} ${repOpInit.op_apellido || ''}`.trim().toUpperCase()
             : 'JORGE PONCE';
           const opInitId = repOpInit ? repOpInit.id_user_operador : 19;
+          const eqInit = repRes.rows[0] || {};
+          const tarifaSugerida = resolverTarifaOperador(eqInit.tipo_equipo || eqInit.equipo_modelo, eqInit.capacidad_maxima);
 
+          // Horas Faena vs Horas Traslado
+          const sumHrsFaena = jornadas
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || (!j.tipo_servicio.toLowerCase().includes('flete') && !j.tipo_servicio.toLowerCase().includes('traslado'))))
+            .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+
+          const sumHrsTraslado = jornadas
+            .filter(j => !j.es_oculta && (j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('flete') || j.tipo_servicio.toLowerCase().includes('traslado'))))
+            .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
+
+          // 1. Horas Faena
           costos.costo_hora_operador.push({
             id_costo_item: null,
             id_its: null,
@@ -623,9 +721,12 @@ const itsController = {
             numero_oc: null,
             concepto_detalle: 'Horas Operador Estándar Faena',
             tipo_calculo: 'HORA_OPERADOR',
-            cantidad_unidades: sumHrs,
-            precio_unitario: 10000,
-            monto_total: sumHrs * 10000,
+            cantidad_unidades: sumHrsFaena || sumHrs,
+            precio_unitario: tarifaSugerida,
+            monto_total: (sumHrsFaena || sumHrs) * tarifaSugerida,
+            tarifa_sugerida: tarifaSugerida,
+            tarifa_modificada: false,
+            modificado_por: null,
             monto_desayuno: 0,
             monto_almuerzo: 0,
             monto_cena: 0,
@@ -634,14 +735,45 @@ const itsController = {
             tipo_estanque: null,
             archivo_comprobante_url: null
           });
+
+          // 2. Horas Traslado (Regla: tarifa idéntica a la máquina asignada)
+          if (sumHrsTraslado > 0) {
+            costos.costo_hora_operador.push({
+              id_costo_item: null,
+              id_its: null,
+              categoria: 'COSTO_HORA_OPERADOR',
+              fecha: repRes.rows[0]?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+              id_personal: opInitId,
+              nombre_personal: opInitNombre,
+              id_equipo: repRes.rows[0]?.id_equipo || null,
+              patente: repRes.rows[0]?.patente || 'VCTR.81-9',
+              numero_oc: null,
+              concepto_detalle: 'Horas Operador Traslado / Movilización',
+              tipo_calculo: 'HORA_OPERADOR',
+              cantidad_unidades: sumHrsTraslado,
+              precio_unitario: tarifaSugerida,
+              monto_total: sumHrsTraslado * tarifaSugerida,
+              tarifa_sugerida: tarifaSugerida,
+              tarifa_modificada: false,
+              modificado_por: null,
+              monto_desayuno: 0,
+              monto_almuerzo: 0,
+              monto_cena: 0,
+              monto_alojamiento: 0,
+              monto_traslado: 0,
+              tipo_estanque: null,
+              archivo_comprobante_url: null
+            });
+          }
         }
 
         // Actualizar totales calculados iniciales
+        const sumCostoOp = costos.costo_hora_operador.reduce((acc, c) => acc + (parseFloat(c.monto_total) || 0), 0);
         its.total_horas_report = sumHrs;
         its.total_ingresos_horas = sumIngresos;
         its.total_ingresos_fletes = valorFletePactado;
         its.total_ingresos_facturables = its.total_ingresos_horas + its.total_ingresos_fletes;
-        its.total_costos_operacionales = sumHrs * 10000;
+        its.total_costos_operacionales = sumCostoOp;
         its.utilidad_bruta = its.total_ingresos_facturables - its.total_costos_operacionales;
         its.margen_porcentaje = its.total_ingresos_facturables > 0 ? (its.utilidad_bruta / its.total_ingresos_facturables) * 100 : 0;
       }
@@ -719,6 +851,8 @@ const itsController = {
           e.patente,
           e.modelo,
           COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
+          COALESCE(e.capacidad_maxima, 0) AS capacidad_maxima,
+          COALESCE(e.unidad_capacidad, 'T') AS unidad_capacidad,
           re.rol_equipo
         FROM tpry_rel_equipo re
         JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
@@ -974,6 +1108,26 @@ const itsController = {
           if (Array.isArray(items)) {
             for (const item of items) {
               const montoTot = parseFloat(item.monto_total || item.monto || item.total || 0);
+              let conceptoFinal = item.concepto_detalle || item.concepto || item.detalle || 'Gasto operacional';
+
+              // Para costo_hora_operador, persistir trazabilidad de auditoría de Yara si fue modificada
+              if (map.key === 'costo_hora_operador') {
+                const precio = parseFloat(item.precio_unitario || item.valor_hora || 0);
+                const sugerida = parseFloat(item.tarifa_sugerida || 0);
+                const fueModificada = item.tarifa_modificada === true || (sugerida > 0 && precio !== sugerida);
+
+                conceptoFinal = conceptoFinal.replace(/\s*<!--AUDIT:.*?-->/g, '').trim();
+
+                if (fueModificada) {
+                  const auditTag = ` <!--AUDIT:${JSON.stringify({
+                    tarifa_sugerida: sugerida || precio,
+                    tarifa_modificada: true,
+                    modificado_por: item.modificado_por || 'Yara'
+                  })}-->`;
+                  conceptoFinal += auditTag;
+                }
+              }
+
               await client.query(`
                 INSERT INTO tits_costo_operacional (
                   id_its, categoria, fecha, id_personal, nombre_personal,
@@ -997,7 +1151,7 @@ const itsController = {
                 item.id_equipo || null,
                 item.patente || null,
                 item.numero_oc || item.numero_comprobante || null,
-                item.concepto_detalle || item.concepto || item.detalle || 'Gasto operacional',
+                conceptoFinal,
                 map.calc,
                 item.cantidad_unidades || item.horas_report || item.litros || 1,
                 item.precio_unitario || item.valor_hora || 0,
@@ -2598,7 +2752,7 @@ const itsController = {
                 deepLink: {
                   tipoApp: 'WEB',
                   ruta: 'crm',
-                  params: { id_proyecto, subtab: 'liquidacion', paso: 'factura' }
+                  params: { id_proyecto, subtab: 'liquidacion', paso: 'its' }
                 },
                 emailData: {
                   asunto: `[GSP] Recepción Contable Requerida: ${its.folio_its}`,
