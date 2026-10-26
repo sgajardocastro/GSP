@@ -129,7 +129,7 @@
                   <span v-if="flujoEdp?.firma_3_comercial || edpFeriaFirmado" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">✓ Despachado</span>
                   <span v-else class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] font-bold">Pendiente Envío</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1">Firma de conformidad comercial y despacho formal del dossier al Mandante.</p>
+                <p class="text-[11px] text-slate-400 mt-1">Visación ejecutiva y despacho formal del dossier al Mandante.</p>
                 <div v-if="flujoEdp?.firma_3_comercial || edpFeriaFirmado" class="mt-2 pt-2 border-t border-white/10 text-[11px] space-y-0.5">
                   <div class="text-white font-bold">{{ (flujoEdp?.firma_3_comercial || edpFeriaFirmado).nombre_firmante }}</div>
                   <div class="font-mono text-emerald-400 text-[10px]">{{ (flujoEdp?.firma_3_comercial || edpFeriaFirmado).codigo_fes }}</div>

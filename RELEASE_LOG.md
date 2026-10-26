@@ -4,6 +4,21 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [Portal Web GSP] - Versión 1.0.168
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-26 20:40:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1078` (`SPEC-103 v1.2`)
+- **Especificación Técnica:** Corrección Estricta de la Sección 4 del PDF Oficial de Estado de Pago (Erradicación Total de "Conformidad Mandante" y Restricción a 2 Firmas FES 100% Internas):
+  1. **Alineación con la Realidad Operativa de GSP (`edpPdfService.js`):**
+     - Eliminación definitiva del recuadro espurio "Conformidad Mandante" heredado de plantillas legacy en la Sección 4 del PDF del EDP. El cliente mandante no firma ni estampa conformidad en el EDP interno de cobro (su conformidad de horas se suscribe exclusivamente en el Report Diario de faena en terreno).
+     - La Sección 4 se estructura de forma canónica y limpia en **2 únicas columnas internas (50% y 50%)**:
+       * Columna 1 (50%): `1. Control de Gestión` — Emisión y Conciliación FES (Yara).
+       * Columna 2 (50%): `2. Despacho Comercial` — V°B° y Despacho Oficial FES (Ejecutivo Comercial).
+     - La referencia a la Orden de Compra (OC / HES) se mantiene en la cabecera de datos del cliente (Sección 1), donde corresponde como atributo comercial y administrativo.
+  2. **Ajuste de Textos en Carátula Web (`ModalCaratulaEDP.vue`):**
+     - Reemplazo de etiquetas ambiguas de conformidad por visación y despacho comercial directo.
+
 ## [Portal Web GSP] - Versión 1.0.167 / [PWA GSP] - Versión 1.0.55
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-10-26 20:20:00 (-03:00)

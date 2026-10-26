@@ -5,9 +5,9 @@
 **Módulos:** `estadoPagoController.js`, `edpPdfService.js`, `PerspectivaContabilidad.vue`  
 **Requerimiento Asociado:** `REQ-1075`  
 **Estado:** `CANÓNICO VIGENTE`  
-**Versión:** `v1.0.0`  
+**Versión:** `v1.2.0`  
 **Fecha:** 26 de Octubre de 2026  
-**Origen:** Acuerdos formales de reunión 2026-10-26 con Maritza Seguel y Jorge Ponce  
+**Origen:** Acuerdos formales de reunión 2026-10-26 con Maritza Seguel y Jorge Ponce (Ajuste canónico de pie de firmas internas en PDF)  
 
 ---
 
@@ -19,10 +19,13 @@
   2. **Doble Imputación Matemática:** Las horas de sobretiempo de los reports ya formaban parte de las `horas_facturables` (ej. 38 hrs totales = 36 normales + 2 ST). Al cobrar $38 \times \$150.000 = \$5.700.000$ y adicionalmente sumar $2 \times \$65.000 = \$130.000$, se duplicaba el cobro de esas 2 horas, inflando el neto a `$6.780.000` frente a los `$6.650.000` reales del ITS.
 * **Solución Spec 103:** Erradicar cualquier número quemado (`65000`). Las horas facturables consolidadas ya liquidan el total de horas a la tarifa unitaria pactada (`valorUnitario * totalHorasFact`). Solo se agregará una línea de recargo si la cotización estipula expresamente un factor multiplicador de sobretiempo o si existe un ajuste autorizado por Tesorería.
 
-### 1.2. Desacople Total del Estado de Pago y Eliminación de Firma Contable
+### 1.2. Desacople Total del Estado de Pago y Estructura Canónica de 2 Firmas FES Internas
 * **Decisión:** Contabilidad (Maritza) no debe firmar el EDP. La responsabilidad de Contabilidad es emitir la Factura Legal DTE (Laudus / SII).
 * **Flujo:** Al validar los Reports Diarios en terreno por Control de Gestión (Yara), el EDP se autogenera y **se libera automáticamente a estado "Listo para Facturar"** (si tiene OC de Comercial o es exento), sin esperar la elaboración ni el cierre del ITS.
-* **Frontend:** Se elimina la pestaña `[ 🟡 Mi Firma EDP ]` y el botón de visación contable en `PerspectivaContabilidad.vue`.
+* **Erradicación de "Conformidad Mandante" en PDF (`edpPdfService.js`):** El cliente mandante no firma el EDP; su conformidad de faena reside exclusivamente en el Report Diario firmado en terreno. La Sección 4 del PDF del EDP se estructura estrictamente en **2 únicas columnas al 50%**:
+  * **Columna 1 (50%):** `1. Control de Gestión` — Emisión y Conciliación FES (Yara).
+  * **Columna 2 (50%):** `2. Despacho Comercial` — V°B° y Despacho Oficial FES (Ejecutivo Comercial).
+* **Frontend:** Se elimina la pestaña `[ 🟡 Mi Firma EDP ]` y el botón de visación contable en `PerspectivaContabilidad.vue`, y se homologa la carátula en `ModalCaratulaEDP.vue`.
 
 ### 1.3. Regla de Protección Comercial en el PDF del EDP (Horas Mínimas)
 * **Problema:** Mostrar turnos de 3 o 4 horas en el desglose cuando se factura el mínimo contratado de 9 horas provocaba discusiones comerciales con clientes mandantes.

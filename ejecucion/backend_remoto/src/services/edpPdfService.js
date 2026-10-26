@@ -577,12 +577,12 @@ function buildEdpHtml(data) {
     </tfoot>
   </table>
 
-  <!-- Cuadro de Firmas de Aprobación (Circuito 3 Hitos FES + Respaldo Mandante) -->
+  <!-- Cuadro de Firmas de Aprobación (Circuito 2 Hitos FES Internos) -->
   <div class="info-box break-inside-avoid" style="margin-top: 8px;">
-    <span class="section-tag" style="color: #475569;">4. CONFORMIDAD Y CERTIFICACIÓN DE ESTADO DE PAGO (CIRCUITO DE VALIDACIÓN FES)</span>
+    <span class="section-tag" style="color: #475569;">4. CERTIFICACIÓN Y EMISIÓN DE ESTADO DE PAGO (CIRCUITO FES INTERNO)</span>
     <table class="w-full" style="margin-top: 6px;">
       <tr>
-        <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 6px; border-right: 1px dashed #cbd5e1;">
+        <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 6px 12px; border-right: 1px dashed #cbd5e1;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
             ${f1Analista?.codigo_fes ? `
               <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ EMISIÓN FES (CONTROL GESTIÓN)</div>
@@ -594,9 +594,9 @@ function buildEdpHtml(data) {
             `}
           </div>
           <div class="font-bold text-dark" style="font-size: 9px;">1. Control de Gestión</div>
-          <div class="text-muted" style="font-size: 7.5px;">Conciliación de Reports y Emisión</div>
+          <div class="text-muted" style="font-size: 7.5px;">Conciliación de Reports y Emisión FES</div>
         </td>
-        <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 6px; border-right: 1px dashed #cbd5e1;">
+        <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 6px 12px;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
             ${f3Comercial?.codigo_fes ? `
               <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ DESPACHO COMERCIAL FES</div>
@@ -608,20 +608,7 @@ function buildEdpHtml(data) {
             `}
           </div>
           <div class="font-bold text-dark" style="font-size: 9px;">2. Despacho Comercial</div>
-          <div class="text-muted" style="font-size: 7.5px;">Envío Oficial a Mandante</div>
-        </td>
-        <td style="width: 34%; text-align: center; vertical-align: bottom; padding: 6px;">
-          <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
-            ${oc_mandante?.numero_oc ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ RESPALDO OC / HES MANDANTE</div>
-              <div class="font-mono text-dark" style="font-size: 9.5px;"><strong>${oc_mandante.numero_oc}</strong></div>
-              ${oc_mandante.monto_neto ? `<div class="font-mono text-muted" style="font-size: 7.5px;">Neto: ${formatCLP(oc_mandante.monto_neto)}</div>` : ''}
-            ` : `
-              <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">Recepción Mandante / OC</div>
-            `}
-          </div>
-          <div class="font-bold text-dark" style="font-size: 9px;">3. Conformidad Mandante</div>
-          <div class="text-muted" style="font-size: 7.5px;">${clienteNombre} • OC / HES</div>
+          <div class="text-muted" style="font-size: 7.5px;">V°B° y Envío Oficial a Mandante</div>
         </td>
       </tr>
     </table>
