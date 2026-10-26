@@ -652,7 +652,7 @@
                   title="Subir y asociar Factura PDF oficial (Laudus / SII)"
                 >
                   <span>🧾</span>
-                  <span>Subir Factura DTE ({{ fmtCLP(p.saldo_pendiente_facturar) }})</span>
+                  <span>Cargar Factura DTE ({{ fmtCLP(p.saldo_pendiente_facturar) }})</span>
                 </button>
 
                 <!-- Caso 2: Mi Firma Contable Pendiente (Acción Primaria Ámbar Sólida) -->
@@ -680,12 +680,12 @@
                 <!-- Caso 4: 100% Facturado Conforme -->
                 <button
                   v-else-if="p.facturado && p.saldo_pendiente_facturar <= 0"
-                  @click="abrirModalDoc('DTE', p)"
+                  @click="abrirPdfFacturaDirecto(p)"
                   class="w-full py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-300 hover:text-white border border-emerald-500/30 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  title="Ver factura(s) asociadas y descargar PDF"
+                  title="Abrir PDF oficial de la Factura en pestaña nueva"
                 >
-                  <span>✅</span>
-                  <span>DTE #{{ p.factura_numero || 'Emitido' }} ↗</span>
+                  <span>📄</span>
+                  <span>Ver Factura DTE #{{ p.factura_numero || 'Emitido' }} ↗</span>
                 </button>
 
                 <!-- Caso 5: En Faena / Conciliación Reports -->
@@ -1899,6 +1899,21 @@ function abrirPdfOC(p) {
   }
 }
 
+function abrirPdfFacturaDirecto(p) {
+  const dtes = p.facturas_dte || [];
+  const dteConArchivo = [...dtes].reverse().find(d => d.archivo_url);
+  if (dteConArchivo && dteConArchivo.archivo_url) {
+    window.open(resolverUrlArchivo(dteConArchivo.archivo_url), '_blank');
+    return;
+  }
+  if (p.archivo_factura_url) {
+    window.open(resolverUrlArchivo(p.archivo_factura_url), '_blank');
+    return;
+  }
+  // Si no cuenta con archivo físico directo, abrir modal como fallback de revisión
+  abrirModalDoc('DTE', p);
+}
+
 async function guardarOcCliente() {
   if (!modalDoc.value.proceso || !formSoporte.value.numero_oc.trim()) return;
   guardandoSoporte.value = true;
@@ -1973,7 +1988,7 @@ async function guardarFacturaDte() {
     await api.post(`/operaciones/edp/proyecto/${p.id_proyecto}/soporte-documental`, payload);
     await cargarDatos();
     const actualizado = procesosRaw.value.find(x => x.id_proyecto === p.id_proyecto);
-    if (actualizado) {
+    if (actualizado && actualizado.saldo_pendiente_facturar > 0 && !esCierre) {
       abrirModalDoc('DTE', actualizado);
     } else {
       modalDoc.value.visible = false;
