@@ -100,15 +100,15 @@ En la parte superior de la tabla de procesos, se reemplaza la botonera genérica
    - Porcentaje de variación devengado vs comprometido.
 5. **Columna 5: ACCIÓN REQUERIDA (Primary CTA de 1 Clic):**
    - **Caso A (Listo para facturar):** Botón verde esmeralda sólido con sombra:
-     `[ 🧾 Subir Factura DTE ($X.XXX.XXX) ]` ➔ Abre directo dropzone DTE.
+     `[ 🧾 Cargar Factura DTE ($X.XXX.XXX) ]` ➔ Habilitado únicamente cuando se cumplen TODAS las condiciones de cobro: EDP firmado y (Servicio Exento de OC o Comercial ya cargó la OC). Abre directo dropzone DTE.
    - **Caso B (Falta firma de Contabilidad):** Botón ámbar sólido:
      `[ ✍️ Visar EDP (2° Firma FES) ]` ➔ Abre diálogo de firma FES.
-   - **Caso C (Falta OC Mandante):** Botón ámbar secundario:
-     `[ ⚠️ Cargar OC Mandante ]` ➔ Abre modal de carga de OC.
-   - **Caso D (100% Facturado):** Botón gris sobrio:
-     `[ ✅ Facturado Conforme (DTE #... ↗) ]` ➔ Abre PDF oficial de la factura.
-   - **Caso E (En Faena / Esperando Liquidación):** Badge neutro:
-     `[ ⏱️ En Faena / Reports ]`.
+   - **Caso C (Falta OC Mandante en servicios no exentos):** Indicador de Bloqueo Comercial (Solo lectura / sin diálogo de carga para Contabilidad):
+     `[ ⏳ Bloqueado: Falta OC (Comercial) ]` ➔ La carga de la OC es responsabilidad exclusiva del Ejecutivo Comercial (en ficha de OT / Cotización / Firma 3° FES). Contabilidad queda a la espera.
+   - **Caso D (100% Facturado Conforme):** Botón de lectura directa (Cero diálogos modales):
+     `[ 📄 Ver Factura DTE #... ↗ ]` ➔ Abre directo el PDF oficial en pestaña nueva.
+   - **Caso E (En Faena / Conciliación Reports):** Badge neutro:
+     `[ ⏱️ En Faena / Conciliación ]`.
 
 ---
 

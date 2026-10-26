@@ -349,9 +349,9 @@
             @click="filtroEstadoDoc = 'FALTA_OC'"
             :class="filtroEstadoDoc === 'FALTA_OC' ? 'bg-orange-600 text-white font-black shadow-md' : 'text-orange-300 hover:bg-white/5 font-semibold'"
             class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
-            title="OTs terminadas que no tienen Orden de Compra del mandante"
+            title="OTs retenidas que requieren Orden de Compra que debe cargar Comercial"
           >
-            <span>⏳ Esperando OC</span>
+            <span>⏳ Retenidas por OC</span>
             <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFaltaOc }}</span>
           </button>
           <button
@@ -534,9 +534,8 @@
                   <div class="flex items-center justify-center gap-1.5 flex-wrap">
                     <span
                       v-if="!p.requiere_oc_hes && !p.tiene_oc"
-                      @click="abrirModalDoc('OC', p)"
-                      class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 cursor-pointer"
-                      title="Cliente no exige OC / Facturación directa"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-white/5 select-none"
+                      title="Servicio exento de OC / Facturación directa"
                     >
                       Exenta OC
                     </span>
@@ -548,14 +547,13 @@
                     >
                       📎 {{ p.numero_oc || 'OC Mandante' }} ↗
                     </button>
-                    <button
+                    <span
                       v-else
-                      @click="abrirModalDoc('OC', p)"
-                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer"
-                      title="Cargar Orden de Compra del Cliente"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 select-none"
+                      :title="`Falta OC: El Ejecutivo Comercial (${p.vendedor_nombre || 'Comercial'}) debe cargar la Orden de Compra`"
                     >
                       ⚠️ Falta OC
-                    </button>
+                    </span>
 
                     <button
                       v-if="p.id_its"
@@ -666,16 +664,15 @@
                   <span>Visar EDP (2° Firma FES)</span>
                 </button>
 
-                <!-- Caso 3: Esperando OC Mandante -->
-                <button
+                <!-- Caso 3: Esperando OC que debe subir Comercial (Bloqueo Informativo para Contabilidad) -->
+                <div
                   v-else-if="p.requiere_oc_hes && !p.tiene_oc && !p.facturado"
-                  @click="abrirModalDoc('OC', p)"
-                  class="w-full py-1.5 px-2.5 rounded-lg bg-orange-500/15 hover:bg-orange-500/25 text-orange-300 border border-orange-500/40 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  title="Cargar Orden de Compra del Cliente"
+                  class="w-full py-2 px-2.5 rounded-lg bg-orange-950/40 text-orange-400 border border-orange-500/30 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 text-center select-none"
+                  :title="`Facturación retenida: El Ejecutivo Comercial (${p.vendedor_nombre || 'Comercial'}) debe cargar la Orden de Compra para habilitar la emisión de factura.`"
                 >
-                  <span>⚠️</span>
-                  <span>Cargar OC Mandante</span>
-                </button>
+                  <span>⏳</span>
+                  <span>Bloqueado: Falta OC (Comercial)</span>
+                </div>
 
                 <!-- Caso 4: 100% Facturado Conforme -->
                 <button
@@ -1895,7 +1892,7 @@ function abrirPdfOC(p) {
   if (p.oc_archivo) {
     window.open(resolverUrlArchivo(p.oc_archivo), '_blank');
   } else {
-    abrirModalDoc('OC', p);
+    alert(`La Orden de Compra N° ${p.numero_oc || ''} no cuenta con archivo PDF adjunto registrado.`);
   }
 }
 

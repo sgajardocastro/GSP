@@ -4,6 +4,25 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [Portal Web GSP] - Versión 1.0.163
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-26 15:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1074` (`SPEC-102`)
+- **Especificación Técnica:** Segregación Estricta de Funciones (SoD) en Perspectiva Contabilidad: Carga Exclusiva de OC por Comercial, Apertura Directa de Factura DTE sin Diálogos y Habilitación Condicional de Facturación:
+  1. **Segregación de Responsabilidad de Orden de Compra (OC Mandante):**
+     - La responsabilidad de cargar y asociar la Orden de Compra (OC/HES) queda atribuida exclusivamente al área Comercial (en ficha de OT / Cotización / 3° Firma FES de conformidad).
+     - Se retira de la vista de Contabilidad cualquier botón o diálogo para cargar OCs de mandantes.
+     - En la Columna 5 ("Acción Requerida"), cuando falta la OC y el cliente la exige, se muestra un indicador informativo de bloqueo no interactivo: `[ ⏳ Bloqueado: Falta OC (Comercial) ]` indicando el ejecutivo responsable.
+     - En la Columna 3 ("Respaldo Documental"), `Falta OC` y `Exenta OC` se visualizan como etiquetas informativas de solo lectura.
+     - La bandeja superior se renombra formalmente a `[ ⏳ Retenidas por OC (Z) ]` para monitoreo de cartera demorada por gestión comercial.
+  2. **Apertura Directa de Factura DTE (Cero Diálogos en Existentes):**
+     - Al hacer clic en un servicio ya facturado (`[ 📄 Ver Factura DTE #XXXXX ↗ ]`), se abre directamente el archivo PDF oficial en una nueva pestaña sin desplegar modales ni formularios de subida.
+     - El diálogo modal de subida con dropzone solo se despliega cuando el servicio está pendiente y efectivamente listo para ser facturado (`[ 🧾 Cargar Factura DTE ($X.XXX.XXX) ]`).
+  3. **Habilitación Determinista de Facturación:**
+     - Si el servicio está exento de OC (`requiere_oc_hes = false`), el botón de carga de DTE se habilita de inmediato una vez visado el EDP sin requerir gestión de Comercial.
+     - Si el servicio requiere OC, el botón se habilita automáticamente en cuanto Comercial suba el documento correspondiente.
+
 ## [Portal Web GSP] - Versión 1.0.162
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-10-26 14:30:00 (-03:00)
