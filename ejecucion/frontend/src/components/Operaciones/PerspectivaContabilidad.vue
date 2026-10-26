@@ -303,28 +303,6 @@
 
       <!-- Filtros rápidos documentales + Buscador + Exportar Excel -->
       <div class="flex flex-wrap items-center gap-2">
-        <!-- Toggle Modo Bandeja Contable vs Cartera Completa -->
-        <div v-if="submenuActivo === 'procesos'" class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-[11px] gap-1">
-          <button
-            @click="filtroBandejaContable = 'SOLO_TRABAJO'"
-            :class="filtroBandejaContable === 'SOLO_TRABAJO' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold' : 'text-slate-400 hover:text-white'"
-            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
-            title="Muestra solo OTs con trabajo contable real (con Reports, Devengo, EDP o Listas para Facturar)"
-          >
-            <span>⚡</span>
-            <span>Bandeja Contable ({{ countBandejaContable }})</span>
-          </button>
-          <button
-            @click="filtroBandejaContable = 'TODAS'"
-            :class="filtroBandejaContable === 'TODAS' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
-            class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
-            title="Muestra la cartera completa de OTs aunque no tengan devengo o reports"
-          >
-            <span>🌐</span>
-            <span>Todas las OTs ({{ procesosFiltradosPeriodo.length }})</span>
-          </button>
-        </div>
-
         <!-- Pestañas de Trabajo por Tarea (Task Buckets) con Contadores Dinámicos -->
         <div v-if="submenuActivo === 'procesos'" class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-[11px] gap-1 flex-wrap">
           <button
@@ -364,12 +342,12 @@
             <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ countFacturado }}</span>
           </button>
           <button
-            @click="filtroEstadoDoc = 'TODOS'"
+            @click="filtroEstadoDoc = 'TODOS'; filtroBandejaContable = 'TODAS'"
             :class="filtroEstadoDoc === 'TODOS' ? 'bg-slate-700 text-white font-black shadow-md' : 'text-slate-300 hover:bg-white/5'"
             class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5"
-            title="Cartera completa del periodo"
+            title="Cartera completa del periodo sin filtros"
           >
-            <span>🌐 Todas</span>
+            <span>🌐 Todas las OTs</span>
             <span class="px-1.5 py-0.2 rounded-full bg-black/40 font-mono text-[10px]">{{ procesosFiltradosPeriodo.length }}</span>
           </button>
         </div>
@@ -1451,13 +1429,9 @@ const countFacturado = computed(() => {
   return procesosFiltradosPeriodo.value.filter(p => p.facturado || (p.facturas_dte && p.facturas_dte.length > 0)).length;
 });
 
-// Procesos filtrados además por el toggle de Bandeja Contable y filtros documentales
+// Procesos filtrados por las Pestañas de Trabajo por Tarea (Task Buckets)
 const procesosFiltradosTabla = computed(() => {
   let lista = procesosFiltradosPeriodo.value;
-
-  if (filtroBandejaContable.value === 'SOLO_TRABAJO') {
-    lista = lista.filter(tieneTrabajoContable);
-  }
 
   if (filtroEstadoDoc.value === 'LISTO_FACTURAR') {
     lista = lista.filter(p => p.habilitado_facturar && (!p.facturado || p.saldo_pendiente_facturar > 0));
