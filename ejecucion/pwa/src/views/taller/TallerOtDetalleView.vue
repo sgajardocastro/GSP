@@ -113,7 +113,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">🏗️ Horómetro Grúa (Izaje) *</label>
+          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">⏱️ Horómetro Operación (Izaje) *</label>
           <input
             v-model.number="formMedidoresInicio.horometro_grua_inicio"
             type="number"
@@ -457,9 +457,15 @@
             <input
               v-model="formHh.tecnico_nombre"
               type="text"
+              list="datalist-tecnicos-pwa"
               placeholder="Nombre y Apellido del Técnico"
               class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
             />
+            <datalist id="datalist-tecnicos-pwa">
+              <option v-for="t in listaTecnicosPwa" :key="t.id_user" :value="t.nombre_completo">
+                {{ t.cargo || 'Técnico Taller Mantenimiento' }}
+              </option>
+            </datalist>
           </div>
 
           <div>
@@ -517,79 +523,265 @@
             <div class="text-xs font-bold uppercase text-amber-600 dark:text-amber-400 tracking-wider">
               + Registrar Insumo / Repuesto de Taller
             </div>
+          </div>
+
+          <!-- SELECTOR DE ORIGEN: BODEGA WMS vs COMPRA LOCAL -->
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-sm transition"
-              @click="mostrarScannerRepuestoModal = true"
+              @click="tipoInsumoPwa = 'wms'"
+              :class="[
+                'py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5',
+                tipoInsumoPwa === 'wms'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ]"
             >
-              <v-icon size="14" color="slate-950">mdi-qrcode-scan</v-icon>
-              Escanear QR
+              <span>📦</span> Bodega WMS
+            </button>
+            <button
+              type="button"
+              @click="tipoInsumoPwa = 'compra'"
+              :class="[
+                'py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5',
+                tipoInsumoPwa === 'compra'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ]"
+            >
+              <span>📝</span> Compra Local / Terreno
             </button>
           </div>
 
-          <div>
-            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Descripción del Material *</label>
-            <input
-              v-model="formMaterial.descripcion"
-              type="text"
-              placeholder="Ej: Grasa multipropósito EP2"
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
-            />
+          <!-- MODO 1: BODEGA WMS -->
+          <div v-if="tipoInsumoPwa === 'wms'" class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase text-emerald-600 dark:text-emerald-400">
+                📦 Catálogo Oficial WMS-Lite
+              </span>
+              <button
+                type="button"
+                class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-sm transition"
+                @click="mostrarScannerRepuestoModal = true"
+              >
+                <v-icon size="14" color="slate-950">mdi-qrcode-scan</v-icon>
+                Escanear QR
+              </button>
+            </div>
+
+            <!-- Buscador con autocomplete -->
+            <div class="relative">
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">
+                Buscar Repuesto en Pañol *
+              </label>
+              <div class="relative">
+                <input
+                  v-model="busquedaRepuesto"
+                  @input="onBuscarRepuestoInput"
+                  type="text"
+                  placeholder="Escriba SKU, Nombre o Código..."
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+                <span v-if="buscandoProductos" class="absolute right-3 top-2.5 text-xs text-slate-400">⏳</span>
+              </div>
+
+              <!-- Lista de sugerencias dropdown -->
+              <div
+                v-if="productosSugeridos.length > 0"
+                class="absolute left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-30 divide-y divide-slate-100 dark:divide-slate-800"
+              >
+                <div
+                  v-for="p in productosSugeridos"
+                  :key="p.id || p.id_producto"
+                  @click="seleccionarProductoWms(p)"
+                  class="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer text-xs flex justify-between items-center transition"
+                >
+                  <div>
+                    <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span class="font-mono text-emerald-600 dark:text-emerald-400">[{{ p.sku }}]</span>
+                      {{ p.nombre }}
+                    </div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                      {{ p.familia || 'General' }} · Stock Pañol: {{ p.stock_disponible ?? p.stock_fisico ?? 0 }} {{ p.uom || p.unidad_medida_base || 'UN' }}
+                    </div>
+                  </div>
+                  <div class="text-right font-mono text-xs">
+                    <div class="text-emerald-600 dark:text-emerald-400 font-bold">
+                      ${{ Number(p.costo_pmp_vigente || p.pmp || 0).toLocaleString('es-CL') }}
+                    </div>
+                    <div class="text-[9px] text-slate-400">PMP</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ficha reactiva / Badge informativo -->
+            <div v-if="productoSeleccionadoPwa" class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                  {{ productoSeleccionadoPwa.sku }}
+                </span>
+                <button
+                  type="button"
+                  @click="productoSeleccionadoPwa = null; busquedaRepuesto = ''"
+                  class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  Cambiar
+                </button>
+              </div>
+              <div class="font-bold text-slate-900 dark:text-white">{{ productoSeleccionadoPwa.nombre }}</div>
+              <div class="flex items-center justify-between pt-1 border-t border-emerald-500/20 text-[11px] font-mono">
+                <span class="text-slate-700 dark:text-slate-300">
+                  Stock en Pañol: <strong :class="productoSeleccionadoPwa.stock_disponible > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'">{{ productoSeleccionadoPwa.stock_disponible }} {{ productoSeleccionadoPwa.uom }}</strong>
+                </span>
+                <span class="text-slate-700 dark:text-slate-300">
+                  PMP: <strong class="text-amber-600 dark:text-amber-400">${{ Number(productoSeleccionadoPwa.pmp).toLocaleString('es-CL') }}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- Cantidad a imputar -->
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Cantidad a Imputar *</label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model.number="formMaterialWms.cantidad"
+                  type="number"
+                  min="0.1"
+                  step="1"
+                  placeholder="1"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+                />
+                <span class="text-xs font-mono text-slate-500 dark:text-slate-400 px-3 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2">
+                  {{ productoSeleccionadoPwa?.uom || 'UN' }}
+                </span>
+              </div>
+              <div
+                v-if="productoSeleccionadoPwa && formMaterialWms.cantidad > productoSeleccionadoPwa.stock_disponible"
+                class="text-[10px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1 font-semibold"
+              >
+                <span>⚠️</span> Supera el stock disponible en pañol ({{ productoSeleccionadoPwa.stock_disponible }} {{ productoSeleccionadoPwa.uom }}).
+              </div>
+            </div>
+
+            <button
+              type="button"
+              @click="guardarMaterial"
+              :disabled="!productoSeleccionadoPwa"
+              class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+            >
+              Solicitar Repuesto a Bodega
+            </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
+          <!-- MODO 2: COMPRA LOCAL / TERRENO -->
+          <div v-else class="space-y-3">
             <div>
-              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Cantidad *</label>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Descripción del Material *</label>
               <input
-                v-model.number="formMaterial.cantidad"
-                type="number"
-                step="1"
-                placeholder="1"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400 font-mono"
-              />
-            </div>
-            <div>
-              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Unidad</label>
-              <input
-                v-model="formMaterial.unidad"
+                v-model="formMaterialCompra.descripcion"
                 type="text"
-                placeholder="UN, L, KG"
+                placeholder="Ej: Grasa multipropósito EP2 o Filtro alternativo"
                 class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
               />
             </div>
-          </div>
 
-          <div>
-            <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Costo Unitario CLP</label>
-            <input
-              v-model.number="formMaterial.costo_unitario"
-              type="number"
-              placeholder="0"
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400 font-mono"
-            />
-          </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Cantidad *</label>
+                <input
+                  v-model.number="formMaterialCompra.cantidad"
+                  type="number"
+                  min="0.1"
+                  step="1"
+                  placeholder="1"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">Unidad</label>
+                <input
+                  v-model="formMaterialCompra.unidad"
+                  type="text"
+                  placeholder="UN, L, KG"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
 
-          <button
-            type="button"
-            @click="guardarMaterial"
-            class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm"
-          >
-            Registrar Insumo
-          </button>
+            <div class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+              <strong class="text-amber-600 dark:text-amber-400">Valorización centralizada:</strong> El costo unitario neto del insumo se asigna en Adquisiciones / Bodega al recepcionar la factura o boleta.
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase block mb-1">N° Factura / Boleta / Caja Chica</label>
+              <input
+                v-model="formMaterialCompra.numero_documento_compra"
+                type="text"
+                placeholder="Ej: Fac 8841 · Caja Chica Terreno"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <button
+              type="button"
+              @click="guardarMaterial"
+              class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+            >
+              Registrar Compra Directa
+            </button>
+          </div>
         </div>
 
+        <!-- LISTADO DE INSUMOS REGISTRADOS -->
         <div class="space-y-2">
-          <div class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400">Insumos Registrados</div>
+          <div class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400">
+            Insumos Registrados ({{ otDetalle?.repuestos_manuales?.length || 0 }})
+          </div>
+          <div v-if="!otDetalle?.repuestos_manuales?.length" class="text-center py-4 text-xs text-slate-400 dark:text-slate-500 italic bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+            No hay insumos registrados para esta OT.
+          </div>
           <div
             v-for="rep in otDetalle?.repuestos_manuales"
             :key="rep.id_ot_repuesto"
-            class="p-3 bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-white/10 text-xs flex justify-between items-center shadow-sm"
+            class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs flex justify-between items-center shadow-md"
           >
-            <div>
-              <div class="font-bold text-slate-900 dark:text-white">{{ rep.descripcion_material }}</div>
-              <div class="text-slate-500 dark:text-slate-400 text-[11px]">{{ rep.cantidad }} {{ rep.unidad_medida }}</div>
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span
+                  v-if="rep.origen_insumo === 'BODEGA_WMS' || rep.id_producto"
+                  :class="[
+                    'px-2 py-0.5 rounded text-[10px] font-black border inline-flex items-center gap-1',
+                    rep.estado === 'SOLICITADO' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  ]"
+                >
+                  <span>{{ rep.estado === 'SOLICITADO' ? '⏳' : '📦' }}</span>
+                  <span>{{ rep.estado === 'SOLICITADO' ? 'SOLICITADO A BODEGA' : 'BODEGA WMS' }}</span>
+                  <span v-if="rep.sku">: {{ rep.sku }}</span>
+                </span>
+                <span
+                  v-else
+                  class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1"
+                >
+                  <span>📝</span> COMPRA LOCAL
+                </span>
+                <span v-if="rep.numero_documento_compra || rep.proveedor_o_documento" class="text-[10px] text-slate-300 font-mono bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                  Doc: {{ rep.numero_documento_compra || rep.proveedor_o_documento }}
+                </span>
+                <span v-if="rep.codigo_ubicacion" class="text-[10px] text-slate-400 font-mono">
+                  📍 {{ rep.codigo_ubicacion }}
+                </span>
+              </div>
+              <div class="font-bold text-white text-xs">{{ rep.descripcion_material }}</div>
+              <div class="text-slate-400 text-[11px] font-mono">
+                {{ Number(rep.cantidad || 0).toLocaleString('es-CL', { maximumFractionDigits: 2 }) }} {{ rep.unidad_medida }} · ${{ Number(rep.costo_unitario || 0).toLocaleString('es-CL') }} c/u
+              </div>
             </div>
-            <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">${{ Number(rep.costo_total || 0).toLocaleString('es-CL') }}</span>
+            <div class="text-right">
+              <div class="font-mono text-emerald-400 font-bold">
+                ${{ Number(rep.costo_total || 0).toLocaleString('es-CL') }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1366,7 +1558,7 @@ const ranurasFotos360 = [
   { key: 'lat_der', titulo: '3. Lateral Der.', icono: '👉', descripcion: 'Estanque y estabilizadores der.' },
   { key: 'posterior', titulo: '4. Posterior', icono: '🔙', descripcion: 'Cola de máquina y contrapesas' },
   { key: 'tablero', titulo: '5. Tablero Medidores', icono: '⏱️', descripcion: 'Horómetro y odómetro de ingreso' },
-  { key: 'sist_izaje', titulo: '6. Pluma / Gancho', icono: '🏗️', descripcion: 'Pluma telescópica y pasteca' }
+  { key: 'sist_izaje', titulo: '6. Pluma / Gancho', icono: '⚙️', descripcion: 'Pluma telescópica y pasteca' }
 ]
 const fotos360 = ref({})
 const inputFoto360Ref = ref(null)
@@ -1395,8 +1587,65 @@ const abrirEnlaceQrExterno = () => {
 }
 
 const formHh = ref({ tecnico_nombre: '', descripcion_trabajo: '', horas: 2.0 })
-const formMaterial = ref({ descripcion: '', cantidad: 1, unidad: 'UN', costo_unitario: 0 })
 const mostrarScannerRepuestoModal = ref(false)
+
+// Modelo Híbrido PWA (WMS vs Compra Local)
+const tipoInsumoPwa = ref('wms') // 'wms' | 'compra'
+const busquedaRepuesto = ref('')
+const buscandoProductos = ref(false)
+const productosSugeridos = ref([])
+const productoSeleccionadoPwa = ref(null)
+
+const formMaterialWms = ref({
+  cantidad: 1
+})
+
+const formMaterialCompra = ref({
+  descripcion: '',
+  cantidad: 1,
+  unidad: 'UN',
+  costo_unitario: 0,
+  numero_documento_compra: ''
+})
+
+let timerBusquedaPwa = null
+function onBuscarRepuestoInput() {
+  clearTimeout(timerBusquedaPwa)
+  timerBusquedaPwa = setTimeout(async () => {
+    const q = busquedaRepuesto.value.trim()
+    if (!q) {
+      productosSugeridos.value = []
+      return
+    }
+    buscandoProductos.value = true
+    try {
+      const res = await api.get(`/inventario/productos?search=${encodeURIComponent(q)}`)
+      const data = res.data?.data || res.data || []
+      productosSugeridos.value = Array.isArray(data) ? data : []
+    } catch (e) {
+      console.error('Error buscando productos WMS:', e)
+      productosSugeridos.value = []
+    } finally {
+      buscandoProductos.value = false
+    }
+  }, 250)
+}
+
+function seleccionarProductoWms(p) {
+  productoSeleccionadoPwa.value = {
+    id_producto: p.id || p.id_producto,
+    sku: p.sku,
+    nombre: p.nombre,
+    familia: p.familia,
+    uom: p.uom || p.unidad_medida_base || 'UN',
+    pmp: Number(p.costo_pmp_vigente || p.pmp || 0),
+    stock_disponible: Number(p.stock_disponible ?? p.stock_fisico ?? 0),
+    codigo_ubicacion: p.codigo_ubicacion || ''
+  }
+  formMaterialWms.value.cantidad = 1
+  busquedaRepuesto.value = `${p.sku} - ${p.nombre}`
+  productosSugeridos.value = []
+}
 
 async function handleScanRepuesto(payload) {
   const raw = String(payload || '').trim()
@@ -1406,19 +1655,13 @@ async function handleScanRepuesto(payload) {
     const res = await api.get(`/inventario/productos?search=${encodeURIComponent(skuBusqueda)}`)
     const prods = res.data?.data || []
     if (prods.length > 0) {
-      const p = prods[0]
-      formMaterial.value.descripcion = `${p.nombre} (${p.sku})`
-      formMaterial.value.unidad = p.unidad_medida_base || p.uom || 'UN'
-      formMaterial.value.costo_unitario = Number(p.costo_pmp_vigente || p.pmp) || 0
-      formMaterial.value.cantidad = 1
-      alert(`Repuesto ${p.sku} cargado desde WMS-Lite`)
+      seleccionarProductoWms(prods[0])
+      alert(`Repuesto ${prods[0].sku} cargado desde WMS-Lite`)
     } else {
-      formMaterial.value.descripcion = skuBusqueda
-      alert(`Código ${skuBusqueda} capturado`)
+      alert(`Código ${skuBusqueda} no encontrado en catálogo WMS`)
     }
   } catch (e) {
-    formMaterial.value.descripcion = skuBusqueda
-    alert(`Código ${skuBusqueda} capturado`)
+    console.error('Error escaneando repuesto:', e)
   }
 }
 const formHallazgo = ref({ criticidad: 'C3', sistema: 'HID', componente: '', descripcion: '', afecta_izaje: false })
@@ -1796,23 +2039,74 @@ const guardarHh = async () => {
 }
 
 const guardarMaterial = async () => {
-  if (!formMaterial.value.descripcion) {
-    alert('Indique la descripción del insumo.')
-    return
-  }
-  try {
-    const res = await api.post(`/mantenimiento/ots/${idOt.value}/materiales`, {
-      descripcion_material: formMaterial.value.descripcion,
-      cantidad: formMaterial.value.cantidad,
-      unidad_medida: formMaterial.value.unidad,
-      costo_unitario: formMaterial.value.costo_unitario
-    })
-    if (res.data?.success) {
-      formMaterial.value = { descripcion: '', cantidad: 1, unidad: 'UN', costo_unitario: 0 }
-      cargarDetalleOt()
+  if (tipoInsumoPwa.value === 'wms') {
+    if (!productoSeleccionadoPwa.value) {
+      alert('Seleccione o escanee un repuesto del catálogo WMS.')
+      return
     }
-  } catch (err) {
-    alert(err.response?.data?.error || err.message)
+    const cant = Number(formMaterialWms.value.cantidad)
+    if (!cant || cant <= 0) {
+      alert('Indique una cantidad válida mayor a 0.')
+      return
+    }
+    const prod = productoSeleccionadoPwa.value
+    if (cant > prod.stock_disponible) {
+      const confirma = confirm(`La cantidad ingresada (${cant}) supera el stock disponible en pañol (${prod.stock_disponible} ${prod.uom}). ¿Desea continuar de todos modos?`)
+      if (!confirma) return
+    }
+    try {
+      const res = await api.post(`/mantenimiento/ots/${idOt.value}/materiales`, {
+        id_producto: prod.id_producto,
+        descripcion_material: `${prod.nombre} [${prod.sku}]`,
+        cantidad: cant,
+        unidad_medida: prod.uom,
+        costo_unitario: prod.pmp,
+        origen_insumo: 'BODEGA_WMS',
+        sku: prod.sku
+      })
+      if (res.data?.success) {
+        productoSeleccionadoPwa.value = null
+        busquedaRepuesto.value = ''
+        formMaterialWms.value.cantidad = 1
+        cargarDetalleOt()
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || err.message)
+    }
+  } else {
+    // Compra Local / Terreno
+    if (!formMaterialCompra.value.descripcion?.trim()) {
+      alert('Indique la descripción del insumo o repuesto.')
+      return
+    }
+    const cant = Number(formMaterialCompra.value.cantidad)
+    if (!cant || cant <= 0) {
+      alert('Indique una cantidad válida mayor a 0.')
+      return
+    }
+    try {
+      const res = await api.post(`/mantenimiento/ots/${idOt.value}/materiales`, {
+        descripcion_material: formMaterialCompra.value.descripcion.trim(),
+        cantidad: cant,
+        unidad_medida: formMaterialCompra.value.unidad || 'UN',
+        costo_unitario: Number(formMaterialCompra.value.costo_unitario || 0),
+        origen_insumo: 'COMPRA_DIRECTA',
+        numero_documento_compra: formMaterialCompra.value.numero_documento_compra?.trim() || null,
+        proveedor_o_documento: formMaterialCompra.value.numero_documento_compra?.trim() || null
+      })
+      if (res.data?.success) {
+        formMaterialCompra.value = {
+          descripcion: '',
+          cantidad: 1,
+          unidad: 'UN',
+          costo_unitario: 0,
+          numero_documento_compra: ''
+        }
+        cargarDetalleOt()
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || err.message)
+    }
   }
 }
 
@@ -2053,7 +2347,14 @@ const volver = () => {
   router.push('/taller')
 }
 
+const listaTecnicosPwa = ref([])
+
 onMounted(() => {
   cargarDetalleOt()
+  api.get('/mantenimiento/tecnicos').then(res => {
+    if (Array.isArray(res.data?.data)) {
+      listaTecnicosPwa.value = res.data.data
+    }
+  }).catch(e => console.error('Error cargando tecnicos PWA:', e))
 })
 </script>

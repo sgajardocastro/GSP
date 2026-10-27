@@ -28,11 +28,11 @@
         <!-- FIRST LEVEL LINK (No children) -->
         <router-link 
           v-if="!item.children"
-          :to="{ name: item.routeName }"
+          :to="item.path ? item.path : { name: item.routeName }"
           class="flex items-center rounded-xl transition-all duration-200 group relative border border-transparent"
           :class="[
             navStore.isCollapsed ? 'justify-center py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full',
-            $route?.name === item.routeName 
+            ($route?.name === item.routeName || (item.path && $route?.path === item.path))
               ? activeClass 
               : 'text-muted-foreground hover:text-white hover:bg-white/5'
           ]"
@@ -51,7 +51,7 @@
 
           <!-- Active Indicator -->
           <div 
-            v-if="$route.name === item.routeName"
+            v-if="$route.name === item.routeName || (item.path && $route.path === item.path)"
             class="absolute left-0 w-1 h-6 rounded-r-full"
             :class="[activeTheme.bgClass]"
             :style="{ boxShadow: `0 0 8px ${activeTheme.primary}` }"
@@ -65,10 +65,11 @@
         >
           <!-- Header of Group -->
           <div
-            class="flex items-center rounded-xl transition-all duration-200 cursor-pointer border border-transparent"
+            @click="toggleGroup(item)"
+            class="flex items-center rounded-xl transition-all duration-200 cursor-pointer border border-transparent select-none"
             :class="[
               navStore.isCollapsed ? 'justify-center py-2.5 px-0' : 'gap-3 px-3 py-2.5 w-full justify-between',
-              item.children.some(child => $route?.name === child.routeName)
+              item.children.some(child => $route?.name === child.routeName || (child.path && $route?.path === child.path))
                 ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5`
                 : 'text-muted-foreground hover:text-white hover:bg-white/5'
             ]"
@@ -83,22 +84,24 @@
             <!-- Chevron indicator for expand mode -->
             <ChevronRight 
               v-if="!navStore.isCollapsed" 
-              class="w-4 h-4 text-zinc-500 group-hover:rotate-90 transition-transform duration-200" 
+              class="w-4 h-4 text-zinc-500 transition-transform duration-200" 
+              :class="isGroupOpen(item) ? 'rotate-90 text-amber-400' : ''"
             />
           </div>
 
           <!-- Children Submenu -->
           <div
             v-if="!navStore.isCollapsed"
-            class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-96 group-hover:opacity-100 transition-all duration-300 pl-8 pr-1 space-y-1 mt-1"
+            class="overflow-hidden transition-all duration-300 pl-8 pr-1 space-y-1 mt-1"
+            :class="isGroupOpen(item) ? 'max-h-[32rem] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'"
           >
             <router-link 
               v-for="sub in item.children"
               :key="sub.name"
-              :to="{ name: sub.routeName }"
+              :to="sub.path ? sub.path : { name: sub.routeName }"
               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs font-medium border border-transparent"
               :class="[
-                $route?.name === sub.routeName
+                ($route?.name === sub.routeName || (sub.path && $route?.path === sub.path))
                   ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5 border-${activeTheme.colorName}-500/10`
                   : 'text-muted-foreground hover:text-white hover:bg-white/5'
               ]"
@@ -118,10 +121,10 @@
             <router-link 
               v-for="sub in item.children"
               :key="sub.name"
-              :to="{ name: sub.routeName }"
+              :to="sub.path ? sub.path : { name: sub.routeName }"
               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs font-medium border border-transparent text-left"
               :class="[
-                $route?.name === sub.routeName
+                ($route?.name === sub.routeName || (sub.path && $route?.path === sub.path))
                   ? `${activeTheme.textClass} bg-${activeTheme.colorName}-500/5 border-${activeTheme.colorName}-500/10`
                   : 'text-muted-foreground hover:text-white hover:bg-white/5'
               ]"
@@ -160,7 +163,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { 
   BarChart3, 
   Users, 
@@ -169,6 +172,7 @@ import {
   Wrench, 
   ShieldCheck, 
   FolderOpen,
+  FileSpreadsheet,
   ChevronFirst,
   ChevronLast,
   ChevronRight,
@@ -176,13 +180,33 @@ import {
   LogOut,
   Settings,
   Orbit,
-  Package
+  Package,
+  ShoppingCart,
+  ListTodo,
+  BookOpen
 } from 'lucide-vue-next'
 import { navStore } from '../stores/navStore'
 import apiAxios from '../services/api'
 
 const router = useRouter()
+const route = useRoute()
 const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.0.0'
+
+const manualOpenGroups = ref(new Set(['Gestión de Flota', 'Inventario & WMS']))
+
+const isGroupOpen = (item) => {
+  return manualOpenGroups.value.has(item.name)
+}
+
+const toggleGroup = (item) => {
+  const next = new Set(manualOpenGroups.value)
+  if (next.has(item.name)) {
+    next.delete(item.name)
+  } else {
+    next.add(item.name)
+  }
+  manualOpenGroups.value = next
+}
 
 const activeProjectsCount = ref(0)
 const blockedOperatorsCount = ref(0)
@@ -270,6 +294,7 @@ const logout = () => {
   if (window.google?.accounts?.id) {
     window.google.accounts.id.disableAutoSelect()
   }
+  window.dispatchEvent(new Event('auth-change'))
   router.push({ name: 'login' })
 }
 
@@ -294,9 +319,15 @@ const menuItems = computed(() => {
       icon: Users
     },
     { 
-      name: 'Estados de Pago', 
-      routeName: 'cruce', 
-      icon: FileCheck2
+      name: 'ITS Transición', 
+      routeName: 'its_transicion', 
+      icon: FileSpreadsheet
+    },
+    { 
+      name: 'Compras & OCs', 
+      routeName: 'compras_oc',
+      path: '/compras-oc',
+      icon: ShoppingCart
     },
     { 
       name: 'Gestión de Flota', 
@@ -304,18 +335,25 @@ const menuItems = computed(() => {
       subtitle: 'Control & Mantenimiento',
       children: [
         { name: 'Vista Equipos 360', routeName: 'vista360' },
+        { name: 'Radar Horómetros & Odómetros', routeName: 'radar_flota' },
         { name: 'Inspecciones de Equipos', routeName: 'inspecciones' },
         { name: 'Órdenes de Trabajo (OTs)', routeName: 'mantenimiento' }
       ]
     },
     {
-      name: 'Inventario (WMS-Lite)',
+      name: 'Inventario & WMS',
       icon: Package,
-      subtitle: 'Global Manager WMS',
+      subtitle: 'Gestión de Almacenes',
       children: [
-        { name: '1. Bodegas & Existencias', routeName: 'inventario_bodegas' },
-        { name: '2. Maestro de Productos', routeName: 'inventario_productos' },
-        { name: '3. Alertas & Quiebres', routeName: 'inventario_alertas' }
+        { name: '1. Bodegas & Ubicaciones', routeName: 'inventario_bodegas' },
+        { name: '2. Maestro de Existencias', routeName: 'inventario_productos' },
+        { name: '3. Recepción e Ingreso OC', routeName: 'inventario_recepcion' },
+        { name: '4. Despacho e Imputación OT', routeName: 'inventario_despacho' },
+        { name: '5. Traspasos entre Bodegas', routeName: 'inventario_traspasos' },
+        { name: '6. Alertas & Quiebres', routeName: 'inventario_alertas' },
+        { name: '7. Conteo Físico & Ajustes', routeName: 'inventario_procesos' },
+        { name: '8. Bajas & Desincorporaciones', routeName: 'inventario_bajas' },
+        { name: '9. Compras & OCs (Eduardo)', routeName: 'compras_oc', path: '/compras-oc' }
       ]
     },
     { 
@@ -331,9 +369,19 @@ const menuItems = computed(() => {
       icon: FolderOpen
     },
     { 
+      name: 'Centro Documentación', 
+      routeName: 'documentacion', 
+      icon: BookOpen
+    },
+    { 
       name: 'Mantenedores', 
       routeName: 'mantenedores', 
       icon: Settings
+    },
+    { 
+      name: 'Backlog', 
+      routeName: 'backlog', 
+      icon: ListTodo
     }
   ]
 })

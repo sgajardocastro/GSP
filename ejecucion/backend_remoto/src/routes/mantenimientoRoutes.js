@@ -19,46 +19,72 @@ function decryptToken(encryptedToken, secret) {
   }
 }
 
-// Middleware tolerante: intenta autenticar con el token.
-// Si el token es válido, puebla req.user con sus datos y roles.
-// Si falla la desencripción o verificación (ej: colisión de token entre DEV y PROD en el mismo dominio servidor.leanglobal.cl),
-// o si no viene token, recurre al usuario de contingencia para no bloquear la consola ni arrojar 401.
+// Middleware de resolución de identidad real (JWT + Header X-User-Id + Payload) sin usuario fijo en duro
 const authOrFallback = async (req, res, next) => {
-  const fallbackUser = {
-    id_user: 55,
-    id_empresa: 9,
-    roles: ['Admin', 'GSP_TALLER_PROG', 'GSP_TALLER_APROB', 'GSP_TALLER_EJEC']
-  };
+  let resolvedUser = null;
 
   const authHeader = req.headers['authorization'];
   if (authHeader) {
     try {
       const parts = authHeader.split(' ');
       if (parts.length === 2 && parts[0] === 'Bearer') {
-        const decrypted = decryptToken(parts[1], jwtEncryptSecret);
-        if (decrypted) {
-          const decoded = jwt.verify(decrypted, jwtSecret);
-          req.user = decoded;
-          if (!req.user.roles && req.user.id_user) {
-            try {
-              const { rows } = await pool.query(
-                `SELECT r.name_rol FROM tsec_user_roles ur JOIN tsec_roles r ON ur.id_rol = r.id_rol WHERE ur.id_user = $1 AND (r.activo IS NULL OR r.activo = true)`,
-                [req.user.id_user]
-              );
-              req.user.roles = rows.map(r => r.name_rol);
-            } catch (_) {
-              req.user.roles = [];
-            }
-          }
-          return next();
+        const decrypted = decryptToken(parts[1], jwtEncryptSecret) || parts[1];
+        try {
+          resolvedUser = jwt.verify(decrypted, jwtSecret);
+        } catch (_) {
+          resolvedUser = jwt.decode(decrypted) || null;
         }
       }
     } catch (_) {
-      // Ignorar fallo de token cross-ambiente y continuar a fallback
+      // Continuar a resolución por X-User-Id / payload
     }
   }
 
-  req.user = fallbackUser;
+  // Si viene X-User-Id de la sesión activa o id_user_creador/id_user explícito en el body, priorizar cuando no hay token o difiere
+  const explicitUserId = Number(
+    req.body?.id_user_creador ||
+    req.body?.id_user ||
+    req.headers['x-user-id'] ||
+    req.query?.id_user ||
+    0
+  );
+
+  if (explicitUserId > 0 && (!resolvedUser || !resolvedUser.id_user || Number(resolvedUser.id_user) !== explicitUserId)) {
+    resolvedUser = {
+      ...(resolvedUser || {}),
+      id_user: explicitUserId,
+      id_empresa: resolvedUser?.id_empresa || 9
+    };
+  }
+
+  if (resolvedUser && resolvedUser.id_user) {
+    try {
+      const { rows: uRows } = await pool.query(
+        `SELECT id_user, name_frst, apellido_pat, email FROM tsec_users WHERE id_user = $1 LIMIT 1`,
+        [resolvedUser.id_user]
+      );
+      if (uRows.length > 0) {
+        resolvedUser.name_frst = uRows[0].name_frst;
+        resolvedUser.apellido_pat = uRows[0].apellido_pat;
+        resolvedUser.email = uRows[0].email;
+      }
+      const { rows: rRows } = await pool.query(
+        `SELECT r.name_rol FROM tsec_user_roles ur JOIN tsec_roles r ON ur.id_rol = r.id_rol WHERE ur.id_user = $1 AND (r.activo IS NULL OR r.activo = true)`,
+        [resolvedUser.id_user]
+      );
+      resolvedUser.roles = rRows.map(r => r.name_rol);
+    } catch (_) {
+      resolvedUser.roles = resolvedUser.roles || [];
+    }
+    req.user = { ...resolvedUser, id_empresa: resolvedUser.id_empresa || 9 };
+    return next();
+  }
+
+  req.user = {
+    id_user: req.body?.id_tecnico_responsable ? Number(req.body.id_tecnico_responsable) : null,
+    id_empresa: 9,
+    roles: ['GSP_TALLER_EJEC']
+  };
   next();
 };
 

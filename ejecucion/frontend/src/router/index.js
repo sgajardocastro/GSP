@@ -115,6 +115,13 @@ const router = createRouter({
       component: MantenimientoView
     },
     {
+      path: '/radar-flota',
+      alias: ['/lg-gsp-dev/radar-flota', '/lg-gsp-qa/radar-flota', '/lg-gsp-prod/radar-flota'],
+      name: 'radar_flota',
+      component: MantenimientoView,
+      meta: { mode: 'radar' }
+    },
+    {
       path: '/mantenimiento/equipo/:id',
       alias: ['/lg-gsp-dev/mantenimiento/equipo/:id', '/lg-gsp-qa/mantenimiento/equipo/:id', '/lg-gsp-prod/mantenimiento/equipo/:id'],
       name: 'hoja_vida_equipo',
@@ -150,6 +157,12 @@ const router = createRouter({
       path: '/documentos',
       name: 'documentos',
       component: Documentos
+    },
+    {
+      path: '/documentacion',
+      alias: ['/lg-gsp-dev/documentacion', '/lg-gsp-qa/documentacion', '/lg-gsp-prod/documentacion'],
+      name: 'documentacion',
+      component: () => import('../views/DocumentacionView.vue')
     },
     {
       path: '/vista360',
@@ -289,6 +302,42 @@ const router = createRouter({
     },
     {
       path: '/lg-gsp-prod/firmar-contrato',
+      name: 'firmar_contrato_prod_legacy',
+      component: () => import('../views/FirmarContratoView.vue'),
+      meta: { layout: 'public' }
+    },
+    {
+      path: '/compras-oc',
+      alias: ['/inventario/compras', '/lg-gsp-dev/compras-oc', '/lg-gsp-qa/compras-oc', '/lg-gsp-prod/compras-oc'],
+      name: 'compras_oc',
+      component: () => import('../views/Inventario/ComprasOcView.vue')
+    },
+    {
+      path: '/aprobacion-gerencia/:token(.*)',
+      name: 'aprobacion_gerencia',
+      component: () => import('../views/Operaciones/AprobacionGerenciaView.vue'),
+      meta: { public: true, layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-dev/aprobacion-gerencia/:token(.*)',
+      name: 'aprobacion_gerencia_dev',
+      component: () => import('../views/Operaciones/AprobacionGerenciaView.vue'),
+      meta: { public: true, layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-qa/aprobacion-gerencia/:token(.*)',
+      name: 'aprobacion_gerencia_qa',
+      component: () => import('../views/Operaciones/AprobacionGerenciaView.vue'),
+      meta: { public: true, layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/aprobacion-gerencia/:token(.*)',
+      name: 'aprobacion_gerencia_prod',
+      component: () => import('../views/Operaciones/AprobacionGerenciaView.vue'),
+      meta: { public: true, layout: 'public' }
+    },
+    {
+      path: '/lg-gsp-prod/firmar-contrato-alias',
       name: 'firmar_contrato_prod',
       component: () => import('../views/FirmarContratoView.vue'),
       meta: { layout: 'public' }
@@ -306,13 +355,13 @@ router.beforeEach((to, from, next) => {
     return next()
   }
 
-  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.name !== 'its_transicion' && to.meta?.layout !== 'public' && to.meta?.layout !== 'print') {
+  if (!token && to.name !== 'login' && to.name !== 'versurveyprint' && to.name !== 'its_transicion' && !to.meta?.public && to.meta?.layout !== 'public' && to.meta?.layout !== 'empty' && to.meta?.layout !== 'print') {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
   // Regla de Arquitectura FES: Si flag_proc_enrol está activo, exige completar el enrolamiento
   const isEnrolPending = user && (user.flag_proc_enrol === true || user.flag_proc_enrol === 't' || user.flag_proc_enrol === 1)
-  if (isEnrolPending && to.name !== 'enrolamiento' && to.meta?.layout !== 'public') {
+  if (isEnrolPending && to.name !== 'enrolamiento' && !to.meta?.public && to.meta?.layout !== 'public' && to.meta?.layout !== 'empty') {
     return next({ name: 'enrolamiento' })
   }
 

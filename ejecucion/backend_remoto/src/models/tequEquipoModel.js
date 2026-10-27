@@ -19,6 +19,16 @@ class TequEquipoModel {
           b.nombre_marca,
           emp.name_empresa,
           emp.razon_social,
+          COALESCE(pm.ult_mant_horometro_grua, 0) AS ult_mant_horometro_grua,
+          ROUND(GREATEST(0, COALESCE(e.horometro_grua_acumulado, 0) - COALESCE(pm.ult_mant_horometro_grua, 0))::numeric, 1) AS uso_mant_horometro_grua,
+          ROUND((250 - GREATEST(0, COALESCE(e.horometro_grua_acumulado, 0) - COALESCE(pm.ult_mant_horometro_grua, 0)))::numeric, 1) AS faltante_horometro_grua,
+          COALESCE(pm.ult_mant_horometro_chasis, 0) AS ult_mant_horometro_chasis,
+          ROUND(GREATEST(0, COALESCE(e.horometro_chasis_acumulado, 0) - COALESCE(pm.ult_mant_horometro_chasis, 0))::numeric, 1) AS uso_mant_horometro_chasis,
+          ROUND((250 - GREATEST(0, COALESCE(e.horometro_chasis_acumulado, 0) - COALESCE(pm.ult_mant_horometro_chasis, 0)))::numeric, 1) AS faltante_horometro_chasis,
+          COALESCE(pm.ult_mant_odometro_km, 0) AS ult_mant_odometro_km,
+          ROUND(GREATEST(0, COALESCE(e.odometro_acumulado, 0) - COALESCE(pm.ult_mant_odometro_km, 0))::numeric, 1) AS uso_mant_odometro_km,
+          ROUND((10000 - GREATEST(0, COALESCE(e.odometro_acumulado, 0) - COALESCE(pm.ult_mant_odometro_km, 0)))::numeric, 1) AS faltante_odometro_km,
+          COALESCE(pm.ult_mant_horometro_grua, 0) AS ultimo_horometro_service,
           (
             SELECT COUNT(DISTINCT srv.id_survey)
             FROM tsrv_survey srv
@@ -46,7 +56,35 @@ class TequEquipoModel {
         LEFT JOIN tpar_empresas emp ON e.id_empresa = emp.id_empresa
         LEFT JOIN tequ_certificados_equipo ce ON e.id_equipo = ce.id_equipo
         LEFT JOIN tequ_tipos_certificado tc ON ce.id_tipo_certificado = tc.id_tipo_certificado
-        GROUP BY e.id_equipo, s.id_subcategoria, c.id_categoria, m.id_modelo, b.id_marca, emp.id_empresa
+        LEFT JOIN LATERAL (
+          SELECT
+            GREATEST(
+              COALESCE((
+                SELECT MAX(GREATEST(COALESCE(ot.horometro_grua_cierre, 0), COALESCE(ot.horometro_cierre, 0), COALESCE(ot.horometro_grua_inicio, 0), COALESCE(ot.horometro_inicio, 0)))
+                FROM tmnt_ot ot
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+              ), 0),
+              COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_grua', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+            ) AS ult_mant_horometro_grua,
+            GREATEST(
+              COALESCE((
+                SELECT MAX(GREATEST(COALESCE(ot.horometro_chasis_cierre, 0), COALESCE(ot.horometro_chasis_inicio, 0)))
+                FROM tmnt_ot ot
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+              ), 0),
+              COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_chasis', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+            ) AS ult_mant_horometro_chasis,
+            GREATEST(
+              COALESCE((
+                SELECT MAX(GREATEST(COALESCE(ot.odometro_cierre, 0), COALESCE(ot.odometro_inicio, 0)))
+                FROM tmnt_ot ot
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+              ), 0),
+              COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_odometro_km', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+            ) AS ult_mant_odometro_km
+        ) pm ON TRUE
+        GROUP BY e.id_equipo, s.id_subcategoria, c.id_categoria, m.id_modelo, b.id_marca, emp.id_empresa,
+                 pm.ult_mant_horometro_grua, pm.ult_mant_horometro_chasis, pm.ult_mant_odometro_km
         ORDER BY e.id_equipo DESC
       `;
       const respuesta = await this.pool.query(sql);

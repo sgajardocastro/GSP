@@ -153,8 +153,8 @@ class MantenimientoController {
     try {
       const { id } = req.params;
       const data = req.body;
-      const user = req.user || { id_user: 55, id_empresa: 9 };
-      const resultado = await mantenimientoModel.actualizarMedidoresInicio(id, data, user.id_empresa);
+      const empresaId = this._getEmpresaId(req);
+      const resultado = await mantenimientoModel.actualizarMedidoresInicio(id, data, empresaId);
       return res.status(200).json({ success: true, message: 'Medidores de entrada actualizados', data: resultado });
     } catch (err) {
       console.error('Error en MantenimientoController.actualizarMedidoresInicio:', err);
@@ -170,8 +170,8 @@ class MantenimientoController {
       if (!posicion) {
         return res.status(400).json({ success: false, error: 'La posición fotográfica es obligatoria.' });
       }
-      const user = req.user || { id_user: 55, id_empresa: 9 };
-      const fotos = await mantenimientoModel.guardarFoto360(id, { posicion, id_doc, url }, user.id_empresa);
+      const empresaId = this._getEmpresaId(req);
+      const fotos = await mantenimientoModel.guardarFoto360(id, { posicion, id_doc, url }, empresaId);
       return res.status(200).json({ success: true, message: 'Foto 360 guardada correctamente', data: fotos });
     } catch (err) {
       console.error('Error en MantenimientoController.guardarFoto360:', err);
@@ -183,8 +183,8 @@ class MantenimientoController {
   async eliminarFoto360(req, res) {
     try {
       const { id, posicion } = req.params;
-      const user = req.user || { id_user: 55, id_empresa: 9 };
-      const fotos = await mantenimientoModel.eliminarFoto360(id, posicion, user.id_empresa);
+      const empresaId = this._getEmpresaId(req);
+      const fotos = await mantenimientoModel.eliminarFoto360(id, posicion, empresaId);
       return res.status(200).json({ success: true, message: 'Foto 360 eliminada', data: fotos });
     } catch (err) {
       console.error('Error en MantenimientoController.eliminarFoto360:', err);
@@ -344,7 +344,7 @@ class MantenimientoController {
   }
 
   // =========================================================================
-  // 3. MATERIALES MANUALES (FASE 1)
+  // 3. MATERIALES Y REPUESTOS (Modelo Híbrido: Bodega WMS vs Compra Directa)
   // =========================================================================
 
   // POST /api/mantenimiento/ots/:id/materiales
@@ -352,15 +352,25 @@ class MantenimientoController {
     try {
       const { id } = req.params;
       const data = req.body;
-      if (!data.descripcion_material) {
-        return res.status(400).json({ success: false, error: 'La descripción del material es obligatoria.' });
+      const origenInsumo = data.origen_insumo === 'BODEGA_WMS' ? 'BODEGA_WMS' : 'COMPRA_DIRECTA';
+
+      if (origenInsumo === 'BODEGA_WMS') {
+        if (!data.id_producto) {
+          return res.status(400).json({ success: false, error: 'El ID de producto es obligatorio para insumos de bodega.' });
+        }
+      } else {
+        if (!data.descripcion_material) {
+          return res.status(400).json({ success: false, error: 'La descripción del material es obligatoria para compras directas.' });
+        }
       }
+
       const user = req.user || { id_user: 55, id_empresa: 9 };
       const rep = await mantenimientoModel.agregarMaterialManual(id, data, user);
       return res.status(201).json({ success: true, data: rep });
     } catch (err) {
       console.error('Error en MantenimientoController.agregarMaterialManual:', err);
-      return res.status(500).json({ success: false, error: err.message });
+      const status = err.statusCode || (err.code === 'STOCK_INSUFICIENTE' ? 400 : 500);
+      return res.status(status).json({ success: false, error: err.message, code: err.code });
     }
   }
 
@@ -368,7 +378,8 @@ class MantenimientoController {
   async eliminarMaterial(req, res) {
     try {
       const { idRepuesto } = req.params;
-      await mantenimientoModel.eliminarMaterial(idRepuesto);
+      const user = req.user || { id_user: 55, id_empresa: 9 };
+      await mantenimientoModel.eliminarMaterial(idRepuesto, user);
       return res.status(200).json({ success: true, message: 'Material eliminado' });
     } catch (err) {
       console.error('Error en MantenimientoController.eliminarMaterial:', err);
@@ -380,13 +391,16 @@ class MantenimientoController {
   // 4. MANO DE OBRA HH
   // =========================================================================
 
-  // POST /api/mantenimiento/ots/:id/hh
+  // POST /api/mantenimiento/ots/:id/hh (Soporte Lote y Unitario - SPEC-096)
   async agregarHh(req, res) {
     try {
       const { id } = req.params;
       const data = req.body;
       if (!data.descripcion_trabajo) {
         return res.status(400).json({ success: false, error: 'La descripción del trabajo es obligatoria.' });
+      }
+      if (Array.isArray(data.tecnicos) && data.tecnicos.length === 0) {
+        return res.status(400).json({ success: false, error: 'Debe seleccionar al menos un técnico para imputar mano de obra.' });
       }
       const user = req.user || { id_user: 55, id_empresa: 9 };
       const hh = await mantenimientoModel.agregarHh(id, data, user);

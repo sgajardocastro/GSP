@@ -52,10 +52,13 @@ class MantenimientoModel {
           ot.pauta_intervalo_horas,
           ot.id_supervisor,
           ot.id_tecnico_responsable,
+          ot.id_user_creador,
           ot.costo_total_calculado,
           ot.observaciones,
           (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_tecnico_responsable) AS nombre_tecnico,
           (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_supervisor) AS nombre_supervisor,
+          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_user_creador) AS nombre_creador,
+          COALESCE(ot.fecha_cierre_real, ot.fecha_hora_liberacion, (SELECT c.fecha_cierre FROM tmnt_ot_cierre c WHERE c.id_ot = ot.id_ot ORDER BY c.id_cierre DESC LIMIT 1)) AS fecha_cierre,
           eq.patente,
           COALESCE(eq.codigo_interno, eq.patente) AS equipo_codigo,
           eq.modelo AS equipo_modelo,
@@ -66,15 +69,13 @@ class MantenimientoModel {
           -- Subtotales reactivos calculados
           COALESCE((SELECT SUM(r.costo_total) FROM tmnt_ot_repuesto r WHERE r.id_ot = ot.id_ot), 0) AS costo_materiales,
           COALESCE((SELECT SUM(h.costo_calculado) FROM tmnt_ot_hh h WHERE h.id_ot = ot.id_ot), 0) AS costo_hh,
+          COALESCE((SELECT SUM(h.horas) FROM tmnt_ot_hh h WHERE h.id_ot = ot.id_ot), 0) AS total_hh,
           COALESCE((SELECT SUM(s.costo) FROM tmnt_ot_servicio_ext s WHERE s.id_ot = ot.id_ot), 0) AS costo_servicios,
           -- Conteo de tareas checklist
           COALESCE((SELECT COUNT(*) FROM tmnt_ot_actividad a WHERE a.id_ot = ot.id_ot), 0) AS total_actividades,
           COALESCE((SELECT COUNT(*) FROM tmnt_ot_actividad a WHERE a.id_ot = ot.id_ot AND a.estado = 'COMPLETADA'), 0) AS actividades_completadas,
           -- Conteo de hallazgos
-          COALESCE((SELECT COUNT(*) FROM tmnt_hallazgo hal WHERE hal.id_ot_origen = ot.id_ot), 0) AS total_hallazgos,
-          -- Nombre de técnico y supervisor
-          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_tecnico_responsable) AS nombre_tecnico,
-          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_supervisor) AS nombre_supervisor
+          COALESCE((SELECT COUNT(*) FROM tmnt_hallazgo hal WHERE hal.id_ot_origen = ot.id_ot), 0) AS total_hallazgos
         FROM tmnt_ot ot
         LEFT JOIN tequ_equipo eq ON ot.id_equipo = eq.id_equipo
         WHERE ot.id_empresa = $1
@@ -152,7 +153,9 @@ class MantenimientoModel {
             ORDER BY rep.id_reporte_avance DESC LIMIT 1
           ), 0) AS horometro_actual,
           (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_tecnico_responsable) AS nombre_tecnico,
-          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_supervisor) AS nombre_supervisor
+          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_supervisor) AS nombre_supervisor,
+          (SELECT u.name_frst || ' ' || u.apellido_pat FROM tsec_users u WHERE u.id_user = ot.id_user_creador) AS nombre_creador,
+          COALESCE(ot.fecha_cierre_real, ot.fecha_hora_liberacion, (SELECT c.fecha_cierre FROM tmnt_ot_cierre c WHERE c.id_ot = ot.id_ot ORDER BY c.id_cierre DESC LIMIT 1)) AS fecha_cierre
         FROM tmnt_ot ot
         LEFT JOIN tequ_equipo eq ON ot.id_equipo = eq.id_equipo
         WHERE ot.id_ot = $1 AND ot.id_empresa = $2
@@ -169,25 +172,33 @@ class MantenimientoModel {
       `;
       const { rows: actividades } = await this.pool.query(actSql, [idOt]);
 
-      // Repuestos / Materiales manuales
+      // Repuestos / Materiales manuales e híbridos WMS
       const repSql = `
         SELECT 
-          id_ot_repuesto,
-          id_empresa,
-          id_ot,
-          id_producto,
-          COALESCE(descripcion_material, 'Material de Taller') AS descripcion_material,
-          COALESCE(cantidad, cantidad_solicitada, 1) AS cantidad,
-          COALESCE(unidad_medida, 'UNIDAD') AS unidad_medida,
-          COALESCE(costo_unitario, 0) AS costo_unitario,
-          COALESCE(costo_total, 0) AS costo_total,
-          proveedor_o_documento,
-          estado,
-          pendiente_valorizar,
-          id_user_registro
-        FROM tmnt_ot_repuesto 
-        WHERE id_ot = $1 
-        ORDER BY id_ot_repuesto ASC
+          r.id_ot_repuesto,
+          r.id_empresa,
+          r.id_ot,
+          r.id_producto,
+          COALESCE(r.descripcion_material, p.nombre, 'Material de Taller') AS descripcion_material,
+          COALESCE(r.cantidad, r.cantidad_solicitada, 1) AS cantidad,
+          COALESCE(r.unidad_medida, p.unidad_medida_base, p.unidad_medida, 'UNIDAD') AS unidad_medida,
+          COALESCE(r.costo_unitario, p.costo_pmp_vigente, 0) AS costo_unitario,
+          COALESCE(r.costo_total, 0) AS costo_total,
+          r.proveedor_o_documento,
+          r.estado,
+          r.pendiente_valorizar,
+          r.id_user_registro,
+          COALESCE(r.origen_insumo, 'COMPRA_DIRECTA') AS origen_insumo,
+          r.id_ubicacion,
+          u.codigo AS codigo_ubicacion,
+          p.sku,
+          r.numero_documento_compra,
+          r.id_movimiento_kardex
+        FROM tmnt_ot_repuesto r
+        LEFT JOIN tinv_producto p ON p.id_producto = r.id_producto
+        LEFT JOIN tinv_ubicacion u ON u.id_ubicacion = r.id_ubicacion
+        WHERE r.id_ot = $1 
+        ORDER BY r.id_ot_repuesto ASC
       `;
       const { rows: repuestos } = await this.pool.query(repSql, [idOt]);
 
@@ -285,6 +296,8 @@ class MantenimientoModel {
         },
         actividades,
         repuestos_manuales: repuestos,
+        repuestos: repuestos,
+        materiales: repuestos,
         mano_obra,
         servicios_externos,
         hallazgos,
@@ -339,7 +352,10 @@ class MantenimientoModel {
 
       // Generar Correlativo MNT-YYMM-XXX
       const seqSql = `
-        SELECT COUNT(*) + 1 AS correlativo 
+        SELECT COALESCE(
+          MAX(CAST(SUBSTRING(numero_ot FROM 'MNT-' || $2 || '-([0-9]+)$') AS INTEGER)),
+          COUNT(*)
+        ) + 1 AS correlativo
         FROM tmnt_ot 
         WHERE id_empresa = $1 AND numero_ot LIKE 'MNT-' || $2 || '%'
       `;
@@ -481,9 +497,15 @@ class MantenimientoModel {
       const nuevoEstadoEquipo = (data.prioridad === 1 || equipo_detenido) ? 'FUERA_DE_SERVICIO' : 'EN_MANTENCION';
       await client.query(`
         UPDATE tequ_equipo 
-        SET estado = $1 
+        SET 
+          estado = $1,
+          horometro_grua_acumulado = GREATEST(COALESCE(horometro_grua_acumulado, 0), COALESCE($3::numeric, 0)),
+          horometro_chasis_acumulado = GREATEST(COALESCE(horometro_chasis_acumulado, 0), COALESCE($4::numeric, 0)),
+          odometro_acumulado = GREATEST(COALESCE(odometro_acumulado, 0), COALESCE($5::numeric, 0)),
+          fecha_ultima_lectura = CASE WHEN COALESCE($3::numeric, 0) > 0 OR COALESCE($4::numeric, 0) > 0 OR COALESCE($5::numeric, 0) > 0 THEN CURRENT_TIMESTAMP ELSE fecha_ultima_lectura END,
+          fuente_ultima_lectura = CASE WHEN COALESCE($3::numeric, 0) > 0 OR COALESCE($4::numeric, 0) > 0 OR COALESCE($5::numeric, 0) > 0 THEN 'OT_INGRESO' ELSE fuente_ultima_lectura END
         WHERE id_equipo = $2
-      `, [nuevoEstadoEquipo, data.id_equipo]);
+      `, [nuevoEstadoEquipo, idEquipo, horoGrua || 0, horoChasis || 0, odoInicio || 0]);
 
       await client.query('COMMIT');
       return nuevaOt;
@@ -555,11 +577,24 @@ class MantenimientoModel {
           horometro_grua_inicio = COALESCE($1, horometro_grua_inicio),
           horometro_chasis_inicio = COALESCE($2, horometro_chasis_inicio),
           odometro_inicio = COALESCE($3, odometro_inicio)
-        WHERE id_ot = $4 AND id_empresa = $5
+        WHERE id_ot = $4
         RETURNING *
       `;
-      const { rows } = await this.pool.query(sql, [hGrua, hChasis, odo, idOt, empresaId]);
+      const { rows } = await this.pool.query(sql, [hGrua, hChasis, odo, idOt]);
       if (rows.length === 0) throw new Error('OT no encontrada');
+      const otActualizada = rows[0];
+      if (otActualizada.id_equipo && (hGrua || hChasis || odo)) {
+        await this.pool.query(`
+          UPDATE tequ_equipo
+          SET
+            horometro_grua_acumulado = GREATEST(COALESCE(horometro_grua_acumulado, 0), COALESCE($1::numeric, 0)),
+            horometro_chasis_acumulado = GREATEST(COALESCE(horometro_chasis_acumulado, 0), COALESCE($2::numeric, 0)),
+            odometro_acumulado = GREATEST(COALESCE(odometro_acumulado, 0), COALESCE($3::numeric, 0)),
+            fecha_ultima_lectura = CURRENT_TIMESTAMP,
+            fuente_ultima_lectura = 'OT_RECEPCION'
+          WHERE id_equipo = $4
+        `, [hGrua || 0, hChasis || 0, odo || 0, otActualizada.id_equipo]);
+      }
       return rows[0];
     } catch (err) {
       console.error('Error en MantenimientoModel.actualizarMedidoresInicio:', err);
@@ -582,10 +617,10 @@ class MantenimientoModel {
           )::jsonb,
           true
         )
-        WHERE id_ot = $4 AND id_empresa = $5
+        WHERE id_ot = $4
         RETURNING fotos_recepcion_360;
       `;
-      const { rows } = await this.pool.query(sql, [posicion, id_doc ? String(id_doc) : null, url, idOt, empresaId]);
+      const { rows } = await this.pool.query(sql, [posicion, id_doc ? String(id_doc) : null, url, idOt]);
       if (rows.length === 0) throw new Error('OT no encontrada');
       return rows[0].fotos_recepcion_360;
     } catch (err) {
@@ -599,10 +634,10 @@ class MantenimientoModel {
       const sql = `
         UPDATE tmnt_ot
         SET fotos_recepcion_360 = COALESCE(fotos_recepcion_360, '{}'::jsonb) - $1::text
-        WHERE id_ot = $2 AND id_empresa = $3
+        WHERE id_ot = $2
         RETURNING fotos_recepcion_360;
       `;
-      const { rows } = await this.pool.query(sql, [posicion, idOt, empresaId]);
+      const { rows } = await this.pool.query(sql, [posicion, idOt]);
       if (rows.length === 0) throw new Error('OT no encontrada');
       return rows[0].fotos_recepcion_360;
     } catch (err) {
@@ -802,12 +837,18 @@ class MantenimientoModel {
         VALUES ($1, $2, 'CERRADA', $3, $4)
       `, [idOt, ot.estado, idUserCierre, data.observacion_final || 'Cierre formal de mantenimiento']);
 
-      // Actualizar estado del activo en tequ_equipo
+      // Actualizar estado y medidores de salida del activo en tequ_equipo
       await client.query(`
         UPDATE tequ_equipo
-        SET estado = $1
+        SET 
+          estado = $1,
+          horometro_grua_acumulado = GREATEST(COALESCE(horometro_grua_acumulado, 0), COALESCE($3::numeric, 0)),
+          horometro_chasis_acumulado = GREATEST(COALESCE(horometro_chasis_acumulado, 0), COALESCE($4::numeric, 0)),
+          odometro_acumulado = GREATEST(COALESCE(odometro_acumulado, 0), COALESCE($5::numeric, 0)),
+          fecha_ultima_lectura = CURRENT_TIMESTAMP,
+          fuente_ultima_lectura = 'OT_CIERRE'
         WHERE id_equipo = $2
-      `, [estadoResultante, ot.id_equipo]);
+      `, [estadoResultante, ot.id_equipo, horometro_cierre || 0, parseFloat(data.horometro_chasis_cierre) || 0, parseFloat(data.odometro_cierre) || 0]);
 
       await client.query('COMMIT');
       return {
@@ -927,101 +968,508 @@ class MantenimientoModel {
   }
 
   // =========================================================================
-  // 3. MATERIALES Y REPUESTOS (Fase 1: Inmediata sin WMS)
+  // 3. MATERIALES Y REPUESTOS (Modelo Híbrido: Bodega WMS vs Compra Directa)
   // =========================================================================
 
   async agregarMaterialManual(idOt, data, user = {}) {
+    const idEmpresa = user.id_empresa || data.id_empresa || 9;
+    const origenInsumo = data.origen_insumo === 'BODEGA_WMS' ? 'BODEGA_WMS' : 'COMPRA_DIRECTA';
     const cant = parseFloat(data.cantidad) || 1.0;
-    const unit = parseFloat(data.costo_unitario) || 0;
-    const total = cant * unit;
-    const pendiente = data.pendiente_valorizar !== undefined ? Boolean(data.pendiente_valorizar) : (unit === 0);
 
-    const sql = `
-      INSERT INTO tmnt_ot_repuesto (
-        id_empresa,
-        id_ot,
-        id_producto,
-        descripcion_material,
-        cantidad,
-        cantidad_solicitada,
-        cantidad_entregada,
-        unidad_medida,
-        costo_unitario,
-        costo_total,
-        proveedor_o_documento,
-        estado,
-        pendiente_valorizar,
-        id_user_registro
-      ) VALUES ($1, $2, NULL, $3, $4, $4, $4, $5, $6, $7, $8, 'ENTREGADO', $9, $10)
-      RETURNING *;
-    `;
-    const params = [
-      user.id_empresa || data.id_empresa || 9,
-      idOt,
-      data.descripcion_material,
-      cant,
-      data.unidad_medida || 'UNIDAD',
-      unit,
-      total,
-      data.proveedor_o_documento || null,
-      pendiente,
-      user.id_user || null
-    ];
-    const { rows } = await this.pool.query(sql, params);
-    return rows[0];
+    if (origenInsumo === 'BODEGA_WMS') {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        const idProducto = data.id_producto;
+        if (!idProducto) {
+          const err = new Error('El id_producto es obligatorio para insumos de Bodega WMS.');
+          err.statusCode = 400;
+          throw err;
+        }
+
+        // Consultar datos del producto en tinv_producto
+        const prodRes = await client.query(`
+          SELECT id_producto, sku, nombre, COALESCE(unidad_medida_base, unidad_medida, 'UN') AS unidad_medida, COALESCE(costo_pmp_vigente, 0) AS costo_pmp_vigente
+          FROM tinv_producto
+          WHERE id_producto = $1 AND id_empresa = $2
+        `, [idProducto, idEmpresa]);
+
+        if (prodRes.rows.length === 0) {
+          const err = new Error(`Producto con ID ${idProducto} no encontrado en la empresa.`);
+          err.statusCode = 404;
+          throw err;
+        }
+        const producto = prodRes.rows[0];
+        const costoUnit = parseFloat(producto.costo_pmp_vigente) || 0;
+
+        // Validar y seleccionar stock disponible
+        if (!data.es_despacho_directo) {
+        // MODO SOLICITUD DE TALLER (SPEC-095 / SoD Taller -> Bodega)
+        // Leonel Vergara / Mecánico emite el requerimiento técnico.
+        // No descuenta existencias en bodega ni altera Kardex hasta que Eduardo Aguirre ejecute el picking físico en Bodega.
+        const repRes = await client.query(`
+          INSERT INTO tmnt_ot_repuesto (
+            id_empresa,
+            id_ot,
+            id_producto,
+            descripcion_material,
+            cantidad,
+            cantidad_solicitada,
+            cantidad_entregada,
+            unidad_medida,
+            costo_unitario,
+            costo_total,
+            proveedor_o_documento,
+            estado,
+            pendiente_valorizar,
+            id_user_registro,
+            origen_insumo,
+            id_ubicacion,
+            id_movimiento_kardex,
+            numero_documento_compra
+          ) VALUES ($1, $2, $3, $4, $5, $5, 0, $6, $7, 0, $8, 'SOLICITADO', $9, $10, 'BODEGA_WMS', NULL, NULL, NULL)
+          RETURNING *;
+        `, [
+          idEmpresa,
+          idOt,
+          idProducto,
+          producto.nombre,
+          cant,
+          producto.unidad_medida || 'UNIDAD',
+          costoUnit,
+          data.proveedor_o_documento || 'Bodega WMS Central',
+          costoUnit === 0,
+          user.id_user || null
+        ]);
+
+        await client.query('COMMIT');
+        return {
+          ...repRes.rows[0],
+          sku: producto.sku,
+          codigo_ubicacion: null
+        };
+      }
+
+      // Si es despacho directo desde Bodega (Eduardo Aguirre), validar stock y rebajar Kardex inmediatamente:
+      let stockRow;
+        if (data.id_ubicacion) {
+          const stockRes = await client.query(`
+            SELECT s.id_stock, s.id_ubicacion, s.cantidad_fisica, u.id_bodega
+            FROM tinv_stock s
+            JOIN tinv_ubicacion u ON u.id_ubicacion = s.id_ubicacion
+            WHERE s.id_producto = $1 AND s.id_ubicacion = $2 AND s.id_empresa = $3
+            FOR UPDATE OF s
+          `, [idProducto, data.id_ubicacion, idEmpresa]);
+
+          if (stockRes.rows.length === 0 || parseFloat(stockRes.rows[0].cantidad_fisica) < cant) {
+            const disponible = stockRes.rows.length > 0 ? parseFloat(stockRes.rows[0].cantidad_fisica) : 0;
+            const err = new Error(`Stock insuficiente en bodega para el producto ${producto.sku || producto.nombre}. Solicitado: ${cant}, Disponible: ${disponible}.`);
+            err.statusCode = 400;
+            err.code = 'STOCK_INSUFICIENTE';
+            throw err;
+          }
+          stockRow = stockRes.rows[0];
+        } else {
+          // Si no viene id_ubicacion, buscar la ubicación con suficiente stock
+          const stockRes = await client.query(`
+            SELECT s.id_stock, s.id_ubicacion, s.cantidad_fisica, u.id_bodega
+            FROM tinv_stock s
+            JOIN tinv_ubicacion u ON u.id_ubicacion = s.id_ubicacion
+            WHERE s.id_producto = $1 AND s.id_empresa = $2 AND s.cantidad_fisica >= $3
+            ORDER BY s.cantidad_fisica DESC
+            LIMIT 1
+            FOR UPDATE OF s
+          `, [idProducto, idEmpresa, cant]);
+
+          if (stockRes.rows.length === 0) {
+            const totRes = await client.query(`
+              SELECT COALESCE(SUM(cantidad_fisica), 0) AS total_fisico
+              FROM tinv_stock
+              WHERE id_producto = $1 AND id_empresa = $2
+            `, [idProducto, idEmpresa]);
+            const totalFisico = parseFloat(totRes.rows[0].total_fisico);
+            const err = new Error(`Stock insuficiente en bodega para el producto ${producto.sku || producto.nombre}. Solicitado: ${cant}, Disponible total: ${totalFisico}.`);
+            err.statusCode = 400;
+            err.code = 'STOCK_INSUFICIENTE';
+            throw err;
+          }
+          stockRow = stockRes.rows[0];
+        }
+
+        const stockAnterior = parseFloat(stockRow.cantidad_fisica);
+        const stockNuevo = stockAnterior - cant;
+        const idUbicacion = stockRow.id_ubicacion;
+        const idBodega = stockRow.id_bodega;
+
+        // Decrementar cantidad física en tinv_stock
+        await client.query(`
+          UPDATE tinv_stock
+          SET cantidad_fisica = cantidad_fisica - $1,
+              updated_at = NOW()
+          WHERE id_stock = $2
+        `, [cant, stockRow.id_stock]);
+
+        const costoTot = cant * costoUnit;
+
+        // Registrar asiento inmutable en tinv_movimiento
+        const movRes = await client.query(`
+          INSERT INTO tinv_movimiento (
+            id_empresa,
+            id_bodega,
+            id_producto,
+            tipo_movimiento,
+            cantidad,
+            referencia,
+            observacion,
+            stock_anterior,
+            stock_nuevo,
+            documento_tipo,
+            documento_folio,
+            id_ubicacion,
+            costo_unitario_pmp,
+            stock_posterior,
+            id_usuario,
+            usuario_registro
+          ) VALUES ($1, $2, $3, 'SALIDA_OT', $4, $5, $6, $7, $8, 'OT_MNT', $9, $10, $11, $12, $13, $14)
+          RETURNING id_movimiento
+        `, [
+          idEmpresa,
+          idBodega,
+          idProducto,
+          cant,
+          `OT-${idOt}`,
+          data.observacion || `Consumo en OT #${idOt} - ${producto.nombre}`,
+          stockAnterior,
+          stockNuevo,
+          `OT-${idOt}`,
+          idUbicacion,
+          costoUnit,
+          stockNuevo,
+          user.id_user || null,
+          user.nombre || user.email || 'Sistema Taller'
+        ]);
+
+        const idMovimientoKardex = movRes.rows[0].id_movimiento;
+
+        // Insertar en tmnt_ot_repuesto
+        const repRes = await client.query(`
+          INSERT INTO tmnt_ot_repuesto (
+            id_empresa,
+            id_ot,
+            id_producto,
+            descripcion_material,
+            cantidad,
+            cantidad_solicitada,
+            cantidad_entregada,
+            unidad_medida,
+            costo_unitario,
+            costo_total,
+            proveedor_o_documento,
+            estado,
+            pendiente_valorizar,
+            id_user_registro,
+            origen_insumo,
+            id_ubicacion,
+            id_movimiento_kardex,
+            numero_documento_compra
+          ) VALUES ($1, $2, $3, $4, $5, $5, $5, $6, $7, $8, $9, 'ENTREGADO', $10, $11, 'BODEGA_WMS', $12, $13, NULL)
+          RETURNING *;
+        `, [
+          idEmpresa,
+          idOt,
+          idProducto,
+          producto.nombre,
+          cant,
+          producto.unidad_medida || 'UNIDAD',
+          costoUnit,
+          costoTot,
+          data.proveedor_o_documento || 'Bodega WMS Central',
+          costoUnit === 0,
+          user.id_user || null,
+          idUbicacion,
+          idMovimientoKardex
+        ]);
+
+        await client.query('COMMIT');
+        return {
+          ...repRes.rows[0],
+          sku: producto.sku,
+          codigo_ubicacion: data.codigo_ubicacion || null
+        };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error en agregarMaterialManual [BODEGA_WMS]:', err);
+        throw err;
+      } finally {
+        client.release();
+      }
+    } else {
+      // COMPRA_DIRECTA (Compra en terreno / ferretería)
+      const unit = parseFloat(data.costo_unitario) || 0;
+      const total = cant * unit;
+      const pendiente = data.pendiente_valorizar !== undefined ? Boolean(data.pendiente_valorizar) : (unit === 0);
+
+      const sql = `
+        INSERT INTO tmnt_ot_repuesto (
+          id_empresa,
+          id_ot,
+          id_producto,
+          descripcion_material,
+          cantidad,
+          cantidad_solicitada,
+          cantidad_entregada,
+          unidad_medida,
+          costo_unitario,
+          costo_total,
+          proveedor_o_documento,
+          estado,
+          pendiente_valorizar,
+          id_user_registro,
+          origen_insumo,
+          id_ubicacion,
+          id_movimiento_kardex,
+          numero_documento_compra
+        ) VALUES ($1, $2, NULL, $3, $4, $4, $4, $5, $6, $7, $8, 'ENTREGADO', $9, $10, 'COMPRA_DIRECTA', NULL, NULL, $11)
+        RETURNING *;
+      `;
+      const params = [
+        idEmpresa,
+        idOt,
+        data.descripcion_material,
+        cant,
+        data.unidad_medida || 'UNIDAD',
+        unit,
+        total,
+        data.proveedor_o_documento || null,
+        pendiente,
+        user.id_user || null,
+        data.numero_documento_compra || null
+      ];
+      const { rows } = await this.pool.query(sql, params);
+      return rows[0];
+    }
   }
 
-  async eliminarMaterial(idOtRepuesto) {
-    await this.pool.query('DELETE FROM tmnt_ot_repuesto WHERE id_ot_repuesto = $1', [idOtRepuesto]);
-    return { success: true };
+  async eliminarMaterial(idOtRepuesto, user = {}) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const repRes = await client.query(`
+        SELECT * FROM tmnt_ot_repuesto WHERE id_ot_repuesto = $1 FOR UPDATE
+      `, [idOtRepuesto]);
+
+      if (repRes.rows.length === 0) {
+        await client.query('COMMIT');
+        return { success: true, message: 'Material no encontrado o ya eliminado' };
+      }
+
+      const rep = repRes.rows[0];
+
+      // Si proviene de Bodega WMS y ya fue ENTREGADO (con movimiento Kardex), reintegrar stock y registrar contracuenta
+      if (rep.origen_insumo === 'BODEGA_WMS' && rep.id_producto && rep.estado === 'ENTREGADO' && rep.id_movimiento_kardex) {
+        const cant = parseFloat(rep.cantidad || rep.cantidad_entregada || rep.cantidad_solicitada || 1);
+        const idEmpresa = rep.id_empresa || user.id_empresa || 9;
+        const idUbicacion = rep.id_ubicacion;
+
+        let stockRes;
+        if (idUbicacion) {
+          stockRes = await client.query(`
+            SELECT s.id_stock, s.cantidad_fisica, u.id_bodega
+            FROM tinv_stock s
+            JOIN tinv_ubicacion u ON u.id_ubicacion = s.id_ubicacion
+            WHERE s.id_producto = $1 AND s.id_ubicacion = $2 AND s.id_empresa = $3
+            FOR UPDATE OF s
+          `, [rep.id_producto, idUbicacion, idEmpresa]);
+        }
+
+        let idStock = null;
+        let stockAnterior = 0;
+        let idBodega = null;
+
+        if (stockRes && stockRes.rows.length > 0) {
+          idStock = stockRes.rows[0].id_stock;
+          stockAnterior = parseFloat(stockRes.rows[0].cantidad_fisica);
+          idBodega = stockRes.rows[0].id_bodega;
+
+          // Reintegrar stock a la ubicación física
+          await client.query(`
+            UPDATE tinv_stock
+            SET cantidad_fisica = cantidad_fisica + $1,
+                updated_at = NOW()
+            WHERE id_stock = $2
+          `, [cant, idStock]);
+        } else if (idUbicacion) {
+          const ubicRes = await client.query(`SELECT id_bodega FROM tinv_ubicacion WHERE id_ubicacion = $1`, [idUbicacion]);
+          idBodega = ubicRes.rows.length > 0 ? ubicRes.rows[0].id_bodega : 1;
+
+          const newStock = await client.query(`
+            INSERT INTO tinv_stock (id_empresa, id_producto, id_ubicacion, cantidad_fisica, cantidad_reservada, estado_stock, updated_at)
+            VALUES ($1, $2, $3, $4, 0, 'LIBRE', NOW())
+            RETURNING id_stock
+          `, [idEmpresa, rep.id_producto, idUbicacion, cant]);
+          idStock = newStock.rows[0].id_stock;
+          stockAnterior = 0;
+        }
+
+        const stockNuevo = stockAnterior + cant;
+
+        // Registrar asiento inmutable de devolución en tinv_movimiento
+        await client.query(`
+          INSERT INTO tinv_movimiento (
+            id_empresa,
+            id_bodega,
+            id_producto,
+            tipo_movimiento,
+            cantidad,
+            referencia,
+            observacion,
+            stock_anterior,
+            stock_nuevo,
+            documento_tipo,
+            documento_folio,
+            id_ubicacion,
+            costo_unitario_pmp,
+            stock_posterior,
+            id_usuario,
+            usuario_registro,
+            id_movimiento_reversado
+          ) VALUES ($1, $2, $3, 'DEVOLUCION_OT', $4, $5, $6, $7, $8, 'OT_MNT', $9, $10, $11, $12, $13, $14, $15)
+        `, [
+          idEmpresa,
+          idBodega,
+          rep.id_producto,
+          cant,
+          `OT-${rep.id_ot}`,
+          `Devolución por anulación en OT #${rep.id_ot}`,
+          stockAnterior,
+          stockNuevo,
+          `OT-${rep.id_ot}`,
+          idUbicacion,
+          parseFloat(rep.costo_unitario) || 0,
+          stockNuevo,
+          user.id_user || null,
+          user.nombre || user.email || 'Sistema Taller',
+          rep.id_movimiento_kardex || null
+        ]);
+      }
+
+      // Eliminar el registro de repuesto de la OT
+      await client.query('DELETE FROM tmnt_ot_repuesto WHERE id_ot_repuesto = $1', [idOtRepuesto]);
+
+      await client.query('COMMIT');
+      return { success: true, message: 'Material eliminado y stock regularizado si correspondía.' };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error en eliminarMaterial:', err);
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   // =========================================================================
-  // 4. MANO DE OBRA (HH TALLER)
+  // 4. MANO DE OBRA (HH TALLER) - SOPORTE MULTITÉCNICO INDEPENDIENTE (SPEC-096)
   // =========================================================================
 
   async agregarHh(idOt, data, user = {}) {
-    const horas = parseFloat(data.horas_reales || data.horas) || 1.0;
-    let tarifa = parseFloat(data.tarifa_hora || data.tarifa);
+    const horasDefault = parseFloat(data.horas_reales || data.horas) || 1.0;
+    let tarifaDefault = parseFloat(data.tarifa_hora || data.tarifa);
     
-    if (isNaN(tarifa) || tarifa <= 0) {
+    if (isNaN(tarifaDefault) || tarifaDefault <= 0) {
       const { rows: paramRows } = await this.pool.query(`
         SELECT valor FROM tmnt_parametro WHERE id_empresa = $1 AND clave = 'tarifa_hh_default'
       `, [user.id_empresa || 9]);
-      tarifa = paramRows.length > 0 ? parseFloat(paramRows[0].valor) : 15000;
+      tarifaDefault = paramRows.length > 0 ? parseFloat(paramRows[0].valor) : 15000;
     }
 
-    const costo_calculado = horas * tarifa;
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const sql = `
-      INSERT INTO tmnt_ot_hh (
-        id_empresa,
-        id_ot,
-        rut_tecnico,
-        nombre_tecnico,
-        horas,
-        tarifa,
-        descripcion_trabajo,
+      // Soporte para asignación múltiple de técnicos con horas independientes (REQ-1067 / SPEC-096)
+      if (Array.isArray(data.tecnicos) && data.tecnicos.length > 0) {
+        const insertSql = `
+          INSERT INTO tmnt_ot_hh (
+            id_empresa,
+            id_ot,
+            rut_tecnico,
+            nombre_tecnico,
+            horas,
+            tarifa,
+            descripcion_trabajo,
+            costo_calculado,
+            fecha_trabajo,
+            id_tecnico
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING *;
+        `;
+        const inserted = [];
+        for (const tec of data.tecnicos) {
+          const tHoras = parseFloat(tec.horas) || horasDefault;
+          const tTarifa = parseFloat(tec.tarifa) || tarifaDefault;
+          const tCosto = tHoras * tTarifa;
+          const rutTec = tec.rut_tecnico || tec.rut || 'MEC-GSP';
+          const nomTec = tec.nombre_tecnico || tec.nombre_completo || 'Mecánico Taller';
+          const idTec = tec.id_tecnico || tec.id_user || null;
+
+          const { rows } = await client.query(insertSql, [
+            user.id_empresa || data.id_empresa || 9,
+            idOt,
+            rutTec,
+            nomTec,
+            tHoras,
+            tTarifa,
+            data.descripcion_trabajo || 'Mano de obra en taller',
+            tCosto,
+            data.fecha_trabajo || new Date(),
+            idTec
+          ]);
+          inserted.push(rows[0]);
+        }
+        await client.query('COMMIT');
+        return inserted;
+      }
+
+      // Inserción unitaria estándar (retrocompatibilidad)
+      const costo_calculado = horasDefault * tarifaDefault;
+      const sql = `
+        INSERT INTO tmnt_ot_hh (
+          id_empresa,
+          id_ot,
+          rut_tecnico,
+          nombre_tecnico,
+          horas,
+          tarifa,
+          descripcion_trabajo,
+          costo_calculado,
+          fecha_trabajo,
+          id_tecnico
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *;
+      `;
+      const params = [
+        user.id_empresa || data.id_empresa || 9,
+        idOt,
+        data.rut_tecnico || 'MEC-GSP',
+        data.nombre_tecnico || data.tecnico_nombre || 'Mecánico Taller',
+        horasDefault,
+        tarifaDefault,
+        data.descripcion_trabajo || 'Mano de obra en taller',
         costo_calculado,
-        fecha_trabajo,
-        id_tecnico
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *;
-    `;
-    const params = [
-      user.id_empresa || data.id_empresa || 9,
-      idOt,
-      data.rut_tecnico || 'MEC-GSP',
-      data.nombre_tecnico || data.tecnico_nombre || 'Mecánico Taller',
-      horas,
-      tarifa,
-      data.descripcion_trabajo || 'Mano de obra en taller',
-      costo_calculado,
-      data.fecha_trabajo || new Date(),
-      data.id_tecnico || user.id_user || null
-    ];
-    const { rows } = await this.pool.query(sql, params);
-    return rows[0];
+        data.fecha_trabajo || new Date(),
+        data.id_tecnico || user.id_user || null
+      ];
+      const { rows } = await client.query(sql, params);
+      await client.query('COMMIT');
+      return rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async eliminarHh(idHh) {
@@ -1378,6 +1826,17 @@ class MantenimientoModel {
         id_user
       ];
       const { rows } = await this.pool.query(sql, params);
+      const horoAviso = parseFloat(data.horometro || data.horometro_reportado) || 0;
+      if (idEquipo && horoAviso > 0) {
+        await this.pool.query(`
+          UPDATE tequ_equipo
+          SET
+            horometro_grua_acumulado = GREATEST(COALESCE(horometro_grua_acumulado, 0), $1::numeric),
+            fecha_ultima_lectura = CURRENT_TIMESTAMP,
+            fuente_ultima_lectura = 'AVISO_AVERIA'
+          WHERE id_equipo = $2
+        `, [horoAviso, idEquipo]);
+      }
       return rows[0];
     } catch (err) {
       console.error('Error en MantenimientoModel.crearAviso:', err);
@@ -1425,11 +1884,20 @@ class MantenimientoModel {
       const sql = `
         SELECT 
           e.id_equipo,
+          e.id_empresa,
+          emp.name_empresa,
           e.patente,
           COALESCE(e.codigo_interno, e.patente) AS equipo_codigo,
-          e.modelo,
-          e.marca,
-          COALESCE(e.json_data->>'tipo_planilla', e.modelo, e.patente) AS equipo_nombre,
+          COALESCE(e.modelo, m.nombre_modelo) AS modelo,
+          COALESCE(e.marca, b.nombre_marca) AS marca,
+          s.nombre_subcategoria,
+          c.nombre_categoria,
+          COALESCE(
+            NULLIF(TRIM(CONCAT_WS(' · ', NULLIF(NULLIF(TRIM(e.codigo_interno), ''), e.patente), s.nombre_subcategoria, NULLIF(TRIM(CONCAT_WS(' ', COALESCE(e.marca, b.nombre_marca), COALESCE(e.modelo, m.nombre_modelo))), ''))), ''),
+            e.json_data->>'tipo_planilla',
+            e.modelo,
+            e.patente
+          ) AS equipo_nombre,
           COALESCE(e.capacidad_maxima, 0) AS tonelaje_capacidad,
           e.estado AS estado_equipo,
           COALESCE(e.tiene_doble_horometro, false) AS tiene_doble_horometro,
@@ -1444,11 +1912,30 @@ class MantenimientoModel {
             WHERE rep.id_equipo = e.id_equipo AND rep.horometro_termino IS NOT NULL 
             ORDER BY rep.id_reporte_avance DESC LIMIT 1
           ), 0) AS horometro_actual,
-          COALESCE((
-            SELECT MAX(ot.horometro_cierre) 
-            FROM tmnt_ot ot 
-            WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
-          ), 0) AS ultimo_horometro_service,
+          GREATEST(
+            COALESCE((
+              SELECT MAX(GREATEST(COALESCE(ot.horometro_grua_cierre, 0), COALESCE(ot.horometro_cierre, 0), COALESCE(ot.horometro_grua_inicio, 0), COALESCE(ot.horometro_inicio, 0)))
+              FROM tmnt_ot ot
+              WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+            ), 0),
+            COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_grua', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+          ) AS ultimo_horometro_service,
+          GREATEST(
+            COALESCE((
+              SELECT MAX(GREATEST(COALESCE(ot.horometro_chasis_cierre, 0), COALESCE(ot.horometro_chasis_inicio, 0)))
+              FROM tmnt_ot ot
+              WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+            ), 0),
+            COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_chasis', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+          ) AS ultimo_horometro_chasis_service,
+          GREATEST(
+            COALESCE((
+              SELECT MAX(GREATEST(COALESCE(ot.odometro_cierre, 0), COALESCE(ot.odometro_inicio, 0)))
+              FROM tmnt_ot ot
+              WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+            ), 0),
+            COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_odometro_km', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
+          ) AS ultimo_odometro_service,
           (
             SELECT ot.codigo_pauta 
             FROM tmnt_ot ot 
@@ -1475,10 +1962,14 @@ class MantenimientoModel {
             ORDER BY doc.fecha_prox_calibracion DESC LIMIT 1
           ) AS fecha_vencimiento_certificacion
         FROM tequ_equipo e
-        WHERE e.id_empresa = $1
-        ORDER BY e.capacidad_maxima DESC NULLS LAST, e.codigo_interno ASC
+        LEFT JOIN tequ_subcategoria s ON e.id_subcategoria = s.id_subcategoria
+        LEFT JOIN tequ_categoria c ON s.id_categoria = c.id_categoria
+        LEFT JOIN tequ_modelo m ON e.id_modelo = m.id_modelo
+        LEFT JOIN tequ_marca b ON m.id_marca = b.id_marca
+        LEFT JOIN tpar_empresas emp ON e.id_empresa = emp.id_empresa
+        ORDER BY e.capacidad_maxima DESC NULLS LAST, e.codigo_interno ASC NULLS LAST, e.id_equipo ASC
       `;
-      const { rows } = await this.pool.query(sql, [empresaId]);
+      const { rows } = await this.pool.query(sql);
 
       // Cargar parámetros dinámicos operacionales de la empresa
       const { rows: pRows } = await this.pool.query(
@@ -1490,18 +1981,24 @@ class MantenimientoModel {
 
       const intervaloBase = parseFloat(paramsMap['pm_intervalo_base_horas']) || 250;
       const ventanaAlerta = parseFloat(paramsMap['pm_ventana_alerta_horas']) || 25;
+      const intervaloOdometroKm = parseFloat(paramsMap['pm_intervalo_odometro_km']) || 10000;
       const umbralProximo = Math.max(0, intervaloBase - ventanaAlerta);
 
       const now = new Date();
       return rows.map(eq => {
         const delta = Math.max(0, Number(eq.horometro_actual) - Number(eq.ultimo_horometro_service));
+        const deltaChasis = Math.max(0, Number(eq.horometro_chasis_acumulado || 0) - Number(eq.ultimo_horometro_chasis_service || 0));
+        const deltaOdoKm = Math.max(0, Number(eq.odometro_acumulado || 0) - Number(eq.ultimo_odometro_service || 0));
+        const faltanteGrua = Math.round((intervaloBase - delta) * 10) / 10;
+        const faltanteChasis = Math.round((intervaloBase - deltaChasis) * 10) / 10;
+        const faltanteOdoKm = Math.round((intervaloOdometroKm - deltaOdoKm) * 10) / 10;
         let estadoPauta = 'OK';
         let proximaPauta = `PM${Math.round(intervaloBase)}`;
-        let horasFaltantes = Math.max(0, intervaloBase - (delta % intervaloBase));
+        let horasFaltantes = Math.max(0, faltanteGrua);
 
-        if (delta >= intervaloBase) {
+        if (delta >= intervaloBase || (Number(eq.horometro_chasis_acumulado) > 0 && deltaChasis >= intervaloBase) || (Number(eq.odometro_acumulado) > 0 && deltaOdoKm >= intervaloOdometroKm)) {
           estadoPauta = 'VENCIDO';
-        } else if (delta >= umbralProximo) {
+        } else if (delta >= umbralProximo || (Number(eq.horometro_chasis_acumulado) > 0 && deltaChasis >= umbralProximo) || (Number(eq.odometro_acumulado) > 0 && deltaOdoKm >= (intervaloOdometroKm * 0.8))) {
           estadoPauta = 'PROXIMO';
         }
 
@@ -1521,7 +2018,15 @@ class MantenimientoModel {
           ...eq,
           horas_desde_ultimo_service: delta,
           horas_para_proximo_service: horasFaltantes,
+          delta_pauta_horas: Math.round(faltanteGrua),
+          uso_mant_horometro_grua: delta,
+          faltante_horometro_grua: faltanteGrua,
+          uso_mant_horometro_chasis: deltaChasis,
+          faltante_horometro_chasis: faltanteChasis,
+          uso_mant_odometro_km: deltaOdoKm,
+          faltante_odometro_km: faltanteOdoKm,
           proxima_pauta_sugerida: proximaPauta,
+          proxima_pauta_horas: `${proximaPauta} (${Math.round(Number(eq.ultimo_horometro_service || 0) + intervaloBase)} hrs)`,
           estado_pauta: estadoPauta,
           dias_vencimiento_cert: diasParaVencerCert,
           estado_certificacion: estadoCert
@@ -1542,18 +2047,37 @@ class MantenimientoModel {
       const eqSql = `
         SELECT 
           e.*,
+          s.nombre_subcategoria,
+          c.nombre_categoria,
+          emp.name_empresa,
+          COALESCE(e.marca, b.nombre_marca) AS marca_resuelta,
+          COALESCE(e.modelo, m.nombre_modelo) AS modelo_resuelto,
           COALESCE(e.codigo_interno, e.patente) AS equipo_codigo,
-          COALESCE(e.json_data->>'tipo_planilla', e.modelo, e.patente) AS equipo_nombre,
-          COALESCE((
-            SELECT rep.horometro_termino 
-            FROM tedp_reporte_avance rep 
-            WHERE rep.id_equipo = e.id_equipo AND rep.horometro_termino IS NOT NULL 
-            ORDER BY rep.id_reporte_avance DESC LIMIT 1
-          ), 0) AS horometro_actual
+          COALESCE(
+            NULLIF(TRIM(CONCAT_WS(' · ', NULLIF(NULLIF(TRIM(e.codigo_interno), ''), e.patente), s.nombre_subcategoria, NULLIF(TRIM(CONCAT_WS(' ', COALESCE(e.marca, b.nombre_marca), COALESCE(e.modelo, m.nombre_modelo))), ''))), ''),
+            e.json_data->>'tipo_planilla',
+            e.modelo,
+            e.patente
+          ) AS equipo_nombre,
+          GREATEST(
+            COALESCE(e.horometro_grua_acumulado, 0),
+            COALESCE((
+              SELECT MAX(GREATEST(COALESCE(rep.horometro_termino, 0), COALESCE(rep.horometro_inicio, 0)))
+              FROM tedp_reporte_avance rep 
+              WHERE rep.id_equipo = e.id_equipo
+            ), 0)
+          ) AS horometro_actual,
+          COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_actual,
+          COALESCE(e.odometro_acumulado, 0) AS odometro_actual
         FROM tequ_equipo e
-        WHERE e.id_equipo = $1 AND e.id_empresa = $2
+        LEFT JOIN tequ_subcategoria s ON e.id_subcategoria = s.id_subcategoria
+        LEFT JOIN tequ_categoria c ON s.id_categoria = c.id_categoria
+        LEFT JOIN tequ_modelo m ON e.id_modelo = m.id_modelo
+        LEFT JOIN tequ_marca b ON m.id_marca = b.id_marca
+        LEFT JOIN tpar_empresas emp ON e.id_empresa = emp.id_empresa
+        WHERE e.id_equipo = $1
       `;
-      const { rows: eqRows } = await this.pool.query(eqSql, [idEquipo, empresaId]);
+      const { rows: eqRows } = await this.pool.query(eqSql, [idEquipo]);
       if (eqRows.length === 0) return null;
       const equipo = eqRows[0];
 
@@ -1577,10 +2101,10 @@ class MantenimientoModel {
           c.costo_total_ot
         FROM tmnt_ot ot
         LEFT JOIN tmnt_ot_cierre c ON ot.id_ot = c.id_ot
-        WHERE ot.id_equipo = $1 AND ot.id_empresa = $2
+        WHERE ot.id_equipo = $1
         ORDER BY ot.id_ot DESC
       `;
-      const { rows: ots } = await this.pool.query(otSql, [idEquipo, empresaId]);
+      const { rows: ots } = await this.pool.query(otSql, [idEquipo]);
 
       // Hallazgos históricos
       const halSql = `
@@ -1659,13 +2183,12 @@ class MantenimientoModel {
       const dispSql = `
         SELECT 
           COUNT(*) AS total_flota,
-          COUNT(*) FILTER (WHERE UPPER(COALESCE(estado_mnt, estado)) IN ('OPERATIVO', 'ABIERTO')) AS operativas,
+          COUNT(*) FILTER (WHERE UPPER(COALESCE(estado_mnt, estado)) IN ('OPERATIVO', 'ABIERTO', 'DISPONIBLE')) AS operativas,
           COUNT(*) FILTER (WHERE UPPER(COALESCE(estado_mnt, estado)) = 'OPERATIVO_CON_RESTRICCION') AS operativas_con_restriccion,
           COUNT(*) FILTER (WHERE UPPER(COALESCE(estado_mnt, estado)) IN ('EN_MANTENCION', 'FUERA_DE_SERVICIO')) AS detenidas
-        FROM tequ_equipo 
-        WHERE id_empresa = $1;
+        FROM tequ_equipo;
       `;
-      const { rows: dispRows } = await this.pool.query(dispSql, [empresaId]);
+      const { rows: dispRows } = await this.pool.query(dispSql);
       const totalFlota = parseInt(dispRows[0].total_flota, 10) || 1;
       const operativas = parseInt(dispRows[0].operativas, 10) || 0;
       const opRestr = parseInt(dispRows[0].operativas_con_restriccion, 10) || 0;

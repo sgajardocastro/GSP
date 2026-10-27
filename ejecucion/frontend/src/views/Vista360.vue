@@ -412,7 +412,7 @@
                              {{ item.estado_srv || 'PENDIENTE' }}
                            </span>
                         </div>
-                        <a v-if="item.id_doc" :href="`https://servidor.leanglobal.cl/lean-services-transmac-dev/api/archivo/transmac/${item.id_doc}`" target="_blank" class="p-3 rounded-xl bg-zinc-100 text-zinc-500 hover:text-white hover:bg-emerald-600 dark:bg-white/5 dark:text-muted-foreground dark:hover:text-white dark:hover:bg-emerald-600 transition-all border border-zinc-200 dark:border-white/5 group-hover:scale-105">
+                        <a v-if="item.id_doc" :href="getDocUrl(item.id_doc)" target="_blank" class="p-3 rounded-xl bg-zinc-100 text-zinc-500 hover:text-white hover:bg-emerald-600 dark:bg-white/5 dark:text-muted-foreground dark:hover:text-white dark:hover:bg-emerald-600 transition-all border border-zinc-200 dark:border-white/5 group-hover:scale-105">
                           <Eye class="w-5 h-5" />
                         </a>
                       </div>
@@ -641,7 +641,7 @@ async function fetchCertificates(assetId) {
         expiry: displayDate || 'S/I',
         status: status,
         fileId: doc.id_doc,
-        fileUrl: doc.id_doc ? `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${doc.id_doc}` : null
+        fileUrl: doc.id_doc ? getDocUrl(doc.id_doc) : null
       }
 
       if (legalNames.includes(doc.nombre_tipo)) {
@@ -785,6 +785,21 @@ async function fetchFleet() {
         legalDocs: [],
         generalDocs: [],
         surveys: assetSurveys,
+        horometroGrua: Number(item.horometro_grua_acumulado || item.json_data?.horometro || 0),
+        ultMantGrua: Number(item.ult_mant_horometro_grua || 0),
+        usoMantGrua: Number(item.uso_mant_horometro_grua || 0),
+        faltanteGrua: Number(item.faltante_horometro_grua ?? 250),
+        horometroChasis: Number(item.horometro_chasis_acumulado || 0),
+        ultMantChasis: Number(item.ult_mant_horometro_chasis || 0),
+        usoMantChasis: Number(item.uso_mant_horometro_chasis || 0),
+        faltanteChasis: Number(item.faltante_horometro_chasis ?? 250),
+        odometro: Number(item.odometro_acumulado || 0),
+        ultMantOdometro: Number(item.ult_mant_odometro_km || 0),
+        usoMantOdometro: Number(item.uso_mant_odometro_km || 0),
+        faltanteOdometro: Number(item.faltante_odometro_km ?? 10000),
+        tieneDobleHorometro: Boolean(item.tiene_doble_horometro),
+        fuenteUltimaLectura: item.fuente_ultima_lectura || null,
+        fechaUltimaLectura: item.fecha_ultima_lectura || null,
         specs: [
           { label: 'Año', value: item.ano_fabricacion || 'S/I' },
           { label: 'Categoría', value: categoryName },
@@ -792,7 +807,11 @@ async function fetchFleet() {
           { label: 'Capacidad', value: item.capacidad_maxima ? `${item.capacidad_maxima} ${item.unidad_capacidad || 'TON'}` : 'S/I' },
           { label: 'Número Serie', value: item.numero_serie || 'S/I' },
           { label: 'Empresa', value: item.name_empresa || item.razon_social || 'SAN PABLO' },
-          { label: 'Estado', value: item.estado || 'Abierto' }
+          { label: 'Estado', value: item.estado || 'Abierto' },
+          { label: 'Horómetro Grúa (Ciclo 250h)', value: `${Number(item.horometro_grua_acumulado || item.json_data?.horometro || 0).toLocaleString('es-CL')} hrs · Últ. Mant.: ${Number(item.ult_mant_horometro_grua || 0).toLocaleString('es-CL')}h · Uso Δ: ${Number(item.uso_mant_horometro_grua || 0).toLocaleString('es-CL')}h · ${Number(item.faltante_horometro_grua ?? 250) <= 0 ? 'Vencido +' + Math.abs(Number(item.faltante_horometro_grua)).toLocaleString('es-CL') + 'h' : 'Faltan ' + Number(item.faltante_horometro_grua ?? 250).toLocaleString('es-CL') + 'h'}` },
+          { label: 'Horómetro Chasis (Ciclo 250h)', value: `${Number(item.horometro_chasis_acumulado || 0).toLocaleString('es-CL')} hrs · Últ. Mant.: ${Number(item.ult_mant_horometro_chasis || 0).toLocaleString('es-CL')}h · Uso Δ: ${Number(item.uso_mant_horometro_chasis || 0).toLocaleString('es-CL')}h · ${Number(item.faltante_horometro_chasis ?? 250) <= 0 ? 'Vencido +' + Math.abs(Number(item.faltante_horometro_chasis)).toLocaleString('es-CL') + 'h' : 'Faltan ' + Number(item.faltante_horometro_chasis ?? 250).toLocaleString('es-CL') + 'h'}` },
+          { label: 'Odómetro Ruta (Ciclo 10.000 km)', value: Number(item.odometro_acumulado || 0) > 0 ? `${Number(item.odometro_acumulado).toLocaleString('es-CL')} km · Últ. Mant.: ${Number(item.ult_mant_odometro_km || 0).toLocaleString('es-CL')} km · Uso Δ: ${Number(item.uso_mant_odometro_km || 0).toLocaleString('es-CL')} km · ${Number(item.faltante_odometro_km ?? 10000) <= 0 ? 'Vencido +' + Math.abs(Number(item.faltante_odometro_km)).toLocaleString('es-CL') + ' km' : 'Faltan ' + Number(item.faltante_odometro_km ?? 10000).toLocaleString('es-CL') + ' km'}` : '— km' },
+          { label: 'Última Lectura', value: item.fuente_ultima_lectura ? `${item.fuente_ultima_lectura}${item.fecha_ultima_lectura ? ' (' + new Date(item.fecha_ultima_lectura).toLocaleDateString('es-CL') + ')' : ''}` : 'Sin registro' }
         ]
       }
     })
@@ -854,9 +873,9 @@ async function openQR() {
   if (!selectedAsset.value) return
   try {
     showQRModal.value = true
-    qrDataUrl.value = ''
-    
-    const url = `${window.location.origin}/lg-gsp-dev/equipo/${selectedAsset.value.plate}`
+    const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+    const prefix = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
+    const url = `${window.location.origin}${prefix}/equipo/${selectedAsset.value.plate}`
     
     qrDataUrl.value = await QRCode.toDataURL(url, {
       width: 300,
