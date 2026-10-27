@@ -70,37 +70,38 @@
     >
       <v-btn to="/surveys" value="surveys" class="ios-tab-btn">
         <v-badge :content="fmt(counts.calidad)" :model-value="counts.calidad > 0" color="error" floating>
-          <v-icon size="22">mdi-view-dashboard-outline</v-icon>
+          <v-icon size="24">mdi-view-dashboard-outline</v-icon>
         </v-badge>
         <span class="ios-tab-label">Operación</span>
       </v-btn>
 
       <v-btn to="/firmas" value="firmas" class="ios-tab-btn">
         <v-badge :content="fmt(counts.documentos)" :model-value="counts.documentos > 0" color="error" floating>
-          <v-icon size="22">mdi-file-sign</v-icon>
+          <v-icon size="24">mdi-file-sign</v-icon>
         </v-badge>
         <span class="ios-tab-label">Firmas</span>
       </v-btn>
 
-      <v-btn to="/taller" value="taller" class="ios-tab-btn">
-        <v-icon size="22" color="amber-darken-2">mdi-wrench-clock</v-icon>
+      <!-- Taller solo para perfiles autorizados (Taller / Bodega / Admin) -->
+      <v-btn v-if="esBodegaOTaller" to="/taller" value="taller" class="ios-tab-btn">
+        <v-icon size="24" color="amber-darken-2">mdi-wrench-clock</v-icon>
         <span class="ios-tab-label">Taller</span>
       </v-btn>
 
       <!-- Bodega / Pañol WMS para perfiles autorizados (Bodega / Taller / Admin) -->
       <v-btn v-if="esBodegaOTaller" to="/bodega" value="bodega" class="ios-tab-btn">
-        <v-icon size="22" color="amber-darken-2">mdi-warehouse</v-icon>
+        <v-icon size="24" color="amber-darken-2">mdi-warehouse</v-icon>
         <span class="ios-tab-label">Bodega</span>
       </v-btn>
 
       <!-- Cotizador solo para perfiles autorizados (Comercial / Admin) -->
       <v-btn v-if="esAdminOComercial" to="/cotizador-express" value="cotizador" class="ios-tab-btn">
-        <v-icon size="22" color="amber-darken-2">mdi-calculator-variant-outline</v-icon>
+        <v-icon size="24" color="amber-darken-2">mdi-calculator-variant-outline</v-icon>
         <span class="ios-tab-label">Cotizador</span>
       </v-btn>
 
       <v-btn id="perfil-btn" value="perfil" class="ios-tab-btn">
-        <v-icon size="22">mdi-account-circle-outline</v-icon>
+        <v-icon size="24">mdi-account-circle-outline</v-icon>
         <span class="ios-tab-label">Mi Perfil</span>
 
         <v-menu activator="#perfil-btn" location="top end">
@@ -163,6 +164,7 @@
 <script setup>
 import { ref, provide, watchEffect, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 import packageJson from '../package.json'
 
 const version = ref(packageJson.version || '1.1.9')
@@ -179,6 +181,7 @@ import { verificarEsAdminOComercial } from '@/composables/usePermisosCotizador'
 /* ---------- stores y router ---------- */
 const route = useRoute()
 const router = useRouter()
+const vuetifyTheme = useTheme()
 const profileStore = useProfileStore()
 const userDetailStore = useUserDetailStore()
 // TRANSAMAC_REMOVE_CONEXION_20260428: oculta menus y redirecciones CNX/vehiculos.
@@ -242,8 +245,10 @@ const currentTheme = ref('dark')
 const applyTheme = (theme) => {
   if (theme === 'dark') {
     document.documentElement.classList.add('dark')
+    vuetifyTheme.global.name.value = 'dark'
   } else {
     document.documentElement.classList.remove('dark')
+    vuetifyTheme.global.name.value = 'light'
   }
 }
 
@@ -559,44 +564,63 @@ const logout = () => {
  * 🍏 APPLE iOS NATIVE TAB BAR STYLES
  * ========================================================================= */
 .ios-tab-bar {
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-  height: 60px !important;
+  border-top: 1px solid rgba(15, 23, 42, 0.14) !important;
+  height: 66px !important;
 }
 
 :deep(.v-theme--dark) .ios-tab-bar,
-.dark .ios-tab-bar {
-  background: rgba(24, 24, 27, 0.88) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+:global(.dark) .ios-tab-bar {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 
 .ios-tab-btn {
   letter-spacing: -0.2px !important;
-  min-width: 64px !important;
-  opacity: 0.65;
+  min-width: 68px !important;
+  color: #1e293b !important;
+  opacity: 0.9 !important;
   transition: opacity 0.2s ease, transform 0.15s ease;
 }
 
+:global(.dark) .ios-tab-btn {
+  color: #f8fafc !important;
+  opacity: 0.92 !important;
+}
+
+:global(.dark) .ios-tab-btn :deep(.v-btn__content),
+:global(.dark) .ios-tab-btn :deep(.v-icon),
+:global(.dark) .ios-tab-btn .ios-tab-label {
+  color: #f8fafc !important;
+}
+
 .ios-tab-btn:hover {
-  opacity: 0.9;
+  opacity: 1 !important;
 }
 
 .ios-tab-btn.v-btn--active {
   opacity: 1 !important;
-  color: #007AFF !important;
+  color: #003B96 !important;
 }
 
 :deep(.ios-tab-btn.v-btn--active .v-icon) {
-  color: #007AFF !important;
+  color: #003B96 !important;
+}
+
+:global(.dark) .ios-tab-btn.v-btn--active,
+:global(.dark) .ios-tab-btn.v-btn--active :deep(.v-btn__content),
+:global(.dark) .ios-tab-btn.v-btn--active :deep(.v-icon),
+:global(.dark) .ios-tab-btn.v-btn--active .ios-tab-label {
+  color: #38bdf8 !important;
 }
 
 .ios-tab-label {
   display: block !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
   line-height: 1.2 !important;
-  margin-top: 2px !important;
+  margin-top: 3px !important;
 }
 </style>

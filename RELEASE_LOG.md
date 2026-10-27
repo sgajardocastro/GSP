@@ -4,6 +4,26 @@ Este archivo contiene el historial detallado de versiones y mejoras liberadas en
 
 
 
+## [PWA GSP] - Versión 1.0.56
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-27 15:37:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` & `/var/www/html/lg-gsp-dev/manual_operador_terreno_gsp.html`
+- **Requerimientos Asociados:** `REQ-1079` (`SPEC-049 v1.3.0`)
+- **Especificación Técnica:** Simplificación Operativa de la APP por Ámbito, Desacople Nativo de Hoja de Viaje, Rediseño de Inicio/Término de Report Diario y Corrección de Cálculo Standby:
+  1. **Limpieza por Ámbito y Contraste (`App.vue` & `Surveys.vue`):**
+     - Restricción del tab inferior `Taller` a roles de bodega/taller/administración (`v-if="esBodegaOTaller"`).
+     - En vista de Operaciones: resumen superior en 2 columnas (`Viajes` y `Reports`), eliminación de `Control de Portón & Patio`, `Visita Técnica a Terreno`, `Checklists & Protocolos Asignados`, tarjetas duplicadas de `Taller` y `Cotizador Express` (manteniéndolo en tab Comercial).
+     - Sincronización del tema claro/oscuro en Vuetify y aumento de tamaño de fuente en botones de acción.
+  2. **Desacople Nativo de Hoja de Viaje (`ViajeConductor.vue`, `viajeOfflineSync.js` & `router/index.js`):**
+     - Incorporación nativa de `/viaje/:token` dentro de la APP Móvil sin redireccionar a la consola Web.
+     - En Llegada a Faena: eliminación del enlace externo de ayuda, eliminación del registro de Horómetro Superestructura, eliminación de observaciones opcionales de ruta, botón único `CONFIRMAR LLEGADA` y tarjeta de cierre limpia.
+  3. **Rediseño de Report Diario (`ReportDiarioIzaje.vue`):**
+     - Cabecera `INICIO REPORT` / `TERMINO DE REPORT` con indicador `DD/MM/YYYY (DIA Y DE X)` y patente única del equipo asignado.
+     - En `INICIO REPORT`: ingreso numérico directo de hora (`HH : MM`), `Horómetro Superestructura` obligatorio con botón único `FOTO HOROMETRO SUPERESTRUCTURA` y botón `GUARDAR INICIO REPORT`.
+     - En `TERMINO DE REPORT`: horario de inicio modificable (ocultando horómetro inicial), ingreso numérico de hora de término (`HH : MM`), resumen en 2 indicadores (`HORA REPORT` y `HORA COLACIÓN`), etiquetas `STAND BY CLIENTE COBRABLE` (sin rebajar `HORA REPORT`) y `STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE`, `Horómetro Superestructura` obligatorio con botón único `FOTO HOROMETRO SUPERESTRUCTURA`, eliminación de `Horómetro Chasis` y `Notas Mecánicas / Taller GSP`, y botón final `TERMINO DE REPORT`.
+  4. **Consistencia Documental (`manual_operador_terreno_gsp.html`):**
+     - Homologación de la matriz oficial de instrumentos, cartilla imprimible y simulador interactivo paso a paso.
+
 ## [Portal Web GSP] - Versión 1.0.168
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-10-26 20:40:00 (-03:00)

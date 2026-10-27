@@ -15,73 +15,34 @@
       </div>
     </div>
 
-    <!-- 📊 RESUMEN RÁPIDO DE PENDIENTES (3 BADGES INFORMATIVOS GRANDES) -->
+    <!-- 📊 RESUMEN RÁPIDO DE PENDIENTES (2 BADGES INFORMATIVOS GRANDES) -->
     <v-row dense class="mb-3">
-      <v-col cols="4">
+      <v-col cols="6">
         <v-card
-          class="pa-2.5 rounded-xl text-center border cursor-pointer"
+          class="pa-3 rounded-xl text-center border cursor-pointer"
           :class="tieneViajeEnCurso ? 'bg-blue-50 border-blue-400 text-blue-900 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'"
           @click="tieneViajeEnCurso ? abrirViajeNativo(viajeActivo.token_viaje) : null"
         >
-          <div class="text-[10px] font-bold uppercase tracking-wider">Viajes</div>
-          <div class="text-sm font-black mt-0.5">
+          <div class="text-xs font-bold uppercase tracking-wider">Viajes</div>
+          <div class="text-base font-black mt-0.5">
             {{ tieneViajeEnCurso ? (viajeActivo.estado_trayecto === 'EN_RUTA' ? 'En Ruta' : 'Asignado') : 'Al Día' }}
           </div>
         </v-card>
       </v-col>
 
-      <v-col cols="4">
+      <v-col cols="6">
         <v-card
-          class="pa-2.5 rounded-xl text-center border cursor-pointer"
+          class="pa-3 rounded-xl text-center border cursor-pointer"
           :class="reportsPendientes.length > 0 ? 'bg-amber-50 border-amber-400 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-300' : 'bg-emerald-50 border-emerald-400 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-300'"
-          @click="abrirReportDiario(reportPrincipalPendiente?.id_proyecto, reportPrincipalPendiente?.id_equipo)"
+          @click="abrirReportDiario((reportPrincipalPendiente || primerConcluido)?.id_proyecto, (reportPrincipalPendiente || primerConcluido)?.id_equipo, reportPrincipalPendiente?.id_reporte_avance_activo)"
         >
-          <div class="text-[10px] font-bold uppercase tracking-wider">Reports</div>
-          <div class="text-sm font-black mt-0.5">
-            {{ reportsPendientes.length > 0 ? `${reportsPendientes.length} Pendiente` : 'Al Día' }}
-          </div>
-        </v-card>
-      </v-col>
-
-      <v-col cols="4">
-        <v-card
-          class="pa-2.5 rounded-xl text-center border cursor-pointer"
-          :class="filteredSurveys.length > 0 ? 'bg-purple-50 border-purple-400 text-purple-900 dark:bg-purple-950/40 dark:border-purple-700 dark:text-purple-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'"
-        >
-          <div class="text-[10px] font-bold uppercase tracking-wider">Checklists</div>
-          <div class="text-sm font-black mt-0.5">
-            {{ filteredSurveys.length > 0 ? `${filteredSurveys.length} Asignados` : 'Al Día' }}
+          <div class="text-xs font-bold uppercase tracking-wider">Reports</div>
+          <div class="text-base font-black mt-0.5">
+            {{ cargandoReportsPendientes && reportsPendientes.length === 0 ? 'Cargando...' : (reportsPendientes.length > 0 ? `${reportsPendientes.length} Pendiente` : 'Al Día') }}
           </div>
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- 🔧 ACCESO RÁPIDO A TALLER & MANTENIMIENTO MÓVIL (SPEC 67) -->
-    <v-card
-      v-if="esUsuarioTaller"
-      class="mb-3 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 shadow-sm overflow-hidden cursor-pointer"
-      @click="router.push('/taller')"
-    >
-      <div class="h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
-      <div class="pa-3.5 d-flex align-center justify-space-between">
-        <div class="d-flex align-center ga-3">
-          <div class="pa-2 rounded-xl bg-amber-500/20 text-amber-400 d-flex align-center justify-center">
-            <v-icon size="24">mdi-wrench-clock</v-icon>
-          </div>
-          <div>
-            <div class="text-[10px] font-black text-amber-400 uppercase tracking-widest font-mono">
-              TALLER & MANTENIMIENTO
-            </div>
-            <div class="text-sm font-black text-white leading-tight">
-              OTs de Taller & Avisos de Falla
-            </div>
-          </div>
-        </div>
-        <v-btn size="small" color="amber-darken-2" variant="flat" class="font-bold text-[11px] rounded-lg">
-          Entrar ➔
-        </v-btn>
-      </div>
-    </v-card>
 
     <!-- ========================================================================= -->
     <!-- 0.5 BANNER DISTINTIVO: ORDEN DE MOVIMIENTO INTERNO GSP (SPEC 87)          -->
@@ -167,7 +128,8 @@
         <v-btn
           color="info"
           variant="flat"
-          class="w-100 font-bold text-none rounded-xl py-3 elevation-0"
+          size="large"
+          class="w-100 font-black text-base text-none rounded-xl py-3.5 elevation-0"
           prepend-icon="mdi-navigation-variant-outline"
           :disabled="!viajeActivo?.token_viaje && !tokenViajePlataformaActivo"
           @click="abrirViajeNativo(viajeActivo?.token_viaje || tokenViajePlataformaActivo)"
@@ -316,18 +278,34 @@
             </div>
           </div>
 
-          <v-chip
-            size="small"
-            :color="reportsPendientes.length > 0 ? 'warning' : 'success'"
-            variant="flat"
-            class="font-bold text-[10px] uppercase"
-          >
-            {{ reportsPendientes.length > 0 ? `${reportsPendientes.length} PENDIENTE` : 'AL DÍA' }}
-          </v-chip>
+          <div class="d-flex align-center ga-1">
+            <v-btn
+              icon="mdi-refresh"
+              size="x-small"
+              variant="text"
+              :loading="cargandoReportsPendientes"
+              title="Actualizar órdenes asignadas"
+              @click.stop="refrescarOperacionTerreno"
+            />
+            <v-chip
+              size="small"
+              :color="cargandoReportsPendientes && reportsPendientes.length === 0 ? 'info' : (reportsPendientes.length > 0 ? 'warning' : 'success')"
+              variant="flat"
+              class="font-bold text-[10px] uppercase"
+            >
+              {{ cargandoReportsPendientes && reportsPendientes.length === 0 ? 'CARGANDO...' : (reportsPendientes.length > 0 ? `${reportsPendientes.length} PENDIENTE` : 'AL DÍA') }}
+            </v-chip>
+          </div>
         </div>
 
         <!-- Cuerpo del Report -->
-        <div v-if="reportPrincipalPendiente" class="bg-amber-50/60 dark:bg-amber-950/30 rounded-xl pa-3 mb-3 border border-amber-100 dark:border-amber-900/40">
+        <div v-if="cargandoReportsPendientes && !reportPrincipalPendiente && !primerConcluido" class="bg-slate-50 dark:bg-zinc-900/60 rounded-xl pa-3 mb-3 border border-slate-200 dark:border-zinc-700 d-flex align-center ga-3">
+          <v-progress-circular indeterminate size="20" width="2" color="warning" />
+          <div class="text-xs font-bold text-slate-600 dark:text-slate-300">
+            Sincronizando orden de trabajo y estado de jornada...
+          </div>
+        </div>
+        <div v-else-if="reportPrincipalPendiente" class="bg-amber-50/60 dark:bg-amber-950/30 rounded-xl pa-3 mb-3 border border-amber-100 dark:border-amber-900/40">
           <div class="d-flex align-center justify-space-between text-xs text-slate-800 dark:text-slate-200 mb-1">
             <span class="font-bold">OT {{ reportPrincipalPendiente.codi_proyecto }} • Día {{ reportPrincipalPendiente.dia_a_reportar }}</span>
             <v-chip size="x-small" color="warning" variant="outlined" class="font-mono font-bold">
@@ -341,6 +319,20 @@
             {{ reportPrincipalPendiente.jornada_en_curso ? '⏳ Jornada iniciada. Registra horómetro final y firma supervisor.' : '⏱️ Listo para iniciar jornada de izaje.' }}
           </div>
         </div>
+        <div v-else-if="primerConcluido" class="bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl pa-3 mb-3 border border-emerald-200 dark:border-emerald-900/40">
+          <div class="d-flex align-center justify-space-between text-xs text-slate-800 dark:text-slate-200 mb-1">
+            <span class="font-bold">OT {{ primerConcluido.codi_proyecto }} • Reportes: {{ primerConcluido.dias_reportados }}/{{ primerConcluido.total_dias }}</span>
+            <v-chip size="x-small" color="success" variant="outlined" class="font-mono font-bold">
+              {{ primerConcluido.patente }}
+            </v-chip>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-400 truncate">
+            Faena: <strong>{{ primerConcluido.obra_nombre }}</strong>
+          </div>
+          <div class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 font-semibold">
+            ✅ {{ primerConcluido.mensaje || 'Jornada del día reportada conforme.' }}
+          </div>
+        </div>
         <div v-else class="text-xs text-slate-500 dark:text-slate-400 mb-3">
           Registro diario de horas máquina efectivas, esperas operacionales y sellado con firma digital FES junto al supervisor mandante.
         </div>
@@ -348,94 +340,14 @@
         <v-btn
           :color="reportsPendientes.length > 0 ? 'warning' : 'success'"
           variant="flat"
-          class="w-100 font-bold text-none rounded-xl py-3 elevation-0"
+          size="large"
+          class="w-100 font-black text-base text-none rounded-xl py-3.5 elevation-0"
           :class="reportsPendientes.length > 0 ? 'text-black' : 'text-white'"
           prepend-icon="mdi-file-document-edit-outline"
-          @click="abrirReportDiario(reportPrincipalPendiente?.id_proyecto, reportPrincipalPendiente?.id_equipo)"
+          :loading="cargandoReportsPendientes && !reportPrincipalPendiente && !primerConcluido"
+          @click="abrirReportDiario((reportPrincipalPendiente || primerConcluido)?.id_proyecto, (reportPrincipalPendiente || primerConcluido)?.id_equipo, reportPrincipalPendiente?.id_reporte_avance_activo)"
         >
-          {{ reportsPendientes.length > 0 ? `Completar y Firmar Report Día ${reportPrincipalPendiente.dia_a_reportar} ➔` : 'Abrir / Ver Historial de Reports ➔' }}
-        </v-btn>
-      </div>
-    </v-card>
-
-    <!-- ========================================================================= -->
-    <!-- 3️⃣ BLOQUE C: CONTROL DE PORTÓN & PATIO                                    -->
-    <!-- ========================================================================= -->
-    <v-card class="mb-4 rounded-2xl border border-amber-300 dark:border-amber-700/60 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden">
-      <div class="h-1 bg-gradient-to-r from-amber-400 to-yellow-500"></div>
-      <div class="pa-4">
-        <div class="d-flex align-center justify-space-between mb-2">
-          <div class="d-flex align-center ga-2.5">
-            <div class="pa-2 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 d-flex align-center justify-center">
-              <v-icon size="22">mdi-boom-gate-up-outline</v-icon>
-            </div>
-            <div>
-              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Portería & Base Central
-              </div>
-              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
-                Control de Portón & Patio
-              </div>
-            </div>
-          </div>
-
-          <v-chip size="small" color="amber-darken-3" variant="flat" class="font-bold text-[10px] text-white">
-            ENTRADA / SALIDA
-          </v-chip>
-        </div>
-
-        <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          Checklist preoperacional autónomo para recepción y despacho de grúas móviles y camiones pluma.
-        </div>
-
-        <v-btn
-          color="amber-darken-2"
-          variant="flat"
-          class="w-100 font-bold text-none rounded-xl py-3 elevation-0 text-black"
-          prepend-icon="mdi-clipboard-check-outline"
-          @click="abrirModalPatio"
-        >
-          Nueva Inspección Entrada / Salida ➔
-        </v-btn>
-      </div>
-    </v-card>
-
-    <!-- 🛠️ BLOQUE TALLER MÓVIL & MANTENIMIENTO -->
-    <v-card
-      v-if="esUsuarioTaller"
-      class="mb-4 rounded-2xl border border-amber-400 dark:border-amber-600 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
-    >
-      <div class="h-1 bg-gradient-to-r from-amber-500 to-orange-500"></div>
-      <div class="pa-4">
-        <div class="d-flex align-center justify-space-between mb-2">
-          <div class="d-flex align-center ga-2.5">
-            <div class="pa-2 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 d-flex align-center justify-center">
-              <v-icon size="22">mdi-wrench-clock</v-icon>
-            </div>
-            <div>
-              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Mantenimiento de Flota
-              </div>
-              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
-                🛠️ Taller Móvil & OTs
-              </div>
-            </div>
-          </div>
-          <v-chip size="small" color="amber-darken-3" variant="flat" class="font-bold text-[10px] text-white">
-            SPEC 67
-          </v-chip>
-        </div>
-        <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          Ejecución in-situ de pautas preventivas (PM), imputación de HH de mecánicos, repuestos y cierre supervisado FES.
-        </div>
-        <v-btn
-          color="amber-darken-2"
-          variant="flat"
-          class="w-100 font-bold text-none rounded-xl py-3 elevation-0 text-black"
-          prepend-icon="mdi-wrench"
-          to="/taller"
-        >
-          Ingresar al Taller Móvil ➔
+          {{ reportsPendientes.length > 0 ? `Completar y Firmar Report Día ${reportPrincipalPendiente.dia_a_reportar} ➔` : (primerConcluido ? `Ver Orden OT ${primerConcluido.codi_proyecto} ➔` : 'Abrir / Ver Historial de Reports ➔') }}
         </v-btn>
       </div>
     </v-card>
@@ -472,8 +384,8 @@
         <v-btn
           color="success"
           variant="tonal"
-          size="small"
-          class="font-bold text-none rounded-xl w-100"
+          size="large"
+          class="font-black text-sm text-none rounded-xl w-100 py-3"
           @click="abrirModalRegistrarProtocolo"
         >
           Iniciar AST de Terreno ➔
@@ -491,51 +403,40 @@
               Plan de Izaje & Rigging
             </div>
           </div>
-          <v-chip size="x-small" color="indigo" variant="flat" class="font-bold text-[9px] text-white">
-            INGENIERÍA
+          <v-chip
+            size="x-small"
+            :color="urlPdfPlanIzaje ? 'success' : 'indigo'"
+            variant="flat"
+            class="font-bold text-[9px] text-white"
+          >
+            {{ urlPdfPlanIzaje ? 'FIRMADO FES' : 'INGENIERÍA' }}
           </v-chip>
         </div>
         <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
           Configuración técnica de pluma telescópica, radios de trabajo, contrapesos y tablas de carga.
         </div>
-        <v-btn
-          color="indigo"
-          variant="tonal"
-          size="small"
-          class="font-bold text-none rounded-xl w-100"
-          @click="abrirModalRegistrarProtocolo"
-        >
-          Registrar / Ver Plan de Izaje ➔
-        </v-btn>
-      </v-card>
-
-      <!-- Tarjeta 3: Visita a Terreno -->
-      <v-card class="mb-3 rounded-2xl border border-orange-300 dark:border-orange-800/60 bg-orange-50/30 dark:bg-orange-950/20 pa-3.5 shadow-sm">
-        <div class="d-flex align-center justify-space-between mb-1.5">
-          <div class="d-flex align-center ga-2">
-            <div class="pa-1.5 rounded-lg bg-orange-600 text-white d-flex align-center justify-center">
-              <v-icon size="18">mdi-map-marker-radius-outline</v-icon>
-            </div>
-            <div class="text-sm font-black text-slate-900 dark:text-white">
-              Visita Técnica a Terreno
-            </div>
-          </div>
-          <v-chip size="x-small" color="warning" variant="flat" class="font-bold text-[9px] text-black">
-            ESTUDIO
-          </v-chip>
+        <div class="d-flex flex-column ga-2">
+          <v-btn
+            color="indigo"
+            variant="tonal"
+            size="large"
+            class="font-black text-sm text-none rounded-xl w-100 py-3"
+            @click="abrirModalPlanIzaje"
+          >
+            {{ urlPdfPlanIzaje ? 'Actualizar / Ver Plan de Izaje ➔' : 'Registrar / Ver Plan de Izaje ➔' }}
+          </v-btn>
+          <v-btn
+            v-if="urlPdfPlanIzaje"
+            color="deep-purple-darken-2"
+            variant="flat"
+            size="large"
+            prepend-icon="mdi-file-pdf-box"
+            class="font-black text-sm text-none rounded-xl w-100 py-3 text-white"
+            @click="verPdfActa(urlPdfPlanIzaje)"
+          >
+            Ver PDF Plan de Izaje Oficial (A4 + Croquis SVG)
+          </v-btn>
         </div>
-        <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
-          Inspección de accesos viales, radio de giro y capacidad portante del suelo para estabilizadores.
-        </div>
-        <v-btn
-          color="warning"
-          variant="tonal"
-          size="small"
-          class="font-bold text-none rounded-xl w-100"
-          @click="abrirModalRegistrarProtocolo"
-        >
-          Nueva Visita Técnica ➔
-        </v-btn>
       </v-card>
     </div>
 
@@ -1650,198 +1551,253 @@
         </v-row>
       </v-col>
 
-      <!-- Encabezado de Checklists Asignados -->
-      <v-col cols="12" class="d-flex align-center justify-space-between px-1 mb-1">
-        <span class="text-xs font-black text-slate-500 uppercase tracking-wider">
-          Checklists & Protocolos Asignados ({{ filteredSurveys.length }})
-        </span>
-        <span v-if="filteredSurveys.length > 0" class="text-[11px] text-amber-600 font-bold">
-          {{ filteredSurveys.length }} pendiente{{ filteredSurveys.length > 1 ? 's' : '' }}
-        </span>
-      </v-col>
-
-      <!-- Estado vacío si no hay checklists -->
-      <v-col cols="12" v-if="filteredSurveys.length === 0">
-        <v-card class="pa-4 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-center text-slate-500 text-xs">
-          <v-icon size="24" color="success" class="mb-1 d-block mx-auto">mdi-check-circle-outline</v-icon>
-          No tienes checklists pendientes asignados para hoy.
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" v-for="survey in filteredSurveys" :key="survey.id_survey">
-        <div
-          v-if="esVistaAsignacionesCnx && isConexionCompactSurvey(survey)"
-          class="conexion-priority-card"
-          @click="goToInspeccion(survey, notifPrimaryId(survey.id_survey))"
-        >
-          <div class="conexion-priority-card__top">
-            <div class="conexion-priority-card__meta-pill">
-              IC {{ getConexionCardData(survey).ic }}
-            </div>
-            <div class="conexion-priority-card__meta-pill">
-              {{ getConexionCardData(survey).tipoTrabajo || 'Sin tipo' }}
-            </div>
-            <div class="conexion-priority-card__meta-pill">
-              {{ getConexionCardData(survey).orden }}
-            </div>
-          </div>
-
-          <div class="conexion-priority-card__address">
-            {{ getConexionCardData(survey).direccionComuna }}
-          </div>
-
-          <div class="conexion-priority-card__people">
-            <div class="conexion-priority-card__person-line">
-              <span class="conexion-priority-card__label-inline">Proyecto</span>
-              <span class="conexion-priority-card__value-inline">{{ getConexionCardData(survey).proyecto }}</span>
-            </div>
-            <div class="conexion-priority-card__person-line">
-              <span class="conexion-priority-card__label-inline">Técnico</span>
-              <span class="conexion-priority-card__value-inline">{{ getConexionCardData(survey).nombreTecnico }}</span>
-            </div>
-            <div class="conexion-priority-card__person-line">
-              <span class="conexion-priority-card__label-inline">Sup. Metrogas</span>
-              <span class="conexion-priority-card__value-inline">{{ getConexionCardData(survey).supMetrogas }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-else-if="esVistaReclamos"
-          class="reclamo-priority-card"
-          @click="goToInspeccion(survey, notifPrimaryId(survey.id_survey))"
-        >
-          <div class="reclamo-priority-card__top">
-            <div class="reclamo-priority-card__meta-pill">
-              IC {{ getConexionCardData(survey).ic }}
-            </div>
-            <div class="reclamo-priority-card__meta-pill">
-              NR {{ getReclamoCardData(survey).numeroReclamo }}
-            </div>
-            <div class="reclamo-priority-card__meta-pill">
-              {{ getReclamoCardData(survey).orden }}
-            </div>
-          </div>
-
-          <div class="reclamo-priority-card__address">
-            {{ getReclamoCardData(survey).direccionComuna }}
-          </div>
-
-          <div class="reclamo-priority-card__people">
-            <div class="reclamo-priority-card__person-line">
-              <span class="reclamo-priority-card__label-inline">Técnico</span>
-              <span class="reclamo-priority-card__value-inline">{{ getConexionCardData(survey).nombreTecnico }}</span>
-            </div>
-            <div class="reclamo-priority-card__person-line">
-              <span class="reclamo-priority-card__label-inline">Sup. Terracon</span>
-              <span class="reclamo-priority-card__value-inline">{{ getReclamoCardData(survey).supTerracon }}</span>
-            </div>
-            <div class="reclamo-priority-card__person-line">
-              <span class="reclamo-priority-card__label-inline">Estado</span>
-              <span class="reclamo-priority-card__value-inline">{{ getReclamoCardData(survey).estado }}</span>
-            </div>
-            <div class="reclamo-priority-card__person-line">
-              <span class="reclamo-priority-card__label-inline">Obs. Terracon</span>
-              <span class="reclamo-priority-card__value-inline reclamo-priority-card__value-inline--multiline">{{ getReclamoCardData(survey).observacionTerracon }}</span>
-            </div>
-            <div class="reclamo-priority-card__person-line">
-              <span class="reclamo-priority-card__label-inline">Contenido Reclamo</span>
-              <span class="reclamo-priority-card__value-inline reclamo-priority-card__value-inline--multiline">{{ getReclamoCardData(survey).contenidoReclamo }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 🍏 TARJETA DE CHECKLIST / INSPECCIÓN ESTILO APPLE iOS -->
-        <v-card
-          v-else
-          @click="goToInspeccion(survey, notifPrimaryId(survey.id_survey))"
-          class="rounded-2xl border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden pa-4 cursor-pointer hover:border-blue-400 transition-colors"
-        >
-          <div class="d-flex align-center justify-space-between mb-2">
-            <div class="d-flex align-center ga-2.5 min-w-0">
-              <div class="pa-2 rounded-xl bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-slate-200 d-flex align-center justify-center">
-                <v-icon size="20">mdi-clipboard-check-outline</v-icon>
-              </div>
-              <div class="min-w-0">
-                <div class="text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {{ survey.name_template_srv || survey.desc_template_srv || 'Checklist de Terreno' }}
-                </div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 truncate">
-                  {{ survey.name_empresa_cliente }} • {{ survey.nombre_proyecto }}
-                </div>
-              </div>
-            </div>
-
-            <div class="d-flex align-center ga-1 pl-2">
-              <v-icon
-                v-if="hasNotif(survey.id_survey)"
-                color="red-darken-2"
-                icon="mdi-bell-ring"
-                size="18"
-                class="mr-1"
-              />
-              <v-chip
-                :color="getEstadoColor(survey.estado_srv).color"
-                size="small"
-                variant="tonal"
-                class="font-bold text-xs"
-              >
-                {{ getEstadoColor(survey.estado_srv).texto }}
-              </v-chip>
-            </div>
-          </div>
-
-          <div class="d-flex align-center justify-space-between pt-2.5 mt-1 border-t border-slate-100 dark:border-zinc-700 text-xs text-slate-500 dark:text-slate-400">
-            <span>Fecha Planificada: <strong>{{ survey.fecha_plan_ini || 'Hoy' }}</strong></span>
-            <span class="text-primary font-bold d-flex align-center ga-1">
-              Abrir Inspección <v-icon size="16">mdi-chevron-right</v-icon>
-            </span>
-          </div>
-        </v-card>
-      </v-col>
     </v-row>
 
-    <!-- ========================================================================= -->
-    <!-- 4️⃣ ⚡ HERRAMIENTA COMERCIAL (EXCLUSIVO PERFILES ADMIN O COMERCIALES)      -->
-    <!-- ========================================================================= -->
-    <div v-if="esAdminOComercial" class="mt-6 mb-4">
-      <div class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
-        Módulo Comercial
-      </div>
-      <v-card
-        class="rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-gradient-to-r from-blue-50/70 to-indigo-50/70 dark:from-zinc-800 dark:to-zinc-800 shadow-sm pa-4 cursor-pointer"
-        @click="$router.push('/cotizador-express')"
-      >
-        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
-          <div class="d-flex align-center ga-3">
-            <div class="pa-2.5 rounded-xl bg-blue-600 text-white d-flex align-center justify-center">
-              <v-icon size="20">mdi-calculator-variant-outline</v-icon>
-            </div>
+    <!-- MODAL REACTIVO: PLAN DE IZAJE DIGITAL & MEMORIA DE CÁLCULO (SPEC 37) -->
+    <v-dialog v-model="dialogPlanIzaje" max-width="540" persistent scrollable>
+      <v-card class="bg-[#0b1120] text-white border border-indigo-500/40 rounded-2xl">
+        <v-card-title class="d-flex align-center justify-space-between pa-4 border-b border-slate-800 bg-[#0f172a]">
+          <div class="d-flex align-center ga-2">
+            <v-icon color="indigo-accent-2" size="22">mdi-ruler-square</v-icon>
             <div>
-              <div class="text-sm font-black text-slate-900 dark:text-white leading-tight">
-                Cotizador Express en Terreno
+              <div class="text-sm font-black text-white leading-tight">Plan de Izaje Digital & Rigging</div>
+              <div class="text-[10px] text-indigo-300 font-bold">Memoria de Cálculo Reactiva · Límite Mandatorio 85%</div>
+            </div>
+          </div>
+          <v-btn icon="mdi-close" size="small" variant="text" color="slate-400" @click="dialogPlanIzaje = false" />
+        </v-card-title>
+
+        <v-card-text class="pa-4 space-y-3" style="max-height: 78vh; overflow-y: auto;">
+          <!-- Selección de OT / Proyecto -->
+          <div class="pa-3 rounded-xl bg-slate-900/90 border border-slate-800">
+            <div class="text-[10px] font-black uppercase text-indigo-300 mb-2">1. Orden de Trabajo / Faena Activa</div>
+            <v-select
+              v-model="formPlanIzaje.id_proyecto"
+              :items="proyectosIzajeDisponibles"
+              item-title="label"
+              item-value="id_proyecto"
+              label="Seleccionar OT / Proyecto"
+              variant="outlined"
+              density="compact"
+              hide-details
+              bg-color="#060a14"
+              class="mb-2"
+              @update:model-value="onCambiarProyectoPlanIzaje"
+            />
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300 mt-2">
+              <div><span class="text-slate-500">Cliente:</span> <strong>{{ formPlanIzaje.cliente_nombre || 'Por definir' }}</strong></div>
+              <div><span class="text-slate-500">Grúa:</span> <strong>{{ formPlanIzaje.grua_modelo || 'Grúa Móvil' }}</strong></div>
+            </div>
+          </div>
+
+          <!-- Parámetros Geométricos -->
+          <div class="pa-3 rounded-xl bg-slate-900/90 border border-slate-800">
+            <div class="text-[10px] font-black uppercase text-indigo-300 mb-2">2. Geometría de Maniobra (Croquis Vectorial SVG)</div>
+            <v-row dense>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="formPlanIzaje.elemento_izar"
+                  label="Elemento / Carga a Izar *"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-text-field
+                  v-model.number="formPlanIzaje.radio_max_m"
+                  type="number"
+                  step="0.5"
+                  label="Radio R (m)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-text-field
+                  v-model.number="formPlanIzaje.largo_pluma_m"
+                  type="number"
+                  step="0.5"
+                  label="Pluma L (m)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                />
+              </v-col>
+              <v-col cols="4">
+                <v-text-field
+                  v-model.number="formPlanIzaje.angulo_deg"
+                  type="number"
+                  label="Ángulo (°)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                />
+              </v-col>
+            </v-row>
+          </div>
+
+          <!-- Calculadora Reactiva de Cargas -->
+          <div class="pa-3 rounded-xl bg-slate-900/90 border border-indigo-500/40">
+            <div class="text-[10px] font-black uppercase text-indigo-300 mb-2">3. Memoria de Cálculo Reactiva (Pesos en kg)</div>
+            <v-row dense>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="formPlanIzaje.peso_neto_kg"
+                  type="number"
+                  label="1. Peso Neto Carga (kg)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="formPlanIzaje.peso_gancho_kg"
+                  type="number"
+                  label="2. Peso Gancho / Pasteca (kg)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="formPlanIzaje.peso_yugo_kg"
+                  type="number"
+                  label="3. Peso Yugo / Separador (kg)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model.number="formPlanIzaje.peso_aparejos_kg"
+                  type="number"
+                  label="4. Eslingas / Grilletes (kg)"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                  class="mb-2"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model.number="formPlanIzaje.capacidad_tabla_kg"
+                  type="number"
+                  label="Capacidad Bruta según Tabla de Grúa (kg) *"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                />
+              </v-col>
+            </v-row>
+
+            <!-- Semáforo de Factor de Utilización -->
+            <div
+              class="mt-3 pa-3 rounded-xl border"
+              :class="excedeLimiteSeguridadIzaje ? 'bg-red-950/60 border-red-500' : 'bg-emerald-950/50 border-emerald-500/60'"
+            >
+              <div class="d-flex align-center justify-space-between text-xs font-black mb-1">
+                <span>CARGA BRUTA TOTAL: {{ pesoBrutoTotalIzajeKg.toLocaleString('es-CL') }} kg</span>
+                <span :class="excedeLimiteSeguridadIzaje ? 'text-red-300' : 'text-emerald-300'">
+                  UTILIZACIÓN: {{ porcentajeUtilizacionIzaje }}% (Máx 85%)
+                </span>
               </div>
-              <div class="text-xs text-slate-500 dark:text-slate-400">
-                Presupuesto formal y cubicación de grúas en 60s
+              <v-progress-linear
+                :model-value="Math.min(porcentajeUtilizacionIzaje, 100)"
+                :color="excedeLimiteSeguridadIzaje ? 'error' : (porcentajeUtilizacionIzaje >= 75 ? 'warning' : 'success')"
+                height="10"
+                rounded
+              />
+              <div class="text-[11px] font-bold mt-1.5" :class="excedeLimiteSeguridadIzaje ? 'text-red-300' : 'text-emerald-300'">
+                <span v-if="excedeLimiteSeguridadIzaje">
+                  MANIOBRA BLOQUEADA POR SEGURIDAD: Supera el 85% de capacidad nominal. Reduzca radio o cambie configuración.
+                </span>
+                <span v-else>
+                  MANIOBRA SEGURA Y APROBADA: Dentro del rango estándar GSP (menor o igual a 85%).
+                </span>
               </div>
             </div>
           </div>
+
+          <!-- Firmantes y PIN FES -->
+          <div class="pa-3 rounded-xl bg-slate-900/90 border border-slate-800">
+            <div class="text-[10px] font-black uppercase text-indigo-300 mb-2">4. Cuadrilla Responsable y Firma FES</div>
+            <v-row dense>
+              <v-col cols="6">
+                <v-text-field v-model="formPlanIzaje.operador_nombre" label="Operador Grúa" variant="outlined" density="compact" hide-details bg-color="#060a14" class="mb-2" />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field v-model="formPlanIzaje.rigger_nombre" label="Rigger Calificado" variant="outlined" density="compact" hide-details bg-color="#060a14" class="mb-2" />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field v-model="formPlanIzaje.supervisor_nombre" label="Supervisor / Jefe Maniobra" variant="outlined" density="compact" hide-details bg-color="#060a14" />
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model="formPlanIzaje.pin_fes"
+                  type="password"
+                  maxlength="4"
+                  label="PIN FES (4 dígitos) *"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  bg-color="#060a14"
+                />
+              </v-col>
+            </v-row>
+          </div>
+
+          <v-alert v-if="mensajePlanIzaje" :type="errorPlanIzaje ? 'error' : 'success'" density="compact" variant="tonal" class="text-xs font-bold">
+            {{ mensajePlanIzaje }}
+          </v-alert>
+        </v-card-text>
+
+        <v-card-actions class="pa-4 border-t border-slate-800 bg-[#0f172a] d-flex flex-column ga-2">
           <v-btn
-            color="primary"
+            color="indigo-accent-3"
             variant="flat"
-            size="small"
-            class="font-bold text-none rounded-xl"
+            class="w-100 font-black text-none rounded-xl py-3 text-white"
+            :loading="guardandoPlanIzaje"
+            :disabled="excedeLimiteSeguridadIzaje || !formPlanIzaje.id_proyecto || String(formPlanIzaje.pin_fes || '').length < 4"
+            @click="guardarPlanIzajeFes"
           >
-            Cotizar ➔
+            Firmar Plan de Izaje (FES) y Generar PDF Oficial A4 ➔
           </v-btn>
-        </div>
+          <v-btn
+            v-if="urlPdfPlanIzaje"
+            color="deep-purple-darken-2"
+            variant="flat"
+            prepend-icon="mdi-file-pdf-box"
+            class="w-100 font-bold text-none rounded-xl text-white"
+            @click="verPdfActa(urlPdfPlanIzaje)"
+          >
+            Abrir PDF Oficial A4 con Croquis Vectorial SVG
+          </v-btn>
+        </v-card-actions>
       </v-card>
-    </div>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup>
-import { onMounted, ref, reactive, computed, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, reactive, computed, watch } from 'vue'
 import apiAxios from '@/services/api'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserDetailStore } from '@/store/userDetail'
@@ -1855,8 +1811,25 @@ const route = useRoute()
 const userDetailStore = useUserDetailStore()
 const { isOnline } = useNetworkStatus()
 
-// id_user seguro (no rompe si userDetail es null)
-const idUser = computed(() => userDetailStore.userDetail?.id_user ?? null)
+// id_user seguro con fallback inmediato a localStorage ('userDetail' y 'perfil' ID_USUARIO/id_user)
+const idUser = computed(() => {
+  if (userDetailStore.userDetail?.id_user) return userDetailStore.userDetail.id_user
+  try {
+    const rawUd = localStorage.getItem('userDetail')
+    if (rawUd) {
+      const parsedUd = JSON.parse(rawUd)
+      const udId = parsedUd?.userDetail?.id_user ?? parsedUd?.id_user
+      if (udId) return udId
+    }
+    const rawPerfil = localStorage.getItem('perfil')
+    if (rawPerfil) {
+      const parsedPerfil = JSON.parse(rawPerfil)
+      const pId = parsedPerfil?.id_user ?? parsedPerfil?.ID_USUARIO
+      if (pId) return pId
+    }
+  } catch (_) {}
+  return null
+})
 
 // Acceso a cotizador express exclusivo para perfiles Admin o Comerciales
 const esAdminOComercial = computed(() => {
@@ -2000,7 +1973,7 @@ const proximaAccionFlujo = computed(() => {
     return {
       paso: 1,
       titulo: '1. EN RUTA A FAENA ➔ REGISTRAR LLEGADA ➔',
-      subtitulo: `Traslado en curso hacia ${v?.obra_nombre || 'faena'}. Registra odómetro, horómetro camión y horómetro grúa`,
+      subtitulo: `Traslado en curso hacia ${v?.obra_nombre || 'faena'}. Registra odómetro, horómetro camión y combustible`,
       badge: 'EN TRAYECTO',
       color: 'info',
       colorTexto: 'text-white',
@@ -2021,7 +1994,7 @@ const proximaAccionFlujo = computed(() => {
       colorTexto: 'text-white',
       icono: 'mdi-file-document-edit-outline',
       pulsar: true,
-      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo)
+      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo, r.id_reporte_avance_activo)
     }
   }
 
@@ -2041,7 +2014,7 @@ const proximaAccionFlujo = computed(() => {
       colorTexto: 'text-white',
       icono: 'mdi-play-circle-outline',
       pulsar: true,
-      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo)
+      accion: () => abrirReportDiario(r.id_proyecto, r.id_equipo, r.id_reporte_avance_activo)
     }
   }
 
@@ -3041,7 +3014,7 @@ const sellarActaRetiroBsm = async () => {
 
 const consultarViajeActivo = async () => {
   const perfilLocal = JSON.parse(localStorage.getItem('perfil') || '{}')
-  const uid = idUser.value || perfilLocal?.id_user
+  const uid = idUser.value || perfilLocal?.id_user || perfilLocal?.ID_USUARIO
   if (!uid) return
   try {
     cargandoViajeActivo.value = true
@@ -3069,17 +3042,12 @@ const consultarViajeActivo = async () => {
 
 const abrirViajeNativo = (token) => {
   if (!token) return
-  const baseOrigin = window.location.origin
-  const isProd = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/pwa-gsp-prod') ||
-    window.location.pathname.startsWith('/lg-gsp-prod')
-  )
-  const appPrefix = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
-  window.location.href = `${baseOrigin}${appPrefix}/viaje/${token}`
+  router.push(`/viaje/${token}`)
 }
 
 const consultarReportsPendientes = async () => {
-  const uid = idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user
+  const perfilLocal = JSON.parse(localStorage.getItem('perfil') || '{}')
+  const uid = idUser.value || perfilLocal?.id_user || perfilLocal?.ID_USUARIO
   if (!uid) return
   try {
     cargandoReportsPendientes.value = true
@@ -3096,9 +3064,13 @@ const consultarReportsPendientes = async () => {
   }
 }
 
-const abrirReportDiario = (idProyecto, idEquipo) => {
+const abrirReportDiario = (idProyecto, idEquipo, idReporteAvance = null) => {
   if (!idProyecto) return
-  const query = idEquipo ? `?id_proyecto=${idProyecto}&id_equipo=${idEquipo}` : `?id_proyecto=${idProyecto}`
+  // REQ-1060 / SPEC-088: se navega con la IDENTIDAD de la jornada (id_reporte_avance), no solo con el equipo
+  const params = new URLSearchParams({ id_proyecto: String(idProyecto) })
+  if (idEquipo) params.set('id_equipo', String(idEquipo))
+  if (idReporteAvance) params.set('id_reporte_avance', String(idReporteAvance))
+  const query = `?${params.toString()}`
   router.push(`/reportDiario${query}`)
 }
 
@@ -3545,27 +3517,56 @@ async function cargarSurveysOffline () {
   }
 }
 
+const refrescarOperacionTerreno = async () => {
+  await Promise.all([
+    consultarReportsPendientes(),
+    consultarViajeActivo()
+  ])
+}
+
+const onAppVisibilityOrFocus = () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+  refrescarOperacionTerreno()
+}
+
 onMounted(async () => {
   console.log('BASE URL PWA:', apiAxios.defaults.baseURL)
 
   console.log('userDetailStore.userDetail en Survey:', userDetailStore.userDetail)
   console.log('idUser en Survey:', idUser.value)
 
+  if (typeof window !== 'undefined') {
+    window.addEventListener('focus', onAppVisibilityOrFocus)
+    document.addEventListener('visibilitychange', onAppVisibilityOrFocus)
+  }
+
+  // Prioridad 1: Cargar de inmediato la OT / Report Diario y el Viaje Activo sin esperar catálogos pesados
+  const promesaOperacionCritica = Promise.all([
+    consultarReportsPendientes(),
+    consultarViajeActivo()
+  ])
+
   await cargarRolesSesion()
   if (esVistaAsignacionesCnx.value && !hasCnxRole.value) {
     await router.replace({ path: '/surveys' })
     return
   }
+  await promesaOperacionCritica
   await cargarNombresUsuarios()
   await getSurvey()
   await cargarNotificaciones()
-  await consultarViajeActivo()
   await cargarDatosRealesPlataformaBsm()
-  await consultarReportsPendientes()
 
   const abrirModo = String(route.query?.abrir_acta_bsm || '').toUpperCase()
   if (abrirModo === 'ENTREGA' || abrirModo === 'RETIRO') {
     await abrirModalPlataformaBsm(abrirModo)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('focus', onAppVisibilityOrFocus)
+    document.removeEventListener('visibilitychange', onAppVisibilityOrFocus)
   }
 })
 
@@ -5504,6 +5505,169 @@ async function cargarNombresUsuarios() {
     nombresUsuariosById.value = next
   } catch (error) {
     console.error('[Survey] Error cargando nombres de usuarios:', error)
+  }
+}
+
+// =========================================================================
+// MÓDULO SPEC 37: PLAN DE IZAJE DIGITAL REACTIVO Y CROQUIS VECTORIAL SVG
+// =========================================================================
+const dialogPlanIzaje = ref(false)
+const guardandoPlanIzaje = ref(false)
+const mensajePlanIzaje = ref('')
+const errorPlanIzaje = ref(false)
+const urlPdfPlanIzaje = ref('')
+const proyectosIzajeDisponibles = ref([])
+
+const formPlanIzaje = reactive({
+  id_proyecto: null,
+  id_equipo: null,
+  cliente_nombre: '',
+  grua_modelo: 'Liebherr LTM 1090-4.2 (90 Ton)',
+  grua_patente: '',
+  elemento_izar: 'Estructura Modular / Equipo Industrial',
+  radio_max_m: 14,
+  largo_pluma_m: 36.5,
+  angulo_deg: 68,
+  viento_kmh: 18,
+  peso_neto_kg: 11200,
+  peso_gancho_kg: 650,
+  peso_yugo_kg: 420,
+  peso_aparejos_kg: 180,
+  capacidad_tabla_kg: 16800,
+  operador_nombre: '',
+  rigger_nombre: 'Juan Pérez Soto',
+  supervisor_nombre: 'Roberto Gómez M.',
+  pin_fes: ''
+})
+
+const pesoBrutoTotalIzajeKg = computed(() => {
+  return (
+    (Number(formPlanIzaje.peso_neto_kg) || 0) +
+    (Number(formPlanIzaje.peso_gancho_kg) || 0) +
+    (Number(formPlanIzaje.peso_yugo_kg) || 0) +
+    (Number(formPlanIzaje.peso_aparejos_kg) || 0)
+  )
+})
+
+const porcentajeUtilizacionIzaje = computed(() => {
+  const cap = Number(formPlanIzaje.capacidad_tabla_kg) || 0
+  if (cap <= 0) return 100
+  return Number(((pesoBrutoTotalIzajeKg.value / cap) * 100).toFixed(1))
+})
+
+const excedeLimiteSeguridadIzaje = computed(() => {
+  return porcentajeUtilizacionIzaje.value > 85.0
+})
+
+const cargarPlanIzajePorProyecto = async (idPry) => {
+  if (!idPry) return
+  try {
+    const { data } = await apiAxios.get(`/operaciones/plan-izaje/proyecto/${idPry}`)
+    if (data?.precarga) {
+      formPlanIzaje.cliente_nombre = data.precarga.cliente_nombre || ''
+      if (data.precarga.equipo) {
+        formPlanIzaje.id_equipo = data.precarga.equipo.id_equipo
+        formPlanIzaje.grua_modelo = data.precarga.equipo.nombre
+        formPlanIzaje.grua_patente = data.precarga.equipo.patente
+      }
+    }
+    if (data?.plan) {
+      const p = data.plan
+      formPlanIzaje.radio_max_m = Number(p.radio_max_m) || 14
+      formPlanIzaje.largo_pluma_m = Number(p.largo_pluma_m) || 36.5
+      formPlanIzaje.angulo_deg = Number(p.angulo_deg) || 68
+      formPlanIzaje.elemento_izar = p.elemento_izar || formPlanIzaje.elemento_izar
+      formPlanIzaje.peso_neto_kg = Number(p.peso_neto_kg) || 11200
+      formPlanIzaje.peso_gancho_kg = Number(p.peso_gancho_kg) || 650
+      formPlanIzaje.peso_yugo_kg = Number(p.peso_yugo_kg) || 420
+      formPlanIzaje.peso_aparejos_kg = Number(p.peso_aparejos_kg) || 180
+      formPlanIzaje.capacidad_tabla_kg = Number(p.capacidad_tabla_kg) || 16800
+      urlPdfPlanIzaje.value = data.url_pdf || (p.id_file_pdf ? `/api/archivo/ver/${p.id_file_pdf}` : '')
+    } else {
+      urlPdfPlanIzaje.value = ''
+    }
+  } catch (err) {
+    console.warn('[PlanIzaje] Aviso consultando plan por proyecto:', err)
+  }
+}
+
+const onCambiarProyectoPlanIzaje = async (idPry) => {
+  mensajePlanIzaje.value = ''
+  errorPlanIzaje.value = false
+  await cargarPlanIzajePorProyecto(idPry)
+}
+
+const abrirModalPlanIzaje = async () => {
+  mensajePlanIzaje.value = ''
+  errorPlanIzaje.value = false
+  const perfilLocal = JSON.parse(localStorage.getItem('perfil') || '{}')
+  formPlanIzaje.operador_nombre = userDetailStore.userDetail?.nombre_user || perfilLocal?.nombre_user || 'Carlos Muñoz R.'
+
+  try {
+    const { data } = await apiAxios.get('/proyectos')
+    const rows = Array.isArray(data) ? data : (data?.proyectos || [])
+    proyectosIzajeDisponibles.value = rows
+      .filter(p => Number(p.id_proyecto_estado) !== 99)
+      .sort((a, b) => Number(b.id_proyecto) - Number(a.id_proyecto))
+      .map(p => ({
+        id_proyecto: p.id_proyecto,
+        label: `${p.codi_proyecto || 'OT-' + p.id_proyecto} • ${p.razon_social || p.nombre_proyecto || 'Obra'}`
+      }))
+
+    const defaultId =
+      viajeActivo.value?.id_proyecto ||
+      reportPrincipalPendiente.value?.id_proyecto ||
+      proyectosIzajeDisponibles.value[0]?.id_proyecto ||
+      null
+
+    if (defaultId) {
+      formPlanIzaje.id_proyecto = Number(defaultId)
+      await cargarPlanIzajePorProyecto(defaultId)
+    }
+  } catch (err) {
+    console.warn('[PlanIzaje] Error cargando proyectos:', err)
+  }
+
+  dialogPlanIzaje.value = true
+}
+
+const guardarPlanIzajeFes = async () => {
+  if (excedeLimiteSeguridadIzaje.value || !formPlanIzaje.id_proyecto) return
+  guardandoPlanIzaje.value = true
+  mensajePlanIzaje.value = ''
+  errorPlanIzaje.value = false
+  try {
+    const payload = {
+      id_proyecto: formPlanIzaje.id_proyecto,
+      id_equipo: formPlanIzaje.id_equipo,
+      grua_modelo: formPlanIzaje.grua_modelo,
+      grua_patente: formPlanIzaje.grua_patente,
+      radio_max_m: formPlanIzaje.radio_max_m,
+      largo_pluma_m: formPlanIzaje.largo_pluma_m,
+      angulo_deg: formPlanIzaje.angulo_deg,
+      elemento_izar: formPlanIzaje.elemento_izar,
+      viento_kmh: formPlanIzaje.viento_kmh,
+      peso_neto_kg: formPlanIzaje.peso_neto_kg,
+      peso_gancho_kg: formPlanIzaje.peso_gancho_kg,
+      peso_yugo_kg: formPlanIzaje.peso_yugo_kg,
+      peso_aparejos_kg: formPlanIzaje.peso_aparejos_kg,
+      capacidad_tabla_kg: formPlanIzaje.capacidad_tabla_kg,
+      operador: { nombre: formPlanIzaje.operador_nombre, cargo: 'Operador Grúa' },
+      rigger: { nombre: formPlanIzaje.rigger_nombre, cargo: 'Rigger Calificado' },
+      supervisor: { nombre: formPlanIzaje.supervisor_nombre, cargo: 'Jefe de Maniobra' },
+      pin_fes: formPlanIzaje.pin_fes
+    }
+    const { data } = await apiAxios.post('/operaciones/plan-izaje/guardar', payload)
+    if (data?.success) {
+      urlPdfPlanIzaje.value = data.url_pdf || ''
+      mensajePlanIzaje.value = 'Plan de Izaje firmado (FES) y PDF A4 con Croquis Vectorial generado exitosamente.'
+      errorPlanIzaje.value = false
+    }
+  } catch (err) {
+    errorPlanIzaje.value = true
+    mensajePlanIzaje.value = err?.response?.data?.error || err?.message || 'Error al guardar Plan de Izaje'
+  } finally {
+    guardandoPlanIzaje.value = false
   }
 }
 </script>

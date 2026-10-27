@@ -12,11 +12,11 @@
             GSP OPERACIONES FAENA
           </div>
           <div class="text-xl sm:text-2xl font-black text-white">
-            🚚 Control de Flota
+            {{ faseVisual === 1 ? 'INICIO REPORT' : 'TERMINO DE REPORT' }}
           </div>
         </div>
-        <v-chip size="large" color="amber-darken-2" variant="flat" class="text-base font-black px-3 py-1.5 rounded-xl shadow-md">
-          DÍA {{ diaCorrelativo }}
+        <v-chip size="large" color="amber-darken-2" variant="flat" class="text-xs sm:text-sm font-black px-3 py-1.5 rounded-xl shadow-md font-mono">
+          {{ etiquetaDiaFecha }}
         </v-chip>
       </div>
 
@@ -29,37 +29,16 @@
           Volver a Mis Faenas
         </v-btn>
       </div>
-
-      <!-- SELECTOR DE MOMENTOS (BOTONERA TÁCTIL) -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
-        <div
-          class="py-3 px-3 rounded-2xl border-2 text-center transition-all cursor-pointer select-none"
-          :class="faseVisual === 1 ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg scale-[1.01]' : 'bg-slate-900 text-slate-300 border-white/20 font-bold'"
-          @click="faseVisual = 1"
-        >
-          <div class="text-xs uppercase tracking-wider font-bold opacity-90">Momento 1</div>
-          <div class="text-base sm:text-lg font-black truncate">🟢 Inicio Faena</div>
-        </div>
-
-        <div
-          class="py-3 px-3 rounded-2xl border-2 text-center transition-all cursor-pointer select-none"
-          :class="faseVisual === 2 ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg scale-[1.01]' : 'bg-slate-900 text-slate-300 border-white/20 font-bold'"
-          @click="irAMomento2"
-        >
-          <div class="text-xs uppercase tracking-wider font-bold opacity-90">Momento 2</div>
-          <div class="text-base sm:text-lg font-black truncate">🔴 Fin Faena</div>
-        </div>
-      </div>
     </div>
 
     <!-- CABECERA REPORT MANDANTE (PASO 3) -->
     <div v-else class="mb-4">
       <div class="d-flex align-center justify-space-between mb-2">
         <v-btn prepend-icon="mdi-arrow-left" size="default" variant="outlined" color="grey-lighten-2" class="font-black text-sm rounded-xl h-10" @click="faseVisual = 2">
-          Volver a Control
+          Volver
         </v-btn>
-        <v-chip size="large" color="emerald-darken-1" variant="flat" class="text-base font-black px-3 py-1.5 rounded-xl shadow-md">
-          DÍA {{ diaCorrelativo }}
+        <v-chip size="large" color="emerald-darken-1" variant="flat" class="text-xs sm:text-sm font-black px-3 py-1.5 rounded-xl shadow-md font-mono">
+          {{ etiquetaDiaFecha }}
         </v-chip>
       </div>
       <div class="text-center py-1">
@@ -78,7 +57,33 @@
       <div class="text-xl font-bold text-slate-200">Cargando datos de faena...</div>
     </v-card>
 
+    <!-- REQ-1060 / SPEC-088: Error de carga del contexto (nunca mostrar formulario con valores por defecto) -->
+    <v-card v-else-if="errorContexto" class="pa-6 text-center rounded-3xl bg-red-950/60 border-2 border-red-500/60 text-white">
+      <div class="text-3xl mb-2">📡</div>
+      <div class="text-lg font-black text-red-200 mb-1">No se pudo cargar la jornada desde el servidor</div>
+      <div class="text-sm text-slate-200 mb-4">
+        Revise su señal de datos y vuelva a intentar. Sus datos de inicio guardados NO se han perdido.
+      </div>
+      <v-btn color="amber-darken-2" size="large" class="font-black text-slate-950 rounded-xl" prepend-icon="mdi-refresh" @click="cargarContexto()">
+        Reintentar
+      </v-btn>
+    </v-card>
+
     <div v-else class="space-y-6">
+      <!-- REQ-1060: Aviso de jornada de un día anterior sin cerrar -->
+      <div v-if="jornadaDiaAnterior" class="bg-orange-950/70 border-2 border-orange-500/70 rounded-2xl p-4 text-white">
+        <div class="text-sm font-black uppercase text-orange-300 mb-1">⚠️ Jornada anterior sin cerrar</div>
+        <div class="text-sm text-slate-100">
+          Tiene una jornada abierta del <strong>{{ form.fecha_reporte }}</strong> (iniciada {{ form.hora_inicio }} hrs).
+          Registre su término y la firma del mandante para cerrarla antes de iniciar una nueva.
+        </div>
+      </div>
+
+      <!-- REQ-1060: OT sin equipo asignado -->
+      <div v-if="!equipoSeleccionado" class="bg-red-950/60 border-2 border-red-500/60 rounded-2xl p-4 text-white text-sm">
+        <strong class="text-red-300">Esta OT no tiene una grúa asignada.</strong>
+        No es posible registrar la jornada. Contacte a Control de Gestión para asignar el equipo.
+      </div>
       <!-- ========================================================================= -->
       <!-- MOMENTO 1: INICIO DE JORNADA                                              -->
       <!-- ========================================================================= -->
@@ -106,31 +111,6 @@
             <span v-if="proyecto.obra_direccion" class="text-slate-300 d-block mt-0.5">• {{ proyecto.obra_direccion }}</span>
           </div>
 
-          <!-- BOTONES SELECTOR MULTI-MÁQUINA -->
-          <div v-if="equipos.length > 1" class="mb-4 pa-3.5 bg-slate-950/80 rounded-2xl border-2 border-slate-700">
-            <label class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-2.5">
-              🚜 SELECCIONAR EQUIPO PARA ESTE REGISTRO (MULTI-MÁQUINA)
-            </label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button
-                v-for="eq in equipos"
-                :key="eq.id_equipo"
-                type="button"
-                class="py-3 px-3 rounded-xl border-2 text-left transition-all flex flex-col justify-center"
-                :class="idEquipoSeleccionado === eq.id_equipo ? 'bg-emerald-600 border-emerald-300 text-white shadow-lg' : 'bg-slate-900 border-slate-700 text-slate-300'"
-                @click="seleccionarEquipo(eq.id_equipo)"
-              >
-                <div class="text-lg font-black font-mono tracking-wider flex items-center ga-1.5">
-                  <span>🚜</span>
-                  <span>{{ eq.patente }}</span>
-                </div>
-                <div class="text-xs font-bold opacity-90 mt-0.5">
-                  {{ eq.modelo }}
-                </div>
-              </button>
-            </div>
-          </div>
-
           <v-divider class="my-3 border-white/20"></v-divider>
 
           <!-- GRÚA ASIGNADA Y TRIPULACIÓN -->
@@ -138,10 +118,10 @@
             <div class="p-3.5 bg-slate-950/90 rounded-2xl border border-amber-400/40">
               <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
               <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
               </strong>
               <span class="text-white text-sm font-bold d-block mt-0.5">
-                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+                {{ equipoSeleccionado?.modelo || '-' }}
               </span>
             </div>
 
@@ -157,31 +137,11 @@
           </div>
         </v-card>
 
-        <!-- FORMULARIO DE INICIO DE JORNADA -->
+        <!-- FORMULARIO DE INICIO REPORT -->
         <v-card
           class="pa-5 rounded-3xl border-2 border-slate-700 text-white shadow-xl"
           style="background-color: #0b1120;"
         >
-          <div class="d-flex align-center ga-3 mb-4">
-            <span class="text-3xl">🟢</span>
-            <div>
-              <div class="text-xl font-black text-white">Registro de Inicio de Faena</div>
-              <div class="text-sm text-slate-300 font-medium">Lectura de tableros al comenzar la jornada</div>
-            </div>
-          </div>
-
-          <!-- Fecha de la Jornada -->
-          <div class="mb-4">
-            <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
-              📅 FECHA DE LA JORNADA
-            </label>
-            <input
-              v-model="form.fecha_reporte"
-              type="date"
-              class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-lg font-black focus:border-amber-400 focus:outline-none h-14"
-            />
-          </div>
-
           <!-- Aviso Especial para Día > 1 (Equipo en Faena) -->
           <div v-if="diaCorrelativo > 1" class="mb-4 pa-4 rounded-2xl border-2 border-emerald-500/50 bg-emerald-950/40 text-left">
             <div class="d-flex align-center ga-2 text-emerald-400 font-black text-sm uppercase mb-1">
@@ -189,27 +149,51 @@
               <span>Servicio Multi-Día • Jornada Día {{ diaCorrelativo }}</span>
             </div>
             <p class="text-xs text-slate-300 mb-0 font-medium">
-              El equipo pernocta en obra y no registra traslado. Solo se estampa la hora de inicio. El horómetro de superestructura se hereda automáticamente del cierre previo (<strong>{{ form.horometro_inicio || '0.0' }} hrs</strong>).
+              El equipo pernocta en obra y no registra traslado. El horómetro de superestructura se hereda del cierre previo (<strong>{{ form.horometro_inicio || '0.0' }} hrs</strong>).
             </p>
           </div>
 
-          <!-- Hora Inicio -->
+          <!-- Hora Inicio (Numérico HH : MM sin reloj circular) -->
           <div class="mb-4">
             <label class="text-sm font-black text-emerald-400 text-uppercase mb-1.5 d-block tracking-wider">
-              🟢 HORA DE INICIO EN FAENA
+              🟢 HORA DE INICIO EN FAENA *
             </label>
-            <input
-              v-model="form.hora_inicio"
-              type="time"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-2xl font-black focus:border-emerald-400 focus:outline-none text-center h-16 shadow-inner"
-            />
+            <div class="d-flex align-center justify-center ga-2 bg-slate-950 border-2 border-slate-700 rounded-2xl p-3">
+              <div class="flex-1 text-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase d-block mb-1">HORA (00-23)</span>
+                <input
+                  :value="horaInicioHH"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="08"
+                  class="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-emerald-400 focus:outline-none"
+                  @input="onInputHora('hora_inicio', 'HH', $event)"
+                  @blur="normalizarHora('hora_inicio')"
+                />
+              </div>
+              <span class="text-3xl font-mono font-black text-emerald-400 pt-4">:</span>
+              <div class="flex-1 text-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase d-block mb-1">MINUTOS (00-59)</span>
+                <input
+                  :value="horaInicioMM"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="00"
+                  class="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-emerald-400 focus:outline-none"
+                  @input="onInputHora('hora_inicio', 'MM', $event)"
+                  @blur="normalizarHora('hora_inicio')"
+                />
+              </div>
+            </div>
           </div>
 
-          <!-- Horómetro Superestructura Inicial (Sin Odómetro Redundante) -->
+          <!-- Horómetro Superestructura Inicial (OBLIGATORIO) -->
           <div class="mb-4">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
+                ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *
               </label>
               <span v-if="diaCorrelativo > 1" class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
                 Heredado Día {{ diaCorrelativo - 1 }}
@@ -224,24 +208,8 @@
             />
           </div>
 
-          <!-- FOTOGRAFÍA DEL HORÓMETRO AL INICIO -->
-          <div class="mb-5 pa-5 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
-            <div class="d-flex align-center justify-space-between mb-2">
-              <label class="text-lg sm:text-xl font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-2">
-                <span>📸 Foto Horómetro Superestructura</span>
-                <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
-              </label>
-              <span v-if="form.foto_tablero_inicio" class="text-base font-black text-emerald-400 bg-emerald-950 px-3 py-1.5 rounded-xl border border-emerald-500">
-                ✅ Foto Cargada
-              </span>
-              <span v-else class="text-xs font-bold text-slate-400 bg-slate-900 px-2 py-1 rounded-lg">
-                Opcional
-              </span>
-            </div>
-            <p class="text-base text-slate-300 mb-4 font-medium">
-              Fotografía clara del horómetro de la superestructura/grúa al iniciar la faena.
-            </p>
-
+          <!-- FOTOGRAFÍA OBLIGATORIA DEL HORÓMETRO AL INICIO (BOTÓN ÚNICO LIMPIO) -->
+          <div class="mb-5">
             <input
               ref="inputFotoInicio"
               type="file"
@@ -267,7 +235,7 @@
                   class="flex-grow-1 font-black text-lg h-16 rounded-2xl text-slate-950"
                   @click="inputFotoInicio.click()"
                 >
-                  📸 Cambiar Foto
+                  📸 CAMBIAR FOTO
                 </v-btn>
                 <v-btn
                   color="red-lighten-1"
@@ -276,7 +244,7 @@
                   class="font-black text-lg h-16 rounded-2xl px-5"
                   @click="form.foto_tablero_inicio = null"
                 >
-                  🗑️ Borrar
+                  🗑️ BORRAR
                 </v-btn>
               </div>
             </div>
@@ -285,30 +253,28 @@
               <v-btn
                 color="amber"
                 variant="flat"
-                size="large"
+                size="x-large"
                 block
-                class="font-black text-base h-14 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
+                class="font-black text-base h-16 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
                 @click="inputFotoInicio.click()"
               >
                 <span class="text-2xl">📸</span>
-                <span>Tomar Foto Horómetro Superestructura</span>
+                <span>FOTO HOROMETRO SUPERESTRUCTURA</span>
               </v-btn>
             </div>
           </div>
 
-          <!-- BOTÓN DE GUARDAR INICIO DE JORNADA -->
+          <!-- BOTÓN DE GUARDAR INICIO REPORT -->
           <v-btn
             block
             size="x-large"
-            :color="diaCorrelativo > 1 ? 'emerald-darken-1' : 'amber-darken-2'"
-            class="font-black text-uppercase rounded-2xl py-4 min-h-[62px] text-base sm:text-lg shadow-xl tracking-wider"
-            :class="diaCorrelativo > 1 ? 'text-white shadow-emerald-500/20' : 'text-slate-950 shadow-amber-500/20'"
+            color="amber-darken-2"
+            class="font-black text-uppercase rounded-2xl py-4 min-h-[62px] text-lg shadow-xl tracking-wider text-slate-950 shadow-amber-500/20"
             :loading="enviandoInicio"
             :disabled="!puedeGuardarInicio"
             @click="guardarInicioJornada"
           >
-            <span v-if="diaCorrelativo > 1">▶️ Iniciar Jornada de Faena Día {{ diaCorrelativo }} ({{ form.hora_inicio }})</span>
-            <span v-else>💾 Guardar Inicio de Jornada (En Faena)</span>
+            GUARDAR INICIO REPORT
           </v-btn>
         </v-card>
       </div>
@@ -327,7 +293,7 @@
               OT: {{ proyecto.codi_proyecto || 'GSP-OT' }}
             </span>
             <v-chip size="default" color="emerald" variant="flat" class="font-black text-xs uppercase px-3 py-1 rounded-xl">
-              DÍA {{ diaCorrelativo }} • EN FAENA
+              🟢 EN FAENA
             </v-chip>
           </div>
 
@@ -343,10 +309,10 @@
             <div class="p-3 bg-slate-950/90 rounded-2xl border border-amber-400/40">
               <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
               <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
               </strong>
               <span class="text-white text-sm font-bold d-block">
-                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+                {{ equipoSeleccionado?.modelo || '-' }}
               </span>
             </div>
 
@@ -361,56 +327,79 @@
             </div>
           </div>
 
-          <!-- DATOS DE INICIO (HORA RECTIFICABLE EN TERRENO) -->
+          <!-- DATOS DE INICIO (SOLO HORARIO DE INICIO MODIFICABLE, OCULTAR HORÓMETRO INICIAL) -->
           <div class="p-3.5 bg-emerald-950/60 rounded-2xl border-2 border-emerald-500/60">
-            <div class="d-flex align-center justify-space-between mb-1.5">
+            <div class="d-flex align-center justify-space-between mb-2">
               <div class="text-xs font-black text-emerald-400 uppercase tracking-wider">
-                ✅ Lecturas al Inicio de Faena:
+                🟢 Horario de Inicio de Faena
               </div>
               <span class="text-[10px] text-emerald-300 font-bold bg-emerald-900/80 px-2 py-0.5 rounded border border-emerald-400/40">
-                ✏️ Hora Rectificable
+                ✏️ Modificable
               </span>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-center items-center">
-              <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
-                <label class="text-slate-300 text-[10px] font-bold uppercase d-block mb-1">🟢 Hora Entrada</label>
-                <input
-                  v-model="form.hora_inicio"
-                  type="time"
-                  class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-emerald-300 font-mono text-base font-black text-center focus:outline-none focus:border-emerald-400"
-                />
-              </div>
-              <div class="p-2 bg-slate-950/80 rounded-xl border border-white/10">
-                <span class="text-slate-300 text-[10px] font-bold uppercase d-block mb-1">⚙️ Horómetro Inicial</span>
-                <span class="text-amber-300 font-mono text-base font-black">{{ form.horometro_inicio || 'N/A' }}</span>
-              </div>
+            <div class="d-flex align-center justify-center ga-2 bg-slate-950/90 rounded-xl p-2.5 border border-white/10">
+              <input
+                :value="horaInicioHH"
+                type="text"
+                inputmode="numeric"
+                maxlength="2"
+                class="w-20 bg-slate-900 border border-emerald-500/50 rounded-lg py-1.5 text-emerald-300 font-mono text-2xl font-black text-center focus:outline-none focus:border-emerald-400"
+                @input="onInputHora('hora_inicio', 'HH', $event)"
+                @blur="normalizarHora('hora_inicio')"
+              />
+              <span class="text-2xl font-mono font-black text-emerald-400">:</span>
+              <input
+                :value="horaInicioMM"
+                type="text"
+                inputmode="numeric"
+                maxlength="2"
+                class="w-20 bg-slate-900 border border-emerald-500/50 rounded-lg py-1.5 text-emerald-300 font-mono text-2xl font-black text-center focus:outline-none focus:border-emerald-400"
+                @input="onInputHora('hora_inicio', 'MM', $event)"
+                @blur="normalizarHora('hora_inicio')"
+              />
             </div>
           </div>
         </v-card>
 
-        <!-- FORMULARIO DE TÉRMINO DE JORNADA -->
+        <!-- FORMULARIO DE TÉRMINO DE REPORT -->
         <v-card
           class="pa-5 rounded-3xl border-2 border-slate-700 text-white shadow-xl"
           style="background-color: #0b1120;"
         >
-          <div class="d-flex align-center ga-3 mb-4">
-            <span class="text-3xl">🔴</span>
-            <div>
-              <div class="text-xl font-black text-white">Registro de Término de Faena</div>
-              <div class="text-sm text-slate-300 font-medium">Cierre de operación diaria y balance horario</div>
-            </div>
-          </div>
-
-          <!-- Hora Término -->
+          <!-- Hora Término (Numérico HH : MM sin reloj circular) -->
           <div class="mb-4">
             <label class="text-sm font-black text-red-400 text-uppercase mb-1.5 d-block tracking-wider">
-              🔴 HORA DE TÉRMINO DE FAENA
+              🔴 HORA DE TÉRMINO DE FAENA *
             </label>
-            <input
-              v-model="form.hora_termino"
-              type="time"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-2xl font-black focus:border-red-400 focus:outline-none text-center h-16 shadow-inner"
-            />
+            <div class="d-flex align-center justify-center ga-2 bg-slate-950 border-2 border-slate-700 rounded-2xl p-3">
+              <div class="flex-1 text-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase d-block mb-1">HORA (00-23)</span>
+                <input
+                  :value="horaTerminoHH"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="18"
+                  class="w-full bg-slate-900 border-2 border-red-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-red-400 focus:outline-none"
+                  @input="onInputHora('hora_termino', 'HH', $event)"
+                  @blur="normalizarHora('hora_termino')"
+                />
+              </div>
+              <span class="text-3xl font-mono font-black text-red-400 pt-4">:</span>
+              <div class="flex-1 text-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase d-block mb-1">MINUTOS (00-59)</span>
+                <input
+                  :value="horaTerminoMM"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="2"
+                  placeholder="00"
+                  class="w-full bg-slate-900 border-2 border-red-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-red-400 focus:outline-none"
+                  @input="onInputHora('hora_termino', 'MM', $event)"
+                  @blur="normalizarHora('hora_termino')"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Tiempo de Colación (Botones Grandes) -->
@@ -437,97 +426,57 @@
             </div>
           </div>
 
-          <!-- ⏱️ CÁLCULO DE JORNADA (JUSTO DEBAJO DE COLACIÓN - GRID 3 COLUMNAS NÍTIDAS) -->
+          <!-- ⏱️ RESUMEN DE TIEMPOS (SOLO HORA REPORT Y HORA COLACIÓN) -->
           <div class="pa-4 rounded-3xl border-2 border-emerald-500/70 bg-emerald-950/50 mb-4 shadow-xl">
-            <div class="d-flex align-center justify-space-between mb-2">
-              <span class="text-sm font-black text-emerald-400 text-uppercase tracking-wider">
-                ⏱️ Resumen de Tiempos de Jornada
-              </span>
-              <span class="text-sm text-slate-200 font-mono font-bold">
-                Base Mínima: {{ horasMinimas }} hrs
-              </span>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2.5 text-center pt-1">
-              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
-                <div class="text-xs uppercase font-black text-slate-300 tracking-wider mb-0.5">Jornada Total</div>
-                <div class="text-xl sm:text-2xl font-mono font-black text-white">
-                  {{ totalHorasJornada }} hrs
-                </div>
-              </div>
-              <div class="p-2.5 bg-slate-900/90 rounded-2xl border border-white/10">
-                <div class="text-xs uppercase font-black text-slate-300 tracking-wider mb-0.5">Colación</div>
-                <div class="text-xl sm:text-2xl font-mono font-black text-amber-300">
-                  {{ horasColacionFormateadas }} hrs
-                </div>
-              </div>
-              <div class="p-2.5 bg-emerald-900/90 rounded-2xl border-2 border-emerald-400 shadow-md">
-                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider mb-0.5">Efectivas</div>
-                <div class="text-xl sm:text-2xl font-mono font-black text-emerald-300">
+            <div class="grid grid-cols-2 gap-3 text-center">
+              <div class="p-3 bg-emerald-900/90 rounded-2xl border-2 border-emerald-400 shadow-md">
+                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider mb-0.5">HORA REPORT</div>
+                <div class="text-2xl font-mono font-black text-emerald-300">
                   {{ calculoHoras.efectivas }} hrs
                 </div>
               </div>
-            </div>
-
-            <div v-if="calculoHoras.standbyCliente > 0 || calculoHoras.standbyGsp > 0" class="mt-3 p-2.5 bg-slate-900/90 rounded-xl border border-white/10 text-xs font-mono">
-              <div class="d-flex justify-space-between mb-1" v-if="calculoHoras.standbyCliente > 0">
-                <span class="text-amber-400 font-bold">Standby Cliente (Aceptado):</span>
-                <span class="text-white font-bold">+{{ calculoHoras.standbyCliente }} hrs</span>
+              <div class="p-3 bg-slate-900/90 rounded-2xl border border-white/10">
+                <div class="text-xs uppercase font-black text-slate-300 tracking-wider mb-0.5">HORA COLACIÓN</div>
+                <div class="text-2xl font-mono font-black text-amber-300">
+                  {{ horasColacionFormateadas }} hrs
+                </div>
               </div>
-              <div class="d-flex justify-space-between mb-1" v-if="calculoHoras.standbyGsp > 0">
-                <span class="text-red-400 font-bold">Standby San Pablo (Deducible):</span>
-                <span class="text-white font-bold">-{{ calculoHoras.standbyGsp }} hrs</span>
-              </div>
-              <div class="d-flex justify-space-between border-t border-white/10 pt-1 text-emerald-400 font-bold">
-                <span>Total Facturable / Computable:</span>
-                <span>{{ calculoHoras.facturables }} hrs</span>
-              </div>
-            </div>
-
-            <div v-if="calculoHoras.sobretiempo > 0" class="mt-3 text-center text-sm font-black text-amber-200 bg-amber-950/90 py-2 px-3 rounded-xl border border-amber-500/50">
-              ⚡ <strong>Sobretiempo Devengado:</strong> +{{ calculoHoras.sobretiempo }} hrs (Total a Facturar: {{ calculoHoras.facturables }} hrs).
-            </div>
-            <div v-else class="mt-3 text-center text-xs font-bold text-emerald-300/90 bg-emerald-950/60 py-1.5 px-3 rounded-xl border border-emerald-500/30">
-              ✔️ Sin sobretiempo devengado (Facturación base contractual: {{ calculoHoras.facturables }} hrs).
             </div>
           </div>
 
-          <!-- GESTIÓN DE HORAS STANDBY / DETENCIONES EN FAENA (REQ JORGE PONCE) -->
+          <!-- GESTIÓN DE HORAS STANDBY / DETENCIONES EN FAENA -->
           <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
-            <div class="d-flex align-center justify-space-between mb-2">
+            <div class="d-flex align-center justify-space-between mb-3">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                🛑 HORAS STANDBY / DETENCIONES EN FAENA
+                🛑 HORAS STANDBY
               </label>
-              <span class="text-xs text-slate-400 font-bold">Opcional</span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <div>
-                <label class="text-xs font-bold text-amber-400 block mb-1">
-                  Standby Cliente (Aceptado / Cobrable)
+            <div class="grid grid-cols-1 gap-3 mb-3">
+              <div class="p-3 rounded-xl bg-slate-900 border border-amber-500/40">
+                <label class="text-sm font-black text-amber-300 block mb-1.5 uppercase tracking-wide">
+                  STAND BY CLIENTE COBRABLE
                 </label>
                 <input
                   v-model.number="form.horas_standby_cliente"
                   type="number"
                   step="0.5"
                   min="0"
-                  placeholder="0.0 hrs"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold text-center"
+                  placeholder="0.0"
+                  class="w-full bg-slate-950 border-2 border-amber-500/50 rounded-xl px-3 py-2.5 text-white font-mono text-xl font-black text-center focus:border-amber-400 focus:outline-none"
                 />
-                <span class="text-[10px] text-slate-400 block mt-1">Espera de carga, viento, permisos. Cuenta en facturación.</span>
               </div>
-              <div>
-                <label class="text-xs font-bold text-red-400 block mb-1">
-                  Standby San Pablo (Falla GSP / Sin Cobro)
+              <div class="p-3 rounded-xl bg-slate-900 border border-red-500/40">
+                <label class="text-sm font-black text-red-300 block mb-1.5 uppercase tracking-wide">
+                  STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE
                 </label>
                 <input
                   v-model.number="form.horas_standby_gsp"
                   type="number"
                   step="0.5"
                   min="0"
-                  placeholder="0.0 hrs"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold text-center"
+                  placeholder="0.0"
+                  class="w-full bg-slate-950 border-2 border-red-500/50 rounded-xl px-3 py-2.5 text-white font-mono text-xl font-black text-center focus:border-red-400 focus:outline-none"
                 />
-                <span class="text-[10px] text-slate-400 block mt-1">Falla técnica o falta de anemómetro. NO se cobra y se deduce.</span>
               </div>
             </div>
             <div v-if="form.horas_standby_cliente > 0 || form.horas_standby_gsp > 0">
@@ -535,17 +484,17 @@
               <input
                 v-model="form.motivo_standby"
                 type="text"
-                placeholder="Ej: Falta de anemómetro para medición de viento / Espera de maniobra cliente"
+                placeholder="Detalle el motivo del standby..."
                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"
               />
             </div>
           </div>
 
-          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OPCIONAL) -->
+          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OBLIGATORIO) -->
           <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
-                ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
+                ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *
               </label>
               <button
                 v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
@@ -591,21 +540,8 @@
               <span v-if="horometroPropuesto" class="text-slate-400 text-[11px]">Sugerido: {{ horometroPropuesto }} hrs</span>
             </div>
 
-            <!-- FOTOGRAFÍA OBLIGATORIA SUPERESTRUCTURA -->
+            <!-- FOTOGRAFÍA OBLIGATORIA SUPERESTRUCTURA (BOTÓN ÚNICO LIMPIO) -->
             <div class="mt-3 pt-3 border-t border-slate-800">
-              <div class="d-flex align-center justify-space-between mb-1.5">
-                <label class="text-xs font-black text-amber-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-                  <span>📸 Foto Tablero Superestructura (Término)</span>
-                  <span class="text-xs font-normal text-slate-400">(OPCIONAL)</span>
-                </label>
-                <span v-if="form.foto_tablero_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
-                  ✅ Foto Cargada
-                </span>
-                <span v-else class="text-[11px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg">
-                  Opcional
-                </span>
-              </div>
-
               <input
                 ref="inputFotoTermino"
                 type="file"
@@ -627,20 +563,20 @@
                   <v-btn
                     color="amber"
                     variant="flat"
-                    size="small"
-                    class="flex-grow-1 font-black text-xs h-9 rounded-lg text-slate-950"
+                    size="default"
+                    class="flex-grow-1 font-black text-sm h-11 rounded-xl text-slate-950"
                     @click="inputFotoTermino.click()"
                   >
-                    📸 Cambiar Foto Superestructura
+                    📸 CAMBIAR FOTO
                   </v-btn>
                   <v-btn
                     color="red-lighten-1"
                     variant="outlined"
-                    size="small"
-                    class="font-black text-xs h-9 rounded-lg px-3"
+                    size="default"
+                    class="font-black text-sm h-11 rounded-xl px-4"
                     @click="form.foto_tablero_termino = null"
                   >
-                    🗑️ Borrar
+                    🗑️ BORRAR
                   </v-btn>
                 </div>
               </div>
@@ -649,108 +585,20 @@
                 <v-btn
                   color="amber"
                   variant="flat"
-                  size="default"
+                  size="large"
                   block
-                  class="font-black text-xs h-11 rounded-xl d-flex align-center ga-2 text-slate-950 shadow py-2"
+                  class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950 shadow py-2"
                   @click="inputFotoTermino.click()"
                 >
-                  <span class="text-lg">📸</span>
-                  <span>Tomar Foto Horómetro Superestructura</span>
-                </v-btn>
-              </div>
-            </div>
-          </div>
-
-
-
-          <!-- 3. HORÓMETRO CHASIS TÉRMINO (EQUIPOS BIMOTOR O DOS MOTORES) -->
-          <div v-if="esGruaBimotor" class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
-            <div class="d-flex align-center justify-space-between mb-1.5">
-              <label class="text-sm font-black text-cyan-300 text-uppercase tracking-wider">
-                🚜 HORÓMETRO CHASIS (TÉRMINO)
-              </label>
-              <span class="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">Motor Chasis</span>
-            </div>
-            <input
-              v-model.number="form.horometro_chasis_termino"
-              type="number"
-              step="0.1"
-              placeholder="Ej: 5120.4"
-              class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 text-cyan-300 font-mono text-2xl font-black focus:border-cyan-400 focus:outline-none text-center h-16 shadow-inner"
-            />
-
-            <!-- FOTOGRAFÍA HORÓMETRO CHASIS -->
-            <div class="mt-3 pt-3 border-t border-slate-800">
-              <div class="d-flex align-center justify-space-between mb-1.5">
-                <label class="text-xs font-black text-cyan-300 text-uppercase tracking-wider d-flex align-center ga-1.5">
-                  <span>📸 Foto Tablero Chasis (Término)</span>
-                  <span v-if="form.horometro_chasis_termino" class="text-red-400 font-black">*</span>
-                </label>
-                <span v-if="form.foto_horometro_chasis_termino" class="text-[11px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-emerald-500">
-                  ✅ Foto Cargada
-                </span>
-                <span v-else-if="form.horometro_chasis_termino" class="text-[11px] font-black text-amber-400 bg-amber-950 px-2 py-0.5 rounded-lg border border-amber-500">
-                  ⚠️ Obligatoria al registrar horómetro chasis
-                </span>
-              </div>
-
-              <input
-                ref="inputFotoChasisTermino"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                class="d-none"
-                @change="onFotoChasisTerminoSeleccionada"
-              />
-
-              <div v-if="form.foto_horometro_chasis_termino" class="position-relative space-y-2">
-                <div class="rounded-xl overflow-hidden border border-cyan-400 bg-black flex items-center justify-center max-h-60 shadow-md">
-                  <img
-                    :src="form.foto_horometro_chasis_termino"
-                    alt="Foto Horómetro Chasis Término"
-                    class="w-full h-auto max-h-60 object-contain"
-                  />
-                </div>
-                <div class="d-flex ga-2">
-                  <v-btn
-                    color="cyan-darken-2"
-                    variant="flat"
-                    size="small"
-                    class="flex-grow-1 font-black text-xs h-9 rounded-lg text-white"
-                    @click="inputFotoChasisTermino.click()"
-                  >
-                    📸 Cambiar Foto Chasis
-                  </v-btn>
-                  <v-btn
-                    color="red-lighten-1"
-                    variant="outlined"
-                    size="small"
-                    class="font-black text-xs h-9 rounded-lg px-3"
-                    @click="form.foto_horometro_chasis_termino = null"
-                  >
-                    🗑️ Borrar
-                  </v-btn>
-                </div>
-              </div>
-
-              <div v-else>
-                <v-btn
-                  color="cyan-darken-3"
-                  variant="outlined"
-                  size="default"
-                  block
-                  class="font-bold text-xs h-11 rounded-xl d-flex align-center ga-2 text-cyan-300 border-cyan-500/50 hover:bg-cyan-950/40 py-2"
-                  @click="inputFotoChasisTermino.click()"
-                >
-                  <span class="text-lg">📸</span>
-                  <span>Tomar Foto Horómetro Chasis</span>
+                  <span class="text-xl">📸</span>
+                  <span>FOTO HOROMETRO SUPERESTRUCTURA</span>
                 </v-btn>
               </div>
             </div>
           </div>
 
           <!-- Observaciones / Maniobras -->
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="text-sm font-black text-amber-300 text-uppercase mb-1.5 d-block tracking-wider">
               📝 MANIOBRAS REALIZADAS (VISIBLES EN REPORT MANDANTE)
             </label>
@@ -762,20 +610,7 @@
             ></textarea>
           </div>
 
-          <!-- Notas Mecánicas Internas GSP (Confidencial Taller) -->
-          <div class="mb-4">
-            <label class="text-sm font-black text-slate-400 text-uppercase mb-1.5 d-block tracking-wider">
-              🔒 NOTAS MECÁNICAS / TALLER GSP (USO INTERNO)
-            </label>
-            <textarea
-              v-model="form.notas_mecanicas_gsp"
-              rows="2"
-              placeholder="Niveles de fluidos, desgaste de aparejos, alertas del computador de abordo..."
-              class="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-3 text-slate-200 text-sm font-medium focus:border-slate-500 focus:outline-none"
-            ></textarea>
-          </div>
-
-          <!-- BOTÓN: PROCEDER A REPORT MANDANTE -->
+          <!-- BOTÓN: TERMINO DE REPORT -->
           <v-btn
             block
             size="x-large"
@@ -783,7 +618,7 @@
             class="font-black text-uppercase rounded-2xl text-slate-950 py-4 min-h-[62px] text-lg shadow-xl shadow-amber-500/20 tracking-wider"
             @click="irAReportMandante"
           >
-            <span>🏁 Finalizar Jornada ➔ Proceder a Report Mandante ➔</span>
+            <span>TERMINO DE REPORT</span>
           </v-btn>
         </v-card>
       </div>
@@ -801,8 +636,8 @@
             <span class="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-widest">
               RESUMEN COMERCIAL DE FAENA
             </span>
-            <v-chip size="default" color="amber" variant="flat" class="font-black text-xs text-slate-950 px-3 py-1">
-              DÍA {{ diaCorrelativo }}
+            <v-chip size="default" color="amber" variant="flat" class="font-black text-xs text-slate-950 px-3 py-1 font-mono">
+              {{ etiquetaDiaFecha }}
             </v-chip>
           </div>
 
@@ -818,10 +653,10 @@
             <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
               <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Certificada</span>
               <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'BGDF.90-4' }}
+                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
               </strong>
               <span class="text-slate-200 text-sm font-bold d-block">
-                {{ equipoSeleccionado?.modelo || 'LTM-1220' }}
+                {{ equipoSeleccionado?.modelo || '-' }}
               </span>
             </div>
             <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
@@ -854,7 +689,7 @@
                 </div>
               </div>
               <div class="p-2.5 bg-emerald-950/90 rounded-2xl border-2 border-emerald-400 shadow-md">
-                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider">Efectivas</div>
+                <div class="text-xs uppercase font-black text-emerald-300 tracking-wider">HORA REPORT</div>
                 <div class="text-2xl font-mono font-black text-emerald-300 mt-0.5">
                   {{ calculoHoras.efectivas }} hrs
                 </div>
@@ -863,21 +698,13 @@
 
             <div v-if="calculoHoras.standbyCliente > 0 || calculoHoras.standbyGsp > 0" class="mt-2.5 pt-2 border-t border-white/20 text-xs font-mono space-y-1">
               <div v-if="calculoHoras.standbyCliente > 0" class="text-amber-300 flex justify-between">
-                <span>Standby Mandante:</span>
+                <span>STAND BY CLIENTE COBRABLE:</span>
                 <span class="font-bold">{{ calculoHoras.standbyCliente }} hrs</span>
               </div>
               <div v-if="calculoHoras.standbyGsp > 0" class="text-red-400 flex justify-between">
-                <span>Standby San Pablo (Descontado):</span>
+                <span>STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE:</span>
                 <span class="font-bold">-{{ calculoHoras.standbyGsp }} hrs</span>
               </div>
-              <div class="text-emerald-400 flex justify-between font-bold border-t border-white/10 pt-1">
-                <span>Total Facturable:</span>
-                <span>{{ calculoHoras.facturables }} hrs</span>
-              </div>
-            </div>
-
-            <div v-if="calculoHoras.sobretiempo > 0" class="mt-2.5 text-sm font-black text-yellow-300 text-center">
-              (Incluye +{{ calculoHoras.sobretiempo }} hrs de sobretiempo sobre base contractual)
             </div>
           </div>
 
@@ -971,7 +798,7 @@
               class="font-black text-base rounded-2xl h-12"
               @click="faseVisual = 2"
             >
-              ◀ Volver a Control de Flota
+              ◀ Volver a Término de Report
             </v-btn>
           </div>
         </v-card>
@@ -1042,18 +869,55 @@ const enviando = ref(false)
 const idProyecto = ref(route.query.id_proyecto || null)
 const idEquipoSeleccionado = ref(route.query.id_equipo ? Number(route.query.id_equipo) : null)
 const idReporteAvanceActivo = ref(null)
+// REQ-1060 / SPEC-088: identidad explícita de la jornada recibida desde la consola (o respaldo local)
+const idReporteAvanceRuta = ref(route.query.id_reporte_avance ? Number(route.query.id_reporte_avance) : null)
+const errorContexto = ref(false)
+const jornadaDiaAnterior = ref(false)
+const jornadasAbiertas = ref([])
+
+// Fecha local operativa (America/Santiago), nunca UTC (INV-7)
+const fechaHoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
+
+// Usuario autenticado de la PWA (INV-8)
+const idUserSesion = () => {
+  try {
+    const perfil = JSON.parse(localStorage.getItem('perfil') || '{}')
+    return perfil?.id_user ? Number(perfil.id_user) : null
+  } catch (e) {
+    return null
+  }
+}
+
+// Respaldo local durable de la jornada iniciada (P7)
+const claveRespaldoJornada = () => `gsp_jornada_activa_${idProyecto.value}`
+const leerRespaldoJornada = () => {
+  try {
+    return JSON.parse(localStorage.getItem(claveRespaldoJornada()) || 'null')
+  } catch (e) {
+    return null
+  }
+}
+const guardarRespaldoJornada = (datos) => {
+  try {
+    localStorage.setItem(claveRespaldoJornada(), JSON.stringify(datos))
+  } catch (e) { /* almacenamiento lleno o bloqueado: el servidor sigue siendo la fuente de verdad */ }
+}
+const borrarRespaldoJornada = () => {
+  try {
+    localStorage.removeItem(claveRespaldoJornada())
+  } catch (e) { /* sin efecto */ }
+}
 const servicioConcluido = ref(false)
 const mensajeConcluido = ref('')
 const mostrarModalRetorno = ref(false)
 const modalRetornoToken = ref(null)
 
 const irAViajeRetorno = () => {
-  const isProd = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/lg-gsp-prod') ||
-    window.location.pathname.startsWith('/pwa-gsp-prod')
-  )
-  const webPrefix = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
-  window.location.href = `${window.location.origin}${webPrefix}/viaje/${modalRetornoToken.value}`
+  if (modalRetornoToken.value) {
+    router.push(`/viaje/${modalRetornoToken.value}`)
+  } else {
+    router.push('/surveys')
+  }
 }
 
 const proyecto = ref({})
@@ -1061,14 +925,22 @@ const equipos = ref([])
 const personas = ref([])
 const reportsPrevios = ref([])
 const diaCorrelativo = ref(1)
+const totalDiasContratados = ref(1)
 const horasMinimas = ref(8.0)
+
+const etiquetaDiaFecha = computed(() => {
+  const raw = String(form.fecha_reporte || fechaHoyChile())
+  const partes = raw.split('-')
+  const fechaFmt = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : raw
+  const tot = Math.max(Number(totalDiasContratados.value) || 1, Number(diaCorrelativo.value) || 1)
+  return `${fechaFmt} (DIA ${diaCorrelativo.value} DE ${tot})`
+})
 
 const inputFotoInicio = ref(null)
 const inputFotoTermino = ref(null)
-const inputFotoChasisTermino = ref(null)
 
 const form = reactive({
-  fecha_reporte: new Date().toISOString().split('T')[0],
+  fecha_reporte: fechaHoyChile(),
   hora_inicio: '08:00',
   hora_termino: '18:00',
   minutos_colacion: 60,
@@ -1100,12 +972,13 @@ const snackbar = reactive({
 })
 
 const equipoSeleccionado = computed(() => {
+  // REQ-1060 / INV-4: el equipo canónico lo define el backend (id_equipo_seleccionado). Nunca se inventa un equipo.
   if (idEquipoSeleccionado.value) {
     const match = equipos.value.find(e => Number(e.id_equipo) === idEquipoSeleccionado.value)
     if (match) return match
   }
   if (equipos.value.length > 0) return equipos.value[0]
-  return { patente: 'BGDF.90-4', modelo: 'LTM-1220 (220 TON)', estado_operativo: 'ARRIBADO' }
+  return null
 })
 
 const operadorNombre = computed(() => {
@@ -1129,17 +1002,33 @@ const riggerNombre = computed(() => {
   return proyecto.value.rigger_nombre || null
 })
 
+const horaInicioHH = computed(() => (form.hora_inicio || '08:00').split(':')[0] || '08')
+const horaInicioMM = computed(() => (form.hora_inicio || '08:00').split(':')[1] || '00')
+const horaTerminoHH = computed(() => (form.hora_termino || '18:00').split(':')[0] || '18')
+const horaTerminoMM = computed(() => (form.hora_termino || '18:00').split(':')[1] || '00')
+
+const onInputHora = (campo, parte, event) => {
+  const digits = String(event.target.value || '').replace(/\D/g, '').slice(0, 2)
+  const actual = (form[campo] || '08:00').split(':')
+  let hh = actual[0] || '00'
+  let mm = actual[1] || '00'
+  if (parte === 'HH') {
+    hh = digits
+  } else {
+    mm = digits
+  }
+  form[campo] = `${hh}:${mm}`
+}
+
+const normalizarHora = (campo) => {
+  const actual = (form[campo] || '08:00').split(':')
+  let hhNum = Math.min(23, Math.max(0, parseInt(actual[0] || '0', 10) || 0))
+  let mmNum = Math.min(59, Math.max(0, parseInt(actual[1] || '0', 10) || 0))
+  form[campo] = `${String(hhNum).padStart(2, '0')}:${String(mmNum).padStart(2, '0')}`
+}
+
 const horasColacionFormateadas = computed(() => {
   return (form.minutos_colacion / 60).toFixed(1)
-})
-
-const totalHorasJornada = computed(() => {
-  if (!form.hora_inicio || !form.hora_termino) return '0.0'
-  const [hIni, mIni] = form.hora_inicio.split(':').map(Number)
-  const [hFin, mFin] = form.hora_termino.split(':').map(Number)
-  let minutosTotales = (hFin * 60 + mFin) - (hIni * 60 + mIni)
-  if (minutosTotales < 0) minutosTotales += 24 * 60
-  return (minutosTotales / 60).toFixed(1)
 })
 
 const deltaHorometro = computed(() => {
@@ -1150,12 +1039,6 @@ const deltaHorometro = computed(() => {
   return null
 })
 
-
-const esGruaBimotor = computed(() => {
-  const t = (equipoSeleccionado.value?.tipo_equipo || equipoSeleccionado.value?.modelo || '').toUpperCase()
-  return t.includes('GRUA') || t.includes('TELESCOPICA') || t.includes('LTM') || equipoSeleccionado.value?.cantidad_estanques === 2 || equipoSeleccionado.value?.es_bimotor === true
-})
-
 // Acciones de cámara para foto inicio horómetro
 const onFotoInicioSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_inicio = b64 })
@@ -1164,11 +1047,6 @@ const onFotoInicioSeleccionada = (event) => {
 // Acciones de cámara para foto término superestructura
 const onFotoTerminoSeleccionada = (event) => {
   comprimirYAsignar(event, (b64) => { form.foto_tablero_termino = b64 })
-}
-
-// Acciones de cámara para foto término chasis (bimotor)
-const onFotoChasisTerminoSeleccionada = (event) => {
-  comprimirYAsignar(event, (b64) => { form.foto_horometro_chasis_termino = b64 })
 }
 
 const comprimirYAsignar = (event, callback) => {
@@ -1229,8 +1107,8 @@ const calculoHoras = computed(() => {
   // Horas netas computables al mandante (Faena - Colación - Standby GSP)
   const totalComputable = Number(Math.max(0, horasBrutas - stbyGsp).toFixed(1))
 
-  // Horas de operación real de izaje (Horas netas - Standby Cliente)
-  const efectivas = Number(Math.max(0, totalComputable - stbyCliente).toFixed(1))
+  // HORA REPORT: NO se rebajan las horas de STAND BY CLIENTE COBRABLE (solo se deduce colación y Standby San Pablo)
+  const efectivas = totalComputable
 
   // Facturables: base contractual o total computable
   const facturables = Number(Math.max(totalComputable, horasMinimas.value).toFixed(1))
@@ -1299,7 +1177,10 @@ watch(() => calculoHoras.value.efectivas, (newEf) => {
 
 const puedeGuardarInicio = computed(() => {
   if (servicioConcluido.value) return false
+  if (errorContexto.value || !equipoSeleccionado.value) return false
   if (!form.fecha_reporte || !form.hora_inicio || enviandoInicio.value) return false
+  if (form.horometro_inicio === null || form.horometro_inicio === '' || Number.isNaN(Number(form.horometro_inicio))) return false
+  if (!form.foto_tablero_inicio) return false
   return true
 })
 
@@ -1313,46 +1194,45 @@ const puedeEnviarReport = computed(() => {
   )
 })
 
-const irAMomento2 = () => {
-  faseVisual.value = 2
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 const irAReportMandante = () => {
+  normalizarHora('hora_inicio')
+  normalizarHora('hora_termino')
   if (!form.hora_termino) {
     snackbar.text = '⚠️ Debes ingresar la Hora de Término de Faena'
     snackbar.color = 'warning'
     snackbar.show = true
     return
   }
-  if (form.horometro_termino && estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
+  if (form.horometro_termino === null || form.horometro_termino === '' || Number.isNaN(Number(form.horometro_termino))) {
+    snackbar.text = '⚠️ El Horómetro Superestructura (Término) es OBLIGATORIO'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (!form.foto_tablero_termino) {
+    snackbar.text = '⚠️ La Foto del Horómetro Superestructura es OBLIGATORIA'
+    snackbar.color = 'warning'
+    snackbar.show = true
+    return
+  }
+  if (estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
     snackbar.text = estadoHorometroTermino.value.mensaje
     snackbar.color = 'error'
     snackbar.show = true
     return
   }
-  if (form.horometro_termino && estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
+  if (estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
     const confirma = window.confirm(`⚠️ Advertencia de Horómetro Motor:\n\nEl horómetro final (${form.horometro_termino}) genera un incremento de +${estadoHorometroTermino.value.diff} hrs de motor en una jornada de ${calculoHoras.value.efectivas} hrs.\n\n¿Estás seguro de que este valor es correcto y no corresponde al kilometraje/odómetro?`)
     if (!confirma) return
-  }
-  if (esGruaBimotor.value && form.horometro_chasis_termino && !form.foto_horometro_chasis_termino) {
-    snackbar.text = '⚠️ La Foto del Horómetro de Chasis al Término es OBLIGATORIA'
-    snackbar.color = 'warning'
-    snackbar.show = true
-    return
   }
   faseVisual.value = 3
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const seleccionarEquipo = async (idEq) => {
-  idEquipoSeleccionado.value = Number(idEq)
-  await cargarContexto(idEq)
-}
-
 const cargarContexto = async (idEqParam = null) => {
   try {
     cargando.value = true
+    errorContexto.value = false
     if (!idProyecto.value) {
       const guardado = localStorage.getItem('id_proyecto_activo')
       if (guardado) idProyecto.value = guardado
@@ -1366,8 +1246,21 @@ const cargarContexto = async (idEqParam = null) => {
       return
     }
 
-    const eqQuery = idEqParam || idEquipoSeleccionado.value ? `?id_equipo=${idEqParam || idEquipoSeleccionado.value}` : ''
-    const res = await api.get(`/operaciones/report/contexto/${idProyecto.value}${eqQuery}`)
+    // REQ-1060 / SPEC-088: se envía la identidad explícita de la jornada (consola o respaldo local) y el usuario
+    const respaldo = leerRespaldoJornada()
+    const params = {}
+    const eqSolicitado = idEqParam || idEquipoSeleccionado.value
+    if (eqSolicitado) params.id_equipo = eqSolicitado
+    const idJornadaConocida = idReporteAvanceRuta.value || (!idEqParam ? respaldo?.id_reporte_avance : null)
+    if (idJornadaConocida) params.id_reporte_avance = idJornadaConocida
+    const uid = idUserSesion()
+    if (uid) params.id_user = uid
+
+    const res = await api.get(`/operaciones/report/contexto/${idProyecto.value}`, { params })
+    if (!res.data || !res.data.success) {
+      errorContexto.value = true
+      return
+    }
     if (res.data && res.data.success) {
       const d = res.data.data
       proyecto.value = d.proyecto || {}
@@ -1390,6 +1283,7 @@ const cargarContexto = async (idEqParam = null) => {
 
       reportsPrevios.value = d.reports || []
       diaCorrelativo.value = d.dia_sugerido || 1
+      totalDiasContratados.value = Number(d.total_dias || d.proyecto?.cantidad_dias || d.proyecto?.dias_contratados || diaCorrelativo.value || 1)
       if (d.horas_minimas !== undefined && d.horas_minimas !== null) {
         horasMinimas.value = Number(d.horas_minimas)
       }
@@ -1402,16 +1296,29 @@ const cargarContexto = async (idEqParam = null) => {
         mensajeConcluido.value = ''
       }
 
-      if (d.id_equipo_seleccionado && !idEquipoSeleccionado.value) {
+      // REQ-1060 / INV-4: el equipo canónico del backend SIEMPRE manda (evita guardar con un equipo y buscar con otro)
+      if (d.id_equipo_seleccionado) {
         idEquipoSeleccionado.value = Number(d.id_equipo_seleccionado)
       } else if (!idEquipoSeleccionado.value && equipos.value.length > 0) {
         idEquipoSeleccionado.value = Number(equipos.value[0].id_equipo)
       }
+      jornadasAbiertas.value = d.jornadas_abiertas || []
+      if (d.equipo_corregido) {
+        console.warn(`[REQ-1060] Equipo corregido: solicitado ${d.id_equipo_solicitado} -> canónico ${d.id_equipo_seleccionado}`)
+      }
 
-      // Si hay una jornada activa (iniciada hoy), precargarla y pasar directo a Momento 2
+      // Si hay una jornada activa, precargarla y pasar directo a Momento 2
       if (d.jornada_activa) {
         const j = d.jornada_activa
         idReporteAvanceActivo.value = j.id_reporte_avance
+        idReporteAvanceRuta.value = j.id_reporte_avance
+        jornadaDiaAnterior.value = Boolean(j.es_dia_anterior)
+        if (j.fecha_reporte_str) {
+          form.fecha_reporte = j.fecha_reporte_str
+        }
+        if (j.hora_inicio_str) {
+          form.hora_inicio = j.hora_inicio_str
+        }
         if (j.horas_minimas !== undefined && j.horas_minimas !== null) {
           horasMinimas.value = Number(j.horas_minimas)
         }
@@ -1422,7 +1329,7 @@ const cargarContexto = async (idEqParam = null) => {
         form.foto_odometro_inicio = j.foto_odometro_inicio || null
         form.foto_tablero_termino = j.foto_tablero_termino || null
         form.foto_odometro_termino = j.foto_odometro_termino || null
-        if (j.fecha_inicio_servicio) {
+        if (!j.hora_inicio_str && j.fecha_inicio_servicio) {
           try {
             const d = new Date(j.fecha_inicio_servicio)
             if (!isNaN(d.getTime())) {
@@ -1440,6 +1347,11 @@ const cargarContexto = async (idEqParam = null) => {
         }
         diaCorrelativo.value = j.dia_correlativo || diaCorrelativo.value
         faseVisual.value = 2 // Pasar directo al Momento 2 (Fin de jornada)
+        guardarRespaldoJornada({
+          id_reporte_avance: j.id_reporte_avance,
+          id_equipo: j.id_equipo,
+          fecha_reporte: j.fecha_reporte_str || form.fecha_reporte
+        })
 
         // Preproponer horómetro de término si está disponible
         if (form.horometro_inicio && (!form.horometro_termino || form.horometro_termino === null)) {
@@ -1447,6 +1359,11 @@ const cargarContexto = async (idEqParam = null) => {
           form.horometro_termino = Number((Number(form.horometro_inicio) + ef).toFixed(1))
         }
       } else {
+        // Sin jornada abierta para esta OT/equipo: el respaldo local (si existía) ya no es válido
+        idReporteAvanceActivo.value = null
+        jornadaDiaAnterior.value = false
+        faseVisual.value = 1
+        if (respaldo) borrarRespaldoJornada()
         if (d.horometro_sugerido && form.horometro_inicio === null) {
           form.horometro_inicio = Number(d.horometro_sugerido)
         }
@@ -1454,9 +1371,17 @@ const cargarContexto = async (idEqParam = null) => {
           form.odometro_inicio = Number(d.odometro_sugerido)
         }
       }
+
+      // Mantener la URL alineada con la identidad canónica (recargas y botón atrás)
+      const nuevaQuery = { ...route.query, id_proyecto: String(idProyecto.value) }
+      if (idEquipoSeleccionado.value) nuevaQuery.id_equipo = String(idEquipoSeleccionado.value)
+      if (idReporteAvanceActivo.value) nuevaQuery.id_reporte_avance = String(idReporteAvanceActivo.value)
+      else delete nuevaQuery.id_reporte_avance
+      router.replace({ query: nuevaQuery }).catch(() => {})
     }
   } catch (err) {
     console.error('Error al cargar contexto de Control de Flota:', err)
+    errorContexto.value = true
     snackbar.text = 'Error al cargar datos del proyecto desde el servidor'
     snackbar.color = 'error'
     snackbar.show = true
@@ -1465,14 +1390,40 @@ const cargarContexto = async (idEqParam = null) => {
   }
 }
 
+// REQ-1060 / INV-8: operador = persona con rol OPERADOR de la OT; si no existe, el usuario autenticado. Nunca 1 ni 55.
+const resolverIdOperador = () => {
+  const op = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))
+  return op?.id_user || idUserSesion() || null
+}
+
 // Guardar Momento 1 (Inicio de Jornada)
 const guardarInicioJornada = async () => {
   try {
+    if (!equipoSeleccionado.value?.id_equipo) {
+      snackbar.text = '⚠️ Esta OT no tiene una grúa asignada. Contacte a Control de Gestión.'
+      snackbar.color = 'error'
+      snackbar.show = true
+      return
+    }
+    const idOperador = resolverIdOperador()
+    if (!idOperador) {
+      snackbar.text = '⚠️ No se pudo identificar al operador. Cierre sesión y vuelva a ingresar.'
+      snackbar.color = 'error'
+      snackbar.show = true
+      return
+    }
+    normalizarHora('hora_inicio')
+    if (form.horometro_inicio === null || form.horometro_inicio === '' || !form.foto_tablero_inicio) {
+      snackbar.text = '⚠️ El Horómetro Superestructura y su Foto son OBLIGATORIOS para iniciar el report.'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
     enviandoInicio.value = true
     const payload = {
       id_proyecto: Number(idProyecto.value),
-      id_equipo: equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value,
-      id_user_operador: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))?.id_user || 1,
+      id_equipo: Number(equipoSeleccionado.value.id_equipo),
+      id_user_operador: idOperador,
       id_user_rigger: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))?.id_user || null,
       dia_correlativo: diaCorrelativo.value,
       fecha_reporte: form.fecha_reporte,
@@ -1488,6 +1439,14 @@ const guardarInicioJornada = async () => {
     if (res.data && res.data.success) {
       if (res.data.data?.id_reporte_avance) {
         idReporteAvanceActivo.value = res.data.data.id_reporte_avance
+        idReporteAvanceRuta.value = res.data.data.id_reporte_avance
+        // REQ-1060 / P7: respaldo local durable de la identidad de la jornada
+        guardarRespaldoJornada({
+          id_reporte_avance: res.data.data.id_reporte_avance,
+          id_equipo: payload.id_equipo,
+          fecha_reporte: payload.fecha_reporte
+        })
+        router.replace({ query: { ...route.query, id_proyecto: String(idProyecto.value), id_equipo: String(payload.id_equipo), id_reporte_avance: String(res.data.data.id_reporte_avance) } }).catch(() => {})
       }
       snackbar.text = '🟢 Inicio de Jornada guardado en Control de Flota exitosamente!'
       snackbar.color = 'success'
@@ -1501,7 +1460,17 @@ const guardarInicioJornada = async () => {
     }
   } catch (err) {
     console.error('Error al registrar inicio de jornada:', err)
-    snackbar.text = err.response?.data?.error || 'Error al guardar inicio de jornada'
+    const data = err.response?.data || {}
+    // REQ-1060: si ya existe una jornada abierta, recargar para presentarla (nunca crear otra)
+    if (err.response?.status === 409 && ['JORNADA_ANTERIOR_ABIERTA', 'JORNADA_ABIERTA_OTRO_EQUIPO'].includes(data.codigo) && data.id_reporte_avance) {
+      idReporteAvanceRuta.value = Number(data.id_reporte_avance)
+      snackbar.text = data.error
+      snackbar.color = 'warning'
+      snackbar.show = true
+      await cargarContexto()
+      return
+    }
+    snackbar.text = data.error || 'Error al guardar inicio de jornada'
     snackbar.color = 'error'
     snackbar.show = true
   } finally {
@@ -1561,7 +1530,7 @@ const sellarYTransmitirReport = async () => {
       id_reporte_avance: idReporteAvanceActivo.value || null,
       id_proyecto: Number(idProyecto.value),
       id_equipo: equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value,
-      id_user_operador: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))?.id_user || 1,
+      id_user_operador: resolverIdOperador(),
       id_user_rigger: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))?.id_user || null,
       dia_correlativo: diaCorrelativo.value,
       fecha_reporte: form.fecha_reporte,
@@ -1599,6 +1568,7 @@ const sellarYTransmitirReport = async () => {
 
     const res = await api.post('/operaciones/report/guardar', payload)
     if (res.data && res.data.success) {
+      borrarRespaldoJornada() // REQ-1060: jornada cerrada, se elimina el respaldo local
       snackbar.text = `✅ Report Día ${diaCorrelativo.value} sellado y transmitido exitosamente!`
       snackbar.color = 'success'
       snackbar.show = true

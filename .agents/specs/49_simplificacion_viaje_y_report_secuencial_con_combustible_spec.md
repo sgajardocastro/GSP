@@ -4,7 +4,7 @@
 **Ecosistema:** Grúas San Pablo (GSP) / LeanGlobal Platform  
 **Fase de Dominio:** Fase 4 y 5 - Desplazamiento de Flota (`id_proyecto_estado = 4`) y Operación en Faena (`id_proyecto_estado = 5`)  
 **Estado:** `ESTÁNDAR CANÓNICO APROBADO`  
-**Versión:** `1.1.0` (Actualizado: 06 de Octubre de 2026)  
+**Versión:** `1.3.0` (Actualizado: 27 de Octubre de 2026)  
 **Autor:** Sergio Gajardo (LeanGlobal) / Jorge Ponce - Omar Ghiselini (Grúas San Pablo)  
 
 ---
@@ -15,47 +15,71 @@
 En la prueba de campo y en la sesión de optimización operativa del 6 de octubre de 2026, la Dirección y Gerencia de Operaciones definieron la eliminación de fricción y sobrecarga de datos innecesarios para el operador en cabina y el cliente mandante en faena:
 1. **Contaminación de Datos en Faena:** Exigir odómetros de carretera al firmar el Report Diario de faena genera confusión en el mandante (quien solo contrata y audita horas de izaje de la grúa, no kilometrajes de traslado).
 2. **Desacople entre Chasis y Superestructura:** Las grúas móviles y camiones pluma poseen dos naturalezas mecánicas distintas:
-   - **Mecanismo de Desplazamiento / Carretera (Chasis/Camión):** Controlado por Odómetro (Km) y Horómetro de Camión (horas motor de traslado).
-   - **Mecanismo de Izaje / Operacional (Superestructura/Grúa):** Controlado por el Horómetro de Grúa (toma de fuerza / motor de superestructura).
-3. **Manejo Incorrecto de Servicios Multi-Día:** Cuando un servicio dura más de 1 día, el equipo pernocta en la faena del cliente y no se desplaza por carretera en los días intermedios. En consecuencia, en el Día 2 en adelante solo se registra el tiempo de inicio de faena, heredando el horómetro de izaje del día anterior, sin exigir datos cinemáticos de carretera.
+   - **Mecanismo de Desplazamiento / Carretera (Chasis/Camión):** Controlado por Odómetro (Km) y Horómetro de Camión (horas motor de traslado). Físicamente residen en el chasis/cabina de conducción.
+   - **Mecanismo de Izaje / Operacional (Superestructura/Grúa):** Controlado por el Horómetro de Grúa (computador LICCON / cabina de izaje).
+3. **Registro Fotográfico Desacoplado (Multi-Foto Obligatoria):** Dado que el odómetro del camión, el horómetro del camión y el horómetro de la grúa no se encuentran en el mismo reloj ni en la misma cabina, el sistema DEBE permitir y exigir la captura de fotografías separadas e independientes por cada instrumento físico.
+4. **Manejo Incorrecto de Servicios Multi-Día:** Cuando un servicio dura más de 1 día, el equipo pernocta en la faena del cliente y no se desplaza por carretera en los días intermedios. En consecuencia, en el Día 2 en adelante solo se registra el tiempo de inicio de faena, heredando el horómetro de izaje del día anterior, sin exigir datos cinemáticos de carretera.
+5. **Estándar de Comunicación con el Operador:**
+   - Queda terminantemente prohibido el término técnico "PWA". En todas las interfaces, afiches y manuales se debe llamar exclusivamente **"APP"** o **"Tu Aplicación en el Celular"**.
+   - Locución guiada y síntesis de voz en español de Chile (`es-CL`).
+6. **Protección contra Bucle en Hoja de Ruta de Retorno (Caso Finning / Natalia):** Al concluir el último report diario y activarse la Hoja de Ruta de Retorno, la interfaz de conducción `ViajeConductor.vue` DEBE propagar obligatoriamente `tipo_trayecto = 'RETORNO'`, calcular tiempos contra `fecha_salida_faena` y `fecha_llegada_patio`, suprimir toda invocación a `abrirFormularioReport()`, y al confirmar llegada en patio central pasar a `OPERACIONALMENTE_CONCLUIDO` y equipo `DISPONIBLE` con retorno al menú principal.
+7. **Simplificación Operativa por Ámbito, Desacople Nativo APP y Rediseño de Report Diario (Sesión 27-Oct-2026):**
+   - **Limpieza de Ámbito Operacional (`App.vue` & `Surveys.vue`):** La pestaña `Taller` en la barra inferior se restringe estrictamente al rol de taller/bodega (`v-if="esBodegaOTaller"`). En la vista de Operaciones (`Surveys.vue`) se eliminan `Control de Portón & Patio`, `Visita Técnica a Terreno`, `Checklists & Protocolos Asignados`, accesos duplicados a `Taller` y la tarjeta `Cotizador Express` (que permanece exclusivamente en la pestaña Comercial). Se corrige el contraste en modo claro/oscuro y se agranda la tipografía de todos los botones de acción.
+   - **Desacoplamiento Total APP vs. Web:** `ViajeConductor.vue` y `viajeOfflineSync.js` se integran de forma 100% nativa en el router interno de la APP (`ejecucion/pwa/src/views/ViajeConductor.vue`, ruta `/viaje/:token`), eliminando cualquier redirección externa hacia la consola web (`/lg-gsp-prod/viaje/...`).
+   - **Traslado del Horómetro Inicial de Grúa desde Llegada hacia Inicio Report y Eliminación de Horómetro Chasis al Cierre:** La Llegada a Faena solo cierra el tramo carretero del camión (Odómetro, Horómetro Camión y Combustible). El **Horómetro de Superestructura (con foto)** pasa a ser **100% obligatorio en el `INICIO REPORT`** y en el **`TERMINO DE REPORT`**, eliminándose definitivamente el Horómetro de Chasis y las notas mecánicas de taller del reporte diario.
 
 ---
 
-## 2. 🏛️ Matriz Canónica de Instrumentos de Control Operativo
+## 2. 🏛️ Matriz Canónica de Instrumentos y Registro Fotográfico Independiente
 
-La siguiente matriz representa la **Verdad Única y Normativa (SSoT)** sobre qué instrumentos y variables deben ser capturados en cada instancia del ciclo operativo de terreno:
+La siguiente matriz representa la **Verdad Única y Normativa (SSoT)** sobre qué instrumentos, variables y fotografías deben ser capturados en cada instancia del ciclo operativo de terreno:
 
-| Instrumento de Medición | 1. SALIDA<br>*(Patio Base GSP)* | 2. LLEGADA<br>*(Arribo a Faena)* | 3. TÉRMINO<br>*(Report con Mandante)* | 4. RETORNO<br>*(Salida Faena a Base)* | 5. LLEGADA A BASE<br>*(Patio Central GSP)* |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **ODÓMETRO (Km)** | **[ X ]** | **[ X ]** | *No aplica* | **[ X ]** | **[ X ]** |
-| **HORÓMETRO CAMIÓN (Chasis)** | **[ X ]** | **[ X ]** | *No aplica* | **[ X ]** | **[ X ]** |
-| **HORÓMETRO GRÚA (Superestructura)** | *No aplica* | **[ X ]** | **[ X ]** | *No aplica* | *No aplica* |
+| Instrumento / Evidencia Fotográfica | 1. SALIDA<br>*(Patio Base GSP)* | 2. LLEGADA<br>*(Arribo a Faena)* | 3. INICIO REPORT<br>*(Inicio de Faena)* | 4. TERMINO DE REPORT<br>*(Cierre con Mandante)* | 5. RETORNO<br>*(Salida Faena a Base)* | 6. LLEGADA A BASE<br>*(Patio Central GSP)* |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **ODÓMETRO (Km)** | **[ X ]** (Foto 1) | **[ X ]** (Foto 1) | *No aplica* | *No aplica* | **[ X ]** (Foto 1) | **[ X ]** (Foto 1) |
+| **HORÓMETRO CAMIÓN (Chasis)** | **[ X ]** (Foto 2) | **[ X ]** (Foto 2) | *No aplica* | *No aplica* | **[ X ]** (Foto 2) | **[ X ]** (Foto 2) |
+| **HORÓMETRO GRÚA (Superestructura)** | *No aplica* | *No aplica* | **[ X ]** (Foto Inicio Obligatoria) | **[ X ]** (Foto Término Obligatoria) | *No aplica* | *No aplica* |
+| **NIVEL DE COMBUSTIBLE** | *No aplica* | **[ X ]** (Foto 3) | *No aplica* | *No aplica* | *No aplica* | **[ X ]** (Foto 3) |
+| **TOTAL FOTOGRAFÍAS REQUERIDAS** | **2 Fotos** | **3 Fotos** | **1 Foto** | **1 Foto** | **2 Fotos** | **3 Fotos** |
 
 ### 2.1. Reglas de Negocio Derivadas de la Matriz:
 
 1. **Instancia 1: SALIDA DE PATIO (Inicio Traslado de Ida):**
-   - **Qué se captura:** `Odómetro Salida` + `Horómetro Camión Salida` (+ foto opcional tablero + PIN).
+   - **Qué se captura:** `Odómetro Salida` (Foto 1) + `Horómetro Camión Salida` (Foto 2) + `PIN`. Se elimina cualquier enlace externo de ayuda documental.
    - **Qué NO se captura:** `Horómetro Grúa` (la superestructura está apagada y trincada en su cuna de transporte).
 
 2. **Instancia 2: LLEGADA A FAENA (Hito Bisagra Carretera ➔ Faena):**
    - **Qué se captura:** 
-     - `Odómetro Llegada` y `Horómetro Camión Llegada`: Cierran el tramo carretero de ida (`Km_Ida = Llegada - Salida`).
-     - `Horómetro Grúa (Superestructura)`: **Lectura inicial obligatoria de faena**. Establece la línea base de izaje antes de emplazar estabilizadores.
-   - **Comportamiento en Servicio de 1 Día:** La llegada a faena engarza de inmediato el Report Diario del Día 1, pre-cargando la hora de llegada como hora de inicio y el horómetro de grúa como horómetro inicial.
+     - `Odómetro Llegada` (Foto 1), `Horómetro Camión Llegada` (Foto 2), `Nivel de Combustible` (Foto 3) y `PIN`: Cierran el tramo carretero de ida (`Km_Ida = Llegada - Salida`).
+   - **Qué NO se captura en Llegada:** Se eliminan de esta pantalla el `Horómetro Grúa (Superestructura)`, el campo `Observaciones de Término / Ruta` y los enlaces de ayuda documental.
+   - **Botón de Confirmación:** Texto único y grande: **`CONFIRMAR LLEGADA`**.
+   - **Resumen al Cierre del Viaje (`ARRIBADO_FAENA`):** Una vez confirmada la llegada, se ocultan los cuadros superiores de resumen y fotografías de Salida y Arribo, mostrando **únicamente el cuadro resumen final inferior** con acción directa para ir al Report Diario o volver al menú principal.
 
-3. **Instancia 3: TÉRMINO DE FAENA (Cierre de Jornada y Firma Mandante):**
-   - **Qué se captura:** `Hora Término Real`, `Horómetro Grúa Término`, `Minutos Colación`, maniobras realizadas y `Firma Digital Mandante` (con Nombre, RUT y Cargo).
-   - **Qué NO se captura:** **Cero Odómetro y Cero Horómetro de Camión**. Queda estrictamente prohibido solicitar kilometrajes o fotos de odómetro en esta pantalla. El cliente mandante únicamente fiscaliza y autoriza horas de izaje.
+3. **Instancia 3: INICIO REPORT (Inicio de Jornada en Faena):**
+   - **Encabezado:** Dice exactamente **`INICIO REPORT`**, mostrando únicamente la patente del equipo asignado al operador (sin selector multi-máquina) y el badge de fecha/día con formato **`DD/MM/YYYY (DIA Y DE X)`**.
+   - **Aislamiento de Fase:** Al estar en `INICIO REPORT`, se oculta el botón/pestaña de Fin de Faena. Se eliminan el subtítulo `"Registro de tableros inicio de faena"` y el selector de `"Fecha de la jornada"` (restringido a la fecha actual del sistema).
+   - **Qué se captura:** `Hora de Inicio` mediante **teclado numérico directo (`HH : MM`)** (sin selector de reloj redondo) y **`Horómetro Superestructura (Inicio)` + Foto Obligatoria** con botón único **`FOTO HOROMETRO SUPERESTRUCTURA`**.
+   - **Botón de Guardado:** Texto único: **`GUARDAR INICIO REPORT`**.
+
+4. **Instancia 4: TERMINO DE REPORT (Cierre de Jornada y Firma Mandante):**
+   - **Encabezado:** Dice exactamente **`TERMINO DE REPORT`**, manteniendo patente única y formato **`DD/MM/YYYY (DIA Y DE X)`**.
+   - **Qué se captura:** `Hora Inicio` (rectificable con input numérico `HH : MM`, ocultando el horómetro inicial en la primera tarjeta), `Hora Término` (input numérico `HH : MM`), `Minutos Colación`, `Horas Standby`, **`Horómetro Superestructura (Término)` + Foto Obligatoria** (botón único **`FOTO HOROMETRO SUPERESTRUCTURA`**, sin etiqueta superior redundante `"Tomar foto"`), maniobras realizadas y `Firma Digital Mandante` (con Nombre, RUT y Cargo).
+   - **Qué NO se captura:** **Cero Odómetro, Cero Horómetro de Chasis (eliminado definitivamente) y Cero Notas Mecánicas / Taller GSP**.
+   - **Resumen de Tiempos y Regla de Standby:**
+     - Se ocultan `"Jornada Total"` y `"Sobretiempo Devengado"`, mostrando únicamente **`HORA REPORT`** y **`HORA COLACIÓN`**.
+     - Etiquetas de Standby estandarizadas y de alto contraste: **`STAND BY CLIENTE COBRABLE`** y **`STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE`**.
+     - **Regla de Cálculo:** El `STAND BY CLIENTE COBRABLE` **NO rebaja** la `HORA REPORT`. Solo el `STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE` y la colación se descuentan de las horas brutas:
+       $$\text{HORA REPORT} = \max(0, \text{Horas Brutas} - \text{Horas Colación} - \text{Standby San Pablo Falla Equipo})$$
    - **Fórmula de Cobro Diario:**
      $$\Delta \text{Horas Grúa} = \text{Horómetro Grúa Término} - \text{Horómetro Grúa Inicio}$$
-     $$\text{Horas Facturables} = \max(\text{Horas Grúa Efectivas}, \text{Piso Mínimo Contractual [8.0h]})$$
+     $$\text{Horas Facturables} = \max(\text{HORA REPORT}, \text{Piso Mínimo Contractual})$$
 
-4. **Instancia 4: RETORNO (Salida Faena hacia Patio Base GSP):**
+5. **Instancia 5: RETORNO (Salida Faena hacia Patio Base GSP):**
    - **Activación:** Se habilita **únicamente tras sellar el último report planificado del servicio** (`dia_correlativo === dias_planificados`).
    - **Qué se captura:** `Odómetro Retorno` + `Horómetro Camión Retorno` (+ PIN).
    - **Qué NO se captura:** `Horómetro Grúa` (equipo recogido para transporte).
 
-5. **Instancia 5: LLEGADA A BASE (Patio Central GSP):**
+6. **Instancia 6: LLEGADA A BASE (Patio Central GSP):**
    - **Qué se captura:** `Odómetro Llegada Base` + `Horómetro Camión Llegada Base` (+ porcentaje de combustible y checklist de patio).
    - **Efecto:** Cierra definitivamente el traslado de retorno, pasa el proyecto a `OPERACIONALMENTE_CONCLUIDO` (estado 6) y libera el equipo a estado `DISPONIBLE`.
 
@@ -65,22 +89,21 @@ La siguiente matriz representa la **Verdad Única y Normativa (SSoT)** sobre qu�
 
 ### 3.1. Caso A: Servicios de 1 Día (Día Único)
 * **Secuencia Continua:**
-  $$\text{1. Salida Base} \longrightarrow \text{2. Llegada Faena} \longrightarrow \text{3. Faena & Report 1 Día} \longrightarrow \text{4. Retorno Faena} \longrightarrow \text{5. Llegada Base}$$
-* La **Llegada a Faena** entrega automáticamente el `horometro_inicio` de la grúa al Report Diario. El operador concluye su labor, digita el `horometro_termino` de grúa, firma con mandante y procede al Retorno.
+  $$\text{1. Salida Base} \longrightarrow \text{2. Llegada Faena} \longrightarrow \text{3. Inicio Report} \longrightarrow \text{4. Termino de Report} \longrightarrow \text{5. Retorno Faena} \longrightarrow \text{6. Llegada Base}$$
+* La **Llegada a Faena** cierra el viaje carretero del camión. Al pasar a **Inicio Report**, el operador registra la hora de inicio (numérica) y el `horometro_inicio` de superestructura con su foto obligatoria. Al finalizar la faena en **Termino de Report**, digita la hora de término, el `horometro_termino` de superestructura con su foto obligatoria, firma con el mandante y procede al Retorno.
 
 ### 3.2. Caso B: Servicios Multi-Día (2 o más Días en Faena)
 * **Día 1:** Cumple pasos 1 (Salida) y 2 (Llegada). Ejecuta faena Día 1 y sella Report Día 1 con mandante. El equipo **pernocta en faena**. La PWA **no activa el Retorno**, sino que queda en estado *"En espera de Jornada Día 2"*.
 * **Días Intermedios (Día 2 hasta Día $N-1$):**
   - El equipo **no se desplaza por carretera**; permanece estático en la obra del mandante.
-  - **Inicio de Jornada:** El operador pulsa `[ ▶️ Iniciar Jornada de Faena Día N ]`.
-    - **Solo se registra el Tiempo (Hora Real de Inicio, ej: 08:00).**
-    - El **Horómetro Grúa Inicial** se hereda de forma automática e idéntica del Horómetro Grúa de Cierre del día anterior:
+  - **Inicio Report (`INICIO REPORT`):**
+    - Se registra la **Hora de Inicio (`HH : MM` numérico)** y el **Horómetro Superestructura (Inicio) + Foto Obligatoria** (`FOTO HOROMETRO SUPERESTRUCTURA`), pre-poblado como sugerencia con el horómetro de cierre del día anterior:
       $$\text{Horómetro Grúa Inicio (Día } N) = \text{Horómetro Grúa Término (Día } N-1)$$
     - **No se solicita Odómetro ni Horómetro de Camión ni fotos de odómetro.**
-  - **Término de Jornada:** Solo registra Hora Término, Horómetro Grúa Término y firma del mandante.
+  - **Término de Jornada (`TERMINO DE REPORT`):** Registra Hora Término (`HH : MM` numérico), Horómetro Superestructura Término + Foto Obligatoria y firma del mandante.
 * **Día Final (Día $N$):**
-  - Inicia jornada con herencia de horómetro.
-  - Al sellar el Report del Día $N$, el sistema detecta que `dia_reportado === dias_planificados` y desbloquea el **Paso 4: Retorno a Base** y **Paso 5: Llegada a Base**.
+  - Cumple `INICIO REPORT` y `TERMINO DE REPORT`.
+  - Al sellar el Report del Día $N$, el sistema detecta que `dia_reportado === dias_planificados` y desbloquea el **Retorno a Base** y **Llegada a Base**.
 
 ---
 
@@ -89,12 +112,14 @@ La siguiente matriz representa la **Verdad Única y Normativa (SSoT)** sobre qu�
 ### 4.1. Estado 1: `SALIDA_PATIO`
 * **Condición de Activación:** `viaje.estado_viaje === 'ASIGNADO'`.
 * **Propósito:** Certificar el inicio del convoy desde el patio central o base operacional de GSP.
-* **Campos Requeridos:**
+* **Campos Requeridos (2 Fotografías Independientes):**
   1. `odometro_salida` (Decimal, obligatorio, ej: `145820.5` KM).
-  2. `horometro_camion_salida` (Decimal, obligatorio, ej: `3240.2` HRS).
-  3. `foto_tablero_salida` (Base64 JPEG comprimido < 800 KB, obligatorio vía cámara).
-  4. `pin_conductor` (Texto numérico, 4 dígitos exactos, obligatorio).
-* **Campos Ocultos:** `horometro_grua`.
+  2. `foto_odometro_salida` (`foto_odometro_salida_path` en BD, Base64/File JPEG, obligatorio vía cámara).
+  3. `horometro_camion_salida` (Decimal, obligatorio, ej: `3240.2` HRS).
+  4. `foto_horometro_salida` (`foto_horometro_salida_path` en BD, Base64/File JPEG, obligatorio vía cámara).
+     * *Atajo ergonómico:* Botón `"Copiar foto del odómetro"` disponible solo si ambos relojes están integrados en el tacógrafo digital de la cabina.
+  5. `pin_conductor` (Texto numérico, 4 dígitos exactos, obligatorio).
+* **Campos Ocultos / Eliminados:** `horometro_grua` y enlaces de ayuda a documentación externa.
 
 ### 4.2. Estado 2: `EN_RUTA`
 * **Condición de Activación:** `viaje.estado_viaje === 'EN_RUTA'`.
@@ -104,27 +129,46 @@ La siguiente matriz representa la **Verdad Única y Normativa (SSoT)** sobre qu�
 
 ### 4.3. Estado 3: `LLEGADA_FAENA`
 * **Condición de Activación:** Gatillado por el botón `[ 🏁 CONFIRMAR LLEGADA A FAENA ]` en `EN_RUTA`.
-* **Propósito:** Certificar la entrega de la grúa en faena y fijar la línea base de izaje.
-* **Campos Requeridos:**
-  1. `odometro_llegada` (Decimal, obligatorio, $\ge$ `odometro_salida`).
-  2. `horometro_camion_llegada` (Decimal, obligatorio, $\ge$ `horometro_camion_salida`).
-  3. `horometro_grua_llegada` (Decimal, obligatorio; lectura inicial de la superestructura para faena).
-  4. `foto_tablero_llegada` (Base64 JPEG comprimido, opcional).
-  5. `pin_conductor` (Texto numérico, 4 dígitos exactos, obligatorio).
+* **Propósito:** Certificar el arribo del camión a faena y cerrar el tramo carretero.
+* **Campos Requeridos (3 Fotografías Independientes):**
+  1. **Bloque 1 (Camión / Chasis):**
+     * `odometro_llegada` (Decimal, obligatorio, $\ge$ `odometro_salida`).
+     * `foto_odometro_llegada` (`foto_odometro_llegada_path` en BD, obligatorio vía cámara).
+     * `horometro_camion_llegada` (Decimal, obligatorio, $\ge$ `horometro_camion_salida`).
+     * `foto_horometro_camion_llegada` (`foto_horometro_camion_llegada_path` en BD, obligatorio vía cámara).
+  2. **Bloque 2 (Combustible):**
+     * `combustible_chasis` (Selección de nivel: 100%, 75%, 50%, 25%, Reserva).
+     * `foto_combustible` (Fotografía de marcador de estanque, obligatoria).
+  3. **Bloque 3 (Seguridad):**
+     * `pin_conductor` (Texto numérico, 4 dígitos exactos, obligatorio).
+* **Elementos Eliminados en Llegada:** `horometro_grua_llegada` y su foto, campo `Observaciones de Término / Ruta` y link de documentación de ayuda.
+* **Botón de Acción Primaria:** Texto único con caracteres grandes: **`[ CONFIRMAR LLEGADA ]`**.
+* **Vista de Cierre (`ARRIBADO_FAENA`):** Al confirmar llegada, se ocultan los resúmenes superiores con fotos de salida/arribo y se exhibe **únicamente el cuadro resumen final inferior** que permite ir al Report Diario o volver al menú.
 
 ### 4.4. Estado 4: `EN_FAENA` & `REPORT_DIARIO` (Report de Faena con Mandante)
 * **Condición de Activación:** `viaje.estado_viaje === 'ARRIBADO_FAENA'`.
-* **Principio Rector:** Erradicación total de campos de carretera. El mandante únicamente firma horas de izaje.
-* **Inicio de Faena (Día 1 vs Día Multi-Día):**
-  - **Día 1:** `horometro_grua_inicio` heredado de la Llegada a Faena.
-  - **Día > 1:** Botón de inicio rápido que solo estampa `hora_inicio` y toma el `horometro_grua_termino` del día previo.
-* **Término de Faena (Sellar con Mandante):**
-  - `hora_termino` (Hora `HH:MM`, obligatorio).
-  - `horometro_grua_termino` (Decimal obligatorio, $\ge$ `horometro_grua_inicio`).
-  - `colacion_minutos` (Botones rápidos: `0m`, `30m`, `45m`, `60m`).
-  - `maniobra_detalle` (Texto obligatorio; descripción técnica de izajes).
-  - `mandante_nombre`, `mandante_rut`, `mandante_cargo` y `firma_mandante` (Lienzo Canvas `SignatureField.vue`).
-* **Campos Erradicados:** Queda eliminado `odometro_inicio`, `odometro_termino` y sus fotos obligatorias.
+* **Principio Rector:** Erradicación total de campos de carretera, horómetro de chasis y notas de taller. El mandante únicamente firma horas de operación y horómetro de superestructura.
+* **Encabezado Dinámico y Cabecera Simplificada:**
+  - Título superior dinámico: **`INICIO REPORT`** (en Fase 1) y **`TERMINO DE REPORT`** (en Fase 2), reemplazando `"Control de Flota"`.
+  - Patente única del equipo asignado al operador (se elimina el selector multi-máquina).
+  - Badge de jornada con formato exacto: **`DD/MM/YYYY (DIA Y DE X)`** (ej. `27/10/2026 (DIA 1 DE 3)`).
+* **Fase 1 — `INICIO REPORT`:**
+  - Al iniciar el report solo se muestra la pantalla de inicio (se oculta el botón/selector de Fin de Faena).
+  - Se eliminan el subtítulo `"Registro de tableros inicio de faena"` y el campo `"Fecha de la jornada"` (fijado a la fecha actual del sistema).
+  - `hora_inicio`: Captura mediante **inputs numéricos directos (`HH` y `MM`)** con teclado numérico, reemplazando el reloj circular nativo.
+  - `horometro_inicio` (Superestructura) + `foto_tablero_inicio`: **100% OBLIGATORIOS** (se elimina la etiqueta `"Opcional"` y los textos triplicados de sacar foto, dejando un único botón **`[ FOTO HOROMETRO SUPERESTRUCTURA ]`**).
+  - Botón de acción primaria: **`[ GUARDAR INICIO REPORT ]`**.
+* **Fase 2 — `TERMINO DE REPORT` (Sellar con Mandante):**
+  - **Tarjeta de Inicio:** Conserva únicamente el `Horario de Inicio` editable (con input numérico `HH : MM`) y **oculta el Horómetro Inicial**.
+  - `hora_termino`: Captura mediante **inputs numéricos directos (`HH` y `MM`)**.
+  - **Resumen de Tiempos:** Se ocultan las tarjetas `"Jornada Total"` y `"Sobretiempo Devengado"`, conservando únicamente **`HORA REPORT`** (en lugar de Horas Efectivas) y **`HORA COLACIÓN`**.
+  - **Horas Standby (Etiquetas y Cálculo):**
+    * Etiquetas legibles de alto contraste: **`STAND BY CLIENTE COBRABLE`** y **`STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE`**.
+    * El `STAND BY CLIENTE COBRABLE` **NO se descuenta** de `HORA REPORT`; únicamente el `STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE` rebaja las horas del report.
+  - `horometro_termino` (Superestructura) + `foto_horometro`: **100% OBLIGATORIOS**, con botón único **`[ FOTO HOROMETRO SUPERESTRUCTURA ]`** (sin etiqueta superior redundante `"Tomar foto"`).
+  - `maniobra_detalle`, `mandante_nombre`, `mandante_rut`, `mandante_cargo` y `firma_mandante` (Lienzo Canvas `SignatureField.vue`).
+  - **Botón de Acción Primaria:** **`[ TERMINO DE REPORT ]`**.
+* **Campos Erradicados Definitivamente:** `odometro_inicio`, `odometro_termino`, `horometro_chasis_termino` (y su foto), selector multi-máquina y bloque `Notas Mecánicas / Taller GSP (Uso Interno)`.
 * **Arquitectura de Pantalla en Faena:**
   1. **Cabecera Operacional Compacta:**
      * Patente y modelo de grúa (`BGDF.90 • LTM-1220`).

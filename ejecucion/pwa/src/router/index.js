@@ -92,6 +92,11 @@ const routes = [
     }
   },
   {
+    path: '/viaje/:token',
+    name: 'ViajeConductor',
+    component: () => import('@/views/ViajeConductor.vue')
+  },
+  {
     path: '/cotizador-express',
     name: 'CotizadorExpress',
     component: () => import('@/views/CotizadorExpress.vue'),
