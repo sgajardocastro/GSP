@@ -62,7 +62,7 @@ class TequEquipoModel {
               COALESCE((
                 SELECT MAX(GREATEST(COALESCE(ot.horometro_grua_cierre, 0), COALESCE(ot.horometro_cierre, 0), COALESCE(ot.horometro_grua_inicio, 0), COALESCE(ot.horometro_inicio, 0)))
                 FROM tmnt_ot ot
-                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA' AND ot.tipo_mantenimiento = 'PREVENTIVO'
               ), 0),
               COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_grua', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
             ) AS ult_mant_horometro_grua,
@@ -70,7 +70,7 @@ class TequEquipoModel {
               COALESCE((
                 SELECT MAX(GREATEST(COALESCE(ot.horometro_chasis_cierre, 0), COALESCE(ot.horometro_chasis_inicio, 0)))
                 FROM tmnt_ot ot
-                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA' AND ot.tipo_mantenimiento = 'PREVENTIVO'
               ), 0),
               COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_horometro_chasis', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
             ) AS ult_mant_horometro_chasis,
@@ -78,7 +78,7 @@ class TequEquipoModel {
               COALESCE((
                 SELECT MAX(GREATEST(COALESCE(ot.odometro_cierre, 0), COALESCE(ot.odometro_inicio, 0)))
                 FROM tmnt_ot ot
-                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA'
+                WHERE ot.id_equipo = e.id_equipo AND ot.estado = 'CERRADA' AND ot.tipo_mantenimiento = 'PREVENTIVO'
               ), 0),
               COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(e.json_data->>'ult_mant_odometro_km', '0'), '[^0-9.]', '', 'g'), '')::numeric, 0)
             ) AS ult_mant_odometro_km
