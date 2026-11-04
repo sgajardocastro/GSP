@@ -2,6 +2,435 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.197
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 16:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1116` (`Servicio 0012`)
+- **Especificación Técnica:** Visualización Resaltada de `Programado / A Disponibilidad` en Preventa y Edición/Asignación de `Condición del Servicio` y `Alimentación / Viáticos` en `2. Validación & Diff` de Operaciones (`GestorOportunidades.vue`):
+  1. **Resaltado Visual y Persistencia de `Condición del Servicio` en Preventa:**
+     - Incorporación de estilo activo con borde/fondo ámbar (`bg-amber-500/20 border-amber-400 text-amber-300`) e indicador `✓` en las opciones `Programado` y `A Disponibilidad` de Preventa, garantizando su visibilidad aún cuando el formulario esté bloqueado (`<fieldset :disabled="isBloqueadoComercial">`) tras enviarse a Operaciones, y normalización de su lectura desde `crm_v1`, `snapshot_comercial` y `cotizaciones_historicas`.
+  2. **Edición de `Programado / A Disponibilidad` y Asignación de `Alimentación / Viáticos` en `2. Validación & Diff` de Operaciones:**
+     - Incorporación en `2. Validación & Diff` (debajo de `Pestaña B: Estructurador de Servicios`) del bloque editable `1. Condición del Servicio (Validación Operaciones)` y `2. Indicadores de Traslado, Alimentación y Alojamiento`, permitiendo a Operaciones corregir `Programado / A Disponibilidad` y asignar/modificar `Alimentación`, `Traslado` y `Alojamiento` con trazabilidad de diferencias (`hasDiff`).
+
+## [Portal Web GSP, PWA & Backend] - Versión 1.0.196 (PWA 1.0.63)
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 16:00:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/var/www/html/lg-gsp-dev/pwa`, `/var/www/html/lg-gsp-prod/pwa`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1113`, `REQ-1114`, `REQ-1115`, `SPEC-016 v4.6.0`
+- **Especificación Técnica:** Eliminación de Piso Mínimo Diario en Reports de Servicios Mensuales y Regularización de Report Existente (`REQ-1113`), Aumento Integral de Tipografía en PDF de Orden de Trabajo con `--disable-smart-shrinking` (`REQ-1114`), e Ingreso de Cotización a Nombre de Otro Ejecutivo y Reasignación de Ejecutivo Responsable por Administrador (`REQ-1115`):
+  1. **Reports de Servicios Mensuales sin Piso Mínimo Diario y Regularización de Report Existente (`REQ-1113` — `reportDiarioController.js`, `reportDiarioPdfService.js`, `ReportDiarioIzaje.vue`, `ModalVisorReport.vue`, `GestorOportunidades.vue`):**
+     - En servicios con modalidad mensual (`unidad` que contiene `'MES'`, ej. `Horas Mes Minimas` / `Horas Mensuales Minimas` como `GSP-2611-00007` METTCO SPA), `resolverPisoMinimoContractualOT` retorna `0` (sin mínimo diario), `horas_facturables = totalComputable` (`horas_operadas + horas_standby_cliente`) y `horas_sobretiempo = 0`, acumulando las horas reales hacia la bolsa mensual.
+     - Actualización del PDF oficial del Reporte Diario (`reportDiarioPdfService.js`) para imprimir `Sin mínimo diario (Modalidad Mensual — Acumula horas reales al mes)` en la Sección 2 (`Piso Mínimo Contractual`) y `Sin mín. diario / Acumula mensual` en la Sección 3 (`Piso Mínimo OT`).
+     - Regularización en `tedp_reporte_avance` (`DEV` y `PROD`) de los reports de servicios mensuales que tenían `horas_minimas = 8.0` y regeneración de su PDF oficial en `tfmg_file`.
+  2. **Aumento Integral del Tamaño de Letra en la Orden de Trabajo (OT) y Regeneración de OTs Vigentes (`REQ-1114` — `proyectoModel.js`):**
+     - Incremento de tamaños de fuente en toda la plantilla HTML de `generarOTVersion` (`body: 14px`, `.ot-title: 24px`, `.ot-code: 16px`, `.section-title: 14px`, `.info-grid` y `table.data-table`: `13.5px`, `Descripción del Servicio (Preventa)` e `Instrucciones & Observaciones`: `15px` bold, textos inline `13px–14px`) e incorporación del flag `--disable-smart-shrinking` en `wkhtmltopdf`, más regeneración en disco de los PDFs de las OTs vigentes en `DEV` y `PROD`.
+  3. **Ingreso de Cotización por Usuario A a Nombre de Usuario B y Reasignación de Ejecutivo Responsable por Administrador (`REQ-1115` — `GestorOportunidades.vue`, `proyectosController.js`, `proyectoModel.js`):**
+     - Selector de `Ejecutivo Comercial Responsable` en `GestorOportunidades.vue` (en el badge superior del header y en `1. Datos de la Oportunidad` fuera del `fieldset` bloqueado) que permite a cualquier usuario A ingresar una cotización a nombre de un ejecutivo B, y habilita a usuarios con perfil Administrador (`esUsuarioAdministrador`) a reasignar el ejecutivo responsable de cualquier proceso comercial en curso (persistiendo inmediatamente `id_usuario_creacion` en `tpry_proyecto` y `id_vendedor`, `vendedor_nombre`, `vendedor_email`, `vendedor_telefono` en `json_field.crm_v1`).
+
+## [Portal Web GSP & Backend] - Versión 1.0.195
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 14:40:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1112`, `CASO-20261104-02`
+- **Especificación Técnica:** Restauración Forense de `GSP-2611-00001` (`id_proyecto = 30`, `PLANTA FEPASA`), Blindaje Anti-Regresión de Estado y Preservación de `ejecucion_v1` / `cotizaciones_historicas` ante Pestañas Obsoletas, Corrección de Columna `codigo_interno` en Asignaciones de Equipos y Verificador Automático de Versión Web vs. Servidor (`REQ-1112` / `CASO-20261104-02`):
+  1. **Restauración Forense de `GSP-2611-00001` (`id_proyecto = 30`, `PLANTA FEPASA`) en `sch_leangsp_prod`:**
+     - Restitución de `id_proyecto_estado = 5` (con proyección automática a `6` Cierre/ITS por tener Report Diario `id_reporte_avance = 10` validado con PDF `id_doc_pdf = 1527`), reconstrucción íntegra de `json_field.ejecucion_v1` (Grúa 70 Ton `id_equipo = 39` `TLXF.37-9`, Operador `id_user = 94` Osvaldo Balboa, Rigger `id_user = 13` Matías Barrales, `ot_versiones` `V1` a `V5` `id_doc = 1573`, `preparacion_salida`, `plan_diario`), fusión de `cotizaciones_historicas` (`v2` `id_doc = 1504` + `v1` `id_doc = 1326`) y poblado de `tpry_asignacion_equipo` / `tpry_asignacion_persona`.
+  2. **Candado Anti-Regresión en Backend (`proyectoModel.updateProyecto` & `asignacionRecursosController.js`) y Frontend (`GestorOportunidades.onEmailSent`):**
+     - En `proyectoModel.updateProyecto`: bloqueo de regresión de `id_proyecto_estado` (`estadoDB > 1 && estadoEntrante < estadoDB`), preservación profunda de `ejecucion_v1` y claves raíz (`dossier_documentos`, `control_vivo_overrides`, `dias_laborales_override`, `contrato_arriendo`), y fusión no destructiva por `version` de `cotizaciones_historicas`.
+     - En `GestorOportunidades.onEmailSent`: pre-sincronización con `GET /proyectos/:id` antes de ejecutar `PUT /proyectos/:id` al enviar una cotización por correo.
+     - En `asignacionRecursosController.getAsignacionesEquipo`: corrección de `e.codigo_interno AS codigo_equipo` en `tequ_equipo`.
+  3. **Verificador Automático de Versión Web vs. Servidor (`App.vue`, `backlogController.getVersion`, `backlogRoutes.js`):**
+     - Nuevo endpoint `GET /api/backlog/version` sin caché (`Cache-Control: no-store`) y guardián reactivo en `App.vue` que compara `__APP_VERSION__` al iniciar, navegar, recuperar foco/visibilidad de pestaña y cada 3 minutos, recargando automáticamente (`window.location.reload()`) cuando detecta una nueva versión en el servidor.
+
+## [PWA GSP & Backend] - Versión 1.0.195 (PWA 1.0.62)
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 15:18:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev/pwa`, `/var/www/html/lg-gsp-prod/pwa`, `/var/www/html/lg-gsp/pwa`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1106`, `REQ-1107`, `REQ-1108`, `SPEC-016 v4.6.0`
+- **Especificación Técnica:** Eliminación de Referencia a Carlos Mendoza / Tarjeta Copec en Punto 5 de los Servicios (`REQ-1106`), Integración Automática de Documentos y Fotos Adjuntos al Final del PDF Oficial como Páginas de Anexo (`REQ-1107`) y Limpieza de Prellenado del Horómetro en PWA y Backend (`REQ-1108`):
+  1. **Eliminación de Referencia a Carlos Mendoza y Tarjeta Copec en Punto 5 (`REQ-1106` — `GestorOportunidades.vue`, `proyectoModel.js`):**
+     - Eliminada la solicitud estática de `Carlos Mendoza` (`HW-8842`, `#COPEC-8492`) en `solicitudesCopecPendientes` (`GestorOportunidades.vue`) y reemplazada la glosa `(Carga con Tarjeta Copec en ruta)` por `(Incluido en tarifa del servicio)` en la Sección `5. Suministros, Observaciones & Seguridad en Faena` del PDF de la Orden de Trabajo (`proyectoModel.js`).
+  2. **Integración Automática de Documentos y Fotos Adjuntos al Final del PDF Oficial como Anexo (`REQ-1107` — `reportDiarioPdfService.js`, `reportDiarioController.js`):**
+     - Implementación de `resolverAnexosDelReporte(data)` en `reportDiarioPdfService.js` para incorporar automáticamente al final del PDF oficial del Reporte Diario cualquier imagen (`JPG/PNG/WebP` o fotografías de horómetro/tablero) como páginas A4 de Anexo (`ANEXO DOCUMENTAL Y EVIDENCIA ADJUNTA`) y fusionar mediante `pdf-lib` cualquier documento `.pdf` adjunto en `tfmg_file` (`id_doc_evidencia`).
+     - Actualización de `adjuntarRespaldoFisico` y `obtenerPdfReportDiario` en `reportDiarioController.js` para compilar y servir siempre el PDF oficial integrado con sus anexos.
+  3. **Limpieza Total del Prellenado del Horómetro en PWA y Backend (`REQ-1108` — `ReportDiarioIzaje.vue`, `reportDiarioController.js`):**
+     - Eliminado el prellenado de `horometroInicio` y `horometroTermino` y los botones `Usar sugerido` en `ReportDiarioIzaje.vue`, y anulado `horometro_sugerido: null` en `obtenerContextoProyecto` (`reportDiarioController.js`), obligando al operador a digitar manualmente la lectura real del equipo.
+
+## [Portal Web GSP & Backend] - Versión 1.0.194
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 14:10:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1110`, `REQ-1111`, `SPEC-016 v4.6.0`
+- **Especificación Técnica:** Solución Estructural de Relevos de Operador por Fecha en un Mismo Equipo, Especificación de Tramo de Traslado (`Solo Ida — Retiro Pendiente`), Aumento de Tamaño de Letra en OT, Saneamiento de Preventa/OT `005` (`GSP-2611-00005`) (`REQ-1110`) y Nuevo Formato de 3 Indicadores de Viáticos (`Traslado`, `Alimentación`, `Alojamiento`) con Verificación Operativa y Convivencia V1/V2 (`REQ-1111`):
+  1. **Relevos de Operador por Fecha en un Único Equipo (`turnos_operadores`), Tramo de Traslado (`modalidad_traslado`), Tipografía 13px en OT y Saneamiento de `GSP-2611-00005` (`REQ-1110` — `GestorOportunidades.vue`, `proyectoModel.js`):**
+     - Eliminación de la 3ª línea fantasma a `$0` (`is_linea_base: false`) en `GSP-2611-00005` (`id_proyecto = 34`, Natalia Ghisellini), restituyendo las 2 líneas originales ($880.000 Neto).
+     - Soporte de múltiples turnos/relevos de operador (`turnos_operadores: [{ operador_id, fecha_ini, fecha_fin }]`) sobre un único `id_equipo` en Flota Principal (`+ Relevo`), bloqueo de duplicidad del mismo `id_equipo` en dos filas distintas de Sección 1, e impresión consolidada en `3. Flota & Convoy` y `4. Dotación Humana` del PDF de la OT (ej. Grúa Horquilla `KKFG-50-6` con Isis Osses el `2026-11-03` y Mario Concha del `2026-11-04` al `2026-11-05`).
+     - Selector explícito de `Tramo` (`modalidad_traslado`: `IDA_VUELTA`, `SOLO_IDA`, `SOLO_RETORNO`) en `2. Equipos de Traslado & Choferes` e impresión de `SOLO IDA — Entrega en Obra (Retiro Pendiente)` en el PDF de la OT (ej. Claudio Gallardo en Camión Plataforma `DRCX. 62- 6`).
+     - Incremento del tamaño de letra en el PDF de la Orden de Trabajo (`body: 12px`, tablas `11.5px`, y `Descripción del Servicio (Preventa)` e `Instrucciones & Observaciones` en `13px` bold).
+  2. **Tabla de 3 Indicadores (`Traslado`, `Alimentación`, `Alojamiento`), Verificación Operativa de Jonathan y Convivencia V1/V2 (`REQ-1111` — `GestorOportunidades.vue`, `proyectoModel.js`):**
+     - Reemplazo del desglose heredado de GeralSoft (`Desayuno`, `Almuerzo`, `Cena`) por la tabla de **3 indicadores** (**`Traslado`**, **`Alimentación`**, **`Alojamiento`**) en Condiciones Comerciales, Verificación Operativa de Jonathan antes de emitir la OT y PDFs de Cotización y Orden de Trabajo.
+     - Estrategia de convivencia determinista mediante discriminador `formato_viaticos: 'V2_3_INDICADORES'` vs `'V1_5_ITEMS'` y escritura espejo (`Dual-Write` hacia `desayuno_costeado`, `almuerzo_costeado`, `cena_costeado`) para preservar intactos los servicios anteriores ya configurados.
+
+## [Backend GSP] - Versión 1.0.193
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 11:50:00 (-03:00)
+- **Ruta de Despliegue:** `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1105`, `SPEC-016 v4.5.0 §21.3`
+- **Especificación Técnica:** Corrección de Visualización de Horas Mínimas y Políticas de Cobro por Equipo/Patente en la Orden de Trabajo (OT) Excluyendo Personal Certificado y Traslados (`proyectoModel.generarOTVersion`):
+  1. **Filtrado Determinista de Categorías de Equipos (`esLineaPersonalOT` & `esLineaTrasladoOT`):**
+     - Exclusión estricta de `PERSONAL CERTIFICADO` (`RIGGER`, `PREVENCIONISTA`, `SUPERVISOR`) y `TRASLADOS` (`TRASLADO`, `FLETE`) en el cálculo de piso mínimo y flota principal de la OT, eliminando además la evaluación por texto libre `l.descripcion` en `isTrasladoOrLogistica`.
+  2. **Listado Completo de Equipos con su Política de Cobro por Patente (`formatearPoliticaCobroLinea`):**
+     - Impresión de todos los equipos asignados con su patente (`[PATENTE]`) y su unidad real de cobro (`Horas Mes Minimas`, `Horas Diarias Minimas` o `Valor Fijo`) en `Piso Mínimo Contractual` (Sección 2) e incorporación de la columna `Política Cobro / Piso Mínimo` en la tabla `3. Flota & Convoy de Equipos Asignados` del PDF de la OT.
+
+## [Portal Web GSP & Backend] - Versión 1.0.192
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 11:32:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1103`, `REQ-1104`, `SPEC-016 v4.4.0`
+- **Especificación Técnica:** Eliminación de Prellenados y Opción `"No Aplica"` en Condiciones de Servicio y Alimentación/Pensiones (`REQ-1103`) y Obligatoriedad de Descripción del Servicio en Preventa con Herencia Automática a la Orden de Trabajo OT (`REQ-1104`):
+  1. **Condiciones del Servicio y Alimentación/Pensiones Obligatorias Sin Prellenado ni `"No Aplica"` (`REQ-1103` — `GestorOportunidades.vue`, `proyectoModel.js`):**
+     - Inicialización en blanco (`''`) de `comercial.condicion_servicio` (`Programado` vs `A Disponibilidad`) y de los 5 campos de `comercial.pensiones` (`Alojamiento`, `Desayuno`, `Almuerzo`, `Cena`, `Traslado Personal`).
+     - Eliminación de la opción `<option value="NA">No Aplica (N/A)</option>` y del badge `"⚠️ NO APLICA (Servicio de 1 Día)"`, exigiendo definir explícitamente si cada ítem es `Costeado por Cliente` o `Costeado por San Pablo`.
+     - Resaltado visual en rojo cuando falta seleccionar cualquiera de los 6 campos, exposición directa en el panel del Estructurador de Servicios y en la pestaña `Condiciones Comerciales`, hidratación sin valores prellenados por defecto en `cargarDatosCotizacion` y validación obligatoria en `validarDatosPreventaParaCotizar()`.
+  2. **Obligatoriedad de Descripción del Servicio en Preventa y Herencia Automática a la OT (`REQ-1104` — `GestorOportunidades.vue`, `proyectoModel.js`):**
+     - Sincronización bidireccional entre `opportunity.descripcion` (`Descripción del Servicio / Faena *`) y `siteVisit.detalle_servicio` (`Detalle del Servicio a realizar *`), con advertencia explícita al comercial de que dicha descripción se reflejará directamente en la Orden de Trabajo (OT) para el operador.
+     - Validación obligatoria tanto en `guardarEnPreventa()` como en `validarDatosPreventaParaCotizar()`.
+     - Visualización destacada de la descripción comercial heredada en la vista `3. Asignación Recursos OT` (`GestorOportunidades.vue`) e impresión de la fila **`Descripción del Servicio (Preventa):`** en el PDF oficial de la Orden de Trabajo (`proyectoModel.generarOTVersion`).
+
+## [Portal Web GSP & Backend] - Versión 1.0.191
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 09:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1091`
+- **Especificación Técnica:** Sincronización de `codi_user` al Actualizar Email en Mantenedor de Usuarios (`usuarioModel.js`), Priorización de `email` en Login (`authModel.js`), Refresco Automático de Roles en `localStorage` (`Sidebar.vue`) y Restitución de Permisos de Consola para Dominique Torres (`id_user = 90`, `alogistica@arriendosanpablo.cl`) y Alfonso Porperello (`id_user = 10`, `alfonsoporperello@gmail.com`):
+  1. **Sincronización de `codi_user` con `email` en `updUsuarioDatos` (`usuarioModel.js` & `authModel.js`):**
+     - En `updUsuarioDatos`, actualización simultánea de `codi_user = COALESCE($3, email, codi_user)` al modificar el correo de un usuario.
+     - En `getUserByEmail`, priorización explícita de la coincidencia por `LOWER(email) = LOWER($1)` antes que `codi_user`.
+     - Normalización en `sch_leangsp_prod.tsec_users` y `sch_leangsp.tsec_users` (`UPDATE tsec_users SET codi_user = LOWER(TRIM(email))`), eliminando la colisión donde `id_user = 10` (`Alfonso Porperello`) retenía `codi_user = 'alogistica@arriendosanpablo.cl'` e interceptaba el inicio de sesión de **Dominique Torres** (`id_user = 90`).
+  2. **Sincronización de Roles RBAC en Sesión Activa y Habilitación de Consola (`Sidebar.vue`, `tsec_user_roles`):**
+     - Actualización reactiva de `localStorage.user.roles` desde `loadUserRoles()` en `Sidebar.vue` y restitución de roles de consola (`ADMIN`, `COORD`, `GSP_PROG`) para Alfonso Porperello (`id_user = 10`) y Dominique Torres (`id_user = 90`).
+
+## [Portal Web GSP & Backend] - Versión 1.0.190
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 02:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp-dev`
+- **Requerimientos Asociados:** `REQ-2239`, `REQ-2178`, `REQ-2127`, `REQ-1099`, `REQ-1098`
+- **Especificación Técnica:** Limpieza de Registro de Cambio / Recuadro Amarillo en Report de `GSP-2611-00004` (`id_reporte_avance = 3`, `id_proyecto = 33`), Habilitación Permanente del Botón `📎 Adjuntar Documento` al Auditar Reports (`ModalVisorReport.vue`), Inclusión de Máquinas Auxiliares y de Flete en Filtros/Buscador del Kanban (`Torre.vue`) y Actualización de Respuestas Oficiales en `tcfg_backlog`:
+  1. **Saneamiento de Registro de Cambio y Regeneración de PDF en `GSP-2611-00004` (`REQ-2239` — `tedp_reporte_avance`, `ModalVisorReport.vue`):**
+     - Limpieza de `ajustes_analista` (`modificado: false`, eliminación de `valores_originales` donde figuraba Osvaldo Balboa y `valores_ajustados`) en `id_reporte_avance = 3` (`id_proyecto = 33`), preservando intacta la liquidación de RRHH de **Omar Patricio Fuentes (`id_user = 97`)** y regenerando el PDF oficial del Report Diario sin recuadro amarillo de cambio.
+     - Eliminación de la condición `v-if="!readonly"` sobre el botón **`📎 Adjuntar Documento`** en `ModalVisorReport.vue`, dejándolo siempre disponible al auditar o abrir el report desde cualquier vista.
+  2. **Soporte de Máquinas Auxiliares / Fletes en Filtros y Buscador del Kanban (`REQ-2178` — `Torre.vue`):**
+     - Incorporación del arreglo `equiposNombres` en `getFichaOperativa(p)`, exponiendo en `opcionesEquiposKanban`, `coincideFiltrosKanbanPro` y `busquedaKanban` tanto los equipos principales como los tracto camiones/camas bajas de traslado (`DRCX.62-0` en `GSP-2611-00005`).
+  3. **Actualización y Respuesta Oficial en Backlog (`tcfg_backlog` en `PROD` y `DEV`):**
+     - Cierre a estado `Implementado` con nota oficial `"Respuesta LeanGlobal: Incidente ya atendido anteriormente por requerimiento levantado por Jorge..."` en los tickets `REQ-2239`, `REQ-2178` y `REQ-2127` (y homologación de `REQ-1098` / `REQ-1099`).
+
+## [Portal Web GSP & Backend] - Versión 1.0.189
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-04 00:58:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1102`, `CASO-20261103-05`, `SPEC-065 §4.1`, `SPEC-046`
+- **Especificación Técnica:** Reparación Integral de Valorización Comercial en ITS (`ModalITS.vue`, `itsController.js`), Piso Mínimo Contractual por Unidad Real en PDF de Orden de Trabajo (`proyectoModel.js`), Apertura Directa del PDF Oficial de la OT en `PMO > Control en Vivo` (`ControlOperativoVivo.vue`, `controlVivoController.js`) y Resumen de Horas Mensuales/Diarias en `3. Asignación Recursos OT` (`GestorOportunidades.vue`, `Torre.vue`):
+  1. **Blindaje de Parámetros Comerciales Base y Valorización de Traslados en ITS (`itsController.js`, `ModalITS.vue`):**
+     - Eliminación de la sobrescritura `valor_flete_pactado = totalIngFletes` en `recalcularTotales()` e `itsController.getITS`, preservando íntegro el parámetro comercial cotizado (`$200.000` en `GSP-2611-00007`) en la Sección 1.
+     - Vinculación de `VENTA NETA PROYECTADA` en la Sección 1 al monto neto comercial proyectado (`(horas_minimas_pactadas * valor_hora_pactado) + valor_flete_pactado` = `$10.640.000`), manteniendo `total_ingresos_facturables` estrictamente para la liquidación real de jornadas ejecutadas (sin alterar EDPs ni ITS cerrados).
+     - Valorización al `100%` en tramo único cuando la línea comercial de traslado tiene explícitamente `unidad === 'TRASLADO IDA'` o `'TRASLADO RETORNO'`, conservando el `50% / 50%` para `TRASLADO IDA/VUELTA`.
+  2. **Piso Mínimo Contractual según Unidad del Estructurador en PDF de la OT (`proyectoModel.js`):**
+     - Resolución dinámica de `pisoMinimoTexto` en `generarOTVersion`: imprime `180 hrs mensuales mínimas (1 Mes)` para unidades mensuales (`Horas Mes Minimas`), `X hrs diarias mínimas (N Días)` para unidades diarias y `Servicio a Valor Fijo Convenido` para valor fijo. Regeneración de `OT-GSP-2611-00007V4-55.pdf` (`id_doc = 1532`).
+  3. **Botón `📄 Abrir OT` en `PMO > Control en Vivo` (`ControlOperativoVivo.vue`, `controlVivoController.js`):**
+     - Exposición de `ot_id_doc` y `ot_url` desde `ejecucion_v1.ot_versiones` en `controlVivoController.js` y apertura directa del PDF oficial de la OT en nueva pestaña (`/api/v1/storage/view/:id_doc`).
+  4. **Visualización de Unidades Mensuales/Diarias en `3. Asignación Recursos OT` y `familia_servicio` en Kanban (`GestorOportunidades.vue`, `Torre.vue`):**
+     - Implementación de `formatResumenCantidadLinea(line)` mostrando `1 Mes × 180 hrs/mes (Horas Mes Minimas)` o `1 Día × 9 hrs/día (Horas Diarias Minimas)` y sincronización automática de `familia_servicio` con la subcategoría/categoría real de la línea principal.
+
+## [Portal Web GSP] - Versión 1.0.188
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-03 23:00:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/frontend_dist` & `/home/nodeadmin/proyectos/lean-services-gsp-dev/frontend_dist`
+- **Requerimientos Asociados:** `REQ-1101`, `CASO-20261103-05`, `SPEC-016 v4.3.0`
+- **Especificación Técnica:** Taxonomía Determinista de Líneas del Estructurador por Categoría/Subcategoría (erradicación de inferencia por descripción libre `l.descripcion`) y Resolución Integral de Equipo y Operador en `Kanban + Filtros` (`GestorOportunidades.vue`, `Torre.vue`), más normalización en base de datos de `GSP-2611-00007` (`id_proyecto = 36`, `METTCO SPA — PLANTA FERRERO- FUNDO CARACAS`) y `GSP-2611-00005` (`id_proyecto = 34`):
+  1. **Taxonomía Determinista de Líneas en `GestorOportunidades.vue` (`isPersonalLine`, `isTrasladoLine`, `esLineaPlataforma`, `sincronizarTrasladosComerciales`):**
+     - Eliminación de `desc.includes('OPERADOR' | 'RIGGER' | 'PREVENCIONISTA' | 'SUPERVISOR')` en `isPersonalLine(l)`, impidiendo que una línea de maquinaria (`CAMIONES — CAMION PLUMA` o `GRUA HORQUILLA`) cuya descripción incluya *"CON OPERADOR"* o *"CON RIGGER"* sea ocultada de `1. FLOTA PRINCIPAL & OPERADORES DE SERVICIO`.
+     - Eliminación de coincidencias por descripción libre en `isTrasladoLine(l)`, `esLineaPlataforma(line)` y `sincronizarTrasladosComerciales()` (erradicando `desc.includes('CONTRAPESO' | 'CLIENTE' | 'TERCERO' | 'MAQUINARIA')` y `opportunity.value?.tipo_caso === 5`).
+     - Matriz de 5 reglas en `sincronizarTrasladosComerciales()` gobernada 100% por `Categoría` y `Subcategoría`: cuando en la Sección 1 solo hay `CAMIONES` autopropulsados (ej. `CAMION PLUMA`), o cuando la subcategoría de traslado es de Grúa/Pluma, la línea comercial de traslado se oculta de la Sección 2 (`2. EQUIPOS DE TRASLADO & CHOFERES`). Documentado en `SPEC-065 §4.1`, `SPEC-016 §20.3`, `guia_asignacion_recursos_traslados_y_reports.html` y `tratamiento_riggers_y_prevencionistas_estructurador.html`.
+     - Asignación del rol `'Operador Camión Pluma'` en `tripulacionAsignada` y `getOperadorAsignadoAEquipo` evaluando `line.tipo` y `line.subcategoria`, e hidratación reactiva de `linesEquiposPrincipales[0]` desde `ejecucion_v1.equipo_id` / `operador_id`.
+  2. **Resolución Integral de Equipo y Operador en `Torre.vue` (`getFichaOperativa` y `getHitoAsignacion`):**
+     - Restricción de `esSoloRigger` a líneas cuya categoría sea de personal (`if (t !== '' && !t.includes('PERSONAL')) return false`).
+     - Incorporación de fallback a `ej.equipos_extra` (`id_equipo` y `chofer_id`) y expresión `/operador|chofer|conductor/i` en `tripulacion_asignada`, además de mostrar la subcategoría de la primera línea de maquinaria cuando aún no hay patente asignada.
+  3. **Normalización en Base de Datos (`sch_leangsp_prod`):**
+     - `GSP-2611-00007` (`id_proyecto = 36`): Vinculación titular de `id_equipo = 56` (`RSPL.82-3 - SINOTRUK C7H8X4 440 EV FORESTAL`) y `id_user = 9` (`Ernesto Israel Rios`) en `lineas_servicio[0]`, `ejecucion_v1.equipo_id`/`operador_id`, limpieza de `ejecucion_v1.equipos_extra = []`, `tpry_rel_equipo` (`CAMIONES - CAMION PLUMA`) y `tpry_rel_persona` (`Operador Camión Pluma`).
+
+## [Portal Web GSP & Backend] - Versión 1.0.187
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-03 21:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1100`, `CASO-20261103-04`, `SPEC-016 v4.2.0`
+- **Especificación Técnica:** Gobernanza del Estructurador Comercial ("Tratamiento de Riggers y Prevencionistas en el Estructurador"), Vigencia de Versiones de Cotización en Servicios en Operación y Herencia Unificada de Piso Mínimo en Report Diario (`GestorOportunidades.vue`, `DocumentacionView.vue`, `tratamiento_riggers_y_prevencionistas_estructurador.html`, `centro_documentacion_gsp.html`, `proyectoModel.js`, `controlVivoController.js`, `reportDiarioController.js`), más normalización del negocio `GSP-2611-00001` (`id_proyecto = 30`, `FERROCARRILES DE PACIFICO S.A. - PLANTA FEPASA`, `id_reporte_avance = 10` con `9.00 hrs` mínimas y PDF `id_doc_pdf = 1526`):
+  1. **Tratamiento de Riggers y Prevencionistas en el Estructurador (`GestorOportunidades.vue`):**
+     - En Preventa, marcar `Requiere Rigger = SÍ` o `Prevencionista Certificado = SÍ` genera inmediatamente el registro en el Estructurador de Servicios.
+     - El ejecutivo comercial puede eliminar libremente ese registro desde el Estructurador cuando por motivos comerciales no se cobra aparte (sin apagar el requerimiento operativo para Operaciones y sin re-inyección automática al reabrir o hidratar el negocio mediante guard `if (isHydrating.value) return`).
+  2. **Saneamiento Automático de Glosa al Cambiar Categoría / Subcategoría (`onTipoChange` / `onSubcategoriaChange`):**
+     - Limpieza automática de descripciones por defecto de otra categoría (`"Servicio de Rigger Certificado"`, `"Servicio de Prevencionista Certificado"`) y sugerencia de glosa coherente con el equipo seleccionado.
+  3. **Control de Vigencia de Cotizaciones en Servicios en Operación (`Estado >= 3`):**
+     - Habilitación de edición comercial y generación de nuevas versiones (`v2`, `v3`) en servicios en operación sin retroceder el estado operativo, sin volver a pedir `"Generar Requerimiento"` y sin bloquear viajes ni Reports Diarios.
+     - Alerta explícita al comercial indicando que mientras la nueva versión no sea enviada formalmente (`[ENVIAR COTIZACIÓN]`), permanece como `🟠 Borrador (No Válida hasta Enviar)` y el Report Diario se rige por la última cotización enviada (`🟢 Vigente en Operaciones`). Al enviarla formalmente, se sincronizan en caliente (`hot-sync`) las tarifas y horas mínimas preservando `equipo_asignado_id`, `operador_asignado_id` y `rigger_asignado_id`.
+  4. **Resolución Unificada de Horas Mínimas (`pisoMinimo`) y Documentación Web Integrada:**
+     - Resolución dinámica de `horas_minimas` desde la cotización enviada vigente en `controlVivoController.overrideHitoActividad` y `reportDiarioController.regularizarReporteManual`.
+     - Publicación de la especificación interactiva `"Tratamiento de Riggers y Prevencionistas en el Estructurador"` en el Centro de Documentación Web (`tratamiento_riggers_y_prevencionistas_estructurador.html`) y acceso directo desde el Estructurador de Servicios.
+
+## [Portal Web GSP & Backend] - Versión 1.0.186
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-03 16:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1099`, `CASO-20261103-03`, `SPEC-057 v1.3`
+- **Especificación Técnica:** Corrección integral de Control Manual en Matriz PMO (`ControlOperativoVivo.vue`, `ModalVisorReport.vue`, `controlVivoController.js`, `controlVivoRoutes.js`, `reportDiarioController.js`) y normalización de `GSP-2611-00004` (`METTCO SPA`, `id_proyecto = 33`):
+  1. **Vinculación Estricta por Fecha Calendario (`YYYY-MM-DD`) y Cálculo de `dia_correlativo` según Calendario Laboral:**
+     - Implementación de `calcularDiaCorrelativoCalendario` en `overrideHitoActividad` para calcular `dia_correlativo` en base al índice real de la fecha en `diasHabilesLista` (`diasHabilesLista.indexOf(fechaOperativa) + 1`), eliminando la dependencia del orden cronológico en que se digiten los días.
+     - Emparejamiento estricto por `fecha_reporte_iso === fDia` en `calcularActividadesDia` y `abrirVisorReportDirecto`, impidiendo que al abrir `Report D1 (29/10)` se muestre el reporte de otra fecha (`02/11`).
+  2. **No-Cierre Automático al Ingresar solo Inicio de Jornada y Soporte de Limpieza a `--:--` (`En ejecución`):**
+     - Eliminación del fallback a `rDia.fecha_registro` / `device_timestamp` en `calcularActividadesDia` cuando `fecha_termino_servicio IS NULL`, y persistencia en `estado_reporte = 'JORNADA_EN_CURSO'` al registrar solo `REPORT_INICIO`.
+     - Incorporación del botón `🗑️` (`Dejar espacio vacío --:--`) en el editor inline de `ControlOperativoVivo.vue` (`limpiarHito`) y en `ModalVisorReport.vue` (`🗑️ --:--`), permitiendo dejar el término de jornada vacío (`--:--`) para servicios en ejecución.
+  3. **Botón Transversal `"📎 Adjuntar Documento"` Asociado al Día (`POST /api/operaciones/control-vivo/adjuntar-documento-dia`):**
+     - Incorporación del botón **`📎 Adjuntar Documento`** tanto en la sección de horarios del día seleccionado en `ControlOperativoVivo.vue` como en la barra superior y tarjeta lateral de `ModalVisorReport.vue` (`Report Día X`), permitiendo adjuntar cualquier documento o fotografía de situaciones ocurridas durante el servicio y dejándolo vinculado al día específico (`fecha` / `dia_correlativo`) y al dossier documental de la OT.
+
+## [Portal Web GSP, Backend & PWA Terreno] - Versión 1.0.185 (PWA v1.0.60)
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-03 10:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-prod`, `/var/www/html/pwa-gsp`, `/var/www/html/pwa-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1097`, `CASO-20261103-01`
+- **Especificación Técnica:** Resolución determinista de Operador/Chofer por Equipo en OTs Multi-Equipo (`GSP-2611-00005` — Parque Costanera), normalización de patente en viajes activos y **Cámara WebRTC In-App con Persistencia Reactiva de Borrador** en Registro de Viaje (`ViajeConductor.vue`, `ReportDiarioIzaje.vue`, `controlVivoController.js`, `reportDiarioController.js`, `viajeModel.js`):
+  1. **Resolución Determinista de Operador por Equipo en Control en Vivo y Reportes (`controlVivoController.js`, `reportDiarioController.js`, `viajeModel.js`):**
+     - Implementación de `resolverOperadorDeEquipo(idEqNum)` en `controlVivoController.js` cruzando `crm.lineas_servicio`, `ejec.tripulacion_asignada` (`equipo_asignado_id`), `ejec.equipos_extra` (`chofer_id`), `ejec.preparacion_salida.inspecciones_patio`, `tpry_rel_persona` y `tequ_log_desplazamiento`, eliminando la condición `SIN OPERADOR` en `KKFG-50- 6`.
+     - Eliminación del `ORDER BY re.id_equipo ASC LIMIT 1` en `getReportsPendientesUsuario` y construcción de mapa `eqToUserMap` / `userToEqMap` en `getReportContexto`, garantizando que en OTs multi-máquina cada operador/chofer reciba exclusivamente su patente asignada (`Claudio Gallardo -> DRCX. 62- 6`, `Isis Osses -> KKFG-50- 6`).
+     - Uso de `COALESCE(v.patente, e.patente, 'S/P') AS patente` en `viajeModel.getViajeActivoPorUsuario` y `getViajesPorProyecto`, autocompletado de patente desde `tequ_equipo` en `crearOObtenerViaje` y deduplicación de viajes activos por `(id_proyecto, id_equipo, tipo_trayecto)`.
+  2. **Cámara WebRTC In-App y Persistencia Instantánea de Borrador en Android (`ViajeConductor.vue`, `ReportDiarioIzaje.vue`):**
+     - Reemplazo de `<input type="file" capture="environment">` por un **Modal de Cámara WebRTC In-App** (`navigator.mediaDevices.getUserMedia`) con captura directa a `<canvas>` JPEG comprimido (1280px, calidad 0.78), impidiendo que Android abra la Activity externa de Cámara y mate la pestaña de Chrome en segundo plano por OOM.
+     - Persistencia reactiva automática (`watch` profundo sobre `formSalida`, `formLlegada` y `formCombustible`) en `localStorage` (`gsp_borrador_viaje_${token}` y `gsp_borrador_viaje_pry_${id_proyecto}_eq_${id_equipo}`), restaurando odómetro, horómetro y fotos ante cualquier recarga del navegador.
+
+## [Portal Web GSP & Backend] - Versión 1.0.184
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-03 01:05:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1094`, `SPEC-105 §3`
+- **Especificación Técnica:** Implementación del Submenú `6. RH` en Perspectiva Contabilidad (`PerspectivaContabilidad.vue`, `estadoPagoController.js`, `estadoPagoRoutes.js`) para la Generación e Impresión de **Anexos de Contrato de Trabajo por Cambio de Obra** Multi-Empresa con Persistencia Dual (Segmento `6. RH` + Biblioteca Documental de la Persona):
+  1. **Emisión Multi-Empresa del Holding:**
+     - Selector interactivo de cualquiera de las 4 empresas hermanas como empleador legal (`9: Grúas San Pablo / LUIS OMAR GHISELLINI JARA EIRL`, `7: Bestmaq / SOCIEDAD COMERCIALIZADORA BESTMAQ LIMITADA`, `8: Logística del Sur / SOCIEDAD DE TRANSPORTES LOGISTICA DEL SUR LIMITADA`, `11: Royal Rental / ARRIENDO ROYAL RENTAL LIMITADA`) con inyección de logo corporativo en Base64, Razón Social, RUT y domicilio comercial.
+  2. **Formulario Interactivo + Vista Previa A4 en Vivo + Generación PDF (`wkhtmltopdf`):**
+     - Captura de datos del empleado (`Nombre Completo`, `RUT`, `Cargo a desempeñar`) con autocompletado opcional desde la nómina (`tsec_users`) y datos del servicio (`Proyecto / Obra`, `Empresa Cliente`, `RUT Cliente`, `Ubicación de la Obra`, `Ciudad`, `Fecha Emisión` y `Fecha Hasta`) con autocompletado opcional desde proyectos/OTs.
+     - Compilación del documento legal `ANEXO CONTRATO DE TRABAJO — CAMBIO DE OBRA` (Artículos 11 y 12 del Código del Trabajo, `Página 1 de 1`) listo para imprimir.
+  3. **Doble Persistencia Automática (`Biblioteca de Personas` + `Segmento 6. RH`):**
+     - Registro físico en `/u05/LeanDocs/anexos_contrato/`, inserción en `tfmg_file` y vinculación automática en `tsec_certificados_persona` bajo el tipo `'Anexo de Contrato de Trabajo (Cambio de Obra)'`, quedando inmediatamente disponible en la **Biblioteca Documental (`3. Dimensión Personas & Tripulación`)** como documento de la persona y en la tabla histórica del segmento **`6. RH`**.
+
+## [Portal Web GSP] - Versión 1.0.183
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 22:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1096`, `SPEC-016 v4.1.0`
+- **Especificación Técnica:** Implementación de Triple Vista Comparativa del Tablero Kanban en Torre de Control (`Torre.vue`) para Gestión de Alta Densidad ("Full Sucursal"):
+  1. **Vista 1 — `🗂️ Tablero Kanban` (`activeView = 'kanban'`):**
+     - Conservación 100% intacta de la vista original de 6 columnas operativas.
+  2. **Vista 2 — `⚡ Kanban + Filtros` (`activeView = 'kanban_filtros'`):**
+     - Barra de Comando y Filtros Multicriterio con selector dual de fecha (`Fecha Ejecución` vs. `Fecha Venta`), presets rápidos (`Todas`, `Hoy`, `Mañana`, `Esta Semana`, `Este Mes`), rango `Desde / Hasta`, y filtros reactivos por **Operador** (incluyendo `Sin Operador Asignado`), **Rigger** (incluyendo `Servicio Solo Rigger` y `Falta Rigger`), **Equipo / Patente**, **Cliente** y **Ejecutivo Comercial**, además de toggle de densidad (`Detallada` vs. `Compacta Full Sucursal`).
+     - Tarjetas en fase operativa enriquecidas con visualización explícita de **Cliente, Fechas (Inicio ➔ Término de Ejecución y Venta), Operador, Rigger y Equipo/Patente**.
+  3. **Vista 3 — `🗄️ Cardex 3D` (`activeView = 'kardex'`):**
+     - Mueble Tarjetero 3D indexado por columna con perspectiva CSS3 (`perspective: 1100px`, `preserve-3d`), donde en estado de reposo solo se asoma la ceja superior con el **Número del Negocio (`codi_proyecto`) y el Cliente**.
+     - Elevación dinámica 3D (`Pop-Up 3D`) de las fichas coincidentes en la medida en que el usuario selecciona criterios por **Fecha de Ejecución, Fecha de Venta, Píldoras de Fechas con Fichas, Operador, Rigger, Equipo o Cliente** (o al pasar el cursor / tocar una pestaña), desplegando todos los detalles operativos de la tarjeta.
+
+## [Portal Web GSP & Backend] - Versión 1.0.182
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 19:25:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1090`, `CASO-20261102-04`, `SPEC-016 v4.0.0`
+- **Especificación Técnica:** Soporte Integral E2E para Modalidad de Servicio Exclusivo de Personal Certificado / Solo Rigger (Sin Maquinaria) desde Asignación OT hasta Informe de Término de Servicio (ITS) (`GestorOportunidades.vue`, `reportDiarioController.js`, `controlVivoController.js`, `itsController.js`):
+  1. **Asignación de Recursos y Bypass Exento de Flota (`GestorOportunidades.vue`):**
+     - Eliminación de placeholders dummy (`'CRN-DEFAULT'`, `'OP-101'`, `'RIG-201'`) al inicializar y persistir OTs sin maquinaria.
+     - Habilitación de asignación de `Rigger` interno y externo (`➕ Ext`) en Sección 3 (`Especialistas & Personal Técnico en Terreno`) con sincronización en `tpry_rel_persona` cuando `linesEquiposPrincipales.length === 0`.
+     - Incorporación de tarjeta de exención de flota en `5. Control de Flota & Despacho`, semáforos `statusSegmento2` / `statusSegmento3` en `'GREEN'` y avance directo a `6. Reportes Diarios de Izaje` mediante `finalizarPreparacionSalida()`.
+  2. **Regularización de Reportes Diarios y Control en Vivo sin Equipo (`reportDiarioController.js`, `controlVivoController.js`):**
+     - Preservación de `id_equipo = NULL` en `regularizarReporteManual` cuando la OT no posee equipos en `tpry_rel_equipo` (sin fallback al equipo `35`) y vinculación del Rigger asignado en `id_user_rigger` / `id_user_operador`.
+     - Visualización de `patente: 'PERSONAL'`, `tipo_equipo: 'SERVICIO RIGGER / ESPECIALISTA'` y datos del especialista asignado en `controlVivoController.js`.
+  3. **Liquidación Exacta en ITS para Servicios de Personal a Valor Fijo (`itsController.js`):**
+     - Detección de `esValorFijoComercial` (`unidad === 'Valor Fijo'`, `'Jornada'`, `'Día'`) para valorizar `horas_report = 1.0`, `tipo_servicio = 'Valor Fijo / Jornada'` y `subtotal = valorUnitario` (`$450.000` en `GSP-2611-00002`), evitando sobre-facturación por multiplicación de horas.
+     - Supresión de fila duplicada de `OPERADOR` en `construirPropuestaPersonalDiaria` cuando `id_user_operador === id_user_rigger` en servicios exclusivos de Rigger.
+
+## [Portal Web GSP, PWA & Backend] - Versión 1.0.181 (PWA v1.0.59)
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 17:02:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/var/www/html/pwa-gsp-dev`, `/var/www/html/pwa-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1476`, `REQ-1546`, `SPEC-006 v1.5`
+- **Especificación Técnica:** Blindaje Transversal Estrictamente Incremental (No-Regresión) de Medidores de Horómetro (Grúa / Chasis) y Odómetro en Mantenimiento, Hoja de Ruta y Report Diario (`mantenimientoModel.js`, `viajeModel.js`, `reportDiarioController.js`, `MantenimientoView.vue`, `ViajeConductor.vue`, `ReportDiarioIzaje.vue`, `TallerOtDetalleView.vue`):
+  1. **Mantenimiento y Taller (`mantenimientoModel.js`, `MantenimientoView.vue`, `TallerOtDetalleView.vue`):**
+     - Validación de no-regresión en `crearOt` contra `tequ_equipo` (`horometro_grua_acumulado`, `horometro_chasis_acumulado`, `odometro_acumulado`), en `actualizarMedidoresInicio` contra `GREATEST(ot_inicio, tequ_acumulado)` y en `cerrarOt` contra los medidores de inicio de la OT.
+     - Sincronización monótona con `GREATEST` en `tequ_equipo` y eliminación del `.catch()` silencioso en `TallerOtDetalleView.vue`.
+  2. **Hoja de Ruta / Desplazamiento (`viajeModel.js`, `ViajeConductor.vue`):**
+     - Retorno de `odometro_acumulado` y `horometro_chasis_acumulado` en `getViajePorToken` con precarga automática en `ViajeConductor.vue`.
+     - Bloqueo de lecturas regresivas en `registrarSalida` (contra acumulado de flota) y en `registrarLlegada` (contra lecturas de salida de patio), actualizando `tequ_equipo` con `GREATEST`.
+  3. **Report Diario de Izaje (`reportDiarioController.js`, `ReportDiarioIzaje.vue`):**
+     - Bloqueo en `guardarInicioJornada` cuando `horometro_inicio` es menor al máximo histórico (`GREATEST(horometro_grua_acumulado, MAX(horometro_termino))`) y en `guardarReportDiario` cuando `horometro_termino < horometro_inicio`, sincronizando `tequ_equipo` con `GREATEST` en ambos momentos.
+
+## [Portal Web GSP & Backend] - Versión 1.0.180
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 16:36:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1088`, `REQ-1089`
+- **Especificación Técnica:** Corrección de Teléfono del Ejecutivo Comercial a Cargo y Optimización de Tamaño del Logo de Grúas San Pablo en PDF de Cotización (`proyectoModel.js`, `GestorOportunidades.vue`, `logo-sanpablo.png`):
+  1. **Resolución Dinámica del Teléfono del Comercial a Cargo (`REQ-1088` — `proyectoModel.js`, `GestorOportunidades.vue`):**
+     - Resolución automática del ejecutivo comercial a cargo en `generarCotizacionVersion` consultando `tsec_users` por correo (`vendedor_email`), nombre (`vendedor_nombre`) o creador (`id_usuario_creacion`) para obtener su teléfono real (`movil` / `json_data`) en formato `+56 9 XXXX XXXX`, eliminando el número fijo de Omar Ghisellini (`+56 9 9443 7725`) y reflejando el número del comercial en el recuadro de cotización (`Fono Ejecutivo`), membrete y pie de página.
+     - Persistencia de `vendedor_telefono` en `crm_v1` desde `buildPayload()` en `GestorOportunidades.vue`.
+  2. **Ajuste de Proporción y Tamaño del Logo de Grúas San Pablo (`REQ-1089` — `logo-sanpablo.png`, `proyectoModel.js`):**
+     - Recorte lossless de los márgenes transparentes laterales vacíos (~64% del ancho original) en `logo-sanpablo.png` (`420x146 px` útiles) y ampliación de las dimensiones del contenedor de logo en el encabezado del PDF (`width: 205px; max-width: 215px; max-height: 95px; object-fit: contain;`).
+
+## [Portal Web GSP] - Versión 1.0.179
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 16:06:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1087`
+- **Especificación Técnica:** Carga y Visualización Directa de Orden de Compra (OC / HES) del Cliente en Preventa Comercial (`GestorOportunidades.vue`):
+  1. **Panel de Carga y Enlace Directo en Preventa Comercial (`⚙️ Requerimientos Comerciales`):**
+     - Despliegue automático del panel **Orden de Compra (OC / HES) Cliente** justo debajo del selector `Requiere OC / HES` cuando `opportunity.requiere_oc_hes === true` o existen OCs registradas (`ordenesCompra.length > 0`).
+     - Incorporación del botón **`📎 + Subir OC Cliente`** (`abrirModalNuevaOC`) y listado de OCs cargadas con enlace directo **`📄 Ver OC ↗`** (`getFullStaticUrl(oc.archivo.url)`) siempre disponible para su consulta posterior en Preventa y Operaciones.
+  2. **Auto-Guardado en Preventa (`guardarOC`):**
+     - Soporte para auto-inicializar el proyecto en preventa (`POST /proyectos/preventa`) si el ejecutivo comercial sube la OC antes del primer guardado manual y ya seleccionó al cliente mandante.
+
+## [Portal Web & Backend GSP] - Versión 1.0.178
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 16:02:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp` & `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1086` (`CASO-20261102-03`)
+- **Especificación Técnica:** Depuración de Usuarios Administrativos (`Admin` / `COORD`) en RBAC, Asignación Determinista de `GSP_EJEC` en Personal Externo y Exclusión de Riggers/Operadores/Técnicos en Copia Conforme (CC) de Cotizaciones y Selectores de Gestión (`acreditacionModel.js`, `ModalEnviarCotizacion.vue`, `GestorOportunidades.vue`):
+  1. **Saneamiento RBAC en Base de Datos (`sch_leangsp_prod` & `sch_leangsp`):**
+     - Eliminación de asignaciones residuales `id_rol = 1` (`Admin`) e `id_rol = 31` (`GSP_PROG`) en cuentas de riggers externos y operadores (`id_user IN (10, 11, 13, 46)`), acotando el rol `Admin` activo exclusivamente a **Omar Ghiselini**, **Jorge Ponce** y **Sergio Gajardo**.
+  2. **Asignación Exclusiva de `GSP_EJEC` al Crear Personal Externo (`acreditacionModel.js`):**
+     - En `crearPersonalExterno`, purga preventiva de cualquier rol previo en `tsec_user_roles` para el `id_user` creado e inserción determinista del rol `GSP_EJEC`.
+  3. **Blindaje de Copia Conforme (CC) y Destinatarios de Gestión (`ModalEnviarCotizacion.vue`, `GestorOportunidades.vue`):**
+     - Exclusión estricta de cuentas con `is_externo === true`, correos `rigger.ext.*` y cargos operativos o de taller (`operador`, `rigger`, `chofer`, `técnico`, `mecanico`, `mantencion`).
+
+## [Portal Web & Backend GSP] - Versión 1.0.177
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 15:03:00 (-03:00)
+- **Ruta de Despliegue:** `/home/nodeadmin/proyectos/lean-services-gsp` & `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1085` (`CASO-20261102-02`)
+- **Especificación Técnica:** Blindaje de Duración en Servicios Mensuales (`Horas Mes Minimas` / Rango de Fechas), Apertura Manual de Inicio de Jornada (`JORNADA_EN_CURSO`) sin Cierre Prematuro a Terminado, y Restricción de `Flete Solo Retorno` en ITS (`proyectoModel.js`, `reportDiarioController.js`, `itsController.js`):
+  1. **Cálculo de `duracion_plan` para Servicios Mensuales y por Rango de Fechas (`proyectoModel.js`, `reportDiarioController.js`):**
+     - Ampliación de la subconsulta `cupo.duracion_plan` en `getProyectos` y de `calcularCupoDiasHabiles` para considerar `cantidad_meses * 30`, la diferencia real entre `fecha_plan_fin` y `fecha_plan_ini` de las líneas de servicio, y la diferencia entre `crm_v1.fecha_hora_termino` y `crm_v1.fecha_hora_inicio`.
+     - Protección de `horas_minimas` diarias en unidades mensuales (`Horas Mes Minimas`) para no interpretar el piso mensual (`170 hrs/mes`) como mínimo de una jornada diaria (`8.0 hrs/día`).
+  2. **Apertura Manual de Inicio de Jornada sin Cierre Prematuro (`reportDiarioController.js`):**
+     - En `regularizarReporteManual`, cuando Control de Gestión ingresa únicamente el inicio de jornada (sin `horometro_termino` ni documento físico adjunto), el registro se persiste como `estado_reporte = 'JORNADA_EN_CURSO'` y `estado_jornada = 'JORNADA_EN_CURSO'` con `fecha_termino_servicio = NULL`, evitando que se contabilice como jornada cerrada antes del cierre real del día.
+  3. **Inyección Condicional de `Flete Solo Retorno` en ITS (`itsController.js`):**
+     - En `getITS`, la fila automática `Flete Solo Retorno` (`FLE-RET`) solo se incorpora cuando existe un viaje de retorno real registrado en `tequ_log_desplazamiento` (`tipo_trayecto IN ('RETORNO', 'IDA_Y_VUELTA')` o tiempos de salida de faena / llegada a patio), manteniendo únicamente `Flete Solo Ida` (`FLE-IDA`) mientras el equipo continúa operando en obra.
+
+## [PWA Terreno GSP] - Versión 1.0.58
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-02 12:26:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1084` (`CASO-20261102-01`)
+- **Especificación Técnica:** Visibilidad de Visitas Técnicas a Terreno y Protocolos Asignados (`Template 80`) en el Panel Principal `Operación` (`/surveys`) de la PWA (`surveys.vue`):
+  1. **Restitución Condicional de Bloque C (`v-if="filteredSurveys.length > 0"` en `surveys.vue`):**
+     - Habilitación reactiva de la sección **Visitas Técnicas a Terreno & Protocolos Asignados** en `/surveys` cuando el coordinador u operador autenticado tiene visitas técnicas o formularios pendientes asignados en `tflw_flow_step` / `tsrv_survey`, mostrando folio del negocio (`codi_proyecto`), nombre de obra/cliente y botón directo **`INICIAR / COMPLETAR VISITA A TERRENO`**.
+
+## [Portal Web GSP] - Versión 1.0.176
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 14:25:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1824`
+- **Especificación Técnica:** Despliegue Visual de Fines de Semana y Festivos en Rojo (`SÁB FDS` / `DOM FDS` / `FERIADO`) en el Ribbon de Jornadas con Control Independiente `[+]` / `[✕]` para Habilitar o Excluir Días Laborales (`controlVivoController.js`, `ControlOperativoVivo.vue`):
+  1. **Calendario Corrido con Sábados, Domingos y Feriados de Chile (`controlVivoController.js`):**
+     - Incorporación de `FERIADOS_CHILE_FIJOS`, `FERIADOS_CHILE_MOVILES`, `evaluarNaturalezaDiaCalendario` y `getCalendarioCompletoRibbon` para desplegar en `franja_multidia` todos los días del calendario (incluyendo fines de semana y festivos intermedios y adyacentes al término).
+     - Por defecto, Lunes a Viernes no festivos son `es_laboral: true` (`D1..DN`), mientras que Sábados (`SÁB FDS`), Domingos (`DOM FDS`) y Feriados (`FERIADO`) se marcan como `es_laboral: false` (`estado: 'no_laboral'`).
+     - Soporte de `clave_actividad === 'TOGGLE_DIA_LABORAL'` en `overrideHitoActividad` para persistir `dias_laborales_override[fecha]` en `tpry_proyecto.json_field`.
+  2. **Cápsulas en Rojo y Separación de Selección vs. Cambio de Estado Laboral (`ControlOperativoVivo.vue`):**
+     - Renderizado en rojo (`bg-red-950/80 border-red-500/80`) de los días No Laborales (`🚫 SÁB FDS`, `🚫 DOM FDS`, `🚫 FERIADO` • `No Lab`).
+     - Separación estricta de acciones: el clic sobre el cuerpo de la cápsula (`seleccionarDia`) únicamente selecciona la jornada para auditar y editar sus horas/hitos, mientras que el botón independiente `[+]` (en días No Laborales) o `[✕]` (en días Laborales) en la esquina superior derecha permite habilitar o deshabilitar el día como laboral sin interferir con la edición de horas.
+
+## [Portal Web GSP] - Versión 1.0.175
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 13:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1824`
+- **Especificación Técnica:** Alineación de Cálculo de Días Laborales en Ribbon de Matriz PMO y Planificación OT (`controlVivoController.js`, `GestorOportunidades.vue`):
+  1. **Cálculo Determinista sin Desfase Horario ni Pérdida de Jornadas (`controlVivoController.js`):**
+     - Incorporación de `formatLocalIsoDate` y `generarNDiasHabilesDesde` para evitar desplazamientos UTC al formatear fechas `YYYY-MM-DD`, preservar jornadas programadas en fin de semana cuando el rango recae en Sábado/Domingo y calcular automáticamente la fecha de término en base a los días contratados (`cantidad_dias` o cierre de mes en `Horas Mes Minimas`) cuando `fecha_fin_plan` aún no ha sido ingresada.
+  2. **Inferencia de Fecha de Término Comercial y Plan Diario en Operaciones (`GestorOportunidades.vue`):**
+     - Actualización de `obtenerFechasComercialesDefecto` y `generarPlanDiario` para proyectar automáticamente los días hábiles contratados (`maxDias` o término de mes en `Horas Mes Minimas`) desde `iniFecha` y soportar servicios o requerimientos internos ejecutados en fin de semana.
+
+## [Portal Web GSP] - Versión 1.0.174
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 13:26:00 (-03:00)
+- **Ruta de Despliegue:** `/home/nodeadmin/proyectos/lean-services-gsp` & `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1547`
+- **Especificación Técnica:** Eliminación de Lecturas de Horómetro y Odómetro del Documento PDF del Report Diario (`reportDiarioPdfService.js`):
+  1. **Ocultamiento en Documento PDF de Descarga y Despacho a Cliente (`buildReportDiarioHtml`):**
+     - Eliminación de la tabla de `Horómetro Motor` y `Odómetro Chasis` de la Sección 3 (renombrada a `3. Liquidación de Jornada y Tiempos de Servicio`) y retiro de la fila `Horómetro Motor` de `tablaAuditoriaHtml`, manteniendo intactos los indicadores horarios facturables y conservando la persistencia en BD (`tedp_reporte_avance` / `tequ_log_desplazamiento`) para control interno y Mantenimiento.
+
+## [Portal Web GSP] - Versión 1.0.173
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 13:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1773`, `REQ-1740`
+- **Especificación Técnica:** Incorporación de Modalidad `TRASLADO RETORNO` en Estructurador Comercial / Generador de Viajes y Campo Nombre de la Obra Vacío por Defecto:
+  1. **Opción `TRASLADO RETORNO` en Estructurador Comercial y Generador de Viajes (`REQ-1773` — `GestorOportunidades.vue`, `viajeModel.js`):**
+     - Incorporación de la opción `TRASLADO RETORNO` en los selectores de unidad/modalidad cuando el tipo de línea es `TRASLADOS` (tanto en Pestaña 1 Preventa Comercial como en Pestaña 2 Validación & Diff).
+     - Preservación de la modalidad `TRASLADO RETORNO` en la hidratación y sincronización de líneas comerciales (`cargarDatosCotizacion`, `sincronizarTrasladosComerciales`).
+     - Actualización de `calcularDevengadoTraslado` para devengar el 100% de una línea `TRASLADO RETORNO` al registrarse el retorno efectivo.
+     - Incorporación de `resolverTipoTrayectoEquipo` en frontend e `inferirTipoTrayectoDesdeLineas` en `viajeModel.js` (`getViajePorToken`, `registrarSalida`, `crearOObtenerViaje`) para instanciar automáticamente el viaje con `tipo_trayecto = 'RETORNO'`.
+  2. **Campo Nombre de la Obra / Faena Vacío por Defecto (`REQ-1740` — `GestorOportunidades.vue`):**
+     - En `cargarDatosCotizacion`, eliminación del fallback `|| p.nombre_proyecto` al hidratar `siteVisit.value.obra_nombre`, garantizando que el campo **Nombre de la Obra / Faena** inicie vacío (`''`) hasta que sea ingresado explícitamente.
+
+## [Portal Web GSP] - Versión 1.0.172
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-02 00:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod` & `/var/www/html/lg-gsp`
+- **Requerimientos Asociados:** `REQ-1083` (`SPEC-016 v3.9.0`)
+- **Especificación Técnica:** Nuevo Formato de Serial del Negocio (`codi_proyecto` / `identificador_formal`) con Secuencia Continua de 5 Dígitos (`[PREFIJO]-[YYMM]-[SECUENCIAL_5_DIGITOS]`):
+  1. **Estandarización de Serial en 5 Dígitos sin ID de Cliente (`proyectoModel.js`):**
+     - Eliminación del segmento `id_cliente` del identificador del negocio y ampliación del correlativo a 5 dígitos con relleno de ceros a la izquierda (`padStart(5, '0')`), generando el formato canónico `GSP-2611-00001` (`BMQ-2611-00001`, `LDS-2611-00001`, `RYL-2611-00001`, `INT-2611-00001`).
+  2. **Secuencia Continua Histórica por Prefijo (`tpry_correlativos`):**
+     - Almacenamiento e incremento atómico en `tpry_correlativos` utilizando la clave continua `anio_mes = '0000'` por `prefijo`, asegurando que el secuencial `00001..99999` nunca se reinicie al cambiar de mes o año mientras el código impreso refleja el `${anio_mes}` (`YYMM`) real de creación.
+  3. **Validación Regex Retrocompatible (`proyectosController.js`):**
+     - Actualización del patrón `isFormalCode` en `createProyecto`, `createProyectoPreventa` y `updateProyecto` a `/^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/`, aceptando el nuevo serial de 5 dígitos y preservando compatibilidad con códigos históricos de 3 dígitos.
+
+## [Portal Web GSP] - Versión 1.0.171
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-10-30 14:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1082` (`SPEC-016 v3.8.0`)
+- **Especificación Técnica:** Redefinición del Estructurador Comercial en Modalidad Autónoma, Diferimiento de Política Urbana / Rural a Verificación de Operaciones con Facultad de Devolución a Comercial, y Ajuste de Reglas de Cobro al Cliente e Incentivos al Operador:
+  1. **Estructuración Libre en Preventa Comercial (`GestorOportunidades.vue` & `proyectoModel.js`):**
+     - Eliminación de los cuadros rígidos de casos comerciales (`Caso 1` a `Caso 5`) en el Estructurador de Preventa, habilitando la configuración libre de líneas de servicio y conservando `distancia_km` como antecedente para Operaciones.
+     - En el PDF de Cotización, inclusión de la cláusula contractual general de cómputo de horas para ambas políticas sin pre-encasillar un régimen rígido antes de Operaciones.
+  2. **Definición de Política Operacional y Devolución a Comercial (`GestorOportunidades.vue`):**
+     - Incorporación del **Panel de Definición de Política Operacional (`Política Urbana` / `Política Rural`)** en `2. Validación & Diff` de Operaciones junto con el antecedente de distancia (`km`) y botón directo **`↩️ Devolver a Preventa Comercial`** (`volverACotizar`).
+  3. **Cobro al Cliente e Incentivos de Horas al Operador (`tarifasOperadorService.js`, `reportDiarioController.js`, `itsController.js` & `ModalVisorReport.vue`):**
+     - **Política Urbana (`URBANO`):** Se cobra al cliente desde la salida de la base hasta el término del servicio en obra; al operador no se le paga traslado de equipo (`horas_flete_pagar = 0`), considerando únicamente las horas reportadas (`horas_faena_pagar = horasRealesEquipo`).
+     - **Política Rural (`RURAL`):** Se cobra al cliente desde el inicio hasta el término del servicio en obra; al operador, si las horas reales son menores a las mínimas, el traslado cubre primero la brecha hasta las mínimas y solo se paga la diferencia positiva por sobre las horas mínimas.
+
+## [PWA GSP] - Versión 1.0.57
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-30 13:33:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev` & `/var/www/html/pwa-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1079` (`SPEC-049 v1.3.0`)
+- **Especificación Técnica:** Corrección de Falso Positivo de Acta de Plataforma en Grúas (`BMQ-`), Hidratación de Horario de Inicio en Término de Report y Edición Libre de Relojes Numéricos (`HH : MM`):
+  1. **Exclusión Estricta de Grúas en Flujo de Plataformas (`ViajeConductor.vue`):**
+     - En `esServicioPlataformaBsm`, se excluyen explícitamente `GRUA`, `PLUMA` y `HORQUILLA` y se retira la condición genérica `cod.startsWith('BMQ')`, garantizando que al confirmar llegada del Viaje de Ida en servicios de grúas se presente el botón verde documentado (`📋 PASO 2: INICIAR REPORT DIARIO DE FAENA ➔`).
+  2. **Sincronización de Horario de Inicio al Abrir Término de Report (`ReportDiarioIzaje.vue`):**
+     - Incorporación de `sincronizarCajasHora()` al hidratar `jornada_activa` en `cargarContexto()`, asegurando que el bloque `HORARIO DE INICIO DE FAENA` muestre la hora registrada sin caer en `00 : 00`.
+  3. **Edición Numérica Fluida sin Bloqueo Reactivo en `HH : MM` (`ReportDiarioIzaje.vue`):**
+     - Reemplazo de propiedades `computed` con fallback inmediato por `ref` editables independientes (`horaInicioHH`, `horaInicioMM`, `horaTerminoHH`, `horaTerminoMM`) con `@focus="$event.target.select()"`, permitiendo borrar y digitar `08`, `12`, etc. libremente y normalizando a 2 dígitos en `@blur` y al guardar.
+
+## [Portal Web GSP] - Versión 1.0.170
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-10-28 17:12:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` & `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1081` (`SPEC-057 v1.2` / `SPEC-078` / `SPEC-105`)
+- **Especificación Técnica:** Anticipación de Verificación de Costos de Personal y Viáticos en el Report Diario, Traspaso Automático al ITS, Filtro por Rango de Fechas ("Desde - Hasta") y Columna "Report Validado" en Perspectiva Contabilidad:
+  1. **Liquidación Diaria de Personal y Viáticos en Report Diario (`ModalVisorReport.vue` & `reportDiarioController.js`):**
+     - Incorporación de la **Sección 3: Liquidación Diaria de Personal y Viáticos (RRHH / Remuneraciones)** en el visor del Report Diario, pre-calculando régimen (`URBANO` $\le 30\text{ km}$ vs. `RURAL` $> 30\text{ km}$), horas faena, horas flete, valor hora sugerido por tabulador (`tpar_tarifa_operador`) y viático diario de alimentación (Operador y Rigger).
+     - Al certificar con PIN FES (`POST /api/operaciones/report/:id/validar`), el sistema guarda `liquidacion_personal_dia` con `validado_rrhh: true` en `tedp_reporte_avance.ajustes_analista`.
+  2. **Traspaso Automático del Report Diario al ITS (`itsController.js` & `ModalITS.vue`):**
+     - `construirPropuestaPersonalDiaria` toma automáticamente los valores ya verificados en cada Report Diario (`liquidacion_report`) para poblar las pestañas *Hora Operador* y *Viático Alimentación* del ITS con indicador `✓ Report`.
+  3. **Cierre Mensual RRHH Independiente del ITS, Filtro "Desde - Hasta" y Columna "Report Validado" (`estadoPagoController.js` & `PerspectivaContabilidad.vue`):**
+     - Habilitación de filtro de rango de fechas (`Desde - Hasta`) sobre el Submenú `2. Horas Operadores / Riggers` con recálculo reactivo del consolidado por trabajador.
+     - Reemplazo de la última columna `ITS Validado` por **`Report Validado`** (`SÍ` / `PARCIAL` / `NO`) tanto en la vista web como en la exportación `.xlsx`.
+
 
 
 ## [PWA GSP] - Versión 1.0.56

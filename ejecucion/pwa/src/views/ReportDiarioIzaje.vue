@@ -149,7 +149,7 @@
               <span>Servicio Multi-Día • Jornada Día {{ diaCorrelativo }}</span>
             </div>
             <p class="text-xs text-slate-300 mb-0 font-medium">
-              El equipo pernocta en obra y no registra traslado. El horómetro de superestructura se hereda del cierre previo (<strong>{{ form.horometro_inicio || '0.0' }} hrs</strong>).
+              El equipo pernocta en obra y no registra traslado. Ingrese manualmente el horómetro actual de la superestructura.
             </p>
           </div>
 
@@ -168,6 +168,7 @@
                   maxlength="2"
                   placeholder="08"
                   class="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-emerald-400 focus:outline-none"
+                  @focus="$event.target.select()"
                   @input="onInputHora('hora_inicio', 'HH', $event)"
                   @blur="normalizarHora('hora_inicio')"
                 />
@@ -182,6 +183,7 @@
                   maxlength="2"
                   placeholder="00"
                   class="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-emerald-400 focus:outline-none"
+                  @focus="$event.target.select()"
                   @input="onInputHora('hora_inicio', 'MM', $event)"
                   @blur="normalizarHora('hora_inicio')"
                 />
@@ -195,9 +197,6 @@
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
                 ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *
               </label>
-              <span v-if="diaCorrelativo > 1" class="text-[11px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
-                Heredado Día {{ diaCorrelativo - 1 }}
-              </span>
             </div>
             <input
               v-model.number="form.horometro_inicio"
@@ -208,13 +207,13 @@
             />
           </div>
 
-          <!-- FOTOGRAFÍA OBLIGATORIA DEL HORÓMETRO AL INICIO (BOTÓN ÚNICO LIMPIO) -->
+          <!-- FOTOGRAFÍA OBLIGATORIA DEL HORÓMETRO AL INICIO (CÁMARA WEBRTC IN-APP) -->
           <div class="mb-5">
             <input
               ref="inputFotoInicio"
               type="file"
               accept="image/*"
-              capture="environment"
+              data-bypass-inapp="true"
               class="d-none"
               @change="onFotoInicioSeleccionada"
             />
@@ -233,7 +232,7 @@
                   variant="flat"
                   size="x-large"
                   class="flex-grow-1 font-black text-lg h-16 rounded-2xl text-slate-950"
-                  @click="inputFotoInicio.click()"
+                  @click="capturarFotoHorometro('INICIO')"
                 >
                   📸 CAMBIAR FOTO
                 </v-btn>
@@ -256,7 +255,7 @@
                 size="x-large"
                 block
                 class="font-black text-base h-16 rounded-2xl d-flex align-center ga-2 text-slate-950 shadow-lg py-3"
-                @click="inputFotoInicio.click()"
+                @click="capturarFotoHorometro('INICIO')"
               >
                 <span class="text-2xl">📸</span>
                 <span>FOTO HOROMETRO SUPERESTRUCTURA</span>
@@ -343,7 +342,9 @@
                 type="text"
                 inputmode="numeric"
                 maxlength="2"
+                placeholder="08"
                 class="w-20 bg-slate-900 border border-emerald-500/50 rounded-lg py-1.5 text-emerald-300 font-mono text-2xl font-black text-center focus:outline-none focus:border-emerald-400"
+                @focus="$event.target.select()"
                 @input="onInputHora('hora_inicio', 'HH', $event)"
                 @blur="normalizarHora('hora_inicio')"
               />
@@ -353,7 +354,9 @@
                 type="text"
                 inputmode="numeric"
                 maxlength="2"
+                placeholder="00"
                 class="w-20 bg-slate-900 border border-emerald-500/50 rounded-lg py-1.5 text-emerald-300 font-mono text-2xl font-black text-center focus:outline-none focus:border-emerald-400"
+                @focus="$event.target.select()"
                 @input="onInputHora('hora_inicio', 'MM', $event)"
                 @blur="normalizarHora('hora_inicio')"
               />
@@ -381,6 +384,7 @@
                   maxlength="2"
                   placeholder="18"
                   class="w-full bg-slate-900 border-2 border-red-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-red-400 focus:outline-none"
+                  @focus="$event.target.select()"
                   @input="onInputHora('hora_termino', 'HH', $event)"
                   @blur="normalizarHora('hora_termino')"
                 />
@@ -395,6 +399,7 @@
                   maxlength="2"
                   placeholder="00"
                   class="w-full bg-slate-900 border-2 border-red-500/50 rounded-xl py-2.5 text-white font-mono text-3xl font-black text-center focus:border-red-400 focus:outline-none"
+                  @focus="$event.target.select()"
                   @input="onInputHora('hora_termino', 'MM', $event)"
                   @blur="normalizarHora('hora_termino')"
                 />
@@ -496,14 +501,6 @@
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
                 ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *
               </label>
-              <button
-                v-if="horometroPropuesto && form.horometro_termino !== horometroPropuesto"
-                type="button"
-                @click="aplicarHorometroSugerido"
-                class="text-[11px] font-bold text-amber-400 bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
-              >
-                💡 Usar Sugerido: {{ horometroPropuesto }}
-              </button>
             </div>
             <input
               v-model.number="form.horometro_termino"
@@ -517,9 +514,6 @@
             <!-- ALERTA: HOROMETRO MENOR -->
             <div v-if="estadoHorometroTermino.tipo === 'ERROR_MENOR'" class="mt-2 p-2 bg-red-950/80 border border-red-500/80 rounded-xl text-xs text-red-200 font-bold flex items-center justify-between">
               <span>{{ estadoHorometroTermino.mensaje }}</span>
-              <button @click="aplicarHorometroSugerido" type="button" class="underline text-white text-[11px] ml-2 cursor-pointer">
-                Corregir
-              </button>
             </div>
 
             <!-- ALERTA: HOROMETRO DISPARADO -->
@@ -527,26 +521,19 @@
               <div class="flex items-start gap-1.5">
                 <span>{{ estadoHorometroTermino.mensaje }}</span>
               </div>
-              <div class="flex items-center justify-between pt-1 border-t border-yellow-500/30">
-                <span class="text-[11px] text-yellow-400">Sugerido estimado: {{ horometroPropuesto }} hrs</span>
-                <button @click="aplicarHorometroSugerido" type="button" class="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-2.5 py-1 rounded-lg text-xs cursor-pointer shadow">
-                  Reemplazar por Sugerido
-                </button>
-              </div>
             </div>
 
             <div v-else-if="deltaHorometro !== null" class="text-xs text-slate-200 d-block mt-1.5 font-mono font-bold flex items-center justify-space-between">
               <span>Δ Superestructura: {{ deltaHorometro }} hrs</span>
-              <span v-if="horometroPropuesto" class="text-slate-400 text-[11px]">Sugerido: {{ horometroPropuesto }} hrs</span>
             </div>
 
-            <!-- FOTOGRAFÍA OBLIGATORIA SUPERESTRUCTURA (BOTÓN ÚNICO LIMPIO) -->
+            <!-- FOTOGRAFÍA OBLIGATORIA SUPERESTRUCTURA (CÁMARA WEBRTC IN-APP) -->
             <div class="mt-3 pt-3 border-t border-slate-800">
               <input
                 ref="inputFotoTermino"
                 type="file"
                 accept="image/*"
-                capture="environment"
+                data-bypass-inapp="true"
                 class="d-none"
                 @change="onFotoTerminoSeleccionada"
               />
@@ -565,7 +552,7 @@
                     variant="flat"
                     size="default"
                     class="flex-grow-1 font-black text-sm h-11 rounded-xl text-slate-950"
-                    @click="inputFotoTermino.click()"
+                    @click="capturarFotoHorometro('TERMINO')"
                   >
                     📸 CAMBIAR FOTO
                   </v-btn>
@@ -588,7 +575,7 @@
                   size="large"
                   block
                   class="font-black text-base h-14 rounded-xl d-flex align-center ga-2 text-slate-950 shadow py-2"
-                  @click="inputFotoTermino.click()"
+                  @click="capturarFotoHorometro('TERMINO')"
                 >
                   <span class="text-xl">📸</span>
                   <span>FOTO HOROMETRO SUPERESTRUCTURA</span>
@@ -856,6 +843,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import SignatureField from '@/components/SignatureField.vue'
+import { abrirCamaraWebRTC } from '@/utils/inAppCamera'
 
 const route = useRoute()
 const router = useRouter()
@@ -927,6 +915,7 @@ const reportsPrevios = ref([])
 const diaCorrelativo = ref(1)
 const totalDiasContratados = ref(1)
 const horasMinimas = ref(8.0)
+const horometroMinimoInicio = ref(0)
 
 const etiquetaDiaFecha = computed(() => {
   const raw = String(form.fecha_reporte || fechaHoyChile())
@@ -982,6 +971,14 @@ const equipoSeleccionado = computed(() => {
 })
 
 const operadorNombre = computed(() => {
+  if (equipoSeleccionado.value?.operador_nombre) {
+    return equipoSeleccionado.value.operador_nombre
+  }
+  const idEqSel = Number(equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value || 0)
+  if (idEqSel > 0) {
+    const opEq = personas.value.find(p => Number(p.id_equipo) === idEqSel)
+    if (opEq) return `${opEq.name_frst || ''} ${opEq.apellido_pat || ''}`.trim()
+  }
   const op = personas.value.find(p => {
     const r = (p.rol_asignado || p.cargo || '').toUpperCase()
     return r.includes('OPERADOR') || r.includes('CHOFER') || r.includes('CONDUCTOR') || r.includes('MAQUINISTA')
@@ -1002,29 +999,61 @@ const riggerNombre = computed(() => {
   return proyecto.value.rigger_nombre || null
 })
 
-const horaInicioHH = computed(() => (form.hora_inicio || '08:00').split(':')[0] || '08')
-const horaInicioMM = computed(() => (form.hora_inicio || '08:00').split(':')[1] || '00')
-const horaTerminoHH = computed(() => (form.hora_termino || '18:00').split(':')[0] || '18')
-const horaTerminoMM = computed(() => (form.hora_termino || '18:00').split(':')[1] || '00')
+const horaInicioHH = ref('08')
+const horaInicioMM = ref('00')
+const horaTerminoHH = ref('18')
+const horaTerminoMM = ref('00')
+
+const sincronizarCajasHora = (campo) => {
+  if (!campo || campo === 'hora_inicio') {
+    const partesIni = String(form.hora_inicio || '08:00').split(':')
+    horaInicioHH.value = String(partesIni[0] || '08').padStart(2, '0')
+    horaInicioMM.value = String(partesIni[1] || '00').padStart(2, '0')
+  }
+  if (!campo || campo === 'hora_termino') {
+    const partesTer = String(form.hora_termino || '18:00').split(':')
+    horaTerminoHH.value = String(partesTer[0] || '18').padStart(2, '0')
+    horaTerminoMM.value = String(partesTer[1] || '00').padStart(2, '0')
+  }
+}
 
 const onInputHora = (campo, parte, event) => {
   const digits = String(event.target.value || '').replace(/\D/g, '').slice(0, 2)
-  const actual = (form[campo] || '08:00').split(':')
-  let hh = actual[0] || '00'
-  let mm = actual[1] || '00'
-  if (parte === 'HH') {
-    hh = digits
-  } else {
-    mm = digits
+  if (event.target.value !== digits) {
+    event.target.value = digits
   }
-  form[campo] = `${hh}:${mm}`
+  const actual = (form[campo] || (campo === 'hora_inicio' ? '08:00' : '18:00')).split(':')
+  if (campo === 'hora_inicio') {
+    if (parte === 'HH') horaInicioHH.value = digits
+    else horaInicioMM.value = digits
+    const hhRaw = horaInicioHH.value !== '' ? horaInicioHH.value : (actual[0] || '08')
+    const mmRaw = horaInicioMM.value !== '' ? horaInicioMM.value : (actual[1] || '00')
+    const hhNum = Math.min(23, Math.max(0, parseInt(hhRaw, 10) || 0))
+    const mmNum = Math.min(59, Math.max(0, parseInt(mmRaw, 10) || 0))
+    form.hora_inicio = `${String(hhNum).padStart(2, '0')}:${String(mmNum).padStart(2, '0')}`
+  } else {
+    if (parte === 'HH') horaTerminoHH.value = digits
+    else horaTerminoMM.value = digits
+    const hhRaw = horaTerminoHH.value !== '' ? horaTerminoHH.value : (actual[0] || '18')
+    const mmRaw = horaTerminoMM.value !== '' ? horaTerminoMM.value : (actual[1] || '00')
+    const hhNum = Math.min(23, Math.max(0, parseInt(hhRaw, 10) || 0))
+    const mmNum = Math.min(59, Math.max(0, parseInt(mmRaw, 10) || 0))
+    form.hora_termino = `${String(hhNum).padStart(2, '0')}:${String(mmNum).padStart(2, '0')}`
+  }
 }
 
 const normalizarHora = (campo) => {
-  const actual = (form[campo] || '08:00').split(':')
-  let hhNum = Math.min(23, Math.max(0, parseInt(actual[0] || '0', 10) || 0))
-  let mmNum = Math.min(59, Math.max(0, parseInt(actual[1] || '0', 10) || 0))
-  form[campo] = `${String(hhNum).padStart(2, '0')}:${String(mmNum).padStart(2, '0')}`
+  const defHH = campo === 'hora_inicio' ? '08' : '18'
+  const refHH = campo === 'hora_inicio' ? horaInicioHH : horaTerminoHH
+  const refMM = campo === 'hora_inicio' ? horaInicioMM : horaTerminoMM
+  const actual = (form[campo] || `${defHH}:00`).split(':')
+  const hhStr = refHH.value !== '' ? refHH.value : (actual[0] || defHH)
+  const mmStr = refMM.value !== '' ? refMM.value : (actual[1] || '00')
+  const hhNum = Math.min(23, Math.max(0, parseInt(hhStr, 10) || 0))
+  const mmNum = Math.min(59, Math.max(0, parseInt(mmStr, 10) || 0))
+  refHH.value = String(hhNum).padStart(2, '0')
+  refMM.value = String(mmNum).padStart(2, '0')
+  form[campo] = `${refHH.value}:${refMM.value}`
 }
 
 const horasColacionFormateadas = computed(() => {
@@ -1039,14 +1068,97 @@ const deltaHorometro = computed(() => {
   return null
 })
 
+// Persistencia en tiempo real del borrador del formulario (evita pérdida ante cualquier recarga)
+const claveBorradorFormulario = () => `gsp_report_draft_${idProyecto.value || '0'}_${idEquipoSeleccionado.value || '0'}`
+const guardarBorradorFormulario = () => {
+  if (!idProyecto.value || cargando.value) return
+  try {
+    localStorage.setItem(claveBorradorFormulario(), JSON.stringify({
+      ts: Date.now(),
+      diaCorrelativo: diaCorrelativo.value,
+      faseVisual: faseVisual.value,
+      form: { ...form }
+    }))
+  } catch (e) { /* quota exceeded */ }
+}
+const restaurarBorradorFormulario = () => {
+  if (!idProyecto.value) return
+  try {
+    const raw = localStorage.getItem(claveBorradorFormulario())
+    if (!raw) return
+    const saved = JSON.parse(raw)
+    if (!saved || !saved.form) return
+    // Solo restaurar si corresponde al mismo día correlativo
+    if (saved.diaCorrelativo && Number(saved.diaCorrelativo) !== Number(diaCorrelativo.value)) return
+    const f = saved.form
+    if (faseVisual.value === 1) {
+      if (f.hora_inicio) form.hora_inicio = f.hora_inicio
+      if (f.horometro_inicio !== null && f.horometro_inicio !== undefined && f.horometro_inicio !== '') {
+        form.horometro_inicio = Number(f.horometro_inicio)
+      }
+      if (f.foto_tablero_inicio && !form.foto_tablero_inicio) {
+        form.foto_tablero_inicio = f.foto_tablero_inicio
+      }
+    } else {
+      if (f.hora_termino) form.hora_termino = f.hora_termino
+      if (f.minutos_colacion !== undefined) form.minutos_colacion = Number(f.minutos_colacion)
+      if (f.horometro_termino !== null && f.horometro_termino !== undefined && f.horometro_termino !== '') {
+        form.horometro_termino = Number(f.horometro_termino)
+      }
+      if (f.horas_standby_cliente !== undefined) form.horas_standby_cliente = Number(f.horas_standby_cliente)
+      if (f.horas_standby_gsp !== undefined) form.horas_standby_gsp = Number(f.horas_standby_gsp)
+      if (f.motivo_standby) form.motivo_standby = f.motivo_standby
+      if (f.foto_tablero_termino && !form.foto_tablero_termino) {
+        form.foto_tablero_termino = f.foto_tablero_termino
+      }
+      if (f.observacion_trabajo) form.observacion_trabajo = f.observacion_trabajo
+      if (f.notas_mecanicas_gsp) form.notas_mecanicas_gsp = f.notas_mecanicas_gsp
+      if (f.cliente_nombre) form.cliente_nombre = f.cliente_nombre
+      if (f.cliente_rut) form.cliente_rut = f.cliente_rut
+      if (f.cliente_cargo) form.cliente_cargo = f.cliente_cargo
+      if (f.cliente_firma_canvas_base64) form.cliente_firma_canvas_base64 = f.cliente_firma_canvas_base64
+    }
+    sincronizarCajasHora()
+  } catch (e) { /* sin efecto */ }
+}
+const borrarBorradorFormulario = () => {
+  try {
+    localStorage.removeItem(claveBorradorFormulario())
+  } catch (e) { /* sin efecto */ }
+}
+
+// Acciones de cámara WebRTC In-App para foto horómetro (no sale del navegador)
+const capturarFotoHorometro = async (etapa) => {
+  guardarBorradorFormulario()
+  const res = await abrirCamaraWebRTC({
+    titulo: etapa === 'INICIO' ? 'Foto Horómetro Superestructura (Inicio)' : 'Foto Horómetro Superestructura (Término)',
+    maxDimension: 1280,
+    quality: 0.82
+  })
+  if (res && res.dataUrl) {
+    if (etapa === 'INICIO') {
+      form.foto_tablero_inicio = res.dataUrl
+    } else {
+      form.foto_tablero_termino = res.dataUrl
+    }
+    guardarBorradorFormulario()
+  }
+}
+
 // Acciones de cámara para foto inicio horómetro
 const onFotoInicioSeleccionada = (event) => {
-  comprimirYAsignar(event, (b64) => { form.foto_tablero_inicio = b64 })
+  comprimirYAsignar(event, (b64) => {
+    form.foto_tablero_inicio = b64
+    guardarBorradorFormulario()
+  })
 }
 
 // Acciones de cámara para foto término superestructura
 const onFotoTerminoSeleccionada = (event) => {
-  comprimirYAsignar(event, (b64) => { form.foto_tablero_termino = b64 })
+  comprimirYAsignar(event, (b64) => {
+    form.foto_tablero_termino = b64
+    guardarBorradorFormulario()
+  })
 }
 
 const comprimirYAsignar = (event, callback) => {
@@ -1110,9 +1222,10 @@ const calculoHoras = computed(() => {
   // HORA REPORT: NO se rebajan las horas de STAND BY CLIENTE COBRABLE (solo se deduce colación y Standby San Pablo)
   const efectivas = totalComputable
 
-  // Facturables: base contractual o total computable
-  const facturables = Number(Math.max(totalComputable, horasMinimas.value).toFixed(1))
-  const sobretiempo = Number(Math.max(0, totalComputable - horasMinimas.value).toFixed(1))
+  // Facturables: base contractual o total computable (REQ-1109: si horasMinimas <= 0 en modalidad mensual, no aplica mínimo diario)
+  const minDia = Number(horasMinimas.value ?? 8.0)
+  const facturables = Number((minDia > 0 ? Math.max(totalComputable, minDia) : totalComputable).toFixed(1))
+  const sobretiempo = Number((minDia > 0 ? Math.max(0, totalComputable - minDia) : 0).toFixed(1))
 
   return {
     efectivas,
@@ -1124,20 +1237,7 @@ const calculoHoras = computed(() => {
   }
 })
 
-// Horómetro Propuesto y Diagnóstico de Consistencia
-const horometroPropuesto = computed(() => {
-  if (form.horometro_inicio !== null && form.horometro_inicio !== undefined && Number(form.horometro_inicio) > 0) {
-    const ef = Number(calculoHoras.value.efectivas || 0)
-    return Number((Number(form.horometro_inicio) + ef).toFixed(1))
-  }
-  return null
-})
-
-const aplicarHorometroSugerido = () => {
-  if (horometroPropuesto.value !== null) {
-    form.horometro_termino = horometroPropuesto.value
-  }
-}
+// Diagnóstico de Consistencia de Horómetro Superestructura (REQ-1108: sin horómetro sugerido prellenado)
 
 const estadoHorometroTermino = computed(() => {
   if (form.horometro_termino === null || form.horometro_termino === undefined || form.horometro_termino === '') {
@@ -1168,12 +1268,12 @@ const estadoHorometroTermino = computed(() => {
   return { tipo: 'OK', diff: diff.toFixed(1) }
 })
 
-// Auto-proponer horómetro cuando se calculan las horas efectivas si está vacío
-watch(() => calculoHoras.value.efectivas, (newEf) => {
-  if (newEf > 0 && form.horometro_inicio && (!form.horometro_termino || form.horometro_termino === null)) {
-    form.horometro_termino = horometroPropuesto.value
-  }
-})
+// REQ-1108: Prohibido prellenar horómetro de término; el operador debe digitarlo manualmente.
+
+// Persistir automáticamente cualquier cambio del formulario en localStorage
+watch(form, () => {
+  guardarBorradorFormulario()
+}, { deep: true })
 
 const puedeGuardarInicio = computed(() => {
   if (servicioConcluido.value) return false
@@ -1316,7 +1416,7 @@ const cargarContexto = async (idEqParam = null) => {
         if (j.fecha_reporte_str) {
           form.fecha_reporte = j.fecha_reporte_str
         }
-        if (j.hora_inicio_str) {
+        if (j.hora_inicio_str && j.hora_inicio_str !== '00:00') {
           form.hora_inicio = j.hora_inicio_str
         }
         if (j.horas_minimas !== undefined && j.horas_minimas !== null) {
@@ -1335,16 +1435,17 @@ const cargarContexto = async (idEqParam = null) => {
             if (!isNaN(d.getTime())) {
               const hh = String(d.getHours()).padStart(2, '0')
               const mm = String(d.getMinutes()).padStart(2, '0')
-              form.hora_inicio = `${hh}:${mm}`
+              if (`${hh}:${mm}` !== '00:00') form.hora_inicio = `${hh}:${mm}`
             } else {
               const t = j.fecha_inicio_servicio.split('T')[1] || ''
-              if (t.length >= 5) form.hora_inicio = t.substring(0, 5)
+              if (t.length >= 5 && t.substring(0, 5) !== '00:00') form.hora_inicio = t.substring(0, 5)
             }
           } catch (e) {
             const t = j.fecha_inicio_servicio.split('T')[1] || ''
-            if (t.length >= 5) form.hora_inicio = t.substring(0, 5)
+            if (t.length >= 5 && t.substring(0, 5) !== '00:00') form.hora_inicio = t.substring(0, 5)
           }
         }
+        sincronizarCajasHora()
         diaCorrelativo.value = j.dia_correlativo || diaCorrelativo.value
         faseVisual.value = 2 // Pasar directo al Momento 2 (Fin de jornada)
         guardarRespaldoJornada({
@@ -1353,24 +1454,23 @@ const cargarContexto = async (idEqParam = null) => {
           fecha_reporte: j.fecha_reporte_str || form.fecha_reporte
         })
 
-        // Preproponer horómetro de término si está disponible
-        if (form.horometro_inicio && (!form.horometro_termino || form.horometro_termino === null)) {
-          const ef = Number(calculoHoras.value.efectivas || 0)
-          form.horometro_termino = Number((Number(form.horometro_inicio) + ef).toFixed(1))
-        }
+        // REQ-1108: form.horometro_termino permanece vacío (null) para obligar digitación manual
       } else {
         // Sin jornada abierta para esta OT/equipo: el respaldo local (si existía) ya no es válido
         idReporteAvanceActivo.value = null
         jornadaDiaAnterior.value = false
         faseVisual.value = 1
+        sincronizarCajasHora()
         if (respaldo) borrarRespaldoJornada()
-        if (d.horometro_sugerido && form.horometro_inicio === null) {
-          form.horometro_inicio = Number(d.horometro_sugerido)
-        }
+        horometroMinimoInicio.value = Number(d.horometro_sugerido || 0)
+        // REQ-1108: form.horometro_inicio permanece vacío (null) para obligar digitación manual
         if (d.odometro_sugerido && form.odometro_inicio === null) {
           form.odometro_inicio = Number(d.odometro_sugerido)
         }
       }
+
+      // Restaurar borrador local si el operador había ingresado datos o foto antes de una recarga
+      restaurarBorradorFormulario()
 
       // Mantener la URL alineada con la identidad canónica (recargas y botón atrás)
       const nuevaQuery = { ...route.query, id_proyecto: String(idProyecto.value) }
@@ -1390,8 +1490,16 @@ const cargarContexto = async (idEqParam = null) => {
   }
 }
 
-// REQ-1060 / INV-8: operador = persona con rol OPERADOR de la OT; si no existe, el usuario autenticado. Nunca 1 ni 55.
+// REQ-1060 / INV-8: operador = operador del equipo seleccionado; si no existe, persona con rol OPERADOR de la OT o el usuario autenticado. Nunca 1 ni 55.
 const resolverIdOperador = () => {
+  if (equipoSeleccionado.value?.id_user_operador) {
+    return Number(equipoSeleccionado.value.id_user_operador)
+  }
+  const idEqSel = Number(equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value || 0)
+  if (idEqSel > 0) {
+    const opEq = personas.value.find(p => Number(p.id_equipo) === idEqSel)
+    if (opEq?.id_user) return Number(opEq.id_user)
+  }
   const op = personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('OPERADOR'))
   return op?.id_user || idUserSesion() || null
 }
@@ -1416,6 +1524,12 @@ const guardarInicioJornada = async () => {
     if (form.horometro_inicio === null || form.horometro_inicio === '' || !form.foto_tablero_inicio) {
       snackbar.text = '⚠️ El Horómetro Superestructura y su Foto son OBLIGATORIOS para iniciar el report.'
       snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (horometroMinimoInicio.value > 0 && Number(form.horometro_inicio) < horometroMinimoInicio.value) {
+      snackbar.text = `⚠️ El Horómetro de Inicio (${form.horometro_inicio} hrs) no puede ser menor al último horómetro registrado (${horometroMinimoInicio.value} hrs).`
+      snackbar.color = 'error'
       snackbar.show = true
       return
     }
@@ -1504,6 +1618,14 @@ const obtenerGeolocalizacion = () => {
 // Guardar Momento 2 + Report Mandante
 const sellarYTransmitirReport = async () => {
   try {
+    normalizarHora('hora_inicio')
+    normalizarHora('hora_termino')
+    if (form.horometro_termino !== null && form.horometro_termino !== '' && form.horometro_inicio !== null && form.horometro_inicio !== '' && Number(form.horometro_termino) < Number(form.horometro_inicio)) {
+      snackbar.text = `⚠️ El Horómetro de Término (${form.horometro_termino} hrs) no puede ser menor al Horómetro de Inicio (${form.horometro_inicio} hrs).`
+      snackbar.color = 'error'
+      snackbar.show = true
+      return
+    }
     if (!form.cliente_nombre || form.cliente_nombre.trim().length < 3) {
       snackbar.text = '⚠️ Debes ingresar el Nombre del Supervisor Mandante'
       snackbar.color = 'warning'
@@ -1569,6 +1691,7 @@ const sellarYTransmitirReport = async () => {
     const res = await api.post('/operaciones/report/guardar', payload)
     if (res.data && res.data.success) {
       borrarRespaldoJornada() // REQ-1060: jornada cerrada, se elimina el respaldo local
+      borrarBorradorFormulario()
       snackbar.text = `✅ Report Día ${diaCorrelativo.value} sellado y transmitido exitosamente!`
       snackbar.color = 'success'
       snackbar.show = true

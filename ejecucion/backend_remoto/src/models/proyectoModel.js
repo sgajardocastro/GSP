@@ -16,6 +16,25 @@ class ProyectoModel {
     let query = `
       SELECT 
         p.*,
+        CASE
+          WHEN p.id_proyecto_estado = 5 AND (
+            its.id_its IS NOT NULL
+            OR COALESCE(v_ret.tiene_retorno, false)
+            OR (
+              COALESCE(rep.reports_cerrados, 0) >= GREATEST(
+                COALESCE(p.duracion_plan, 0),
+                COALESCE(cupo.duracion_plan, 0),
+                COALESCE(NULLIF(regexp_replace(COALESCE(p.json_field->>'duracion_estimada', ''), '[^0-9]', '', 'g'), '')::int, 1)
+              )
+              AND COALESCE(rep.reports_abiertos, 0) = 0
+              AND COALESCE(rep.reports_cerrados, 0) > 0
+            )
+          ) THEN 6
+          ELSE p.id_proyecto_estado
+        END AS id_proyecto_estado,
+        its.id_its,
+        its.folio_its,
+        COALESCE(its.estado_its, p.json_field->>'estado_its') AS estado_its,
         e.razon_social AS nombre_cliente,
         est.nombre_estado,
         tip.nombre_tipo
@@ -23,6 +42,67 @@ class ProyectoModel {
       LEFT JOIN tpar_empresas e ON p.id_empresa_cliente = e.id_empresa
       LEFT JOIN tpry_estado  est ON p.id_proyecto_estado = est.id_proyecto_estado
       LEFT JOIN tpry_tipo   tip ON p.id_proyecto_tipo = tip.id_proyecto_tipo
+      LEFT JOIN LATERAL (
+        SELECT i.id_its, i.folio_its, i.estado_its
+        FROM tits_informe_termino i
+        WHERE i.id_proyecto = p.id_proyecto
+        ORDER BY i.id_its DESC
+        LIMIT 1
+      ) its ON true
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*) FILTER (
+            WHERE r.estado_reporte != 'JORNADA_EN_CURSO'
+              AND COALESCE(r.estado_jornada, '') != 'JORNADA_EN_CURSO'
+              AND r.fecha_termino_servicio IS NOT NULL
+          )::int AS reports_cerrados,
+          COUNT(*) FILTER (
+            WHERE r.estado_reporte = 'JORNADA_EN_CURSO'
+               OR COALESCE(r.estado_jornada, '') = 'JORNADA_EN_CURSO'
+               OR r.fecha_termino_servicio IS NULL
+          )::int AS reports_abiertos
+        FROM tedp_reporte_avance r
+        WHERE r.id_proyecto = p.id_proyecto
+      ) rep ON true
+      LEFT JOIN LATERAL (
+        SELECT EXISTS (
+          SELECT 1
+          FROM tequ_log_desplazamiento ld
+          WHERE ld.id_proyecto = p.id_proyecto
+            AND ld.tipo_trayecto = 'RETORNO'
+            AND ld.estado_trayecto IN ('ASIGNADO', 'EN_RUTA', 'ARRIBADO')
+        ) AS tiene_retorno
+      ) v_ret ON true
+      LEFT JOIN LATERAL (
+        SELECT GREATEST(
+          COALESCE(MAX(GREATEST(
+            COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'duracion_dias', ''), '[^0-9]', '', 'g'), '')::int, 0),
+            COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad_dias', ''), '[^0-9]', '', 'g'), '')::int, 0),
+            COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad_meses', ''), '[^0-9]', '', 'g'), '')::int, 0) * 30,
+            CASE
+              WHEN (elem->>'fecha_plan_ini') ~ '^\d{4}-\d{2}-\d{2}' AND (elem->>'fecha_plan_fin') ~ '^\d{4}-\d{2}-\d{2}'
+              THEN GREATEST(1, (LEFT(elem->>'fecha_plan_fin', 10)::date - LEFT(elem->>'fecha_plan_ini', 10)::date) + 1)
+              ELSE 0
+            END,
+            COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad', ''), '[^0-9]', '', 'g'), '')::int, 0)
+          )), 0),
+          CASE
+            WHEN (p.json_field->'crm_v1'->>'fecha_hora_inicio') ~ '^\d{4}-\d{2}-\d{2}'
+             AND (p.json_field->'crm_v1'->>'fecha_hora_termino') ~ '^\d{4}-\d{2}-\d{2}'
+            THEN GREATEST(1, (LEFT(p.json_field->'crm_v1'->>'fecha_hora_termino', 10)::date - LEFT(p.json_field->'crm_v1'->>'fecha_hora_inicio', 10)::date) + 1)
+            ELSE 0
+          END
+        ) AS duracion_plan
+        FROM jsonb_array_elements(
+          CASE
+            WHEN jsonb_typeof(p.json_field->'crm_v1'->'lineas_servicio') = 'array'
+            THEN p.json_field->'crm_v1'->'lineas_servicio'
+            WHEN jsonb_typeof(p.json_field->'planificacion_operativa'->'cupos') = 'array'
+            THEN p.json_field->'planificacion_operativa'->'cupos'
+            ELSE '[]'::jsonb
+          END
+        ) elem
+      ) cupo ON true
     `;
     const conditions = [];
     const values = [];
@@ -64,7 +144,7 @@ class ProyectoModel {
     }
   }
 
-  // ✅ Generar código transaccional (codi_proyecto)
+  // ✅ Generar código transaccional (codi_proyecto) [REQ-1083: PREFIJO-YYMM-00001 con correlativo continuo]
   async generarCodigoTransaccional(id_empresa, id_cliente = null, providedClient = null) {
     const client = providedClient || await this.pool.connect();
     let localTransaction = !providedClient;
@@ -76,6 +156,7 @@ class ProyectoModel {
       const yy = String(date.getFullYear()).slice(-2);
       const mm = String(date.getMonth() + 1).padStart(2, '0');
       const anio_mes = `${yy}${mm}`;
+      const periodo_correlativo = '0000'; // Secuencia continua sin reinicio mensual (REQ-1083)
       
       let prefijo = 'PRY';
       if (id_empresa == 9) prefijo = 'GSP';
@@ -83,12 +164,12 @@ class ProyectoModel {
       else if (id_empresa == 8) prefijo = 'LDS';
       else if (id_empresa == 11) prefijo = 'RYL';
 
-      // Aseguramos que exista el registro para el mes actual
+      // Aseguramos que exista el registro para la secuencia continua del prefijo
       await client.query(`
         INSERT INTO tpry_correlativos (prefijo, anio_mes, ultimo_valor)
         VALUES ($1, $2, 0)
         ON CONFLICT (prefijo, anio_mes) DO NOTHING;
-      `, [prefijo, anio_mes]);
+      `, [prefijo, periodo_correlativo]);
 
       // Bloqueamos e incrementamos de forma atómica
       const result = await client.query(`
@@ -96,18 +177,12 @@ class ProyectoModel {
         SET ultimo_valor = ultimo_valor + 1
         WHERE prefijo = $1 AND anio_mes = $2
         RETURNING ultimo_valor, prefijo;
-      `, [prefijo, anio_mes]);
+      `, [prefijo, periodo_correlativo]);
 
       const nuevoValor = result.rows[0].ultimo_valor;
       const pref = result.rows[0].prefijo;
-      const correlativo = String(nuevoValor).padStart(3, '0');
-      
-      let codigo = '';
-      if (id_cliente) {
-        codigo = `${pref}-${anio_mes}-${id_cliente}-${correlativo}`;
-      } else {
-        codigo = `${pref}-${anio_mes}-${correlativo}`;
-      }
+      const correlativo = String(nuevoValor).padStart(5, '0');
+      const codigo = `${pref}-${anio_mes}-${correlativo}`;
 
       if (localTransaction) await client.query('COMMIT');
       return codigo;
@@ -321,6 +396,52 @@ class ProyectoModel {
     }
   }
 
+  // Helper REQ-1100: Preservar asignaciones operativas (equipo, operador, rigger, fechas) al sincronizar líneas comerciales
+  _mergeAsignacionesOperativas(lineasNuevas = [], lineasOperativasPrevias = []) {
+    if (!Array.isArray(lineasNuevas)) return [];
+    if (!Array.isArray(lineasOperativasPrevias) || lineasOperativasPrevias.length === 0) return lineasNuevas;
+
+    const esLineaMaquinaria = (l) => {
+      const t = String(l?.tipo || '').toUpperCase();
+      return t.includes('GRUA') || t.includes('GRÚA') || t.includes('CAMION') || t.includes('CAMIÓN') || t.includes('TRACTO') || t.includes('CAMA BAJA') || t.includes('MAQUINARIA') || t.includes('ALZA') || t.includes('MANLIFT') || t.includes('HORQUILLA');
+    };
+
+    const prevMaquinarias = lineasOperativasPrevias.filter(esLineaMaquinaria);
+    const nuevasMaquinarias = lineasNuevas.filter(esLineaMaquinaria);
+
+    return lineasNuevas.map((ln, idx) => {
+      const copia = { ...ln };
+      let matchPrev = null;
+
+      if (lineasOperativasPrevias[idx] && (
+        String(lineasOperativasPrevias[idx].tipo || '').toUpperCase() === String(copia.tipo || '').toUpperCase() ||
+        (esLineaMaquinaria(lineasOperativasPrevias[idx]) && esLineaMaquinaria(copia))
+      )) {
+        matchPrev = lineasOperativasPrevias[idx];
+      }
+      if (!matchPrev) {
+        matchPrev = lineasOperativasPrevias.find(p =>
+          String(p?.tipo || '').toUpperCase() === String(copia.tipo || '').toUpperCase() &&
+          String(p?.subcategoria || '').toUpperCase() === String(copia.subcategoria || '').toUpperCase() &&
+          (p.equipo_asignado_id || p.operador_asignado_id || p.rigger_asignado_id)
+        );
+      }
+      if (!matchPrev && esLineaMaquinaria(copia) && prevMaquinarias.length === 1 && nuevasMaquinarias.length === 1) {
+        matchPrev = prevMaquinarias[0];
+      }
+
+      if (matchPrev) {
+        if (!copia.equipo_asignado_id && matchPrev.equipo_asignado_id) copia.equipo_asignado_id = matchPrev.equipo_asignado_id;
+        if (!copia.operador_asignado_id && matchPrev.operador_asignado_id) copia.operador_asignado_id = matchPrev.operador_asignado_id;
+        if (!copia.rigger_asignado_id && matchPrev.rigger_asignado_id) copia.rigger_asignado_id = matchPrev.rigger_asignado_id;
+        if (!copia.fecha_plan_ini && matchPrev.fecha_plan_ini) copia.fecha_plan_ini = matchPrev.fecha_plan_ini;
+        if (!copia.fecha_plan_fin && matchPrev.fecha_plan_fin) copia.fecha_plan_fin = matchPrev.fecha_plan_fin;
+        if (!copia.regimen_operacional && matchPrev.regimen_operacional) copia.regimen_operacional = matchPrev.regimen_operacional;
+      }
+      return copia;
+    });
+  }
+
   // Actualizar proyecto
   async updateProyecto(id_proyecto, data) {
     const {
@@ -336,11 +457,24 @@ class ProyectoModel {
       objetivo_proyecto = null,
       observacion_proyecto = null,
       json_field = null,
-      id_user_modificacion = null
+      id_user_modificacion = null,
+      id_usuario_creacion = null,
+      id_user_creacion = null
     } = data;
+    const final_user_creacion = id_usuario_creacion ?? id_user_creacion ?? null;
 
-    // Auto-guardado de contacto si aplica
+    // Auto-guardado de contacto, escudo anti-regresión de pestaña obsoleta (REQ-1103) y gobernanza de cotizaciones (REQ-1100)
+    const currentPry = await this.getProyectoById(id_proyecto);
+    const estadoDB = Number(currentPry?.id_proyecto_estado || 1);
+    const estadoEntrante = (id_proyecto_estado !== null && id_proyecto_estado !== undefined) ? Number(id_proyecto_estado) : null;
+    let final_id_proyecto_estado = estadoEntrante;
+    if (estadoDB > 1 && estadoDB < 90 && estadoEntrante !== null && estadoEntrante !== 99 && estadoEntrante < estadoDB) {
+      console.warn(`[updateProyecto] Bloqueando regresión de estado (${estadoDB} -> ${estadoEntrante}) en proyecto #${id_proyecto} (pestaña obsoleta). Se preserva estado ${estadoDB}.`);
+      final_id_proyecto_estado = estadoDB;
+    }
+
     let json_field_processed = json_field;
+    let nuevoPisoMinimoParaReports = null;
     if (json_field_processed) {
       let isStr = typeof json_field_processed === 'string';
       let parsed = isStr ? null : json_field_processed;
@@ -348,12 +482,184 @@ class ProyectoModel {
         try { parsed = JSON.parse(json_field_processed); } catch (_) { parsed = null; }
       }
       if (parsed) {
-        let idEmpresa = id_empresa_cliente;
-        if (!idEmpresa) {
-          const currentPry = await this.getProyectoById(id_proyecto);
-          idEmpresa = currentPry?.id_empresa_cliente;
-        }
+        let idEmpresa = id_empresa_cliente || currentPry?.id_empresa_cliente;
         parsed = await this.autoGuardarContactoSiAplica(parsed, idEmpresa);
+
+        const prevJson = currentPry?.json_field || {};
+        for (const rootKey of ['dossier_documentos', 'control_vivo_overrides', 'dias_laborales_override', 'contrato_arriendo']) {
+          if (prevJson[rootKey] && (!parsed[rootKey] || (typeof parsed[rootKey] === 'object' && Object.keys(parsed[rootKey]).length === 0))) {
+            parsed[rootKey] = prevJson[rootKey];
+          }
+        }
+
+        const estadoActual = Number(final_id_proyecto_estado || estadoDB || 1);
+
+        // REQ-1103: Escudo de preservación de ejecucion_v1 cuando el proyecto ya está en Operaciones (Estado >= 3)
+        if (estadoDB >= 3 && estadoDB < 90 && prevJson.ejecucion_v1) {
+          const prevEjec = prevJson.ejecucion_v1;
+          const inEjec = parsed.ejecucion_v1 || {};
+          const mergedEjec = { ...prevEjec, ...inEjec };
+
+          if ((!inEjec.equipo_id || inEjec.equipo_id === 'CRN-DEFAULT') && prevEjec.equipo_id && prevEjec.equipo_id !== 'CRN-DEFAULT') {
+            mergedEjec.equipo_id = prevEjec.equipo_id;
+          }
+          if ((!inEjec.operador_id || inEjec.operador_id === 'OP-101') && prevEjec.operador_id && prevEjec.operador_id !== 'OP-101') {
+            mergedEjec.operador_id = prevEjec.operador_id;
+          }
+          if ((!inEjec.rigger_id || inEjec.rigger_id === 'RIG-201') && prevEjec.rigger_id && prevEjec.rigger_id !== 'RIG-201') {
+            mergedEjec.rigger_id = prevEjec.rigger_id;
+          }
+          for (const arrKey of ['ot_versiones', 'ot_despachos_historicos', 'traza_correos', 'plan_diario', 'tripulacion_asignada', 'especialistas_terreno', 'equipos_extra']) {
+            const prevArr = Array.isArray(prevEjec[arrKey]) ? prevEjec[arrKey] : [];
+            const inArr = Array.isArray(inEjec[arrKey]) ? inEjec[arrKey] : [];
+            if (prevArr.length > 0 && inArr.length === 0) {
+              mergedEjec[arrKey] = prevArr;
+            } else if (arrKey === 'ot_versiones' && prevArr.length > inArr.length) {
+              const mapOt = new Map();
+              prevArr.forEach(o => mapOt.set(Number(o.version || o.id_doc), o));
+              inArr.forEach(o => mapOt.set(Number(o.version || o.id_doc), o));
+              mergedEjec.ot_versiones = Array.from(mapOt.values()).sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
+            }
+          }
+          if (prevEjec.preparacion_salida) {
+            const prevInsp = prevEjec.preparacion_salida.inspecciones_patio || {};
+            const inInsp = inEjec.preparacion_salida?.inspecciones_patio || {};
+            if (Object.keys(prevInsp).length > 0 && Object.keys(inInsp).length === 0) {
+              mergedEjec.preparacion_salida = prevEjec.preparacion_salida;
+            }
+          }
+          if (prevEjec.regimen_operacional_confirmado && !inEjec.regimen_operacional_confirmado) {
+            mergedEjec.regimen_operacional_confirmado = true;
+            if (!inEjec.regimen_operacional && prevEjec.regimen_operacional) {
+              mergedEjec.regimen_operacional = prevEjec.regimen_operacional;
+            }
+          }
+          if (prevEjec.decision && !inEjec.decision) mergedEjec.decision = prevEjec.decision;
+          if (prevEjec.asignacion_confirmada && !inEjec.asignacion_confirmada) mergedEjec.asignacion_confirmada = prevEjec.asignacion_confirmada;
+          if (estadoDB >= 4 && (!inEjec.subtab_activa || inEjec.subtab_activa === 'validacion') && prevEjec.subtab_activa && prevEjec.subtab_activa !== 'validacion') {
+            mergedEjec.subtab_activa = prevEjec.subtab_activa;
+            mergedEjec.subtab_actual_view = prevEjec.subtab_actual_view || prevEjec.subtab_activa;
+          }
+          for (const planKey of ['fecha_salida_plan', 'fecha_fin_plan', 'hora_salida_plan', 'hora_llegada_plan', 'hora_fin_plan', 'horas_minimas', 'servicio']) {
+            if ((!inEjec[planKey] || inEjec[planKey] === '') && prevEjec[planKey]) {
+              mergedEjec[planKey] = prevEjec[planKey];
+            }
+          }
+          parsed.ejecucion_v1 = mergedEjec;
+        }
+
+        // REQ-1100 & REQ-1103: Gobernanza de vigencia de cotizaciones en servicios en operación (Estado >= 3)
+        if (parsed.crm_v1) {
+          const prevCrm = currentPry?.json_field?.crm_v1 || {};
+          if (prevCrm.regimen_operacional_confirmado && !parsed.crm_v1.regimen_operacional_confirmado) {
+            parsed.crm_v1.regimen_operacional_confirmado = true;
+            if (!parsed.crm_v1.regimen_operacional && prevCrm.regimen_operacional) {
+              parsed.crm_v1.regimen_operacional = prevCrm.regimen_operacional;
+            }
+          }
+          const prevLineasOp = (Array.isArray(prevCrm.lineas_operativas_vigentes) && prevCrm.lineas_operativas_vigentes.length > 0)
+            ? prevCrm.lineas_operativas_vigentes
+            : (Array.isArray(prevCrm.lineas_servicio) ? prevCrm.lineas_servicio : []);
+
+          const rawCots = Array.isArray(parsed.crm_v1.cotizaciones_historicas) ? parsed.crm_v1.cotizaciones_historicas : [];
+          const prevCots = Array.isArray(prevCrm.cotizaciones_historicas) ? prevCrm.cotizaciones_historicas : [];
+          const cotsMap = new Map();
+          prevCots.forEach(pc => {
+            if (pc && pc.version !== undefined) cotsMap.set(Number(pc.version), JSON.parse(JSON.stringify(pc)));
+          });
+          rawCots.forEach(rc => {
+            if (!rc || rc.version === undefined) return;
+            const vNum = Number(rc.version);
+            const existing = cotsMap.get(vNum);
+            if (!existing) {
+              cotsMap.set(vNum, rc);
+            } else {
+              const evPrev = Array.isArray(existing.eventos_envio) ? existing.eventos_envio : (existing.evento_envio ? [existing.evento_envio] : []);
+              const evIn = Array.isArray(rc.eventos_envio) ? rc.eventos_envio : (rc.evento_envio ? [rc.evento_envio] : []);
+              const evMerged = [...evPrev];
+              evIn.forEach(ev => {
+                if (ev && !evMerged.some(e => e.fecha_envio === ev.fecha_envio)) evMerged.push(ev);
+              });
+              cotsMap.set(vNum, {
+                ...existing,
+                ...rc,
+                lineas_snapshot: (Array.isArray(rc.lineas_snapshot) && rc.lineas_snapshot.length > 0) ? rc.lineas_snapshot : existing.lineas_snapshot,
+                eventos_envio: evMerged,
+                evento_envio: rc.evento_envio || existing.evento_envio || (evMerged.length > 0 ? evMerged[evMerged.length - 1] : undefined)
+              });
+            }
+          });
+          const cots = Array.from(cotsMap.values()).sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
+          parsed.crm_v1.cotizaciones_historicas = cots;
+          const countEnvios = (arr) => arr.reduce((acc, c) => acc + (Array.isArray(c?.eventos_envio) ? c.eventos_envio.length : (c?.evento_envio ? 1 : 0)), 0);
+          const enviosAumentaron = countEnvios(cots) > countEnvios(prevCots);
+
+          const enviadas = cots
+            .filter(c => (Array.isArray(c?.eventos_envio) && c.eventos_envio.length > 0) || Boolean(c?.evento_envio))
+            .sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
+          const ultimaEnviada = enviadas.length > 0 ? enviadas[0] : null;
+
+          cots.forEach(c => {
+            const fueEnviada = (Array.isArray(c?.eventos_envio) && c.eventos_envio.length > 0) || Boolean(c?.evento_envio);
+            if (fueEnviada) {
+              c.estado_vigencia = (ultimaEnviada && Number(c.version) === Number(ultimaEnviada.version))
+                ? 'ENVIADA_VIGENTE'
+                : 'ENVIADA_HISTORICA';
+            } else {
+              c.estado_vigencia = 'BORRADOR_NO_ENVIADO';
+            }
+          });
+
+          const versionRecienEnviada = Number(parsed.crm_v1.cotizacion_recien_enviada_version || 0);
+          const fueRecienEnviada = Boolean(versionRecienEnviada > 0 || enviosAumentaron);
+          delete parsed.crm_v1.cotizacion_recien_enviada_version;
+
+          if (Array.isArray(parsed.crm_v1.lineas_servicio) && prevLineasOp.length > 0) {
+            parsed.crm_v1.lineas_servicio = this._mergeAsignacionesOperativas(parsed.crm_v1.lineas_servicio, prevLineasOp);
+          }
+
+          if (fueRecienEnviada && ultimaEnviada) {
+            const snapshotBase = (Array.isArray(ultimaEnviada.lineas_snapshot) && ultimaEnviada.lineas_snapshot.length > 0)
+              ? JSON.parse(JSON.stringify(ultimaEnviada.lineas_snapshot))
+              : (Array.isArray(parsed.crm_v1.lineas_borrador_comercial) && parsed.crm_v1.lineas_borrador_comercial.length > 0
+                  ? JSON.parse(JSON.stringify(parsed.crm_v1.lineas_borrador_comercial))
+                  : JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio || [])));
+            const lineasPromovidas = this._mergeAsignacionesOperativas(snapshotBase, prevLineasOp);
+            parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(lineasPromovidas));
+            parsed.crm_v1.lineas_servicio = JSON.parse(JSON.stringify(lineasPromovidas));
+            parsed.crm_v1.version_cotizacion_vigente_operaciones = Number(ultimaEnviada.version);
+            delete parsed.crm_v1.lineas_borrador_comercial;
+            delete parsed.crm_v1._modo_borrador_comercial_operaciones;
+
+            if (estadoActual >= 3) {
+              const lineaGrua = lineasPromovidas.find(l => Number(l.pisoMinimo || l.cantidad_horas || 0) > 0);
+              if (lineaGrua) {
+                const pm = Number(lineaGrua.pisoMinimo || lineaGrua.cantidad_horas || 0);
+                if (pm > 0 && pm <= 24) nuevoPisoMinimoParaReports = pm;
+              }
+            }
+          } else if (estadoActual >= 3 && parsed.crm_v1._modo_borrador_comercial_operaciones) {
+            const borradorConAsignaciones = this._mergeAsignacionesOperativas(
+              JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio || [])),
+              prevLineasOp
+            );
+            parsed.crm_v1.lineas_borrador_comercial = borradorConAsignaciones;
+            if (prevLineasOp.length > 0) {
+              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(prevLineasOp));
+              parsed.crm_v1.lineas_servicio = JSON.parse(JSON.stringify(prevLineasOp));
+            }
+            delete parsed.crm_v1._modo_borrador_comercial_operaciones;
+          } else if (estadoActual >= 3) {
+            if (Array.isArray(parsed.crm_v1.lineas_servicio) && parsed.crm_v1.lineas_servicio.length > 0) {
+              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+            }
+          } else {
+            if (Array.isArray(parsed.crm_v1.lineas_servicio)) {
+              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+            }
+          }
+        }
+
         json_field_processed = isStr ? JSON.stringify(parsed) : parsed;
       }
     }
@@ -374,6 +680,7 @@ class ProyectoModel {
         observacion_proyecto     = COALESCE($11, observacion_proyecto),
         json_field               = COALESCE($12, json_field),
         id_usuario_modificacion  = COALESCE($13, id_usuario_modificacion),
+        id_usuario_creacion      = COALESCE($15, id_usuario_creacion),
         fecha_modificacion       = NOW()
       WHERE id_proyecto = $14
       RETURNING *;
@@ -385,7 +692,7 @@ class ProyectoModel {
       centro_costo,
       id_empresa_cliente,
       id_usuario_jefe_proyecto,
-      id_proyecto_estado,
+      final_id_proyecto_estado,
       id_proyecto_tipo,
       fecha_plan_ini,
       fecha_plan_fin,
@@ -393,12 +700,27 @@ class ProyectoModel {
       observacion_proyecto,
       json_field_processed,
       id_user_modificacion,
-      id_proyecto
+      id_proyecto,
+      final_user_creacion
     ];
 
     try {
       const { rows, rowCount } = await this.pool.query(query, values);
       if (!rowCount) return null;
+      if (nuevoPisoMinimoParaReports && nuevoPisoMinimoParaReports > 0) {
+        try {
+          await this.pool.query(
+            `UPDATE tedp_reporte_avance
+             SET horas_minimas = $2,
+                 horas_facturables = GREATEST(COALESCE(horas_operadas, 0), $2)
+             WHERE id_proyecto = $1
+               AND COALESCE(validado_cliente, false) = false`,
+            [id_proyecto, nuevoPisoMinimoParaReports]
+          );
+        } catch (eRep) {
+          console.warn('[REQ-1100] Advertencia sincronizando horas_minimas en tedp_reporte_avance:', eRep.message);
+        }
+      }
       return rows[0];
     } catch (error) {
       throw new Error(`Error al actualizar proyecto: ${error.message}`);
@@ -468,13 +790,18 @@ class ProyectoModel {
       const version = jsonField.crm_v1.cotizaciones_historicas.length + 1;
       const fileName = `${codi}V${version}-${nextId}.pdf`;
       
+      const lineasParaSnapshot = (Number(p.id_proyecto_estado) >= 3 && Array.isArray(jsonField.crm_v1.lineas_borrador_comercial) && jsonField.crm_v1.lineas_borrador_comercial.length > 0)
+        ? JSON.parse(JSON.stringify(jsonField.crm_v1.lineas_borrador_comercial))
+        : JSON.parse(JSON.stringify(jsonField.crm_v1.lineas_servicio || []));
+
       const nuevaCotizacion = {
         id_cotizacion: Number(nextId),
         version: version,
         nombre_archivo: fileName,
         monto: Number(monto || 0),
         fecha: new Date().toISOString(),
-        fecha: new Date().toISOString()
+        estado_vigencia: 'BORRADOR_NO_ENVIADO',
+        lineas_snapshot: lineasParaSnapshot
       };
       // We will set url after inserting into tfmg_file.
 
@@ -573,9 +900,55 @@ class ProyectoModel {
       };
 
       const crm = jsonField.crm_v1 || {};
-      const ejecutivoNombre = crm.vendedor_nombre || 'Wilson Navarrete';
-      const ejecutivoFono = crm.vendedor_telefono || '+56 9 9443 7725';
-      const ejecutivoEmail = crm.vendedor_email || 'ventas@arriendosanpablo.cl';
+      let dbComercial = null;
+      try {
+        const idCreador = crm.id_vendedor || p.id_usuario_creacion || null;
+        const emailVendedor = (crm.vendedor_email || '').trim();
+        const nombreVendedor = (crm.vendedor_nombre || '').trim();
+        if (idCreador) {
+          const uRes = await this.pool.query('SELECT * FROM tsec_users WHERE id_user = $1 LIMIT 1', [idCreador]);
+          if (uRes.rows.length > 0) dbComercial = uRes.rows[0];
+        }
+        if (!dbComercial && emailVendedor) {
+          const uRes = await this.pool.query('SELECT * FROM tsec_users WHERE LOWER(TRIM(email)) = LOWER($1) LIMIT 1', [emailVendedor]);
+          if (uRes.rows.length > 0) dbComercial = uRes.rows[0];
+        }
+        if (!dbComercial && nombreVendedor) {
+          const uRes = await this.pool.query(
+            `SELECT * FROM tsec_users
+             WHERE LOWER(REGEXP_REPLACE(TRIM(COALESCE(name_frst, '') || ' ' || COALESCE(apellido_pat, '')), '\\s+', ' ', 'g')) =
+                   LOWER(REGEXP_REPLACE(TRIM($1), '\\s+', ' ', 'g'))
+             LIMIT 1`,
+            [nombreVendedor]
+          );
+          if (uRes.rows.length > 0) dbComercial = uRes.rows[0];
+        }
+      } catch (eUser) {
+        console.warn('[generarCotizacionVersion] Error consultando comercial en tsec_users:', eUser.message);
+      }
+
+      const dbUserJson = (dbComercial && typeof dbComercial.json_data === 'object' && dbComercial.json_data) ? dbComercial.json_data : {};
+      const dbNombre = dbComercial
+        ? ([dbComercial.name_frst, dbComercial.apellido_pat].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim())
+        : '';
+      const rawFono = crm.vendedor_telefono || (dbComercial ? (dbComercial.movil || dbUserJson.telefono || dbUserJson.movil || dbUserJson.celular || '') : '') || '';
+      const formatFonoCL = (f) => {
+        const clean = String(f || '').replace(/\s+/g, '').trim();
+        if (!clean) return '';
+        const digits = clean.replace(/\D/g, '');
+        if (digits.length === 9 && digits.startsWith('9')) {
+          return `+56 9 ${digits.slice(1, 5)} ${digits.slice(5)}`;
+        }
+        if (digits.length === 11 && digits.startsWith('569')) {
+          return `+56 9 ${digits.slice(3, 7)} ${digits.slice(7)}`;
+        }
+        return clean;
+      };
+      const dbEmail = dbComercial ? (dbComercial.email || '') : '';
+
+      const ejecutivoNombre = (crm.vendedor_nombre || dbNombre || 'Ejecutivo Comercial').replace(/\s+/g, ' ').trim();
+      const ejecutivoFono = formatFonoCL(rawFono) || emisor.fono || '';
+      const ejecutivoEmail = crm.vendedor_email || dbEmail || 'ventas@arriendosanpablo.cl';
 
       let finalLogoPath = emisor.logoPath;
       try {
@@ -593,8 +966,10 @@ class ProyectoModel {
         console.error('Error leyendo logo desde disco:', err);
       }
 
-      // 3. Extraer datos estructurados de json_field.crm_v1
-      const lineas = crm.lineas_servicio || [];
+      // 3. Extraer datos estructurados de json_field.crm_v1 (REQ-1100: usa lineas_snapshot de esta versión)
+      const lineas = Array.isArray(nuevaCotizacion.lineas_snapshot) && nuevaCotizacion.lineas_snapshot.length > 0
+        ? nuevaCotizacion.lineas_snapshot
+        : (crm.lineas_servicio || []);
 
       // Formateador simple de moneda CLP
       const formatCLP = (v) => {
@@ -662,10 +1037,12 @@ class ProyectoModel {
       const totalGeneralVal = totalNetoVal + ivaVal;
 
       // Formatear saltos de línea de condiciones para HTML y cláusula contractual de régimen
-      const esCaso5 = Number(crm.tipo_caso) === 5 || crm.tipo_caso_glosa === 'ESPECIAL_MIXTO_LIBRE';
-      const kmEstimado = parseFloat(crm.distancia_km) || (crm.incluye_flete ? 35 : 0);
-      const esUrbano = kmEstimado <= 30;
-      let clausulaRegimen = '';
+      const esCaso5 = true;
+      const kmEstimado = parseFloat(crm.distancia_km ?? crm.snapshot_comercial?.distancia_km) || (crm.incluye_flete ? 35 : 0);
+      const regimenOpDefinido = String(p.json_field?.ejecucion_v1?.regimen_operacional || crm.regimen_operacional || '').toUpperCase(); const glosaPoliticaOperacional = regimenOpDefinido === 'RURAL' ? 'POLÍTICA RURAL (Cobro inicio a término en obra)' : (regimenOpDefinido === 'URBANO' ? 'POLÍTICA URBANA (Cobro salida de base a término en obra)' : 'Sujeto a Verificación Operacional (Según Condiciones Generales)'); const esUrbano = kmEstimado <= 30;
+      const penCot = crm.pensiones || crm.snapshot_comercial?.pensiones || {};
+      const fmtPenCot = (val) => val === 'CLIENTE' ? 'Costeado por Cliente' : (val === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Por Definir');
+      let clausulaRegimen = `• CÓMPUTO DE HORAS SEGÚN POLÍTICA OPERACIONAL: En servicios bajo Política Urbana, el cobro de horas al cliente se contabiliza desde la salida del equipo de la base Grúas San Pablo hasta el término del servicio en obra. En servicios bajo Política Rural, el cobro de horas al cliente se contabiliza desde el inicio hasta el término del servicio en obra.`;
       if (!esCaso5) {
         clausulaRegimen = esUrbano
           ? `• RÉGIMEN URBANO (≤ 30 km): La jornada y el cómputo de horas de arriendo inician al momento de la salida del equipo desde las instalaciones de Grúas San Pablo (Panamericana Sur Km 678, Temuco) y finalizan al retornar a las mismas.`
@@ -764,14 +1141,14 @@ class ProyectoModel {
           <table class="header-table">
             <tr>
               <td style="width: 25%;">
-                ${finalLogoPath ? `<img src="${finalLogoPath}" style="max-width: 140px; max-height: 80px;" alt="Logo" />` : ''}
+                ${finalLogoPath ? `<img src="${finalLogoPath}" style="${idEmisora === 9 ? 'width: 205px; max-width: 215px; max-height: 95px;' : 'max-width: 165px; max-height: 85px;'} object-fit: contain;" alt="Logo" />` : ''}
               </td>
               <td style="width: 45%;">
                 <div class="emitter-title">${emisor.nombre}</div>
                 <div class="emitter-info">
                   RUT: ${emisor.rut} | Giro: ${emisor.giro}<br>
                   Casa Matriz: ${emisor.direccion}<br>
-                  Contacto: ${emisor.fono}
+                  Contacto: ${ejecutivoFono || emisor.fono}
                 </div>
               </td>
               <td style="width: 30%; text-align: right;">
@@ -833,6 +1210,12 @@ class ProyectoModel {
               </td>
             </tr>
             <tr>
+              <td class="info-label">Distancia Estimada Comercial:</td>
+              <td class="info-value"><strong style="color: #b45309;">${kmEstimado > 0 ? `${kmEstimado} km (Ida desde Casa Matriz)` : 'No especificada'}</strong></td>
+              <td class="info-label">Política Operacional:</td>
+              <td class="info-value"><strong>${glosaPoliticaOperacional}</strong></td>
+            </tr>
+            <tr>
               <td class="info-label">Horario Inicio Servicio:</td>
               <td class="info-value">${crm.fecha_hora_inicio ? new Date(crm.fecha_hora_inicio).toLocaleString('es-CL') : 'A coordinar con Operaciones'}</td>
               <td class="info-label">Término Estimado:</td>
@@ -840,7 +1223,7 @@ class ProyectoModel {
             </tr>
             <tr>
               <td class="info-label">Detalle del Servicio:</td>
-              <td class="info-value" colspan="3">${crm.detalle_servicio || p.observacion_proyecto || '—'}</td>
+              <td class="info-value" colspan="3">${crm.detalle_servicio || crm.descripcion || p.objetivo_proyecto || p.observacion_proyecto || '—'}</td>
             </tr>
             <tr>
               <td class="info-label">Tipo de Carga:</td>
@@ -858,7 +1241,7 @@ class ProyectoModel {
               <td class="info-label">Condiciones Operativas:</td>
               <td class="info-value" colspan="3">
                 • <strong>Requiere Acreditación:</strong> ${crm.requiere_acreditacion === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Régimen Operacional:</strong> ${esCaso5 ? 'ESPECIAL / PLATAFORMAS (Partidas Abiertas)' : (esUrbano ? 'URBANO (≤ 30 km)' : 'RURAL (> 30 km)')} (${kmEstimado > 0 ? kmEstimado + ' km estim. ida' : 'No especificada'})&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Política Operacional:</strong> ${glosaPoliticaOperacional} (${kmEstimado > 0 ? kmEstimado + ' km antecedente' : 'Sin distancia informada'})&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Requiere Rigger:</strong> ${crm.requiere_rigger === true ? 'SÍ' : 'NO'}&nbsp;&nbsp;&nbsp;&nbsp;
                 • <strong>Prevencionista:</strong> ${crm.requiere_prevencionista === true ? 'SÍ' : 'NO'}<br>
                 • <strong>Cliente pone Combustible:</strong> <strong>${crm.cliente_pone_combustible === true ? 'SÍ (Suministrado por Mandante)' : 'NO (Suministrado por San Pablo)'}</strong>
@@ -934,18 +1317,15 @@ class ProyectoModel {
                   : '<strong>NO</strong> — Suministrado por Grúas San Pablo (Incluido en tarifa del servicio).'}
               </td>
             </tr>
-            ${crm.pensiones ? `
             <tr>
-              <td class="info-label">Responsabilidad de Pensiones:</td>
+              <td class="info-label">Traslado, Alimentación y Alojamiento:</td>
               <td class="info-value" colspan="3" style="font-size: 9.5px; line-height: 1.5;">
-                • <strong>Alojamiento:</strong> ${crm.pensiones.alojamiento_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.alojamiento_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Desayuno:</strong> ${crm.pensiones.desayuno_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.desayuno_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Almuerzo:</strong> ${crm.pensiones.almuerzo_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.almuerzo_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}<br>
-                • <strong>Cena:</strong> ${crm.pensiones.cena_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.cena_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}&nbsp;&nbsp;&nbsp;&nbsp;
-                • <strong>Traslado Personal:</strong> ${crm.pensiones.traslado_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (crm.pensiones.traslado_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'No Aplica')}
+                ${(penCot.formato_viaticos === 'V1_5_ITEMS' && !penCot.alimentacion_costeado && (penCot.desayuno_costeado !== penCot.almuerzo_costeado || penCot.almuerzo_costeado !== penCot.cena_costeado))
+                  ? `• <strong>Traslado:</strong> ${fmtPenCot(penCot.traslado_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Desayuno:</strong> ${fmtPenCot(penCot.desayuno_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Almuerzo:</strong> ${fmtPenCot(penCot.almuerzo_costeado)}<br>• <strong>Cena:</strong> ${fmtPenCot(penCot.cena_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alojamiento:</strong> ${fmtPenCot(penCot.alojamiento_costeado)}`
+                  : `• <strong>Traslado:</strong> ${fmtPenCot(penCot.traslado_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alimentación:</strong> ${fmtPenCot(penCot.alimentacion_costeado || penCot.almuerzo_costeado || penCot.desayuno_costeado || penCot.cena_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alojamiento:</strong> ${fmtPenCot(penCot.alojamiento_costeado)}`
+                }
               </td>
             </tr>
-            ` : ''}
           </table>
           
           ${condicionesHtml ? `
@@ -955,7 +1335,7 @@ class ProyectoModel {
           
           <div class="footer">
             Documento de carácter confidencial emitido por el Holding de Empresas de Grúas San Pablo.<br>
-            Para cualquier consulta comercial o de operaciones, contactar a fono: ${emisor.fono} o al correo oficial de su ejecutivo asignado.
+            Para cualquier consulta comercial o de operaciones, contactar a ${ejecutivoNombre} (${ejecutivoFono || emisor.fono} / ${ejecutivoEmail}).
           </div>
         </div>
       </body>
@@ -1196,9 +1576,87 @@ class ProyectoModel {
       const lineasServicio = crm.lineas_servicio || [];
 
       // Horas Mínimas Contractuales (Piso Mínimo)
+      // REQ-1105: Clasificación determinista por Categoría/Subcategoría (Excluyendo Personal Certificado y Traslados)
+      const esLineaPersonalOT = (l) => {
+        if (!l) return false;
+        const tipo = String(l.tipo || l.categoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        const sub = String(l.subcategoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        if (tipo === 'PERSONAL CERTIFICADO' || tipo === 'PERSONAL' || tipo === 'MANO DE OBRA') return true;
+        if (tipo === '' && (sub.includes('RIGGER') || sub.includes('PREVENCIONISTA') || sub.includes('OPERADOR') || sub.includes('SUPERVISOR'))) return true;
+        return false;
+      };
+
+      const esLineaTrasladoOT = (l) => {
+        if (!l || esLineaPersonalOT(l)) return false;
+        const tipo = String(l.tipo || l.categoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        const unidad = String(l.unidad || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        if (tipo === 'TRASLADOS' || tipo === 'TRASLADO' || tipo === 'FLETE' || tipo === 'FLETES' || tipo === 'TRANSPORTE') return true;
+        if (unidad.includes('TRASLADO') || unidad === 'FLETE' || unidad === 'VIAJE') return true;
+        return false;
+      };
+
+      const formatearPoliticaCobroLinea = (l) => {
+        if (!l) return '8 hrs diarias mínimas';
+        const hrs = Number(l.pisoMinimo || l.horas_minimas || l.cantidad_horas || 8.0);
+        const u = String(l.unidad || '').toUpperCase().trim();
+        if (u.includes('MES')) {
+          const meses = Number(l.cantidad_meses || l.cantidad || 1);
+          return `${hrs} hrs mensuales mínimas (${meses} ${meses === 1 ? 'Mes' : 'Meses'})`;
+        }
+        if (u.includes('DIA') || u.includes('DÍA') || u.includes('JORNADA') || u === 'HORAS') {
+          const dias = Number(l.cantidad_dias || l.cantidad || 1);
+          return `${hrs} hrs diarias mínimas (${dias} ${dias === 1 ? 'Día' : 'Días'})`;
+        }
+        if (u.includes('FIJO') || u.includes('SERVICIO') || u.includes('MANIOBRA')) {
+          return 'Servicio a Valor Fijo Convenido';
+        }
+        if (u.includes('TRASLADO') || u.includes('FLETE') || u.includes('VIAJE')) {
+          const cant = Number(l.cantidad || 1);
+          return `${l.unidad || 'Traslado'} (${cant} ${cant === 1 ? 'Viaje' : 'Viajes'})`;
+        }
+        return `${hrs} hrs diarias mínimas`;
+      };
+
+      // Filtrar exclusivamente líneas de Equipos Principales (excluyendo Personal Certificado y Traslados)
+      // Priorizar líneas base comerciales y deduplicar por equipo físico (1 Patente = 1 Política de Cobro)
+      const lineasEquiposRaw = lineasServicio.filter(l => !esLineaPersonalOT(l) && !esLineaTrasladoOT(l));
+      const lineasEquiposBase = lineasEquiposRaw.filter(l => l.is_linea_base !== false);
+      const lineasEquiposCandidatas = [
+        ...lineasEquiposBase,
+        ...lineasEquiposRaw.filter(l => l.is_linea_base === false)
+      ];
+      const lineasEquiposOT = [];
+      const patentesEquiposOT = new Set();
+      lineasEquiposCandidatas.forEach((l, idx) => {
+        const eqId = l.equipo_asignado_id || l.equipo_id || (lineasEquiposOT.length === 0 ? ejec.equipo_id : null);
+        const eqObj = eqId ? (getEquipoInfo(eqId) || {}) : {};
+        const pat = (eqObj.patente || eqObj.ppu || (typeof eqId === 'string' ? eqId : '') || '').toUpperCase().trim();
+        const dedupKey = pat ? `PAT_${pat}` : (eqId ? `EQ_${eqId}` : `LINE_${idx}`);
+        if ((pat || eqId) && patentesEquiposOT.has(dedupKey)) return;
+        // Ignorar líneas sintéticas operativas sin tarifa si ya existe al menos una línea base comercial
+        if (l.is_linea_base === false && Number(l.valorUnitario || l.valor_unitario || 0) === 0 && !eqId && lineasEquiposBase.length > 0) return;
+        if (pat || eqId) patentesEquiposOT.add(dedupKey);
+        lineasEquiposOT.push({ ...l, _resolved_eq_id: eqId, _resolved_patente: pat, _resolved_eq_obj: eqObj });
+      });
+
       let horasMinimas = 8.0;
+      let pisoMinimoTexto = '8 hrs diarias mínimas';
+      if (lineasEquiposOT.length > 0) {
+        const lFirst = lineasEquiposOT[0];
+        horasMinimas = Number(lFirst.pisoMinimo || lFirst.horas_minimas || lFirst.cantidad_horas || 8.0);
+        const politicasPorPatente = lineasEquiposOT.map((l, idx) => {
+          const pat = l._resolved_patente || '';
+          const labelEq = pat ? `[${pat}]` : (l.subcategoria || l.tipo || `Equipo #${idx + 1}`);
+          return `<strong>${labelEq}:</strong> ${formatearPoliticaCobroLinea(l)}`;
+        });
+        pisoMinimoTexto = politicasPorPatente.join('<br>');
+      } else if (ejec.horas_minimas || crm.horas_minimas) {
+        horasMinimas = Number(ejec.horas_minimas || crm.horas_minimas || 8.0);
+        pisoMinimoTexto = `${horasMinimas} hrs diarias mínimas`;
+      }
+      // Fin cálculo Piso Mínimo Contractual
       if (lineasServicio && lineasServicio.length > 0) {
-        const lPiso = lineasServicio.find(l => l.pisoMinimo || l.horas_minimas || l.cantidad_horas);
+        const lPiso = null;
         if (lPiso) {
           horasMinimas = Number(lPiso.pisoMinimo || lPiso.horas_minimas || lPiso.cantidad_horas || 8.0);
         }
@@ -1211,50 +1669,91 @@ class ProyectoModel {
         if (!l) return false;
         const tipo = String(l.tipo || '').toUpperCase();
         const desc = String(l.descripcion || l.subcategoria || '').toUpperCase();
-        return tipo.includes('TRASLADO') || tipo.includes('FLETE') || tipo.includes('PERSONAL') || tipo.includes('TRANSPORTE') || desc.includes('TRASLADO') || desc.includes('FLETE');
+        return esLineaPersonalOT(l) || esLineaTrasladoOT(l);
       };
 
       // Segmento 1: Flota Principal (Grúas y Equipos de Izaje Primario)
-      lineasServicio.forEach((l, idx) => {
+      const fmtFechaCortaOT = (f) => {
+        if (!f || typeof f !== 'string') return '';
+        const m = f.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return m ? `${m[3]}-${m[2]}-${m[1]}` : f;
+      };
+      const fmtRangoTurnoOT = (ini, fin) => {
+        const f1 = fmtFechaCortaOT(ini);
+        const f2 = fmtFechaCortaOT(fin);
+        if (f1 && f2) return f1 === f2 ? f1 : `${f1} al ${f2}`;
+        return f1 || f2 || '';
+      };
+
+      const patentesFlotaVistas = new Set(); lineasEquiposOT.forEach((l, idx) => {
         if (isTrasladoOrLogistica(l)) return; // Excluir traslados/fletes de la flota principal
 
-        const eqId = l.equipo_asignado_id || l.equipo_id;
+        const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
         if (eqId) {
-          const eqObj = getEquipoInfo(eqId) || {};
-          const opObj = getUserInfo(l.operador_asignado_id || ejec.operador_id) || {};
+          const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
+          const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
+            ? l.turnos_operadores.filter(t => t && t.operador_id)
+            : [];
+          let choferLabel = 'Sin Operador Asignado';
+          if (turnos.length > 0) {
+            choferLabel = turnos.map(t => {
+              const u = getUserInfo(t.operador_id) || {};
+              const nom = u.nombre_user || u.name_frst || 'Operador';
+              const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
+              return rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
+            }).join('<br>');
+          } else {
+            const opObj = getUserInfo(l.operador_asignado_id || ejec.operador_id) || {};
+            if (opObj.nombre_user || opObj.name_frst) {
+              const rng = fmtRangoTurnoOT(l.fecha_plan_ini, l.fecha_plan_fin);
+              choferLabel = rng
+                ? `<strong>${opObj.nombre_user || opObj.name_frst}</strong> (Operador • ${rng})`
+                : `${opObj.nombre_user || opObj.name_frst} (Operador)`;
+            }
+          }
           flotaItems.push({
             segmento: 'Izaje Principal',
             tipo: l.tipo || eqObj.tipo || 'Grúa Móvil',
-            modelo: eqObj.nombre_equipo || eqObj.modelo || l.subcategoria || 'General',
+            modelo: l.subcategoria || eqObj.nombre_equipo || eqObj.modelo || 'General',
             patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
-            chofer: opObj.nombre_user || opObj.name_frst ? `${opObj.nombre_user || opObj.name_frst} (Operador)` : 'Sin Operador Asignado'
+            chofer: choferLabel
           });
         }
       });
 
       // Segmento 2: Traslados & Logística
       const equiposExtra = Array.isArray(ejec.equipos_extra) ? ejec.equipos_extra : [];
+      const fmtModalidadTrasladoOT = (mod) => {
+        const m = String(mod || '').toUpperCase().trim();
+        if (m === 'SOLO_IDA' || m === 'IDA') return 'SOLO IDA — Entrega en Obra (Retiro Pendiente)';
+        if (m === 'SOLO_RETORNO' || m === 'RETORNO') return 'SOLO RETORNO — Retiro desde Obra';
+        if (m === 'IDA_VUELTA') return 'IDA Y VUELTA';
+        return '';
+      };
       equiposExtra.forEach((ex, idx) => {
         const eqId = typeof ex === 'object' ? ex.id_equipo : ex;
         if (eqId) {
-          const eqObj = getEquipoInfo(eqId) || {};
+          const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
           const chObj = getUserInfo(ex.chofer_id || ejec.chofer_id) || {};
+          const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
+          const rngEx = fmtRangoTurnoOT(ex.fecha_plan_ini, ex.fecha_plan_fin);
+          const chNombre = chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado';
           flotaItems.push({
-            segmento: 'Traslado & Logística',
+            segmento: modTexto ? `Traslado (${modTexto})` : 'Traslado & Logística',
             tipo: ex.tipo || eqObj.tipo || 'Transporte',
             modelo: eqObj.nombre_equipo || ex.subcategoria || ex.descripcion || 'Cama Baja',
             patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
-            chofer: chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado'
+            chofer: rngEx ? `${chNombre} <span style="color:#475569;">(${rngEx})</span>` : chNombre
           });
         }
       });
 
       // Si no hay equipos_extra pero lineasServicio tenía una línea de traslado con equipo asignado:
       if (equiposExtra.length === 0) {
-        lineasServicio.filter(isTrasladoOrLogistica).forEach((l) => {
-          const eqId = l.equipo_asignado_id || l.equipo_id;
+        lineasServicio.filter(esLineaTrasladoOT).forEach((l) => {
+          const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
           if (eqId) {
-            const eqObj = getEquipoInfo(eqId) || {};
+            const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
             const chObj = getUserInfo(l.operador_asignado_id || ejec.chofer_id) || {};
             flotaItems.push({
               segmento: 'Traslado & Logística',
@@ -1285,9 +1784,9 @@ class ProyectoModel {
           <tr>
             <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
             <td><strong style="color: #1e293b;">${f.tipo}</strong> — ${f.modelo}</td>
-            <td style="text-align: center; font-family: monospace; font-weight: bold; color: #1e40af;">${f.patente}</td>
-            <td style="font-size: 10px;">${f.segmento}</td>
-            <td>${f.chofer}</td>
+            <td style="text-align: center; font-family: monospace; font-weight: bold; font-size: 14px; color: #1e40af;">${f.patente}</td>
+            <td style="font-size: 13px;">${f.segmento}</td>
+            <td style="font-size: 13.5px; font-weight: 600;">${f.chofer}</td>
           </tr>
         `;
       });
@@ -1297,7 +1796,19 @@ class ProyectoModel {
       const userIdsSeen = new Set();
 
       lineasServicio.forEach(l => {
-        if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
+        const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
+          ? l.turnos_operadores.filter(t => t && t.operador_id)
+          : [];
+        if (turnos.length > 0) {
+          turnos.forEach(t => {
+            if (t.operador_id && !userIdsSeen.has(t.operador_id)) {
+              userIdsSeen.add(t.operador_id);
+              const u = getUserInfo(t.operador_id);
+              const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
+              if (u) tripulacionItems.push({ rol: rng ? `Operador Grúa / Equipo (${rng})` : 'Operador Grúa / Equipo', ...u });
+            }
+          });
+        } else if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
           userIdsSeen.add(l.operador_asignado_id);
           const u = getUserInfo(l.operador_asignado_id);
           if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
@@ -1308,7 +1819,8 @@ class ProyectoModel {
         if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
           userIdsSeen.add(ex.chofer_id);
           const u = getUserInfo(ex.chofer_id);
-          if (u) tripulacionItems.push({ rol: 'Chofer Cama Baja / Transporte', ...u });
+          const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
+          if (u) tripulacionItems.push({ rol: modTexto ? `Chofer Transporte (${modTexto})` : 'Chofer Cama Baja / Transporte', ...u });
         }
       });
 
@@ -1333,10 +1845,10 @@ class ProyectoModel {
         tripulacionHtml += `
           <tr>
             <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-            <td><strong>${t.nombre_user || `${t.name_frst || ''} ${t.name_last || ''}`}</strong></td>
-            <td style="font-family: monospace; font-size: 10px;">${t.rut_user || 'N/A'}</td>
-            <td><span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9.5px;">${t.rol || t.cargo || 'Especialista'}</span></td>
-            <td style="font-size: 10px; color: #64748b;">${t.email || '-'}</td>
+            <td><strong style="font-size: 13.5px;">${t.nombre_user || `${t.name_frst || ''} ${t.name_last || ''}`}</strong></td>
+            <td style="font-family: monospace; font-size: 13px; font-weight: 600;">${t.rut_user || 'N/A'}</td>
+            <td><span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12.5px;">${t.rol || t.cargo || 'Especialista'}</span></td>
+            <td style="font-size: 12.5px; color: #334155;">${t.email || '-'}</td>
           </tr>
         `;
       });
@@ -1356,7 +1868,7 @@ class ProyectoModel {
           }
         });
         if (rowsApar.length > 0) {
-          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.6; color: #334155;">${rowsApar.join('')}</ul>`;
+          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; color: #1e293b;">${rowsApar.join('')}</ul>`;
         }
       } else if (typeof aparejosJson === 'object' && aparejosJson !== null && Object.keys(aparejosJson).length > 0) {
         const rowsApar = [];
@@ -1372,17 +1884,23 @@ class ProyectoModel {
           }
         }
         if (rowsApar.length > 0) {
-          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.6; color: #334155;">${rowsApar.join('')}</ul>`;
+          aparejosHtml = `<ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; color: #1e293b;">${rowsApar.join('')}</ul>`;
         }
       }
 
       if (!aparejosHtml) {
-        aparejosHtml = '<p style="margin: 0; font-size: 10px; color: #64748b; font-style: italic;">Aparejos estándar de faena (Eslingas certificadas, grilletes omega y fajas de alta resistencia según tabla de carga).</p>';
+        aparejosHtml = '<p style="margin: 0; font-size: 13px; color: #334155; font-style: italic;">Aparejos estándar de faena (Eslingas certificadas, grilletes omega y fajas de alta resistencia según tabla de carga).</p>';
       }
 
       // Suministros & Logística
       const combMandante = crm.cliente_pone_combustible === true;
+      const descripcionServicioOT = crm.descripcion || crm.detalle_servicio || p.objetivo_proyecto || p.observacion_proyecto || 'Sin descripción comercial registrada.';
       const observaciones = ejec.observaciones || crm.observaciones_cotizacion || 'Servicio sujeto a protocolo de seguridad y análisis seguro de trabajo (AST) en faena.';
+      const kmEstimadoOT = parseFloat(crm.distancia_km ?? crm.snapshot_comercial?.distancia_km) || (crm.incluye_flete ? 35 : 0);
+      const esCaso5OT = Number(crm.tipo_caso) === 5 || crm.tipo_caso_glosa === 'ESPECIAL_MIXTO_LIBRE';
+      const regimenOT = esCaso5OT ? 'ESPECIAL / PLATAFORMAS (Partidas Abiertas)' : (kmEstimadoOT <= 30 ? 'URBANO (≤ 30 km)' : 'RURAL (> 30 km)');
+      const penOT = crm.pensiones || crm.snapshot_comercial?.pensiones || {};
+      const fmtPenOT = (val) => val === 'CLIENTE' ? 'Costeado por Cliente' : (val === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Por Definir');
 
       // Template HTML A4
       const htmlContent = `
@@ -1393,33 +1911,33 @@ class ProyectoModel {
         <title>Orden de Trabajo ${codi} - V${version}</title>
         <style>
           @page { size: A4; margin: 8mm 10mm; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #1e293b; background: #ffffff; margin: 0; padding: 0; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.45; color: #0f172a; background: #ffffff; margin: 0; padding: 0; }
           .header { border-bottom: 3px solid ${emisor.color}; padding-bottom: 10px; margin-bottom: 12px; }
           .header table { width: 100%; border-collapse: collapse; }
-          .logo { max-height: 55px; max-width: 190px; object-fit: contain; }
+          .logo { max-height: 62px; max-width: 210px; object-fit: contain; }
           .title-box { text-align: right; }
-          .ot-title { font-size: 20px; font-weight: 900; color: ${emisor.color}; margin: 0; letter-spacing: 0.5px; }
-          .ot-code { font-size: 13px; font-weight: bold; color: #0f172a; margin-top: 2px; font-family: monospace; }
-          .ot-version { display: inline-block; background: ${emisor.color}; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 3px; }
+          .ot-title { font-size: 24px; font-weight: 900; color: ${emisor.color}; margin: 0; letter-spacing: 0.5px; }
+          .ot-code { font-size: 16px; font-weight: bold; color: #0f172a; margin-top: 3px; font-family: monospace; }
+          .ot-version { display: inline-block; background: ${emisor.color}; color: #000; font-weight: 900; padding: 3px 10px; border-radius: 4px; font-size: 13px; margin-top: 4px; }
           
-          .section-title { font-size: 11.5px; font-weight: bold; background: #f1f5f9; color: #0f172a; padding: 4px 8px; border-left: 4px solid ${emisor.color}; margin-top: 10px; margin-bottom: 6px; text-transform: uppercase; }
+          .section-title { font-size: 14px; font-weight: bold; background: #f1f5f9; color: #0f172a; padding: 6px 10px; border-left: 5px solid ${emisor.color}; margin-top: 12px; margin-bottom: 7px; text-transform: uppercase; }
           
-          table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10.5px; }
-          table.data-table th { background: #f8fafc; color: #475569; font-weight: bold; font-size: 9.5px; text-transform: uppercase; padding: 5px 8px; border: 1px solid #cbd5e1; text-align: left; }
-          table.data-table td { padding: 5px 8px; border: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
+          table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13.5px; }
+          table.data-table th { background: #f8fafc; color: #334155; font-weight: bold; font-size: 12.5px; text-transform: uppercase; padding: 7px 8px; border: 1px solid #cbd5e1; text-align: left; }
+          table.data-table td { padding: 7px 8px; border: 1px solid #cbd5e1; color: #0f172a; vertical-align: middle; }
           table.data-table tr:nth-child(even) { background: #f8fafc; }
           
-          .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
-          .info-grid td { padding: 4px 6px; border: 1px solid #e2e8f0; vertical-align: top; }
-          .info-lbl { font-weight: bold; color: #475569; width: 18%; background: #f8fafc; }
-          .info-val { color: #0f172a; width: 32%; }
+          .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13.5px; }
+          .info-grid td { padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top; }
+          .info-lbl { font-weight: bold; color: #334155; width: 20%; background: #f8fafc; font-size: 13px; }
+          .info-val { color: #0f172a; width: 30%; font-size: 13.5px; }
           
-          .signatures { width: 100%; margin-top: 20px; border-collapse: collapse; }
+          .signatures { width: 100%; margin-top: 22px; border-collapse: collapse; }
           .signatures td { width: 50%; vertical-align: bottom; text-align: center; padding: 0 20px; }
-          .sig-line { border-top: 1.5px dashed #64748b; margin-top: 45px; padding-top: 5px; font-size: 10px; font-weight: bold; color: #1e293b; }
-          .sig-sub { font-size: 9px; color: #64748b; }
+          .sig-line { border-top: 1.5px dashed #475569; margin-top: 45px; padding-top: 6px; font-size: 12px; font-weight: bold; color: #0f172a; }
+          .sig-sub { font-size: 11px; color: #475569; }
           
-          .footer { margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; font-size: 8.5px; color: #64748b; }
+          .footer { margin-top: 14px; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; font-size: 10.5px; color: #475569; }
         </style>
       </head>
       <body>
@@ -1428,7 +1946,7 @@ class ProyectoModel {
             <tr>
               <td style="width: 50%;">
                 ${finalLogoPath ? `<img src="${finalLogoPath}" class="logo" alt="Logo">` : `<h2>${emisor.nombre}</h2>`}
-                <div style="font-size: 9px; color: #475569; margin-top: 4px; line-height: 1.3;">
+                <div style="font-size: 11.5px; color: #334155; margin-top: 4px; line-height: 1.35;">
                   <strong>${emisor.nombre}</strong><br>
                   RUT: ${emisor.rut} | ${emisor.giro}<br>
                   ${emisor.direccion} | Fono: ${emisor.fono}
@@ -1438,7 +1956,7 @@ class ProyectoModel {
                 <div class="ot-title">ORDEN DE TRABAJO (OT)</div>
                 <div class="ot-code">${codi}</div>
                 <div class="ot-version">VERSIÓN ${version}</div>
-                <div style="font-size: 9px; color: #64748b; margin-top: 4px;">Emisión: ${new Date().toLocaleString('es-CL')}</div>
+                <div style="font-size: 11.5px; color: #475569; margin-top: 4px;">Emisión: ${new Date().toLocaleString('es-CL')}</div>
               </td>
             </tr>
           </table>
@@ -1466,6 +1984,12 @@ class ProyectoModel {
             <td class="info-val">${obraContacto} (${obraTelefono})</td>
           </tr>
           <tr>
+            <td class="info-lbl">Distancia Estimada Comercial:</td>
+            <td class="info-val"><strong style="color: #b45309;">${kmEstimadoOT > 0 ? `${kmEstimadoOT} km (Ida desde Casa Matriz)` : 'No especificada'}</strong></td>
+            <td class="info-lbl">Régimen Operacional:</td>
+            <td class="info-val"><strong>${regimenOT}</strong></td>
+          </tr>
+          <tr>
             <td class="info-lbl">Georreferenciación GPS:</td>
             <td class="info-val" colspan="3" style="font-family: monospace; color: #0369a1;">📍 ${coordenadasGps}</td>
           </tr>
@@ -1482,7 +2006,7 @@ class ProyectoModel {
           </tr>
           <tr>
             <td class="info-lbl">Piso Mínimo Contractual:</td>
-            <td class="info-val"><strong style="color: #0f172a;">${horasMinimas} hrs diarias mínimas</strong></td>
+            <td class="info-val"><strong style="color: #0f172a;">${pisoMinimoTexto}</strong></td>
             <td class="info-lbl">Término y Retorno:</td>
             <td class="info-val"><strong style="color: #b91c1c;">${fechaFin} a las ${horaFin} hrs</strong></td>
           </tr>
@@ -1534,12 +2058,25 @@ class ProyectoModel {
             <td class="info-val" colspan="3">
               ${combMandante 
                 ? '<strong>Suministrado por Cliente Mandante en faena.</strong>' 
-                : '<strong>Suministrado por Grúas San Pablo (Carga con Tarjeta Copec en ruta).</strong>'}
+                : '<strong>Suministrado por Grúas San Pablo (Incluido en tarifa del servicio).</strong>'}
             </td>
           </tr>
           <tr>
+            <td class="info-lbl">Traslado, Alimentación y Alojamiento:</td>
+            <td class="info-val" colspan="3" style="font-size: 13.5px; line-height: 1.55;">
+              ${(penOT.formato_viaticos === 'V1_5_ITEMS' && !penOT.alimentacion_costeado && (penOT.desayuno_costeado !== penOT.almuerzo_costeado || penOT.almuerzo_costeado !== penOT.cena_costeado))
+                ? `• <strong>Traslado:</strong> ${fmtPenOT(penOT.traslado_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Desayuno:</strong> ${fmtPenOT(penOT.desayuno_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Almuerzo:</strong> ${fmtPenOT(penOT.almuerzo_costeado)}<br>• <strong>Cena:</strong> ${fmtPenOT(penOT.cena_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alojamiento:</strong> ${fmtPenOT(penOT.alojamiento_costeado)}`
+                : `• <strong>Traslado:</strong> ${fmtPenOT(penOT.traslado_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alimentación:</strong> ${fmtPenOT(penOT.alimentacion_costeado || penOT.almuerzo_costeado || penOT.desayuno_costeado || penOT.cena_costeado)}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Alojamiento:</strong> ${fmtPenOT(penOT.alojamiento_costeado)}`
+              }
+            </td>
+          </tr>
+          <tr>
+            <td class="info-lbl">Descripción del Servicio (Preventa):</td>
+            <td class="info-val" colspan="3" style="font-size: 15px; line-height: 1.5; color: #0f172a; font-weight: 700; white-space: pre-wrap;">${descripcionServicioOT}</td>
+          </tr>
+          <tr>
             <td class="info-lbl">Instrucciones & Observaciones:</td>
-            <td class="info-val" colspan="3" style="font-size: 9.5px; color: #334155;">${observaciones}</td>
+            <td class="info-val" colspan="3" style="font-size: 15px; line-height: 1.5; color: #1e293b; font-weight: 600; white-space: pre-wrap;">${observaciones}</td>
           </tr>
         </table>
 
@@ -1569,7 +2106,7 @@ class ProyectoModel {
       fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
       await new Promise((resolve, reject) => {
-        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
+        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --disable-smart-shrinking --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
         exec(cmd, (error, stdout, stderr) => {
           try {
             if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath);
@@ -2197,7 +2734,7 @@ class ProyectoModel {
 }
 
 // =========================================================================
-// SPEC 87: REQUERIMIENTOS INTERNOS (INT-YYMM-XXX) Y SOLICITUD V°B° GERENCIA
+// SPEC 87: REQUERIMIENTOS INTERNOS (INT-YYMM-XXXXX) Y SOLICITUD V°B° GERENCIA
 // =========================================================================
 
 ProyectoModel.prototype.generarCodigoRequerimientoInterno = async function(providedClient = null) {
@@ -2211,22 +2748,23 @@ ProyectoModel.prototype.generarCodigoRequerimientoInterno = async function(provi
     const yy = String(date.getFullYear()).slice(-2);
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const anio_mes = `${yy}${mm}`;
+    const periodo_correlativo = '0000';
     const prefijo = 'INT';
 
     await client.query(`
       INSERT INTO tpry_correlativos (prefijo, anio_mes, ultimo_valor)
       VALUES ($1, $2, 0)
       ON CONFLICT (prefijo, anio_mes) DO NOTHING;
-    `, [prefijo, anio_mes]);
+    `, [prefijo, periodo_correlativo]);
 
     const result = await client.query(`
       UPDATE tpry_correlativos
       SET ultimo_valor = ultimo_valor + 1
       WHERE prefijo = $1 AND anio_mes = $2
       RETURNING ultimo_valor;
-    `, [prefijo, anio_mes]);
+    `, [prefijo, periodo_correlativo]);
 
-    const correlativo = String(result.rows[0].ultimo_valor).padStart(3, '0');
+    const correlativo = String(result.rows[0].ultimo_valor).padStart(5, '0');
     const codigo = `INT-${anio_mes}-${correlativo}`;
 
     if (localTransaction) await client.query('COMMIT');
@@ -2458,7 +2996,7 @@ ProyectoModel.prototype.solicitarVbGerencia = async function(id_proyecto, data =
     let personalAsignado = Array.isArray(data.personal_asignado) ? data.personal_asignado : [];
     try {
       const eqRes = await client.query(`
-        SELECT re.id_equipo, re.rol_equipo, eq.patente, eq.nombre_equipo, eq.marca, eq.modelo
+        SELECT re.id_equipo, re.rol_equipo, eq.patente, eq.codigo_interno AS nombre_equipo, eq.marca, eq.modelo
         FROM tpry_rel_equipo re
         LEFT JOIN tequ_equipo eq ON re.id_equipo = eq.id_equipo
         WHERE re.id_proyecto = $1

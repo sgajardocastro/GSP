@@ -10,6 +10,7 @@
             <div class="flex items-center gap-2.5 flex-wrap">
               <h3 class="text-base font-black text-white uppercase tracking-wider font-mono">
                 Report Diario Digital — Día {{ reportLocal?.dia_correlativo || 1 }}
+                <span v-if="reportLocal?.id_reporte_avance" class="text-amber-400 font-normal">· #{{ reportLocal.id_reporte_avance }}</span>
               </h3>
               <span 
                 v-if="reportLocal?.ajustes_analista?.evidencia_fisica_adjunta"
@@ -66,6 +67,20 @@
             </span>
           </a>
 
+          <!-- REQ-1099 / REQ-2239: BOTÓN TRANSVERSAL ADJUNTAR DOCUMENTO ASOCIADO AL DÍA (SIEMPRE DISPONIBLE EN AUDITORÍA) -->
+          <button
+            @click="dispararSelectorDocumentoDia"
+            type="button"
+            class="px-3 py-1.5 text-xs font-bold font-mono rounded-lg border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-200 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Adjuntar cualquier documento o fotografía (report físico, incidencia en terreno, guía, etc.) asociada a este día"
+          >
+            <span>📎</span>
+            <span>Adjuntar Documento</span>
+            <span v-if="documentosDiaVisor.length > 0" class="px-1.5 py-0.2 rounded bg-cyan-500/30 text-white text-[10px]">
+              {{ documentosDiaVisor.length }}
+            </span>
+          </button>
+
           <button 
             v-if="!readonly"
             @click="toggleModoEdicion" 
@@ -98,7 +113,7 @@
         <div class="lg:col-span-7 flex flex-col gap-3">
           
           <!-- RESUMEN CONTEXTUAL DE PERSONAL Y EQUIPO (1 LÍNEA COMPACTA) -->
-          <div :class="tieneRigger ? 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#080d1a] border border-white/10 rounded-xl p-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#080d1a] border border-white/10 rounded-xl p-3'">
+          <div :class="(tieneRigger || modoAjuste) ? 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#080d1a] border border-white/10 rounded-xl p-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#080d1a] border border-white/10 rounded-xl p-3'">
             <div>
               <span class="text-[10px] text-slate-400 font-bold uppercase block">🚚 Grúa Móvil / Patente</span>
               <strong class="text-amber-300 font-mono text-xs block mt-0.5 truncate">{{ reportLocal?.equipo_patente || 'N/A' }}</strong>
@@ -106,13 +121,53 @@
             </div>
             <div>
               <span class="text-[10px] text-slate-400 font-bold uppercase block">👷 Operador Asignado</span>
-              <strong class="text-white text-xs block mt-0.5 truncate">{{ reportLocal?.operador_nombre || 'N/A' }}</strong>
-              <span class="text-[10px] text-slate-400">GSP Operaciones</span>
+              <div v-if="modoAjuste" class="mt-1">
+                <select
+                  v-model="formAjustes.id_user_operador"
+                  class="w-full bg-[#0a0f1e] border border-amber-500/50 rounded px-1.5 py-1 text-[11px] text-amber-300 font-bold focus:outline-none truncate"
+                >
+                  <option :value="null">-- Seleccionar Operador --</option>
+                  <option v-for="u in usuariosOperativos" :key="'op-vis-'+u.id_user" :value="Number(u.id_user)">
+                    {{ u.nombre_completo }} {{ u.cargo ? `(${u.cargo})` : '' }}
+                  </option>
+                </select>
+              </div>
+              <template v-else>
+                <span
+                  v-if="reportLocal?.ajustes_analista?.valores_originales?.operador_nombre && reportLocal?.ajustes_analista?.valores_originales?.operador_nombre !== nombreOperadorMostrado"
+                  class="line-through text-rose-400 text-[10px] block truncate"
+                  title="Operador originalmente registrado"
+                >
+                  {{ reportLocal.ajustes_analista.valores_originales.operador_nombre }}
+                </span>
+                <strong class="text-white text-xs block mt-0.5 truncate" :class="{ 'text-emerald-400': esOperadorModificado || (reportLocal?.ajustes_analista?.valores_originales?.operador_nombre && reportLocal?.ajustes_analista?.valores_originales?.operador_nombre !== nombreOperadorMostrado) }">{{ nombreOperadorMostrado }}</strong>
+                <span class="text-[10px] text-slate-400">GSP Operaciones</span>
+              </template>
             </div>
-            <div v-if="tieneRigger">
+            <div v-if="tieneRigger || modoAjuste">
               <span class="text-[10px] text-slate-400 font-bold uppercase block">🦺 Rigger / Asistente</span>
-              <strong class="text-white text-xs block mt-0.5 truncate">{{ reportLocal?.rigger_nombre }}</strong>
-              <span class="text-[10px] text-slate-400">En Terreno</span>
+              <div v-if="modoAjuste" class="mt-1">
+                <select
+                  v-model="formAjustes.id_user_rigger"
+                  class="w-full bg-[#0a0f1e] border border-cyan-500/50 rounded px-1.5 py-1 text-[11px] text-cyan-300 font-bold focus:outline-none truncate"
+                >
+                  <option :value="null">-- Sin Rigger / N/A --</option>
+                  <option v-for="u in usuariosOperativos" :key="'rig-vis-'+u.id_user" :value="Number(u.id_user)">
+                    {{ u.nombre_completo }} {{ u.cargo ? `(${u.cargo})` : '' }}
+                  </option>
+                </select>
+              </div>
+              <template v-else>
+                <span
+                  v-if="reportLocal?.ajustes_analista?.valores_originales?.rigger_nombre && reportLocal?.ajustes_analista?.valores_originales?.rigger_nombre !== nombreRiggerMostrado"
+                  class="line-through text-rose-400 text-[10px] block truncate"
+                  title="Rigger originalmente registrado"
+                >
+                  {{ reportLocal.ajustes_analista.valores_originales.rigger_nombre }}
+                </span>
+                <strong class="text-white text-xs block mt-0.5 truncate" :class="{ 'text-emerald-400': esRiggerModificado || (reportLocal?.ajustes_analista?.valores_originales?.rigger_nombre && reportLocal?.ajustes_analista?.valores_originales?.rigger_nombre !== nombreRiggerMostrado) }">{{ nombreRiggerMostrado }}</strong>
+                <span class="text-[10px] text-slate-400">En Terreno</span>
+              </template>
             </div>
             <div>
               <span class="text-[10px] text-slate-400 font-bold uppercase block">📋 Base Mínima OT</span>
@@ -126,7 +181,7 @@
             <div class="flex items-center gap-2">
               <span class="text-base flex-shrink-0">✏️</span>
               <span class="text-[11px] leading-tight">
-                <strong>Modo Edición Activado:</strong> Modifica lo que reportó operaciones (Horario Faena, Colación, Horómetros y Odómetros). Las Horas Efectivas, Horas a Facturar y Sobretiempo se re-calcularán automáticamente con estricta cuadratura.
+                <strong>Modo Edición Activado:</strong> Modifica lo que reportó operaciones (Operador, Rigger, Horario Faena, Colación, Horómetros y Odómetros). Las Horas Efectivas, Horas a Facturar y Sobretiempo se re-calcularán automáticamente con estricta cuadratura.
               </span>
             </div>
             <button 
@@ -151,13 +206,13 @@
               </span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               <!-- 1. Horario Faena & Colación -->
               <div class="bg-[#050810] border border-white/10 rounded-xl p-3 flex flex-col justify-between">
                 <div>
                   <span class="text-[10px] text-slate-400 font-bold uppercase block">⏱️ Horario Faena</span>
                   
-                  <div v-if="modoAjuste" class="pt-1.5 flex items-center gap-1">
+                  <div v-if="modoAjuste" class="pt-1.5 flex items-center gap-1 flex-wrap">
                     <input 
                       type="time" 
                       v-model="formAjustes.hora_inicio"
@@ -169,15 +224,24 @@
                       type="time" 
                       v-model="formAjustes.hora_termino"
                       class="bg-[#0a0f1e] border border-amber-500/50 rounded px-1.5 py-0.5 text-xs font-mono text-amber-300 focus:outline-none"
-                      title="Hora de Término"
+                      title="Hora de Término (dejar vacío si sigue en ejecución)"
                     />
+                    <button
+                      v-if="formAjustes.hora_termino"
+                      type="button"
+                      @click="formAjustes.hora_termino = ''"
+                      class="px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-[10px] font-mono cursor-pointer"
+                      title="Dejar término vacío (--:--) porque el servicio sigue en ejecución"
+                    >
+                      🗑️ --:--
+                    </button>
                   </div>
                   <div v-else class="text-xs font-mono font-bold text-white mt-1">
                     <span v-if="reportLocal?.ajustes_analista?.modificado" class="line-through text-rose-400 mr-1 text-[11px]" title="Horario Original Reportado en Terreno">
-                      {{ reportLocal.ajustes_analista.valores_originales?.hora_inicio }} ➔ {{ reportLocal.ajustes_analista.valores_originales?.hora_termino }}
+                      {{ reportLocal.ajustes_analista.valores_originales?.hora_inicio }} ➔ {{ reportLocal.ajustes_analista.valores_originales?.hora_termino || '--:--' }}
                     </span>
                     <span :class="reportLocal?.ajustes_analista?.modificado ? 'text-emerald-400' : 'text-white'">
-                      {{ formAjustes.hora_inicio }} ➔ {{ formAjustes.hora_termino }}
+                      {{ formAjustes.hora_inicio }} ➔ {{ formAjustes.hora_termino || '--:-- (En ejecución)' }}
                     </span>
                     <span v-if="reportLocal?.ajustes_analista?.modificado" class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded ml-1.5 uppercase font-sans font-bold inline-block">
                       Ajustado
@@ -296,6 +360,70 @@
                   </strong>
                 </div>
               </div>
+
+              <!-- 4. Standby / Detención Operacional (Spec 84) -->
+              <div 
+                class="bg-[#050810] border rounded-xl p-3 flex flex-col justify-between"
+                :class="(formAjustes.horas_standby_cliente > 0 || formAjustes.horas_standby_gsp > 0) ? 'border-amber-500/40 bg-amber-950/10' : 'border-white/10'"
+              >
+                <div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">⏳ Standby / Detención</span>
+                    <span 
+                      v-if="formAjustes.horas_standby_cliente > 0 || formAjustes.horas_standby_gsp > 0"
+                      class="text-[8px] bg-amber-500/20 text-amber-300 font-mono font-bold px-1 rounded border border-amber-500/40"
+                    >
+                      Activo
+                    </span>
+                  </div>
+
+                  <div v-if="modoAjuste" class="space-y-1.5 pt-1.5">
+                    <div class="flex items-center justify-between gap-1 text-[10px] font-mono">
+                      <span class="text-amber-400">Cli:</span>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        min="0"
+                        v-model.number="formAjustes.horas_standby_cliente"
+                        class="w-14 bg-[#0a0f1e] border border-amber-500/50 rounded px-1.5 py-0.5 text-amber-300 text-center focus:outline-none"
+                        title="Standby imputable a Cliente (horas)"
+                      />
+                      <span class="text-blue-400 ml-1">GSP:</span>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        min="0"
+                        v-model.number="formAjustes.horas_standby_gsp"
+                        class="w-14 bg-[#0a0f1e] border border-amber-500/50 rounded px-1.5 py-0.5 text-amber-300 text-center focus:outline-none"
+                        title="Standby imputable a GSP (horas)"
+                      />
+                    </div>
+                    <input 
+                      type="text" 
+                      v-model="formAjustes.motivo_standby"
+                      placeholder="Motivo detención..."
+                      class="w-full bg-[#0a0f1e] border border-amber-500/50 rounded px-1.5 py-0.5 text-[10px] text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                  <div v-else class="text-xs font-mono font-bold mt-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-300">Cli: {{ Number(formAjustes.horas_standby_cliente || 0).toFixed(1) }}h</span>
+                      <span class="text-slate-400">·</span>
+                      <span class="text-blue-300">GSP: {{ Number(formAjustes.horas_standby_gsp || 0).toFixed(1) }}h</span>
+                    </div>
+                    <div v-if="formAjustes.motivo_standby" class="text-[10px] font-sans font-normal text-slate-400 italic mt-1 line-clamp-2" :title="formAjustes.motivo_standby">
+                      "{{ formAjustes.motivo_standby }}"
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-2 border-t border-white/5 mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Total Parada:</span>
+                  <strong class="font-mono text-amber-300">
+                    {{ (Number(formAjustes.horas_standby_cliente || 0) + Number(formAjustes.horas_standby_gsp || 0)).toFixed(1) }} hrs
+                  </strong>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -307,27 +435,29 @@
                 <span>Cálculo Automático de Horas y Facturación</span>
               </span>
               <span class="text-[10px] text-slate-400 font-mono">
-                Cuadratura: Horario - Colación vs Base OT
+                {{ formLiquidacionDia.regimen === 'URBANO'
+                  ? `Política Urbana: Cobro Salida Base (${formLiquidacionDia.hora_salida_bodega || formAjustes.hora_inicio}) → Término (${formAjustes.hora_termino})`
+                  : `Política Rural: Cobro Inicio Obra (${formAjustes.hora_inicio}) → Término (${formAjustes.hora_termino})` }}
               </span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <!-- 4. Horas Efectivas Operadas (Calculadas de Horario y Colación) -->
+              <!-- 4. Horas Efectivas / Operación Real -->
               <div class="bg-[#050810] border border-white/10 rounded-xl p-3 flex flex-col justify-between">
                 <div>
-                  <span class="text-[10px] text-slate-400 font-bold uppercase block">⏱️ Horas Efectivas</span>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase block">⏱️ Operación Real</span>
                   <div class="mt-1">
                     <div v-if="esHorasOperadasModificadas" class="text-[10px] line-through text-rose-400 font-mono">
                       Terreno: {{ reportLocal?.horas_operadas || 0 }}h
                     </div>
                     <div class="text-2xl font-black font-mono" :class="esHorasOperadasModificadas ? 'text-emerald-400' : 'text-white'">
-                      {{ horasEfectivasCalculadas }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
+                      {{ horasOperacionReal }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
                     </div>
                   </div>
                 </div>
                 <div class="pt-2 border-t border-white/5 mt-2">
                   <span class="text-[10px] text-slate-400 block font-mono">
-                    {{ duracionFaena }}h faena - {{ formAjustes.horas_colacion }}h col.
+                    {{ horasComputablesCliente }}h netas (incl. {{ formAjustes.horas_standby_cliente }}h SB Cli)
                   </span>
                 </div>
               </div>
@@ -357,7 +487,7 @@
 
                 <div class="pt-2 border-t border-white/5 mt-2">
                   <span class="text-[10px] text-amber-500/80 block font-mono truncate">
-                    Base {{ baseMinima }}h + ST ({{ sobretiempoCalculado }}h)
+                    {{ baseMinima > 0 ? `Base ${baseMinima}h` : 'Sin mín. diario (Mensual)' }} · Imputables {{ horasComputablesCliente }}h
                   </span>
                 </div>
               </div>
@@ -372,9 +502,224 @@
                 </div>
                 <div class="pt-2 border-t border-white/5 mt-2">
                   <span class="text-[10px] text-slate-400 block font-mono truncate">
-                    Base {{ baseMinima }}h
+                    {{ baseMinima > 0 ? `Base ${baseMinima}h` : 'Sin mín. diario (Mensual)' }}
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3 (SPEC-106): LIQUIDACIÓN DIARIA DE PERSONAL Y VIÁTICOS (RRHH / CONTROL DE GESTIÓN) -->
+          <div class="bg-[#080d1a] border border-cyan-500/30 rounded-xl p-3.5 space-y-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                  👷 3. Liquidación Diaria de Personal y Viáticos (RRHH / Remuneraciones)
+                </span>
+                <span
+                  class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border"
+                  :class="formLiquidacionDia.regimen === 'URBANO'
+                    ? 'bg-blue-500/15 text-blue-300 border-blue-500/40'
+                    : 'bg-purple-500/15 text-purple-300 border-purple-500/40'"
+                >
+                  {{ formLiquidacionDia.regimen === 'URBANO' ? `POLÍTICA URBANA (${formLiquidacionDia.distancia_km || 12} km)` : `POLÍTICA RURAL (${formLiquidacionDia.distancia_km || 45} km)` }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono text-slate-300 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                  {{ formLiquidacionDia.categoria_label || 'Tabulador' }} · Sugerido ${{ formatMiles(formLiquidacionDia.tarifa_sugerida) }}/hr
+                </span>
+                <span
+                  class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border"
+                  :class="esValidado
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/40'"
+                >
+                  {{ esValidado ? '✓ Validado RRHH' : '⏳ Por Verificar Analista' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- FILA 1: OPERADOR PRINCIPAL -->
+            <div class="bg-[#050810] border border-white/10 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono">
+                    OPERADOR
+                  </span>
+                  <strong class="text-xs text-white font-semibold">{{ nombreOperadorMostrado }}</strong>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">
+                  {{ formLiquidacionDia.regimen === 'URBANO'
+                    ? `Política Urbana: Sin pago traslado · Solo horas reportadas (${formAjustes.hora_inicio} → ${formAjustes.hora_termino} -${formAjustes.horas_colacion}h col)`
+                    : `Política Rural: En Obra (${formLiquidacionDia.hora_llegada_obra || formAjustes.hora_inicio} → ${formAjustes.hora_termino} -${formAjustes.horas_colacion}h col) + Dif. Positiva Traslado` }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end">
+                <!-- Hrs Faena a Pagar -->
+                <div>
+                  <label class="text-[9.5px] text-slate-400 uppercase font-bold block mb-1">Hrs Faena Pagar</label>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.horas_faena_pagar"
+                    @input="onCambioHorasLiq"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    class="w-full bg-slate-900 border border-cyan-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-white focus:border-cyan-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-white bg-black/40 px-2 py-1 rounded border border-white/5">
+                    {{ formLiquidacionDia.horas_faena_pagar }}h
+                  </div>
+                </div>
+
+                <!-- Hrs Flete a Pagar -->
+                <div>
+                  <label class="text-[9.5px] text-slate-400 uppercase font-bold block mb-1">Hrs Flete Pagar</label>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.horas_flete_pagar"
+                    @input="onCambioHorasLiq"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    class="w-full bg-slate-900 border border-cyan-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-white focus:border-cyan-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-white bg-black/40 px-2 py-1 rounded border border-white/5">
+                    {{ formLiquidacionDia.horas_flete_pagar }}h
+                  </div>
+                </div>
+
+                <!-- Total Hrs Pagar -->
+                <div>
+                  <label class="text-[9.5px] text-cyan-300 uppercase font-bold block mb-1">Total Hrs Pagar</label>
+                  <div class="text-sm font-mono font-black text-cyan-300 bg-cyan-950/30 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-center">
+                    {{ horasTotalesLiqOperador }} hrs
+                  </div>
+                </div>
+
+                <!-- Tarifa $/hr -->
+                <div>
+                  <label class="text-[9.5px] text-slate-400 uppercase font-bold block mb-1">Valor Hora ($/hr)</label>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.precio_unitario"
+                    type="number"
+                    step="500"
+                    min="0"
+                    class="w-full bg-slate-900 border border-cyan-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-amber-300 bg-black/40 px-2 py-1 rounded border border-white/5">
+                    ${{ formatMiles(formLiquidacionDia.precio_unitario) }}
+                  </div>
+                </div>
+
+                <!-- Subtotal Hrs Operador ($) -->
+                <div>
+                  <label class="text-[9.5px] text-emerald-400 uppercase font-bold block mb-1">Subtotal Hrs ($)</label>
+                  <div class="text-sm font-mono font-black text-emerald-400 bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-right">
+                    ${{ formatMiles(subtotalHoraOperadorLiq) }}
+                  </div>
+                </div>
+
+                <!-- Viático Alimentación Operador ($) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[9.5px] text-amber-300 uppercase font-bold">Viático Alim. ($)</label>
+                    <span class="text-[9px] font-mono text-slate-400" title="Sugerido según escala por horas totales">
+                      Sug: ${{ formatMiles(viaticoSugeridoOperador) }}
+                    </span>
+                  </div>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.monto_viatico_operador"
+                    @input="formLiquidacionDia.viatico_manual = true"
+                    type="number"
+                    step="1000"
+                    min="0"
+                    class="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-amber-300 bg-black/40 px-2 py-1 rounded border border-white/5 text-right">
+                    ${{ formatMiles(formLiquidacionDia.monto_viatico_operador) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FILA 2: RIGGER / MANIOBRISTA (SI APLICA) -->
+            <div v-if="tieneRigger" class="bg-[#050810] border border-white/10 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
+                    RIGGER
+                  </span>
+                  <strong class="text-xs text-white font-semibold">{{ nombreRiggerMostrado }}</strong>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">
+                  Tarifa hora: $0 (Sueldo Base) · Devenga Viático Alimentación según horas jornada
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+                <div>
+                  <label class="text-[9.5px] text-slate-400 uppercase font-bold block mb-1">Hrs Jornada Rigger</label>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.horas_totales_rigger"
+                    @input="onCambioHorasRiggerLiq"
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    class="w-full bg-slate-900 border border-purple-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-white focus:border-purple-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-white bg-black/40 px-2 py-1 rounded border border-white/5">
+                    {{ formLiquidacionDia.horas_totales_rigger }}h
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[9.5px] text-slate-400 uppercase font-bold block mb-1">Subtotal Hrs ($)</label>
+                  <div class="text-xs font-mono text-slate-400 bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5">
+                    $0 (Sueldo Base)
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[9.5px] text-amber-300 uppercase font-bold">Viático Alimentación Rigger ($)</label>
+                    <span class="text-[9px] font-mono text-slate-400">
+                      Sugerido ({{ formLiquidacionDia.horas_totales_rigger }}h): ${{ formatMiles(viaticoSugeridoRigger) }}
+                    </span>
+                  </div>
+                  <input
+                    v-if="!readonly"
+                    v-model.number="formLiquidacionDia.monto_viatico_rigger"
+                    @input="formLiquidacionDia.viatico_rigger_manual = true"
+                    type="number"
+                    step="1000"
+                    min="0"
+                    class="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-2 py-1 text-xs font-mono font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
+                  />
+                  <div v-else class="text-sm font-mono font-bold text-amber-300 bg-black/40 px-2 py-1 rounded border border-white/5 text-right">
+                    ${{ formatMiles(formLiquidacionDia.monto_viatico_rigger) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PIE RESUMEN SECCIÓN 3 -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] font-mono text-slate-300">
+              <span class="text-[10px] text-slate-400">
+                ⚡ Se aprueba con el Report Diario para Cierre Mensual RRHH y se traspasa automáticamente al ITS.
+              </span>
+              <div class="flex items-center gap-3">
+                <span>Hrs Operador: <strong class="text-emerald-400">${{ formatMiles(subtotalHoraOperadorLiq) }}</strong></span>
+                <span>Viáticos Día: <strong class="text-amber-300">${{ formatMiles(totalViaticosDiaLiq) }}</strong></span>
+                <span class="bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 px-2 py-0.5 rounded font-bold">
+                  Total Día Personal: ${{ formatMiles(subtotalHoraOperadorLiq + totalViaticosDiaLiq) }}
+                </span>
               </div>
             </div>
           </div>
@@ -572,6 +917,101 @@
             <div v-else class="text-slate-400 text-xs italic bg-black/30 p-2 rounded-lg border border-dashed border-white/10 flex items-center justify-center gap-2">
               <span>📷</span>
               <span>Sin fotografías de panel registradas por el operador en este reporte.</span>
+            </div>
+          </div>
+
+          <!-- 2.B REQ-1099: DOCUMENTOS Y FOTOGRAFÍAS ASOCIADOS AL DÍA DE SERVICIO -->
+          <div class="bg-[#080d1a] border border-cyan-500/30 rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📎</span>
+                <span>Documentos y Fotografías del Día {{ reportLocal?.dia_correlativo || 1 }}</span>
+              </span>
+              <button
+                type="button"
+                @click="dispararSelectorDocumentoDia"
+                class="px-2.5 py-1 rounded-lg bg-cyan-600/25 hover:bg-cyan-600 text-cyan-200 hover:text-white border border-cyan-500/40 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all"
+                title="Adjuntar cualquier documento, report físico o foto de terreno a este día"
+              >
+                <span>+ Adjuntar Documento</span>
+              </button>
+            </div>
+
+            <!-- Input oculto + Barra de confirmación de subida -->
+            <input
+              ref="inputArchivoDocVisorRef"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+              class="hidden"
+              @change="onCambioArchivoDocVisor"
+            />
+
+            <div
+              v-if="mostrarFormAdjuntoDia || archivoDocVisor"
+              class="bg-cyan-950/30 border border-cyan-500/40 rounded-lg p-2.5 space-y-2 animate-fadeIn"
+            >
+              <div class="flex items-center justify-between text-[11px] font-mono text-cyan-200">
+                <span class="truncate font-bold">
+                  {{ archivoDocVisor ? `📄 ${archivoDocVisor.name}` : 'Seleccione un archivo o foto para este día' }}
+                </span>
+                <button
+                  type="button"
+                  @click="cancelarAdjuntoDiaVisor"
+                  class="text-slate-400 hover:text-white text-xs ml-2 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  v-model="tituloDocVisor"
+                  placeholder="Descripción (ej: Report físico, Foto situación en obra...)"
+                  class="flex-1 bg-[#050810] border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  @click="subirDocumentoDiaDesdeVisor"
+                  :disabled="!archivoDocVisor || subiendoDocVisor"
+                  class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {{ subiendoDocVisor ? '⏳ Subiendo...' : '📎 Subir' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de documentos adjuntos al día -->
+            <div v-if="documentosDiaVisor.length > 0" class="space-y-1.5 max-h-32 overflow-y-auto">
+              <div
+                v-for="doc in documentosDiaVisor"
+                :key="doc.id_doc || doc.nombre_archivo"
+                class="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono"
+              >
+                <a
+                  :href="getUrlDocumentoVisor(doc)"
+                  target="_blank"
+                  class="flex items-center gap-1.5 text-cyan-300 hover:text-white hover:underline truncate"
+                  :title="doc.nombre_archivo || doc.titulo"
+                >
+                  <span>📄</span>
+                  <span class="truncate font-semibold">{{ doc.titulo || doc.nombre_archivo }}</span>
+                  <span class="text-[10px] text-cyan-400 shrink-0">↗ Ver</span>
+                </a>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    v-if="!readonly && doc.id_doc"
+                    type="button"
+                    @click="quitarDocumentoDiaDesdeVisor(doc)"
+                    class="text-slate-400 hover:text-rose-400 text-xs cursor-pointer px-1"
+                    title="Quitar documento del día"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="!mostrarFormAdjuntoDia" class="text-slate-400 text-[11px] italic bg-black/30 p-2 rounded-lg border border-dashed border-white/10 flex items-center justify-between">
+              <span>Sin documentos o fotografías adicionales adjuntas en este día.</span>
             </div>
           </div>
 
@@ -777,6 +1217,14 @@
             <span class="text-[11px] text-slate-400">Horas a Facturar:</span>
             <strong class="text-emerald-400">{{ horasFacturablesCalculadas }} hrs</strong>
           </div>
+          <div class="flex justify-between items-center text-slate-300 border-t border-white/10 pt-1.5 mt-1">
+            <span class="text-[11px] text-slate-400">Hrs Pagar Operador (RRHH):</span>
+            <strong class="text-cyan-300">{{ horasTotalesLiqOperador }} hrs · ${{ formatMiles(subtotalHoraOperadorLiq) }}</strong>
+          </div>
+          <div class="flex justify-between items-center text-slate-300">
+            <span class="text-[11px] text-slate-400">Viáticos Alimentación Día:</span>
+            <strong class="text-amber-300">${{ formatMiles(totalViaticosDiaLiq) }}</strong>
+          </div>
         </div>
 
         <!-- Explicación de Efectos Legales y Operativos -->
@@ -898,6 +1346,27 @@ const modoAjuste = ref(false)
 const mapContainerRef = ref(null)
 let leafletMap = null
 
+const usuariosLista = ref([])
+
+const cargarUsuariosOperativos = async () => {
+  if (usuariosLista.value.length > 0) return
+  try {
+    const { data } = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
+    const raw = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : (data?.usuarios || []))
+    usuariosLista.value = raw
+      .filter(u => u && u.flag_activo !== false)
+      .map(u => ({
+        id_user: Number(u.id_user),
+        nombre_completo: u.nombre_user || u.name_user || `${u.name_frst || u.user_name || ''} ${u.apellido_pat || u.user_lastname || ''}`.trim() || `Usuario #${u.id_user}`,
+        cargo: u.json_data?.cargo || u.cargo || ''
+      }))
+  } catch (e) {
+    console.warn('[ModalVisorReport] Error cargando usuarios:', e)
+  }
+}
+
+const usuariosOperativos = computed(() => usuariosLista.value)
+
 // Formulario de ajustes de lo reportado por operaciones
 const formAjustes = ref({
   hora_inicio: '08:00',
@@ -906,8 +1375,87 @@ const formAjustes = ref({
   horometro_inicio: 0,
   horometro_termino: 0,
   odometro_inicio: 0,
-  odometro_termino: 0
+  odometro_termino: 0,
+  id_user_operador: null,
+  id_user_rigger: null,
+  horas_standby_cliente: 0,
+  horas_standby_gsp: 0,
+  motivo_standby: ''
 })
+
+// SPEC-106: Formulario de Liquidación Diaria de Personal y Viáticos (RRHH / Control de Gestión)
+const formLiquidacionDia = ref({
+  regimen: 'URBANO',
+  distancia_km: 12,
+  categoria_label: 'Camión Pluma / Grúa',
+  hora_salida_bodega: '08:00',
+  hora_llegada_obra: '08:00',
+  horas_faena_pagar: 9,
+  horas_flete_pagar: 0,
+  tarifa_sugerida: 5000,
+  precio_unitario: 5000,
+  monto_viatico_operador: 8000,
+  horas_totales_rigger: 0,
+  monto_viatico_rigger: 0,
+  horas_manual: false,
+  viatico_manual: false,
+  horas_rigger_manual: false,
+  viatico_rigger_manual: false
+})
+
+const calcularViaticoPorHorasFrontend = (horasTotales) => {
+  const h = Math.floor(Number(horasTotales) || 0)
+  if (h < 8) return 0
+  return Math.min(18000, 7000 + (h - 8) * 1000)
+}
+
+const formatMiles = (val) => {
+  const n = Math.round(Number(val) || 0)
+  return n.toLocaleString('es-CL')
+}
+
+const inicializarLiquidacionDesdeReport = (rep) => {
+  const liq = rep?.liquidacion_personal_dia || rep?.ajustes_analista?.liquidacion_personal_dia || {}
+  const hFaena = liq.horas_faena_pagar !== undefined && liq.horas_faena_pagar !== null
+    ? Number(liq.horas_faena_pagar)
+    : Number(rep?.horas_facturables || rep?.horas_operadas || 9)
+  const hFlete = liq.horas_flete_pagar !== undefined && liq.horas_flete_pagar !== null
+    ? Number(liq.horas_flete_pagar)
+    : 0
+  const hTot = Number((hFaena + hFlete).toFixed(2))
+  const tarSug = Number(liq.tarifa_sugerida || liq.precio_unitario || 5000)
+  const precUnit = Number(liq.precio_unitario || tarSug || 5000)
+  const viatSugOp = calcularViaticoPorHorasFrontend(hTot)
+  const viatOp = liq.monto_viatico_operador !== undefined && liq.monto_viatico_operador !== null
+    ? Number(liq.monto_viatico_operador)
+    : viatSugOp
+  const hRig = liq.horas_totales_rigger !== undefined && liq.horas_totales_rigger !== null
+    ? Number(liq.horas_totales_rigger)
+    : (rep?.id_user_rigger ? hTot : 0)
+  const viatSugRig = calcularViaticoPorHorasFrontend(hRig)
+  const viatRig = liq.monto_viatico_rigger !== undefined && liq.monto_viatico_rigger !== null
+    ? Number(liq.monto_viatico_rigger)
+    : (rep?.id_user_rigger ? viatSugRig : 0)
+
+  formLiquidacionDia.value = {
+    regimen: liq.regimen || 'URBANO',
+    distancia_km: Number(liq.distancia_km || 12),
+    categoria_label: liq.categoria_label || 'Tabulador Tonelaje',
+    hora_salida_bodega: liq.hora_salida_bodega || formatHoraSimple(rep?.hora_inicio || rep?.fecha_inicio_servicio, '08:00'),
+    hora_llegada_obra: liq.hora_llegada_obra || formatHoraSimple(rep?.hora_inicio || rep?.fecha_inicio_servicio, '08:00'),
+    horas_faena_pagar: hFaena,
+    horas_flete_pagar: hFlete,
+    tarifa_sugerida: tarSug,
+    precio_unitario: precUnit,
+    monto_viatico_operador: viatOp,
+    horas_totales_rigger: hRig,
+    monto_viatico_rigger: viatRig,
+    horas_manual: false,
+    viatico_manual: Boolean(liq.viatico_modificado),
+    horas_rigger_manual: false,
+    viatico_rigger_manual: Boolean(liq.viatico_rigger_modificado)
+  }
+}
 
 const formatHoraSimple = (timestampStr, defaultVal = '08:00') => {
   if (!timestampStr) return defaultVal
@@ -928,9 +1476,132 @@ const formatHoraSimple = (timestampStr, defaultVal = '08:00') => {
   }
 }
 
+// REQ-1099: Estado para adjuntar documentos o fotos del día directamente desde el Visor Report
+const mostrarFormAdjuntoDia = ref(false)
+const archivoDocVisor = ref(null)
+const tituloDocVisor = ref('')
+const subiendoDocVisor = ref(false)
+const inputArchivoDocVisorRef = ref(null)
+
+const documentosDiaVisor = computed(() => {
+  const lista = []
+  const vistos = new Set()
+  const docsDirectos = Array.isArray(reportLocal.value?.documentos_dia) ? reportLocal.value.documentos_dia : []
+  const docsAjustes = Array.isArray(reportLocal.value?.ajustes_analista?.documentos_dia) ? reportLocal.value.ajustes_analista.documentos_dia : []
+  for (const d of [...docsDirectos, ...docsAjustes]) {
+    if (!d) continue
+    const k = d.id_doc ? `id:${d.id_doc}` : `nm:${d.nombre_archivo || d.titulo}`
+    if (!vistos.has(k)) {
+      vistos.add(k)
+      lista.push(d)
+    }
+  }
+  return lista
+})
+
+const getUrlDocumentoVisor = (doc) => {
+  if (!doc) return '#'
+  const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+  if (doc.id_doc) return `${base}/v1/storage/view/${doc.id_doc}`
+  if (doc.url_vista) return doc.url_vista.startsWith('http') ? doc.url_vista : `${base}${doc.url_vista.replace(/^\/api/, '')}`
+  return '#'
+}
+
+const dispararSelectorDocumentoDia = () => {
+  mostrarFormAdjuntoDia.value = true
+  if (inputArchivoDocVisorRef.value) {
+    inputArchivoDocVisorRef.value.value = ''
+    inputArchivoDocVisorRef.value.click()
+  }
+}
+
+const onCambioArchivoDocVisor = (e) => {
+  const f = e.target?.files?.[0] || null
+  archivoDocVisor.value = f
+  if (f && !tituloDocVisor.value) {
+    tituloDocVisor.value = f.name.replace(/\.[^/.]+$/, '')
+  }
+}
+
+const cancelarAdjuntoDiaVisor = () => {
+  mostrarFormAdjuntoDia.value = false
+  archivoDocVisor.value = null
+  tituloDocVisor.value = ''
+}
+
+const subirDocumentoDiaDesdeVisor = async () => {
+  if (!archivoDocVisor.value || !reportLocal.value?.id_proyecto) return
+  try {
+    subiendoDocVisor.value = true
+    const fechaIso = reportLocal.value.fecha_reporte_iso || (reportLocal.value.fecha_reporte ? String(reportLocal.value.fecha_reporte).slice(0, 10) : '')
+    const fd = new FormData()
+    fd.append('archivo', archivoDocVisor.value)
+    fd.append('id_proyecto', reportLocal.value.id_proyecto)
+    fd.append('id_equipo', reportLocal.value.id_equipo || 0)
+    fd.append('fecha', fechaIso)
+    fd.append('dia', reportLocal.value.dia_correlativo || 1)
+    if (reportLocal.value.id_reporte_avance) {
+      fd.append('id_reporte_avance', reportLocal.value.id_reporte_avance)
+    }
+    if (tituloDocVisor.value?.trim()) {
+      fd.append('titulo', tituloDocVisor.value.trim())
+    }
+
+    const { data } = await apiAxios.post('/operaciones/control-vivo/adjuntar-documento-dia', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    if (data?.success && data.data?.documento) {
+      const nuevoDoc = data.data.documento
+      if (!Array.isArray(reportLocal.value.documentos_dia)) {
+        reportLocal.value.documentos_dia = []
+      }
+      reportLocal.value.documentos_dia.push(nuevoDoc)
+      if (!reportLocal.value.id_doc_pdf && nuevoDoc.id_doc) {
+        reportLocal.value.id_doc_pdf = nuevoDoc.id_doc
+      }
+      if (!reportLocal.value.ajustes_analista) reportLocal.value.ajustes_analista = {}
+      reportLocal.value.ajustes_analista.evidencia_fisica_adjunta = true
+      cancelarAdjuntoDiaVisor()
+      emit('report-validado', reportLocal.value)
+    }
+  } catch (err) {
+    console.error('Error adjuntando documento al día desde visor:', err)
+    alert('❌ No se pudo adjuntar el documento: ' + (err.response?.data?.message || err.message))
+  } finally {
+    subiendoDocVisor.value = false
+  }
+}
+
+const quitarDocumentoDiaDesdeVisor = async (doc) => {
+  if (!doc?.id_doc || !reportLocal.value?.id_proyecto) return
+  if (!confirm(`¿Quitar el documento "${doc.titulo || doc.nombre_archivo}" de este día?`)) return
+  try {
+    const fechaIso = reportLocal.value.fecha_reporte_iso || (reportLocal.value.fecha_reporte ? String(reportLocal.value.fecha_reporte).slice(0, 10) : '')
+    await apiAxios.delete(`/operaciones/control-vivo/documento-dia/${doc.id_doc}`, {
+      params: {
+        id_proyecto: reportLocal.value.id_proyecto,
+        fecha: fechaIso,
+        id_reporte_avance: reportLocal.value.id_reporte_avance || ''
+      }
+    })
+    if (Array.isArray(reportLocal.value.documentos_dia)) {
+      reportLocal.value.documentos_dia = reportLocal.value.documentos_dia.filter(d => Number(d.id_doc) !== Number(doc.id_doc))
+    }
+    if (Array.isArray(reportLocal.value.ajustes_analista?.documentos_dia)) {
+      reportLocal.value.ajustes_analista.documentos_dia = reportLocal.value.ajustes_analista.documentos_dia.filter(d => Number(d.id_doc) !== Number(doc.id_doc))
+    }
+    emit('report-validado', reportLocal.value)
+  } catch (err) {
+    console.error('Error quitando documento desde visor:', err)
+    alert('❌ No se pudo quitar el documento: ' + (err.response?.data?.message || err.message))
+  }
+}
+
 watch(() => props.report, (newRep) => {
   if (newRep && Object.keys(newRep).length > 0) {
     reportLocal.value = JSON.parse(JSON.stringify(newRep))
+    cancelarAdjuntoDiaVisor()
     
     const tieneAjuste = !!newRep.ajustes_analista?.modificado
     const valAj = newRep.ajustes_analista?.valores_ajustados || {}
@@ -938,9 +1609,14 @@ watch(() => props.report, (newRep) => {
     const hIni = tieneAjuste && valAj.hora_inicio
       ? valAj.hora_inicio
       : formatHoraSimple(newRep.hora_inicio || newRep.fecha_inicio_servicio, '08:00')
+    const tieneTerminoReal = Boolean(
+      (tieneAjuste && valAj.hora_termino) ||
+      newRep.hora_termino ||
+      newRep.fecha_termino_servicio
+    )
     const hFin = tieneAjuste && valAj.hora_termino
       ? valAj.hora_termino
-      : formatHoraSimple(newRep.hora_termino || newRep.fecha_termino_servicio, '18:00')
+      : (tieneTerminoReal ? formatHoraSimple(newRep.hora_termino || newRep.fecha_termino_servicio, '18:00') : '')
     const col = Number(
       tieneAjuste && valAj.horas_colacion !== undefined
         ? valAj.horas_colacion
@@ -966,6 +1642,25 @@ watch(() => props.report, (newRep) => {
         ? valAj.odometro_termino
         : (newRep.odometro_termino || 0)
     )
+    const opId = tieneAjuste && valAj.id_user_operador !== undefined && valAj.id_user_operador !== null
+      ? Number(valAj.id_user_operador)
+      : (newRep.id_user_operador ? Number(newRep.id_user_operador) : null)
+    const rigId = tieneAjuste && valAj.id_user_rigger !== undefined
+      ? (valAj.id_user_rigger ? Number(valAj.id_user_rigger) : null)
+      : (newRep.id_user_rigger ? Number(newRep.id_user_rigger) : null)
+    const sbCli = Number(
+      tieneAjuste && valAj.horas_standby_cliente !== undefined
+        ? valAj.horas_standby_cliente
+        : (newRep.horas_standby_cliente || 0)
+    )
+    const sbGsp = Number(
+      tieneAjuste && valAj.horas_standby_gsp !== undefined
+        ? valAj.horas_standby_gsp
+        : (newRep.horas_standby_gsp || 0)
+    )
+    const motSb = tieneAjuste && valAj.motivo_standby !== undefined
+      ? valAj.motivo_standby
+      : (newRep.motivo_standby || '')
 
     formAjustes.value = {
       hora_inicio: hIni,
@@ -974,11 +1669,19 @@ watch(() => props.report, (newRep) => {
       horometro_inicio: horoIni,
       horometro_termino: horoFin,
       odometro_inicio: odoIni,
-      odometro_termino: odoFin
+      odometro_termino: odoFin,
+      id_user_operador: opId,
+      id_user_rigger: rigId,
+      horas_standby_cliente: sbCli,
+      horas_standby_gsp: sbGsp,
+      motivo_standby: motSb
     }
 
     obsValidacion.value = newRep.obs_validador || ''
     modoAjuste.value = false
+
+    inicializarLiquidacionDesdeReport(newRep)
+    cargarUsuariosOperativos()
 
     // Inicializar mapa de firma
     nextTick(() => {
@@ -991,6 +1694,8 @@ watch(() => props.visible, (val) => {
   if (val) {
     if (props.readonly) {
       modoAjuste.value = false
+    } else {
+      cargarUsuariosOperativos()
     }
     nextTick(() => {
       setTimeout(inicializarMapaFirma, 200)
@@ -1103,10 +1808,32 @@ const restablecerAjustes = () => {
       horometro_inicio: Number(reportLocal.value.horometro_inicio || 0),
       horometro_termino: Number(reportLocal.value.horometro_termino || 0),
       odometro_inicio: Number(reportLocal.value.odometro_inicio || 0),
-      odometro_termino: Number(reportLocal.value.odometro_termino || 0)
+      odometro_termino: Number(reportLocal.value.odometro_termino || 0),
+      id_user_operador: reportLocal.value.id_user_operador ? Number(reportLocal.value.id_user_operador) : null,
+      id_user_rigger: reportLocal.value.id_user_rigger ? Number(reportLocal.value.id_user_rigger) : null,
+      horas_standby_cliente: Number(reportLocal.value.horas_standby_cliente || 0),
+      horas_standby_gsp: Number(reportLocal.value.horas_standby_gsp || 0),
+      motivo_standby: reportLocal.value.motivo_standby || ''
     }
+    inicializarLiquidacionDesdeReport(reportLocal.value)
   }
 }
+
+const nombreOperadorMostrado = computed(() => {
+  if (formAjustes.value.id_user_operador && usuariosLista.value.length > 0) {
+    const found = usuariosLista.value.find(u => Number(u.id_user) === Number(formAjustes.value.id_user_operador))
+    if (found) return found.nombre_completo
+  }
+  return reportLocal.value?.ajustes_analista?.valores_ajustados?.operador_nombre || reportLocal.value?.operador_nombre || 'N/A'
+})
+
+const nombreRiggerMostrado = computed(() => {
+  if (formAjustes.value.id_user_rigger && usuariosLista.value.length > 0) {
+    const found = usuariosLista.value.find(u => Number(u.id_user) === Number(formAjustes.value.id_user_rigger))
+    if (found) return found.nombre_completo
+  }
+  return reportLocal.value?.ajustes_analista?.valores_ajustados?.rigger_nombre || reportLocal.value?.rigger_nombre || 'S/R'
+})
 
 const abrirFotoGrande = (url) => {
   if (url) {
@@ -1122,9 +1849,28 @@ const esValidado = computed(() => {
   return reportLocal.value?.estado_reporte === 'VALIDADO_ANALISTA'
 })
 
-// Cálculo de duración entre hora de inicio y término
-const duracionFaena = computed(() => {
+// Horas reportadas en obra (Inicio Obra -> Término Obra - Colación)
+const horasReportadasObra = computed(() => {
   const hIni = formAjustes.value.hora_inicio
+  const hFin = formAjustes.value.hora_termino
+  if (!hIni || !hFin) return 0
+  const [h1, m1] = hIni.split(':').map(Number)
+  const [h2, m2] = hFin.split(':').map(Number)
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0
+  let minutos = (h2 * 60 + m2) - (h1 * 60 + m1)
+  if (minutos < 0) minutos += 24 * 60
+  const dur = Number((minutos / 60).toFixed(1))
+  const col = Number(formAjustes.value.horas_colacion || 0)
+  return Number(Math.max(0, dur - col).toFixed(1))
+})
+
+// Cálculo de duración computable al cliente:
+// - Política Urbana: desde Salida de Base hasta Término en Obra
+// - Política Rural: desde Inicio en Obra hasta Término en Obra
+const duracionFaena = computed(() => {
+  const hIni = (formLiquidacionDia.value.regimen === 'URBANO' && formLiquidacionDia.value.hora_salida_bodega)
+    ? formLiquidacionDia.value.hora_salida_bodega
+    : formAjustes.value.hora_inicio
   const hFin = formAjustes.value.hora_termino
   if (!hIni || !hFin) return 0
   const [h1, m1] = hIni.split(':').map(Number)
@@ -1135,39 +1881,57 @@ const duracionFaena = computed(() => {
   return Number((minutos / 60).toFixed(1))
 })
 
-// Horas Efectivas calculadas: (Término - Inicio) - Colación
-const horasEfectivasCalculadas = computed(() => {
+// Horas Netas Computables al Mandante: Faena - Colación - Standby GSP (Spec 84)
+const horasComputablesCliente = computed(() => {
   const dur = duracionFaena.value
   const col = Number(formAjustes.value.horas_colacion || 0)
-  const ef = Math.max(0, dur - col)
-  return Number(ef.toFixed(1))
+  const sbGsp = Number(formAjustes.value.horas_standby_gsp || 0)
+  return Number(Math.max(0, dur - col - sbGsp).toFixed(1))
+})
+
+// Horas de Operación Real de Izaje: Horas Netas - Standby Cliente
+const horasOperacionReal = computed(() => {
+  const comp = horasComputablesCliente.value
+  const sbCli = Number(formAjustes.value.horas_standby_cliente || 0)
+  return Number(Math.max(0, comp - sbCli).toFixed(1))
+})
+
+// Alias para interfaces y payload de validación
+const horasEfectivasCalculadas = computed(() => {
+  return horasOperacionReal.value
 })
 
 // Validar si el servicio contempla Rigger asignado
 const tieneRigger = computed(() => {
+  if (formAjustes.value.id_user_rigger) return true
   const rig = reportLocal.value?.rigger_nombre
   if (!rig) return false
   const rigTrim = String(rig).trim().toUpperCase()
   return rigTrim !== '' && rigTrim !== 'S/R' && rigTrim !== 'RIGGER' && rigTrim !== 'NULL' && rigTrim !== 'UNDEFINED'
 })
 
-// Base mínima contractual
+// Base mínima contractual (REQ-1109: preserva 0 cuando el contrato es modalidad mensual sin mínimo diario)
 const baseMinima = computed(() => {
-  return Number(reportLocal.value?.horas_minimas || 4.0)
+  const raw = reportLocal.value?.horas_minimas
+  if (raw !== undefined && raw !== null && String(raw).trim() !== '' && !Number.isNaN(Number(raw))) {
+    return Number(raw)
+  }
+  return 4.0
 })
 
-// Horas a facturar: Math.max(Efectivas, Base Mínima)
+// Horas a facturar: Math.max(Base Mínima, Horas Computables al Mandante) (Spec 84 corregido / REQ-1109)
 const horasFacturablesCalculadas = computed(() => {
-  const ef = horasEfectivasCalculadas.value
+  const comp = horasComputablesCliente.value
   const base = baseMinima.value
-  return Number(Math.max(ef, base).toFixed(1))
+  return Number((base > 0 ? Math.max(base, comp) : comp).toFixed(1))
 })
 
-// Sobretiempo: Math.max(0, Efectivas - Base Mínima)
+// Sobretiempo: Math.max(0, Horas Computables al Mandante - Base Mínima) (Spec 84 corregido / REQ-1109)
 const sobretiempoCalculado = computed(() => {
-  const ef = horasEfectivasCalculadas.value
+  const comp = horasComputablesCliente.value
   const base = baseMinima.value
-  const st = ef - base
+  if (base <= 0) return 0
+  const st = comp - base
   return st > 0 ? Number(st.toFixed(1)) : 0
 })
 
@@ -1225,6 +1989,20 @@ const esOdometroModificado = computed(() => {
   return Math.abs(Number(formAjustes.value.odometro_inicio) - origIni) > 0.1 || Math.abs(Number(formAjustes.value.odometro_termino) - origFin) > 0.1
 })
 
+const esOperadorModificado = computed(() => {
+  if (!reportLocal.value) return false
+  const orig = reportLocal.value.id_user_operador ? Number(reportLocal.value.id_user_operador) : null
+  const curr = formAjustes.value.id_user_operador ? Number(formAjustes.value.id_user_operador) : null
+  return curr !== orig
+})
+
+const esRiggerModificado = computed(() => {
+  if (!reportLocal.value) return false
+  const orig = reportLocal.value.id_user_rigger ? Number(reportLocal.value.id_user_rigger) : null
+  const curr = formAjustes.value.id_user_rigger ? Number(formAjustes.value.id_user_rigger) : null
+  return curr !== orig
+})
+
 const esHorasOperadasModificadas = computed(() => {
   if (!reportLocal.value) return false
   const orig = Number(reportLocal.value.horas_operadas || 0)
@@ -1237,9 +2015,103 @@ const esHorasFacturablesModificadas = computed(() => {
   return Math.abs(Number(horasFacturablesCalculadas.value) - orig) > 0.01
 })
 
-// El analista modifica: Horario Faena, Colación, Horómetro u Odómetro
+const esStandbyModificado = computed(() => {
+  if (!reportLocal.value) return false
+  const origCli = Number(reportLocal.value.horas_standby_cliente || 0)
+  const origGsp = Number(reportLocal.value.horas_standby_gsp || 0)
+  const origMot = String(reportLocal.value.motivo_standby || '').trim()
+  return Math.abs(Number(formAjustes.value.horas_standby_cliente || 0) - origCli) > 0.01 ||
+         Math.abs(Number(formAjustes.value.horas_standby_gsp || 0) - origGsp) > 0.01 ||
+         String(formAjustes.value.motivo_standby || '').trim() !== origMot
+})
+
+// El analista modifica: Operador, Rigger, Horario Faena, Colación, Horómetro, Odómetro, Standby o Liquidación Personal
+const horasTotalesLiqOperador = computed(() => {
+  const hFaena = Number(formLiquidacionDia.value.horas_faena_pagar || 0)
+  const hFlete = Number(formLiquidacionDia.value.horas_flete_pagar || 0)
+  return Number((hFaena + hFlete).toFixed(2))
+})
+
+const subtotalHoraOperadorLiq = computed(() => {
+  return Math.round(horasTotalesLiqOperador.value * Number(formLiquidacionDia.value.precio_unitario || 0))
+})
+
+const viaticoSugeridoOperador = computed(() => {
+  return calcularViaticoPorHorasFrontend(horasTotalesLiqOperador.value)
+})
+
+const viaticoSugeridoRigger = computed(() => {
+  if (!tieneRigger.value) return 0
+  return calcularViaticoPorHorasFrontend(formLiquidacionDia.value.horas_totales_rigger)
+})
+
+const totalViaticosDiaLiq = computed(() => {
+  const vOp = Number(formLiquidacionDia.value.monto_viatico_operador || 0)
+  const vRig = tieneRigger.value ? Number(formLiquidacionDia.value.monto_viatico_rigger || 0) : 0
+  return Math.round(vOp + vRig)
+})
+
+const onCambioHorasLiq = () => {
+  formLiquidacionDia.value.horas_manual = true
+  if (!formLiquidacionDia.value.viatico_manual) {
+    formLiquidacionDia.value.monto_viatico_operador = calcularViaticoPorHorasFrontend(horasTotalesLiqOperador.value)
+  }
+  if (tieneRigger.value && !formLiquidacionDia.value.horas_rigger_manual) {
+    formLiquidacionDia.value.horas_totales_rigger = horasTotalesLiqOperador.value
+    if (!formLiquidacionDia.value.viatico_rigger_manual) {
+      formLiquidacionDia.value.monto_viatico_rigger = calcularViaticoPorHorasFrontend(horasTotalesLiqOperador.value)
+    }
+  }
+}
+
+const onCambioHorasRiggerLiq = () => {
+  formLiquidacionDia.value.horas_rigger_manual = true
+  if (!formLiquidacionDia.value.viatico_rigger_manual) {
+    formLiquidacionDia.value.monto_viatico_rigger = calcularViaticoPorHorasFrontend(formLiquidacionDia.value.horas_totales_rigger)
+  }
+}
+
+// Sincronizar automáticamente horas de liquidación cuando el analista edita horario/colación en Sección 1/2
+watch([() => formAjustes.value.hora_inicio, () => formAjustes.value.hora_termino, () => formAjustes.value.horas_colacion], () => {
+  if (!modoAjuste.value || formLiquidacionDia.value.horas_manual) return
+  const hrsRealesObra = horasReportadasObra.value
+  const minPactado = baseMinima.value
+  if (formLiquidacionDia.value.regimen === 'URBANO') {
+    formLiquidacionDia.value.horas_faena_pagar = hrsRealesObra
+    formLiquidacionDia.value.horas_flete_pagar = 0
+  } else {
+    formLiquidacionDia.value.horas_faena_pagar = hrsRealesObra > 0 ? Math.max(minPactado, hrsRealesObra) : 0
+  }
+  const hTot = Number((formLiquidacionDia.value.horas_faena_pagar + Number(formLiquidacionDia.value.horas_flete_pagar || 0)).toFixed(2))
+  if (!formLiquidacionDia.value.viatico_manual) {
+    formLiquidacionDia.value.monto_viatico_operador = calcularViaticoPorHorasFrontend(hTot)
+  }
+  if (tieneRigger.value && !formLiquidacionDia.value.horas_rigger_manual) {
+    formLiquidacionDia.value.horas_totales_rigger = hTot
+    if (!formLiquidacionDia.value.viatico_rigger_manual) {
+      formLiquidacionDia.value.monto_viatico_rigger = calcularViaticoPorHorasFrontend(hTot)
+    }
+  }
+})
+
+const esLiquidacionPersonalModificada = computed(() => {
+  const baseLiq = reportLocal.value?.liquidacion_personal_dia || reportLocal.value?.ajustes_analista?.liquidacion_personal_dia || {}
+  const origFaena = Number(baseLiq.horas_faena_pagar ?? (reportLocal.value?.horas_facturables || 0))
+  const origFlete = Number(baseLiq.horas_flete_pagar ?? 0)
+  const origPrecio = Number(baseLiq.precio_unitario ?? 5000)
+  const origViaticoOp = Number(baseLiq.monto_viatico_operador ?? 0)
+  const origViaticoRig = Number(baseLiq.monto_viatico_rigger ?? 0)
+  return (
+    Math.abs(Number(formLiquidacionDia.value.horas_faena_pagar || 0) - origFaena) > 0.01 ||
+    Math.abs(Number(formLiquidacionDia.value.horas_flete_pagar || 0) - origFlete) > 0.01 ||
+    Math.abs(Number(formLiquidacionDia.value.precio_unitario || 0) - origPrecio) > 1 ||
+    Math.abs(Number(formLiquidacionDia.value.monto_viatico_operador || 0) - origViaticoOp) > 1 ||
+    (tieneRigger.value && Math.abs(Number(formLiquidacionDia.value.monto_viatico_rigger || 0) - origViaticoRig) > 1)
+  )
+})
+
 const hayModificaciones = computed(() => {
-  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value
+  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value || esOperadorModificado.value || esRiggerModificado.value || esStandbyModificado.value || esLiquidacionPersonalModificada.value
 })
 
 const formatearFecha = (fechaStr) => {
@@ -1375,7 +2247,7 @@ const ejecutarValidacionConPin = async () => {
     const idUser = currentUserAnalista.value.id_user || 55
 
     const justificacionFinal = obsValidacion.value.trim() || 
-      (hayModificaciones.value ? 'Ajustes de horario y telemetría por Control de Gestión' : 'Report validado conforme por Analista de Operaciones')
+      (hayModificaciones.value ? 'Ajustes de horario, tripulación y telemetría por Control de Gestión' : 'Report validado conforme por Analista de Operaciones')
 
     const payload = {
       id_user_validador: idUser,
@@ -1389,10 +2261,31 @@ const ejecutarValidacionConPin = async () => {
         horometro_termino: formAjustes.value.horometro_termino,
         odometro_inicio: formAjustes.value.odometro_inicio,
         odometro_termino: formAjustes.value.odometro_termino,
+        id_user_operador: formAjustes.value.id_user_operador,
+        id_user_rigger: formAjustes.value.id_user_rigger,
+        horas_standby_cliente: formAjustes.value.horas_standby_cliente,
+        horas_standby_gsp: formAjustes.value.horas_standby_gsp,
+        motivo_standby: formAjustes.value.motivo_standby,
         horas_operadas: horasEfectivasCalculadas.value,
         horas_facturables: horasFacturablesCalculadas.value,
         horas_sobretiempo: sobretiempoCalculado.value
-      } : null
+      } : null,
+      liquidacion_personal_dia: {
+        regimen: formLiquidacionDia.value.regimen,
+        distancia_km: formLiquidacionDia.value.distancia_km,
+        categoria_label: formLiquidacionDia.value.categoria_label,
+        horas_faena_pagar: Number(formLiquidacionDia.value.horas_faena_pagar || 0),
+        horas_flete_pagar: Number(formLiquidacionDia.value.horas_flete_pagar || 0),
+        horas_totales_pagar: horasTotalesLiqOperador.value,
+        tarifa_sugerida: Number(formLiquidacionDia.value.tarifa_sugerida || 0),
+        precio_unitario: Math.round(Number(formLiquidacionDia.value.precio_unitario || 0)),
+        monto_total_hora_operador: subtotalHoraOperadorLiq.value,
+        monto_viatico_sugerido_operador: viaticoSugeridoOperador.value,
+        monto_viatico_operador: Math.round(Number(formLiquidacionDia.value.monto_viatico_operador || 0)),
+        horas_totales_rigger: tieneRigger.value ? Number(formLiquidacionDia.value.horas_totales_rigger || 0) : 0,
+        monto_viatico_sugerido_rigger: viaticoSugeridoRigger.value,
+        monto_viatico_rigger: tieneRigger.value ? Math.round(Number(formLiquidacionDia.value.monto_viatico_rigger || 0)) : 0
+      }
     }
 
     const res = await apiAxios.post(`/operaciones/report/${reportLocal.value.id_reporte_avance}/validar`, payload)

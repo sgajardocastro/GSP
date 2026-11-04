@@ -7,58 +7,12 @@
 
 const path = require('path');
 const fs = require('fs');
-
-let puppeteerInstance = null;
-
-async function getPuppeteer() {
-  if (puppeteerInstance) return puppeteerInstance;
-  try {
-    puppeteerInstance = require('puppeteer');
-    return puppeteerInstance;
-  } catch (e) {
-    try {
-      const mod = await import('puppeteer-core');
-      puppeteerInstance = mod.default || mod;
-      return puppeteerInstance;
-    } catch (e2) {
-      try {
-        const mod = await import(path.join(__dirname, '../../node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js'));
-        puppeteerInstance = mod.default || mod;
-        return puppeteerInstance;
-      } catch (e3) {
-        throw new Error('No se pudo inicializar puppeteer: ' + e3.message);
-      }
-    }
-  }
-}
-
-function getChromeExecutablePath() {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-  if (process.platform === 'win32') {
-    const winPaths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-    ];
-    for (const p of winPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-  } else {
-    const linuxPaths = [
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser'
-    ];
-    for (const p of linuxPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-  }
-  return undefined;
-}
+const os = require('os');
+const { exec } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
+const { PDFDocument } = require('pdf-lib');
+const db = require('../config/dbConfig');
+const { STORAGE_ROOT } = require('../config/storageConfig');
 
 function formatDateCL(dateStr) {
   if (!dateStr) return 'N/A';
@@ -126,9 +80,13 @@ function buildReportDiarioHtml(data) {
   const horasColacion = Number(report.horas_colacion !== undefined && report.horas_colacion !== null ? report.horas_colacion : 1.0).toFixed(1);
   const colacionTexto = Number(horasColacion) > 0 ? `${horasColacion} hrs` : '0 hrs';
   const horasOperadas = Number(report.horas_operadas || 0).toFixed(1);
-  const horasMinimas = Number(report.horas_minimas || 8.0).toFixed(1);
+  const rawMinimas = (report.horas_minimas !== undefined && report.horas_minimas !== null && String(report.horas_minimas).trim() !== '' && !Number.isNaN(Number(report.horas_minimas)))
+    ? Number(report.horas_minimas)
+    : 8.0;
+  const esSinMinimoDiario = rawMinimas <= 0;
+  const horasMinimas = rawMinimas.toFixed(1);
   const horasFacturables = Number(report.horas_facturables || horasOperadas).toFixed(1);
-  const horasSobretiempo = Number(report.horas_sobretiempo || 0).toFixed(1);
+  const horasSobretiempo = esSinMinimoDiario ? '0.0' : Number(report.horas_sobretiempo || 0).toFixed(1);
 
   const horoIni = Number(report.horometro_inicio || 0).toFixed(1);
   const horoFin = Number(report.horometro_termino || 0).toFixed(1);
@@ -209,11 +167,6 @@ function buildReportDiarioHtml(data) {
               <td>Colación</td>
               <td style="text-align: center;"><span class="strikethrough">${orig.horas_colacion} hrs</span></td>
               <td style="text-align: center;"><strong>${ajus.horas_colacion} hrs</strong></td>
-            </tr>
-            <tr>
-              <td>Horómetro Motor</td>
-              <td style="text-align: center;"><span class="strikethrough">${orig.horometro_inicio} ➔ ${orig.horometro_termino}</span></td>
-              <td style="text-align: center;"><strong>${ajus.horometro_inicio} ➔ ${ajus.horometro_termino}</strong></td>
             </tr>
           </tbody>
         </table>
@@ -571,16 +524,16 @@ function buildReportDiarioHtml(data) {
         <td class="lbl">Rigger / Asistente:</td>
         <td class="val">${riggerNombre}</td>
         <td class="lbl">Piso Mínimo Contractual:</td>
-        <td class="val"><strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)</td>
+        <td class="val">${esSinMinimoDiario ? '<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual)</strong>' : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
         ` : `
         <td class="lbl">Piso Mínimo Contractual:</td>
-        <td class="val" colspan="3"><strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)</td>
+        <td class="val" colspan="3">${esSinMinimoDiario ? '<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual — Acumula horas reales al mes)</strong>' : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
         `}
       </tr>
     </table>
 
-    <!-- 4. CONTROL DE TIEMPOS, JORNADA & HORÓMETROS -->
-    <div class="section-header">3. Liquidación de Jornada, Tiempos & Telemetría</div>
+    <!-- 4. CONTROL DE TIEMPOS Y JORNADA -->
+    <div class="section-header">3. Liquidación de Jornada y Tiempos de Servicio</div>
     <table class="metrics-grid">
       <thead>
         <tr>
@@ -599,26 +552,11 @@ function buildReportDiarioHtml(data) {
           <td><strong>${horaTermino}</strong></td>
           <td><strong>${colacionTexto}</strong><span class="metric-sub">${Number(horasColacion) > 0 ? `${horasColacion} hrs colación` : 'Sin colación'}</span></td>
           <td><strong>${horasOperadas} hrs</strong><span class="metric-sub">Efectivas izaje</span></td>
-          <td>${horasMinimas} hrs<span class="metric-sub">Base pactada</span></td>
+          <td>${esSinMinimoDiario ? '<strong>Sin mín. diario</strong><span class="metric-sub">Acumula mensual</span>' : `${horasMinimas} hrs<span class="metric-sub">Base pactada</span>`}</td>
           <td style="background: #ecfdf5;"><span class="metric-highlight">${horasFacturables} hrs</span><span class="metric-sub">Para Estado Pago</span></td>
           <td>${horasSobretiempo > 0 ? `<strong style="color:#b45309;">+${horasSobretiempo} hrs</strong>` : '0.0 hrs'}<span class="metric-sub">Excedente base</span></td>
         </tr>
       </tbody>
-    </table>
-
-    <table class="grid-table">
-      <tr>
-        <td class="lbl">Horómetro Motor:</td>
-        <td class="val">
-          Inicio: <strong>${horoIni}</strong> • Término: <strong>${horoFin}</strong> ➔ 
-          <strong style="color: #0f172a;">Delta: ${deltaHoro} hrs motor</strong>
-        </td>
-        <td class="lbl">Odómetro Chasis:</td>
-        <td class="val">
-          Inicio: <strong>${odoIni}</strong> • Término: <strong>${odoFin}</strong> ➔ 
-          <strong>Recorrido: ${deltaOdo} KM</strong>
-        </td>
-      </tr>
     </table>
 
     <!-- 5. MANIOBRA Y OBSERVACIONES -->
@@ -658,19 +596,19 @@ function buildReportDiarioHtml(data) {
         <!-- FIRMA ELECTRÓNICA SIMPLE (FES) ANALISTA -->
         <td class="sig-card">
           <div class="sig-header">
-            <span style="color: #166534;">CERTIFICACIÓN DIGITAL ANALISTA PMO</span>
-            <span style="color: #166534; font-size: 8.5px;">CONTROL GESTIÓN</span>
+            <span style="color: ${codigoFes ? '#166534' : '#b45309'};">${codigoFes ? 'CERTIFICACIÓN DIGITAL ANALISTA PMO' : 'CONTROL OPERACIONAL GSP'}</span>
+            <span style="color: ${codigoFes ? '#166534' : '#b45309'}; font-size: 8.5px;">${codigoFes ? 'CONTROL GESTIÓN' : 'EMISIÓN EN FAENA'}</span>
           </div>
           <div class="fes-seal-zone">
-            <div class="fes-stamp">🔒 FIRMA ELECTRÓNICA SIMPLE (FES)</div>
-            <div class="fes-code">${codigoFes || `FES-REP-${report.id_reporte_avance}-OFFICIAL`}</div>
-            <div class="fes-legend">Validado con Clave Secreta PIN y Trazabilidad Criptográfica SHA-256</div>
+            <div class="fes-stamp">${codigoFes ? '🔒 FIRMA ELECTRÓNICA SIMPLE (FES)' : '📋 REGISTRO OPERATIVO DE FAENA'}</div>
+            <div class="fes-code">${codigoFes || `REP-OPERATIVO-${report.id_reporte_avance || 'FAENA'}`}</div>
+            <div class="fes-legend">${codigoFes ? 'Validado con Clave Secreta PIN y Trazabilidad Criptográfica SHA-256' : 'Registrado en faena con firma táctil mandante y georreferencia GPS'}</div>
           </div>
           <div class="sig-data">
-            <strong>Analista:</strong> ${nombreAnalista}<br>
-            <strong>RUT:</strong> ${rutAnalista} • <strong>Área:</strong> Control Operacional GSP<br>
-            <strong>Fecha/Hora Validación:</strong> ${fechaValidacionStr}<br>
-            <span style="font-size: 8px; color: #166534;">Certificado conforme a Ley N° 19.799 sobre Documentos Electrónicos</span>
+            <strong>Analista:</strong> ${codigoFes ? nombreAnalista : 'Pendiente de Auditoría'}<br>
+            <strong>RUT:</strong> ${codigoFes ? rutAnalista : '---'} • <strong>Área:</strong> Control Operacional GSP<br>
+            <strong>Fecha/Hora Validación:</strong> ${codigoFes ? fechaValidacionStr : 'En revisión PMO'}<br>
+            <span style="font-size: 8px; color: ${codigoFes ? '#166534' : '#64748b'};">${codigoFes ? 'Certificado conforme a Ley N° 19.799 sobre Documentos Electrónicos' : 'Copia operativa emitida en terreno'}</span>
           </div>
         </td>
       </tr>
@@ -682,53 +620,125 @@ function buildReportDiarioHtml(data) {
       Verificación de validez y descarga oficial en: <strong>${validacionUrl || ((process.env.APP_ENV === 'prod') ? 'https://servidor.leanglobal.cl/lg-gsp-prod/validador-doc' : 'https://servidor.leanglobal.cl/lg-gsp-dev/validador-doc')}</strong>
     </div>
 
+    <!-- 9. ANEXOS DOCUMENTALES E IMÁGENES ADJUNTAS (REQ-1107) -->
+    ${Array.isArray(data.anexosImagenes) && data.anexosImagenes.length > 0 ? data.anexosImagenes.map((anx, idx) => `
+      <div style="page-break-before: always; padding-top: 6px;">
+        <div class="section-header">ANEXO #${idx + 1}: ${anx.titulo || 'DOCUMENTO / EVIDENCIA ADJUNTA'} — ${codiOT} (DÍA ${diaNum})</div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; text-align: center; background: #f8fafc; margin-top: 8px;">
+          <img src="${anx.dataUri}" style="max-width: 100%; max-height: 235mm; object-fit: contain; display: block; margin: 0 auto;" />
+        </div>
+      </div>
+    `).join('') : ''}
+
   </body>
   </html>
   `;
 }
 
 /**
- * Compila y genera el buffer del PDF oficial del Report Diario
+ * Compila y genera el buffer del PDF oficial del Report Diario con wkhtmltopdf (0% Puppeteer)
  */
-async function generarPdfReportDiario(data) {
-  const puppeteer = await getPuppeteer();
-  const chromePath = getChromeExecutablePath();
+async function resolverAnexosDelReporte(data) {
+  const anexosImagenes = Array.isArray(data.anexosImagenes) ? [...data.anexosImagenes] : [];
+  const anexosPdfs = Array.isArray(data.anexosPdfs) ? [...data.anexosPdfs] : [];
+  const rep = data.report || {};
 
-  const launchOptions = {
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  };
-
-  if (chromePath) {
-    launchOptions.executablePath = chromePath;
+  // 1. Fotos capturadas en terreno (inicio / término de horómetro o tablero)
+  const fotoIni = rep.foto_tablero_inicio || rep.foto_horometro_inicio || null;
+  if (typeof fotoIni === 'string' && fotoIni.startsWith('data:image/')) {
+    anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO INICIO EN TERRENO', dataUri: fotoIni });
+  }
+  const fotoFin = rep.foto_tablero_termino || rep.foto_horometro || null;
+  if (typeof fotoFin === 'string' && fotoFin.startsWith('data:image/') && fotoFin !== fotoIni) {
+    anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO TÉRMINO EN TERRENO', dataUri: fotoFin });
   }
 
-  const browser = await puppeteer.launch(launchOptions);
-  try {
-    const page = await browser.newPage();
-    const html = buildReportDiarioHtml(data);
+  // 2. Documento o foto adjunta como respaldo físico (id_doc_evidencia)
+  const ajustes = typeof rep.ajustes_analista === 'string'
+    ? (() => { try { return JSON.parse(rep.ajustes_analista); } catch (_) { return {}; } })()
+    : (rep.ajustes_analista || {});
+  const idDocEvidencia = data.idDocEvidencia || ajustes.id_doc_evidencia || null;
 
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '8mm',
-        right: '8mm',
-        bottom: '8mm',
-        left: '8mm'
+  if (idDocEvidencia) {
+    try {
+      const fRes = await db.query('SELECT id_doc, mime_type, name_doc_orig, name_doc_save, path_doc FROM tfmg_file WHERE id_doc = $1', [idDocEvidencia]);
+      if (fRes.rows.length > 0) {
+        const fRow = fRes.rows[0];
+        const candidates = [
+          path.join(STORAGE_ROOT, fRow.path_doc || '', fRow.name_doc_save || ''),
+          path.join(STORAGE_ROOT, fRow.path_doc || '')
+        ];
+        const diskPath = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+        if (diskPath) {
+          const buf = fs.readFileSync(diskPath);
+          const mime = String(fRow.mime_type || '').toLowerCase();
+          const ext = path.extname(fRow.name_doc_save || fRow.name_doc_orig || '').toLowerCase();
+          if (mime.includes('pdf') || ext === '.pdf') {
+            anexosPdfs.push(buf);
+          } else if (mime.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+            const imgMime = mime.startsWith('image/') ? mime : (ext === '.png' ? 'image/png' : 'image/jpeg');
+            anexosImagenes.push({
+              titulo: `RESPALDO FÍSICO ADJUNTO (${fRow.name_doc_orig || fRow.name_doc_save || 'Documento'})`,
+              dataUri: `data:${imgMime};base64,${buf.toString('base64')}`
+            });
+          }
+        }
       }
+    } catch (errAnx) {
+      console.warn('[REQ-1107] Aviso resolviendo anexo de reporte:', errAnx.message);
+    }
+  }
+
+  return { anexosImagenes, anexosPdfs };
+}
+
+async function generarPdfReportDiario(data) {
+  const { anexosImagenes, anexosPdfs } = await resolverAnexosDelReporte(data);
+  const htmlContent = buildReportDiarioHtml({ ...data, anexosImagenes });
+  const uuid = uuidv4();
+  const tmpDir = os.tmpdir();
+  const tempHtmlPath = path.join(tmpDir, `rep_${uuid}.html`);
+  const tempPdfPath = path.join(tmpDir, `rep_${uuid}.pdf`);
+
+  fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+  try {
+    await new Promise((resolve, reject) => {
+      const isWin = process.platform === 'win32';
+      const cmd = isWin
+        ? `wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${tempPdfPath}"`
+        : `xvfb-run -a --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${tempPdfPath}"`;
+
+      exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
+        if (error && !fs.existsSync(tempPdfPath)) {
+          console.error('[ReportDiario wkhtmltopdf] Error:', error.message, stderr);
+          return reject(new Error('Fallo al compilar Report Diario con wkhtmltopdf: ' + error.message));
+        }
+        resolve();
+      });
     });
 
-    return pdfBuffer;
+    let finalBuffer = fs.readFileSync(tempPdfPath);
+
+    // REQ-1107: Si existen documentos PDF adjuntos como respaldo físico, fusionar sus páginas al final del PDF oficial
+    if (anexosPdfs.length > 0) {
+      try {
+        const mainDoc = await PDFDocument.load(finalBuffer);
+        for (const pdfBuf of anexosPdfs) {
+          const annexDoc = await PDFDocument.load(pdfBuf);
+          const copiedPages = await mainDoc.copyPages(annexDoc, annexDoc.getPageIndices());
+          copiedPages.forEach(p => mainDoc.addPage(p));
+        }
+        finalBuffer = Buffer.from(await mainDoc.save());
+      } catch (mergeErr) {
+        console.warn('[REQ-1107] Aviso fusionando PDF anexo al final del reporte:', mergeErr.message);
+      }
+    }
+
+    return finalBuffer;
   } finally {
-    await browser.close();
+    try { if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath); } catch (_) {}
+    try { if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath); } catch (_) {}
   }
 }
 

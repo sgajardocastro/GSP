@@ -128,7 +128,7 @@ module.exports = {
   createProyecto: async (req, res) => {
     try {
       let codi_proyecto = req.body.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_empresa = req.body.id_empresa || req.user?.id_empresa;
         const id_cliente = req.body.id_empresa_cliente || null;
@@ -137,10 +137,12 @@ module.exports = {
         }
       }
 
+      const targetUserCreacion = req.body.id_usuario_creacion || req.body.id_user_creacion || req.user?.id_user || null;
       const payload = {
         ...req.body,
         codi_proyecto,
-        id_user_creacion: req.body.id_user_creacion ?? req.user?.id_user ?? null,
+        id_usuario_creacion: targetUserCreacion,
+        id_user_creacion: targetUserCreacion,
       };
 
       const nuevo = await proyecto.createProyecto(payload);
@@ -163,17 +165,20 @@ module.exports = {
       }
 
       let codi_proyecto = req.body.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_cliente = req.body.id_empresa_cliente || null;
         codi_proyecto = await proyecto.generarCodigoTransaccional(id_empresa, id_cliente);
       }
 
+      // REQ-1113: Permitir que un usuario A ingrese una cotización asignada a un ejecutivo responsable B
+      const targetUserCreacion = req.body.id_usuario_creacion || req.body.id_user_creacion || req.user?.id_user || null;
       const payload = {
         ...req.body,
         id_empresa,
         codi_proyecto,
-        id_user_creacion: req.user?.id_user ?? req.body.id_user_creacion ?? null,
+        id_usuario_creacion: targetUserCreacion,
+        id_user_creacion: targetUserCreacion,
         id_proyecto_estado: 1, // 1 = "Oportunidad Registrada"
       };
 
@@ -196,7 +201,7 @@ module.exports = {
       }
 
       let codi_proyecto = req.body.codi_proyecto || existing.codi_proyecto;
-      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(-\d+)?-\d{3}$/.test(codi_proyecto);
+      const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/.test(codi_proyecto);
       if (!isFormalCode) {
         const id_empresa = req.body.id_empresa || existing.id_empresa || req.user?.id_empresa;
         const id_cliente = req.body.id_empresa_cliente || existing.id_empresa_cliente || null;
@@ -208,7 +213,9 @@ module.exports = {
       const payload = {
         ...req.body,
         codi_proyecto,
-        id_user_modificacion: req.body.id_user_modificacion ?? null,
+        id_usuario_creacion: req.body.id_usuario_creacion ?? req.body.id_user_creacion ?? null,
+        id_user_creacion: req.body.id_usuario_creacion ?? req.body.id_user_creacion ?? null,
+        id_user_modificacion: req.body.id_user_modificacion ?? req.user?.id_user ?? null,
       };
 
       const updated = await proyecto.updateProyecto(id, payload);
@@ -381,12 +388,22 @@ module.exports = {
       const existingJson = typeof existing.json_field === 'object' && existing.json_field !== null ? existing.json_field : {};
       const crmV1 = { ...(existingJson.crm_v1 || {}) };
       
-      crmV1.motivo_reverso_verificacion = motivoTexto;
-      crmV1.fecha_reverso_verificacion = fechaNow;
-      crmV1.usuario_reverso_verificacion = {
+      const usuarioReversoObj = {
         id_user: currentUser.id_user || null,
         nombre: currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : (currentUser.nombre || 'Operaciones')
       };
+      crmV1.motivo_reverso_verificacion = motivoTexto;
+      crmV1.fecha_reverso_verificacion = fechaNow;
+      crmV1.usuario_reverso_verificacion = usuarioReversoObj;
+      const historialPrevio = Array.isArray(crmV1.historial_reversos_verificacion) ? crmV1.historial_reversos_verificacion : [];
+      const nuevoHistorialReversos = [
+        ...historialPrevio,
+        {
+          motivo: motivoTexto,
+          fecha: fechaNow,
+          usuario: usuarioReversoObj
+        }
+      ];
 
       // Si el cliente mandó un payload con cambios adicionales de la UI:
       const mergedPayload = {
@@ -400,7 +417,17 @@ module.exports = {
             ...crmV1,
             ...(payload?.json_field?.crm_v1 || {}),
             motivo_reverso_verificacion: motivoTexto,
-            fecha_reverso_verificacion: fechaNow
+            fecha_reverso_verificacion: fechaNow,
+            usuario_reverso_verificacion: usuarioReversoObj,
+            historial_reversos_verificacion: nuevoHistorialReversos,
+            regimen_operacional: '',
+            regimen_operacional_confirmado: false
+          },
+          ejecucion_v1: {
+            ...(existingJson.ejecucion_v1 || {}),
+            ...(payload?.json_field?.ejecucion_v1 || {}),
+            regimen_operacional: '',
+            regimen_operacional_confirmado: false
           }
         }
       };
