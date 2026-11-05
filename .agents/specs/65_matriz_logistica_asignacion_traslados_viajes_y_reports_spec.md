@@ -74,21 +74,23 @@ flowchart TD
 ## 4. Reglas de Desacoplamiento en la Asignación de Recursos (Pestaña C)
 
 1. **Supresión Estricta de Fletes Autopropulsados:**  
-   Cuando una línea de servicio provenga de una cotización y corresponda a `tipo === 'TRASLADO'` o `subtipo === 'FLETE_GRUA'` vinculado a un equipo autopropulsado, la interfaz de Asignación de Recursos **no debe instanciar una fila de asignación de tripulación independiente**. Dicha línea se marca internamente como `hereda_tripulacion_de: id_equipo_principal`.
+   Cuando una línea de servicio provenga de una cotización y corresponda a `tipo === 'TRASLADOS'` vinculada a un equipo autopropulsado, la interfaz de Asignación de Recursos **no debe instanciar una fila de asignación de tripulación independiente**.
 2. **Inmutabilidad del Rol del Operador:**  
-   Un trabajador asignado como `Operador Grúa` o `Rigger` en `tpry_rel_persona` jamás puede ser degradado o sobreescrito a `Chofer` por efectos de un ítem de traslado secundario o deduplicación de tripulación en `confirmarAsignacionOT`. El rol de faena prevalece de forma estricta.
+   Un trabajador asignado como `Operador Grúa`, `Operador Camión Pluma` o `Rigger` en `tpry_rel_persona` jamás puede ser degradado o sobreescrito a `Chofer` por efectos de un ítem de traslado secundario o deduplicación de tripulación en `confirmarAsignacionOT`. El rol de faena prevalece de forma estricta.
 3. **Veto Estricto de Autopropulsados en Sección 2 (`equipos_extra`):**  
-   La Sección 2 de Asignación de Recursos está reservada de forma exclusiva a vehículos auxiliares de transporte (`TRACTO`, `CAMION`, `RAMPLA`, `CAMA_BAJA`, `CAMIONETA`). Queda terminantemente prohibido que una grúa autopropulsada (`subcategoria` con `GRUA`, `PLUMA`, `LTM`) o cualquier equipo ya presente en la Sección 1 (`linesEquiposPrincipales`) sea incorporado o permanezca en `equipos_extra`.
-4. **Resolución Determinista de Glosas Comerciales Híbridas:**  
-   Cuando una descripción comercial agrupe múltiples conceptos (ej: *"traslado de grúa 90 toneladas y contrapesos"*), el estructurador operativo descompone la instrucción:
-   - El traslado de la grúa autopropulsada se reconoce como chasis propio y no genera equipo auxiliar.
-   - El traslado de contrapesos genera un único registro de apoyo logístico para el tractocamión / rampla asignada.
-5. **Supresión de Cama Baja Forzada en Servicios Rurales:**  
-   Se elimina la asignación automática y obligatoria de camas bajas en servicios a más de 30 km para grúas autopropulsadas. Las grúas viajan por sus propios medios salvo que el equipo sea estacionario/no vial (`es_autopropulsado = false`).
-6. **Equipos de Contrapeso Independientes:**  
-   La línea comercial de traslado de contrapesos (`TRASLADO_CONTRAPESOS`) instancia obligatoriamente un slot de asignación vehicular donde el selector de equipos filtra exclusivamente categorías de transporte pesado (`TRACTO`, `CAMION`, `RAMPLA`, `CAMA_BAJA`) y el selector de personal filtra usuarios con rol `CHOFER_TRANSPORTE`.
-7. **Validación de Equipos No Autopropulsados:**  
-   Si el equipo principal asignado tiene bandera `es_autopropulsado = false` (ej. grúa sobre orugas o alzahombre de arrastre), el sistema exige obligatoriamente vincular un camión cama baja con su respectivo chofer para autorizar el paso a estado `PROGRAMADO`.
+   La Sección 2 de Asignación de Recursos está reservada de forma exclusiva a vehículos auxiliares de transporte (`CAMA BAJA`, `CAMIÓN PLATAFORMA`, `RAMPLA`, `TRACTOCAMIÓN`). Queda terminantemente prohibido que una grúa autopropulsada (`subcategoria` con `GRUA`, `PLUMA`, `LTM`) o cualquier equipo ya presente en la Sección 1 (`linesEquiposPrincipales`) sea incorporado o permanezca en `equipos_extra`.
+
+### 4.1. Matriz Determinista de Visibilidad de Líneas `TRASLADOS` en Sección 2 (`sincronizarTrasladosComerciales`) — Cero Lectura de `descripcion` (`REQ-1101`)
+
+Queda **estrictamente prohibido** evaluar el texto libre `l.descripcion` o depender de `opportunity.value?.tipo_caso === 5` para decidir si una línea de `Categoría = TRASLADOS` se muestra en la **Sección 2 (`2. EQUIPOS DE TRASLADO & CHOFERES`)**. La decisión se gobierna **100% por `Categoría (l.tipo)` y `Subcategoría (l.subcategoria)`**:
+
+| # | Composición de Equipos Principales (Sección 1) | Línea en `Categoría = TRASLADOS` | ¿Se muestra en Sección 2 (Asignación de Vehículo + Chofer)? | Razón de Negocio |
+| :--- | :--- | :--- | :---: | :--- |
+| **1** | **Solo Camión (`Categoría = CAMIONES`, ej. `CAMION PLUMA`)** (sin Plataformas/Horquillas) | Cualquier subcategoría | **NO (`false`)** | El Camión Pluma es autopropulsado (viaja con su propio operador) y no lleva camión auxiliar de contrapesos. Su línea de traslado es solo cobro comercial. |
+| **2** | **Grúa Telescópica (`Categoría = GRUAS TELESCOPICAS`)** | `Subcategoría` de Grúa (`GRUA ... TON`) | **NO (`false`)** | Es el cobro de movilización de la propia Grúa Telescópica (autopropulsada, viaja con su operador de Sección 1). |
+| **3** | **Grúa Telescópica (`Categoría = GRUAS TELESCOPICAS`)** | `Subcategoría` de Camión Auxiliar (`CAMA BAJA`, `CAMIÓN PLATAFORMA`, `RAMPLA`, `TRACTOCAMIÓN`) | **SÍ (`true`)** | Cuando una Grúa Telescópica lleva además una línea de `TRASLADOS` con subcategoría `CAMA BAJA` / `CAMIÓN PLATAFORMA`, corresponde al camión auxiliar que transporta sus contrapesos/aparejos y requiere asignar vehículo + chofer. |
+| **4** | **Equipos No Autopropulsados (`Categoría = PLATAFORMAS`, Alza Hombre, Horquilla)** | `Subcategoría` de Camión (`CAMA BAJA`, `CAMIÓN PLATAFORMA`) | **SÍ (`true`)** | Las plataformas/horquillas no se desplazan solas por carretera; requieren asignar el camión de traslado y su chofer en Sección 2. |
+| **5** | **Ningún equipo en Sección 1** (`linesEquiposPrincipales.length === 0`, solo venta de `TRASLADOS`) | Cualquier subcategoría | **SÍ (`true`)** | Es un servicio de Flete/Transporte puro; requiere asignar en Sección 2 el camión y el chofer que hará el viaje. |
 
 ---
 

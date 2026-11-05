@@ -4,7 +4,7 @@
 **Ecosistema:** Grúas San Pablo (GSP) / LeanGlobal Platform  
 **Fase de Dominio:** Fase 4 y 5 - Desplazamiento de Flota (`id_proyecto_estado = 4`) y Operación en Faena (`id_proyecto_estado = 5`)  
 **Estado:** `ESTÁNDAR CANÓNICO APROBADO`  
-**Versión:** `1.3.0` (Actualizado: 27 de Octubre de 2026)  
+**Versión:** `1.4.0` (Actualizado: 04 de Noviembre de 2026 — REQ-1107, REQ-1108 y REQ-1113)  
 **Autor:** Sergio Gajardo (LeanGlobal) / Jorge Ponce - Omar Ghiselini (Grúas San Pablo)  
 
 ---
@@ -334,6 +334,31 @@ https://servidor.leanglobal.cl/lg-gsp-dev/viaje/{token_viaje}?fase=reporte
    * El enlace recibido en WhatsApp abre directamente la aplicación en el navegador del celular sin requerir inicio de sesión.
 5. **Prueba de Resiliencia Offline:**
    * Al desconectar la red (Modo Avión), el chofer puede completar cualquiera de los 5 estados o registrar combustible; los datos se almacenan en `IndexedDB` y se sincronizan al restablecer la conexión.
+
+---
+
+## 9. 📎 Anexos Automáticos en PDF del Report Diario (`REQ-1107`), Prohibición de Prellenado de Horómetro (`REQ-1108`) y Regla de Servicios Mensuales sin Piso Mínimo Diario (`REQ-1113` — 04-Nov-2026)
+
+### 9.1. Integración Automática de Documentos y Fotografías Adjuntas al Final del PDF Oficial del Report Diario (`REQ-1107`)
+1. **Fusión Automática en `reportDiarioPdfService.js` (`resolverAnexosDelReporte`):**
+   - Al generar o regenerar el PDF oficial de un Report Diario (`generarPdfReportDiario`), el servicio resuelve todos los documentos y fotografías adjuntas asociadas al reporte (`id_doc_evidencia`, `ajustes_analista.documentos_adjuntos_dia`, `foto_tablero_inicio`, `foto_horometro_termino`).
+   - Las fotografías (`JPG`, `PNG`, `WebP`) se renderizan automáticamente en páginas A4 adicionales al final del documento bajo el encabezado **`ANEXO DOCUMENTAL Y EVIDENCIA ADJUNTA`**.
+   - Los archivos `.pdf` adjuntos almacenados en `tfmg_file` se fusionan página por página al final del PDF oficial utilizando `pdf-lib` (`PDFDocument.load` / `copyPages`), garantizando que al abrir o descargar el PDF del Report Diario desde cualquier vista se obtenga un único expediente consolidado.
+
+### 9.2. Eliminación Total de Prellenado del Horómetro en APP y Backend (`REQ-1108`)
+1. **Prohibición de Prellenar o Sugerir el Horómetro (`ReportDiarioIzaje.vue` & `reportDiarioController.js`):**
+   - Queda estrictamente prohibido prellenar `horometroInicio` o `horometroTermino` en `ReportDiarioIzaje.vue` o mostrar botones de atajo `"Usar sugerido"`.
+   - En `reportDiarioController.getReportContexto`, el atributo `horometro_sugerido` se retorna siempre en `null`, obligando al operador en terreno a leer el reloj físico de la superestructura y digitar manualmente la lectura real junto con su fotografía obligatoria.
+
+### 9.3. Regla de Cálculo para Servicios Mensuales: Sin Mínimo de Horas Diarias (`REQ-1113`)
+1. **Exención de Piso Mínimo Diario en Contratos Mensuales (`unidad` contiene `'MES'`):**
+   - Cuando la línea comercial del equipo en la OT está pactada bajo modalidad mensual (`Horas Mes Minimas` / `Horas Mensuales Minimas`, donde `String(linea.unidad).toUpperCase().includes('MES')`), el servicio **no aplica piso mínimo diario de 8 horas**, ya que las horas reales operadas cada día se acumulan contra la bolsa mensual (ej. `180 hrs/mes`).
+   - En consecuencia, `resolverPisoMinimoContractualOT` en `reportDiarioController.js` retorna `horas_minimas = 0`, y tanto en la APP (`ReportDiarioIzaje.vue`), como en el backend (`guardarReportDiario`, `validarReporteAnalista`, `regularizarReporteManual`) y en el visor web (`ModalVisorReport.vue` / `GestorOportunidades.vue`):
+     $$\text{horas\_minimas} = 0$$
+     $$\text{horas\_facturables} = \text{horas\_operadas} + \text{horas\_standby\_cliente}$$
+     $$\text{horas\_sobretiempo} = 0$$
+2. **Representación en el PDF Oficial del Report Diario (`reportDiarioPdfService.js`):**
+   - Cuando `Number(report.horas_minimas) <= 0`, la Sección 2 (`Piso Mínimo Contractual`) imprime **`Sin mínimo diario (Modalidad Mensual — Acumula horas reales al mes)`** y la Sección 3 (`Piso Mínimo OT`) imprime **`Sin mín. diario / Acumula mensual`**.
 
 ---
 **FIN DE LA ESPECIFICACIÓN TÉCNICA (SPEC 49)**

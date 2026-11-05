@@ -1,4 +1,5 @@
 # Especificación Técnica: Gestor de Oportunidades y Cotizaciones B2B (Spec 16)
+**Versión:** 4.7.0 (Consolidación SDD — REQ-1103 a REQ-1116: Condiciones Obligatorias, Relevos por Fecha, 3 Indicadores de Viáticos V2, Candado Anti-Regresión, Tipografía OT 14px–24px, Asignación/Reasignación de Ejecutivo Comercial y Edición Operativa en Validación & Diff — 04-Nov-2026)
 
 ## 1. Objetivo y Alcance
 Transformar el enfoque básico de "simulador de tarifas" en una herramienta **Enterprise (Gestor de Oportunidades & Pipeline Operacional)** capaz de estructurar negocios de alto valor (High-Ticket B2B). Este módulo modela de forma determinística la complejidad operativa, técnica y financiera desde la captación del prospecto comercial hasta la transferencia formal a Operaciones (Asignación de Recursos, Acreditaciones y Preparación de Salida en Patio).
@@ -24,8 +25,8 @@ El objeto de oportunidad no es solo una tarifa por horas, sino un expediente int
   // 1. Matriz de Requerimientos Comerciales Mandatorios (Flags Booleanos y Distancia Vial)
   requiere_oc_hes: true,
   requiere_acreditacion: true,
-  distancia_km: 85,             // Distancia vial estimada de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco)
-  regimen_operacional: "RURAL", // Derivado reactivo: "URBANO" (<= 30 km) | "RURAL" (> 30 km)
+  distancia_km: 85,             // Antecedente comercial de distancia vial de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco)
+  regimen_operacional: "RURAL", // Definido en Verificación de Operaciones (Pestaña 2): "URBANO" | "RURAL"
   requiere_rigger: true,
   requiere_prevencionista: false,
   cliente_pone_combustible: false,
@@ -126,9 +127,7 @@ Valida la información mercantil de preventa antes de permitir la emisión de co
 3. **Contacto Mandante:** Selector (`contacto_id`) que rellena Nombre, Teléfono y Correo.
 4. **Tipo de Pago:** Selector (`transferencia`, `credito`, `efectivo`, `debito`, `cheque`, `otros`).
 5. **Matriz de Requerimientos Comerciales y Control de Distancia Vial:**
-   - **`distancia_km` (Input Numérico de Ida):** Distancia vial estimada de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco). El sistema determina reactivamente el régimen operacional:
-     * **`URBANO (≤ 30 km)`:** Badge verde inline. El cómputo de horas corre desde la salida de Casa Matriz hasta el retorno. Flete de grúa autotransportada = $0.
-     * **`RURAL (> 30 km)`:** Badge ámbar inline. El cómputo de horas corre en faena (portón a portón). Exige cobro obligatorio de flete independiente.
+   - **`distancia_km` (Input Numérico de Ida — Antecedente para Operaciones):** Distancia vial estimada de IDA desde Casa Matriz (Panamericana Sur Km 678, Temuco). En Preventa Comercial se registra como antecedente obligatorio sin imponer bloqueos de casos sobre el estructurador.
    - **`requiere_oc_hes`:** Bloquea facturación final hasta carga de OC formal.
    - **`requiere_acreditacion`:** Habilita matriz documental de faena en Operaciones.
    - **`requiere_rigger`:** Sincronizado bidireccionalmente con `PERSONAL CERTIFICADO ➔ RIGGER`.
@@ -171,10 +170,13 @@ La gestión de visitas técnicas a terreno (Template 80: `Visita Terreno`) opera
 
 ### 🔍 3.8. Pestaña 2: Validación & Diff (Auditoría de Antecedentes y Limpieza de Traza)
 Permite al Coordinador de Operaciones auditar la cotización enviada por Comercial frente a las condiciones reales de ejecución:
-1. **Limpieza de Traza Visual (Cero Etiquetas Invasivas):**
+1. **Definición Obligatoria de Política Operacional (`URBANO` / `RURAL`) y Facultad de Devolución a Comercial:**
+   - **Respuesta Obligatoria de Operaciones (Cero Preselección Automática en `id_proyecto_estado = 3`):** El Coordinador de Operaciones revisa el antecedente `distancia_km` registrado por Comercial y debe seleccionar **obligatoriamente** en el sistema si al servicio se le aplica la **Política Urbana (`URBANO`)** o la **Política Rural (`RURAL`)** (`operacionesAssignment.regimen_operacional`, con flag `regimen_operacional_confirmado = true` persistido en `json_field.ejecucion_v1` y `json_field.crm_v1`). No se permite preseleccionar automáticamente por distancia ni autorizar el requerimiento hacia `3. Asignación de Recursos` sin esta respuesta explícita.
+   - **Devolución a Comercial con Motivo de Rechazo y Fecha de Devolución:** Si al revisar los antecedentes el Coordinador detecta que la estructura cotizada no se ajusta a la realidad operativa del servicio (ej. omisión de un flete, equipo de apoyo o condición necesaria), dispone del botón directo **`[ ↩️ Devolver a Preventa Comercial ]`** (`volverACotizar`), registrando obligatoriamente el **Motivo de Rechazo (`motivo_reverso_verificacion`)**, la **Fecha de Devolución (`fecha_reverso_verificacion`)** y el **Usuario (`usuario_reverso_verificacion`)**, visibles en alerta destacada tanto en `1. Preventa Comercial` como en `2. Validación & Diff`.
+2. **Limpieza de Traza Visual (Cero Etiquetas Invasivas):**
    - **Líneas Nuevas:** Si la línea fue agregada posteriormente (`!isOriginalLine`), se marca únicamente con un badge sobrio `[ + Nueva Línea ]`, eliminando de raíz cajas tachadas innecesarias.
    - **Campos Modificados:** Se destacan sutilmente con borde de advertencia (`border-amber-500/50`) y tooltip contextual nativo `title="Valor Preventa: ..."` al pasar el cursor, preservando la legibilidad limpia de la celda.
-2. **Gestión de Visitas Técnicas Obligatorias:** Si Comercial no solicitó visita pero la criticidad de la maniobra lo amerita, Operaciones dispone del botón directo `[ 📍 Exigir Visita Técnica Obligatoria ]`.
+3. **Gestión de Visitas Técnicas Obligatorias:** Si Comercial no solicitó visita pero la criticidad de la maniobra lo amerita, Operaciones dispone del botón directo `[ 📍 Exigir Visita Técnica Obligatoria ]`.
 
 ---
 
@@ -354,20 +356,10 @@ Por ende, cuando una línea comercial o recurso de traslado posee categoría **`
 
 ---
 
-### 4.4. Matriz Canónica de los 4 Casos de Cobro y Comportamiento del Estructurador (Acuerdo Jorge Ponce - 11-Sep-2026)
-A partir de la calibración técnica del 11 de septiembre de 2026 con Gerencia General, se erradica el combobox manual de flete (`incluye_flete`) y se formaliza la siguiente matriz determinística de 4 escenarios según la distancia de ida a faena (`distancia_km`) y la presencia de contrapesos:
-
-| Escenario de Negocio | Condición Operativa | Comportamiento del Estructurador (Líneas Facturables) | Cómputo de Tiempos & Cláusula Legal PDF |
-| :--- | :--- | :--- | :--- |
-| **Caso 1: Urbano sin Contrapeso** | $\text{distancia\_km} \le 30$ km<br>Grúa liviana / mediana ($< 90\text{T}$) | **1 sola línea:**<br>• `Horas de Arriendo Grúa` ($0 flete adicional). | El tiempo corre desde la salida de Casa Matriz (Km 678) hasta el término de maniobra. |
-| **Caso 2: Urbano con Contrapeso** | $\text{distancia\_km} \le 30$ km<br>Grúa pesada ($\ge 90\text{T}$ a $400\text{T}$) | **2 líneas separadas:**<br>1. `Horas de Arriendo Grúa`<br>2. `Traslado Contrapesos` (Fijo \$500.000, unidad `Traslado`). | El tiempo de grúa corre desde salida de base. El traslado de contrapesos se cobra a valor fijo a todo evento. |
-| **Caso 3: Rural sin Contrapeso** | $\text{distancia\_km} > 30$ km<br>Grúa liviana / mediana ($< 90\text{T}$) | **2 líneas separadas:**<br>1. `Horas de Arriendo Grúa` (operación en obra)<br>2. `Flete / Traslado Grúa` (ida y vuelta cerrada). | El tiempo de arriendo corre a partir del arribo a portería de faena. El flete carretero se factura independiente. |
-| **Caso 4: Rural con Contrapeso** | $\text{distancia\_km} > 30$ km<br>Grúa pesada ($\ge 90\text{T}$ a $400\text{T}$) | **3 LÍNEAS SEPARADAS OBLIGATORIAS:**<br>1. `Horas de Arriendo Grúa` (operación en faena)<br>2. `Flete / Traslado Grúa` (movilización vial grúa)<br>3. `Traslado de Contrapesos` (cama baja / tracto). | Horas efectivas en obra. Flete de grúa y traslado de contrapesos se desglosan en 2 líneas de transporte independientes para trazabilidad de costos de combustible y patentes en el ITS. |
-
-#### Reglas de Gobierno en el Estructurador:
-1. **Banner Reactivo Anti-Fuga:** Si $\text{distancia\_km} > 30$ y el estructurador no posee líneas de flete (`tipo === 'TRASLADOS'`), se despliega una alerta roja bloqueante con el botón de inyección automática.
-2. **Duplicación Interna de Distancia ($D \times 2$):** El vendedor digita exclusivamente la distancia de IDA (ej. 85 km). El backend y el modelo de costos operacionales del ITS multiplican automáticamente por 2 ($85 \times 2 = 170$ km) para calcular consumo de combustible, desgaste de neumáticos y peajes ida y vuelta.
-3. **Compuerta Comercial Estricta:** Queda prohibido generar la cotización o avanzar a requerimiento si se detecta un viaje rural sin sus respectivas partidas de flete estructuradas.
+### 4.4. Estructuración Comercial Libre y Diferimiento de Política Urbana / Rural a Operaciones (Acuerdo Jorge Ponce - 30-Oct-2026)
+1. **Estructuración Libre en Preventa:** En `1. Preventa Comercial`, se eliminan los 4 casos guiados y sus bloqueos estructurales. El ejecutivo comercial configura con total autonomía las líneas de servicio que requiere la operación (horas de grúa, fletes de contrapesos o equipos, camiones complementarios, valor fijo, etc.).
+2. **Duplicación Interna de Distancia ($D \times 2$):** El vendedor digita la distancia de IDA (`distancia_km`) como antecedente para Operaciones. El backend y el ITS multiplican por 2 para el costeo logístico de ida y vuelta.
+3. **Definición en Operaciones:** El régimen operacional (`URBANO` o `RURAL`) se determina en la etapa `2. Validación & Diff` por el Coordinador de Operaciones.
 
 ---
 
@@ -605,38 +597,23 @@ Conecta de punta a punta la conciliación de faena con la facturación final med
 
 ---
 
-## 10. Estructurador de Servicios & Matriz Canónica de los 4 Casos (Urbano vs. Rural)
+## 10. Reglas de Cobro al Cliente (EDP) y Liquidación de Horas de Operadores (RRHH) según Política Definida en Operaciones
 
-### 10.1. Propósito y Diagnóstico de UX
-El estructurador de cotizaciones en `GestorOportunidades.vue` (`activeTab === 'servicios'`) sustituye las alertas punitivas pos-mortem ("CASO X: falta flete...") por un **Asistente Visual Guiado** que detecta automáticamente el caso canónico aplicable según la distancia de traslado ($\le 30\text{ km}$ vs $> 30\text{ km}$) y el tonelaje de la grúa ($< 90\text{T}$ vs $\ge 90\text{T}$), permitiendo auto-estructurar las líneas de servicio en 1 solo clic.
+### 10.1. Impacto en el Cobro al Cliente y Facturación (Report Diario / EDP)
+Al cierre del servicio, las horas efectivas a cobrar al cliente en el Estado de Pago (multiplicadas por la tarifa cotizada y respetando las horas mínimas pactadas) se contabilizan según la política definida por el Coordinador de Operaciones:
+1. **Servicios Urbanos (`URBANO`):** Se cobra al cliente **desde la salida de la base de GSP (`hora_salida_patio` / `hora_salida`) hasta el término del servicio en obra (`hora_termino`)**, descontando colación y standby GSP, respetando las horas mínimas pactadas más los fletes o ítems adicionales cotizados.
+2. **Servicios Rurales (`RURAL`):** Se cobra al cliente **desde el inicio del servicio en obra (`hora_inicio`) hasta el término del servicio en obra (`hora_termino`)**, descontando colación y standby GSP, respetando las horas mínimas pactadas más los fletes o ítems adicionales cotizados.
 
-### 10.2. Matriz Canónica Oficial de los 4 Casos
-
-| Caso | Régimen & Configuración | ¿QUÉ SE COBRA? | ¿DESDE CUÁNDO se cobra? | ¿HASTA CUÁNDO se cobra? | Representación en Estructurador, ITS y EDP |
-| :---: | :--- | :--- | :--- | :--- | :--- |
-| **CASO 1** | **$\le 30\text{ km}$ (URBANO)**<br>Grúa Normal<br>*(Sin camiones de contrapeso)* | 1. Horas Arriendo Grúa (no hay mín).<br>2. Rigger adicional (si aplica). | Desde la **SALIDA de Casa Matriz GSP** (`hora_salida`). | Hasta el **TÉRMINO de la maniobra** en obra (`hora_termino`). | **\$0 (Sin Flete).**<br>El viaje por la ciudad se paga 100% como horas de arriendo de la grúa.<br>*(1 línea en estructurador)*. |
-| **CASO 2** | **$\le 30\text{ km}$ (URBANO)**<br>Grúa con Contrapesos<br>*(Camas Bajas)* | 1. Horas Arriendo Grúa.<br>2. Flete Tracto Camión (por cada camión de contrapesos).<br>3. Escolta (si aplica). | • Grúa: Desde la **SALIDA de Casa Matriz** (`hora_salida`).<br>• Camión Contrapeso: **Flete fijo de ida y vuelta**. | • Grúa: Hasta el **desmontaje final** en obra (`hora_termino`).<br>• Camas: **Retorno y descarga en patio GSP**. | • Grúa: **\$0 de flete** (viaje en horas).<br>• Camas de Contrapeso: **Línea de Flete OBLIGATORIA** por camión cama baja.<br>Ítem canónico: *"Traslado Contrapesos"*. *(2 líneas)*. |
-| **CASO 3** | **$> 30\text{ km}$ (RURAL)**<br>Grúa Normal<br>*(Sin camiones de contrapeso)* | 1. Horas Arriendo Grúa (no hay hor mín).<br>2. Flete de la Grúa (**OBLIGATORIO**). | • Grúa: Desde la **LLEGADA a la faena** (`hora_llegada`).<br>• Flete: **Valor cerrado pactado**. | • Grúa: Hasta el **TÉRMINO de la maniobra en faena** (`hora_termino`). | **Línea de Flete OBLIGATORIA.** El viaje por carretera NO corre en las horas de arriendo; se paga como Flete.<br>Al cliente se le presentan **dos líneas**: 1) Horas Grúa, 2) *"Traslado de Grúa"*. |
-| **CASO 4** | **$> 30\text{ km}$ (RURAL)**<br>Grúa con Contrapesos<br>*(Camas Bajas)* | 1. Horas Arriendo Grúa (**Piso mín. 8 hrs**).<br>2. Flete de la Grúa (**OBLIGATORIO**).<br>3. Flete Contrapesos (**OBLIGATORIO**). | • Grúa: Desde la **LLEGADA a la faena** (`hora_llegada`).<br>• Fletes: **Valores cerrados pactados**. | • Grúa: Hasta el **desmontaje final en faena** (`hora_termino`). | **Líneas de Flete OBLIGATORIAS para todo el convoy:**<br>• Flete Grúa.<br>• Flete Camión Contrapesos #1, #2...<br>Al cliente se le presentan **tres líneas**: 1) Horas Grúa (mín. 8 hrs), 2) *"Traslado de Grúa desde $origen a $destino con retorno"*, 3) *"Traslado de Contrapesos desde $origen a $destino con retorno"*. |
-
-### 10.3. Reglas Deterministas de Taxímetro y Desacoplamiento de Traslados
-1. **Régimen Urbano ($\le 30\text{ km}$):** El taxímetro de la grúa corre desde el portón de salida de Casa Matriz GSP hasta el término de la maniobra. El tiempo de viaje en ciudad se devenga en la tarifa horaria de la máquina.
-2. **Régimen Rural ($> 30\text{ km}$):** El taxímetro de la grúa corre **estrictamente en faena** (desde `hora_llegada` hasta `hora_termino`). El viaje de carretera se factura de forma separada como **Flete cerrado de ida y vuelta**, no en las horas de arriendo.
-3. **Piso Mínimo en Grúa con Contrapesos Rural (Caso 4):** Exige un piso contractual mínimo de **8 horas por jornada** en arriendo de grúa.
-
-### 10.4. Componente Asistente Visual y Auto-Estructuración en 1 Clic
-1. **Cuadrícula de 4 Tarjetas Interactivas:** Ubicada sobre la tabla de servicios, destaca en borde ámbar (`border-amber-500 bg-amber-500/10`) y badge `★ RECOMENDADO` el caso coincidente con la planilla oficial:
-   - **CASO 1: URBANO (SIN FLETE)**: $\le 30\text{ km}$, Grúa Normal, taxímetro desde salida Casa Matriz, 1 línea ($0 flete).
-   - **CASO 2: URBANO (CON FLETE CONTRAPESOS)**: $\le 30\text{ km}$, Grúa con contrapesos, 2 líneas (Grúa en horas + "Traslado Contrapesos" fijo).
-   - **CASO 3: RURAL (CON FLETE GRÚA)**: $> 30\text{ km}$, Grúa Normal, taxímetro en faena, 2 líneas (Horas en faena + "Traslado de Grúa" obligatorio).
-   - **CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)**: $> 30\text{ km}$, Grúa con contrapesos, piso mín. 8 hrs, 3 líneas obligatorias (Horas Grúa + "Traslado de Grúa" + "Traslado Contrapesos").
-2. **Activación Condicional de Tarjetas según Umbral 30 km:**
-   - Si $\le 30\text{ km}$: Casos 1 y 2 activos y elegibles; Casos 3 y 4 inactivos / atenuados (`opacity-30 cursor-not-allowed`) con badge explicativo `Inactivo (> 30km)`.
-   - Si $> 30\text{ km}$: Casos 3 y 4 activos y elegibles; Casos 1 y 2 inactivos / atenuados (`opacity-30 cursor-not-allowed`) con badge explicativo `Inactivo (≤ 30km)`.
-3. **Botón Proactivo `[ ⚡ Aplicar Configuración Canónica Caso N ]`:**
-   - Inyecta o alinea las líneas de servicio canónicas (grúa y fletes correspondientes) sin borrar tarifas unitarias ya digitadas. Si la estructura está completa, permite re-estructurar con `[ ⚡ Re-Aplicar Configuración Caso N ]`.
-4. **Guía Canónica Desplegable (`[ 📋 Ver Tabla Canónica Oficial ]`):**
-   - Modal o acordeón con la tabla comparativa oficial de los 4 casos (idéntica a la planilla física de GSP) para consulta inmediata del usuario.
+### 10.2. Impacto en el Costeo de Incentivos de los Trabajadores (RRHH — `tarifasOperadorService.js`)
+La liquidación de horas de los operadores se calcula automáticamente según la política definida por Operaciones:
+1. **Servicios Urbanos (`URBANO`):**
+   - **No se paga traslado de equipo** (`horas_flete_pagar = 0`).
+   - Únicamente se consideran las **horas de servicio reportadas** (`horas_faena_pagar = horasRealesEquipo`).
+2. **Servicios Rurales (`RURAL`):**
+   - **Si las horas reales de servicio en obra son menores a las horas mínimas (`horasRealesEquipo < horas_minimas`):** Las horas de traslado cubren primero el tramo faltante para enterar el mínimo, y **solo se paga la diferencia positiva** por sobre las horas mínimas:
+     * `horas_faena_pagar = horas_minimas`
+     * `horas_flete_pagar = max(0, (horasRealesEquipo + horasTraslado) - horas_minimas)`
+   - **Si las horas reales de servicio en obra son iguales o mayores a las horas mínimas (`horasRealesEquipo >= horas_minimas`):** Se pagan las horas reales trabajadas en obra más las horas de traslado reportadas (`horas_faena_pagar = horasRealesEquipo`, `horas_flete_pagar = horasTraslado`).
 
 ---
 
@@ -647,7 +624,7 @@ Para optimizar la localización de negocios durante la marcha blanca comercial y
 
 ### 11.2. Criterios de Búsqueda Concurrente (Multi-Criterio)
 El motor de filtrado evalúa concurrentemente los siguientes atributos normalizados (en minúsculas y sin distinción de tildes):
-1. **N° de Cotización / Código de Proyecto:** `codi_proyecto` (ej: `GSP-2609-001`), `id_proyecto` numérico, `codigo_maestro` o `n_licitacion`.
+1. **N° de Cotización / Código de Proyecto:** `codi_proyecto` (formato canónico `[PREFIJO]-[YYMM]-[SECUENCIAL_5_DIGITOS]`, ej: `GSP-2611-00001`, con soporte retrocompatible para códigos históricos de 3 dígitos), `id_proyecto` numérico, `codigo_maestro` o `n_licitacion`.
 2. **Cliente:** `nombre_cliente` (Razón Social), `contacto_nombre`, `contacto_email`.
 3. **Vendedor / Ejecutivo Creador:** Identificación del usuario creador mediante el mapeo reactivo de `id_user_creacion` contra el catálogo `tsec_users` (`GET /api/usuarios`), `vendedor`, o `usuario_creacion`.
 4. **Obra / Faena / Ubicación:** `nombre_proyecto`, `obra_nombre`, `obra_ciudad`.
@@ -923,3 +900,283 @@ La pestaña `Contrato & Formalización` presenta tres paneles coordinados:
    * Resumen de trazabilidad indicando el estado del despacho por canal (Correo cliente, Copia ejecutivo, WhatsApp).
    * Botones de contingencia para abrir WhatsApp Web y copiar enlace.
    * Ficha de auditoría legal post-firma con visor del documento final suscrito.
+
+---
+
+## 16. Nuevo Formato de Serial del Negocio (`codi_proyecto`) con Secuencia Continua de 5 Dígitos (REQ-1083 — 01-Nov-2026)
+
+### 16.1. Regla de Negocio y Estructura Canónica
+1. **Estructura Oficial (`[PREFIJO]-[YYMM]-[SECUENCIAL_5_DIGITOS]`):**
+   - Se elimina el `id_cliente` intermedio del identificador del negocio (`codi_proyecto`) y se amplía el correlativo numérico de 3 a **5 dígitos con relleno de ceros a la izquierda (`00001` a `99999`)**.
+   - Ejemplo canónico: **`GSP-2611-00001`** (`BMQ-2611-00001`, `LDS-2611-00001`, `RYL-2611-00001`, `INT-2611-00001`).
+2. **Secuencia Continua Histórica por Prefijo (Sin Reinicio Mensual):**
+   - El correlativo atómico en `tpry_correlativos` se almacena e incrementa bajo la clave continua `anio_mes = '0000'` por `prefijo`, garantizando que la numeración `00001..99999` sea estrictamente correlativa e ininterrumpida a lo largo del tiempo (sin reiniciarse al cambiar de mes o año).
+   - El segmento visual `[YYMM]` impreso en `codi_proyecto` continúa reflejando el año y mes real de creación del negocio (`${yy}${mm}`).
+3. **Validación Regex Retrocompatible (`proyectosController.js`):**
+   - El patrón de reconocimiento de códigos formales se actualiza a `/^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/`, validando nativamente el nuevo estándar de 5 dígitos sin segmento de cliente y preservando compatibilidad con cualquier registro histórico de 3 dígitos.
+4. **Propagación Automática en Cotizaciones PDF y Documentos:**
+   - Las versiones de cotización (`${codi_proyecto}-V1`, `${codi_proyecto}-V2`) y las órdenes de trabajo (`OT-${codi_proyecto}`) adoptan automáticamente el nuevo serial (`GSP-2611-00001-V1`, `OT-GSP-2611-00001`).
+
+---
+
+## 17. Modalidad de Servicio Exclusivo de Personal Certificado / Solo Rigger (Sin Maquinaria) (REQ-1090 / CASO-20261102-04 — 02-Nov-2026)
+
+### 17.1. Naturaleza del Negocio y Alcance
+El ecosistema soporta órdenes de trabajo (OT) cuyo alcance comercial consiste exclusivamente en la provisión de **Personal Certificado en Terreno** (`tipo === 'PERSONAL CERTIFICADO'`, subcategorías `RIGGER`, `OPERADOR EXTERNO`, `PREVENCIONISTA DE RIESGOS`, `SUPERVISOR DE IZAJE`) sin arriendo de grúas ni camiones pluma (`linesEquiposPrincipales.length === 0`).
+
+### 17.2. Asignación e Hidratación en Sub-Pestaña `3. Asignación` (Sección 3 — Especialistas & Personal Técnico en Terreno)
+1. **Erradicación de Placeholders Ficticios (`CRN-DEFAULT`, `OP-101`, `RIG-201`):**
+   - El objeto reactivo `operacionesAssignment` y el método `buildPayload()` nunca deben inyectar ni persistir strings ficticios (`'CRN-DEFAULT'`, `'OP-101'`, `'RIG-201'`). Cuando no existe recurso asignado, el valor canónico es `null`.
+2. **Hidratación Determinística de Rigger en Servicios Sin Maquinaria:**
+   - En servicios con grúas (`linesEquiposPrincipales.length > 0`), el Rigger se asigna en la tarjeta del equipo principal (Sección 1) y se excluye de `especialistasTerreno` (Sección 3) para evitar duplicidad.
+   - En cambio, cuando `linesEquiposPrincipales.length === 0` (Servicio Solo Personal / Solo Rigger), `cargarDatosCotizacion()` **habilita y pobla automáticamente el cargo `Rigger` dentro de `especialistasTerreno` (Sección 3)** a partir de las líneas comerciales `PERSONAL CERTIFICADO` o del flag `requiere_rigger`, hidratando su `id_user` desde `ejecucion_v1.especialistas_terreno`, `ejecucion_v1.tripulacion_asignada`, `ejecucion_v1.rigger_id` o `tpry_rel_persona`.
+3. **Enrolamiento Rápido de Rigger Externo (`+ Ext`) en Sección 3:**
+   - La fila de `Rigger` en la Sección 3 incorpora el botón `[+ Ext]` (`abrirModalRiggerExterno(esp)`), permitiendo enrolar y asignar un Rigger externo en caliente aun cuando la OT no contenga maquinaria.
+4. **Confirmación de Asignación (`confirmarAsignacionOT`):**
+   - Resuelve `rigger_id` tanto desde `linesEquiposPrincipales[0]?.rigger_asignado_id` como desde el especialista con cargo `Rigger` en `especialistasTerreno`, sincronizándolo en `tpry_rel_persona` y `ejecucion_v1.tripulacion_asignada` sin exigir `id_equipo`.
+
+### 17.3. Exención de Inspección de Flota y Pase Directo en `5. Control de Flota & Despacho` (`preparacion_salida`)
+1. **Tarjeta de Exención de Flota en Columna 1:**
+   - Cuando `equiposAsignadosLista.length === 0`, la Columna 1 (`1. Inspección Patio & Flota`) despliega una tarjeta informativa dedicada (**"Servicio Exclusivo de Personal Certificado en Terreno — Sin Maquinaria"**) que lista al Rigger/Especialista asignado e informa que la OT está exenta de Checklist de Salida de Patio (Template 76) y de Hoja de Ruta GPS de flota.
+   - Los indicadores `statusSegmento2` y `statusSegmento3` evalúan automáticamente en `'GREEN'` siempre que exista al menos un integrante con `id_user` en `tripulacionAsignada`.
+2. **Desbloqueo y Persistencia Determinística del Botón `finalizarPreparacionSalida`:**
+   - El botón primario `[FINALIZAR PREPARACIÓN & LIBERAR FLOTA A EJECUCIÓN TERRENO]` solo se deshabilita cuando `preparacionSalidaState.preparacion_finalizada === true`.
+   - Al ejecutar `finalizarPreparacionSalida()`, el sistema marca automáticamente `validacion_estricta = true`, `analista_revision_360 = true`, `analista_geocerca_activa = true` y `preparacion_finalizada = true`, actualiza `subtab_activa = 'reports'` y `subtab_actual_view = 'reports'` en `rawEjecucionJson` y `opportunity.json_field.ejecucion_v1` **antes** de invocar `buildPayload()` y `PUT /proyectos/:id`, navega a la sub-pestaña `6. Reportes Diarios de Izaje`, carga los reportes del proyecto y emite `emit('creada')` para que `Torre.vue` traslade de inmediato la tarjeta desde la Columna 4 (`EN PREPARACIÓN OPERACIONES`) hacia la Columna 5 (`EN EJECUCIÓN / FAENA`).
+
+### 17.4. Soporte en Ejecución (`reports`), Control Operativo en Vivo e ITS
+1. **Regularización y Reportes Diarios sin Equipo (`reportDiarioController.js`):**
+   - En `regularizarReporteManual`, si el proyecto no registra equipos en `tpry_rel_equipo`, `id_equipo` se mantiene en `NULL` (queda prohibido asignar el fallback `id_equipo = 35`). El especialista/Rigger asignado en `tpry_rel_persona` se vincula en `id_user_rigger` e `id_user_operador`.
+2. **Control Operativo en Vivo (`controlVivoController.js`):**
+   - Cuando un proyecto en ejecución carece de maquinaria en `tpry_rel_equipo` pero posee personal asignado (`Rigger` / `Especialista`), la tarjeta viva expone `patente: 'PERSONAL'`, `tipo_equipo: 'SERVICIO RIGGER / ESPECIALISTA'` y el nombre real del especialista asignado.
+3. **Liquidación Comercial y de Personal en ITS (`itsController.js`):**
+   - Cuando la línea comercial está pactada bajo unidad `Valor Fijo` / `Jornada`, la jornada en el ITS se valoriza con `horas_report = 1.0`, `tipo_servicio = 'Valor Fijo / Jornada'` y `subtotal = valorUnitario` (evitando multiplicar la tarifa fija por las horas de presencia en obra).
+   - Cuando en un reporte sin maquinaria el mismo especialista figura en `id_user_operador` e `id_user_rigger`, `itsController.js` lo consolida una única vez bajo `rol_personal = 'RIGGER'` para el cálculo de horas y viático de alimentación.
+
+---
+
+## 18. Triple Vista Comparativa de Tablero Kanban en Torre de Control (`Torre.vue` — REQ-1096 — 02-Nov-2026)
+
+### 18.1. Objetivo de Usabilidad y Evaluación Comparativa ("Full Sucursal")
+Con el propósito de resolver la búsqueda y contención visual cuando una sucursal opera a máxima capacidad ("Full Sucursal") y permitir evaluar en vivo las alternativas de experiencia de usuario, `Torre.vue` dispone en su selector principal de vistas de **3 modalidades de tablero Kanban contiguas**:
+
+1. **`🗂️ Tablero Kanban` (`activeView = 'kanban'` — Vista Base Original):**
+   - Conserva 100% intacta la estructura original de 6 columnas y sus tarjetas clásicas sin alteraciones.
+2. **`⚡ Kanban + Filtros` (`activeView = 'kanban_filtros'` — Propuesta UX de Alta Densidad y Tarjetas Contextuales):**
+   - Incorpora una **Barra de Comando y Filtros Multicriterio** que permite filtrar simultáneamente por:
+     - **Tipo de Fecha (`FECHA_EJECUCION` vs. `FECHA_VENTA`)** con Presets rápidos (`Todos`, `Hoy`, `Mañana`, `Esta Semana`, `Este Mes`) y rango `Desde` / `Hasta`.
+     - **Operador Asignado** (incluyendo filtro rápido `Sin Operador`).
+     - **Rigger Asignado** (incluyendo filtros rápidos `Falta Rigger` y `Servicio Solo Rigger`).
+     - **Equipo / Patente**, **Cliente Mandante** y **Ejecutivo Comercial**.
+     - **Selector de Densidad (`Expandida` vs. `Compacta`)** y **Agrupación Intra-Columna por Horizonte de Fecha**.
+   - En las columnas de **Fase Operativa (Columnas 3, 4 y 5)**, las tarjetas muestran explícitamente:
+     - **Folio (`codi_proyecto`)** y **Cliente (`nombre_cliente`)** + **Obra**.
+     - **Fechas Duales:** Ventana de Ejecución (`Inicio ➔ Término`) y Fecha de Venta/Cotización.
+     - **Operador Asignado**, **Rigger Asignado** y **Equipo / Patente** (o insignia `SOLO RIGGER`).
+3. **`🗄️ Cardex 3D` (`activeView = 'kardex'` — Mueble Tarjetero 3D con Elevación Dinámica de Fichas):**
+   - Representa cada una de las 6 columnas operativas como un **cajón tarjetero indexado en perspectiva 3D (`CSS3 perspective / preserve-3d`)**.
+   - **Estado Plegado en Cajón (Reposo):** Las tarjetas apiladas muestran en su ceja superior biselada únicamente el **Número del Negocio (`codi_proyecto`)** y el **Nombre del Cliente (`nombre_cliente`)**, permitiendo contener decenas de fichas por columna en una sola vista.
+   - **Elevación 3D por Criterio (`Pop-Up 3D`):** En la medida en que el usuario selecciona un criterio en la barra superior (por **Fecha de Ejecución**, **Fecha de Venta**, **Píldora de Fecha específica del carrusel temporal**, **Operador**, **Rigger**, **Cliente** o búsqueda de texto) o interactúa con una ceja, las tarjetas que cumplen el criterio **se levantan físicamente en 3D fuera del cajón**, desplegando el detalle completo del servicio (**Fechas de Ejecución y Venta, Operador, Rigger, Equipo/Patente, Obra, Monto y acceso directo al expediente**).
+
+---
+
+## 19. Gobernanza del Estructurador Comercial, Ciclo de Vida de Rigger/Prevencionista, Vigencia de Versiones de Cotización en Operación y Herencia de Piso Mínimo (`REQ-1100` — 03-Nov-2026)
+
+### 19.1. Ciclo de Vida de Rigger y Prevencionista en el Estructurador de Servicios
+1. **Inyección Inicial en Preventa al Marcar el Check/Selector:**
+   - Cuando el ejecutivo comercial marca manualmente `Requiere Rigger = SÍ` (`opportunity.requiere_rigger = true`) o `Prevencionista = SÍ` (`opportunity.requiere_prevencionista = true`) durante la estructuración comercial (`!isHydrating.value`), el **Estructurador de Servicios** agrega inmediatamente la fila comercial correspondiente (`PERSONAL CERTIFICADO — RIGGER` con descripción `"Servicio de Rigger Certificado"` o `PERSONAL CERTIFICADO — PREVENCIONISTA` con descripción `"Servicio de Prevencionista Certificado"`), siempre que no exista ya en `lines.value`.
+2. **Eliminación Comercial Respetada y Desacoplada del Requerimiento Operativo:**
+   - El ejecutivo comercial **puede eliminar libremente** la fila de `RIGGER` o `PREVENCIONISTA` desde el Estructurador de Servicios (mediante `eliminarLinea(idx)`) cuando, por motivos comerciales, dicho recurso está incluido en la tarifa de la grúa o no se cobra como ítem separado en la cotización PDF.
+   - **Regla de No-Regresión Operativa:** Eliminar la fila comercial del Estructurador **NO desmarca** `opportunity.requiere_rigger = true` ni `opportunity.requiere_prevencionista = true`, de modo que Operaciones conserva intacta la instrucción de asignar un Rigger/Prevencionista a la maniobra.
+   - **Prohibición de Re-Inyección Automática en Hidratación (`isHydrating` Guard):** Ambos `watch` (`opportunity.value.requiere_rigger` y `opportunity.value.requiere_prevencionista`) deben evaluar obligatoriamente `if (isHydrating.value) return;` en su primera línea. Queda estrictamente prohibido que al abrir un negocio existente, cambiar de pestaña o recargar `cargarDatosCotizacion()` el sistema vuelva a inyectar automáticamente la fila de Rigger o Prevencionista que el ejecutivo comercial decidió eliminar o excluir del itemizado.
+
+### 19.2. Limpieza y Sugerencia Automática de Descripción al Cambiar Categoría o Subcategoría (`onTipoChange` / `onSubcategoriaChange`)
+1. **Saneamiento al Cambiar `Categoría` (`onTipoChange`):**
+   - Cuando el usuario cambia la categoría (`line.tipo`) de una fila existente en el Estructurador (por ejemplo, cambiando una fila de `PERSONAL CERTIFICADO` a `GRUAS TELESCOPICAS`), si `line.descripcion` contiene una glosa por defecto de otra categoría (`"Servicio de Rigger Certificado"`, `"Servicio de Prevencionista Certificado"`, `"Flete / Traslado "` o `"HORAS MINIMAS DIARIAS "`), el sistema **limpia automáticamente `line.descripcion`** para impedir que una grúa conserve por arrastre la glosa `"Servicio de Rigger Certificado"`.
+2. **Sugerencia Automática al Seleccionar `Subcategoría` (`onSubcategoriaChange`):**
+   - Al seleccionar una `Subcategoría` (`line.subcategoria`):
+     - Si `line.tipo === 'GRUAS TELESCOPICAS'` o `'CAMIONES PLUMA'` y `line.descripcion` está vacía o contiene una plantilla previa (`"Servicio de Rigger Certificado"`, `"Servicio de Prevencionista Certificado"`, `"HORAS MINIMAS DIARIAS ..."`), se sugiere automáticamente `HORAS MINIMAS DIARIAS ${line.subcategoria}` (cuando la unidad es `Horas Diarias Minimas`) o `SERVICIO ${line.subcategoria}`.
+     - Si `line.tipo === 'PERSONAL CERTIFICADO'` y `line.subcategoria === 'RIGGER'`, se sugiere `"Servicio de Rigger Certificado"`. Si `line.subcategoria === 'PREVENCIONISTA'`, se sugiere `"Servicio de Prevencionista Certificado"`.
+
+### 19.3. Gobernanza de Versiones de Cotización para Servicios en Operación (`id_proyecto_estado >= 3`)
+1. **Edición Comercial Controlada sin Regresión de Estado Operativo:**
+   - Cuando un negocio ya se encuentra en fase operativa (`id_proyecto_estado >= 3`: Asignación, Preparación, En Ejecución o Cierre Técnico), la pestaña `1. Preventa Comercial` dispone del botón explícito **`[✏️ Modificar Cotización / Nueva Versión]`** (`modoEdicionComercialOperaciones`).
+   - Al activarlo, se habilita la edición del Estructurador de Servicios y el botón **`[📄 Generar Nueva Versión Cotización]`** (`generarPDF`), manteniendo **oculto y bloqueado el botón `[Generar Requerimiento]`** (`estadoDbActual <= 2`).
+   - **Invariante de Continuidad Operacional:** Generar o enviar una nueva versión de cotización sobre un servicio en operación **NUNCA retrocede `id_proyecto_estado` a `1` o `2`**, **NUNCA exige volver a pasar por `"Generar Requerimiento"`**, **NUNCA bloquea los registros de viaje (`tequ_log_desplazamiento`) de los operadores en la PWA** y **NUNCA elimina las asignaciones operativas (`tpry_rel_equipo`, `tpry_rel_persona`, `equipo_asignado_id`, `operador_asignado_id`, `rigger_asignado_id`)**.
+2. **Snapshot por Versión y Condición de Vigencia Operativa (`BORRADOR_NO_ENVIADO` vs. `ENVIADA_VIGENTE`):**
+   - Al invocar `generarCotizacionVersion` (`POST /api/proyectos/:id/generar-cotizacion`), cada versión registrada en `crm_v1.cotizaciones_historicas` almacena su propio `lineas_snapshot` (copia inmutable de las líneas comerciales de esa versión) y nace con `estado_vigencia: 'BORRADOR_NO_ENVIADO'`.
+   - **Regla de Vigencia en Operación:** Si el proyecto ya está en Operación (`id_proyecto_estado >= 3`), mientras la nueva versión (`v2`, `v3`, etc.) **NO haya sido enviada formalmente al cliente** mediante **`[ENVIAR COTIZACIÓN]`**:
+     - El sistema despliega una alerta explícita al ejecutivo comercial:
+       > *"⚠️ Atención Comercial: Ha generado una nueva versión de cotización (vX) sobre un servicio que ya está en Operación. Mientras NO envíe formalmente esta cotización al cliente ([ENVIAR COTIZACIÓN]), esta versión NO tiene validez operativa y el Report Diario seguirá rigiéndose por la última cotización enviada."*
+     - En `2. Control de Versiones & Envíos`, la versión no enviada exhibe la insignia **`🟠 BORRADOR SIN VALIDEZ OPERATIVA (PENDIENTE DE ENVÍO)`**, mientras la última versión enviada mantiene la insignia **`🟢 VIGENTE EN OPERACIONES (ENVIADA)`**.
+     - El backend conserva en `crm_v1.lineas_operativas_vigentes` (y en la resolución de `horas_minimas` del Report Diario) la estructura de la **última cotización enviada formalmente**, de modo que un borrador no enviado jamás altera la operación en curso.
+3. **Activación Automática en Caliente (`Hot-Sync`) al Enviar Formalmente la Nueva Cotización (`[ENVIAR COTIZACIÓN]`):**
+   - El bloque `2. Control de Versiones & Envíos` y su botón **`[ENVIAR COTIZACIÓN]`** permanecen siempre habilitados, incluso cuando `isModoOperaciones` es `true`.
+   - En el instante en que el ejecutivo comercial envía formalmente la nueva versión al cliente (`ModalEnviarCotizacion.vue` ➔ `onEmailSent` ➔ `PUT /api/proyectos/:id`):
+     - La versión enviada pasa a `estado_vigencia = 'ENVIADA_VIGENTE'`.
+     - El backend (`proyectoModel.updateProyecto`) actualiza `crm_v1.lineas_operativas_vigentes` con el `lineas_snapshot` de la versión recién enviada y sincroniza en caliente (`hot-sync`) los atributos comerciales (`descripcion`, `unidad`, `cantidad`, `cantidad_dias`, `cantidad_horas`, `pisoMinimo`, `valorUnitario`) en `crm_v1.lineas_servicio`, **preservando intactos** `equipo_asignado_id`, `operador_asignado_id`, `rigger_asignado_id`, `fecha_plan_ini` y `fecha_plan_fin`.
+     - Asimismo, actualiza automáticamente `horas_minimas` y recalcula `horas_facturables = GREATEST(COALESCE(horas_operadas, 0), nuevo_piso_minimo)` en los registros abiertos/no validados de `tedp_reporte_avance` pertenecientes al proyecto.
+
+### 19.4. Resolución Unificada de Horas Mínimas Contractuales (`pisoMinimo`) en Todas las Vías de Creación de Report Diario
+1. Tanto `controlVivoController.overrideHitoActividad` (al crear o actualizar un reporte desde la Matriz PMO / Control en Vivo) como `reportDiarioController.regularizarReporteManual` y `reportDiarioController.getReportContexto` deben resolver `horas_minimas` dinámicamente desde la línea comercial vigente del equipo (priorizando `crm_v1.lineas_operativas_vigentes` o el `lineas_snapshot` de la última versión en `cotizaciones_historicas` con `eventos_envio` / `evento_envio`, y en su defecto `crm_v1.lineas_servicio`), extrayendo `Number(linea.pisoMinimo || linea.cantidad_horas)` y utilizando `8.0` únicamente como fallback de último recurso cuando no exista piso mínimo definido (`> 0 && <= 24`).
+
+---
+
+## 20. Taxonomía Determinista de Líneas por Categoría y Subcategoría — Prohibición de Inferencia por Descripción Libre (`REQ-1101` / `CASO-20261103-05` — 03-Nov-2026)
+
+### 20.1. Regla Inviolable de Clasificación de Líneas Comerciales (`GestorOportunidades.vue` & `Torre.vue`)
+1. **Prohibición de Evaluar `l.descripcion` para Clasificar el Tipo de Recurso:**
+   - El campo `l.descripcion` en el Estructurador de Servicios es un texto comercial libre donde el ejecutivo redacta glosas como *"HORAS MÍNIMAS MENSUALES ARRIENDO DE CAMIÓN PLUMA CON OPERADOR"*, *"CON RIGGER CERTIFICADO"* o *"INCLUYE TRASLADO"*.
+   - Queda **estrictamente prohibido** utilizar `l.descripcion` para determinar si una línea pertenece a:
+     - **Sección 1 (`1. FLOTA PRINCIPAL & OPERADORES DE SERVICIO` — `linesEquiposPrincipales`)**
+     - **Sección 2 (`2. EQUIPOS DE TRASLADO & CHOFERES (LOGÍSTICA)` — `isTrasladoLine`)**
+     - **Sección 3 (`3. ESPECIALISTAS & PERSONAL TÉCNICO EN TERRENO` — `isPersonalLine`)**
+     - **Modalidad Dry Lease (`PLATAFORMAS` — `esLineaPlataforma`)**
+2. **Reglas Deterministas por Atributos Estructurados (`l.tipo`, `l.subcategoria`, `l.unidad`):**
+   - **`isPersonalLine(l)`:** Retorna `true` única y exclusivamente cuando `l.tipo` es `'PERSONAL CERTIFICADO'` / `'PERSONAL'` (o cuando `l.tipo === ''` en registros legacy y `l.subcategoria` es `'RIGGER'`, `'PREVENCIONISTA'`, `'OPERADOR'` o `'SUPERVISOR'`). Si `l.tipo !== ''` (por ejemplo `'GRUAS TELESCOPICAS'`, `'CAMIONES'`, `'GRUA HORQUILLA'`, `'PLATAFORMAS'`, `'TRASLADOS'`), retorna siempre `false`.
+   - **`isTrasladoLine(l)`:** Retorna `true` única y exclusivamente cuando `l.tipo` es `'TRASLADOS'` / `'TRASLADO'` / `'FLETE'` o cuando `l.unidad` corresponde a una unidad de traslado (`'TRASLADO IDA/VUELTA'`, `'TRASLADO SOLO IDA'`, `'TRASLADO SOLO RETORNO'`, `'TRASLADO'`, `'FLETE'`, `'VIAJE'`).
+   - **`esLineaPlataforma(l)`:** Retorna `false` de inmediato si `l.tipo === 'TRASLADOS'`, `l.tipo === 'CAMIONES'` o `l.subcategoria.includes('CAMION PLATAFORMA')`, impidiendo confundir un camión plataforma logístico con una plataforma elevadora (manlift / tijera) Dry Lease.
+   - **Rol de Operador para `CAMIONES — CAMION PLUMA`:** `tripulacionAsignada` y `getOperadorAsignadoAEquipo` evalúan `${line.tipo} ${line.subcategoria}` para asignar el cargo `'Operador Camión Pluma'` cuando corresponde a `CAMIONES` / `PLUMA`.
+
+### 20.2. Resolución Integral de Equipo y Operador en `Torre.vue` (`getFichaOperativa` y `getHitoAsignacion`)
+1. **Resolución de Equipo / Patente (`equipoNombre` / `equipoLabel`):**
+   - Evalúa en orden de precedencia: `ej.equipo_id` ➔ `lineas.find(l => l.equipo_asignado_id)?.equipo_asignado_id` ➔ `ej.equipos_extra.find(ex => ex?.id_equipo)?.id_equipo` ➔ `ej.recursos_asignados?.equipos?.[0]`.
+   - Si aún no existe patente asignada, resuelve la subcategoría de la primera línea comercial de maquinaria (`reqEquipoComercial`) antes de recurrir al valor por defecto de `crm.familia_servicio`.
+2. **Resolución de Operador / Conductor (`operadorNombre` / `operadorLabel`):**
+   - Evalúa en orden de precedencia: `ej.operador_id` ➔ `lineas.find(l => l.operador_asignado_id)?.operador_asignado_id` ➔ `ej.equipos_extra.find(ex => ex?.chofer_id)?.chofer_id` ➔ `ej.chofer_id` ➔ `ej.tripulacion_asignada.find(t => /operador|chofer|conductor/i.test(t.rol || t.cargo))?.id_user`.
+
+### 20.3. Matriz Determinista de Visibilidad de Líneas `TRASLADOS` en Sección 2 (`sincronizarTrasladosComerciales`) — Cero Lectura de `descripcion`
+Queda **estrictamente prohibido** evaluar el texto libre `l.descripcion` o depender de `opportunity.value?.tipo_caso === 5` para decidir si una línea de `Categoría = TRASLADOS` se muestra en la **Sección 2 (`2. EQUIPOS DE TRASLADO & CHOFERES`)**. La decisión se gobierna **100% por `Categoría (l.tipo)` y `Subcategoría (l.subcategoria)`**:
+
+| # | Composición de Equipos Principales (Sección 1) | Línea en `Categoría = TRASLADOS` | ¿Se muestra en Sección 2 (Asignación de Vehículo + Chofer)? | Razón de Negocio |
+| :--- | :--- | :--- | :---: | :--- |
+| **1** | **Solo Camión (`Categoría = CAMIONES`, ej. `CAMION PLUMA`)** (sin Plataformas/Horquillas) | Cualquier subcategoría | **NO (`false`)** | El Camión Pluma es autopropulsado (viaja con su propio operador) y no lleva camión auxiliar de contrapesos. Su línea de traslado es solo cobro comercial. |
+| **2** | **Grúa Telescópica (`Categoría = GRUAS TELESCOPICAS`)** | `Subcategoría` de Grúa (`GRUA ... TON`) | **NO (`false`)** | Es el cobro de movilización de la propia Grúa Telescópica (autopropulsada, viaja con su operador de Sección 1). |
+| **3** | **Grúa Telescópica (`Categoría = GRUAS TELESCOPICAS`)** | `Subcategoría` de Camión Auxiliar (`CAMA BAJA`, `CAMIÓN PLATAFORMA`, `RAMPLA`, `TRACTOCAMIÓN`) | **SÍ (`true`)** | Cuando una Grúa Telescópica lleva además una línea de `TRASLADOS` con subcategoría `CAMA BAJA` / `CAMIÓN PLATAFORMA`, corresponde al camión auxiliar que transporta sus contrapesos/aparejos y requiere asignar vehículo + chofer. |
+| **4** | **Equipos No Autopropulsados (`Categoría = PLATAFORMAS`, Alza Hombre, Horquilla)** | `Subcategoría` de Camión (`CAMA BAJA`, `CAMIÓN PLATAFORMA`) | **SÍ (`true`)** | Las plataformas/horquillas no se desplazan solas por carretera; requieren asignar el camión de traslado y su chofer en Sección 2. |
+| **5** | **Ningún equipo en Sección 1** (`linesEquiposPrincipales.length === 0`, solo venta de `TRASLADOS`) | Cualquier subcategoría | **SÍ (`true`)** | Es un servicio de Flete/Transporte puro; requiere asignar en Sección 2 el camión y el chofer que hará el viaje. |
+
+---
+
+## 21. Eliminación de Prellenados en Condición del Servicio y Alimentación/Pensiones (`REQ-1103`) y Obligatoriedad de Descripción del Servicio con Herencia a la Orden de Trabajo (`REQ-1104` — 04-Nov-2026)
+
+### 21.1. Condición del Servicio y Responsabilidad de Alimentación / Pensiones Sin Prellenado ni Opción `"No Aplica"` (`REQ-1103`)
+1. **Inicialización en Blanco (`''`) por Defecto:**
+   - El estado reactivo `comercial.value.condicion_servicio` debe inicializarse en blanco (`''`, nunca prellenado en `'programado'`).
+   - Los 5 campos de `comercial.value.pensiones` (`alojamiento_costeado`, `desayuno_costeado`, `almuerzo_costeado`, `cena_costeado`, `traslado_costeado`) deben inicializarse en blanco (`''`, nunca prellenados en `'CLIENTE'` ni `'SAN_PABLO'`).
+2. **Eliminación de la Opción `"No Aplica (N/A)"` y Alerta Visual en Rojo:**
+   - Se elimina de los 5 selectores de pensiones la opción `<option value="NA">No Aplica (N/A)</option>` y el badge `"⚠️ NO APLICA (Servicio de 1 Día)"`.
+   - Cada selector ofrece únicamente el placeholder `<option value="" disabled>-- Seleccionar (Obligatorio) --</option>`, `<option value="CLIENTE">Costeado por Cliente</option>` y `<option value="SAN_PABLO">Costeado por San Pablo</option>`.
+   - Tanto `Condición del Servicio *` (`Programado` vs. `A Disponibilidad`) como cada uno de los 5 selectores de `Pensiones *` se marcan visualmente en rojo (`border-red-500/80 bg-red-500/10`) mientras permanezcan vacíos (`''`).
+   - Además de la sub-pestaña `Condiciones Comerciales`, el bloque de `Condición del Servicio *` y `Alimentación, Estadía y Traslado Personal *` se expone directamente en el formulario principal de `1. Preventa Comercial` para que el vendedor lo complete sin omisiones antes de cotizar.
+3. **Hidratación Estricta sin Fallbacks Prellenados (`cargarDatosCotizacion`):**
+   - Al cargar un negocio existente, `comercial.value.condicion_servicio = crm.condicion_servicio || ''` y `comercial.value.moneda = crm.moneda || 'CLP'`.
+   - Cada campo de `comercial.value.pensiones` se hidrata exclusivamente si su valor guardado es `'CLIENTE'` o `'SAN_PABLO'`; si está vacío o era `'NA'`, se mantiene en `''` para obligar al usuario a definirlo conscientemente.
+4. **Compuerta de Validación Obligatoria (`validarDatosPreventaParaCotizar`):**
+   - Antes de permitir `Generar Cotización PDF` o `Generar Requerimiento` hacia Operaciones, el sistema verifica obligatoriamente que `comercial.value.condicion_servicio` (`'programado'` o `'disponibilidad'`) y los 5 campos de `comercial.value.pensiones` (`'CLIENTE'` o `'SAN_PABLO'`) estén seleccionados.
+
+### 21.2. Obligatoriedad de Descripción del Servicio en Preventa y Herencia Automática a la Orden de Trabajo (`REQ-1104`)
+1. **Sincronización Unificada y Obligatoriedad en Preventa (`GestorOportunidades.vue`):**
+   - Los campos `opportunity.value.descripcion` (`Descripción del Servicio / Faena *`) y `siteVisit.value.detalle_servicio` (`Detalle del Servicio a realizar *`) operan sincronizados bidireccionalmente, hidratándose desde `crm.descripcion || crm.detalle_servicio || p.objetivo_proyecto || p.observacion_proyecto || ''` y persistiendo ambos en `crm_v1` (`descripcion` y `detalle_servicio`) además de `objetivo_proyecto` y `observacion_proyecto`.
+   - Se incorpora bajo el área de texto una advertencia visible:
+     > *"⚠️ Campo obligatorio: Esta descripción e instrucciones comerciales (detalle maniobra, viáticos, autorización Uber, horas dobles, etc.) se reflejarán directamente en la Orden de Trabajo (OT) para el operador."*
+   - Tanto `guardarEnPreventa()` como `validarDatosPreventaParaCotizar()` exigen que la descripción del servicio no esté vacía.
+2. **Herencia Automática en Pantalla (`3. Asignación Recursos OT`) y en el PDF Oficial de la OT (`proyectoModel.js`):**
+   - En la sub-pestaña `3. Asignación Recursos OT` (`operacionesSubTab === 'asignacion'`), se despliega una tarjeta destacada con la **`Descripción Comercial del Servicio & Instrucciones para el Operador`** heredada directamente de Preventa.
+### 21.3. Regla de Visualización de Horas Mínimas y Políticas de Cobro por Equipo/Patente en la Orden de Trabajo (`REQ-1105`)
+1. **Exclusión Estricta de `Personal Certificado` y `Traslados` (`esLineaPersonalOT` / `esLineaTrasladoOT`):**
+   - Al construir la Orden de Trabajo (`generarOTVersion` en `proyectoModel.js`), el sistema clasifica las líneas exclusivamente por `l.tipo` (`Categoría`) y `l.subcategoria` (`Subcategoría`), excluyendo de forma absoluta las categorías `PERSONAL CERTIFICADO` (`PERSONAL`, `RIGGER`, `PREVENCIONISTA`, `SUPERVISOR`) y `TRASLADOS` (`TRASLADO`, `FLETE`) y prohibiendo evaluar `l.descripcion`.
+2. **Despliegue de Todos los Equipos con su Política de Cobro por Patente y Deduplicación Física:**
+   - Para cada línea perteneciente a categorías de **Equipos** (`lineasEquiposOT`), se priorizan las líneas base comerciales (`is_linea_base !== false`) y se deduplica por patente (`_resolved_patente`), garantizando la regla **`1 Patente Física = 1 Política de Cobro Contractual`** (`Horas Mes Minimas` -> `X hrs mensuales mínimas (N Meses)`, `Horas Diarias Minimas` -> `X hrs diarias mínimas (N Días)`, `Valor Fijo` -> `Servicio a Valor Fijo Convenido`).
+   - En la **Sección 2 (`Piso Mínimo Contractual`)** del PDF de la OT se imprimen todos los equipos principales distintos con su respectiva patente y política de cobro.
+   - En la **Sección 3 (`3. Flota & Convoy de Equipos Asignados`)** del PDF de la OT (manteniendo sus 5 columnas canónicas: `N°`, `Equipo / Modelo`, `Patente (PPU)`, `Segmento`, `Operador / Chofer Asignado`), cada equipo principal se lista como `<Categoría> — <Subcategoría>` con segmento `Izaje Principal` y rol `(Operador)`, impidiendo que una patente de `Izaje Principal` (ej. Camión Pluma autopropulsado) se duplique o clasifique como `Traslado & Logística`.
+
+
+
+
+
+---
+
+## 22. Relevos de Operador por Fecha en un Mismo Equipo, Tramo de Traslado (`Solo Ida`), Nuevo Estándar de 3 Indicadores de Viáticos (`V2_3_INDICADORES`) y Limpieza de Glosa Copec (`REQ-1106`, `REQ-1110`, `REQ-1111` — 04-Nov-2026)
+
+### 22.1. Relevos de Operador por Fecha en un Único Equipo (`turnos_operadores` — `REQ-1110`)
+1. **Unicidad de Patente en Flota Principal y Arreglo `turnos_operadores`:**
+   - Queda prohibido duplicar la misma máquina física (`id_equipo`) en dos filas distintas de `1. Flota Principal & Operadores de Servicio` para asignar un relevo de operador.
+   - Cada línea de equipo principal admite el arreglo estructurado `turnos_operadores: [{ operador_id, fecha_ini, fecha_fin }]`, gestionable desde el botón **`+ Relevo`** en `3. Asignación Recursos OT`.
+   - En el PDF de la Orden de Trabajo (`proyectoModel.generarOTVersion`), la tabla `3. Flota & Convoy de Equipos Asignados` consolida una única fila por patente y lista en la columna `Operador / Chofer Asignado` a cada operador con su ventana de fechas (`DD-MM-YYYY al DD-MM-YYYY`), mientras que `4. Dotación Humana & Tripulación de Faena` incorpora a todos los operadores de relevo.
+
+### 22.2. Especificación de Tramo en Equipos de Traslado (`modalidad_traslado` — `REQ-1110`)
+1. Cada vehículo en `2. Equipos de Traslado & Choferes (Logística)` dispone del selector `modalidad_traslado`:
+   - `IDA_VUELTA`: **`Ida y Vuelta`**
+   - `SOLO_IDA`: **`SOLO IDA — Entrega en Obra (Retiro Pendiente)`**
+   - `SOLO_RETORNO`: **`SOLO RETORNO — Retiro desde Obra`**
+2. Dicha glosa se imprime explícitamente en la columna `Segmento` de la Orden de Trabajo PDF (`Traslado (SOLO IDA — Entrega en Obra (Retiro Pendiente))`).
+
+### 22.3. Nuevo Formato de 3 Indicadores de Viáticos (`Traslado`, `Alimentación`, `Alojamiento`) y Convivencia `V1` / `V2` (`REQ-1111`)
+1. **Reemplazo del Desglose de 5 Ítems por 3 Indicadores Consolidados:**
+   - El desglose heredado (`Desayuno`, `Almuerzo`, `Cena`, `Alojamiento`, `Traslado`) se reemplaza en Preventa, Operaciones y PDFs de Cotización y OT por **3 indicadores obligatorios**:
+     1. **`Traslado`** (`traslado_costeado`: `'CLIENTE'` | `'SAN_PABLO'`)
+     2. **`Alimentación`** (`alimentacion_costeado`: `'CLIENTE'` | `'SAN_PABLO'`)
+     3. **`Alojamiento`** (`alojamiento_costeado`: `'CLIENTE'` | `'SAN_PABLO'`)
+2. **Estrategia de Convivencia sin Migración Destructiva (`V2_3_INDICADORES` vs. `V1_5_ITEMS`):**
+   - Todo registro nuevo o editado persiste `formato_viaticos: 'V2_3_INDICADORES'` y ejecuta escritura espejo (`Dual-Write`) copiando `alimentacion_costeado` hacia `desayuno_costeado`, `almuerzo_costeado` y `cena_costeado` para mantener compatibilidad total con ITS y RRHH.
+   - Los servicios históricos con `formato_viaticos === 'V1_5_ITEMS'` que posean valores diferenciados entre desayuno, almuerzo y cena continúan renderizando su desglose original en los PDFs sin alteración.
+
+### 22.4. Eliminación de Referencia Estática a Carlos Mendoza / Tarjeta Copec (`REQ-1106`)
+1. Se elimina de `GestorOportunidades.vue` cualquier placeholder estático de solicitudes Copec (`Carlos Mendoza`, `HW-8842`, `#COPEC-8492`).
+2. En la Sección `5. Elementos de Izaje, Logística & Suministros` del PDF de la Orden de Trabajo (`proyectoModel.generarOTVersion`), cuando el combustible es suministrado por Grúas San Pablo, se imprime exclusivamente:
+   > **`Suministrado por Grúas San Pablo (Incluido en tarifa del servicio).`** (prohibida toda mención a `"Carga con Tarjeta Copec en ruta"`).
+
+---
+
+## 23. Blindaje Anti-Regresión de Estado Operativo, Preservación de `ejecucion_v1` ante Pestañas Obsoletas y Verificador Reactivo de Versión Web (`REQ-1112` / `CASO-20261104-02` — 04-Nov-2026)
+
+### 23.1. Candado Anti-Regresión en `proyectoModel.updateProyecto`
+1. **Prohibición de Retroceso de `id_proyecto_estado` por Payloads Obsoletos:**
+   - Si el estado actual en base de datos es `estadoDB > 1` y un `PUT /api/proyectos/:id` envía un `id_proyecto_estado < estadoDB` (sin flag explícito de reversión administrativa `allow_state_rollback: true`), `updateProyecto` **bloquea el retroceso y conserva `estadoDB`**.
+2. **Preservación Profunda de `ejecucion_v1` y Fusión No Destructiva de `cotizaciones_historicas`:**
+   - Si un payload entrante desde una pestaña en modo Preventa envía `ejecucion_v1` vacío o sin `ot_versiones` / `equipo_id` cuando la base de datos ya los posee, el backend preserva íntegramente `currentJson.ejecucion_v1` y las claves raíz (`dossier_documentos`, `control_vivo_overrides`, `dias_laborales_override`, `contrato_arriendo`).
+   - El arreglo `crm_v1.cotizaciones_historicas` se fusiona por `version` (`Map`), conservando los `eventos_envio` e `id_doc` existentes para que ninguna pestaña desactualizada pueda borrar versiones previas.
+3. **Pre-Sincronización antes de Registrar Envío de Correo (`onEmailSent`):**
+   - En `GestorOportunidades.vue`, antes de ejecutar `PUT /proyectos/:id` al enviar una cotización por correo, `onEmailSent` consulta `GET /proyectos/:id` para hidratar el `id_proyecto_estado` y `ejecucion_v1` vigentes en el servidor.
+
+### 23.2. Verificador Automático de Versión Web vs. Servidor (`App.vue` & `GET /api/backlog/version`)
+1. El endpoint público `GET /api/backlog/version` responde con cabeceras `Cache-Control: no-store, no-cache, must-revalidate` y expone la versión vigente de `package.json`.
+2. `App.vue` verifica la versión al iniciar, en cada cambio de ruta (`router.afterEach`), al recuperar el foco/visibilidad de la pestaña (`visibilitychange` / `focus`) y cada 3 minutos, ejecutando `window.location.reload()` cuando detecta una versión nueva desplegada en el servidor.
+
+---
+
+## 24. Estándar Tipográfico de Alta Legibilidad en PDF de Orden de Trabajo (`REQ-1114`) e Ingreso/Reasignación de Ejecutivo Comercial Responsable (`REQ-1115` — 04-Nov-2026)
+
+### 24.1. Tipografía Aumentada y `--disable-smart-shrinking` en PDF de Orden de Trabajo (`REQ-1114`)
+1. En `proyectoModel.generarOTVersion`, la plantilla HTML A4 de la Orden de Trabajo aplica obligatoriamente la siguiente escala tipográfica de alta legibilidad para lectura en terreno e impresión física:
+   - `body`: `font-size: 14px; line-height: 1.45;`
+   - `.ot-title`: `font-size: 24px; font-weight: 900;`
+   - `.ot-code`: `font-size: 16px;` y `.ot-version`: `font-size: 13px;`
+   - `.section-title`: `font-size: 14px;`
+   - Tablas `.info-grid` y `table.data-table`: `font-size: 13.5px;` (encabezados `th`: `12.5px`, etiquetas `.info-lbl`: `13px`)
+   - Filas **`Descripción del Servicio (Preventa)`** e **`Instrucciones & Observaciones`**: `font-size: 15px; line-height: 1.5; font-weight: 700 / 600;`
+2. El comando `wkhtmltopdf` incluye obligatoriamente el flag `--disable-smart-shrinking` para impedir que el motor reduzca proporcionalmente las fuentes al renderizar el documento A4.
+
+### 24.2. Ingreso de Cotización por Usuario A a Nombre de Usuario B y Reasignación de Ejecutivo Responsable por Administrador (`REQ-1115`)
+1. **Selección de Ejecutivo en Creación de Cotización (Usuario A $\rightarrow$ Usuario B):**
+   - Al crear una nueva oportunidad/cotización (`!opportunity.id_proyecto`), el selector **`Ejecutivo Comercial Responsable`** (disponible tanto en el badge superior del header como en la sección `1. Datos de la Oportunidad`) está habilitado para cualquier usuario autenticado, permitiendo que un usuario A ingrese la cotización asignándola directamente a un ejecutivo B (`opportunity.id_usuario_creacion`).
+2. **Reasignación de Ejecutivo Responsable en Procesos en Curso por Perfil Administrador (`esUsuarioAdministrador`):**
+   - Para usuarios con rol Administrador (`ADMIN`, `SUPERADMIN`, `GSP_ADMIN`, `GERENCIA`, `GERENTE`, `DIRECTOR`), el selector **`Ejecutivo Comercial Responsable`** permanece habilitado en todo momento (ubicado fuera de `<fieldset :disabled="isBloqueadoComercial">`) sobre cualquier proceso comercial existente.
+   - Al cambiar el ejecutivo responsable (`onCambiarEjecutivoResponsable`), el sistema actualiza de inmediato en PostgreSQL (`PUT /api/proyectos/:id` vía `proyectosController.js` y `proyectoModel.js`) tanto la columna `tpry_proyecto.id_usuario_creacion` como los atributos `id_vendedor`, `vendedor_nombre`, `vendedor_email` y `vendedor_telefono` en `json_field.crm_v1` y `snapshot_comercial`.
+   - Asimismo, `proyectoModel.generarCotizacionVersion` resuelve el emisor comercial del PDF priorizando `crm.id_vendedor || p.id_usuario_creacion`.
+
+---
+
+## 25. Visualización Resaltada de `Programado / A Disponibilidad` en Preventa y Edición de `Condición del Servicio` + `Alimentación / Viáticos` en `2. Validación & Diff` de Operaciones (`REQ-1116` — Servicio `0012` — 04-Nov-2026)
+
+### 25.1. Visibilidad Inequívoca de `Programado / A Disponibilidad` en Preventa (`GestorOportunidades.vue`)
+1. En la sección `1. Condición del Servicio *` de Preventa, las opciones **`Programado`** (`'programado'`) y **`A Disponibilidad`** (`'disponibilidad'`) aplican clases reactivas de alto contraste (`border-amber-400 bg-amber-500/20 text-amber-200 font-bold shadow-sm` y badge **`✓`**) sobre la opción seleccionada.
+2. Esto garantiza que, incluso cuando la oportunidad ya fue enviada como requerimiento a Operaciones y el `<fieldset :disabled="isBloqueadoComercial">` deshabilita los inputs nativos, el usuario vea de forma inmediata y clara qué opción marcó Preventa.
+3. En `cargarDatosCotizacion`, la hidratación de `comercial.value.condicion_servicio` normaliza cualquier variante (`'programado'` / `'disponibilidad'` / `'disponible'`) leyendo en cascada desde `crm.condicion_servicio`, `crm.snapshot_comercial?.condicion_servicio` y el último snapshot de `crm.cotizaciones_historicas`.
+
+### 25.2. Edición de `Programado / A Disponibilidad` y Asignación de `Alimentación / Viáticos` en `2. Validación & Diff` de Operaciones
+1. En la sub-pestaña **`2. Validación & Diff`** de Operaciones (`operacionesSubTab === 'validacion'`), inmediatamente debajo de `Pestaña B: Estructurador de Servicios`, se dispone del panel interactivo **`Condición del Servicio & Asignación de Viáticos (Validación Operaciones)`** dividido en dos bloques editables:
+   - **`1. Condición del Servicio (Validación Operaciones)`:** Permite a Operaciones corregir directamente entre **`Programado`** (`'programado'`) y **`A Disponibilidad`** (`'disponibilidad'`), mostrando en un badge superior lo que marcó originalmente Preventa (`Preventa marcó: Programado / A Disponibilidad`).
+   - **`2. Indicadores de Traslado, Alimentación y Alojamiento`:** Permite a Operaciones asignar o modificar el responsable (`Costeado por Cliente` vs. `Costeado por San Pablo`) de **`Traslado`**, **`Alimentación`** (con sincronización automática `onChangeAlimentacionUnificada()` hacia `desayuno_costeado`, `almuerzo_costeado` y `cena_costeado`) y **`Alojamiento`**.
+2. **Detección Reactiva de Diferencias (`hasDiff`):**
+   - El computed `hasDiff` compara `comercial.value.condicion_servicio` y `comercial.value.pensiones` (`traslado_costeado`, `alimentacion_costeado`, `alojamiento_costeado`) contra `snapshotComercial.value`. Si Operaciones corrige la condición del servicio o modifica la alimentación/viáticos respecto a lo enviado por Preventa, se activa el indicador de diferencia (`Diff`) para habilitar el flujo de solicitud de `V°B° Comercial` o confirmación de validación operativa.
