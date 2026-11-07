@@ -51,8 +51,30 @@
             </button>
           </div>
 
-          <!-- Si NO es readonly (Cockpit PMO) -->
-          <template v-if="!readonly">
+          <!-- MODO REVISIÓN EJECUTIVA (SPEC-116 / REQ-1127): Jefaturas y Contabilidad -->
+          <template v-if="esModoRevisionEjecutiva">
+            <div class="flex items-center bg-slate-900 border border-white/10 rounded-lg p-0.5">
+              <button 
+                type="button"
+                @click="vistaRevisionActiva = 'PDF'"
+                :class="vistaRevisionActiva === 'PDF' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 text-xs font-mono font-bold rounded transition-colors cursor-pointer"
+              >
+                📄 PDF Firmado
+              </button>
+              <button 
+                type="button"
+                @click="vistaRevisionActiva = 'NUMEROS'"
+                :class="vistaRevisionActiva === 'NUMEROS' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                class="px-2.5 py-1 text-xs font-mono font-bold rounded transition-colors cursor-pointer"
+              >
+                👁️ Desglose Técnico
+              </button>
+            </div>
+          </template>
+
+          <!-- Si NO es modo ejecutivo ni readonly (Cockpit PMO / Yara Paso 1) -->
+          <template v-else-if="!readonly">
             <button 
               type="button"
               @click="guardar(false)" 
@@ -86,7 +108,7 @@
             </button>
           </template>
 
-          <!-- Si ES readonly (Kanban de Operaciones) -->
+          <!-- Si ES readonly (Kanban de Operaciones sin modo ejecutivo) -->
           <template v-else>
             <button 
               v-if="embedded"
@@ -100,7 +122,7 @@
           </template>
 
           <button 
-            v-if="puedeFirmarPasoActual"
+            v-if="puedeFirmarPasoActual && !esModoRevisionEjecutiva"
             type="button"
             @click="abrirModalFes('APRUEBA')"
             class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-900/40 flex items-center gap-1.5 transition-all cursor-pointer"
@@ -192,7 +214,90 @@
         <p class="text-sm font-mono">Cargando datos relacionales del ITS...</p>
       </div>
 
+      <!-- CUERPO EN MODO REVISIÓN EJECUTIVA: VISTA OFICIAL PDF A PANTALLA COMPLETA -->
+      <div v-else-if="esModoRevisionEjecutiva && vistaRevisionActiva === 'PDF'" class="flex-1 flex flex-col min-h-0 bg-slate-950">
+        <div class="bg-slate-900/90 border-b border-white/10 px-5 py-2 flex items-center justify-between text-xs font-mono flex-shrink-0">
+          <span class="text-slate-300 flex items-center gap-2">
+            <span>📄</span> <span>Documento oficial formalizado y firmado con PIN FES en Paso 1 (Yiara Mendoza).</span>
+          </span>
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              @click="recargarPreviewPdf" 
+              class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>🔄</span> <span>Actualizar Vista</span>
+            </button>
+            <a 
+              :href="urlPdfOficial"
+              target="_blank"
+              rel="noopener"
+              class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-white/10 flex items-center gap-1 cursor-pointer no-underline"
+            >
+              <span>↗</span> <span>Abrir en Pestaña</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Visor del PDF Oficial Firmado -->
+        <div class="flex-1 relative bg-slate-900 overflow-hidden">
+          <iframe 
+            v-if="urlPdfPreviewIframe" 
+            :src="urlPdfPreviewIframe" 
+            class="w-full h-full border-0"
+            title="Documento Oficial ITS"
+          ></iframe>
+          <div v-else class="flex-1 flex items-center justify-center text-slate-500 text-xs font-mono p-8 text-center">
+            No se pudo cargar el documento PDF.
+          </div>
+        </div>
+
+        <!-- Barra Fija de Decisión Ejecutiva para Jefaturas (Operaciones / Contabilidad) -->
+        <div v-if="puedeFirmarPasoActual" class="bg-[#050810] border-t border-white/15 px-6 py-3.5 flex items-center justify-between gap-4 flex-shrink-0">
+          <button 
+            v-if="pasoPendienteActual?.orden > 1"
+            type="button"
+            @click="abrirModalFes('RECHAZA')"
+            class="px-4 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 text-xs font-bold font-mono flex items-center gap-2 cursor-pointer transition-colors shadow-lg"
+          >
+            <span>❌</span> <span>Devolver con Observaciones</span>
+          </button>
+          <div v-else></div>
+
+          <button 
+            type="button"
+            @click="abrirModalFes('APRUEBA')"
+            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black font-mono flex items-center gap-2 cursor-pointer transition-all shadow-xl shadow-emerald-950/50"
+          >
+            <span>🔏</span> <span>Aprobar ITS (Paso {{ pasoPendienteActual?.orden || 2 }})</span>
+          </button>
+        </div>
+      </div>
+
       <div v-else class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6 custom-scrollbar">
+        <!-- Banner informativo si está en Desglose Técnico Solo Lectura -->
+        <div v-if="esModoRevisionEjecutiva" class="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-xs text-amber-200 flex items-center justify-between">
+          <span class="flex items-center gap-2 font-mono">
+            <span>🔒</span> <span>Modo Inspección Solo Lectura: Valores conciliados por Control de Gestión en Paso 1. Para solicitar correcciones, use "Devolver con Observaciones".</span>
+          </span>
+          <div v-if="puedeFirmarPasoActual" class="flex items-center gap-2">
+            <button 
+              v-if="pasoPendienteActual?.orden > 1"
+              type="button"
+              @click="abrirModalFes('RECHAZA')"
+              class="px-3 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 text-xs font-mono font-bold cursor-pointer"
+            >
+              ❌ Devolver
+            </button>
+            <button 
+              type="button"
+              @click="abrirModalFes('APRUEBA')"
+              class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold cursor-pointer"
+            >
+              🔏 Aprobar (Paso {{ pasoPendienteActual?.orden || 2 }})
+            </button>
+          </div>
+        </div>
         
         <!-- SECCIÓN 1: DATOS DEL SERVICIO INTEGRAL & ASIGNACIÓN -->
         <section class="bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm">
@@ -250,13 +355,13 @@
                 @input="recalcularTotales"
                 class="w-full bg-slate-950 border border-cyan-500/40 rounded px-2 py-1 font-mono font-bold text-cyan-300 text-xs mt-0.5"
               />
-              <span class="text-[9px] text-cyan-400/80 block mt-0.5 font-mono">Pactado (Ida + Retorno faena)</span>
+              <span class="text-[9px] text-cyan-400/80 block mt-0.5 font-mono">{{ etiquetaModalidadFlete }}</span>
             </div>
 
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-white/10">
               <span class="text-[10px] text-slate-400 uppercase font-mono block">Venta Neta Proyectada</span>
               <strong class="text-emerald-400 font-mono text-sm block mt-1">
-                {{ formatMoneda(its.total_ingresos_facturables) }}
+                {{ formatMoneda(ventaNetaProyectadaComercial) }}
               </strong>
             </div>
           </div>
@@ -344,6 +449,12 @@
               <span class="bg-blue-950 text-blue-300 border border-blue-700/50 text-xs font-mono px-2 py-0.5 rounded">
                 {{ jornadasActivas.length }} Jornadas Activas
               </span>
+              <span
+                class="px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase tracking-wider border"
+                :class="its.tipo_contexto === 'RURAL' ? 'bg-amber-950/80 text-amber-300 border-amber-600/50' : 'bg-emerald-950/80 text-emerald-300 border-emerald-600/50'"
+              >
+                {{ its.tipo_contexto === 'RURAL' ? 'Servicio Rural' : 'Servicio Urbano' }}
+              </span>
             </div>
             
             <div class="flex items-center gap-2 flex-wrap">
@@ -398,7 +509,8 @@
                   <th class="p-2.5">Término</th>
                   <th class="p-2.5">Retorno</th>
                   <th class="p-2.5">Colación</th>
-                  <th class="p-2.5">Hrs Reales</th>
+                  <th class="p-2.5" :title="its.tipo_contexto === 'RURAL' ? 'Política Rural: Llegada a Obra → Término' : 'Política Urbana: Salida San Pablo → Término'">Hrs Servicio</th>
+                  <th class="p-2.5 text-cyan-300" title="Puerta a Puerta: Salida San Pablo → Retorno San Pablo">Hrs Viáticos</th>
                   <th class="p-2.5 text-amber-300">Hrs Report</th>
                   <th class="p-2.5 text-blue-300 text-right">Tarifa $/hr</th>
                   <th class="p-2.5 text-emerald-300 text-right">Subtotal</th>
@@ -463,8 +575,12 @@
                     </div>
                   </td>
 
-                  <td class="p-2 font-bold text-slate-300">
-                    {{ j.horas_reales }} hrs
+                  <td class="p-2 font-bold text-slate-300 font-mono">
+                    {{ formatHorasHHMM(j.horas_reales) }} hrs
+                  </td>
+
+                  <td class="p-2 font-bold text-cyan-300 font-mono">
+                    {{ formatHorasHHMM(j.horas_viaticos) }} hrs
                   </td>
 
                   <td class="p-2">
@@ -546,7 +662,7 @@
                 </tr>
 
                 <tr v-if="jornadas.length === 0">
-                  <td colspan="15" class="p-6 text-center text-slate-500 font-sans text-xs">
+                  <td colspan="16" class="p-6 text-center text-slate-500 font-sans text-xs">
                     No hay jornadas registradas. Presione "+ Agregar Jornada" para incorporar días de faena.
                   </td>
                 </tr>
@@ -559,10 +675,13 @@
                     Total Horas Facturables (Jornadas Activas):
                   </td>
                   <td class="p-2.5 font-bold text-slate-300">
-                    {{ totalHorasRealesActivas.toFixed(1) }} hrs
+                    {{ formatHorasHHMM(totalHorasRealesActivas) }} hrs
+                  </td>
+                  <td class="p-2.5 font-bold text-cyan-300">
+                    {{ formatHorasHHMM(totalHorasViaticosActivas) }} hrs
                   </td>
                   <td class="p-2.5 font-black text-amber-300 text-sm">
-                    {{ its.total_horas_report.toFixed(1) }} hrs
+                    {{ formatHorasHHMM(its.total_horas_report) }} hrs
                   </td>
                   <td class="p-2.5 text-slate-400 text-right text-[11px]">
                     Tarifa Base: {{ formatMoneda(its.valor_hora_pactado) }}
@@ -903,87 +1022,257 @@
                 </table>
               </div>
 
-              <!-- CASO COSTO HORA OPERADOR (Multiplicativo Valor Hora * Horas) -->
+              <!-- CASO COSTO HORA OPERADOR (Consolidación Diaria por Movimiento: Operador + Rigger RRHH/Contabilidad) -->
               <div v-else-if="tabCostoActiva === 'costo_hora_operador'">
+                <!-- BANNER REGLA COMERCIAL tpar_tarifa_operador + RÉGIMEN URBANO / RURAL -->
+                <div class="mb-2.5 px-3 py-2 bg-slate-900/90 border border-indigo-500/30 rounded-lg flex flex-col gap-1.5 text-xs">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold text-[10px]">tpar_tarifa_operador</span>
+                      <span class="text-slate-300">
+                        Tarifa Comercial Comprometida:
+                        <strong class="text-white font-mono">{{ tarifaOperadorComercial?.categoria || 'Según línea cotizada' }}</strong>
+                        <strong class="text-emerald-300 font-mono ml-1">({{ formatMoneda(tarifaOperadorComercial?.valor_hora || 0) }}/hr)</strong>
+                      </span>
+                    </div>
+                    <span class="text-[11px] text-slate-400">
+                      Incluye <strong class="text-sky-300">Operador</strong> (liquidación horaria) y <strong class="text-purple-300">Rigger</strong> (sueldo fijo $0, registro de horas para RRHH/Contabilidad)
+                    </span>
+                  </div>
+                  <div class="pt-1.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+                    <div v-if="its.tipo_contexto === 'RURAL'" class="flex items-center gap-2 text-amber-300">
+                      <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-bold">🌲 RÉGIMEN RURAL (&gt; 30 km{{ proyecto.distancia_km ? ` · ${proyecto.distancia_km} km` : '' }})</span>
+                      <span class="text-slate-300"><strong>Hrs Faena</strong> = Máx(Mín {{ its.horas_minimas_pactadas || 8 }}h, (Término − Llegada) − Colación) + <strong>Hrs Flete</strong> = (Ida + Retorno) al mismo valor hora</span>
+                    </div>
+                    <div v-else class="flex items-center gap-2 text-blue-300">
+                      <span class="px-2 py-0.5 rounded bg-blue-500/20 border border-blue-500/40 font-bold">🏢 RÉGIMEN URBANO (&le; 30 km{{ proyecto.distancia_km ? ` · ${proyecto.distancia_km} km` : '' }})</span>
+                      <span class="text-slate-300"><strong>Hrs a Pagar</strong> = (Hora Término Obra − Hora Salida Planta) − Colación · <strong>Hrs Flete = 0 hrs</strong></span>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- BANNER AUDITORÍA CONTROL DE GESTIÓN (YARA) -->
                 <div v-if="costos.costo_hora_operador.some(it => it.tarifa_modificada)" class="mb-3 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between text-amber-300 text-xs">
                   <div class="flex items-center gap-2">
                     <span class="text-amber-400 font-bold">⚠️ Tarifa Modificada por Control de Gestión</span>
-                    <span class="text-slate-400 text-[11px]">(Valores de tarifa editados respecto a la tarifa sugerida del equipo)</span>
+                    <span class="text-slate-400 text-[11px]">(Valores editados respecto a la tarifa comercial sugerida en tpar_tarifa_operador)</span>
                   </div>
-                  <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-200 font-mono">Auditoría: Yara</span>
+                  <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-200 font-mono">Auditoría Control de Gestión</span>
                 </div>
 
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-900 text-slate-400 font-mono uppercase text-[10px] border-b border-white/10">
-                    <tr>
-                      <th class="p-2">Fecha</th>
-                      <th class="p-2">Patente</th>
-                      <th class="p-2">Operador</th>
-                      <th class="p-2">Valor Hora ($)</th>
-                      <th class="p-2">Horas Report</th>
-                      <th class="p-2 text-rose-300">Total Costo ($)</th>
-                      <th class="p-2 text-center">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5 font-mono">
-                    <tr v-for="(it, idx) in costos.costo_hora_operador" :key="idx" class="hover:bg-white/[0.02]">
-                      <td class="p-1.5"><input type="date" v-model="it.fecha" class="bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white" /></td>
-                      <td class="p-1.5">
-                        <select v-model="it.patente" @change="onPatenteOperadorChange(it)" class="w-28 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white font-bold font-mono">
-                          <option value="" disabled>Patente...</option>
-                          <option v-for="eq in patentesAsignadas" :key="eq.patente" :value="eq.patente">{{ eq.patente }}</option>
-                          <option v-if="it.patente && !patentesAsignadas.some(e => e.patente === it.patente)" :value="it.patente">{{ it.patente }}</option>
-                        </select>
-                      </td>
-                      <td class="p-1.5">
-                        <select v-if="personalAsignadoLista.length > 0" v-model="it.nombre_personal" class="w-36 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white font-bold">
-                          <option value="" disabled>Seleccione tripulante...</option>
-                          <option v-for="p in personalAsignadoLista" :key="p.id_user || p.nombre" :value="p.nombre">
-                            {{ p.nombre }}
-                          </option>
-                          <option v-if="it.nombre_personal && !personalAsignadoLista.some(p => p.nombre === it.nombre_personal)" :value="it.nombre_personal">{{ it.nombre_personal }}</option>
-                        </select>
-                        <input v-else type="text" v-model="it.nombre_personal" placeholder="Nombre Operador" class="w-36 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white" />
-                        <div v-if="it.concepto_detalle" class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[140px]" :title="it.concepto_detalle">
-                          {{ it.concepto_detalle }}
-                        </div>
-                      </td>
-                      <td class="p-1.5">
-                        <div class="flex items-center gap-1.5">
-                          <input 
-                            type="number" 
-                            v-model.number="it.precio_unitario" 
-                            @input="recalcularCostoOperador(it)" 
-                            :class="[
-                              'w-24 bg-slate-900 border rounded px-1 py-1 text-xs text-right font-mono transition-colors',
-                              it.tarifa_modificada ? 'border-amber-500/60 text-amber-300 bg-amber-500/10 font-bold' : 'border-white/10 text-white'
-                            ]" 
-                          />
-                          <div v-if="it.tarifa_modificada" class="flex flex-col items-start leading-tight">
-                            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap shadow-sm" title="Tarifa modificada por Control de Gestión (Yara)">
-                              ⚠️ Modificado
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-900 text-slate-400 font-mono uppercase text-[10px] border-b border-white/10">
+                      <tr>
+                        <th class="p-2">Fecha</th>
+                        <th class="p-2">Equipo</th>
+                        <th class="p-2">Persona / Rol</th>
+                        <th class="p-1.5 text-center">Salida</th>
+                        <th class="p-1.5 text-center">Llegada</th>
+                        <th class="p-1.5 text-center">Término</th>
+                        <th class="p-1.5 text-center">Retorno</th>
+                        <th class="p-1.5 text-center">Colación</th>
+                        <th class="p-1.5 text-center text-sky-300">Hrs Reales</th>
+                        <th class="p-1.5 text-center text-amber-300" title="Stand By Grúas San Pablo">SB GSP</th>
+                        <th class="p-1.5 text-center text-indigo-300" title="Stand By Cliente">SB Cli</th>
+                        <th class="p-1.5 text-right text-emerald-300">Hrs Pagar</th>
+                        <th class="p-1.5 text-right text-purple-300">Hrs Flete</th>
+                        <th class="p-2 text-right">Valor Hora ($)</th>
+                        <th class="p-2 text-right text-rose-300">Total Costo ($)</th>
+                        <th class="p-1.5 text-center">V°B°</th>
+                        <th class="p-1.5 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 font-mono">
+                      <tr v-for="(it, idx) in costos.costo_hora_operador" :key="idx" :class="['hover:bg-white/[0.02]', (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) ? 'bg-purple-950/10' : '']">
+                        <td class="p-1.5"><input type="date" v-model="it.fecha" class="bg-slate-900 border border-white/10 rounded px-1 py-1 text-[11px] text-white w-28" /></td>
+                        <td class="p-1.5">
+                          <select v-model="it.patente" @change="onPatenteOperadorChange(it)" class="w-24 bg-slate-900 border border-white/10 rounded px-1 py-1 text-[11px] text-white font-bold font-mono">
+                            <option value="" disabled>Patente...</option>
+                            <option v-for="eq in patentesAsignadas" :key="eq.patente" :value="eq.patente">{{ eq.patente }}</option>
+                            <option v-if="it.patente && !patentesAsignadas.some(e => e.patente === it.patente)" :value="it.patente">{{ it.patente }}</option>
+                          </select>
+                        </td>
+                        <td class="p-1.5">
+                          <div class="flex items-center gap-1">
+                            <span :class="[
+                              'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
+                              (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica)
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                            ]">
+                              {{ (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) ? 'Rigger' : 'Operador' }}
                             </span>
-                            <span v-if="it.tarifa_sugerida" class="text-[9px] text-slate-400 font-mono line-through" title="Tarifa sugerida original">
-                              {{ formatMoneda(it.tarifa_sugerida) }}
+                            <input type="text" v-model="it.nombre_personal" placeholder="Tripulante" class="w-32 bg-slate-900 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-white font-bold" />
+                            <span v-if="it.report_validado" class="px-1 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Traspasado desde Report Diario Validado">
+                              ✓ Report
                             </span>
                           </div>
-                          <span v-else-if="it.tarifa_sugerida" class="text-[9px] text-slate-500 font-mono whitespace-nowrap" title="Tarifa sugerida por maquinaria">
-                            (Sug: {{ formatMoneda(it.tarifa_sugerida) }})
+                          <div v-if="it.concepto_detalle" class="text-[9px] text-slate-400 mt-0.5 truncate max-w-[170px]" :title="it.concepto_detalle">
+                            {{ it.concepto_detalle }}
+                          </div>
+                        </td>
+                        <td class="p-1 text-center">
+                          <input type="time" v-model="it.hora_salida" @change="onHorarioOperadorChange(it)" class="bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-slate-200 font-mono" />
+                        </td>
+                        <td class="p-1 text-center">
+                          <input type="time" v-model="it.hora_llegada" @change="onHorarioOperadorChange(it)" class="bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-slate-200 font-mono" />
+                        </td>
+                        <td class="p-1 text-center">
+                          <input type="time" v-model="it.hora_termino" @change="onHorarioOperadorChange(it)" class="bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-slate-200 font-mono" />
+                        </td>
+                        <td class="p-1 text-center">
+                          <input type="time" v-model="it.hora_retorno" @change="onHorarioOperadorChange(it)" class="bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-slate-200 font-mono" />
+                        </td>
+                        <td class="p-1 text-center text-[11px] text-slate-400">{{ it.colacion_horas !== undefined && it.colacion_horas !== null ? `${formatHorasHHMM(it.colacion_horas)}h` : '00:00h' }}</td>
+                        <td class="p-1 text-center text-[11px] font-bold text-sky-300">{{ formatHorasHHMM(it.horas_reales_equipo ?? it.cantidad_unidades ?? 0) }}</td>
+                        <td class="p-1 text-center text-[11px] text-amber-300">{{ formatHorasHHMM(it.horas_standby_gsp || 0) }}</td>
+                        <td class="p-1 text-center text-[11px] text-indigo-300">{{ formatHorasHHMM(it.horas_standby_cliente || 0) }}</td>
+                        <td class="p-1 text-right">
+                          <input type="number" step="0.25" v-model.number="it.cantidad_unidades" @input="recalcularCostoOperador(it, true)" class="w-16 bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-emerald-300 text-right font-bold font-mono" />
+                        </td>
+                        <td class="p-1 text-right">
+                          <input type="number" step="0.25" v-model.number="it.horas_flete_pagar" @input="onFleteOperadorChange(it)" class="w-14 bg-slate-900 border border-white/10 rounded px-1 py-0.5 text-[11px] text-purple-300 text-right font-bold font-mono" />
+                        </td>
+                        <td class="p-1.5 text-right">
+                          <div v-if="it.rol_personal === 'RIGGER' || it.tarifa_no_aplica" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px]">
+                            Sueldo Fijo ($0)
+                          </div>
+                          <div v-else class="flex items-center justify-end gap-1">
+                            <input 
+                              type="number" 
+                              v-model.number="it.precio_unitario" 
+                              @input="recalcularCostoOperador(it)" 
+                              :class="[
+                                'w-20 bg-slate-900 border rounded px-1 py-0.5 text-[11px] text-right font-mono transition-colors',
+                                it.tarifa_modificada ? 'border-amber-500/60 text-amber-300 bg-amber-500/10 font-bold' : 'border-white/10 text-white'
+                              ]" 
+                            />
+                            <span v-if="it.tarifa_modificada" class="px-1 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40" :title="`Sugerida: ${formatMoneda(it.tarifa_sugerida)}`">
+                              ⚠️
+                            </span>
+                          </div>
+                        </td>
+                        <td class="p-1.5 font-bold text-rose-300 text-right font-mono">{{ formatMoneda(it.monto_total) }}</td>
+                        <td class="p-1 text-center">
+                          <input type="checkbox" v-model="it.vb_validado" class="w-3.5 h-3.5 accent-emerald-500 cursor-pointer" title="V°B° Control de Gestión" />
+                        </td>
+                        <td class="p-1 text-center">
+                          <button type="button" @click="eliminarItemCosto('costo_hora_operador', idx)" class="text-rose-400 hover:text-rose-200 cursor-pointer">🗑️</button>
+                        </td>
+                      </tr>
+                      <tr v-if="costos.costo_hora_operador.length === 0">
+                        <td colspan="17" class="p-4 text-center text-slate-500 font-sans">Sin registros diarios de horas de personal.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- CASO VIÁTICO ALIMENTACIÓN (Precalculado por Defecto Día a Día según Escala Tabular) -->
+              <div v-else-if="tabCostoActiva === 'alimentacion'">
+                <div class="mb-2.5 px-3 py-2 bg-slate-900/90 border border-emerald-500/30 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold text-[10px]">Escala Viático Diario</span>
+                    <span class="text-slate-300">
+                      <strong>&lt; 8h reales:</strong> $0 (Sin Viático) · <strong>8h reales:</strong> $7.000 base · <strong>&gt; 8h:</strong> +$1.000/hr adicional · <strong>Tope:</strong> $18.000/día
+                    </span>
+                  </div>
+                  <span class="text-[11px] text-slate-400">
+                    Aplica a <strong class="text-sky-300">Operador</strong> y <strong class="text-purple-300">Rigger</strong> (descontando colación real del report)
+                  </span>
+                </div>
+
+                <div v-if="costos.alimentacion.some(it => it.tarifa_modificada)" class="mb-3 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between text-amber-300 text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="text-amber-400 font-bold">⚠️ Viático Modificado por Control de Gestión</span>
+                    <span class="text-slate-400 text-[11px]">(Monto editado manualmente respecto al cálculo automático por tramo horario)</span>
+                  </div>
+                  <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-200 font-mono">Auditoría Control de Gestión</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-900 text-slate-400 font-mono uppercase text-[10px] border-b border-white/10">
+                      <tr>
+                        <th class="p-2">Fecha</th>
+                        <th class="p-2">Equipo</th>
+                        <th class="p-2">Persona / Rol</th>
+                        <th class="p-2">Condición Movimiento Día</th>
+                        <th class="p-1.5 text-center">Desde</th>
+                        <th class="p-1.5 text-center">Hasta</th>
+                        <th class="p-1.5 text-center">Colación</th>
+                        <th class="p-1.5 text-center text-sky-300">Hrs Efectivas</th>
+                        <th class="p-2 text-right text-rose-300">Monto Viático ($)</th>
+                        <th class="p-1.5 text-center">V°B°</th>
+                        <th class="p-1.5 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 font-mono">
+                      <tr v-for="(it, idx) in costos.alimentacion" :key="idx" class="hover:bg-white/[0.02]">
+                        <td class="p-1.5"><input type="date" v-model="it.fecha" class="bg-slate-900 border border-white/10 rounded px-1 py-1 text-[11px] text-white w-28" /></td>
+                        <td class="p-1.5 text-[11px] font-bold text-slate-300">{{ it.patente || 'S/P' }}</td>
+                        <td class="p-1.5">
+                          <div class="flex items-center gap-1">
+                            <span :class="[
+                              'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
+                              it.rol_personal === 'RIGGER'
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                            ]">
+                              {{ it.rol_personal === 'RIGGER' ? 'Rigger' : 'Operador' }}
+                            </span>
+                            <input type="text" v-model="it.nombre_personal" class="w-32 bg-slate-900 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-white font-bold" />
+                            <span v-if="it.report_validado" class="px-1 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Traspasado desde Report Diario Validado">
+                              ✓ Report
+                            </span>
+                          </div>
+                        </td>
+                        <td class="p-1.5">
+                          <div class="text-[11px] text-slate-200 font-sans">{{ it.condicion_label || it.concepto_detalle || 'Jornada Diaria' }}</div>
+                        </td>
+                        <td class="p-1 text-center text-[11px] text-slate-300">{{ it.desde || '--:--' }}</td>
+                        <td class="p-1 text-center text-[11px] text-slate-300">{{ it.hasta || '--:--' }}</td>
+                        <td class="p-1 text-center text-[11px] text-slate-400">{{ it.colacion_horas !== undefined && it.colacion_horas !== null ? `${formatHorasHHMM(it.colacion_horas)}h` : '00:00h' }}</td>
+                        <td class="p-1 text-center">
+                          <span :class="[
+                            'px-1.5 py-0.5 rounded text-[10px] font-bold',
+                            (it.horas_redondeadas ?? it.cantidad_unidades ?? 0) < 8
+                              ? 'bg-slate-800 text-slate-400 border border-white/10'
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          ]">
+                            {{ formatHorasHHMM(it.horas_efectivas ?? it.cantidad_unidades ?? 0) }}h ({{ it.horas_redondeadas ?? Math.round(it.cantidad_unidades || 0) }}h)
                           </span>
-                        </div>
-                      </td>
-                      <td class="p-1.5"><input type="number" step="0.5" v-model.number="it.cantidad_unidades" @input="recalcularCostoOperador(it)" class="w-20 bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white text-right font-bold text-amber-300 font-mono" /></td>
-                      <td class="p-1.5 font-bold text-rose-300 text-right font-mono">{{ formatMoneda(it.monto_total) }}</td>
-                      <td class="p-1.5 text-center">
-                        <button type="button" @click="eliminarItemCosto('costo_hora_operador', idx)" class="text-rose-400 hover:text-rose-200 cursor-pointer">🗑️</button>
-                      </td>
-                    </tr>
-                    <tr v-if="costos.costo_hora_operador.length === 0">
-                      <td colspan="7" class="p-4 text-center text-slate-500 font-sans">Sin costo hora operador imputado.</td>
-                    </tr>
-                  </tbody>
-                </table>
+                        </td>
+                        <td class="p-1.5 text-right">
+                          <div class="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              v-model.number="it.monto_total"
+                              @input="recalcularViaticoAlimentacion(it)"
+                              :class="[
+                                'w-24 bg-slate-900 border rounded px-1.5 py-0.5 text-xs text-right font-mono font-bold transition-colors',
+                                it.tarifa_modificada ? 'border-amber-500/60 text-amber-300 bg-amber-500/10' : 'border-white/10 text-rose-300'
+                              ]"
+                            />
+                            <span v-if="it.tarifa_modificada" class="px-1 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40" :title="`Sugerido: ${formatMoneda(it.tarifa_sugerida)}`">
+                              ⚠️
+                            </span>
+                          </div>
+                        </td>
+                        <td class="p-1 text-center">
+                          <input type="checkbox" v-model="it.vb_validado" class="w-3.5 h-3.5 accent-emerald-500 cursor-pointer" title="V°B° Control de Gestión" />
+                        </td>
+                        <td class="p-1 text-center">
+                          <button type="button" @click="eliminarItemCosto('alimentacion', idx)" class="text-rose-400 hover:text-rose-200 cursor-pointer">🗑️</button>
+                        </td>
+                      </tr>
+                      <tr v-if="costos.alimentacion.length === 0">
+                        <td colspan="11" class="p-4 text-center text-slate-500 font-sans">Sin registros diarios de viático de alimentación.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- CASO TABLA ESTÁNDAR PARA LAS OTRAS CATEGORÍAS (Peajes, Personal Ext, Feriados, Flete Ext, Gastos Extra) -->
@@ -1063,8 +1352,8 @@
         <!-- SECCIÓN 4: CONSOLA DE RESULTADO ECONÓMICO (P&L) & OBSERVACIONES -->
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
-          <!-- PANEL IZQUIERDO: BALANCE FINANCIERO (VENTA VS COSTOS) -->
-          <div class="bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <!-- PANEL IZQUIERDO: BALANCE FINANCIERO (VENTA VS COSTOS) - Oculto exclusivamente para el perfil SECRETARIA (REQ-1122) -->
+          <div v-if="!esRolSecretaria" class="bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm flex flex-col justify-between">
             <div>
               <h3 class="text-xs font-mono font-bold uppercase text-blue-400 tracking-wider flex items-center gap-2 border-b border-white/10 pb-2 mb-3">
                 <span>📊</span> Balance Financiero del Servicio (P&L Operacional)
@@ -1077,7 +1366,7 @@
                     A. Resumen de Ingresos Totales (Venta)
                   </p>
                   <div class="flex justify-between py-0.5">
-                    <span class="text-slate-300">1. Ingresos Horas Trabajadas ({{ its.total_horas_report }}h × {{ formatMoneda(its.valor_hora_pactado) }}):</span>
+                    <span class="text-slate-300">1. Ingresos Horas Trabajadas ({{ formatHorasHHMM(its.total_horas_report) }}h × {{ formatMoneda(its.valor_hora_pactado) }}):</span>
                     <strong class="text-white">{{ formatMoneda(its.total_ingresos_horas) }} ({{ getPctSobreVenta(its.total_ingresos_horas) }}%)</strong>
                   </div>
                   <div class="flex justify-between py-0.5">
@@ -1171,7 +1460,7 @@
           </div>
 
           <!-- PANEL DERECHO: OBSERVACIONES DEL SERVICIO CON PLANTILLAS -->
-          <div class="bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+          <div :class="esRolSecretaria ? 'lg:col-span-2 bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm flex flex-col justify-between' : 'bg-[#080d1a] border border-white/15 rounded-xl p-4 shadow-sm flex flex-col justify-between'">
             <div>
               <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                 <h3 class="text-xs font-mono font-bold uppercase text-blue-400 tracking-wider flex items-center gap-2">
@@ -1385,7 +1674,7 @@
 
             <div v-if="cargandoPdfPreview" class="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
               <div class="w-8 h-8 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-2"></div>
-              <span class="text-xs font-mono">Compilando documento con Puppeteer...</span>
+              <span class="text-xs font-mono">Cargando documento oficial...</span>
             </div>
 
             <iframe 
@@ -1564,6 +1853,7 @@ const costos = ref({
 });
 
 const categoriasSinCosto = ref({});
+const tarifaOperadorComercial = ref(null);
 
 const categoriasCostosTabs = [
   { key: 'alimentacion', label: 'Viático Alimentación' },
@@ -1608,6 +1898,12 @@ const totalHorasRealesActivas = computed(() => {
   return jornadasActivas.value
     .filter(j => !j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete'))
     .reduce((acc, j) => acc + (parseFloat(j.horas_reales) || 0), 0);
+});
+
+const totalHorasViaticosActivas = computed(() => {
+  return jornadasActivas.value
+    .filter(j => !j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete'))
+    .reduce((acc, j) => acc + (parseFloat(j.horas_viaticos) || 0), 0);
 });
 
 const porcentajeCostosSobreVenta = computed(() => {
@@ -1665,6 +1961,25 @@ const urlPdfPreviewIframe = computed(() => {
   const id = resolvedIdProyecto.value;
   if (!id) return null;
   return `${urlPdfOficial.value}?t=${pdfPreviewTimestamp.value}`;
+});
+
+// Modo de Revisión Ejecutiva (SPEC-116 / REQ-1127): Jefaturas y Contabilidad
+const vistaRevisionActiva = ref('PDF');
+
+const esModoRevisionEjecutiva = computed(() => {
+  // 1. Si el paso pendiente actual es directivo (Paso > 1: Jefatura de Operaciones o Contabilidad)
+  if (pasoPendienteActual.value && pasoPendienteActual.value.orden > 1) return true;
+
+  // 2. Si el ITS ya fue emitido y firmado en Paso 1 (Yiara) y está en revisión o concluido
+  const estado = String(its.value?.estado_its || '').toUpperCase();
+  if (['EN_REVISION_OPERACIONES', 'EN_REVISION_CONTABILIDAD', 'CONCLUIDO'].includes(estado)) {
+    return true;
+  }
+
+  // 3. Si viene forzado por prop readonly
+  if (props.readonly) return true;
+
+  return false;
 });
 
 const puedeFirmarPasoActual = computed(() => {
@@ -1758,6 +2073,7 @@ const cargarITS = async () => {
       its.value = { ...its.value, ...res.data.data.its };
       crmPensiones.value = res.data.data.crm_pensiones || res.data.data.proyecto?.json_field?.crm_v1?.pensiones || {};
       categoriasSinCosto.value = res.data.data.its?.categorias_sin_costo || {};
+      tarifaOperadorComercial.value = res.data.data.tarifa_operador_comercial || null;
       jornadas.value = (res.data.data.jornadas || []).map(j => {
         let f = j.fecha;
         if (f) {
@@ -1769,9 +2085,38 @@ const cargarITS = async () => {
         }
         const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (res.data.data.its?.valor_hora_pactado || 0));
         const hrs = parseFloat(j.horas_report || 0);
+        const hSal = j.hora_salida ? String(j.hora_salida).slice(0, 5) : '';
+        const hLle = j.hora_llegada ? String(j.hora_llegada).slice(0, 5) : '';
+        const hTer = j.hora_termino ? String(j.hora_termino).slice(0, 5) : '';
+        const hRet = j.hora_retorno ? String(j.hora_retorno).slice(0, 5) : '';
+        const colMin = j.colacion_minutos !== null && j.colacion_minutos !== undefined ? Number(j.colacion_minutos) : 0;
+        const esFlete = j.tipo_servicio && String(j.tipo_servicio).toLowerCase().includes('flete');
+        let hrsServ = parseFloat(j.horas_reales || 0);
+        let hrsViat = parseFloat(j.horas_viaticos || 0);
+        if (!esFlete) {
+          const ctx = (res.data.data.its?.tipo_contexto || its.value.tipo_contexto || 'URBANO');
+          const iniServ = (ctx === 'URBANO') ? (hSal || hLle) : (hLle || hSal);
+          if (iniServ && hTer) {
+            const minS = Math.max(0, calcularDiferenciaMinutos(iniServ, hTer) - colMin);
+            hrsServ = parseFloat((minS / 60).toFixed(2));
+          }
+          const iniViat = hSal || hLle;
+          const finViat = hRet || hTer;
+          if (iniViat && finViat) {
+            const minV = Math.max(0, calcularDiferenciaMinutos(iniViat, finViat) - colMin);
+            hrsViat = parseFloat((minV / 60).toFixed(2));
+          }
+        }
         return {
           ...j,
           fecha: f || '',
+          hora_salida: hSal,
+          hora_llegada: hLle,
+          hora_termino: hTer,
+          hora_retorno: hRet,
+          colacion_minutos: colMin,
+          horas_reales: hrsServ,
+          horas_viaticos: hrsViat,
           tarifa_hora: tarifa,
           subtotal: parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (hrs * tarifa))
         };
@@ -2014,6 +2359,25 @@ const confirmarFirmaFes = async () => {
   }
 };
 
+const etiquetaModalidadFlete = computed(() => {
+  const u = String(its.value?.unidad_flete_pactado || '').toUpperCase().trim();
+  if (u === 'TRASLADO IDA') return 'Pactado (Solo Ida faena)';
+  if (u === 'TRASLADO RETORNO') return 'Pactado (Solo Retorno base)';
+  return 'Pactado (Ida + Retorno faena)';
+});
+
+const ventaNetaProyectadaComercial = computed(() => {
+  const hrsBase = parseFloat(its.value?.horas_minimas_pactadas || 0);
+  const valHora = parseFloat(its.value?.valor_hora_pactado || 0);
+  const valFlete = parseFloat(its.value?.valor_flete_pactado || 0);
+  const calcDirecto = Math.round((hrsBase * valHora) + valFlete);
+  if (calcDirecto > 0) return calcDirecto;
+  if (Number(its.value?.venta_neta_proyectada_comercial) > 0) {
+    return Number(its.value.venta_neta_proyectada_comercial);
+  }
+  return parseFloat(its.value?.total_ingresos_facturables || 0);
+});
+
 // Motor Reactivo de Cálculos
 const recalcularTotales = () => {
   // 1. Horas facturables y Subtotal por Jornada
@@ -2047,7 +2411,6 @@ const recalcularTotales = () => {
   // 2. Ingresos
   if (totalIngFletes > 0) {
     its.value.total_ingresos_fletes = totalIngFletes;
-    its.value.valor_flete_pactado = totalIngFletes;
   } else {
     its.value.total_ingresos_fletes = parseFloat(its.value.valor_flete_pactado || 0);
   }
@@ -2118,11 +2481,26 @@ const calcularHorasReales = (j) => {
       j.tarifa_hora = parseFloat(its.value.valor_flete_pactado || 400000);
     }
   } else {
-    // Faena normal (Hora, Mensual, Fijo): Llegada a Término descontando colación
-    minTotales = Math.max(0, calcularDiferenciaMinutos(j.hora_llegada, j.hora_termino) - (j.colacion_minutos || 0));
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1));
-    if (!j.horas_report || j.horas_report === 0) {
-      j.horas_report = Math.max(j.horas_reales, its.value.horas_minimas_pactadas || 4.0);
+    // Faena normal (Hora, Mensual, Fijo): HRS SERVICIO según régimen URBANO (Salida -> Término) o RURAL (Llegada -> Término) descontando colación
+    const horaInicioServicio = (its.value.tipo_contexto === 'URBANO')
+      ? (j.hora_salida || j.hora_llegada)
+      : (j.hora_llegada || j.hora_salida);
+    minTotales = Math.max(0, calcularDiferenciaMinutos(horaInicioServicio, j.hora_termino) - (Number(j.colacion_minutos) || 0));
+    j.horas_reales = parseFloat((minTotales / 60).toFixed(2));
+
+    // HRS VIÁTICOS: Independiente de Urbano/Rural, desde Salida San Pablo hasta Retorno San Pablo descontando colación
+    const iniViatico = j.hora_salida || j.hora_llegada;
+    const finViatico = j.hora_retorno || j.hora_termino;
+    const minViaticos = Math.max(0, calcularDiferenciaMinutos(iniViatico, finViatico) - (Number(j.colacion_minutos) || 0));
+    j.horas_viaticos = parseFloat((minViaticos / 60).toFixed(2));
+
+    const pisoMin = parseFloat(its.value.horas_minimas_pactadas || 4.0);
+    if (!j.id_reporte_avance) {
+      // Fila insertada manualmente: actualizar horas_report reactivamente con las horas reales
+      j.horas_report = j.horas_reales > 0 ? j.horas_reales : pisoMin;
+    } else if (!j.horas_report || j.horas_report === 0 || j.horas_reales > j.horas_report) {
+      // Fila de Report validado: nunca reducir por debajo del mínimo/horas validadas en el Report, solo subir si horas_reales lo supera
+      j.horas_report = Math.max(parseFloat(j.horas_report || 0), j.horas_reales, pisoMin);
     }
     if (!j.tarifa_hora || j.tarifa_hora > 150000) {
       j.tarifa_hora = parseFloat(its.value.valor_hora_pactado || 85000);
@@ -2360,29 +2738,54 @@ const agregarItemCosto = (cat) => {
       monto_total: 0
     });
   } else if (cat === 'costo_hora_operador') {
-    const defaultTripulante = personalAsignadoLista.value?.[0]?.nombre || 'JORGE PONCE';
-    const defaultPat = patentesAsignadas.value?.[0]?.patente || 'VCTR.81-9';
-    const eqObj = (patentesAsignadas.value || []).find(e => e.patente === defaultPat) || patentesAsignadas.value?.[0];
-    const tarifaSugerida = resolverTarifaOperadorCliente(eqObj?.tipo_equipo || eqObj?.modelo || '', eqObj?.capacidad_maxima || 0);
-    const hrs = its.value.total_horas_report || 28;
+    const defaultTripulante = personalAsignadoLista.value?.[0]?.nombre || '';
+    const defaultPat = patentesAsignadas.value?.[0]?.patente || '';
+    const tarifaSugerida = tarifaOperadorComercial.value?.valor_hora || 5000;
     costos.value[cat].push({
       fecha: hoy,
       patente: defaultPat,
       nombre_personal: defaultTripulante,
+      rol_personal: 'OPERADOR',
       concepto_detalle: 'Horas Operador Estándar Faena',
+      hora_salida: null,
+      hora_llegada: null,
+      hora_termino: null,
+      hora_retorno: null,
+      colacion_horas: 0,
+      horas_reales_equipo: 8,
+      horas_standby_gsp: 0,
+      horas_standby_cliente: 0,
+      horas_faena_pagar: 8,
+      horas_flete_pagar: 0,
       precio_unitario: tarifaSugerida,
       tarifa_sugerida: tarifaSugerida,
-      tarifa_modificada: false,
-      modificado_por: null,
-      cantidad_unidades: hrs,
-      monto_total: tarifaSugerida * hrs
+      tarifa_modificada: true,
+      modificado_por: 'Control de Gestión',
+      vb_validado: true,
+      cantidad_unidades: 8,
+      monto_total: tarifaSugerida * 8
     });
   } else if (cat === 'alimentacion') {
     costos.value[cat].push({
       fecha: hoy,
+      patente: patentesAsignadas.value?.[0]?.patente || '',
       nombre_personal: personalAsignadoLista.value?.[0]?.nombre || '',
-      concepto_detalle: 'Alimentación Operador',
-      monto_total: 0
+      rol_personal: 'OPERADOR',
+      condicion_dia: 'IDA_Y_REGRESO',
+      condicion_label: 'Ida y Regreso en el Día (Salida a Retorno)',
+      concepto_detalle: 'Viático Alimentación — Ida y Regreso en el Día (8h efectivas)',
+      desde: null,
+      hasta: null,
+      colacion_horas: 0,
+      horas_efectivas: 8,
+      horas_redondeadas: 8,
+      cantidad_unidades: 8,
+      precio_unitario: 7000,
+      tarifa_sugerida: 7000,
+      tarifa_modificada: true,
+      modificado_por: 'Control de Gestión',
+      vb_validado: true,
+      monto_total: 7000
     });
   } else {
     costos.value[cat].push({
@@ -2481,27 +2884,93 @@ const resolverTarifaOperadorCliente = (tipo_equipo, capacidad_ton) => {
 };
 
 const onPatenteOperadorChange = (it) => {
-  const eq = (patentesAsignadas.value || []).find(e => e.patente === it.patente);
-  if (eq) {
-    const sug = resolverTarifaOperadorCliente(eq.tipo_equipo || eq.modelo || '', eq.capacidad_maxima || 0);
-    it.tarifa_sugerida = sug;
-    if (!it.tarifa_modificada) {
-      it.precio_unitario = sug;
-      recalcularCostoOperador(it);
-    }
+  if (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) {
+    it.precio_unitario = 0;
+    it.monto_total = 0;
+    recalcularTotales();
+    return;
+  }
+  const sug = tarifaOperadorComercial.value?.valor_hora || 5000;
+  it.tarifa_sugerida = sug;
+  if (!it.tarifa_modificada) {
+    it.precio_unitario = sug;
+    recalcularCostoOperador(it);
   }
 };
 
-const recalcularCostoOperador = (it) => {
+const onHorarioOperadorChange = (it) => {
+  const colMin = Math.round((parseFloat(it.colacion_horas) || 0) * 60);
+  if (it.hora_llegada && it.hora_termino) {
+    const minFaena = Math.max(0, calcularDiferenciaMinutos(it.hora_llegada, it.hora_termino) - colMin);
+    const hrsReal = parseFloat((minFaena / 60).toFixed(1));
+    it.horas_reales_equipo = hrsReal;
+    const pisoMin = parseFloat(its.value.horas_minimas_pactadas || 4.0);
+    if (!it.id_reporte_avance) {
+      it.horas_faena_pagar = hrsReal > 0 ? hrsReal : pisoMin;
+    } else if (hrsReal > (parseFloat(it.horas_faena_pagar) || 0)) {
+      it.horas_faena_pagar = hrsReal;
+    }
+  }
+  if (it.hora_salida && it.hora_retorno) {
+    const minTotalViaje = Math.max(0, calcularDiferenciaMinutos(it.hora_salida, it.hora_retorno) - colMin);
+    const hrsTotalViaje = parseFloat((minTotalViaje / 60).toFixed(1));
+    const hrsFaena = parseFloat(it.horas_faena_pagar) || parseFloat(it.horas_reales_equipo) || 0;
+    it.horas_flete_pagar = Math.max(0, parseFloat((hrsTotalViaje - hrsFaena).toFixed(1)));
+  }
+  const faena = parseFloat(it.horas_faena_pagar) || 0;
+  const flete = Math.max(0, parseFloat(it.horas_flete_pagar) || 0);
+  if (faena > 0 || flete > 0) {
+    it.cantidad_unidades = parseFloat((faena + flete).toFixed(2));
+  }
+  recalcularCostoOperador(it, true);
+};
+
+const onFleteOperadorChange = (it) => {
+  const faena = parseFloat(it.horas_faena_pagar) || 0;
+  const flete = Math.max(0, parseFloat(it.horas_flete_pagar) || 0);
+  it.cantidad_unidades = parseFloat((faena + flete).toFixed(2));
+  recalcularCostoOperador(it, true);
+};
+
+const recalcularCostoOperador = (it, forzarModificado = false) => {
+  if (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) {
+    it.precio_unitario = 0;
+    it.monto_total = 0;
+    if (forzarModificado) {
+      it.tarifa_modificada = true;
+      it.modificado_por = 'Control de Gestión';
+    }
+    recalcularTotales();
+    return;
+  }
   const precio = parseFloat(it.precio_unitario) || 0;
   const horas = parseFloat(it.cantidad_unidades) || 0;
-  it.monto_total = precio * horas;
+  it.monto_total = Math.round(precio * horas);
 
+  if (forzarModificado) {
+    it.tarifa_modificada = true;
+    it.modificado_por = 'Control de Gestión';
+  } else if (it.tarifa_sugerida !== undefined && it.tarifa_sugerida !== null) {
+    const sug = parseFloat(it.tarifa_sugerida);
+    if (Math.abs(precio - sug) > 0.01) {
+      it.tarifa_modificada = true;
+      it.modificado_por = 'Control de Gestión';
+    } else if (it.id_reporte_avance) {
+      it.tarifa_modificada = false;
+      it.modificado_por = null;
+    }
+  }
+  recalcularTotales();
+};
+
+const recalcularViaticoAlimentacion = (it) => {
+  const monto = parseFloat(it.monto_total) || 0;
+  it.precio_unitario = monto;
   if (it.tarifa_sugerida !== undefined && it.tarifa_sugerida !== null) {
     const sug = parseFloat(it.tarifa_sugerida);
-    if (precio !== sug) {
+    if (Math.abs(monto - sug) > 0.01) {
       it.tarifa_modificada = true;
-      it.modificado_por = 'Yara';
+      it.modificado_por = 'Control de Gestión';
     } else {
       it.tarifa_modificada = false;
       it.modificado_por = null;
@@ -2529,9 +2998,54 @@ const necesitaColumnaOC = (cat) => {
   return ['pensiones', 'personal_externo', 'subcontratacion_flete'].includes(cat);
 };
 
-// Plantillas y Contexto
+// Plantillas y Contexto (Recalcula Hora Operador según Régimen URBANO vs RURAL)
 const cambiarContexto = (ctx) => {
   its.value.tipo_contexto = ctx;
+  (jornadas.value || []).forEach(j => calcularHorasReales(j));
+  const hrsMin = parseFloat(its.value.horas_minimas_pactadas || 8);
+
+  (costos.value.costo_hora_operador || []).forEach(it => {
+    const colHrs = parseFloat(it.colacion_horas || 0);
+    const hSal = it.hora_salida;
+    const hLleg = it.hora_llegada || hSal;
+    const hTerm = it.hora_termino;
+    const hRet = it.hora_retorno;
+
+    if (hSal && hTerm) {
+      if (ctx === 'RURAL') {
+        const minFaena = Math.max(0, calcularDiferenciaMinutos(hLleg, hTerm) - Math.round(colHrs * 60));
+        const hrsFaenaReal = Math.round((minFaena / 60) * 100) / 100;
+        const hrsFaenaPagar = Math.max(hrsMin, hrsFaenaReal);
+        const minIda = hSal && hLleg ? Math.max(0, calcularDiferenciaMinutos(hSal, hLleg)) : 0;
+        const minRet = hTerm && hRet ? Math.max(0, calcularDiferenciaMinutos(hTerm, hRet)) : 0;
+        const hrsFlete = Math.round(((minIda + minRet) / 60) * 100) / 100;
+        const hrsTotal = Math.round((hrsFaenaPagar + hrsFlete) * 100) / 100;
+
+        it.horas_reales_equipo = hrsFaenaReal;
+        it.horas_faena_pagar = hrsFaenaPagar;
+        it.horas_flete_pagar = hrsFlete;
+        it.cantidad_unidades = hrsTotal;
+      } else {
+        const minUrb = Math.max(0, calcularDiferenciaMinutos(hSal, hTerm) - Math.round(colHrs * 60));
+        const hrsUrb = Math.round((minUrb / 60) * 100) / 100;
+
+        it.horas_reales_equipo = hrsUrb;
+        it.horas_faena_pagar = hrsUrb;
+        it.horas_flete_pagar = 0;
+        it.cantidad_unidades = hrsUrb;
+      }
+
+      if (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) {
+        it.precio_unitario = 0;
+        it.monto_total = 0;
+      } else {
+        const precio = parseFloat(it.precio_unitario || it.tarifa_sugerida || 0);
+        it.monto_total = Math.round(it.cantidad_unidades * precio);
+      }
+    }
+  });
+
+  recalcularTotales();
   if (!its.value.observaciones) {
     inyectarPlantilla(ctx);
   }
@@ -2548,6 +3062,33 @@ const inyectarPlantilla = (tipo) => {
 const formatMoneda = (monto) => {
   return '$ ' + Math.round(monto || 0).toLocaleString('es-CL');
 };
+
+const formatHorasHHMM = (val) => {
+  const num = parseFloat(val);
+  if (isNaN(num) || num <= 0) return '00:00';
+  const totalMin = Math.round(num * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+// REQ-1122: Restricción del Resumen Ejecutivo Financiero exclusivamente para el perfil SECRETARIA
+const esRolSecretaria = computed(() => {
+  try {
+    const raw = localStorage.getItem('user_data') || localStorage.getItem('usuario') || '{}';
+    const u = JSON.parse(raw);
+    const rolesArr = Array.isArray(u.roles) ? u.roles : [u.rol || u.name_rol || ''];
+    const cargoStr = String(u.cargo || u.rol_activo || '').toUpperCase();
+    const tieneAdmin = rolesArr.some(r => {
+      const rn = String(r?.name_rol || r || '').toUpperCase();
+      return rn.includes('ADMIN') || rn.includes('GERENCIA') || rn.includes('OPERACIONES') || rn.includes('CONTABILIDAD');
+    });
+    if (tieneAdmin) return false;
+    return rolesArr.some(r => String(r?.name_rol || r || '').toUpperCase().includes('SECRETARIA')) || cargoStr.includes('SECRETARIA');
+  } catch {
+    return false;
+  }
+});
 
 const cerrar = () => {
   emit('close');

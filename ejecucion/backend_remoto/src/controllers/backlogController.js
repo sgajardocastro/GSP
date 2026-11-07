@@ -16,9 +16,12 @@ const ensureTables = async () => {
       solicitado_por VARCHAR(150),
       estado VARCHAR(30) DEFAULT 'Pendiente',
       creado_por VARCHAR(150),
+      adjuntos JSONB DEFAULT '[]'::jsonb,
       creado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE ${schema}.tcfg_backlog ADD COLUMN IF NOT EXISTS adjuntos JSONB DEFAULT '[]'::jsonb;
 
     CREATE TABLE IF NOT EXISTS ${schema}.tcfg_releases (
       id SERIAL PRIMARY KEY,
@@ -112,7 +115,8 @@ const backlogController = {
         fecha_implementacion,
         solicitado_por,
         estado = 'Pendiente',
-        creado_por = 'Sergio Gajardo'
+        creado_por = 'Sergio Gajardo',
+        adjuntos = []
       } = req.body;
 
       if (!nombre_requerimiento || !solicitado_por) {
@@ -126,11 +130,11 @@ const backlogController = {
 
       const insertRes = await db.query(`
         INSERT INTO ${schema}.tcfg_backlog 
-          (codigo_req, nombre_requerimiento, descripcion, prioridad, fecha_registro, fecha_implementacion, solicitado_por, estado, creado_por)
+          (codigo_req, nombre_requerimiento, descripcion, prioridad, fecha_registro, fecha_implementacion, solicitado_por, estado, creado_por, adjuntos)
         VALUES 
-          ($1, $2, $3, $4, COALESCE($5, CURRENT_DATE), $6, $7, $8, $9)
+          ($1, $2, $3, $4, COALESCE($5, CURRENT_DATE), $6, $7, $8, $9, $10::jsonb)
         RETURNING *
-      `, [codigo_req, nombre_requerimiento, descripcion, prioridad, fecha_registro || null, fecha_implementacion || null, solicitado_por, estado, creado_por]);
+      `, [codigo_req, nombre_requerimiento, descripcion, prioridad, fecha_registro || null, fecha_implementacion || null, solicitado_por, estado, creado_por, JSON.stringify(adjuntos || [])]);
 
       res.status(201).json({ success: true, data: insertRes.rows[0] });
     } catch (err) {
@@ -152,7 +156,8 @@ const backlogController = {
         fecha_registro,
         fecha_implementacion,
         solicitado_por,
-        estado
+        estado,
+        adjuntos
       } = req.body;
 
       const updateRes = await db.query(`
@@ -165,10 +170,11 @@ const backlogController = {
           fecha_implementacion = $5,
           solicitado_por = COALESCE($6, solicitado_por),
           estado = COALESCE($7, estado),
+          adjuntos = CASE WHEN $8::text IS NOT NULL THEN $8::jsonb ELSE adjuntos END,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $8
+        WHERE id = $9
         RETURNING *
-      `, [nombre_requerimiento, descripcion, prioridad, fecha_registro, fecha_implementacion, solicitado_por, estado, id]);
+      `, [nombre_requerimiento, descripcion, prioridad, fecha_registro, fecha_implementacion, solicitado_por, estado, adjuntos !== undefined ? JSON.stringify(adjuntos) : null, id]);
 
       if (updateRes.rows.length === 0) {
         return res.status(404).json({ success: false, error: 'Requerimiento no encontrado' });
@@ -243,6 +249,22 @@ const backlogController = {
     } catch (err) {
       console.error('Error al crear release:', err);
       res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // 7. Obtener versión vigente del servidor para verificación Web vs Servidor (REQ-1112)
+  async getVersion(req, res) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const pkgPath = path.join(__dirname, '../../package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      const version = String(pkg.version || '1.0.195').replace(/^v/i, '');
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.json({ success: true, version });
+    } catch (err) {
+      res.set('Cache-Control', 'no-store');
+      res.json({ success: true, version: '1.0.195' });
     }
   }
 };

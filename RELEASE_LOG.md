@@ -2,6 +2,73 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.202
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-07 18:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1127` (`SPEC-116`), `REQ-1128` (`SPEC-117`), `REQ-1129` (`SPEC-118`), `REQ-1131` (`SPEC-119`)
+- **Especificación Técnica:** Estabilización Ejecutiva y Resolución de Fondo Cero Parches (ITS, Viáticos RER/Riggers, Colación, Backlog Multimedia y Combustible Convoy):
+  1. **REQ-1127 (Modo de Revisión Ejecutiva en ITS):** En `ModalITS.vue`, para pasos de supervisión directiva (Paso 2 Operaciones y Paso 3 Contabilidad), se bloquea la edición de datos operativos y se despliega directamente el visor completo del PDF oficial firmado con PIN FES en Paso 1 (Yiara Mendoza), acompañado de barra ejecutiva con botones `Aprobar ITS (PIN FES)` y `Devolver con Observaciones`.
+  2. **REQ-1128 & Erradicación de Fallbacks de Colación:**
+     - En `controlVivoController.js` y `reportDiarioController.js`, erradicados fallbacks `colacion || 1.0` y `diffMin - 60`, preservando estrictamente `0` colación.
+     - En `reportDiarioController.js` y `itsController.js`, implementado fallback dinámico desde `ejecV1.tripulacion_asignada` hacia `tedp_reporte_avance.id_user_rigger` y `nombre_rigger`, garantizando la liquidación obligatoria de viáticos para Riggers / RER según escala tabular ($7.000 base 8h, +$1.000/h extra, tope $18.000).
+     - **Datafix Masivo en Producción:** Actualizados los reportes de OT 35 (Inarco) asignando a Alfonso Maldonado (`id_user = 21`) con $8.000 diarios, y barrido transversal ejecutado en toda la base de datos (OTs 30, 31, 32, 35, 44, 51, 62).
+  3. **REQ-1129 (Soporte Multimedia en Backlog):** Agregada columna `adjuntos JSONB DEFAULT '[]'::jsonb` en `tcfg_backlog` (DEV y PROD). En `BacklogView.vue`, incorporada captura directa de capturas de pantalla pegadas con `Ctrl+V`, selector de archivos, miniaturas con borrado y visor modal Lightbox en alta resolución.
+  4. **REQ-1131 (Combustible Multiequipo por OT y Hitos Excel):** En `itsController.js`, enlace multiequipo `(cs.id_proyecto = $1 OR ld.id_proyecto = $1)` para capturar combustible de ramplas y vehículos de apoyo (caso Besalco). En `estadoPagoController.js`, erradicada máscara estática `18:00` en Excel Combustible, formateando los hitos con la marca temporal real en huso `America/Santiago`.
+  5. **Alineación de Secuencias PostgreSQL:** Secuencias de todas las tablas en `sch_leangsp_prod` y `sch_leangsp` sincronizadas con sus valores máximos de ID.
+
+## [Portal Web GSP & Backend] - Versión 1.0.201
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-06 17:55:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1125` (`SPEC-115`)
+- **Especificación Técnica:** Resolución de Piso Mínimo Contractual en Reportes Diarios e ITS para Modalidad Mensual (`controlVivoController.js`, `reportDiarioPdfService.js`, `itsController.js`, `itsPdfService.js`):
+  1. **Eliminación de Imposición de 8.0 Horas Diarias en Servicios Mensuales:** En servicios con modalidad mensual (`HRS_MES` / `Horas Mes Mínimas`), `resolverPisoMinimoContractual` retorna `0.0`, imputando las horas reales de trabajo (`horas_facturables = horas_operadas`) y anulando sobretiempos diarios espurios (`horas_sobretiempo = 0.0`), acumulando las horas al bolsón mensual pactado en la OT.
+  2. **Actualización de Plantillas PDF de Report Diario e ITS:** Inclusión de la leyenda *"Sin mínimo diario (Modalidad Mensual — X hrs/mes pactadas en OT)"* en Sección 2 y Sección 3 del Report Diario oficial, y liquidación en base a horas operadas efectivas en el ITS.
+  3. **Datafix y Regeneración Física de 13 PDFs en Producción:** Regularización de los 13 reportes de las OTs 27, 35 y 36 en `sch_leangsp_prod.tedp_reporte_avance` (Día 5 de Inarco con 6.0 hrs facturables exactas) y regeneración de los archivos físicos en `/u05/LeanDocs/GSP/prod/reports/`.
+
+## [Portal Web GSP & Backend] - Versión 1.0.200
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-05 18:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1124` (`SPEC-078`)
+- **Especificación Técnica:** Ajustes al ITS Real (Referencia `GSP-2611-00001` FEPASA): Marcador `Servicio Urbano` / `Servicio Rural` en Sección 2, Columnas `HRS SERVICIO` (según régimen Urbano/Rural) y `HRS VIÁTICOS` (Puerta a Puerta Universal) en Web y PDF, y Corrección de Colación `0m` y Hora de `RETORNO` en el PDF Oficial (`itsController.js`, `ModalITS.vue`, `itsPdfService.js`):
+  1. **Marcador de Régimen `Servicio Urbano` / `Servicio Rural` en Sección 2 (`ModalITS.vue` e `itsPdfService.js`):**
+     - Incorporación del marcador visual `Servicio Urbano` o `Servicio Rural` junto al badge de `# Jornadas Activas` en el encabezado de la Sección 2 de `ModalITS.vue` y en el título de la Sección 3 del PDF Oficial.
+  2. **Renombramiento de `HRS REALES` a `HRS SERVICIO` con Aplicación de Política Urbano/Rural e Incorporación de Columna `HRS VIÁTICOS` (`itsController.js` y `ModalITS.vue`):**
+     - **`HRS SERVICIO`:** Cálculo según política comercial de cobro: en régimen `URBANO` desde `SALIDA` (Planta San Pablo) hasta `TÉRMINO` (Fin faena en obra) menos `COLACIÓN` (`13:00 - 07:30 - 0m = 05:30 hrs` en `GSP-2611-00001`), y en régimen `RURAL` desde `LLEGADA` (Llegada a obra) hasta `TÉRMINO` menos `COLACIÓN`, con recálculo inmediato al alternar el selector Urbano/Rural.
+     - **`HRS VIÁTICOS`:** Nueva columna universal (independiente de si es Urbano o Rural) calculada puerta a puerta desde `SALIDA` (Salida de Planta San Pablo) hasta `RETORNO` (Retorno a Planta San Pablo) menos `COLACIÓN` (`13:51 - 07:30 - 0m = 06:21 hrs` en `GSP-2611-00001`), con precisión de 2 decimales (`.toFixed(2)`) para preservar el minuto exacto en formato reloj `HH:mm`.
+  3. **Corrección de Colación `0m`, Columna `RETORNO` y Columnas `HRS SERVICIO` / `HRS VIÁTICOS` en el PDF Oficial (`itsPdfService.js`):**
+     - Eliminación del fallback erróneo `|| 60` sobre `colacion_minutos` que transformaba `0` minutos en `60m`, normalización de hitos horarios a `HH:mm` e incorporación de las columnas `RETORNO` (`13:51`), `HRS SERVICIO` (`05:30 h`) y `HRS VIÁTICOS` (`06:21 h`) con sus respectivos subtotales en la Sección 3 y Anexo 7 del PDF Oficial.
+
+## [Portal Web GSP & Backend] - Versión 1.0.199
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-05 12:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1120`, `REQ-1121`, `REQ-1122`, `REQ-1123` (`SPEC-065`, `SPEC-078`, `SPEC-047`)
+- **Especificación Técnica:** Proyección y Edición de `obs_validador` del Report Diario en la Tarjeta de Torre PMO (`REQ-1120`), Visualización de Horas en Formato Reloj `HH:mm` (`REQ-1121`), Restricción del Resumen Ejecutivo Financiero del ITS exclusivamente para el Perfil `SECRETARIA` con Firma FES y Notificación a Yiara (`REQ-1122`), y Automatización de Notificación por Email con Link al PDF Firmado de Visita a Terreno (`id_template = 80`) (`REQ-1123`):
+  1. **Visualización y Edición Sincronizada de `obs_validador` (Observaciones de Validación del Report Diario) en la Tarjeta de Torre PMO (`REQ-1120` — `controlVivoController.js`, `ControlOperativoVivo.vue`, `ModalVisorReport.vue`):**
+     - Proyección del campo `tedp_reporte_avance.obs_validador` (`Observaciones de Validación` ingresado por la Analista de Control de Gestión en `ModalVisorReport.vue`) dentro de cada día de `franja_multidia`, desplegándolo en la parte inferior del día seleccionado de la tarjeta PMO (`ControlOperativoVivo.vue`) con badge `💬` en la cinta de días para lectura inmediata de RRHH (Tesalia Malatesta) y Operaciones (Jorge Ponce / Yiara Mendoza), y habilitando su edición bidireccional tanto en `ControlOperativoVivo.vue` (`clave_actividad === 'OBS_VALIDADOR'` en `overrideHitoActividad`) como en `ModalVisorReport.vue` (`guardarObsValidadorDirecto`).
+  2. **Visualización de Duraciones y Totales Horarios en Formato Reloj `HH:mm` (`REQ-1121` — `ModalITS.vue`, `ItsTransicionView.vue`, `ModalVisorReport.vue`, `itsPdfService.js`):**
+     - Incorporación de `formatHorasHHMM` para representar las horas operadas, horas facturables, sobretiempo, liquidación de operador y totales de jornadas en formato reloj `HH:mm` (ej. `05:30 hrs` en lugar de `5.5 hrs`), preservando internamente los valores numéricos exactos para el cálculo financiero.
+  3. **Restricción del Resumen Ejecutivo Financiero del ITS exclusivamente para el Perfil `SECRETARIA` + Firma FES y Notificación a Yiara (`REQ-1122` — `ModalITS.vue`, `ItsTransicionView.vue`, `itsController.js`):**
+     - Ocultamiento exclusivo para el perfil `SECRETARIA` (`esRolSecretaria` / `rolActivo === 'SECRETARIA'`, manteniendo visibilidad completa para `OPERACIONES_EJEC` y demás roles operativos) del panel izquierdo de Balance Financiero / P&L (Venta Neta, Costos consolidados, Utilidad Bruta y Margen %), habilitación de firma FES en el Paso 1 (`Elaboración`) para usuario autenticado y notificación automática por correo/WhatsApp a **Yiara Mendoza** (`ymendoza@arriendosanpablo.cl`, `id_user = 65`) y Jefatura de Operaciones.
+  4. **Automatización de Notificaciones por Correo al Firmar Visita a Terreno (`id_template = 80`) (`REQ-1123` — `signatureController.js`):**
+     - Al completarse la firma FES y sellado PDF (`postSignature3`) de un survey con `id_template = 80` (Informe de Visita a Terreno), actualización automática de `tpry_proyecto.estado_solicitud_visita = 'COMPLETADA'` y despacho de notificación por correo electrónico con enlace directo al PDF oficial firmado (`/api/v1/storage/view/{id_doc}`) y acceso al negocio en CRM al Ejecutivo Comercial asignado, Operaciones y Gerencia.
+
+## [Portal Web GSP & Backend] - Versión 1.0.198
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-05 12:00:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/var/www/html/lg-gsp`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-dev` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1117`, `REQ-1118`, `REQ-1119` (`SPEC-065`, `SPEC-078`)
+- **Especificación Técnica:** Saneamiento de Horarios Validados, Retorno a Planta y Suma Reactiva Manual en ITS (`REQ-1117` — Caso FEPASA `GSP-2611-00001`), Asignación Dinámica de Operadores por Rango de Fechas en Torre PMO (`REQ-1118` — Caso Besalco `GSP-2611-00005`), y Captura/Visualización del Hito `LLEGADA_BASE` en Retorno (`REQ-1119` — Caso Gerardo Barthou `GSP-2611-00003`):
+  1. **Prioridad de Horarios Validados, Despliegue de `hora_retorno` y Suma Reactiva Manual en ITS (`REQ-1117` — `itsController.js`, `ModalITS.vue`):**
+     - Prioridad determinista de horarios validados por Operaciones (`ajustes_analista.valores_ajustados` y `control_vivo_overrides`) por sobre la marcación GPS cruda del chofer (`07:30` en lugar de `08:35` en FEPASA `GSP-2611-00001`), recálculo de `horas_reales` (`5.5` hrs), resolución integral de `hora_retorno` (`13:52`), preservación de ediciones/inserciones manuales en `costo_hora_operador` y `alimentacion` aún cuando `validado_rrhh` sea verdadero, y edición reactiva de horarios y `Hrs Flete` en `ModalITS.vue` sin reducir pisos mínimos validados.
+  2. **Resolución Dinámica de Operadores por Rango de Fechas en Torre PMO (`REQ-1118` — `controlVivoController.js`, `ControlOperativoVivo.vue`):**
+     - Evaluación por fecha (`fechaRef`) en `resolverOperadorDeEquipo` y `resolverOperadorAsignado` contra `lineas_servicio[].turnos_operadores` (`fecha_ini <= fechaRef <= fecha_fin`) y `ejecucion_v1.tripulacion_asignada` (`fecha_plan_ini <= fechaRef <= fecha_plan_fin`), inyectando `operador` y `telefono_operador` por día en `franja_multidia` y en `ControlOperativoVivo.vue` (mostrando a Isis Osses el `2026-11-03` y a Mario Concha del `2026-11-04` al `2026-11-06` en `GSP-2611-00005` Besalco).
+  3. **Captura y Visualización del Hito `LLEGADA_BASE` en Retorno y Filtro de Equipos Reemplazados (`REQ-1119` — `controlVivoController.js`):**
+     - Incorporación del hito `LLEGADA_BASE` (`Llegada a planta (fin retorno)`, `fecha_llegada_patio`) en días `UNICO` y `TERMINO` con sincronización en `tequ_log_desplazamiento` y blindaje retrocompatible, más exclusión de equipos fantasma reemplazados cuando existe asignación formal en `tpry_rel_equipo` (desplegando la grúa `PJYY.20-1` con salida faena `16:00` y llegada a planta `16:42` en `GSP-2611-00003` Gerardo Barthou).
+
 ## [Portal Web GSP & Backend] - Versión 1.0.197
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-04 16:20:00 (-03:00)

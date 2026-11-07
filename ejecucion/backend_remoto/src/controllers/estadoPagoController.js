@@ -1780,12 +1780,20 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         COALESCE(ra.horas_minimas, 8) AS horas_minimas,
         COALESCE(ra.horas_colacion, 0) AS horas_colacion,
         ra.estado_reporte,
+        ra.ajustes_analista,
         ra.id_doc_pdf,
+        ra.dia_correlativo AS folio_correlativo,
+        ra.horometro_inicio,
+        ra.horometro_termino,
         ra.cliente_nombre AS receptor_faena,
         COALESCE(e.patente, 'S/P') AS equipo_patente,
         COALESCE(NULLIF(TRIM(COALESCE(e.marca, '') || ' ' || COALESCE(e.modelo, '')), ''), e.modelo, 'Equipo Izaje') AS equipo_nombre,
         COALESCE(e.modelo, '') AS equipo_modelo,
+        COALESCE(e.marca, '') AS equipo_marca,
         COALESCE(e.tipo_equipo, 'GRUA') AS equipo_tipo,
+        COALESCE(e.horometro_grua_acumulado, 0) AS equipo_horo_grua,
+        COALESCE(e.horometro_chasis_acumulado, 0) AS equipo_horo_chasis,
+        COALESCE(e.odometro_acumulado, 0) AS equipo_odometro,
         0 AS equipo_capacidad_ton,
         COALESCE(u_op.name_frst || ' ' || u_op.apellido_pat, u_op.email, 'Operador') AS operador_nombre,
         COALESCE(u_op.rut, '') AS operador_rut,
@@ -1798,8 +1806,87 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       LEFT JOIN tsec_users u_op ON ra.id_user_operador = u_op.id_user
       LEFT JOIN tsec_users u_rig ON ra.id_user_rigger = u_rig.id_user
       WHERE ra.estado_reporte != 'JORNADA_EN_CURSO'
+        AND NOT (ra.fecha_termino_servicio IS NULL AND COALESCE(ra.horas_operadas, 0) <= 0 AND COALESCE(ra.horas_facturables, 0) <= 0)
       ORDER BY ra.fecha_reporte DESC, ra.id_reporte_avance DESC;
     `);
+
+    // 2.b Catálogo de Tarifas Operador (tpar_tarifa_operador) para liquidación de Horas Operadores
+    const tarifasOpRes = await db.query(`
+      SELECT * FROM tpar_tarifa_operador WHERE activo = TRUE ORDER BY id_tarifa ASC;
+    `).catch(() => ({ rows: [] }));
+    const catalogoTarifasOp = tarifasOpRes.rows || [];
+
+    function resolverValorHoraOperadorDesdeLineas(lineas = [], modeloEquipo = '', tipoEquipo = '') {
+      const texto = `${lineas.map(l => `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`).join(' ')} ${modeloEquipo} ${tipoEquipo}`.toUpperCase();
+      const tonMatch = texto.match(/(\d{2,3})\s*(?:T|TON)/i);
+      const ton = tonMatch ? Number(tonMatch[1]) : 0;
+      if (ton >= 300) return 15000;
+      if (ton >= 200) return 12000;
+      if (ton >= 130) return 10000;
+      if (ton >= 100) return 8000;
+      if (ton >= 80) return 7000;
+      if (ton >= 60) return 6000;
+      if (ton >= 25) return 5000;
+      if (texto.includes('HORQUILLA')) return 3000;
+      if (texto.includes('TRACTO') || texto.includes('CAMA BAJA')) return 7000;
+      if (texto.includes('PLUMA') || texto.includes('MANITOU') || texto.includes('MANIPULADOR')) return 5000;
+      if (catalogoTarifasOp.length > 0) {
+        const found = catalogoTarifasOp.find(t => texto.includes(String(t.nombre_mostrar || '').toUpperCase()));
+        if (found) return Number(found.valor_hora_clp) || 5000;
+      }
+      return 5000;
+    }
+
+    // 2.c Obtener Movimientos de Salida de Bodega (tinv_movimiento + tmnt_ot_repuesto) para Reporte Salidas Bodega
+    const salidasKardexRes = await db.query(`
+      SELECT
+        m.id_movimiento,
+        TO_CHAR(m.fecha_movimiento, 'YYYY-MM-DD') AS fecha_fmt,
+        EXTRACT(MONTH FROM m.fecha_movimiento)::int AS mes_num,
+        m.tipo_movimiento,
+        m.documento_tipo,
+        m.documento_folio,
+        m.cantidad,
+        COALESCE(m.costo_unitario_pmp, p.costo_pmp_vigente, 0) AS precio_unitario,
+        ROUND(COALESCE(m.cantidad, 0) * COALESCE(m.costo_unitario_pmp, p.costo_pmp_vigente, 0)) AS costo_total,
+        COALESCE(p.codigo_legado, p.sku, 'S/C') AS codigo,
+        COALESCE(p.nombre, 'Insumo / Repuesto') AS producto,
+        COALESCE(p.familia, 'GENERAL') AS familia,
+        COALESCE(NULLIF(m.usuario_registro, ''), TRIM(CONCAT(u_reg.name_frst, ' ', COALESCE(u_reg.apellido_pat, ''))), u_reg.email, 'Taller / Bodega') AS retira,
+        m.observaciones,
+        COALESCE(m.id_empresa, 9) AS id_empresa
+      FROM tinv_movimiento m
+      JOIN tinv_producto p ON m.id_producto = p.id_producto
+      LEFT JOIN tsec_users u_reg ON u_reg.id_user = m.id_usuario
+      WHERE m.tipo_movimiento IN ('SALIDA_OT', 'CONSUMO', 'AJUSTE_NEGATIVO')
+      ORDER BY m.fecha_movimiento DESC, m.id_movimiento DESC;
+    `).catch(() => ({ rows: [] }));
+
+    const salidasOtRepRes = await db.query(`
+      SELECT
+        r.id_ot_repuesto,
+        ot.numero_ot,
+        TO_CHAR(COALESCE(ot.fecha_creacion, NOW()), 'YYYY-MM-DD') AS fecha_fmt,
+        EXTRACT(MONTH FROM COALESCE(ot.fecha_creacion, NOW()))::int AS mes_num,
+        COALESCE(p.codigo_legado, p.sku, 'REP-' || r.id_ot_repuesto) AS codigo,
+        COALESCE(r.descripcion_material, p.nombre, 'Repuesto OT') AS producto,
+        COALESCE(p.familia, 'REPUESTOS') AS familia,
+        r.cantidad,
+        COALESCE(r.costo_unitario, p.costo_pmp_vigente, 0) AS precio_unitario,
+        COALESCE(r.costo_total, ROUND(COALESCE(r.cantidad, 0) * COALESCE(r.costo_unitario, p.costo_pmp_vigente, 0))) AS costo_total,
+        COALESCE(eq.patente, ot.numero_ot, 'TALLER') AS centro_costo,
+        COALESCE(eq.tipo_equipo, 'MAQUINARIA') AS tipo_equipo,
+        COALESCE(TRIM(CONCAT(u_tec.name_frst, ' ', COALESCE(u_tec.apellido_pat, ''))), 'Mecánico Taller') AS retira,
+        COALESCE(r.id_empresa, 9) AS id_empresa,
+        r.estado
+      FROM tmnt_ot_repuesto r
+      JOIN tmnt_ot ot ON ot.id_ot = r.id_ot
+      LEFT JOIN tequ_equipo eq ON eq.id_equipo = ot.id_equipo
+      LEFT JOIN tinv_producto p ON p.id_producto = r.id_producto
+      LEFT JOIN tsec_users u_tec ON u_tec.id_user = ot.id_usuario_responsable
+      WHERE COALESCE(r.estado, 'ACTIVO') != 'DEVUELTO'
+      ORDER BY r.id_ot_repuesto DESC;
+    `).catch(() => ({ rows: [] }));
 
     // 3. Obtener catálogo de equipos asignados a proyectos (tpry_rel_equipo + tequ_equipo)
     const relEqRes = await db.query(`
@@ -1870,12 +1957,19 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       equiposPorProyecto.get(eq.id_proyecto).push(eq);
     }
 
-    // Indexar viáticos por proyecto
+    // Indexar viáticos y combustible por proyecto
     const viaticosPorProyecto = new Map();
+    const combustiblePorProyecto = new Map();
     for (const c of costosItsRes.rows) {
       const cat = String(c.categoria_costo || '').toUpperCase();
       if (cat.includes('PENSION') || cat.includes('ALIMENTA') || cat.includes('VIATICO') || cat.includes('ALOJAMIENTO')) {
         viaticosPorProyecto.set(c.id_proyecto, (viaticosPorProyecto.get(c.id_proyecto) || 0) + Number(c.monto_total || 0));
+      }
+      if (cat.includes('COMBUSTIBLE') || cat.includes('PETROLEO')) {
+        if (!combustiblePorProyecto.has(c.id_proyecto)) {
+          combustiblePorProyecto.set(c.id_proyecto, []);
+        }
+        combustiblePorProyecto.get(c.id_proyecto).push(c);
       }
     }
 
@@ -1884,6 +1978,12 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       7: 'Bestmaq',
       8: 'Logística del Sur',
       11: 'Royal Rental'
+    };
+    const RUTS_HOLDING = {
+      9: '76.143.620-1',
+      7: '76.209.534-3',
+      8: '76.218.576-8',
+      11: '78.254.535-3'
     };
 
     const procesos = [];
@@ -1903,11 +2003,13 @@ exports.getPerspectivaContabilidad = async (req, res) => {
     let kpiFacturadoBruto = 0;
     let kpiFacturadoCount = 0;
 
-    // Mapas para Submenú 2 (Horas Operadores/Riggers) y Submenú 3 (Ventas por Grúa/Equipo)
+    // Mapas para Submenú 2 (Horas Operadores/Riggers), Submenú 3 (Ventas por Grúa/Equipo) y Submenú 4 (Combustible)
     const mapaTrabajadores = new Map();
     const detalleJornadasPersonal = [];
     const mapaEquipos = new Map();
     const detalleAsignacionesEquipo = [];
+    const mapaCombustibleVehiculos = new Map();
+    const detalleCargasCombustible = [];
 
     for (const p of proyRes.rows) {
       const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field || '{}') : (p.json_field || {});
@@ -1927,9 +2029,18 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         continue;
       }
 
+      const repsProyecto = reportsPorProyecto.get(p.id_proyecto) || [];
       const fechaRef = p.fecha_plan_ini || p.fecha_creacion;
-      if (fecha_desde && fechaRef && new Date(fechaRef) < new Date(fecha_desde)) continue;
-      if (fecha_hasta && fechaRef && new Date(fechaRef) > new Date(fecha_hasta + 'T23:59:59')) continue;
+      const tieneReportsEnRango = repsProyecto.some(r => {
+        if (!r.fecha_reporte_fmt) return false;
+        if (fecha_desde && r.fecha_reporte_fmt < fecha_desde) return false;
+        if (fecha_hasta && r.fecha_reporte_fmt > fecha_hasta) return false;
+        return true;
+      });
+      if (!tieneReportsEnRango) {
+        if (fecha_desde && fechaRef && new Date(fechaRef) < new Date(fecha_desde)) continue;
+        if (fecha_hasta && fechaRef && new Date(fechaRef) > new Date(fecha_hasta + 'T23:59:59')) continue;
+      }
 
       const empresaCorto = EMPRESAS_HOLDING[empId] || p.empresa_emisora_nombre || 'Grúas San Pablo';
       const vendedorNombre = crmV1.vendedor_nombre || jf.vendedor_nombre || 'Comercial GSP';
@@ -1967,7 +2078,6 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         : (netoCrm > 0 ? Math.round(netoCrm) : Math.round(itsIngresosNeto));
 
       // 2. Calcular Devengado por Reports Diarios
-      const repsProyecto = reportsPorProyecto.get(p.id_proyecto) || [];
       const totalReports = repsProyecto.length;
       const reportsValidados = repsProyecto.filter(r => r.estado_reporte === 'VALIDADO_ANALISTA').length;
       const reportsPendientes = repsProyecto.filter(r => r.estado_reporte !== 'VALIDADO_ANALISTA').length;
@@ -2252,15 +2362,61 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       });
 
       // =========================================================================
-      // POBLAR SUBMENÚ 2: HORAS DE OPERADORES Y RIGGERS
+      // POBLAR SUBMENÚ 2: HORAS DE OPERADORES Y RIGGERS (Formato Horas Operadores.xlsx + ITS Validado)
       // =========================================================================
       const viaticoPryTotal = viaticosPorProyecto.get(p.id_proyecto) || 0;
       const viaticoPorReport = totalReports > 0 ? Math.round(viaticoPryTotal / totalReports) : 0;
 
+      // Resolver Valor Hora Servicio Comercial de la OT
+      let valorHoraServicioOt = 0;
+      for (const l of lineas) {
+        const tipoUpper = String(l.tipo || '').toUpperCase();
+        if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA', 'ALZAHOMBRES / PLATAFORMAS'].includes(tipoUpper)) {
+          const valUnit = Number(l.valorUnitario || l.precio_unitario || l.tarifa || 0);
+          if (valUnit > 0) {
+            if (String(l.unidad || '').toLowerCase() === 'diario') {
+              valorHoraServicioOt = Math.round(valUnit / 9);
+            } else {
+              valorHoraServicioOt = Math.round(valUnit);
+            }
+            break;
+          }
+        }
+      }
+      if (valorHoraServicioOt === 0 && horasFacturablesPry > 0 && montoDevengadoReports > 0) {
+        valorHoraServicioOt = Math.round(montoDevengadoReports / horasFacturablesPry);
+      }
+
+      const itsValidadoFlag = Boolean(p.estado_its === 'CONCLUIDO' || p.estado_its === 'APROBADO');
+
       for (const rep of repsProyecto) {
-        const hrsTotal = Number(rep.horas_facturables || rep.horas_operadas || 0);
+        // SPEC-106: Filtrar por fecha del Report Diario ("Desde - Hasta") independiente del cierre del ITS
+        if (fecha_desde && rep.fecha_reporte_fmt && rep.fecha_reporte_fmt < fecha_desde) continue;
+        if (fecha_hasta && rep.fecha_reporte_fmt && rep.fecha_reporte_fmt > fecha_hasta) continue;
+
+        const liqRep = rep.ajustes_analista?.liquidacion_personal_dia || null;
+        const reportValidadoFlag = Boolean(rep.estado_reporte === 'VALIDADO_ANALISTA' || liqRep?.validado_rrhh);
+        const reportValidadoLabel = reportValidadoFlag ? 'SÍ' : 'NO';
+
+        const hrsTotal = liqRep?.horas_totales_pagar !== undefined && liqRep?.horas_totales_pagar !== null
+          ? Number(liqRep.horas_totales_pagar)
+          : Number(rep.horas_facturables || rep.horas_operadas || 0);
+        const hrsMaq = Number(rep.horas_operadas || hrsTotal || 0);
         const hrsSt = Number(rep.horas_sobretiempo || 0);
         const hrsNorm = Math.max(0, Number((hrsTotal - hrsSt).toFixed(1)));
+        const valorHoraOpDia = liqRep?.precio_unitario !== undefined && Number(liqRep.precio_unitario) > 0
+          ? Number(liqRep.precio_unitario)
+          : resolverValorHoraOperadorDesdeLineas(lineas, rep.equipo_modelo || rep.equipo_nombre, rep.equipo_tipo);
+        const totalServicioDia = Math.round(hrsTotal * valorHoraServicioOt);
+        const totalOperadorDia = liqRep?.monto_total_hora_operador !== undefined && liqRep?.monto_total_hora_operador !== null
+          ? Math.round(Number(liqRep.monto_total_hora_operador))
+          : Math.round(hrsTotal * valorHoraOpDia);
+        const viaticoOpDia = liqRep?.monto_viatico_operador !== undefined && liqRep?.monto_viatico_operador !== null
+          ? Math.round(Number(liqRep.monto_viatico_operador))
+          : (viaticoPorReport > 0
+              ? viaticoPorReport
+              : (hrsTotal >= 8 ? Math.min(18000, 7000 + Math.floor(hrsTotal - 8) * 1000) : 0));
+        const reportFolio = rep.folio_correlativo ? String(rep.folio_correlativo) : String(rep.id_reporte_avance);
 
         // Registrar Operador
         if (rep.id_user_operador || rep.operador_nombre) {
@@ -2280,7 +2436,13 @@ exports.getPerspectivaContabilidad = async (req, res) => {
               horas_normales: 0,
               horas_sobretiempo: 0,
               horas_totales: 0,
-              viaticos_clp: 0
+              horas_maq_totales: 0,
+              valor_hora_operador_ref: valorHoraOpDia,
+              total_servicio_clp: 0,
+              total_operador_clp: 0,
+              viaticos_clp: 0,
+              reports_validados_count: 0,
+              its_validados_count: 0
             });
           }
           const tOp = mapaTrabajadores.get(opKey);
@@ -2290,30 +2452,61 @@ exports.getPerspectivaContabilidad = async (req, res) => {
           tOp.horas_normales = Number((tOp.horas_normales + hrsNorm).toFixed(1));
           tOp.horas_sobretiempo = Number((tOp.horas_sobretiempo + hrsSt).toFixed(1));
           tOp.horas_totales = Number((tOp.horas_totales + hrsTotal).toFixed(1));
-          tOp.viaticos_clp += viaticoPorReport;
+          tOp.horas_maq_totales = Number((tOp.horas_maq_totales + hrsMaq).toFixed(1));
+          if (valorHoraOpDia > 0) tOp.valor_hora_operador_ref = valorHoraOpDia;
+          tOp.total_servicio_clp += totalServicioDia;
+          tOp.total_operador_clp += totalOperadorDia;
+          tOp.viaticos_clp += viaticoOpDia;
+          if (reportValidadoFlag) {
+            tOp.reports_validados_count += 1;
+            tOp.its_validados_count += 1;
+          }
 
           detalleJornadasPersonal.push({
             id_reporte: rep.id_reporte_avance,
-            fecha: rep.fecha_reporte_fmt || '',
-            trabajador: rep.operador_nombre || 'Operador',
-            rut: rep.operador_rut || 'S/R',
-            rol: 'OPERADOR',
+            orden: p.codi_proyecto || `OT-${p.id_proyecto}`,
             codi_proyecto: p.codi_proyecto || `OT-${p.id_proyecto}`,
-            cliente_nombre: p.cliente_nombre,
-            empresa_emisora: empresaCorto,
-            equipo_patente: rep.equipo_patente,
+            fecha: rep.fecha_reporte_fmt || '',
+            vehiculo: rep.equipo_tipo || 'GRUA',
+            patente: rep.equipo_patente || 'S/P',
+            equipo_patente: rep.equipo_patente || 'S/P',
             equipo_modelo: rep.equipo_modelo || rep.equipo_nombre,
+            valor_hora_operador: valorHoraOpDia,
+            cliente_nombre: p.cliente_nombre,
+            report_nro: reportFolio,
+            valor_hora_servicio: valorHoraServicioOt,
+            horas: hrsTotal,
+            horas_maq: hrsMaq,
             horas_normales: hrsNorm,
             horas_sobretiempo: hrsSt,
             horas_totales: hrsTotal,
+            total_servicio: totalServicioDia,
+            total_operador: totalOperadorDia,
+            factura_nro: facturaNumero || '',
+            report_validado: reportValidadoFlag,
+            report_validado_label: reportValidadoLabel,
+            its_validado: reportValidadoFlag,
+            its_validado_label: reportValidadoLabel,
+            estado_its: p.estado_its || 'SIN_ITS',
+            trabajador: rep.operador_nombre || 'Operador',
+            rut: rep.operador_rut || 'S/R',
+            rol: 'OPERADOR',
+            empresa_emisora: empresaCorto,
             estado_reporte: rep.estado_reporte,
-            viatico_estimado_clp: viaticoPorReport
+            viatico_estimado_clp: viaticoOpDia
           });
         }
 
         // Registrar Rigger si participó en el report
         if (rep.id_user_rigger && rep.rigger_nombre) {
           const rigKey = `RIG-${rep.id_user_rigger}`;
+          const hrsRiggerDia = liqRep?.horas_totales_rigger !== undefined && liqRep?.horas_totales_rigger !== null
+            ? Number(liqRep.horas_totales_rigger)
+            : hrsTotal;
+          const viaticoRigDia = liqRep?.monto_viatico_rigger !== undefined && liqRep?.monto_viatico_rigger !== null
+            ? Math.round(Number(liqRep.monto_viatico_rigger))
+            : (hrsRiggerDia >= 8 ? Math.min(18000, 7000 + Math.floor(hrsRiggerDia - 8) * 1000) : 0);
+
           if (!mapaTrabajadores.has(rigKey)) {
             mapaTrabajadores.set(rigKey, {
               key: rigKey,
@@ -2329,7 +2522,13 @@ exports.getPerspectivaContabilidad = async (req, res) => {
               horas_normales: 0,
               horas_sobretiempo: 0,
               horas_totales: 0,
-              viaticos_clp: 0
+              horas_maq_totales: 0,
+              valor_hora_operador_ref: 0,
+              total_servicio_clp: 0,
+              total_operador_clp: 0,
+              viaticos_clp: 0,
+              reports_validados_count: 0,
+              its_validados_count: 0
             });
           }
           const tRig = mapaTrabajadores.get(rigKey);
@@ -2338,26 +2537,156 @@ exports.getPerspectivaContabilidad = async (req, res) => {
           tRig.reports_count += 1;
           tRig.horas_normales = Number((tRig.horas_normales + hrsNorm).toFixed(1));
           tRig.horas_sobretiempo = Number((tRig.horas_sobretiempo + hrsSt).toFixed(1));
-          tRig.horas_totales = Number((tRig.horas_totales + hrsTotal).toFixed(1));
+          tRig.horas_totales = Number((tRig.horas_totales + hrsRiggerDia).toFixed(1));
+          tRig.horas_maq_totales = Number((tRig.horas_maq_totales + hrsMaq).toFixed(1));
+          tRig.total_servicio_clp += totalServicioDia;
+          tRig.viaticos_clp += viaticoRigDia;
+          if (reportValidadoFlag) {
+            tRig.reports_validados_count += 1;
+            tRig.its_validados_count += 1;
+          }
 
           detalleJornadasPersonal.push({
             id_reporte: rep.id_reporte_avance,
+            orden: p.codi_proyecto || `OT-${p.id_proyecto}`,
+            codi_proyecto: p.codi_proyecto || `OT-${p.id_proyecto}`,
             fecha: rep.fecha_reporte_fmt || '',
+            vehiculo: rep.equipo_tipo || 'GRUA',
+            patente: rep.equipo_patente || 'S/P',
+            equipo_patente: rep.equipo_patente || 'S/P',
+            equipo_modelo: rep.equipo_modelo || rep.equipo_nombre,
+            valor_hora_operador: 0,
+            cliente_nombre: p.cliente_nombre,
+            report_nro: reportFolio,
+            valor_hora_servicio: valorHoraServicioOt,
+            horas: hrsRiggerDia,
+            horas_maq: hrsMaq,
+            horas_normales: hrsNorm,
+            horas_sobretiempo: hrsSt,
+            horas_totales: hrsRiggerDia,
+            total_servicio: totalServicioDia,
+            total_operador: 0,
+            factura_nro: facturaNumero || '',
+            report_validado: reportValidadoFlag,
+            report_validado_label: reportValidadoLabel,
+            its_validado: reportValidadoFlag,
+            its_validado_label: reportValidadoLabel,
+            estado_its: p.estado_its || 'SIN_ITS',
             trabajador: rep.rigger_nombre,
             rut: rep.rigger_rut || 'S/R',
             rol: 'RIGGER',
-            codi_proyecto: p.codi_proyecto || `OT-${p.id_proyecto}`,
-            cliente_nombre: p.cliente_nombre,
             empresa_emisora: empresaCorto,
-            equipo_patente: rep.equipo_patente,
-            equipo_modelo: rep.equipo_modelo || rep.equipo_nombre,
-            horas_normales: hrsNorm,
-            horas_sobretiempo: hrsSt,
-            horas_totales: hrsTotal,
             estado_reporte: rep.estado_reporte,
-            viatico_estimado_clp: 0
+            viatico_estimado_clp: viaticoRigDia
           });
         }
+      }
+
+      // =========================================================================
+      // POBLAR SUBMENÚ 4: COMBUSTIBLE Y RENDIMIENTO DE FLOTA (Combustible Enero 2026.xlsx)
+      // =========================================================================
+      const itemsCombPry = combustiblePorProyecto.get(p.id_proyecto) || [];
+      const montoCombPryTotal = itemsCombPry.reduce((acc, c) => acc + Number(c.monto_total || 0), 0);
+      const montoCombPorReport = totalReports > 0 ? Math.round(montoCombPryTotal / totalReports) : montoCombPryTotal;
+      const metaComb0 = itemsCombPry[0]?.metadatos_json
+        ? (typeof itemsCombPry[0].metadatos_json === 'string' ? JSON.parse(itemsCombPry[0].metadatos_json || '{}') : itemsCombPry[0].metadatos_json)
+        : {};
+
+      for (const rep of repsProyecto) {
+        const hrsIni = Number(rep.horometro_inicio || 0);
+        const hrsFin = Number(rep.horometro_termino || 0);
+        const totalHrsHoro = hrsFin > hrsIni
+          ? Number((hrsFin - hrsIni).toFixed(1))
+          : Number(rep.horas_operadas || rep.horas_facturables || 0);
+        const hrsGIni = Number(rep.equipo_horo_grua || 0);
+        const hrsGFin = Number((hrsGIni + totalHrsHoro).toFixed(1));
+        const kmIni = Number(rep.equipo_odometro || 0);
+        const kmFin = distanciaKm > 0 ? Number((kmIni + distanciaKm).toFixed(1)) : kmIni;
+        const totalKm = Number((kmFin - kmIni).toFixed(1));
+
+        const litrosCarga = Number(metaComb0.litros || 0);
+        const precioLitro = Number(metaComb0.precio_litro || (litrosCarga > 0 && montoCombPorReport > 0 ? Math.round(montoCombPorReport / litrosCarga) : 0));
+        const guiaComb = metaComb0.guia || metaComb0.nro_guia || 'S/G (Sin Captura)';
+        const llenadoCon = litrosCarga > 0 ? (metaComb0.llenado_con || 'ESTANQUE / SURTIDOR') : 'SIN REGISTRO EN TERRENO';
+        const rendiKm = litrosCarga > 0 && totalKm > 0 ? Number((totalKm / litrosCarga).toFixed(2)) : 0;
+        const rendiHrs = litrosCarga > 0 && totalHrsHoro > 0 ? Number((litrosCarga / totalHrsHoro).toFixed(2)) : 0;
+        const rendiHrsG = rendiHrs;
+        const patComb = rep.equipo_patente || 'S/P';
+        const tipoVehComb = rep.equipo_tipo || 'GRUA';
+        const combKey = `${tipoVehComb}::${patComb}`;
+
+        if (!mapaCombustibleVehiculos.has(combKey)) {
+          mapaCombustibleVehiculos.set(combKey, {
+            key: combKey,
+            tipo_vehiculo: tipoVehComb,
+            patente: patComb,
+            modelo: rep.equipo_modelo || rep.equipo_nombre || '',
+            marca: rep.equipo_marca || '',
+            empresa_holding: empresaCorto,
+            cargas_count: 0,
+            suma_litros: 0,
+            suma_total_clp: 0,
+            total_horas: 0,
+            total_km: 0
+          });
+        }
+        const mComb = mapaCombustibleVehiculos.get(combKey);
+        mComb.cargas_count += 1;
+        mComb.suma_litros = Number((mComb.suma_litros + litrosCarga).toFixed(1));
+        mComb.suma_total_clp += montoCombPorReport;
+        mComb.total_horas = Number((mComb.total_horas + totalHrsHoro).toFixed(1));
+        mComb.total_km = Number((mComb.total_km + totalKm).toFixed(1));
+
+        detalleCargasCombustible.push({
+          id_reporte: rep.id_reporte_avance,
+          codi_proyecto: p.codi_proyecto || `OT-${p.id_proyecto}`,
+          fecha: rep.fecha_reporte_fmt || '',
+          guia: guiaComb,
+          llenado_con: llenadoCon,
+          litros: litrosCarga,
+          precio: precioLitro,
+          hrs_inicial: hrsIni,
+          hrs_final: hrsFin,
+          total_horas: totalHrsHoro,
+          km_inicial: kmIni,
+          km_final: kmFin,
+          total_km: totalKm,
+          hrs_g_inicial: hrsGIni,
+          hrs_g_final: hrsGFin,
+          total_hrs_g: totalHrsHoro,
+          total_clp: montoCombPorReport,
+          rendi_km: rendiKm,
+          rendi_hrs: rendiHrs,
+          rendi_hrs_g: rendiHrsG,
+          patente: patComb,
+          tipo_vehiculo: tipoVehComb,
+          modelo: rep.equipo_modelo || rep.equipo_nombre || '',
+          marca: rep.equipo_marca || '',
+          anio: '',
+          operador: rep.operador_nombre || 'Operador',
+          nro_interno: rep.id_equipo ? `EQ-${rep.id_equipo}` : '',
+          sucursal: 'CASA MATRIZ',
+          // RESOLUCIÓN DE FONDO (REQ-1131 / SPEC-119): Formato horario real en zona horaria America/Santiago sin forzar 18:00
+          fecha_ingreso: (() => {
+            const tsRaw = rep.fecha_registro || rep.fecha_termino_servicio || rep.fecha_inicio_servicio;
+            if (tsRaw) {
+              try {
+                const d = new Date(tsRaw);
+                if (!isNaN(d.getTime())) {
+                  const fechaPart = d.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+                  const horaPart = d.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hour12: false });
+                  return `${fechaPart} ${horaPart}`;
+                }
+              } catch (_) {}
+            }
+            return rep.fecha_reporte_fmt ? `${rep.fecha_reporte_fmt} ${rep.hora_termino || '08:00'}` : '';
+          })(),
+          rut_empresa: RUTS_HOLDING[empId] || '76.143.620-1',
+          empresa_emisora: empresaCorto,
+          estado_captura: litrosCarga > 0
+            ? 'CAPTURADO'
+            : (montoCombPorReport > 0 ? 'MONTO ITS SIN LITROS/GUÍA' : 'SIN CAPTURA DE COMBUSTIBLE')
+        });
       }
 
       // =========================================================================
@@ -2485,7 +2814,15 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       horas_normales: t.horas_normales,
       horas_sobretiempo: t.horas_sobretiempo,
       horas_totales: t.horas_totales,
-      viaticos_clp: t.viaticos_clp
+      horas_maq_totales: t.horas_maq_totales,
+      valor_hora_operador_ref: t.valor_hora_operador_ref,
+      total_servicio_clp: t.total_servicio_clp,
+      total_operador_clp: t.total_operador_clp,
+      viaticos_clp: t.viaticos_clp,
+      reports_validados_count: t.reports_validados_count,
+      report_validado_label: t.reports_validados_count === t.reports_count && t.reports_count > 0 ? 'SÍ' : (t.reports_validados_count > 0 ? 'PARCIAL' : 'NO'),
+      its_validados_count: t.reports_validados_count,
+      its_validado_label: t.reports_validados_count === t.reports_count && t.reports_count > 0 ? 'SÍ' : (t.reports_validados_count > 0 ? 'PARCIAL' : 'NO')
     })).sort((a, b) => b.horas_totales - a.horas_totales);
 
     const resumenEquipos = Array.from(mapaEquipos.values()).map(eq => {
@@ -2517,6 +2854,132 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         margen_contribucion_pct: margenPct
       };
     }).sort((a, b) => b.venta_comprometida_neto - a.venta_comprometida_neto);
+
+    // =========================================================================
+    // CONSOLIDAR SUBMENÚ 4: COMBUSTIBLE Y RENDIMIENTO (Hoja2 + sistema)
+    // =========================================================================
+    const resumenCombustibleVehiculos = Array.from(mapaCombustibleVehiculos.values())
+      .sort((a, b) => a.tipo_vehiculo.localeCompare(b.tipo_vehiculo) || a.patente.localeCompare(b.patente));
+
+    // =========================================================================
+    // CONSOLIDAR SUBMENÚ 5: SALIDAS DE BODEGA Y CENTROS DE COSTOS (Hoja2 + Sistema)
+    // =========================================================================
+    const MESES_ES = {
+      '01': 'ENERO', '02': 'FEBRERO', '03': 'MARZO', '04': 'ABRIL',
+      '05': 'MAYO', '06': 'JUNIO', '07': 'JULIO', '08': 'AGOSTO',
+      '09': 'SEPTIEMBRE', '10': 'OCTUBRE', '11': 'NOVIEMBRE', '12': 'DICIEMBRE'
+    };
+
+    const CUENTAS_CONTABLES_CANONICAS = [
+      'Activo',
+      'Galpon Puerto Montt',
+      'Gastos de Oficina',
+      'Implementos Seguridad',
+      'Mant. Maquinarias',
+      'Mant. Vehiculos',
+      'Mantencion Edificio',
+      'Obra en Construccion',
+      'Sin Parametrizar (Pendiente Plan de Cuentas)'
+    ];
+
+    const mapaCuentasBodega = new Map();
+    for (const cta of CUENTAS_CONTABLES_CANONICAS) {
+      mapaCuentasBodega.set(cta, {
+        cuenta_contable: cta,
+        enero: 0,
+        febrero: 0,
+        marzo: 0,
+        otros_meses: 0,
+        total_general: 0,
+        movimientos_count: 0
+      });
+    }
+
+    const detalleSalidasBodega = [];
+    const filasRawBodega = [
+      ...(salidasKardexRes.rows || []).map(r => ({ ...r, origen: 'KARDEX_BODEGA' })),
+      ...(salidasOtRepRes.rows || []).map(r => ({ ...r, origen: 'OT_MANTENCION' }))
+    ];
+
+    for (const r of filasRawBodega) {
+      const fechaStr = r.fecha_fmt || '';
+      const mesNum = fechaStr.slice(5, 7);
+      const mesNombre = MESES_ES[mesNum] || 'OTRO';
+      const cant = Number(r.cantidad || 0);
+      const precioUnit = Math.round(Number(r.precio_unitario || 0));
+      const totalFila = Math.round(Number(r.total || (cant * precioUnit) || 0));
+
+      // Inferencia inicial o marcación explícita de falta de parametrización de Centro de Costos / Cuenta Contable
+      const catUpper = String(r.categoria || '').toUpperCase();
+      let cuentaSugerida = 'Sin Parametrizar (Pendiente Plan de Cuentas)';
+      if (catUpper.includes('EPP') || catUpper.includes('SEGURIDAD')) {
+        cuentaSugerida = 'Implementos Seguridad';
+      } else if (r.origen === 'OT_MANTENCION' || catUpper.includes('REPUESTO') || catUpper.includes('FILTRO') || catUpper.includes('LUBRICANTE') || catUpper.includes('HIDRAULIC')) {
+        cuentaSugerida = 'Mant. Maquinarias';
+      } else if (catUpper.includes('OFICINA') || catUpper.includes('ASEO')) {
+        cuentaSugerida = 'Gastos de Oficina';
+      }
+
+      const centroCostoStr = r.equipo_patente && r.equipo_patente !== 'SIN ASIGNAR'
+        ? `${r.equipo_patente} (Pendiente C. Costo Contable)`
+        : 'SIN CENTRO DE COSTO (Pendiente Parametrizar)';
+
+      if (!mapaCuentasBodega.has(cuentaSugerida)) {
+        mapaCuentasBodega.set(cuentaSugerida, {
+          cuenta_contable: cuentaSugerida,
+          enero: 0,
+          febrero: 0,
+          marzo: 0,
+          otros_meses: 0,
+          total_general: 0,
+          movimientos_count: 0
+        });
+      }
+      const mCta = mapaCuentasBodega.get(cuentaSugerida);
+      if (mesNum === '01') mCta.enero += totalFila;
+      else if (mesNum === '02') mCta.febrero += totalFila;
+      else if (mesNum === '03') mCta.marzo += totalFila;
+      else mCta.otros_meses += totalFila;
+      mCta.total_general += totalFila;
+      mCta.movimientos_count += 1;
+
+      detalleSalidasBodega.push({
+        id_movimiento: r.id_movimiento,
+        codigo: r.codigo || 'S/C',
+        producto: r.producto || 'Ítem de Bodega',
+        fecha: fechaStr,
+        mes: mesNombre,
+        detalle: r.detalle || 'SALIDA POR CONSUMO',
+        nro_dcto: String(r.nro_dcto || r.id_movimiento),
+        cantidad: cant,
+        precio_unitario: precioUnit,
+        total: totalFila,
+        centro_costo: centroCostoStr,
+        empresa: 'Grúas San Pablo',
+        cuenta_contable: cuentaSugerida,
+        retira: r.retira || 'SIN REGISTRO RETIRA',
+        origen_registro: r.origen,
+        estado_parametrizacion: 'PENDIENTE_CATALOGO_CC_Y_CUENTAS'
+      });
+    }
+
+    const resumenCuentasBodega = Array.from(mapaCuentasBodega.values());
+
+    // =========================================================================
+    // CONSOLIDAR SUBMENÚ 6: RH — ANEXOS DE CONTRATO POR CAMBIO DE OBRA (REQ-1094)
+    // =========================================================================
+    let anexosRhList = [];
+    let padronTrabajadoresRh = [];
+    try {
+      const [anexosData, padronData] = await Promise.all([
+        obtenerAnexosContratoRH(db),
+        obtenerPadronTrabajadoresRH(db)
+      ]);
+      anexosRhList = anexosData;
+      padronTrabajadoresRh = padronData;
+    } catch (errRh) {
+      console.warn('[PERSPECTIVA_CONTABILIDAD] Aviso cargando datos RH:', errRh.message);
+    }
 
     const baseExigibleFacturar = Math.max(kpiDevengadoNeto, kpiEmitidoEdpNeto);
     const brechaPorFacturarNeto = Math.max(0, baseExigibleFacturar - kpiFacturadoNeto);
@@ -2550,6 +3013,20 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         ventas_equipos: {
           resumen_equipos: resumenEquipos,
           detalle_asignaciones: detalleAsignacionesEquipo
+        },
+        combustible_flota: {
+          aviso_estructura: 'Estructura homologada con Combustible Enero 2026.xlsx (Hoja2 y sistema). La captura de Guía, Surtidor y Litros en terreno aún no se encuentra activa en la PWA/Web, por lo que se exponen los horómetros/odómetros de reports y los montos de combustible registrados en ITS.',
+          resumen_vehiculos: resumenCombustibleVehiculos,
+          detalle_cargas: detalleCargasCombustible
+        },
+        salidas_bodega: {
+          aviso_estructura: 'Estructura homologada con Salidas bodega enero - marzo 2026.xlsx (Hoja2 y Sistema). Actualmente la base de datos no dispone del maestro de Centros de Costos ni del clasificador de Cuentas Contables en el Kardex de Bodega (tinv_movimiento), ni existen consumos registrados en el período.',
+          resumen_cuentas: resumenCuentasBodega,
+          detalle_salidas: detalleSalidasBodega
+        },
+        rh_anexos: {
+          anexos: anexosRhList,
+          padron_trabajadores: padronTrabajadoresRh
         }
       }
     });
@@ -2602,5 +3079,789 @@ exports.descargarPdfCotizacionProyecto = async (req, res) => {
   } catch (err) {
     console.error('[descargarPdfCotizacionProyecto] Error:', err);
     return res.status(500).send('Error interno al obtener PDF de cotización: ' + err.message);
+  }
+};
+
+// ============================================================================
+// 14. SUBMENÚ 6. RH — GENERADOR DE ANEXOS DE CONTRATO DE TRABAJO (CAMBIO DE OBRA)
+//     MULTI-EMPRESA Y PERSISTENCIA DUAL (SEGMENTO RH + BIBLIOTECA DE PERSONAS)
+//     Especificación: .agents/specs/105_reportes_contabilidad_horas_combustible_y_bodega_spec.md (§3, REQ-1094)
+// ============================================================================
+const os = require('os');
+const { exec } = require('child_process');
+const ArchivoModel = require('../models/archivoModel');
+
+const EMPRESAS_HERMANAS_ANEXO = {
+  9: {
+    id_empresa: 9,
+    nombre_corto: 'Grúas San Pablo',
+    razon_social: 'LUIS OMAR GHISELLINI JARA EIRL',
+    rut: '52.004.162-1',
+    domicilio: 'Lugar Botrolhue KM. 9,5 camino Labranza, ciudad de Temuco',
+    logo_file: 'logo-sanpablo.png',
+    color_acento: '#D97706'
+  },
+  7: {
+    id_empresa: 7,
+    nombre_corto: 'Bestmaq',
+    razon_social: 'SOCIEDAD COMERCIALIZADORA BESTMAQ LIMITADA',
+    rut: '76.209.534-3',
+    domicilio: 'Lugar Botrolhue KM. 9,5 camino Labranza, ciudad de Temuco',
+    logo_file: 'logo-bestmaq.png',
+    color_acento: '#EA580C'
+  },
+  8: {
+    id_empresa: 8,
+    nombre_corto: 'Logística del Sur',
+    razon_social: 'SOCIEDAD DE TRANSPORTES LOGISTICA DEL SUR LIMITADA',
+    rut: '76.218.576-8',
+    domicilio: 'Lugar Botrolhue KM. 9,5 camino Labranza, ciudad de Temuco',
+    logo_file: 'logo-logistica.png',
+    color_acento: '#0284C7'
+  },
+  11: {
+    id_empresa: 11,
+    nombre_corto: 'Royal Rental',
+    razon_social: 'ARRIENDO ROYAL RENTAL LIMITADA',
+    rut: '78.254.535-3',
+    domicilio: 'Lugar Botrolhue KM. 9,5 camino Labranza, ciudad de Temuco',
+    logo_file: 'logo-royal.png',
+    color_acento: '#7C3AED'
+  }
+};
+
+function resolveLogoBase64Anexo(logoName = 'logo-sanpablo.png') {
+  try {
+    const candidates = [
+      path.join(process.cwd(), 'public', logoName),
+      path.join('/home/nodeadmin/proyectos/lean-services-gsp-prod/public', logoName),
+      path.join('/home/nodeadmin/proyectos/lean-services-gsp/public', logoName),
+      path.join(__dirname, '../../../frontend/public', logoName),
+      path.join(__dirname, '../../../frontend/public/logo-sanpablo.png')
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        const ext = path.extname(p).replace('.', '').toLowerCase();
+        const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext || 'png'}`;
+        const buf = fs.readFileSync(p);
+        return `data:${mime};base64,${buf.toString('base64')}`;
+      }
+    }
+  } catch (err) {
+    console.warn('[ANEXO-RH] Error cargando logo Base64:', err.message);
+  }
+  return '';
+}
+
+function formatDateGuionCL(dateStr) {
+  if (!dateStr) return '—';
+  const s = String(dateStr).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return s;
+}
+
+function escapeHtmlAnexo(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function asegurarTipoCertificadoAnexoObra(dbConn) {
+  const nombreCanonic = 'Anexo de Contrato de Trabajo (Cambio de Obra)';
+  const resExist = await dbConn.query(
+    `SELECT id_tipo_certificado_persona 
+     FROM tsec_tipos_certificado_persona 
+     WHERE UPPER(nombre_tipo) LIKE '%ANEXO%CAMBIO DE OBRA%' 
+     ORDER BY id_tipo_certificado_persona ASC LIMIT 1`
+  );
+  if (resExist.rows.length > 0) {
+    return resExist.rows[0].id_tipo_certificado_persona;
+  }
+  const insRes = await dbConn.query(
+    `INSERT INTO tsec_tipos_certificado_persona (nombre_tipo, obligatorio, es_empresa_dependiente)
+     VALUES ($1, false, true)
+     RETURNING id_tipo_certificado_persona`,
+    [nombreCanonic]
+  );
+  return insRes.rows[0].id_tipo_certificado_persona;
+}
+
+async function obtenerPadronTrabajadoresRH(dbConn) {
+  const sql = `
+    SELECT 
+      u.id_user,
+      TRIM(COALESCE(u.name_frst, '') || ' ' || COALESCE(u.name_sec, '') || ' ' || COALESCE(u.apellido_pat, '') || ' ' || COALESCE(u.apellido_mat, '')) AS nombre_completo,
+      COALESCE(u.rut, '') AS rut,
+      COALESCE(NULLIF(TRIM(u.json_data->>'cargo'), ''), 'OPERADOR DE GRÚA') AS cargo,
+      COALESCE(u.email, '') AS email,
+      COALESCE(u.id_empresa, 9) AS id_empresa
+    FROM tsec_users u
+    WHERE COALESCE(u.activo, true) = true
+      AND TRIM(COALESCE(u.name_frst, '') || ' ' || COALESCE(u.apellido_pat, '')) <> ''
+    ORDER BY u.name_frst ASC, u.apellido_pat ASC;
+  `;
+  const { rows } = await dbConn.query(sql);
+  return rows.map(r => ({
+    id_user: r.id_user,
+    nombre_completo: String(r.nombre_completo || '').replace(/\s+/g, ' ').trim(),
+    rut: r.rut || '',
+    cargo: String(r.cargo || 'OPERADOR DE GRÚA').toUpperCase(),
+    email: r.email || '',
+    id_empresa: Number(r.id_empresa || 9)
+  }));
+}
+
+async function obtenerAnexosContratoRH(dbConn) {
+  const sql = `
+    SELECT 
+      cp.id_certificado_persona AS id_cert,
+      cp.id_user,
+      cp.id_tipo_certificado_persona,
+      tp.nombre_tipo,
+      COALESCE(cp.id_empresa, 9) AS id_empresa_empleadora,
+      emp.name_empresa AS empresa_nombre_bd,
+      to_char(cp.fecha_emision, 'YYYY-MM-DD') AS fecha_emision,
+      to_char(cp.fecha_vencimiento, 'YYYY-MM-DD') AS fecha_hasta,
+      cp.id_doc,
+      cp.observaciones,
+      TRIM(COALESCE(u.name_frst, '') || ' ' || COALESCE(u.name_sec, '') || ' ' || COALESCE(u.apellido_pat, '') || ' ' || COALESCE(u.apellido_mat, '')) AS trabajador_nombre_bd,
+      COALESCE(u.rut, '') AS trabajador_rut_bd,
+      COALESCE(u.json_data->>'cargo', 'OPERADOR') AS trabajador_cargo_bd,
+      f.path_doc,
+      f.name_doc_orig,
+      to_char(f.fecha_creacion AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI') AS creado_en
+    FROM tsec_certificados_persona cp
+    JOIN tsec_tipos_certificado_persona tp ON cp.id_tipo_certificado_persona = tp.id_tipo_certificado_persona
+    LEFT JOIN tsec_users u ON cp.id_user = u.id_user
+    LEFT JOIN tpar_empresas emp ON cp.id_empresa = emp.id_empresa
+    LEFT JOIN tfmg_file f ON cp.id_doc = f.id_doc
+    WHERE (
+      UPPER(tp.nombre_tipo) LIKE '%ANEXO%CAMBIO DE OBRA%'
+      OR UPPER(COALESCE(cp.observaciones, '')) LIKE 'ANEXO CAMBIO DE OBRA%'
+    )
+    ORDER BY cp.id_certificado_persona DESC;
+  `;
+  const { rows } = await dbConn.query(sql);
+  return rows.map(r => {
+    const idEmp = Number(r.id_empresa_empleadora || 9);
+    const empCat = EMPRESAS_HERMANAS_ANEXO[idEmp] || EMPRESAS_HERMANAS_ANEXO[9];
+    let meta = {};
+    if (r.path_doc) {
+      const metaPath = `${r.path_doc}.meta.json`;
+      try {
+        if (fs.existsSync(metaPath)) {
+          meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        }
+      } catch (_) {}
+    }
+
+    return {
+      id_cert: r.id_cert,
+      id_user: r.id_user,
+      id_doc: r.id_doc,
+      folio_anexo: meta.folio_anexo || `ANX-${String(r.id_cert).padStart(4, '0')}`,
+      id_empresa_empleadora: idEmp,
+      empresa_empleadora_nombre: meta.empresa_empleadora_nombre || empCat.nombre_corto,
+      empresa_empleadora_razon_social: meta.empresa_empleadora_razon_social || empCat.razon_social,
+      empresa_empleadora_rut: meta.empresa_empleadora_rut || empCat.rut,
+      empresa_empleadora_domicilio: meta.empresa_empleadora_domicilio || empCat.domicilio,
+      ciudad_emision: meta.ciudad_emision || 'Temuco',
+      fecha_emision: meta.fecha_emision || r.fecha_emision || '',
+      fecha_hasta: meta.fecha_hasta || r.fecha_hasta || '',
+      trabajador_nombre: meta.trabajador_nombre || String(r.trabajador_nombre_bd || '').replace(/\s+/g, ' ').trim(),
+      trabajador_rut: meta.trabajador_rut || r.trabajador_rut_bd || '',
+      trabajador_cargo: meta.trabajador_cargo || r.trabajador_cargo_bd || 'OPERADOR',
+      id_proyecto: meta.id_proyecto || null,
+      codi_proyecto: meta.codi_proyecto || '',
+      proyecto_obra: meta.proyecto_obra || '',
+      empresa_cliente: meta.empresa_cliente || '',
+      rut_cliente: meta.rut_cliente || '',
+      ubicacion_obra: meta.ubicacion_obra || '',
+      observaciones: r.observaciones || '',
+      creado_en: r.creado_en || r.fecha_emision || '',
+      url_pdf: r.id_doc ? `/api/archivo/ver/${r.id_doc}` : null
+    };
+  });
+}
+
+function buildAnexoContratoTrabajoHtml(meta) {
+  const idEmp = Number(meta.id_empresa_empleadora || 9);
+  const empInfo = EMPRESAS_HERMANAS_ANEXO[idEmp] || EMPRESAS_HERMANAS_ANEXO[9];
+  const logoSrc = resolveLogoBase64Anexo(empInfo.logo_file);
+
+  const razonSocialEmp = escapeHtmlAnexo(meta.empresa_empleadora_razon_social || empInfo.razon_social);
+  const rutEmp = escapeHtmlAnexo(meta.empresa_empleadora_rut || empInfo.rut);
+  const domicilioEmp = escapeHtmlAnexo(meta.empresa_empleadora_domicilio || empInfo.domicilio);
+  const nombreCortoEmp = escapeHtmlAnexo(meta.empresa_empleadora_nombre || empInfo.nombre_corto);
+
+  const ciudadEmision = escapeHtmlAnexo(meta.ciudad_emision || 'Temuco');
+  const fechaEmisionFmt = escapeHtmlAnexo(formatDateGuionCL(meta.fecha_emision));
+  const fechaHastaFmt = escapeHtmlAnexo(formatDateGuionCL(meta.fecha_hasta));
+
+  const trabajadorNombre = escapeHtmlAnexo(meta.trabajador_nombre || '');
+  const trabajadorRut = escapeHtmlAnexo(meta.trabajador_rut || '');
+  const trabajadorCargo = escapeHtmlAnexo(meta.trabajador_cargo || '');
+
+  const proyectoObra = escapeHtmlAnexo(meta.proyecto_obra || '');
+  const empresaCliente = escapeHtmlAnexo(meta.empresa_cliente || '');
+  const rutCliente = escapeHtmlAnexo(meta.rut_cliente || 'S/R');
+  const ubicacionObra = escapeHtmlAnexo(meta.ubicacion_obra || '');
+  const folioAnexo = escapeHtmlAnexo(meta.folio_anexo || 'ANX-OFICIAL');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anexo Contrato de Trabajo - Cambio de Obra</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 16mm 14mm 16mm;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      color: #1e293b;
+      font-size: 11pt;
+      line-height: 1.55;
+      background: #ffffff;
+    }
+    .page-frame {
+      border: 1px solid #cbd5e1;
+      border-top: 5px solid ${empInfo.color_acento};
+      padding: 22px 26px 26px 26px;
+      min-height: 960px;
+      position: relative;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      margin-bottom: 22px;
+    }
+    .header-table td {
+      vertical-align: middle;
+      padding-bottom: 12px;
+    }
+    .logo-img {
+      max-height: 54px;
+      max-width: 165px;
+      object-fit: contain;
+    }
+    .emp-block {
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.35;
+    }
+    .emp-block strong {
+      color: #0f172a;
+      font-size: 9.5pt;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .page-meta {
+      text-align: right;
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .folio-pill {
+      display: inline-block;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      margin-top: 3px;
+    }
+    .title-box {
+      text-align: center;
+      margin: 18px 0 24px 0;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+    }
+    .title-main {
+      font-size: 14pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin: 0;
+      text-decoration: underline;
+    }
+    .title-sub {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: #334155;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 4px 0 0 0;
+      text-decoration: underline;
+    }
+    .legal-paragraph {
+      text-align: justify;
+      margin-bottom: 16px;
+      font-size: 10.8pt;
+      color: #1e293b;
+    }
+    .clause-box {
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border-left: 3.5px solid ${empInfo.color_acento};
+      border-top: 1px solid #f1f5f9;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+      text-align: justify;
+      font-size: 10.6pt;
+    }
+    .clause-title {
+      font-weight: 800;
+      color: #0f172a;
+      text-decoration: underline;
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 22px 0;
+      font-size: 9.2pt;
+    }
+    .summary-table th {
+      background: #f1f5f9;
+      color: #334155;
+      text-align: left;
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 8pt;
+      width: 24%;
+    }
+    .summary-table td {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      font-weight: 600;
+      width: 26%;
+    }
+    .signatures-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 85px;
+    }
+    .signatures-table td {
+      width: 50%;
+      text-align: center;
+      vertical-align: top;
+      padding: 0 24px;
+    }
+    .sig-line {
+      border-top: 1.5px solid #0f172a;
+      width: 82%;
+      margin: 0 auto 8px auto;
+    }
+    .sig-role {
+      font-weight: 800;
+      font-size: 10pt;
+      color: #0f172a;
+      letter-spacing: 0.4px;
+    }
+    .sig-name {
+      font-size: 9pt;
+      color: #334155;
+      margin-top: 2px;
+    }
+    .sig-rut {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+    .footer-note {
+      margin-top: 40px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 7.8pt;
+      color: #64748b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-frame">
+    <table class="header-table">
+      <tr>
+        <td style="width: 28%;">
+          ${logoSrc ? `<img src="${logoSrc}" class="logo-img" alt="Logo Empresa" />` : `<div style="font-weight:900;font-size:14pt;color:#0f172a;">${nombreCortoEmp}</div>`}
+        </td>
+        <td style="width: 47%;">
+          <div class="emp-block">
+            <strong>${razonSocialEmp}</strong>
+            RUT: ${rutEmp}<br/>
+            ${domicilioEmp}
+          </div>
+        </td>
+        <td style="width: 25%;" class="page-meta">
+          <div><strong>Página 1 de 1</strong></div>
+          <div>Fecha: ${fechaEmisionFmt}</div>
+          <div class="folio-pill">${folioAnexo}</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="title-box">
+      <h1 class="title-main">ANEXO CONTRATO DE TRABAJO</h1>
+      <h2 class="title-sub">CAMBIO DE OBRA</h2>
+    </div>
+
+    <p class="legal-paragraph">
+      En <strong>${ciudadEmision}</strong>, a <strong>${fechaEmisionFmt}</strong>, entre:
+      <strong>${razonSocialEmp}</strong> Rut, <strong>${rutEmp}</strong> con domicilio comercial en
+      ${domicilioEmp} y don: <strong>${trabajadorNombre}</strong> Rut, <strong>${trabajadorRut}</strong>
+      para cuyos efectos las partes convienen denominarse, respectivamente,
+      <strong>EMPLEADOR Y TRABAJADOR</strong>, acuerdan lo siguiente.
+    </p>
+
+    <div class="clause-box">
+      <span class="clause-title">PRIMERO:</span>
+      En virtud de lo dispuesto por los artículos 11 y 12 del Código del Trabajo, las partes desean modificar el sitio o recinto de trabajo en los siguientes términos:
+      <br/><br/>
+      Que, a contar de esta fecha, el trabajador se desempeñará como <strong>${trabajadorCargo}</strong>
+      en el Proyecto <strong>${proyectoObra}</strong> encargada por la Empresa
+      <strong>${empresaCliente}</strong>${rutCliente && rutCliente !== 'S/R' ? ` Rut, <strong>${rutCliente}</strong>` : ''}
+      ubicada en <strong>${ubicacionObra}</strong> hasta el <strong>${fechaHastaFmt}</strong>.
+    </div>
+
+    <table class="summary-table">
+      <tr>
+        <th>Trabajador</th>
+        <td>${trabajadorNombre}</td>
+        <th>RUT Trabajador</th>
+        <td>${trabajadorRut}</td>
+      </tr>
+      <tr>
+        <th>Cargo / Función</th>
+        <td>${trabajadorCargo}</td>
+        <th>Empleador</th>
+        <td>${nombreCortoEmp} (${rutEmp})</td>
+      </tr>
+      <tr>
+        <th>Proyecto / Obra</th>
+        <td>${proyectoObra}</td>
+        <th>Empresa Cliente</th>
+        <td>${empresaCliente}${rutCliente && rutCliente !== 'S/R' ? ` (${rutCliente})` : ''}</td>
+      </tr>
+      <tr>
+        <th>Ubicación Obra</th>
+        <td>${ubicacionObra}</td>
+        <th>Vigencia Destinación</th>
+        <td>Desde ${fechaEmisionFmt} hasta ${fechaHastaFmt}</td>
+      </tr>
+    </table>
+
+    <div class="clause-box">
+      <span class="clause-title">SEGUNDO:</span>
+      El presente anexo se entiende que forma parte del contrato de trabajo, para todos los efectos legales.
+    </div>
+
+    <div class="clause-box">
+      <span class="clause-title">TERCERO:</span>
+      En todo lo no modificado en el presente anexo, el contrato de trabajo habido entre las partes, se mantiene sin alteración.
+    </div>
+
+    <div class="clause-box">
+      <span class="clause-title">CUARTO:</span>
+      El presente anexo se extiende y se firma en dos (2) ejemplares, declarando el trabajador, haber recibido en este acto un (1) ejemplar de él.
+    </div>
+
+    <table class="signatures-table">
+      <tr>
+        <td>
+          <div class="sig-line"></div>
+          <div class="sig-role">TRABAJADOR</div>
+          <div class="sig-name">${trabajadorNombre}</div>
+          <div class="sig-rut">${trabajadorRut}</div>
+        </td>
+        <td>
+          <div class="sig-line"></div>
+          <div class="sig-role">EMPRESA</div>
+          <div class="sig-name">${razonSocialEmp}</div>
+          <div class="sig-rut">${rutEmp}</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer-note">
+      Documento oficial generado en Módulo Contabilidad &amp; Recursos Humanos (${nombreCortoEmp}) y archivado en Biblioteca Documental de Personas.
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function compilarAnexoPdfWkhtmltopdf(htmlContent, outPdfPath) {
+  const tmpHtmlPath = path.join(os.tmpdir(), `anexo_rh_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
+  fs.writeFileSync(tmpHtmlPath, htmlContent, 'utf8');
+  try {
+    await new Promise((resolve, reject) => {
+      const isWin = process.platform === 'win32';
+      const cmd = isWin
+        ? `wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 10mm --margin-bottom 10mm --margin-left 10mm --margin-right 10mm "${tmpHtmlPath}" "${outPdfPath}"`
+        : `xvfb-run -a --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 10mm --margin-bottom 10mm --margin-left 10mm --margin-right 10mm "${tmpHtmlPath}" "${outPdfPath}"`;
+
+      exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
+        if (error && !fs.existsSync(outPdfPath)) {
+          console.error('[ANEXO-RH wkhtmltopdf] Error:', error.message, stderr);
+          return reject(new Error('Fallo al compilar Anexo de Contrato con wkhtmltopdf: ' + error.message));
+        }
+        resolve();
+      });
+    });
+  } finally {
+    try { if (fs.existsSync(tmpHtmlPath)) fs.unlinkSync(tmpHtmlPath); } catch (_) {}
+  }
+}
+
+exports.listarAnexosContratoRH = async (req, res) => {
+  try {
+    const [anexos, padron_trabajadores] = await Promise.all([
+      obtenerAnexosContratoRH(db),
+      obtenerPadronTrabajadoresRH(db)
+    ]);
+    return res.status(200).json({
+      success: true,
+      data: {
+        anexos,
+        padron_trabajadores
+      }
+    });
+  } catch (error) {
+    console.error('[ANEXO-RH] Error listando anexos:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al listar anexos de contrato RH',
+      error: error.message
+    });
+  }
+};
+
+exports.generarAnexoContratoRH = async (req, res) => {
+  try {
+    const {
+      id_empresa_empleadora = 9,
+      ciudad_emision = 'Temuco',
+      fecha_emision,
+      id_user,
+      trabajador_nombre,
+      trabajador_rut,
+      trabajador_cargo,
+      id_proyecto,
+      codi_proyecto,
+      proyecto_obra,
+      empresa_cliente,
+      rut_cliente,
+      ubicacion_obra,
+      fecha_hasta
+    } = req.body || {};
+
+    if (!trabajador_nombre || !trabajador_rut || !trabajador_cargo || !proyecto_obra || !empresa_cliente || !ubicacion_obra) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos los datos del trabajador (Nombre, RUT, Cargo) y de la obra destino (Proyecto, Empresa Cliente, Ubicación) son obligatorios.'
+      });
+    }
+
+    const idEmp = Number(id_empresa_empleadora || 9);
+    const empCat = EMPRESAS_HERMANAS_ANEXO[idEmp] || EMPRESAS_HERMANAS_ANEXO[9];
+    const fechaEmisionIso = (fecha_emision && /^\d{4}-\d{2}-\d{2}/.test(String(fecha_emision)))
+      ? String(fecha_emision).slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+    const fechaHastaIso = (fecha_hasta && /^\d{4}-\d{2}-\d{2}/.test(String(fecha_hasta)))
+      ? String(fecha_hasta).slice(0, 10)
+      : fechaEmisionIso;
+
+    // 1. Resolver o crear trabajador en tsec_users para garantizar vínculo en Biblioteca de Personas
+    let targetUserId = id_user ? Number(id_user) : null;
+    const cleanRut = String(trabajador_rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+
+    if (!targetUserId && cleanRut) {
+      const existRes = await db.query(
+        `SELECT id_user FROM tsec_users WHERE UPPER(REGEXP_REPLACE(COALESCE(rut, ''), '[^0-9kK]', '', 'g')) = $1 LIMIT 1`,
+        [cleanRut]
+      );
+      if (existRes.rows.length > 0) {
+        targetUserId = existRes.rows[0].id_user;
+      }
+    }
+
+    if (!targetUserId) {
+      const partes = String(trabajador_nombre).trim().split(/\s+/);
+      const nameFrst = (partes[0] || 'TRABAJADOR').slice(0, 50);
+      const apellidoPat = (partes.slice(1).join(' ') || 'GSP').slice(0, 50);
+      const rutDb = String(trabajador_rut || '').replace(/\./g, '').trim().toUpperCase().slice(0, 10);
+      const emailGen = `rh.${cleanRut.toLowerCase() || Date.now()}@arriendosanpablo.cl`;
+      const jsonData = {
+        cargo: String(trabajador_cargo).trim().toUpperCase(),
+        rut_formateado: String(trabajador_rut).trim(),
+        origen_registro: 'ANEXO_CONTRATO_RH',
+        fecha_registro: new Date().toISOString()
+      };
+      const insUser = await db.query(
+        `INSERT INTO tsec_users (
+           name_frst, apellido_pat, rut, email, id_empresa, activo, flag_proc_enrol, codi_user, json_data, fecha_creacion, fecha_actualizacion
+         ) VALUES ($1, $2, $3, $4, $5, true, false, $4, $6, NOW(), NOW())
+         RETURNING id_user`,
+        [nameFrst, apellidoPat, rutDb, emailGen, idEmp, JSON.stringify(jsonData)]
+      );
+      targetUserId = insUser.rows[0].id_user;
+    } else {
+      // Actualizar cargo en json_data si estaba vacío
+      await db.query(
+        `UPDATE tsec_users 
+         SET json_data = COALESCE(json_data, '{}'::jsonb) || jsonb_build_object('cargo', $2::text),
+             fecha_actualizacion = NOW()
+         WHERE id_user = $1`,
+        [targetUserId, String(trabajador_cargo).trim().toUpperCase()]
+      );
+    }
+
+    // 2. Asegurar Tipo de Certificado en tsec_tipos_certificado_persona
+    const idTipoCert = await asegurarTipoCertificadoAnexoObra(db);
+
+    // 3. Preparar directorio de almacenamiento en /u05/LeanDocs/anexos_contrato
+    const baseDocsDir = fs.existsSync('/u05/LeanDocs')
+      ? '/u05/LeanDocs/anexos_contrato'
+      : path.join(os.tmpdir(), 'LeanDocs_anexos_contrato');
+    if (!fs.existsSync(baseDocsDir)) {
+      fs.mkdirSync(baseDocsDir, { recursive: true });
+    }
+
+    const stamp = Date.now();
+    const safeRut = cleanRut || 'SINRUT';
+    const internalFileName = `Anexo_Cambio_Obra_${safeRut}_${stamp}.pdf`;
+    const fullPdfPath = path.join(baseDocsDir, internalFileName);
+    const displayFileName = `Anexo Cambio de Obra — ${String(proyecto_obra).trim()} (${String(empresa_cliente).trim()}) — Cargo: ${String(trabajador_cargo).trim()}.pdf`;
+
+    const metaPayload = {
+      id_empresa_empleadora: idEmp,
+      empresa_empleadora_nombre: empCat.nombre_corto,
+      empresa_empleadora_razon_social: empCat.razon_social,
+      empresa_empleadora_rut: empCat.rut,
+      empresa_empleadora_domicilio: empCat.domicilio,
+      ciudad_emision: String(ciudad_emision || 'Temuco').trim(),
+      fecha_emision: fechaEmisionIso,
+      fecha_hasta: fechaHastaIso,
+      id_user: targetUserId,
+      trabajador_nombre: String(trabajador_nombre).trim().toUpperCase(),
+      trabajador_rut: String(trabajador_rut).trim(),
+      trabajador_cargo: String(trabajador_cargo).trim().toUpperCase(),
+      id_proyecto: id_proyecto || null,
+      codi_proyecto: codi_proyecto || '',
+      proyecto_obra: String(proyecto_obra).trim().toUpperCase(),
+      empresa_cliente: String(empresa_cliente).trim().toUpperCase(),
+      rut_cliente: String(rut_cliente || '').trim(),
+      ubicacion_obra: String(ubicacion_obra).trim()
+    };
+
+    // 4. Generar PDF con wkhtmltopdf
+    const htmlContent = buildAnexoContratoTrabajoHtml(metaPayload);
+    await compilarAnexoPdfWkhtmltopdf(htmlContent, fullPdfPath);
+
+    // 5. Persistir en tfmg_file
+    const archivoModel = new ArchivoModel();
+    const fileRow = await archivoModel.insertarTfmgFile(
+      'PDF',
+      'application/pdf',
+      displayFileName,
+      internalFileName,
+      fullPdfPath,
+      req.user?.id_user || targetUserId,
+      1
+    );
+    const idDoc = fileRow?.id_doc;
+
+    // 6. Vincular en tsec_certificados_persona (Biblioteca Documental -> Dimensión Personas)
+    const certIns = await db.query(
+      `INSERT INTO tsec_certificados_persona (
+         id_user, id_tipo_certificado_persona, fecha_emision, fecha_vencimiento, id_doc, observaciones, id_empresa
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id_certificado_persona AS id_cert`,
+      [
+        targetUserId,
+        idTipoCert,
+        fechaEmisionIso,
+        fechaHastaIso,
+        idDoc,
+        displayFileName,
+        idEmp
+      ]
+    );
+    const idCert = certIns.rows[0].id_cert;
+    metaPayload.id_cert = idCert;
+    metaPayload.id_doc = idDoc;
+    metaPayload.folio_anexo = `ANX-${String(idCert).padStart(4, '0')}`;
+
+    // Re-compilar con el folio definitivo ANX-XXXX y guardar JSON de metadatos junto al PDF
+    const htmlFinal = buildAnexoContratoTrabajoHtml(metaPayload);
+    await compilarAnexoPdfWkhtmltopdf(htmlFinal, fullPdfPath);
+    fs.writeFileSync(`${fullPdfPath}.meta.json`, JSON.stringify(metaPayload, null, 2), 'utf8');
+
+    await db.query('UPDATE tsec_users SET fecha_actualizacion = NOW() WHERE id_user = $1', [targetUserId]);
+
+    const anexosActualizados = await obtenerAnexosContratoRH(db);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Anexo de Contrato generado y archivado en Biblioteca de Personas y en RH exitosamente.',
+      data: {
+        anexo: {
+          ...metaPayload,
+          url_pdf: `/api/archivo/ver/${idDoc}`
+        },
+        anexos: anexosActualizados
+      }
+    });
+  } catch (error) {
+    console.error('[ANEXO-RH] Error generando anexo de contrato:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al generar el Anexo de Contrato de Trabajo',
+      error: error.message
+    });
+  }
+};
+
+exports.eliminarAnexoContratoRH = async (req, res) => {
+  try {
+    const { id_cert } = req.params;
+    if (!id_cert) {
+      return res.status(400).json({ success: false, message: 'id_cert es requerido' });
+    }
+    await db.query('DELETE FROM tsec_certificados_persona WHERE id_certificado_persona = $1', [id_cert]);
+    const anexos = await obtenerAnexosContratoRH(db);
+    return res.status(200).json({
+      success: true,
+      message: 'Anexo eliminado correctamente',
+      data: { anexos }
+    });
+  } catch (error) {
+    console.error('[ANEXO-RH] Error eliminando anexo:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al eliminar anexo de contrato',
+      error: error.message
+    });
   }
 };

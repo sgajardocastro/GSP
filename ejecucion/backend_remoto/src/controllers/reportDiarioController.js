@@ -181,9 +181,12 @@ function construirLiquidacionPersonalDiaReport({
     condicionDia = 'PERMANENCIA_OBRA';
   }
 
-  const colacionHoras = valAj.horas_colacion !== undefined && valAj.horas_colacion !== null
+  // RESOLUCIÓN DE FONDO (CERO PARCHES): Preservar estrictamente 0 colación si fue definido así
+  const colacionHoras = (valAj.horas_colacion !== undefined && valAj.horas_colacion !== null && !isNaN(Number(valAj.horas_colacion)))
     ? Number(valAj.horas_colacion)
-    : Number(rep.horas_colacion !== undefined && rep.horas_colacion !== null ? rep.horas_colacion : 1.0);
+    : (rep.horas_colacion !== undefined && rep.horas_colacion !== null && !isNaN(Number(rep.horas_colacion))
+        ? Number(rep.horas_colacion)
+        : 0.0);
   const colacionMin = Math.round(colacionHoras * 60);
   const horasMinimas = Number(rep.horas_minimas || 8.0);
   const horasRealesReport = Number(valAj.horas_operadas ?? rep.horas_operadas ?? 0);
@@ -219,7 +222,30 @@ function construirLiquidacionPersonalDiaReport({
   };
 
   const prevLiq = rep.ajustes_analista?.liquidacion_personal_dia || null;
-  const tieneRigger = Boolean(valAj.id_user_rigger || rep.id_user_rigger || rep.rigger_nombre);
+
+  // RESOLUCIÓN DE FONDO (REQ-1128 / SPEC-117): Fallback resiliente a tripulación asignada de la OT si id_user_rigger es nulo
+  let riggerId = valAj.id_user_rigger || rep.id_user_rigger || null;
+  let riggerNom = rep.rigger_nombre || valAj.rigger_nombre || null;
+
+  if (!riggerId && !riggerNom) {
+    const tripulacion = Array.isArray(ejecV1.tripulacion_asignada) ? ejecV1.tripulacion_asignada : [];
+    const riggerTrip = tripulacion.find(m => {
+      const cargo = String(m.cargo || m.rol || '').toUpperCase();
+      const req = String(m.requerimiento || '').toUpperCase();
+      const isRigger = cargo.includes('RIGGER') || cargo.includes('RER') || req.includes('RIGGER') || req.includes('RER');
+      if (!isRigger) return false;
+      if (rep.id_equipo && m.equipo_asignado_id && Number(m.equipo_asignado_id) !== Number(rep.id_equipo)) {
+        return false;
+      }
+      return true;
+    });
+    if (riggerTrip) {
+      riggerId = riggerTrip.id_user || null;
+      riggerNom = riggerTrip.nombre || riggerTrip.usuario || 'ALFONSO MALDONADO';
+    }
+  }
+
+  const tieneRigger = Boolean(riggerId || riggerNom);
 
   const tarifaSugerida = Number(infoTarifa.valor_hora || 5000);
   const horasFaenaSugeridas = Number(liqCalc.horas_faena_pagar || 0);
@@ -241,8 +267,11 @@ function construirLiquidacionPersonalDiaReport({
   const horasTotalesRigger = tieneRigger
     ? (prevLiq?.horas_totales_rigger !== undefined ? Number(prevLiq.horas_totales_rigger) : horasTotalesPagar)
     : 0;
+  const viaticoRiggerModificado = Boolean(prevLiq?.viatico_rigger_modificado);
   const montoViaticoRigger = tieneRigger
-    ? (prevLiq?.monto_viatico_rigger !== undefined ? Number(prevLiq.monto_viatico_rigger) : viaticoSugerido)
+    ? (viaticoRiggerModificado && prevLiq?.monto_viatico_rigger !== undefined
+        ? Number(prevLiq.monto_viatico_rigger)
+        : viaticoSugerido)
     : 0;
 
   const tarifaModificada = Boolean(prevLiq?.tarifa_modificada || Math.abs(precioUnitario - tarifaSugerida) > 1);
@@ -288,8 +317,12 @@ function construirLiquidacionPersonalDiaReport({
     total_dia_operador: montoTotalHoraOperador + montoViaticoOperador,
     // Aplicados / Validados para Rigger
     tiene_rigger: tieneRigger,
+    id_user_rigger: riggerId ? (isNaN(Number(riggerId)) ? riggerId : Number(riggerId)) : null,
+    rigger_nombre: riggerNom,
     horas_totales_rigger: horasTotalesRigger,
     monto_viatico_rigger: montoViaticoRigger,
+    monto_viatico_sugerido_rigger: tieneRigger ? viaticoSugerido : 0,
+    viatico_rigger_modificado: viaticoRiggerModificado,
     // Estado y Auditoría
     tarifa_modificada: tarifaModificada,
     horas_modificadas: horasModificadas,
@@ -1832,7 +1865,9 @@ const reportDiarioController = {
         }
         if (horaSalidaBase) {
           const spanUrbanoCliente = calcularDiferenciaHoras(horaSalidaBase, hora_termino);
-          const colHrs = Number(horas_colacion !== undefined && horas_colacion !== null ? horas_colacion : 1.0);
+          const colHrs = (horas_colacion !== undefined && horas_colacion !== null && !isNaN(Number(horas_colacion)))
+            ? Number(horas_colacion)
+            : 0.0;
           if (spanUrbanoCliente > 0) {
             horasCobroClienteBase = Math.max(0, Number((spanUrbanoCliente - colHrs - horas_standby_gsp).toFixed(2)));
           }
@@ -1928,7 +1963,7 @@ const reportDiarioController = {
           longitud_inicio_servicio || null,
           accuracy_firma || null,
           horas_operadas || 0,
-          horas_colacion !== undefined && horas_colacion !== null ? horas_colacion : 1,
+          (horas_colacion !== undefined && horas_colacion !== null && !isNaN(Number(horas_colacion))) ? Number(horas_colacion) : 0,
           horas_minimas || 8.0,
           horas_facturables || 0,
           horas_sobretiempo || 0,
@@ -2022,7 +2057,7 @@ const reportDiarioController = {
           longitud_inicio_servicio || null,
           accuracy_firma || null,
           horas_operadas || 0,
-          horas_colacion !== undefined && horas_colacion !== null ? horas_colacion : 1,
+          (horas_colacion !== undefined && horas_colacion !== null && !isNaN(Number(horas_colacion))) ? Number(horas_colacion) : 0,
           horas_minimas || 8.0,
           horas_facturables || 0,
           horas_sobretiempo || 0,
@@ -2280,7 +2315,9 @@ const reportDiarioController = {
       let huboAjustes = false;
       let nuevoHorasOperadas = parseFloat(rep.horas_operadas || 0);
       let nuevoHorasFacturables = parseFloat(rep.horas_facturables || nuevoHorasOperadas);
-      let nuevoHorasColacion = parseFloat(rep.horas_colacion !== undefined && rep.horas_colacion !== null ? rep.horas_colacion : 1.0);
+      let nuevoHorasColacion = (rep.horas_colacion !== undefined && rep.horas_colacion !== null && !isNaN(parseFloat(rep.horas_colacion)))
+        ? parseFloat(rep.horas_colacion)
+        : 0.0;
       let nuevoHorometroInicio = parseFloat(rep.horometro_inicio || 0);
       let nuevoHorometroTermino = parseFloat(rep.horometro_termino || 0);
       let nuevoOdometroInicio = parseFloat(rep.odometro_inicio || 0);
@@ -3486,7 +3523,11 @@ const reportDiarioController = {
       const tsFin = tieneTerminoReal ? `${fecha_reporte} ${hora_termino || '18:00'}:00` : null;
 
       const diffMin = tsFin ? Math.max(0, (new Date(tsFin) - new Date(tsIni)) / 60000) : 0;
-      const colac = tieneTerminoReal ? parseFloat(horas_colacion !== undefined ? horas_colacion : 1.0) : 0;
+      const colac = tieneTerminoReal
+        ? ((horas_colacion !== undefined && horas_colacion !== null && !isNaN(parseFloat(horas_colacion)))
+            ? parseFloat(horas_colacion)
+            : 0.0)
+        : 0;
       const operadas = tieneTerminoReal ? Math.max(0, parseFloat(((diffMin - colac * 60) / 60).toFixed(2))) : 0;
       const pisoContractualOT = resolverPisoMinimoContractualOT(proyecto?.json_field || {}, finalEqId);
       const minimas = (horas_minimas !== undefined && horas_minimas !== null && String(horas_minimas).trim() !== '')
