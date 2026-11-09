@@ -20,36 +20,40 @@ Jorge Ponce solicitó auditar los registros de base de datos para verificar el m
 ---
 
 ## 3. Metodología de Auditoría Forense y Extracción de Datos
-Se ejecutó una inspección exhaustiva de solo lectura sobre las tablas transaccionales de producción:
+Se ejecutó una inspección exhaustiva de solo lectura sobre las tablas transaccionales de producción y los registros de acceso HTTP del servidor web:
 1. `sch_leangsp_prod.tpry_proyecto` (`id_proyecto = 56`, folio comercial `GSP-2611-00017`).
 2. `sch_leangsp_prod.tsec_users` (identificación inequívoca del usuario Nicolás Ceballos, `id_user = 45`).
 3. `sch_leangsp_prod.tequ_log_desplazamiento` (trazabilidad de viajes de ida/retorno, odómetros, estados y timestamps de servidor y dispositivo).
 4. `sch_leangsp_prod.tedp_reporte_avance` (reporte de horas operadas y jornada en faena).
+5. `/var/log/nginx/access.log` (auditoría forense de solicitudes HTTP entrantes por IP, User-Agent, ruta de endpoint y código de respuesta HTTP).
 
 ---
 
 ## 4. Hallazgos y Cronología Forense Irrefutable
 
-### 4.1. Viaje de IDA (Log #53 — Registro en BD):
-* **ID Log de Desplazamiento:** `53`
-* **Proyecto:** `id_proyecto = 56` (`GSP-2611-00017`)
-* **Activo:** Equipo 35 (`VCTR.81-9`)
-* **Operador/Chofer:** Nicolás Ceballos (`id_user = 45`)
-* **Tipo Trayecto:** `IDA` | **Estado:** `ARRIBADO`
-* **Marca Temporal de Salida de Patio:**
-  * Timestamp Servidor (`fecha_salida_patio`): `2026-11-09 11:20:35.095 UTC` (**08:20:35 hora local de Chile**)
-  * Timestamp Dispositivo (`device_timestamp_salida`): `2026-11-09 11:20:29.269 UTC` (**08:20:29 hora local**)
-  * Odómetro Inicial: `618888.00 km`
-* **Marca Temporal de Llegada a Faena:**
-  * Timestamp Servidor (`fecha_llegada_faena`): `2026-11-09 11:21:09.248 UTC` (**08:21:09 hora local de Chile**)
-  * Timestamp Dispositivo (`device_timestamp_llegada`): `2026-11-09 11:21:06.305 UTC` (**08:21:06 hora local**)
-  * Odómetro Final: `618888.00 km`
+### 4.1. Conexión Matutina y Primera Salida de Patio (07:22 - 07:24 CLT):
+* **07:22:42 CLT** (`10:22:42 UTC`): Nicolás Ceballos ingresó a la plataforma (`https://servidor.leanglobal.cl/pwa-gsp-prod/`) desde su teléfono móvil Android (IP `191.118.43.221`, `Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/157.0.0.0 Mobile Safari/537.36`).
+* **07:22:43 CLT**: La PWA sincronizó las credenciales y el estado operativo del operador:
+  * `GET /lg-gsp-prod/api/viajes/usuario/activo?id_user=45` -> HTTP 200 OK.
+  * `GET /lg-gsp-prod/api/reports/usuario/pendientes?id_user=45` -> HTTP 200 OK.
+* **07:23:33 CLT** (`10:23:33 UTC`): **NICOLÁS CEBALLOS SÍ ENVIÓ LA SALIDA DE PATIO**:
+  * Petición HTTP: `POST /lg-gsp-prod/api/operaciones/viaje/vj_56_35_ac486bbd/salida`.
+  * Respuesta Servidor: **HTTP 200 OK** (Payload transferido: `309.385 bytes`, correspondiente a la fotografía del odómetro/tablero capturada en la base).
+* **07:23:34 a 07:24:47 CLT**: La PWA se mantuvo activa realizando polling de notificaciones cada 10 segundos, tras lo cual el operador bloqueó o cerró el teléfono para iniciar la conducción.
+
+### 4.2. Arribo a Obra Mandante y Sobreescritura del Registro (08:20 - 08:21 CLT):
+* **08:20:21 CLT** (`11:20:21 UTC`): Al llegar a la obra, el operador reabrió la PWA desde la misma IP móvil (`191.118.43.221`).
+* **08:20:36 CLT** (`11:20:36 UTC`): Por desincronización de estado en la UI o duda del operador ("pensó que no se había guardado"), **volvió a presionar Salida**:
+  * Petición HTTP: `POST /lg-gsp-prod/api/operaciones/viaje/vj_56_35_ac486bbd/salida` -> **HTTP 200 OK**.
+  * **Efecto en Backend (`viajeModel.registrarSalida`):** El controlador ejecutó ciegamente un `UPDATE` con `fecha_salida_patio = CURRENT_TIMESTAMP`, **sobrescribiendo el timestamp original de las 07:23:33 CLT con las 08:20:35 CLT**.
+* **08:21:10 CLT** (`11:21:10 UTC`) (34 segundos después): El operador registró inmediatamente la Llegada a Faena:
+  * Petición HTTP: `POST /lg-gsp-prod/api/operaciones/viaje/vj_56_35_ac486bbd/llegada` -> **HTTP 200 OK** (`fecha_llegada_faena = 08:21:09 CLT`).
 
 > [!IMPORTANT]
-> **Hallazgo Clave 1 (Diferencia de 34 Segundos y 0 Km):**
-> La salida de patio (08:20:35 CLT) y la llegada a faena (08:21:09 CLT) fueron registradas con **exactamente 34 segundos de diferencia**, con el mismo odómetro (`618888 km`). El operador NO registró la salida al momento de salir físicamente de la planta; marcó la salida e inmediatamente la llegada en un solo acto consecutivo desde el mismo punto geográfico.
+> **Conclusión Forense Clave:**
+> El operador **SÍ realizó la salida de planta a las 07:23:33 CLT desde el patio**, y el servidor la recibió con éxito (HTTP 200). La aparente anomalía en base de datos (salida y llegada separadas por solo 34 segundos en la obra) se debió exclusivamente a que el operario re-ejecutó la salida a las 08:20:36 CLT y el backend sobreescribió la marca temporal original.
 
-### 4.2. Reporte Diario de Avance (Reporte #52):
+### 4.3. Reporte Diario de Avance (Reporte #52):
 * **ID Reporte Avance:** `52`
 * **Operador:** Nicolás Ceballos (`id_user_operador = 45`)
 * **Fecha Reporte:** `2026-11-09`
@@ -60,7 +64,7 @@ Se ejecutó una inspección exhaustiva de solo lectura sobre las tablas transacc
 * **Timestamp del Dispositivo:** `2026-11-09 15:40:45.473 UTC` (**12:40:45 hora local**)
 * **Estado:** `PENDIENTE_VALIDACION`
 
-### 4.3. Viaje de RETORNO (Log #58):
+### 4.4. Viaje de RETORNO (Log #58):
 * **ID Log de Desplazamiento:** `58`
 * **Salida de Faena:** `2026-11-09 16:54:56.295 UTC` (**13:54:56 CLT**)
 * **Llegada a Patio:** `2026-11-09 16:57:03.785 UTC` (**13:57:03 CLT**)
@@ -69,11 +73,9 @@ Se ejecutó una inspección exhaustiva de solo lectura sobre las tablas transacc
 ---
 
 ## 5. Causa Raíz de la Queja del Operador ("No reconoció los datos guardados")
-1. **El Servidor NUNCA Perdió los Datos:** El Log #53 ingresó y se almacenó exitosamente en PostgreSQL a las 08:20:35 CLT y 08:21:09 CLT.
-2. **Origen de la Sensación de Falla:**
-   - Al marcar salida y llegada consecutivamente en 34 segundos, si el operario experimentó micro-desconexión celular (3G/4G intermitente en trayecto), la PWA encoló localmente la solicitud en `IndexedDB`.
-   - Si el operador recargó la aplicación antes de recibir el banner de confirmación de sincronización, la interfaz volvió a mostrar el botón de inicio de trayecto, induciendo a pensar erróneamente que "se borró la información".
-   - Al reconectar red a las 11:00 CLT, la cola offline se vació hacia el backend de producción sin duplicidad ni pérdida.
+1. **El Operador Dijo la Verdad:** Nicolás Ceballos ingresó a las 07:22 CLT y completó su formulario de salida de patio a las 07:23:33 CLT con fotografía del tablero incluida.
+2. **Defecto de Idempotencia en Backend (`viajeModel.registrarSalida`):** El endpoint permite sobreescribir `fecha_salida_patio` de forma ilimitada con `CURRENT_TIMESTAMP` si el viaje ya había iniciado su trayecto, borrando el hito cronológico original cuando el usuario reintenta en faena.
+3. **Desincronización de UI PWA:** Al reabrir la aplicación tras 55 minutos de trayecto vial, la interfaz no mantuvo bloqueada la fase de salida como "Completada", induciendo al operador a marcarla de nuevo antes de marcar llegada.
 
 ---
 
