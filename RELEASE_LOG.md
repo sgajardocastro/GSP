@@ -2,6 +2,23 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.204
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-09 10:55:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1134` (`SPEC-120`)
+- **Casos de Soporte Vinculados:** `CASO-20261109-01`, `CASO-20261109-02`, `CASO-20261109-03`
+- **Especificación Técnica:** Normalización de Costos Directos en ITS, Resguardo DDL en Backlog y Reseteo Preventivo de Odómetros en Flota (`ModalITS.vue`, `backlogController.js`, BD PostgreSQL):
+  1. **REQ-1134 (Normalización y Eliminación Reactiva en Sección 3 de ModalITS — SPEC-120 / CASO-20261109-03):**
+     - **Desenvolvimiento Seguro de Reactividad:** Implementada la función pura `normalizarCatKey` en `ModalITS.vue` para resolver identificadores de categoría suministrados tanto como `RefImpl` reactivos (`$setup.tabCostoActiva`) como primitivas `String`.
+     - **Corrección Botón Basurero:** En `eliminarItemCosto`, resolución de clave canónica normalizada para ejecutar determinísticamente `.splice(idx, 1)` y disparar `recalcularTotales()` sin evaluar a `undefined`.
+     - **Homologación de Diccionarios Frontend-Backend:** Mapeo bidireccional entre la nomenclatura de base de datos (`subcontrato_flete`, `gastos_extra`) y el estado del cliente (`subcontratacion_flete`, `gastos_extraordinarios`), blindando igualmente `agregarItemCosto`, `toggleDeclararSinCosto`, `getEstadoCategoria`, `getSubtotalCategoria` y `necesitaColumnaOC`.
+  2. **CASO-20261109-02 (Erradicación de DDL en Tiempo de Ejecución y Ajuste de Ownership en tcfg_backlog):**
+     - Removida la sentencia `ALTER TABLE` evaluada en cada petición dentro de `ensureTables()` en `backlogController.js`, aislando la API de tickets a operaciones DML (`SELECT`, `INSERT`, `UPDATE`).
+     - Transferido el ownership de las tablas `tcfg_backlog` y `tcfg_releases` a `usr_leangsp_prod` y `usr_leangsp` con privilegios completos.
+  3. **CASO-20261109-01 (Desbloqueo de Odómetro y Calibración en Flota General):**
+     - Reseteado a `0.00` el `odometro_acumulado` en `sch_leangsp_prod.tequ_equipo` y `sch_leangsp.tequ_equipo` para la Grúa Telescópica Liebherr LTM-1055 (Equipo 36, `CCCB.38-1`) operada por Claudio Gallardo en OT 62 y Tadano GT 750EL (Equipo 43, `TYGC.45-1`), eliminando odómetros residuales de prueba mock que bloqueaban el registro de salida en faena.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.203
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-08 22:00:00 (-03:00)
