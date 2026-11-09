@@ -97,11 +97,17 @@
         </div>
       </div>
 
+      <!-- ESTADO DE CARGA / SINCRONIZACIÓN INICIAL DEL VIAJE -->
+      <div v-if="cargandoViaje" class="bg-[#0a0f1e] border border-blue-500/30 rounded-2xl p-6 text-center space-y-3 shadow-xl">
+        <div class="animate-spin text-2xl">⏳</div>
+        <p class="text-xs font-mono text-slate-300">Sincronizando estado operativo del viaje...</p>
+      </div>
+
       <!-- ========================================================================= -->
       <!-- PASO 1: SALIDA DE PATIO (ACTIVO vs BLOQUEADO SOLO MIENTRAS ESTÁ EN RUTA)  -->
       <!-- ========================================================================= -->
       <!-- CASO A: BLOQUEADO (SOLO MIENTRAS ESTÁ EN RUTA; AL CERRAR QUEDA SOLO EL RESUMEN INFERIOR) -->
-      <div v-if="viaje.estado_viaje === 'EN_RUTA'" class="bg-[#0a0f1e] border border-emerald-500/30 rounded-2xl p-4 shadow-lg space-y-2.5">
+      <div v-else-if="viaje.estado_viaje === 'EN_RUTA'" class="bg-[#0a0f1e] border border-emerald-500/30 rounded-2xl p-4 shadow-lg space-y-2.5">
         <div class="flex items-center justify-between border-b border-white/10 pb-2">
           <div class="flex items-center gap-2">
             <span class="text-emerald-400 font-bold text-sm">🔒</span>
@@ -129,8 +135,8 @@
         </div>
       </div>
 
-      <!-- CASO B: FORMULARIO ACTIVO (SOLO ANTES DE SALIR) -->
-      <div v-else-if="viaje.estado_viaje === 'ASIGNADO'" class="bg-[#0a0f1e] border border-amber-500/30 rounded-2xl p-4 shadow-xl space-y-4">
+      <!-- CASO B: FORMULARIO ACTIVO (SOLO ANTES DE SALIR Y SI NO EXISTE SALIDA PREVIA) -->
+      <div v-else-if="viaje.estado_viaje === 'ASIGNADO' && !viaje.fecha_salida_patio && !viaje.fecha_salida_faena" class="bg-[#0a0f1e] border border-amber-500/30 rounded-2xl p-4 shadow-xl space-y-4">
         <div class="flex items-center gap-2 border-b border-white/10 pb-2">
           <span class="text-base">🚀</span>
           <div>
@@ -157,12 +163,11 @@
                 <img :src="formSalida.foto_odometro" alt="Odómetro Salida" class="w-full h-32 object-cover" />
                 <button @click="formSalida.foto_odometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
               </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+              <button v-else @click="abrirCamaraInApp('odometro_salida', 'Foto Odómetro de Salida (KM)')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
                 <span class="text-xs font-bold text-amber-400">Tomar Foto del Odómetro (Tacógrafo)</span>
-                <span class="text-[9px] text-slate-400">Captura clara de los kilómetros de salida</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoOdometroSalida" class="hidden" />
-              </label>
+                <span class="text-[9px] text-slate-400">Cámara integrada en App (sin salir de pantalla)</span>
+              </button>
             </div>
           </div>
 
@@ -179,12 +184,11 @@
                 <img :src="formSalida.foto_horometro" alt="Horómetro Salida" class="w-full h-32 object-cover" />
                 <button @click="formSalida.foto_horometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
               </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+              <button v-else @click="abrirCamaraInApp('horometro_salida', 'Foto Horómetro Motor Camión (HRS)')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
                 <span class="text-xs font-bold text-amber-400">Tomar Foto del Horómetro del Motor</span>
-                <span class="text-[9px] text-slate-400">Captura clara de las horas del motor chasis</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoHorometroSalida" class="hidden" />
-              </label>
+                <span class="text-[9px] text-slate-400">Cámara integrada en App (sin salir de pantalla)</span>
+              </button>
             </div>
 
             <!-- Botón de Asistencia: Misma foto si están juntos en el display -->
@@ -206,8 +210,8 @@
             </button>
           </div>
 
-          <!-- 3. Nivel de Combustible al Salir de Patio (Base GSP) -->
-          <div class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
+          <!-- 3. Nivel de Combustible al Salir de Patio (Solo en Salida de Base GSP - IDA) -->
+          <div v-if="viaje.tipo_trayecto !== 'RETORNO'" class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
             <label class="block text-xs font-bold text-slate-200 mb-1">3. Nivel de Combustible al Salir de Patio *</label>
             <select v-model="formSalida.combustible_salida" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-amber-400">
               <option value="" disabled>Seleccione nivel (1% a 100%)...</option>
@@ -219,10 +223,9 @@
                 <img :src="formSalida.foto_combustible" alt="Combustible Salida" class="w-full h-24 object-cover" />
                 <button @click="formSalida.foto_combustible = ''" type="button" class="absolute top-1 right-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-xs">✕</button>
               </div>
-              <label v-else class="flex items-center justify-center gap-2 border border-dashed border-white/20 hover:border-amber-400 rounded-xl p-2 cursor-pointer bg-black/40 text-xs text-amber-400 font-bold">
+              <button v-else @click="abrirCamaraInApp('combustible_salida', 'Foto Marcador Combustible Salida')" type="button" class="w-full flex items-center justify-center gap-2 border border-dashed border-white/20 hover:border-amber-400 rounded-xl p-2 cursor-pointer bg-black/40 text-xs text-amber-400 font-bold">
                 <span>📸 Adjuntar Foto Marcador</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleSalida" class="hidden" />
-              </label>
+              </button>
             </div>
           </div>
 
@@ -258,10 +261,12 @@
             <span :class="formSalida.foto_horometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
               {{ formSalida.foto_horometro ? '✓' : '⚠️' }} Foto Horóm.
             </span>
-            <span class="text-slate-600">•</span>
-            <span :class="formSalida.combustible_salida ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
-              {{ formSalida.combustible_salida ? '✓' : '⚠️' }} Combustible
-            </span>
+            <template v-if="viaje.tipo_trayecto !== 'RETORNO'">
+              <span class="text-slate-600">•</span>
+              <span :class="formSalida.combustible_salida ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+                {{ formSalida.combustible_salida ? '✓' : '⚠️' }} Combustible
+              </span>
+            </template>
             <span class="text-slate-600">•</span>
             <span :class="(formSalida.pin && formSalida.pin.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
               {{ (formSalida.pin && formSalida.pin.length === 4) ? '✓' : '⚠️' }} PIN ({{ formSalida.pin ? formSalida.pin.length : 0 }}/4)
@@ -502,11 +507,10 @@
               <img :src="formCombustible.foto_voucher" alt="Voucher Combustible" class="w-full h-36 object-cover" />
               <button @click="formCombustible.foto_voucher = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
             </div>
-            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/30">
+            <button v-else @click="abrirCamaraInApp('combustible_voucher', 'Foto Voucher / Boleta Combustible')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/30">
               <span class="text-2xl mb-1">🧾</span>
               <span class="text-xs font-bold text-emerald-400">Tomar Foto del Voucher</span>
-              <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleVoucher" class="hidden" />
-            </label>
+            </button>
           </div>
 
           <button @click="confirmarRendicionCombustible" :disabled="!isFormRendicionCombustibleValido" type="button" class="w-full min-h-[50px] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-black font-black text-sm uppercase rounded-xl tracking-wider transition-all cursor-pointer shadow-lg shadow-amber-500/20">
@@ -556,11 +560,11 @@
                 <img :src="formLlegada.foto_odometro" alt="Odómetro Llegada" class="w-full h-32 object-cover" />
                 <button @click="formLlegada.foto_odometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
               </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+              <button v-else @click="abrirCamaraInApp('odometro_llegada', 'Foto Odómetro de Llegada (KM)')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
                 <span class="text-xs font-bold text-emerald-400">Tomar Foto del Odómetro Llegada</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoOdometroLlegada" class="hidden" />
-              </label>
+                <span class="text-[9px] text-slate-400">Cámara integrada en App (sin salir de pantalla)</span>
+              </button>
             </div>
 
             <!-- Horómetro Camión Llegada -->
@@ -576,11 +580,11 @@
                 <img :src="formLlegada.foto_horometro_camion" alt="Horómetro Camión Llegada" class="w-full h-32 object-cover" />
                 <button @click="formLlegada.foto_horometro_camion = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
               </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+              <button v-else @click="abrirCamaraInApp('horometro_camion_llegada', 'Foto Horómetro Camión Llegada (HRS)')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
                 <span class="text-xs font-bold text-emerald-400">Tomar Foto del Horómetro Camión</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoHorometroCamionLlegada" class="hidden" />
-              </label>
+                <span class="text-[9px] text-slate-400">Cámara integrada en App (sin salir de pantalla)</span>
+              </button>
             </div>
 
             <!-- Botón Atajo Display Único Camión -->
@@ -624,11 +628,10 @@
                 <img :src="formLlegada.foto_combustible" alt="Marcador Combustible Llegada" class="w-full h-32 object-cover" />
                 <button @click="formLlegada.foto_combustible = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
               </div>
-              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/30 transition-colors">
+              <button v-else @click="abrirCamaraInApp('combustible_llegada', 'Foto Marcador Combustible Llegada')" type="button" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/30 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
                 <span class="text-xs font-bold text-emerald-400">Tomar Foto Marcador Combustible (Opcional)</span>
-                <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleLlegada" class="hidden" />
-              </label>
+              </button>
             </div>
           </div>
 
@@ -737,11 +740,62 @@
       </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- MODAL CÁMARA INTEGRADA IN-APP (EVITA CIERRE DE PESTAÑA EN ANDROID)        -->
+    <!-- ========================================================================= -->
+    <div v-if="modalCamara.visible" class="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-[#0a0f1e] border border-amber-500/40 rounded-2xl max-w-md w-full p-4 space-y-3 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📸</span>
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider">{{ modalCamara.titulo || 'Capturar Evidencia Fotográfica' }}</h3>
+              <p class="text-[10px] text-emerald-400 font-mono">Cámara integrada • Tus datos digitados están respaldados</p>
+            </div>
+          </div>
+          <button @click="cerrarCamaraInApp" type="button" class="text-slate-400 hover:text-white px-2 py-1 text-base font-bold">✕</button>
+        </div>
+
+        <div v-if="!modalCamara.errorStream" class="relative rounded-xl overflow-hidden bg-black border border-white/15">
+          <video ref="videoCamaraRef" autoplay playsinline muted class="w-full h-64 sm:h-72 object-cover bg-black"></video>
+          <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 h-20 border-2 border-dashed border-amber-400/70 rounded-xl pointer-events-none flex items-end justify-center pb-1">
+            <span class="text-[9px] font-mono bg-black/70 text-amber-300 px-2 py-0.5 rounded">Enfoque el marcador / lectura</span>
+          </div>
+        </div>
+        <div v-else class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 space-y-1 text-center">
+          <p class="font-bold">⚠️ {{ modalCamara.errorStream }}</p>
+          <p class="text-[11px] text-slate-300">Usa el botón inferior para seleccionar o tomar la foto con el selector del teléfono (tus datos ya están guardados).</p>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <button
+            v-if="!modalCamara.errorStream"
+            @click="capturarFotoDesdeVideo"
+            type="button"
+            class="w-full min-h-[52px] bg-amber-500 hover:bg-amber-400 text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
+          >
+            <span>📸</span>
+            <span>CAPTURAR FOTO AHORA</span>
+          </button>
+
+          <button
+            @click="abrirSelectorArchivoSistema"
+            type="button"
+            class="w-full py-2.5 bg-white/10 hover:bg-white/15 text-slate-200 border border-white/15 font-bold text-xs uppercase rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>📂</span>
+            <span>Subir desde Galería / Cámara del Teléfono</span>
+          </button>
+          <input ref="inputArchivoFallbackRef" type="file" accept="image/*" @change="onFallbackArchivoCamara" class="hidden" />
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiAxios from '@/services/api'
 import {
@@ -906,13 +960,17 @@ let timerInterval = null
 
 // Validaciones Computadas
 const isFormSalidaValido = computed(() => {
-  return Boolean(formSalida.value.odometro) &&
-         Boolean(formSalida.value.foto_odometro) &&
-         Boolean(formSalida.value.horometro) &&
-         Boolean(formSalida.value.foto_horometro) &&
-         Boolean(formSalida.value.combustible_salida) &&
-         Boolean(formSalida.value.pin) &&
-         formSalida.value.pin.length === 4
+  const baseValida = Boolean(formSalida.value.odometro) &&
+                     Boolean(formSalida.value.foto_odometro) &&
+                     Boolean(formSalida.value.horometro) &&
+                     Boolean(formSalida.value.foto_horometro) &&
+                     Boolean(formSalida.value.pin) &&
+                     formSalida.value.pin.length === 4
+
+  if (viaje.value.tipo_trayecto !== 'RETORNO') {
+    return baseValida && Boolean(formSalida.value.combustible_salida)
+  }
+  return baseValida
 })
 
 const isFormRendicionCombustibleValido = computed(() => {
@@ -938,20 +996,21 @@ const esMovimientoInterno = computed(() => {
 const esServicioPlataformaBsm = computed(() => {
   if (esMovimientoInterno.value) return false
   const t = String(viaje.value?.tipo_equipo || '').toUpperCase()
-  const cod = String(viaje.value?.codigo_proyecto || '').toUpperCase()
   const mod = String(viaje.value?.modelo || '').toUpperCase()
+  if (t.includes('GRUA') || t.includes('PLUMA') || t.includes('HORQUILLA')) return false
   const lineas = Array.isArray(viaje.value?.lineas_servicio) ? viaje.value.lineas_servicio : []
   const tieneLineaPlat = lineas.some(l => {
     const s = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
     return s.includes('PLATAFORMA') || s.includes('ALZA') || s.includes('MANLIFT') || s.includes('TIJERA') || s.includes('ARTICULAD')
   })
   return (
-    t.includes('CAMION') ||
-    t.includes('TRACTO') ||
     t.includes('PLATAFORMA') ||
-    cod.startsWith('BMQ') ||
-    mod.includes('VOLVO') ||
+    t.includes('ALZA') ||
+    t.includes('MANLIFT') ||
+    t.includes('TIJERA') ||
     mod.includes('JLG') ||
+    mod.includes('GENIE') ||
+    mod.includes('HAULOTTE') ||
     tieneLineaPlat
   )
 })
@@ -1009,78 +1068,241 @@ const isFormLlegadaValido = computed(() => {
   return baseValida
 })
 
-// Handlers de Fotos Salida
-const onFotoOdometroSalida = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    const comp = await comprimirFoto(file)
-    formSalida.value.foto_odometro = comp
-    formSalida.value.foto = comp
+// =============================================================
+// PERSISTENCIA EN TIEMPO REAL DE BORRADOR Y CÁMARA INTEGRADA
+// =============================================================
+const getDraftKey = () => `gsp_borrador_viaje_${tokenViaje.value || 'default'}`
+const getProjectDraftKey = () => {
+  const pid = viaje.value?.id_proyecto
+  const eid = viaje.value?.id_equipo
+  return (pid && eid) ? `gsp_borrador_viaje_pry_${pid}_eq_${eid}` : null
+}
+
+const persistirBorradorViaje = () => {
+  try {
+    const snapshot = {
+      updatedAt: Date.now(),
+      formSalida: { ...formSalida.value },
+      formLlegada: { ...formLlegada.value },
+      formCombustible: { ...formCombustible.value },
+      modalLlegadaVisible: Boolean(modalLlegada.value?.visible),
+      modalCombustibleVisible: Boolean(modalCombustible.value?.visible)
+    }
+    const raw = JSON.stringify(snapshot)
+    localStorage.setItem(getDraftKey(), raw)
+    const pKey = getProjectDraftKey()
+    if (pKey) localStorage.setItem(pKey, raw)
+  } catch (e) {
+    console.warn('[ViajeConductor] No se pudo guardar borrador en localStorage:', e?.message)
   }
 }
 
-const onFotoHorometroSalida = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formSalida.value.foto_horometro = await comprimirFoto(file)
+const restaurarBorradorViaje = () => {
+  try {
+    const pKey = getProjectDraftKey()
+    const raw = localStorage.getItem(getDraftKey()) || (pKey ? localStorage.getItem(pKey) : null)
+    if (!raw) return false
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return false
+
+    if (parsed.formSalida && typeof parsed.formSalida === 'object') {
+      Object.entries(parsed.formSalida).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) {
+          formSalida.value[k] = v
+        }
+      })
+    }
+    if (parsed.formLlegada && typeof parsed.formLlegada === 'object') {
+      Object.entries(parsed.formLlegada).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) {
+          formLlegada.value[k] = v
+        }
+      })
+    }
+    if (parsed.formCombustible && typeof parsed.formCombustible === 'object') {
+      Object.entries(parsed.formCombustible).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) {
+          formCombustible.value[k] = v
+        }
+      })
+    }
+    if (parsed.modalLlegadaVisible && viaje.value.estado_viaje === 'EN_RUTA') {
+      modalLlegada.value.visible = true
+    }
+    return true
+  } catch (e) {
+    console.warn('[ViajeConductor] No se pudo restaurar borrador:', e?.message)
+    return false
+  }
+}
+
+watch([formSalida, formLlegada, formCombustible], () => {
+  persistirBorradorViaje()
+}, { deep: true })
+
+// Cámara Integrada WebRTC In-App
+const modalCamara = ref({
+  visible: false,
+  campo: '',
+  titulo: '',
+  errorStream: ''
+})
+const videoCamaraRef = ref(null)
+const inputArchivoFallbackRef = ref(null)
+let activeMediaStream = null
+
+const detenerStreamCamara = () => {
+  if (activeMediaStream) {
+    try {
+      activeMediaStream.getTracks().forEach(t => t.stop())
+    } catch (err) {
+      console.warn(err)
+    }
+    activeMediaStream = null
+  }
+  if (videoCamaraRef.value) {
+    try {
+      videoCamaraRef.value.srcObject = null
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+}
+
+const asignarFotoCapturada = (campo, base64Img) => {
+  if (!base64Img) return
+  switch (campo) {
+    case 'odometro_salida':
+      formSalida.value.foto_odometro = base64Img
+      formSalida.value.foto = base64Img
+      break
+    case 'horometro_salida':
+      formSalida.value.foto_horometro = base64Img
+      break
+    case 'combustible_salida':
+      formSalida.value.foto_combustible = base64Img
+      break
+    case 'combustible_voucher':
+      formCombustible.value.foto_voucher = base64Img
+      break
+    case 'odometro_llegada':
+      formLlegada.value.foto_odometro = base64Img
+      formLlegada.value.foto = base64Img
+      break
+    case 'horometro_camion_llegada':
+      formLlegada.value.foto_horometro_camion = base64Img
+      break
+    case 'combustible_llegada':
+      formLlegada.value.foto_combustible = base64Img
+      break
+  }
+  persistirBorradorViaje()
+}
+
+const abrirCamaraInApp = async (campo, titulo = 'Capturar Foto') => {
+  persistirBorradorViaje()
+  detenerStreamCamara()
+  modalCamara.value = {
+    visible: true,
+    campo,
+    titulo,
+    errorStream: ''
+  }
+
+  await nextTick()
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    modalCamara.value.errorStream = 'Tu navegador requiere usar el selector de archivos del teléfono.'
+    return
+  }
+
+  try {
+    activeMediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    })
+    await nextTick()
+    if (videoCamaraRef.value) {
+      videoCamaraRef.value.srcObject = activeMediaStream
+      await videoCamaraRef.value.play().catch(() => {})
+    }
+  } catch (err) {
+    console.warn('[ViajeConductor] Fallback a selector por permiso/cámara:', err?.message)
+    modalCamara.value.errorStream = 'No se pudo abrir el visor directo. Usa el botón inferior.'
+  }
+}
+
+const cerrarCamaraInApp = () => {
+  detenerStreamCamara()
+  modalCamara.value.visible = false
+}
+
+const capturarFotoDesdeVideo = () => {
+  const video = videoCamaraRef.value
+  if (!video || !video.videoWidth || !video.videoHeight) {
+    modalCamara.value.errorStream = 'La cámara aún se está enfocando. Intenta de nuevo o usa el botón inferior.'
+    return
+  }
+  const maxWidth = 1280
+  let width = video.videoWidth
+  let height = video.videoHeight
+  if (width > maxWidth) {
+    height = Math.round((height * maxWidth) / width)
+    width = maxWidth
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(video, 0, 0, width, height)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.78)
+  asignarFotoCapturada(modalCamara.value.campo, dataUrl)
+  cerrarCamaraInApp()
+}
+
+const abrirSelectorArchivoSistema = () => {
+  persistirBorradorViaje()
+  if (inputArchivoFallbackRef.value) {
+    inputArchivoFallbackRef.value.value = ''
+    inputArchivoFallbackRef.value.click()
+  }
+}
+
+const onFallbackArchivoCamara = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  try {
+    const comp = await comprimirFoto(file)
+    asignarFotoCapturada(modalCamara.value.campo, comp)
+    cerrarCamaraInApp()
+  } catch (err) {
+    console.error('[ViajeConductor] Error procesando foto:', err)
   }
 }
 
 const copiarFotoOdometroAHorometroSalida = () => {
   formSalida.value.foto_horometro = formSalida.value.foto_odometro
+  persistirBorradorViaje()
 }
 
 const copiarFotoHorometroAOdometroSalida = () => {
   formSalida.value.foto_odometro = formSalida.value.foto_horometro
   formSalida.value.foto = formSalida.value.foto_horometro
-}
-
-// Handlers de Fotos Llegada
-const onFotoOdometroLlegada = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    const comp = await comprimirFoto(file)
-    formLlegada.value.foto_odometro = comp
-    formLlegada.value.foto = comp
-  }
-}
-
-const onFotoHorometroCamionLlegada = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formLlegada.value.foto_horometro_camion = await comprimirFoto(file)
-  }
+  persistirBorradorViaje()
 }
 
 const copiarFotoOdometroAHorometroLlegada = () => {
   formLlegada.value.foto_horometro_camion = formLlegada.value.foto_odometro
+  persistirBorradorViaje()
 }
 
 const copiarFotoHorometroAOdometroLlegada = () => {
   formLlegada.value.foto_odometro = formLlegada.value.foto_horometro_camion
   formLlegada.value.foto = formLlegada.value.foto_horometro_camion
-}
-
-// Handlers Combustible
-const onFotoCombustibleSalida = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formSalida.value.foto_combustible = await comprimirFoto(file)
-  }
-}
-
-const onFotoCombustibleLlegada = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formLlegada.value.foto_combustible = await comprimirFoto(file)
-  }
-}
-
-const onFotoCombustibleVoucher = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formCombustible.value.foto_voucher = await comprimirFoto(file)
-  }
+  persistirBorradorViaje()
 }
 
 // -------------------------------------------------------------
@@ -1206,10 +1428,23 @@ const ejecutarInicioViaje = async () => {
     let faltantes = []
     if (!formSalida.value.odometro) faltantes.push('Odómetro de Salida (KM)')
     if (!formSalida.value.horometro) faltantes.push('Horómetro de Salida (HRS)')
-    if (!formSalida.value.combustible_salida) faltantes.push('Nivel de Combustible al Salir de Patio')
+    if (viaje.value.tipo_trayecto !== 'RETORNO' && !formSalida.value.combustible_salida) faltantes.push('Nivel de Combustible al Salir de Patio')
     if (!formSalida.value.pin) faltantes.push('PIN del Conductor')
     else if (String(formSalida.value.pin).trim().length !== 4) faltantes.push('El PIN debe tener exactamente 4 dígitos')
     alert(`⚠️ Requisitos incompletos para autorizar salida:\n\n• ${faltantes.join('\n• ')}`)
+    return
+  }
+
+  const odoSal = Number(formSalida.value.odometro)
+  const horoSal = Number(formSalida.value.horometro)
+  const minOdo = Number(viaje.value.odometro_acumulado || 0)
+  const minHoro = Number(viaje.value.horometro_chasis_acumulado || 0)
+  if (minOdo > 0 && odoSal < minOdo) {
+    alert(`🚨 Valor Incremental Inválido:\n\nEl Odómetro de Salida (${odoSal} KM) no puede ser menor al último registro acumulado del equipo (${minOdo} KM).`)
+    return
+  }
+  if (minHoro > 0 && horoSal < minHoro) {
+    alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Salida (${horoSal} HRS) no puede ser menor al último registro acumulado del equipo (${minHoro} HRS).`)
     return
   }
 
@@ -1336,10 +1571,28 @@ const confirmarRendicionCombustible = async () => {
 // ACCIÓN: LLEGADA A FAENA / PATIO
 // -------------------------------------------------------------
 const abrirModalLlegada = () => {
+  if (!formLlegada.value.odometro && viaje.value.odometro_salida) {
+    formLlegada.value.odometro = viaje.value.odometro_salida
+  }
+  if (!formLlegada.value.horometro && viaje.value.horometro_salida) {
+    formLlegada.value.horometro = viaje.value.horometro_salida
+  }
   modalLlegada.value.visible = true
 }
 
 const ejecutarLlegadaFaena = async () => {
+  const odoLleg = Number(formLlegada.value.odometro)
+  const horoLleg = Number(formLlegada.value.horometro)
+  const odoSal = Number(viaje.value.odometro_salida || 0)
+  const horoSal = Number(viaje.value.horometro_salida || 0)
+  if (odoSal > 0 && odoLleg < odoSal) {
+    alert(`🚨 Valor Incremental Inválido:\n\nEl Odómetro de Llegada (${odoLleg} KM) no puede ser menor al Odómetro de Salida (${odoSal} KM).`)
+    return
+  }
+  if (horoSal > 0 && horoLleg < horoSal) {
+    alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Llegada (${horoLleg} HRS) no puede ser menor al Horómetro de Salida (${horoSal} HRS).`)
+    return
+  }
   guardando.value = true
   detenerMotorEnRuta()
 
@@ -1525,6 +1778,7 @@ const cambiarFaseDemo = (fase) => {
 onMounted(async () => {
   window.addEventListener('online', onOnlineStatusChange)
   window.addEventListener('offline', onOnlineStatusChange)
+  restaurarBorradorViaje()
 
   if (tokenViaje.value && !tokenViaje.value.includes('demo')) {
     cargandoViaje.value = true
@@ -1574,6 +1828,8 @@ onMounted(async () => {
           horometro_salida: dbViaje.horometro_inicial,
           odometro_llegada: dbViaje.km_final,
           horometro_llegada: dbViaje.horometro_final,
+          odometro_acumulado: Number(dbViaje.odometro_acumulado || 0),
+          horometro_chasis_acumulado: Number(dbViaje.horometro_chasis_acumulado || 0),
           obs_termino: dbViaje.obs_termino,
           cargas_combustible: dbViaje.cargas_combustible || [],
           combustible_salida: dbViaje.combustible_salida || null,
@@ -1585,6 +1841,16 @@ onMounted(async () => {
           total_pings_gps: (dbViaje.pings_ruta && dbViaje.pings_ruta.length) || 0
         }
         totalPingsEnRuta.value = viaje.value.total_pings_gps
+        // Restaurar cualquier dato digitado o foto capturada en borrador ANTES de rellenar con acumulado por defecto
+        restaurarBorradorViaje()
+        if (viaje.value.estado_viaje === 'ASIGNADO') {
+          if (!formSalida.value.odometro && viaje.value.odometro_acumulado > 0) {
+            formSalida.value.odometro = viaje.value.odometro_acumulado
+          }
+          if (!formSalida.value.horometro && viaje.value.horometro_chasis_acumulado > 0) {
+            formSalida.value.horometro = viaje.value.horometro_chasis_acumulado
+          }
+        }
 
         await guardarSesionLocal(tokenViaje.value, viaje.value)
         if (viaje.value.estado_viaje === 'EN_RUTA') {
@@ -1601,6 +1867,7 @@ onMounted(async () => {
           iniciarMotorEnRuta()
         }
       }
+      restaurarBorradorViaje()
     } finally {
       cargandoViaje.value = false
     }
@@ -1615,6 +1882,7 @@ onMounted(async () => {
     } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
       cambiarFaseDemo('ARRIBADO_FAENA')
     }
+    restaurarBorradorViaje()
   }
 
   if (viaje.value.id_proyecto && esServicioPlataformaBsm.value) {
@@ -1628,6 +1896,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  detenerStreamCamara()
   detenerMotorEnRuta()
   window.removeEventListener('online', onOnlineStatusChange)
   window.removeEventListener('offline', onOnlineStatusChange)

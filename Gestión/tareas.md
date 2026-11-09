@@ -1297,13 +1297,18 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 * [x] **109. `[REQ-1139]` [Soporte Producción — CASO-20261109-04 — OT 17 Nicolás Ceballos] Auditoría Forense en Base de Datos de Salida de Planta y Jornada Terreno [PostgreSQL PROD / COMPLETADO - 09-Nov-2026]:**
   - **1. Auditoría SQL en Producción:** Verificado que el operario Nicolás Ceballos (`id_user = 45`) registró su salida de patio y llegada a faena en `tequ_log_desplazamiento` (Log #53) a las 08:20:35 CLT y 08:21:09 CLT con odómetro `618888 km` (ambas marcas con 34 segundos de diferencia).
   - **2. Persistencia Confirmada:** El dato NUNCA se perdió; el reporte de avance (#52) fue sincronizado a las 11:00 CLT con 9.00 hrs facturables. Se emitió ficha de soporte `Soporte/CASO-20261109-04_Auditoria_Forense_OT17_Salida_Planta_Nicolas_Ceballos.md`.
-* [ ] **110. `[REQ-1138]` [Regla Comercial — Horas Mínimas en Arriendo / Valor Fijo] Supresión de Piso Mínimo de 8 Horas Diarias en Contratos Mensuales y Fijos [En espera de Alfonso]:**
+* [x] **110. `[REQ-1140]` [PWA & Backend — Idempotencia Salida de Patio y Saneamiento OT 17] Protección de Idempotencia e Inmutabilidad en Salidas de Patio y Saneamiento Fáctico OT 17 [SPEC-124 / PWA & Backend / COMPLETADO - 09-Nov-2026]:**
+  - **1. Especificación Canónica (`SPEC-124`):** Redactada especificación en `.agents/specs/124_idempotencia_inmutabilidad_salidas_viaje_pwa_spec.md` abordando el problema en sus 4 niveles de fondo ("Cero Parches").
+  - **2. Blindaje de Idempotencia en Backend (`viajeModel.js`):** Modificado el `UPDATE` en `registrarSalida` para utilizar `COALESCE(fecha_salida_patio, CURRENT_TIMESTAMP)`, preservando siempre la primera marca temporal fáctica capturada en patio, blindando las fotos iniciales y protegiendo `estado_trayecto` contra retrocesos si el viaje ya fue arribado o concluido.
+  - **3. Saneamiento en BD de Producción (OT 17 / Log #53):** Restituida la marca temporal comprobada por Nginx (`10:23:33 UTC` / `07:23:33 CLT`), corrigiendo la anomalía de los 34 segundos y regularizando el viaje a su duración real de 57 minutos y 36 segundos.
+  - **4. Resiliencia de UI en PWA (`ViajeConductor.vue`):** Incorporado skeleton de sincronización (`v-if="cargandoViaje"`) y condición estricta para que el formulario editable de salida quede bloqueado de forma inmutable si ya existe fecha de salida en BD o en el estado local.
+* [ ] **111. `[REQ-1138]` [Regla Comercial — Horas Mínimas en Arriendo / Valor Fijo] Supresión de Piso Mínimo de 8 Horas Diarias en Contratos Mensuales y Fijos [En espera de Alfonso]:**
   - Supresión de sobretiempos ficticios diarios en arriendos puros a la espera del detalle técnico de tipos de arriendo por parte de Alfonso Porperrello.
-* [ ] **111. `[REQ-1140]` [Taller Mecánico — Certificados de Mantenimiento] Incorporación de Formatos de Certificación de Taller [En espera de Alfonso]:**
+* [ ] **112. `[REQ-1141]` [Taller Mecánico — Certificados de Mantenimiento] Incorporación de Formatos de Certificación de Taller [En espera de Alfonso]:**
   - A la espera de las muestras físicas recopiladas por Alfonso en taller mecánico para diseñar las plantillas PDF.
-* [ ] **112. `[REQ-1142]` [Soporte Taller — Tickets Observaciones Leonel Vergara] Canal de Incidencias Menores de Taller [En espera de Alfonso]:**
+* [ ] **113. `[REQ-1142]` [Soporte Taller — Tickets Observaciones Leonel Vergara] Canal de Incidencias Menores de Taller [En espera de Alfonso]:**
   - Recepción de tickets de observaciones menores del taller mecánico para priorización.
-* [ ] **113. `[REQ-1141]` [Módulo Compras y Bodega] Flujo de Órdenes de Compra y Gestión de Stock [Pausado por 2 días]:**
+* [ ] **114. `[REQ-1143]` [Módulo Compras y Bodega] Flujo de Órdenes de Compra y Gestión de Stock [Pausado por 2 días]:**
   - Postergado temporalmente por acuerdo de reunión para concentrar capacidad en soporte e ITS.
 
 

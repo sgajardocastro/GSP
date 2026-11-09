@@ -1,6 +1,21 @@
 const db = require('../config/dbConfig');
 const crypto = require('crypto');
 
+function inferirTipoTrayectoDesdeLineas(lineas, idEquipo) {
+  if (!Array.isArray(lineas)) return 'IDA';
+  const lineaEq = lineas.find(l =>
+    l && l.tipo === 'TRASLADOS' && String(l.equipo_asignado_id || l.id_equipo || '') === String(idEquipo || '')
+  );
+  if (lineaEq && String(lineaEq.unidad || '').toUpperCase().includes('RETORNO')) {
+    return 'RETORNO';
+  }
+  const lineasTraslado = lineas.filter(l => l && l.tipo === 'TRASLADOS');
+  if (lineasTraslado.length > 0 && lineasTraslado.every(l => String(l.unidad || '').toUpperCase().includes('RETORNO'))) {
+    return 'RETORNO';
+  }
+  return 'IDA';
+}
+
 const viajeModel = {
   // 1.3 Resolver dinámicamente el proyecto y equipo a partir del token (sin importar formato)
   async resolverContextoPorToken(token) {
@@ -112,7 +127,10 @@ const viajeModel = {
         COALESCE(u.email, u_alt.email) AS chofer_email,
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
-        COALESCE(e.marca, 'GSP') AS marca
+        COALESCE(e.marca, 'GSP') AS marca,
+        COALESCE(e.odometro_acumulado, 0) AS odometro_acumulado,
+        COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_acumulado,
+        COALESCE(e.horometro_grua_acumulado, 0) AS horometro_grua_acumulado
       FROM tequ_log_desplazamiento v
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
@@ -172,8 +190,17 @@ const viajeModel = {
       return viaje;
     }
 
-    // 1.2 Si no existe aún la fila en tequ_log_desplazamiento, resolver por token dinámicamente
+    // 1.2 Si no existe aún la fila con ese token exacto, resolver por proyecto/equipo y verificar si existe viaje activo en BD
     const { id_proyecto, id_equipo } = await viajeModel.resolverContextoPorToken(token);
+    if (id_proyecto && id_equipo) {
+      const altTokenRes = await db.query(
+        `SELECT token_viaje FROM tequ_log_desplazamiento WHERE id_proyecto = $1 AND id_equipo = $2 AND token_viaje IS NOT NULL AND token_viaje <> $3 ORDER BY id_log_desplazamiento DESC LIMIT 1`,
+        [id_proyecto, id_equipo, token]
+      );
+      if (altTokenRes.rows.length > 0 && altTokenRes.rows[0].token_viaje) {
+        return await viajeModel.getViajePorToken(altTokenRes.rows[0].token_viaje);
+      }
+    }
     if (id_proyecto) {
       const infoSql = `
         SELECT 
@@ -206,6 +233,9 @@ const viajeModel = {
           COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
           COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
           COALESCE(e.marca, 'GSP') AS marca,
+          COALESCE(e.odometro_acumulado, 0) AS odometro_acumulado,
+          COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_acumulado,
+          COALESCE(e.horometro_grua_acumulado, 0) AS horometro_grua_acumulado,
           COALESCE(u.id_user, 55) AS id_user_chofer,
           COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Sergio Gajardo') AS chofer_nombre,
           p.json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio
@@ -232,7 +262,7 @@ const viajeModel = {
           id_equipo: row.id_equipo || null,
           id_user_chofer: row.id_user_chofer || 55,
           patente: row.patente || 'S/P',
-          tipo_trayecto: 'IDA',
+          tipo_trayecto: inferirTipoTrayectoDesdeLineas(row.lineas_servicio, row.id_equipo),
           fecha_salida_patio: null,
           fecha_llegada_faena: null,
           fecha_salida_faena: null,
@@ -268,6 +298,9 @@ const viajeModel = {
           tipo_equipo: row.tipo_equipo,
           modelo: row.modelo,
           marca: row.marca,
+          odometro_acumulado: Number(row.odometro_acumulado || 0),
+          horometro_chasis_acumulado: Number(row.horometro_chasis_acumulado || 0),
+          horometro_grua_acumulado: Number(row.horometro_grua_acumulado || 0),
           cantidad_estanques: (row.tipo_equipo && row.tipo_equipo.toUpperCase().includes('GRUA')) ? 2 : 1,
           lineas_servicio: row.lineas_servicio || [],
           piso_minimo_estructurador: pisoMin,
@@ -286,8 +319,39 @@ const viajeModel = {
     const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
 
     // 2.1 Verificar si ya existe fila para este token
-    const checkSql = `SELECT id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1;`;
+    const checkSql = `SELECT id_log_desplazamiento, id_equipo FROM tequ_log_desplazamiento WHERE token_viaje = $1;`;
     const checkRes = await db.query(checkSql, [token_viaje]);
+
+    let eqIdVal = id_equipo || (checkRes.rows[0] ? checkRes.rows[0].id_equipo : null);
+    if (!eqIdVal) {
+      const ctxEq = await viajeModel.resolverContextoPorToken(token_viaje);
+      eqIdVal = ctxEq.id_equipo;
+    }
+    if (eqIdVal) {
+      const eqAcumRes = await db.query(
+        `SELECT COALESCE(odometro_acumulado, 0) AS odo, COALESCE(horometro_chasis_acumulado, 0) AS h_chasis
+         FROM tequ_equipo WHERE id_equipo = $1`,
+        [eqIdVal]
+      );
+      if (eqAcumRes.rows.length > 0) {
+        const acum = eqAcumRes.rows[0];
+        if (km_inicial !== undefined && km_inicial !== null && Number(km_inicial) > 0 && Number(acum.odo) > 0 && Number(km_inicial) < Number(acum.odo)) {
+          throw new Error(`El Odómetro de salida (${km_inicial} km) no puede ser menor al último registro acumulado del equipo (${acum.odo} km).`);
+        }
+        if (horometro_inicial !== undefined && horometro_inicial !== null && Number(horometro_inicial) > 0 && Number(acum.h_chasis) > 0 && Number(horometro_inicial) < Number(acum.h_chasis)) {
+          throw new Error(`El Horómetro de salida (${horometro_inicial} hrs) no puede ser menor al último registro acumulado del equipo (${acum.h_chasis} hrs).`);
+        }
+      }
+      await db.query(
+        `UPDATE tequ_equipo
+         SET odometro_acumulado = GREATEST(COALESCE(odometro_acumulado, 0), COALESCE($1::numeric, 0)),
+             horometro_chasis_acumulado = GREATEST(COALESCE(horometro_chasis_acumulado, 0), COALESCE($2::numeric, 0)),
+             fecha_ultima_lectura = CURRENT_TIMESTAMP,
+             fuente_ultima_lectura = 'VIAJE_SALIDA'
+         WHERE id_equipo = $3`,
+        [km_inicial || 0, horometro_inicial || 0, eqIdVal]
+      );
+    }
 
     if (checkRes.rows.length > 0) {
       // Ya existía -> Actualizar
@@ -300,15 +364,15 @@ const viajeModel = {
           foto_odometro_salida_path = COALESCE($10, $3, foto_odometro_salida_path),
           foto_horometro_salida_path = COALESCE($11, foto_horometro_salida_path),
           pin_hash = $4,
-          fecha_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_salida_patio ELSE CURRENT_TIMESTAMP END,
-          fecha_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN CURRENT_TIMESTAMP ELSE fecha_salida_faena END,
-          device_timestamp_salida = COALESCE($5, CURRENT_TIMESTAMP),
-          latitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN latitud_salida_patio ELSE $6 END,
-          longitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN longitud_salida_patio ELSE $7 END,
-          latitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN $6 ELSE latitud_salida_faena END,
-          longitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN $7 ELSE longitud_salida_faena END,
-          combustible_salida = $8,
-          estado_trayecto = 'EN_RUTA'
+          fecha_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN fecha_salida_patio ELSE COALESCE(fecha_salida_patio, CURRENT_TIMESTAMP) END,
+          fecha_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN COALESCE(fecha_salida_faena, CURRENT_TIMESTAMP) ELSE fecha_salida_faena END,
+          device_timestamp_salida = COALESCE(device_timestamp_salida, $5, CURRENT_TIMESTAMP),
+          latitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN latitud_salida_patio ELSE COALESCE(latitud_salida_patio, $6) END,
+          longitud_salida_patio = CASE WHEN tipo_trayecto = 'RETORNO' THEN longitud_salida_patio ELSE COALESCE(longitud_salida_patio, $7) END,
+          latitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN COALESCE(latitud_salida_faena, $6) ELSE latitud_salida_faena END,
+          longitud_salida_faena = CASE WHEN tipo_trayecto = 'RETORNO' THEN COALESCE(longitud_salida_faena, $7) ELSE longitud_salida_faena END,
+          combustible_salida = COALESCE(combustible_salida, $8),
+          estado_trayecto = CASE WHEN estado_trayecto IN ('ARRIBADO', 'LLEGADO', 'CONCLUIDO') THEN estado_trayecto ELSE 'EN_RUTA' END
         WHERE token_viaje = $9
         RETURNING *;
       `;
@@ -383,6 +447,16 @@ const viajeModel = {
         if (eqRes.rows.length > 0) pat = eqRes.rows[0].patente;
       }
 
+      let tipoTrayectoInsert = 'IDA';
+      if (idPry) {
+        try {
+          const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [idPry]);
+          if (pRes.rows.length > 0) {
+            tipoTrayectoInsert = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, idEq);
+          }
+        } catch (e) {}
+      }
+
       const insertSql = `
         INSERT INTO tequ_log_desplazamiento (
           id_proyecto,
@@ -405,7 +479,7 @@ const viajeModel = {
           longitud_salida_patio,
           pings_ruta
         ) VALUES (
-          $1, $2, $3, $4, 'IDA', 'EN_RUTA', $5,
+          $1, $2, $3, $4, $16, 'EN_RUTA', $5,
           $6, $7, $8, COALESCE($9, $14), COALESCE($14, $9), $15, $10, CURRENT_TIMESTAMP, COALESCE($11, CURRENT_TIMESTAMP), $12, $13, '[]'::jsonb
         ) RETURNING *;
       `;
@@ -424,7 +498,8 @@ const viajeModel = {
         latitud || null,
         longitud || null,
         foto_odometro_salida || null,
-        foto_horometro_salida || null
+        foto_horometro_salida || null,
+        tipoTrayectoInsert
       ]);
       const viajeNuevo = res.rows[0];
 
@@ -493,6 +568,30 @@ const viajeModel = {
     device_timestamp
   }) {
     const deviceTs = device_timestamp ? new Date(device_timestamp) : null;
+    const prevViajeRes = await db.query(
+      `SELECT id_equipo, km_inicial, horometro_inicial FROM tequ_log_desplazamiento WHERE token_viaje = $1`,
+      [token_viaje]
+    );
+    if (prevViajeRes.rows.length > 0) {
+      const pv = prevViajeRes.rows[0];
+      if (km_final !== undefined && km_final !== null && pv.km_inicial !== null && Number(km_final) < Number(pv.km_inicial)) {
+        throw new Error(`El Odómetro de llegada (${km_final} km) no puede ser menor al Odómetro de salida (${pv.km_inicial} km).`);
+      }
+      if (horometro_final !== undefined && horometro_final !== null && pv.horometro_inicial !== null && Number(horometro_final) < Number(pv.horometro_inicial)) {
+        throw new Error(`El Horómetro de llegada (${horometro_final} hrs) no puede ser menor al Horómetro de salida (${pv.horometro_inicial} hrs).`);
+      }
+      if (pv.id_equipo) {
+        await db.query(
+          `UPDATE tequ_equipo
+           SET odometro_acumulado = GREATEST(COALESCE(odometro_acumulado, 0), COALESCE($1::numeric, 0)),
+               horometro_chasis_acumulado = GREATEST(COALESCE(horometro_chasis_acumulado, 0), COALESCE($2::numeric, 0)),
+               fecha_ultima_lectura = CURRENT_TIMESTAMP,
+               fuente_ultima_lectura = 'VIAJE_LLEGADA'
+           WHERE id_equipo = $3`,
+          [km_final || 0, horometro_final || 0, pv.id_equipo]
+        );
+      }
+    }
     const sql = `
       UPDATE tequ_log_desplazamiento
       SET 
@@ -614,23 +713,57 @@ const viajeModel = {
   async crearOObtenerViaje({ id_proyecto, id_equipo, id_user_chofer, patente, tipo_trayecto, token_viaje, fecha_programada }) {
     const token = token_viaje || `vj_${id_proyecto}_${id_equipo}_${crypto.randomBytes(4).toString('hex')}`;
 
-    // Verificar si ya existe registro con este token_viaje
-    const checkSql = `SELECT id_log_desplazamiento FROM tequ_log_desplazamiento WHERE token_viaje = $1 LIMIT 1;`;
-    const checkRes = await db.query(checkSql, [token]);
+    let patenteFinal = patente || null;
+    if (!patenteFinal && id_equipo) {
+      try {
+        const eqPatRes = await db.query(`SELECT patente FROM tequ_equipo WHERE id_equipo = $1 LIMIT 1`, [id_equipo]);
+        if (eqPatRes.rows.length > 0 && eqPatRes.rows[0].patente) {
+          patenteFinal = eqPatRes.rows[0].patente;
+        }
+      } catch (e) {}
+    }
+
+    let tipoTrayectoFinal = tipo_trayecto || 'IDA';
+    if (!tipo_trayecto && id_proyecto) {
+      try {
+        const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
+        if (pRes.rows.length > 0) {
+          tipoTrayectoFinal = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, id_equipo);
+        }
+      } catch (e) {}
+    }
+
+    // Verificar si ya existe registro con este token_viaje o viaje activo (ASIGNADO / EN_RUTA) para (id_proyecto, id_equipo, tipo_trayecto)
+    const checkSql = `
+      SELECT id_log_desplazamiento
+      FROM tequ_log_desplazamiento
+      WHERE token_viaje = $1
+         OR (
+           id_proyecto = $2
+           AND id_equipo = $3
+           AND COALESCE(tipo_trayecto, 'IDA') = $4
+           AND estado_trayecto IN ('ASIGNADO', 'EN_RUTA')
+         )
+      ORDER BY id_log_desplazamiento DESC
+      LIMIT 1;
+    `;
+    const checkRes = await db.query(checkSql, [token, id_proyecto || null, id_equipo || null, tipoTrayectoFinal]);
     if (checkRes.rows.length > 0) {
       const updateSql = `
         UPDATE tequ_log_desplazamiento
         SET id_user_chofer = COALESCE($1, id_user_chofer),
             patente = COALESCE($2, patente),
-            fecha_programada = COALESCE($3, fecha_programada)
+            fecha_programada = COALESCE($3, fecha_programada),
+            tipo_trayecto = COALESCE($5, tipo_trayecto)
         WHERE id_log_desplazamiento = $4
         RETURNING *;
       `;
       const upRes = await db.query(updateSql, [
         id_user_chofer || null,
-        patente || null,
+        patenteFinal,
         fecha_programada || null,
-        checkRes.rows[0].id_log_desplazamiento
+        checkRes.rows[0].id_log_desplazamiento,
+        tipoTrayectoFinal
       ]);
       return upRes.rows[0];
     }
@@ -646,8 +779,8 @@ const viajeModel = {
       id_proyecto,
       id_equipo || null,
       id_user_chofer || null,
-      patente || null,
-      tipo_trayecto || 'IDA',
+      patenteFinal,
+      tipoTrayectoFinal,
       token,
       fecha_programada || null
     ]);
@@ -659,6 +792,7 @@ const viajeModel = {
     const sql = `
       SELECT 
         v.*,
+        COALESCE(v.patente, e.patente, 'S/P') AS patente,
         COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Sin Conductor') AS chofer_nombre,
         u.email AS chofer_email,
         e.tipo_equipo,
@@ -689,7 +823,7 @@ const viajeModel = {
         v.id_log_desplazamiento,
         v.id_proyecto,
         v.id_equipo,
-        v.patente,
+        COALESCE(v.patente, e.patente, 'S/P') AS patente,
         v.tipo_trayecto,
         v.estado_trayecto,
         v.token_viaje,
@@ -707,7 +841,10 @@ const viajeModel = {
         COALESCE(p.json_field->>'direccion_obra', p.json_field->'ejecucion_v1'->'cliente'->>'direccion_faena', 'Faena Operacional GSP') AS obra_direccion,
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
-        COALESCE(e.marca, 'GSP') AS marca
+        COALESCE(e.marca, 'GSP') AS marca,
+        COALESCE(e.odometro_acumulado, 0) AS odometro_acumulado,
+        COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_acumulado,
+        COALESCE(e.horometro_grua_acumulado, 0) AS horometro_grua_acumulado
       FROM tequ_log_desplazamiento v
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
@@ -735,7 +872,7 @@ const viajeModel = {
       SELECT * FROM tequ_log_desplazamiento 
       WHERE id_proyecto = $1 
         AND (id_equipo = $2 OR $2 IS NULL)
-        AND tipo_trayecto = 'RETORNO'
+        AND (tipo_trayecto IN ('RETORNO', 'IDA_Y_VUELTA') OR fecha_llegada_patio IS NOT NULL)
       ORDER BY id_log_desplazamiento DESC LIMIT 1;
     `;
     const checkRes = await db.query(checkSql, [id_proyecto, id_equipo || null]);
