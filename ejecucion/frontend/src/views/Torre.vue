@@ -3414,6 +3414,7 @@ const resolverUltimoMantenimientoEquipo = (eq) => {
 const calcularDevengadoReportsEquipo = (eq, diasVentana) => {
   const idEq = Number(eq.id_equipo)
   const patEq = (eq.patente || '').toUpperCase().trim()
+  const patClean = patEq.replace(/[^A-Z0-9]/g, '')
   const desdeStr = diasVentana[0]?.fechaStr || '0000-01-01'
   const hastaStr = diasVentana[diasVentana.length - 1]?.fechaStr || '9999-12-31'
 
@@ -3463,24 +3464,52 @@ const calcularDevengadoReportsEquipo = (eq, diasVentana) => {
     }
 
     let devPry = 0
-    const lineasGrua = lineas.filter(l => {
-      const t = String(l.tipo || '').toUpperCase()
-      return ['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA', 'ALZAHOMBRES / PLATAFORMAS'].includes(t)
+    // 1. Buscar línea de cotización asignada a este equipo por patente o modelo
+    let lineaEquipo = lineas.find(l => {
+      const patL = String(l.patente || l.equipo || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      return patClean && patL && (patL.includes(patClean) || patClean.includes(patL))
     })
 
-    if (lineasGrua.length > 0) {
-      const l = lineasGrua[0]
-      const valUnit = Number(l.valorUnitario || l.precio_unitario || l.tarifa || 0)
-      const unidadLower = String(l.unidad || '').trim().toLowerCase()
-      if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
+    // 2. Si no hay match por patente, buscar por categoría / tipo de equipo
+    if (!lineaEquipo) {
+      const catEq = String(eq.categoria || eq.tipo || '').toUpperCase().trim()
+      lineaEquipo = lineas.find(l => {
+        const t = String(l.tipo || l.categoria || '').toUpperCase().trim()
+        return t && catEq && (t.includes(catEq) || catEq.includes(t))
+      })
+    }
+
+    // 3. Si aún no hay match y la OT solo tiene una línea de servicio principal
+    if (!lineaEquipo && lineas.length === 1) {
+      lineaEquipo = lineas[0]
+    }
+
+    if (lineaEquipo) {
+      const valUnit = Number(lineaEquipo.valorUnitario || lineaEquipo.precio_unitario || lineaEquipo.valor_unitario || lineaEquipo.tarifa || 0)
+      const unidadLower = String(lineaEquipo.unidad || '').trim().toLowerCase()
+
+      if (['diario', 'dia', 'día', 'jornada', 'turno'].includes(unidadLower)) {
         devPry = valUnit * infoRep.count
-      } else if (['hora', 'horas', 'hr', 'hrs'].includes(unidadLower) && valUnit > 0 && valUnit < 350000) {
+      } else if (['hora', 'horas', 'hr', 'hrs'].includes(unidadLower) && valUnit > 0) {
         devPry = valUnit * infoRep.horas
+      } else if (valUnit > 0 && valUnit <= 350000) {
+        // Rango típico de tarifa horaria industrial en Chile ($20.000 - $350.000/hr)
+        devPry = valUnit * infoRep.horas
+      } else if (valUnit > 350000 && valUnit <= 3000000 && infoRep.count > 0) {
+        // Rango de tarifa diaria/jornada
+        devPry = valUnit * infoRep.count
       } else {
-        devPry = calcularSubtotalLinea(l)
+        // En contratos globales/mensuales, estimar prorrateo por hora (base mes 180 hrs)
+        const cantLin = Number(lineaEquipo.cantidad || 1)
+        const montoBase = valUnit * (cantLin > 0 ? cantLin : 1)
+        const horasBaseContrato = Math.max(cantLin > 1 ? cantLin * 8 : 180, 1)
+        const tarifaHoraEstimada = montoBase / horasBaseContrato
+        devPry = tarifaHoraEstimada * infoRep.horas
       }
-    } else if (montoComprometidoPry > 0) {
-      devPry = montoComprometidoPry
+    } else {
+      // Si la cotización no tiene líneas aplicables al equipo, usar su tarifa por hora si existe
+      const tarifaEq = Number(eq.tarifa_hora || eq.valor_hora || 0)
+      devPry = tarifaEq > 0 ? tarifaEq * infoRep.horas : 0
     }
 
     if (montoComprometidoPry > 0 && devPry > montoComprometidoPry) {
