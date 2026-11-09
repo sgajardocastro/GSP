@@ -17,7 +17,7 @@
       </div>
 
       <!-- Buscador Omnibox Reactivo (Spec 16 - Sección 11) + Filtro Tipo (Spec 87) -->
-      <div v-if="activeView === 'kanban'" class="flex-1 flex flex-wrap items-center gap-2 max-w-2xl w-full md:w-auto">
+      <div v-if="['kanban', 'kardex'].includes(activeView)" class="flex-1 flex flex-wrap items-center gap-2 max-w-2xl w-full md:w-auto">
         <div class="relative flex-1 min-w-[210px] flex items-center">
           <span class="absolute left-3 text-slate-400 pointer-events-none text-xs">🔍</span>
           <input 
@@ -84,16 +84,28 @@
         </button>
       </div>
 
-      <!-- Selector Cuadri-Modal de Vistas -->
+      <!-- Selector de Vistas Principal -->
       <div class="flex flex-wrap items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0 gap-0.5">
         <button 
           @click="activeView = 'kanban'" 
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
-          :class="activeView === 'kanban' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+          :class="activeView === 'kanban' ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white'"
+          title="Vista Kanban: Tablero operativo con filtros avanzados y densidad ajustable"
         >
           <span>🗂️</span>
-          <span>Tablero Kanban</span>
+          <span>Kanban</span>
         </button>
+
+        <button 
+          @click="activeView = 'kardex'" 
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          :class="activeView === 'kardex' ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20' : 'text-amber-400/90 hover:text-amber-300'"
+          title="Vista Cardex: Mueble tarjetero indexado con elevación de fichas por estado y fecha"
+        >
+          <span>🗄️</span>
+          <span>Vista Cardex</span>
+        </button>
+
         <button 
           @click="activeView = 'pmo'" 
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all relative cursor-pointer"
@@ -103,6 +115,7 @@
           <span>Matriz PMO</span>
           <span v-if="alertasCriticasTotales > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
         </button>
+
         <button 
           @click="activeView = 'gantt'" 
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
@@ -111,6 +124,7 @@
           <span>📅</span>
           <span>Flota Gantt</span>
         </button>
+
         <button 
           @click="activeView = 'contabilidad'" 
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all relative cursor-pointer"
@@ -118,584 +132,677 @@
         >
           <span>💼</span>
           <span>Contabilidad</span>
-          <span v-if="pendientesFacturacion > 0" class="w-2 h-2 rounded-full bg-emerald-400"></span>
         </button>
       </div>
     </div>
 
-    <!-- Kanban Columns (6 Columnas Operativas) -->
-    <div v-if="activeView === 'kanban'" class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
-      <!-- Columna 1: Requerimiento Registrado -->
-      <div class="bg-[#0f1629] border-t-4 border-[#6366f1] border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
+    <!-- ========================================================================= -->
+    <!-- VISTA 1: KANBAN OPERATIVO CON FILTROS MULTICRITERIO Y FECHAS CON FICHAS   -->
+    <!-- ========================================================================= -->
+    <div v-if="activeView === 'kanban'" class="space-y-3 animate-fadeIn">
+      <!-- Barra de Comando y Filtros Multicriterio -->
+      <div class="bg-[#0b1120] border border-cyan-500/25 rounded-xl p-3 space-y-2.5 shadow-lg">
+        <!-- Fila 1: Modo Fecha + Presets Rápidos + Rango Fecha + Densidad -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Selector Tipo de Fecha: Ejecución vs Venta -->
+            <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px]">
+              <button
+                type="button"
+                @click="tipoFechaKanbanPro = 'EJECUCION'"
+                class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1"
+                :class="tipoFechaKanbanPro === 'EJECUCION' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+              >
+                <span>📅</span>
+                <span>Fecha Ejecución</span>
+              </button>
+              <button
+                type="button"
+                @click="tipoFechaKanbanPro = 'VENTA'"
+                class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1"
+                :class="tipoFechaKanbanPro === 'VENTA' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+              >
+                <span>🏷️</span>
+                <span>Fecha Venta</span>
+              </button>
+            </div>
+
+            <!-- Presets Rápidos de Fecha -->
+            <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px] flex-wrap">
+              <button
+                v-for="preset in [
+                  { id: 'TODOS', label: 'Todas' },
+                  { id: 'HOY', label: '⚡ Hoy' },
+                  { id: 'MANANA', label: 'Mañana' },
+                  { id: 'SEMANA', label: 'Esta Semana' },
+                  { id: 'MES', label: 'Este Mes' }
+                ]"
+                :key="preset.id"
+                type="button"
+                @click="seleccionarPresetFechaPro(preset.id)"
+                class="px-2 py-1 rounded-md font-bold transition-all cursor-pointer"
+                :class="presetFechaKanbanPro === preset.id ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+
+            <!-- Inputs Rango Desde / Hasta -->
+            <div class="flex items-center gap-1.5 bg-[#060a12] px-2 py-1 rounded-lg border border-white/10 text-[11px]">
+              <span class="text-slate-500 font-bold">Desde:</span>
+              <input
+                v-model="fechaDesdeKanbanPro"
+                @change="presetFechaKanbanPro = 'CUSTOM'"
+                type="date"
+                class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+              />
+              <span class="text-slate-600">➔</span>
+              <span class="text-slate-500 font-bold">Hasta:</span>
+              <input
+                v-model="fechaHastaKanbanPro"
+                @change="presetFechaKanbanPro = 'CUSTOM'"
+                type="date"
+                class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <!-- Controles Derecha: Densidad + Agrupación -->
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 bg-[#6366f1] rounded-full"></span>
-            <span class="text-xs font-black uppercase text-white">Requerimiento Registrado</span>
+            <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px]">
+              <button
+                type="button"
+                @click="densidadKanbanPro = 'expandida'"
+                class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+                :class="densidadKanbanPro === 'expandida' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'"
+                title="Tarjeta Operativa Detallada"
+              >
+                ▤ Detallada
+              </button>
+              <button
+                type="button"
+                @click="densidadKanbanPro = 'compacta'"
+                class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+                :class="densidadKanbanPro === 'compacta' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'"
+                title="Tarjeta Compacta para Full Sucursal"
+              >
+                ☰ Compacta
+              </button>
+            </div>
           </div>
-          <span class="bg-black/20 text-[10px] text-slate-400 font-bold px-2 py-0.5 rounded border border-white/5">
-            {{ preventaFiltrados.length }}
-          </span>
         </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div class="space-y-1.5 mb-2">
-            <button @click="abrirCotizacion" class="w-full py-2 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#818cf8] rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
-              <span>+ Nueva Oportunidad</span>
+
+        <!-- Tira Interactiva de Fechas con Fichas (incorporada desde Vista Cardex) -->
+        <div v-if="fechasDisponiblesKardex.length > 0" class="flex items-center gap-1 overflow-x-auto py-1 border-t border-white/5 max-w-full">
+          <span class="text-[10px] text-slate-400 font-bold uppercase px-1 shrink-0">Fechas con fichas:</span>
+          <button
+            v-for="itemFecha in fechasDisponiblesKardex"
+            :key="itemFecha.iso"
+            type="button"
+            @click="seleccionarFechaPuntualKardex(itemFecha.iso)"
+            class="px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition-all shrink-0 cursor-pointer flex items-center gap-1"
+            :class="fechaPuntualKardex === itemFecha.iso
+              ? 'bg-cyan-500 text-slate-950 border-cyan-300 font-black scale-105 shadow-md shadow-cyan-500/30'
+              : 'bg-[#070b14] text-cyan-300 border-cyan-500/25 hover:border-cyan-400'"
+          >
+            <span>{{ itemFecha.label }}</span>
+            <span class="px-1 rounded bg-black/30 text-[9px]" :class="fechaPuntualKardex === itemFecha.iso ? 'text-white' : 'text-amber-300'">
+              {{ itemFecha.count }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Fila 2: Selectores por Operador, Rigger, Equipo, Cliente y Comercial -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 pt-1 border-t border-white/5">
+          <!-- Filtro Operador -->
+          <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span class="text-xs">👷</span>
+            <select v-model="filtroOperadorKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+              <option value="">Operador: Todos</option>
+              <option value="__SIN_OPERADOR__">⚠️ Sin Operador Asignado</option>
+              <option v-for="op in opcionesOperadoresKanban" :key="op" :value="op">{{ op }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro Rigger -->
+          <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span class="text-xs">🦺</span>
+            <select v-model="filtroRiggerKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+              <option value="">Rigger: Todos</option>
+              <option value="__SOLO_RIGGER__">🦺 Servicio Solo Rigger</option>
+              <option value="__FALTA_RIGGER__">⚠️ Requiere Rigger (Sin Asignar)</option>
+              <option v-for="rg in opcionesRiggersKanban" :key="rg" :value="rg">{{ rg }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro Equipo / Patente -->
+          <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span class="text-xs">🚜</span>
+            <select v-model="filtroEquipoKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+              <option value="">Equipo / Patente: Todos</option>
+              <option v-for="eq in opcionesEquiposKanban" :key="eq" :value="eq">{{ eq }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro Cliente -->
+          <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span class="text-xs">🏢</span>
+            <select v-model="filtroClienteKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+              <option value="">Cliente: Todos</option>
+              <option v-for="cl in opcionesClientesKanban" :key="cl" :value="cl">{{ cl }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro Ejecutivo Comercial -->
+          <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span class="text-xs">👤</span>
+            <select v-model="filtroVendedorKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+              <option value="">Comercial: Todos</option>
+              <option v-for="ve in opcionesVendedoresKanban" :key="ve" :value="ve">{{ ve }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 3: Resumen de Filtros Activos -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-slate-400 font-semibold">
+              Mostrando <strong class="text-cyan-400 font-mono">{{ totalCoincidenciasKanbanPro }}</strong> de <strong class="text-white font-mono">{{ totalProyectosTablero }}</strong> negocios
+            </span>
+            <span v-if="presetFechaKanbanPro !== 'TODOS' || fechaDesdeKanbanPro || fechaHastaKanbanPro" class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-[10px]">
+              {{ tipoFechaKanbanPro === 'EJECUCION' ? '📅 Ejecución' : '🏷️ Venta' }}: {{ presetFechaKanbanPro }} {{ fechaDesdeKanbanPro ? `(${fechaDesdeKanbanPro} ➔ ${fechaHastaKanbanPro || '...'})` : '' }}
+            </span>
+            <span v-if="filtroOperadorKanbanPro" class="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[10px]">
+              👷 {{ filtroOperadorKanbanPro }}
+            </span>
+            <span v-if="filtroRiggerKanbanPro" class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px]">
+              🦺 {{ filtroRiggerKanbanPro }}
+            </span>
+            <span v-if="filtroEquipoKanbanPro" class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px]">
+              🚜 {{ filtroEquipoKanbanPro }}
+            </span>
+            <span v-if="filtroClienteKanbanPro" class="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px]">
+              🏢 {{ filtroClienteKanbanPro }}
+            </span>
+          </div>
+          <button
+            v-if="tieneFiltrosActivosKanbanPro"
+            type="button"
+            @click="limpiarFiltrosKanbanPro"
+            class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+          >
+            ✕ Limpiar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- 6 Columnas del Kanban + Filtros (Con Tarjeta Operativa Enriquecida y Densidad Dual) -->
+      <div class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-320px)] overflow-y-auto">
+        <div
+          v-for="col in columnasKanbanPro"
+          :key="col.id"
+          class="bg-[#0f1629] border-t-4 border border-white/5 rounded-xl p-2.5 flex flex-col min-h-0"
+          :class="col.borderTopClass"
+        >
+          <!-- Cabecera de Columna -->
+          <div class="flex justify-between items-center mb-3 px-0.5">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="w-2 h-2 rounded-full shrink-0" :class="col.dotClass"></span>
+              <span class="text-[11px] font-black uppercase text-white truncate" :title="col.titulo">{{ col.titulo }}</span>
+            </div>
+            <span class="bg-black/30 text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0" :class="col.badgeCountClass">
+              {{ col.items.length }}<span v-if="tieneFiltrosActivosKanbanPro" class="text-slate-500">/{{ col.totalSinFiltro }}</span>
+            </span>
+          </div>
+
+          <!-- Botones rápidos en Columna 1 -->
+          <div v-if="col.id === 'preventa'" class="grid grid-cols-2 gap-1.5 mb-2.5">
+            <button @click="abrirCotizacion" class="py-1.5 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#818cf8] rounded-lg text-[10px] font-bold transition-all cursor-pointer">
+              + Oportunidad
             </button>
-            <button @click="mostrarModalReqInterno = true" class="w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-dashed border-amber-400/60 text-amber-300 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-              <span>🔁</span>
-              <span>+ Req. Interno</span>
+            <button @click="mostrarModalReqInterno = true" class="py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-dashed border-amber-400/60 text-amber-300 rounded-lg text-[10px] font-black transition-all cursor-pointer">
+              🔁 + Interno
             </button>
           </div>
-          
-          <div 
-            v-for="p in preventaFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'comercial')"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-[#6366f1]/5 transition-all cursor-pointer text-left"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-[#6366f1]/40')
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1.5">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
+
+          <!-- Lista de Tarjetas -->
+          <div class="space-y-2 flex-1 overflow-y-auto pr-0.5">
+            <div
+              v-for="p in col.items"
+              :key="p.id_proyecto"
+              @click="abrirProyecto(p.id_proyecto, col.subtab)"
+              class="bg-[#151d35] border rounded-lg transition-all cursor-pointer text-left hover:brightness-110"
+              :class="[
+                densidadKanbanPro === 'compacta' ? 'p-2 space-y-1' : 'p-2.5 space-y-2',
+                esProyectoInterno(p)
+                  ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
+                  : 'border-white/10 hover:border-cyan-400/50'
+              ]"
+            >
+              <!-- Línea 1: Folio + Indicador Acreditación Compacto + Badge Solo Rigger / Prioridad -->
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-[10px] font-mono font-black tracking-tight" :class="col.codeTextClass">
+                    {{ p.codi_proyecto || '—' }}
+                  </span>
+                  <span
+                    v-if="getFichaOperativa(p).esSoloRigger"
+                    class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40"
+                  >
+                    🦺 SOLO RIGGER
+                  </span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <!-- Píldora compacta de acreditación en vez del círculo gigante -->
+                  <span
+                    v-if="col.esOperativa && !esProyectoInterno(p)"
+                    @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+                    class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border cursor-pointer"
+                    :class="calcularPorcentajeAcreditacion(p) === 100 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-red-500/15 text-red-300 border-red-500/30'"
+                    title="Porcentaje de Acreditación (Clic para abrir Acreditaciones)"
+                  >
+                    Acr: {{ calcularPorcentajeAcreditacion(p) }}%
+                  </span>
+                  <span v-if="densidadKanbanPro === 'compacta' && formatMonto(p)" class="text-[9px] font-mono font-bold text-emerald-300">
+                    {{ formatMonto(p) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Línea 2: Cliente y Obra -->
+              <div>
+                <h4 class="text-[11px] font-extrabold text-white leading-tight truncate" :title="p.nombre_cliente">
+                  {{ p.nombre_cliente || '—' }}
+                </h4>
+                <p v-if="densidadKanbanPro === 'expandida'" class="text-[10px] text-slate-400 truncate mt-0.5" :title="p.nombre_proyecto">
+                  {{ p.nombre_proyecto }}
+                </p>
+              </div>
+
+              <!-- Bloque Fechas (Siempre visible en Fase Operativa y Comercial) -->
+              <div class="bg-[#0a0f1d] border border-white/5 rounded px-2 py-1 text-[9.5px] font-mono space-y-0.5">
+                <div class="flex items-center justify-between gap-1 text-cyan-300">
+                  <span class="text-slate-400 font-sans font-semibold">📅 Ejec:</span>
+                  <span class="font-bold truncate">{{ getFichaOperativa(p).fechaEjecIniLabel }} ➔ {{ getFichaOperativa(p).fechaEjecFinLabel }}</span>
+                </div>
+                <div v-if="densidadKanbanPro === 'expandida' || !col.esOperativa" class="flex items-center justify-between gap-1 text-indigo-300">
+                  <span class="text-slate-500 font-sans font-semibold">🏷️ Venta:</span>
+                  <span>{{ getFichaOperativa(p).fechaVentaLabel }}</span>
+                </div>
+              </div>
+
+              <!-- Bloque Recursos Operativos (Visible en Columnas Operativas 3, 4, 5 y 6) -->
+              <div v-if="col.esOperativa" class="bg-[#0b1324] border border-cyan-500/15 rounded px-2 py-1.5 text-[10px] space-y-1">
+                <div v-if="densidadKanbanPro === 'expandida'" class="flex items-center justify-between gap-1">
+                  <span class="text-slate-400 text-[9px] uppercase font-bold">Equipo:</span>
+                  <span class="font-mono font-bold text-white truncate max-w-[160px]" :title="getFichaOperativa(p).equipoLabel">
+                    {{ getFichaOperativa(p).equipoLabel }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-slate-400 text-[9px] uppercase font-bold">👷 Operador:</span>
+                  <span
+                    class="font-semibold truncate max-w-[155px]"
+                    :class="getFichaOperativa(p).sinOperador ? 'text-amber-400 font-bold' : 'text-cyan-200'"
+                    :title="getFichaOperativa(p).operadorLabel"
+                  >
+                    {{ getFichaOperativa(p).operadorLabel }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-slate-400 text-[9px] uppercase font-bold">🦺 Rigger:</span>
+                  <span
+                    class="font-semibold truncate max-w-[155px]"
+                    :class="getFichaOperativa(p).faltaRigger ? 'text-red-400 font-bold' : 'text-emerald-300'"
+                    :title="getFichaOperativa(p).riggerLabel"
+                  >
+                    {{ getFichaOperativa(p).riggerLabel }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- En Columnas Comerciales (1 y 2): Familia, Comercial y Monto -->
+              <div v-else class="text-[10px] text-slate-300 space-y-0.5">
+                <p class="truncate text-slate-400">{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+                <div class="flex items-center justify-between pt-0.5">
+                  <span v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 truncate max-w-[130px]">👤 {{ getNombreVendedor(p) }}</span>
+                  <span v-if="formatMonto(p)" class="text-[10px] font-mono font-bold text-white">{{ formatMonto(p) }}</span>
+                </div>
+              </div>
+
+              <!-- Footer en modo expandido operativo -->
+              <div v-if="col.esOperativa && densidadKanbanPro === 'expandida'" class="flex items-center justify-between pt-1 border-t border-white/5 text-[9px]">
+                <span v-if="getNombreVendedor(p)" class="text-indigo-400 truncate max-w-[130px]">👤 {{ getNombreVendedor(p) }}</span>
+                <span v-else class="text-slate-500">{{ col.etiquetaPie }}</span>
+                <span v-if="formatMonto(p)" class="font-mono font-bold text-white">{{ formatMonto(p) }}</span>
+              </div>
             </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-[#818cf8]'">{{ p.codi_proyecto || '—' }}</span>
-              <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                🔥 Alta
-              </span>
-            </div>
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
-              </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Tentativa:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
-            </div>
-            <div class="flex flex-wrap gap-1.5 mt-2">
-              <span class="text-[8px] font-bold uppercase bg-[#6366f1]/10 px-2 py-0.5 rounded border border-[#6366f1]/20 text-[#818cf8]">
-                {{ p.id_proyecto_estado === 1 ? 'Oportunidad' : 'Cotizando' }}
-              </span>
-              <span
-                v-if="getEstadoVbGerencia(p)"
-                class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                :class="getEstadoVbGerencia(p).classes"
-                :title="getEstadoVbGerencia(p).tooltip"
-              >
-                {{ getEstadoVbGerencia(p).label }}
-              </span>
+
+            <div v-if="col.items.length === 0" class="text-center py-8 text-[11px] text-slate-500 italic">
+              Sin fichas con los filtros actuales
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Columna 2: En Verificación Operaciones -->
-      <div class="bg-[#0f1629] border-t-4 border-amber-500 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs">🔥</span>
-            <span class="text-xs font-black uppercase text-white">En Verificación Operaciones</span>
-          </div>
-          <span class="bg-black/20 text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded border border-amber-500/20">
-            {{ verificacionFiltrados.length }}
-          </span>
-        </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in verificacionFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'validacion')"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-amber-500/5 transition-all cursor-pointer text-left"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-amber-500/40')
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1.5">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
+    <!-- ========================================================================= -->
+    <!-- VISTA 2: VISTA CARDEX — TARJETERO INDEXADO CON ELEVACIÓN DE FICHAS        -->
+    <!-- ========================================================================= -->
+    <div v-else-if="activeView === 'kardex'" class="space-y-3 animate-fadeIn">
+      <!-- Panel de Control de Vista Cardex -->
+      <div class="bg-gradient-to-r from-[#0d1326] via-[#11182d] to-[#0d1326] border border-amber-500/35 rounded-xl p-3.5 space-y-3 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-lg shadow-inner">
+              🗄️
             </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono text-amber-500 font-bold">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                  🔥 Alta
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-black uppercase tracking-wider text-amber-300">Vista Cardex — Tarjetero Indexado</h3>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 font-mono font-bold">
+                  {{ totalLevantadasKardex }} fichas levantadas de {{ totalProyectosTablero }}
                 </span>
-                <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
-                <div 
-                  v-if="Number(p.id_proyecto_estado) >= 5 && !esProyectoInterno(p)"
-                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
-                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
-                >
-                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path 
-                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
-                      class="transition-all duration-700" 
-                      stroke-width="3.5" 
-                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
-                      stroke-linecap="round" 
-                      stroke="currentColor" 
-                      fill="none" 
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
-                    {{ calcularPorcentajeAcreditacion(p) }}%
-                  </span>
-                </div>
               </div>
-            </div>
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
+              <p class="text-[11px] text-slate-400">
+                En reposo solo se asoma el <strong class="text-white">N° de Negocio y el Cliente</strong>. Selecciona criterios por <strong class="text-amber-300">Fecha, Operador o Rigger</strong> (o toca una pestaña) para desplegar las fichas.
               </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
-            </div>
-            <div class="flex flex-wrap gap-1.5 mt-3">
-              <span class="text-[8px] font-bold uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5 text-slate-400">
-                {{ esProyectoInterno(p) ? 'Orden Interna' : (p.json_field?.crm_v1?.requiere_acreditacion ? 'Acreditación' : 'Sin Acreditación') }}
-              </span>
-              <span
-                v-if="getEstadoVbGerencia(p)"
-                class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                :class="getEstadoVbGerencia(p).classes"
-                :title="getEstadoVbGerencia(p).tooltip"
-              >
-                {{ getEstadoVbGerencia(p).label }}
-              </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Columna 3: En Asignación Recursos -->
-      <div class="bg-[#0f1629] border-t-4 border-blue-500 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">En Asignación Recursos</span>
-          <span class="bg-black/20 text-[10px] text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/20">
-            {{ asignadosFiltrados.length }}
-          </span>
-        </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in asignadosFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'asignacion')"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-blue-500/5 transition-all cursor-pointer text-left"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-blue-500/40')
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1.5">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
-            </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-blue-400'">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                  🔥 Alta
-                </span>
-                <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
-                <div 
-                  v-if="Number(p.id_proyecto_estado) >= 5 && !esProyectoInterno(p)"
-                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
-                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
-                >
-                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path 
-                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
-                      class="transition-all duration-700" 
-                      stroke-width="3.5" 
-                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
-                      stroke-linecap="round" 
-                      stroke="currentColor" 
-                      fill="none" 
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
-                    {{ calcularPorcentajeAcreditacion(p) }}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
-              </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_ini" class="text-blue-400/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
-            </div>
-            <div class="flex flex-wrap gap-1.5 mt-3">
-              <span class="text-[8px] font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 text-blue-400">Asignando OT</span>
-              <span
-                v-if="getEstadoVbGerencia(p)"
-                class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                :class="getEstadoVbGerencia(p).classes"
-                :title="getEstadoVbGerencia(p).tooltip"
-              >
-                {{ getEstadoVbGerencia(p).label }}
-              </span>
-            </div>
+          <!-- Botones de Acción Rápida del Tarjetero -->
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-1.5 text-[11px] text-slate-300 bg-[#070b14] px-2.5 py-1.5 rounded-lg border border-white/10 cursor-pointer select-none">
+              <input type="checkbox" v-model="kardexSoloLevantadas" class="accent-amber-500 rounded cursor-pointer" />
+              <span>Ocultar fichas guardadas</span>
+            </label>
+            <button
+              type="button"
+              @click="kardexLevantarTodas = !kardexLevantarTodas"
+              class="px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer"
+              :class="kardexLevantarTodas ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-[#070b14] text-amber-300 border-amber-500/30 hover:bg-amber-500/10'"
+            >
+              {{ kardexLevantarTodas ? '🔽 Guardar todas en el cajón' : '🔼 Levantar todas las fichas' }}
+            </button>
+            <button
+              v-if="tieneCriterioActivoKardex"
+              type="button"
+              @click="limpiarFiltrosKanbanPro"
+              class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-bold text-[11px] transition-all cursor-pointer"
+            >
+              ✕ Bajar Fichas (Reset)
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- Columna 4: En Preparación Operaciones -->
-      <div class="bg-[#0f1629] border-t-4 border-cyan-500 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">En Preparación Operaciones</span>
-          <span class="bg-black/20 text-[10px] text-cyan-400 font-bold px-2 py-0.5 rounded border border-cyan-500/20">
-            {{ desplazamientoFiltrados.length }}
-          </span>
+        <!-- Tira Interactiva de Fechas ("Teclado del Tarjetero") -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+          <!-- Selector Modo Fecha: Ejecución vs Venta -->
+          <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px] shrink-0">
+            <button
+              type="button"
+              @click="tipoFechaKanbanPro = 'EJECUCION'"
+              class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+              :class="tipoFechaKanbanPro === 'EJECUCION' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+            >
+              📅 Por Fecha Ejecución
+            </button>
+            <button
+              type="button"
+              @click="tipoFechaKanbanPro = 'VENTA'"
+              class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+              :class="tipoFechaKanbanPro === 'VENTA' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white'"
+            >
+              🏷️ Por Fecha Venta / Cotiz
+            </button>
+          </div>
+
+          <!-- Presets Rápidos -->
+          <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px]">
+            <button
+              v-for="preset in [
+                { id: 'TODOS', label: 'Todos' },
+                { id: 'HOY', label: 'Hoy' },
+                { id: 'MANANA', label: 'Mañana' },
+                { id: 'SEMANA', label: 'Esta Semana' },
+                { id: 'MES', label: 'Este Mes' }
+              ]"
+              :key="preset.id"
+              type="button"
+              @click="seleccionarPresetFechaPro(preset.id)"
+              class="px-2 py-1 rounded-md font-bold transition-all cursor-pointer"
+              :class="presetFechaKanbanPro === preset.id && !fechaPuntualKardex ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+            >
+              {{ preset.label }}
+            </button>
+          </div>
+
+          <!-- Botones Píldora de Fechas Específicas -->
+          <div v-if="fechasDisponiblesKardex.length > 0" class="flex items-center gap-1 overflow-x-auto py-0.5 max-w-[460px]">
+            <button
+              v-for="itemFecha in fechasDisponiblesKardex"
+              :key="itemFecha.iso"
+              type="button"
+              @click="seleccionarFechaPuntualKardex(itemFecha.iso)"
+              class="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold border transition-all shrink-0 cursor-pointer flex items-center gap-1"
+              :class="fechaPuntualKardex === itemFecha.iso
+                ? 'bg-amber-400 text-slate-950 border-amber-300 font-black scale-105 shadow-md shadow-amber-500/30'
+                : 'bg-[#070b14] text-amber-300 border-amber-500/25 hover:border-amber-400'"
+            >
+              <span>{{ itemFecha.label }}</span>
+              <span class="px-1 rounded bg-black/30 text-[9px]" :class="fechaPuntualKardex === itemFecha.iso ? 'text-black' : 'text-amber-200'">
+                {{ itemFecha.count }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Rango Personalizado -->
+          <div class="flex items-center gap-1 bg-[#060a12] px-2 py-1 rounded-lg border border-white/10 text-[11px] ml-auto">
+            <span class="text-slate-500 font-bold">Desde:</span>
+            <input
+              v-model="fechaDesdeKanbanPro"
+              @change="presetFechaKanbanPro = 'CUSTOM'; fechaPuntualKardex = ''"
+              type="date"
+              class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+            />
+            <span class="text-slate-600">➔</span>
+            <span class="text-slate-500 font-bold">Hasta:</span>
+            <input
+              v-model="fechaHastaKanbanPro"
+              @change="presetFechaKanbanPro = 'CUSTOM'; fechaPuntualKardex = ''"
+              type="date"
+              class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+            />
+          </div>
         </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in desplazamientoFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'preparacion_salida')"
-            @mouseenter="hoveredProyectoId = p.id_proyecto"
-            @mouseleave="hoveredProyectoId = null"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-cyan-500/5 transition-all cursor-pointer text-left select-none space-y-2"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-cyan-500/40'),
-              hoveredProyectoId === p.id_proyecto ? 'ring-2 ring-cyan-400 shadow-xl shadow-cyan-500/20 scale-[1.01]' : ''
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
-            </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-cyan-400'">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                  🔥 Alta
-                </span>
-                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
-                <div 
-                  v-if="!esProyectoInterno(p)"
-                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
-                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
-                >
-                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path 
-                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
-                      class="transition-all duration-700" 
-                      stroke-width="3.5" 
-                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
-                      stroke-linecap="round" 
-                      stroke="currentColor" 
-                      fill="none" 
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
-                    {{ calcularPorcentajeAcreditacion(p) }}%
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
+        <!-- Filtros Secundarios: Operador, Rigger, Equipo y Cliente -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+          <div class="flex flex-wrap items-center gap-2">
+            <select
+              v-model="filtroOperadorKanbanPro"
+              class="bg-[#060a12] border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-amber-500 cursor-pointer max-w-[170px]"
+            >
+              <option value="">👤 Todos los Operadores</option>
+              <option v-for="op in opcionesOperadoresKanban" :key="op" :value="op">{{ op }}</option>
+            </select>
 
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
-              </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_ini" class="text-cyan-400/70"><span class="font-semibold">Inicio:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
-            </div>
+            <select
+              v-model="filtroRiggerKanbanPro"
+              class="bg-[#060a12] border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-amber-500 cursor-pointer max-w-[170px]"
+            >
+              <option value="">🦺 Todos los Riggers</option>
+              <option v-for="rig in opcionesRiggersKanban" :key="rig" :value="rig">{{ rig }}</option>
+            </select>
 
-            <div class="flex flex-wrap items-center justify-between gap-1.5 mt-3 pt-1 border-t border-white/5">
-              <span class="text-[8px] font-bold uppercase bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/25 text-cyan-400">Patio / Salida</span>
-              <span
-                v-if="getEstadoVbGerencia(p)"
-                class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                :class="getEstadoVbGerencia(p).classes"
-                :title="getEstadoVbGerencia(p).tooltip"
-              >
-                {{ getEstadoVbGerencia(p).label }}
-              </span>
-            </div>
+            <select
+              v-model="filtroEquipoKanbanPro"
+              class="bg-[#060a12] border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-amber-500 cursor-pointer max-w-[180px]"
+            >
+              <option value="">🚜 Todas las Máquinas</option>
+              <option v-for="eq in opcionesEquiposKanban" :key="eq" :value="eq">{{ eq }}</option>
+            </select>
+
+            <select
+              v-model="filtroClienteKanbanPro"
+              class="bg-[#060a12] border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-amber-500 cursor-pointer max-w-[180px]"
+            >
+              <option value="">🏢 Todos los Clientes</option>
+              <option v-for="cli in opcionesClientesKanban" :key="cli" :value="cli">{{ cli }}</option>
+            </select>
+
+            <select
+              v-model="filtroVendedorKanbanPro"
+              class="bg-[#060a12] border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-amber-500 cursor-pointer max-w-[170px]"
+            >
+              <option value="">💼 Todos los Comerciales</option>
+              <option v-for="vend in opcionesVendedoresKanban" :key="vend" :value="vend">{{ vend }}</option>
+            </select>
+          </div>
+
+          <div v-if="tieneCriterioActivoKardex" class="text-[11px] text-amber-300 font-mono flex items-center gap-1.5">
+            <span>✨ Elevando fichas coincidentes</span>
           </div>
         </div>
       </div>
 
-      <!-- Columna 5: En Ejecución / Faena -->
-      <div class="bg-[#0f1629] border-t-4 border-purple-400 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">En Ejecución / Faena</span>
-          <span class="bg-black/20 text-[10px] text-purple-400 font-bold px-2 py-0.5 rounded border border-purple-500/20">
-            {{ maniobraFiltrados.length }}
-          </span>
-        </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in maniobraFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'reports')"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-purple-400/5 transition-all cursor-pointer text-left"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-purple-400/40')
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1.5">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
+      <!-- 6 Cajones del Mueble Tarjetero Cardex -->
+      <div class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-340px)] overflow-y-auto">
+        <div
+          v-for="col in columnasKardex3D"
+          :key="col.id"
+          class="kardex-cabinet-column bg-[#0b1020] border-t-4 border border-white/10 rounded-xl p-2.5 flex flex-col min-h-0 shadow-2xl"
+          :class="col.borderTopClass"
+        >
+          <!-- Cabecera Metálica del Cajón Cardex -->
+          <div class="flex justify-between items-center mb-3 pb-2 border-b border-white/10 px-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="w-2 h-2 rounded-full shrink-0" :class="col.dotClass"></span>
+              <span class="text-[11px] font-black uppercase text-white truncate" :title="col.titulo">{{ col.titulo }}</span>
             </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-purple-400'">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                  🔥 Alta
-                </span>
-                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
-                <div 
-                  v-if="!esProyectoInterno(p)"
-                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
-                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
-                >
-                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path 
-                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
-                      class="transition-all duration-700" 
-                      stroke-width="3.5" 
-                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
-                      stroke-linecap="round" 
-                      stroke="currentColor" 
-                      fill="none" 
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
-                    {{ calcularPorcentajeAcreditacion(p) }}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
-              </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <p v-if="p.fecha_plan_fin" class="text-purple-400/70"><span class="font-semibold">Término Est.:</span> {{ new Date(p.fecha_plan_fin).toLocaleDateString() }}</p>
-            </div>
-            <div class="flex flex-wrap items-center justify-between gap-1.5 mt-3 pt-1 border-t border-white/5">
-              <span class="text-[8px] font-bold uppercase bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/25 text-purple-400">
-                {{ esProyectoInterno(p) ? 'En Ruta Interna' : 'Izaje / Faena' }}
-              </span>
+            <div class="flex items-center gap-1 shrink-0">
               <span
-                v-if="getEstadoVbGerencia(p)"
-                class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                :class="getEstadoVbGerencia(p).classes"
-                :title="getEstadoVbGerencia(p).tooltip"
+                v-if="col.levantadasCount > 0"
+                class="bg-amber-500 text-slate-950 text-[9px] font-mono font-black px-1.5 py-0.5 rounded shadow"
+                title="Fichas levantadas en este cajón"
               >
-                {{ getEstadoVbGerencia(p).label }}
+                ▲ {{ col.levantadasCount }}
               </span>
-              <span v-else class="text-[8px] font-bold uppercase bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 text-amber-400 flex items-center gap-1">
-                <span>📋</span>
-                <span>{{ esProyectoInterno(p) ? 'Traslado GSP' : 'Reports Diarios' }}</span>
+              <span class="bg-black/40 text-[10px] font-mono text-slate-400 font-bold px-1.5 py-0.5 rounded border border-white/10">
+                {{ col.items.length }}
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Columna 6: Finalizado / Devengado -->
-      <div class="bg-[#0f1629] border-t-4 border-emerald-500 border border-white/5 rounded-xl p-3 flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <span class="text-xs font-black uppercase text-white">Finalizado / Contabilidad</span>
-          <span class="bg-black/20 text-[10px] text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20">
-            {{ completadosFiltrados.length }}
-          </span>
-        </div>
-        <div class="space-y-3 flex-1 overflow-y-auto">
-          <div 
-            v-for="p in completadosFiltrados" 
-            :key="p.id_proyecto" 
-            @click="abrirProyecto(p.id_proyecto, 'liquidacion')"
-            class="bg-[#151d35] border rounded-lg p-3 hover:bg-emerald-500/5 transition-all cursor-pointer text-left"
-            :class="[
-              esProyectoInterno(p)
-                ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
-                : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-emerald-500/40')
-            ]"
-          >
-            <div v-if="esProyectoInterno(p)" class="mb-1.5">
-              <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
-                🔁 MOVIMIENTO INTERNO · COSTO PROPIO
-              </span>
-            </div>
-            <div class="flex justify-between items-start">
-              <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-emerald-400'">{{ p.codi_proyecto || '—' }}</span>
-              <div class="flex items-center gap-1.5">
-                <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
-                  🔥 Alta
-                </span>
-                <!-- Micro-Gauge Avance Acreditación (3x Tamaño) -->
-                <div 
-                  v-if="!esProyectoInterno(p)"
-                  @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
-                  class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
-                  :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
-                >
-                  <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path 
-                      :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
-                      class="transition-all duration-700" 
-                      stroke-width="3.5" 
-                      :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
-                      stroke-linecap="round" 
-                      stroke="currentColor" 
-                      fill="none" 
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
-                    {{ calcularPorcentajeAcreditacion(p) }}%
+          <!-- Interior del Cajón Tarjetero -->
+          <div class="kardex-drawer-viewport flex-1 overflow-y-auto px-1 pt-2 pb-8">
+            <div
+              v-for="(p, idx) in col.items"
+              :key="p.id_proyecto"
+              @mouseenter="hoveredKardexId = p.id_proyecto"
+              @mouseleave="hoveredKardexId = null"
+              @click="toggleTarjetaKardexManual(p.id_proyecto)"
+              class="kardex-card-3d select-none cursor-pointer"
+              :class="[
+                esTarjetaLevantadaKardex(p) ? 'is-lifted' : 'is-resting',
+                tieneCriterioActivoKardex && !esTarjetaCoincidenteCriterio(p) && !kardexPinesManuales.has(p.id_proyecto) ? 'is-dimmed' : ''
+              ]"
+              :style="{ zIndex: esTarjetaLevantadaKardex(p) ? 50 + idx : idx + 1 }"
+            >
+              <!-- CEJA / PESTAÑA SUPERIOR DEL TARJETERO (Siempre visible: Solo N° Negocio y Cliente) -->
+              <div
+                class="kardex-tab-header flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-t-lg border-t border-x transition-all"
+                :class="esTarjetaLevantadaKardex(p)
+                  ? 'bg-gradient-to-r from-[#1e293b] via-[#172554] to-[#1e293b] border-amber-400/80 shadow-lg'
+                  : 'bg-gradient-to-b from-[#172036] to-[#0f172a] border-white/15 hover:border-cyan-400/50'"
+              >
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span
+                    class="text-[9.5px] font-mono font-black px-1.5 py-0.5 rounded shrink-0 border"
+                    :class="esTarjetaLevantadaKardex(p)
+                      ? 'bg-amber-500 text-slate-950 border-amber-300'
+                      : 'bg-black/40 text-cyan-300 border-white/10'"
+                  >
+                    {{ p.codi_proyecto || `ID-${p.id_proyecto}` }}
+                  </span>
+                  <span
+                    class="text-[10.5px] font-bold truncate"
+                    :class="esTarjetaLevantadaKardex(p) ? 'text-white' : 'text-slate-200'"
+                    :title="p.nombre_cliente"
+                  >
+                    {{ p.nombre_cliente || 'Sin Cliente' }}
                   </span>
                 </div>
-              </div>
-            </div>
-            <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
-            <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
-              📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
-            </p>
-            <div class="text-[10px] text-slate-400 mt-2 space-y-1">
-              <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
-                <span>👤</span> {{ getNombreVendedor(p) }}
-              </p>
-              <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
-                🚫 NO FACTURABLE (C. COSTO INTERNO)
-              </p>
-              <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
-              <div class="flex items-center gap-1.5 flex-wrap pt-1">
                 <span
-                  v-if="esProyectoInterno(p)"
-                  class="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono"
+                  class="text-[8.5px] font-mono shrink-0 px-1 py-0.5 rounded"
+                  :class="esTarjetaLevantadaKardex(p) ? 'text-amber-300 bg-amber-500/15 font-bold' : 'text-slate-400'"
                 >
-                  <span>📑</span> ITS Costo Interno Cerrado
-                </span>
-                <span 
-                  v-else-if="p.id_proyecto_estado === 7 || p.json_field?.liquidacion_v1?.estado_financiero === 'FACTURADO_CONFORME'"
-                  class="text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono"
-                >
-                  <span>🟢</span> Facturado (DTE {{ p.json_field?.liquidacion_v1?.factura_numero || p.folio_factura_erp || 'Emitido' }})
-                </span>
-                <span 
-                  v-else-if="p.estado_its === 'CONCLUIDO'"
-                  class="text-[9px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono"
-                >
-                  <span>💰</span> EDP Listo a Facturar
-                </span>
-                <span 
-                  v-else-if="p.estado_its === 'EN_REVISION_CONTABILIDAD'"
-                  class="text-[9px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono animate-pulse"
-                >
-                  <span>📑</span> Recep. Contabilidad
-                </span>
-                <span 
-                  v-else-if="p.estado_its === 'EN_REVISION_OPERACIONES'"
-                  class="text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono"
-                >
-                  <span>✍️</span> V°B° Operaciones
-                </span>
-                <span 
-                  v-else
-                  class="text-[9px] font-bold uppercase bg-slate-500/20 text-slate-300 border border-slate-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-mono"
-                >
-                  <span>🏁</span> Faena Concluida
-                </span>
-                <span
-                  v-if="getEstadoVbGerencia(p)"
-                  class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
-                  :class="getEstadoVbGerencia(p).classes"
-                  :title="getEstadoVbGerencia(p).tooltip"
-                >
-                  {{ getEstadoVbGerencia(p).label }}
+                  {{ tipoFechaKanbanPro === 'EJECUCION' ? getFichaOperativa(p).fechaEjecIniCorto : getFichaOperativa(p).fechaVentaCorto }}
                 </span>
               </div>
-              <p v-if="p.fecha_plan_fin" class="text-emerald-400/70 pt-0.5"><span class="font-semibold">Término:</span> {{ new Date(p.fecha_plan_fin).toLocaleDateString() }}</p>
+
+              <!-- CUERPO DE LA FICHA (Se despliega al levantarse la tarjeta) -->
+              <div
+                v-if="esTarjetaLevantadaKardex(p)"
+                class="kardex-card-body bg-[#131c33] border-x border-b border-amber-400/70 rounded-b-lg p-2.5 space-y-2 text-left shadow-2xl"
+              >
+                <div class="flex items-center justify-between gap-1 border-b border-white/10 pb-1.5">
+                  <p class="text-[10px] text-slate-300 font-semibold truncate" :title="p.nombre_proyecto">
+                    📍 {{ p.nombre_proyecto || 'Sin nombre de obra' }}
+                  </p>
+                  <span
+                    v-if="getFichaOperativa(p).esSoloRigger"
+                    class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 shrink-0"
+                  >
+                    🦺 SOLO RIGGER
+                  </span>
+                </div>
+
+                <!-- Fechas de Ejecución y Venta -->
+                <div class="bg-[#090d18] border border-white/10 rounded p-1.5 text-[9.5px] font-mono space-y-0.5">
+                  <div class="flex items-center justify-between text-slate-300">
+                    <span class="text-slate-500 text-[9px]">Ejecución:</span>
+                    <span class="text-white font-bold">{{ getFichaOperativa(p).fechaEjecRango }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1 text-indigo-300">
+                    <span class="text-indigo-400/70 text-[9px]">Venta / Cotiz:</span>
+                    <span>{{ getFichaOperativa(p).fechaVenta }}</span>
+                  </div>
+                </div>
+
+                <!-- Recursos Asignados -->
+                <div class="bg-[#0b1324] border border-cyan-500/15 rounded p-1.5 text-[9.5px] space-y-1">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-slate-400 text-[9px]">Equipo:</span>
+                    <span class="text-cyan-300 font-bold truncate max-w-[130px]" :title="getFichaOperativa(p).equipo">{{ getFichaOperativa(p).equipo }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-slate-400 text-[9px]">Operador:</span>
+                    <span class="text-white truncate max-w-[130px]" :title="getFichaOperativa(p).operador">{{ getFichaOperativa(p).operador }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-slate-400 text-[9px]">Rigger:</span>
+                    <span class="text-amber-300 font-medium truncate max-w-[130px]" :title="getFichaOperativa(p).rigger">{{ getFichaOperativa(p).rigger }}</span>
+                  </div>
+                </div>
+
+                <!-- Footer con Vendedor y Monto -->
+                <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[9.5px]">
+                  <span v-if="formatMonto(p)" class="font-mono font-bold text-emerald-400">{{ formatMonto(p) }}</span>
+                  <span v-else class="text-slate-500">—</span>
+                  <button
+                    type="button"
+                    @click.stop="abrirProyecto(p.id_proyecto, col.subtab)"
+                    class="px-2 py-0.5 rounded bg-cyan-600/30 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-[9px] font-bold transition-all cursor-pointer"
+                  >
+                    Abrir Ficha ↗
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center justify-between gap-1.5 mt-3 pt-2 border-t border-white/5">
-              <span class="text-[8px] font-bold uppercase bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25 text-emerald-400">
-                {{ esProyectoInterno(p) ? 'Control Costos' : 'Liquidación & EDP' }}
-              </span>
-              <span v-if="p.folio_its" class="text-[9px] font-mono text-amber-400 font-bold truncate max-w-[130px]" :title="p.folio_its">
-                {{ p.folio_its }}
-              </span>
+
+            <div v-if="col.items.length === 0" class="text-center py-12 text-[11px] text-slate-500 italic">
+              Cajón vacío (sin fichas)
             </div>
           </div>
         </div>
@@ -3850,6 +3957,607 @@ const formatMonto = (p) => {
   return mDirecto > 0 ? '$' + mDirecto.toLocaleString('es-CL') : null
 }
 
+const tipoFechaKanbanPro = ref('EJECUCION') // 'EJECUCION' | 'VENTA'
+const presetFechaKanbanPro = ref('TODOS') // 'TODOS' | 'HOY' | 'MANANA' | 'SEMANA' | 'MES' | 'CUSTOM'
+const fechaDesdeKanbanPro = ref('')
+const fechaHastaKanbanPro = ref('')
+const fechaPuntualKardex = ref('')
+const filtroOperadorKanbanPro = ref('')
+const filtroRiggerKanbanPro = ref('')
+const filtroEquipoKanbanPro = ref('')
+const filtroClienteKanbanPro = ref('')
+const filtroVendedorKanbanPro = ref('')
+const densidadKanbanPro = ref('expandida') // 'expandida' | 'compacta'
+
+// Estado exclusivo de interacción 3D en Cardex
+const hoveredKardexId = ref(null)
+const kardexSoloLevantadas = ref(false)
+const kardexLevantarTodas = ref(false)
+const kardexPinesManuales = ref(new Set())
+
+const toggleTarjetaKardexManual = (idProyecto) => {
+  const next = new Set(kardexPinesManuales.value)
+  if (next.has(idProyecto)) {
+    next.delete(idProyecto)
+  } else {
+    next.add(idProyecto)
+  }
+  kardexPinesManuales.value = next
+}
+
+const toLocalIsoDate = (val) => {
+  if (!val) return ''
+  const str = String(val).trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10)
+  const d = new Date(val)
+  if (Number.isNaN(d.getTime())) return ''
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+// formatIsoToDdMmYyyy already defined above
+
+const formatIsoToDdMm = (iso) => {
+  if (!iso || iso.length < 10) return '—'
+  const [, m, d] = iso.slice(0, 10).split('-')
+  return `${d}/${m}`
+}
+
+const getFichaOperativa = (p) => {
+  if (!p) {
+    return {
+      esSoloRigger: false,
+      fechaVentaIso: '',
+      fechaEjecIniIso: '',
+      fechaEjecFinIso: '',
+      fechaVentaLabel: '—',
+      fechaEjecIniLabel: '—',
+      fechaEjecFinLabel: '—',
+      fechaVentaCorto: '—',
+      fechaEjecIniCorto: '—',
+      equipoNombre: '',
+      equipoLabel: 'Sin Equipo',
+      operadorNombre: '',
+      operadorLabel: '⚠️ Sin Operador',
+      sinOperador: true,
+      riggerNombre: '',
+      riggerLabel: 'No requerido',
+      faltaRigger: false,
+      requiereRigger: false
+    }
+  }
+
+  const crm = p.json_field?.crm_v1 || {}
+  const ej = p.json_field?.ejecucion_v1 || {}
+  const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
+  const repList = getReportsProyecto(p.id_proyecto)
+
+  // 1. Detectar si es Servicio Solo Rigger / Solo Personal Certificado
+  const esSoloRigger = Boolean(
+    crm.modalidad_tarifa === 'SOLO_RIGGER' ||
+    crm.requiere_maquinaria === false ||
+    (lineas.length > 0 && lineas.every(l => {
+      const t = String(l.tipo || l.categoria || '').toUpperCase().trim()
+      const s = String(l.subcategoria || '').toUpperCase().trim()
+      if (t !== '' && !t.includes('PERSONAL')) return false
+      return t.includes('PERSONAL') || s === 'RIGGER' || s === 'PREVENCIONISTA'
+    }))
+  )
+
+  // 2. Resolver Fecha de Venta y Ventana de Ejecución (Inicio -> Fin)
+  const histCot = Array.isArray(crm.cotizaciones_historicas) ? crm.cotizaciones_historicas : []
+  const rawVenta = histCot.at(-1)?.fecha || p.fecha_creacion || p.fecha_plan_ini
+  const rawEjecIni = ej.fecha_salida_plan || crm.fecha_hora_inicio || lineas[0]?.fecha_plan_ini || p.fecha_plan_ini || p.fecha_creacion
+  const rawEjecFin = ej.fecha_fin_plan || crm.fecha_hora_termino || lineas[0]?.fecha_plan_fin || p.fecha_plan_fin || rawEjecIni
+
+  const fechaVentaIso = toLocalIsoDate(rawVenta)
+  const fechaEjecIniIso = toLocalIsoDate(rawEjecIni)
+  const fechaEjecFinIso = toLocalIsoDate(rawEjecFin) || fechaEjecIniIso
+
+  // 3. Resolver Equipo / Patente (principal + auxiliares/fletes)
+  const extraEq = Array.isArray(ej.equipos_extra) ? ej.equipos_extra.find(ex => ex && typeof ex === 'object' && ex.id_equipo) : null
+  const detEq = Array.isArray(ej.equipos_detalle) ? ej.equipos_detalle.find(ed => ed && typeof ed === 'object' && ed.id_equipo) : null
+  const allEqIds = new Set()
+  if (ej.equipo_id) allEqIds.add(Number(ej.equipo_id))
+  lineas.forEach(l => { if (l.equipo_asignado_id) allEqIds.add(Number(l.equipo_asignado_id)); if (l.id_equipo) allEqIds.add(Number(l.id_equipo)) })
+  if (Array.isArray(ej.equipos_ids)) ej.equipos_ids.forEach(id => { if (id) allEqIds.add(Number(id)) })
+  if (Array.isArray(ej.flota_traslado_ids)) ej.flota_traslado_ids.forEach(id => { if (id) allEqIds.add(Number(id)) })
+  if (Array.isArray(ej.equipos_detalle)) ej.equipos_detalle.forEach(ed => { if (ed?.id_equipo) allEqIds.add(Number(ed.id_equipo)) })
+  if (Array.isArray(ej.equipos_extra)) ej.equipos_extra.forEach(ex => { if (ex?.id_equipo) allEqIds.add(Number(ex.id_equipo)) })
+  if (Array.isArray(ej.recursos_asignados?.equipos)) ej.recursos_asignados.equipos.forEach(re => { if (re?.id_equipo || re?.id) allEqIds.add(Number(re.id_equipo || re.id)) })
+
+  const equiposNombres = []
+  if (flotaEquiposMaster.value.length > 0) {
+    allEqIds.forEach(id => {
+      const eqObj = flotaEquiposMaster.value.find(e => Number(e.id_equipo) === Number(id))
+      if (eqObj) {
+        const lbl = `[${eqObj.patente}] ${eqObj.nombre_equipo || eqObj.modelo || ''}`.trim()
+        if (lbl && !equiposNombres.includes(lbl)) equiposNombres.push(lbl)
+      }
+    })
+  }
+
+  let equipoNombre = ''
+  if (esSoloRigger) {
+    equipoNombre = 'Solo Rigger (Sin Máquina)'
+  } else {
+    const idEq = ej.equipo_id ||
+      lineas.find(l => l.equipo_asignado_id)?.equipo_asignado_id ||
+      detEq?.id_equipo ||
+      extraEq?.id_equipo ||
+      (Array.isArray(ej.equipos_ids) ? ej.equipos_ids[0] : null) ||
+      (Array.isArray(ej.flota_traslado_ids) ? ej.flota_traslado_ids[0] : null) ||
+      ej.recursos_asignados?.equipos?.[0]?.id_equipo ||
+      ej.recursos_asignados?.equipos?.[0]?.id
+    if (idEq && flotaEquiposMaster.value.length > 0) {
+      const eqObj = flotaEquiposMaster.value.find(e => Number(e.id_equipo) === Number(idEq))
+      if (eqObj) {
+        equipoNombre = `[${eqObj.patente}] ${eqObj.nombre_equipo || eqObj.modelo || ''}`.trim()
+      }
+    }
+    if (!equipoNombre && equiposNombres.length > 0) {
+      equipoNombre = equiposNombres[0]
+    }
+    if (!equipoNombre) {
+      const pat = repList[0]?.equipo_patente || ej.patente_grua || lineas.find(l => l.patente)?.patente || detEq?.patente
+      if (pat) equipoNombre = `[${pat}]`
+    }
+    if (equipoNombre && !equiposNombres.includes(equipoNombre)) {
+      equiposNombres.unshift(equipoNombre)
+    }
+  }
+  const lineaEquipoComercial = lineas.find(l => {
+    const t = String(l.tipo || l.categoria || '').toUpperCase().trim()
+    return t !== '' && !t.includes('PERSONAL') && !t.includes('TRASLADO') && !t.includes('FLETE')
+  })
+  const reqEquipoComercial = lineaEquipoComercial?.subcategoria || lineaEquipoComercial?.tipo || lineaEquipoComercial?.descripcion || crm.familia_servicio
+  const equipoLabel = equipoNombre || (reqEquipoComercial ? `Req: ${reqEquipoComercial}` : '⚠️ Sin Equipo')
+
+  // 4. Resolver Operador
+  let operadorNombre = ''
+  if (!esSoloRigger) {
+    const idOp = ej.operador_id ||
+      lineas.find(l => l.operador_asignado_id)?.operador_asignado_id ||
+      extraEq?.chofer_id ||
+      ej.chofer_id ||
+      ej.tripulacion_asignada?.find(t => /operador|chofer|conductor/i.test(t.rol || t.cargo || ''))?.id_user
+    if (idOp && mapaUsuarios.value.has(Number(idOp))) {
+      operadorNombre = mapaUsuarios.value.get(Number(idOp))
+    } else {
+      operadorNombre = repList[0]?.operador_nombre || ej.operador_nombre || ''
+    }
+  }
+  const sinOperador = !esSoloRigger && !operadorNombre
+  const operadorLabel = esSoloRigger
+    ? 'No aplica (Solo Rigger)'
+    : (operadorNombre || '⚠️ Sin Operador')
+
+  // 5. Resolver Rigger
+  let riggerNombre = ''
+  const espRigger = Array.isArray(ej.especialistas_terreno)
+    ? ej.especialistas_terreno.find(e => /rigger/i.test(e.cargo || e.rol || ''))
+    : null
+  const tripRigger = Array.isArray(ej.tripulacion_asignada)
+    ? ej.tripulacion_asignada.find(t => /rigger/i.test(t.rol || t.cargo || ''))
+    : null
+  const idRg = ej.rigger_id ||
+    lineas.find(l => l.rigger_asignado_id)?.rigger_asignado_id ||
+    espRigger?.id_user ||
+    tripRigger?.id_user
+  if (idRg && mapaUsuarios.value.has(Number(idRg))) {
+    riggerNombre = mapaUsuarios.value.get(Number(idRg))
+  } else {
+    riggerNombre = espRigger?.nombre_completo || espRigger?.nombre || tripRigger?.nombre_completo || tripRigger?.nombre || ''
+  }
+
+  const requiereRigger = Boolean(
+    esSoloRigger ||
+    crm.requiere_rigger === true ||
+    lineas.some(l => l.requiere_rigger === true) ||
+    riggerNombre
+  )
+  const faltaRigger = requiereRigger && !riggerNombre
+  const riggerLabel = riggerNombre
+    ? riggerNombre
+    : (requiereRigger ? '⚠️ Falta Rigger' : 'No requerido')
+
+  return {
+    esSoloRigger,
+    fechaVentaIso,
+    fechaEjecIniIso,
+    fechaEjecFinIso,
+    fechaVentaLabel: formatIsoToDdMmYyyy(fechaVentaIso),
+    fechaEjecIniLabel: formatIsoToDdMmYyyy(fechaEjecIniIso),
+    fechaEjecFinLabel: formatIsoToDdMmYyyy(fechaEjecFinIso),
+    fechaVentaCorto: formatIsoToDdMm(fechaVentaIso),
+    fechaEjecIniCorto: formatIsoToDdMm(fechaEjecIniIso),
+    equipoNombre,
+    equiposNombres,
+    equipoLabel,
+    operadorNombre,
+    operadorLabel,
+    sinOperador,
+    riggerNombre,
+    riggerLabel,
+    faltaRigger,
+    requiereRigger
+  }
+}
+
+const seleccionarPresetFechaPro = (presetId) => {
+  presetFechaKanbanPro.value = presetId
+  fechaPuntualKardex.value = ''
+  const hoy = new Date()
+  const toIso = (d) => {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  if (presetId === 'TODOS') {
+    fechaDesdeKanbanPro.value = ''
+    fechaHastaKanbanPro.value = ''
+  } else if (presetId === 'HOY') {
+    const h = toIso(hoy)
+    fechaDesdeKanbanPro.value = h
+    fechaHastaKanbanPro.value = h
+  } else if (presetId === 'MANANA') {
+    const m = new Date(hoy)
+    m.setDate(m.getDate() + 1)
+    const isoM = toIso(m)
+    fechaDesdeKanbanPro.value = isoM
+    fechaHastaKanbanPro.value = isoM
+  } else if (presetId === 'SEMANA') {
+    const d1 = new Date(hoy)
+    const day = d1.getDay() || 7
+    d1.setDate(d1.getDate() - day + 1)
+    const d2 = new Date(d1)
+    d2.setDate(d2.getDate() + 6)
+    fechaDesdeKanbanPro.value = toIso(d1)
+    fechaHastaKanbanPro.value = toIso(d2)
+  } else if (presetId === 'MES') {
+    const d1 = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    const d2 = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+    fechaDesdeKanbanPro.value = toIso(d1)
+    fechaHastaKanbanPro.value = toIso(d2)
+  }
+}
+
+const seleccionarFechaPuntualKardex = (iso) => {
+  if (fechaPuntualKardex.value === iso) {
+    fechaPuntualKardex.value = ''
+    presetFechaKanbanPro.value = 'TODOS'
+    fechaDesdeKanbanPro.value = ''
+    fechaHastaKanbanPro.value = ''
+  } else {
+    fechaPuntualKardex.value = iso
+    presetFechaKanbanPro.value = 'CUSTOM'
+    fechaDesdeKanbanPro.value = iso
+    fechaHastaKanbanPro.value = iso
+  }
+}
+
+const limpiarFiltrosKanbanPro = () => {
+  presetFechaKanbanPro.value = 'TODOS'
+  fechaDesdeKanbanPro.value = ''
+  fechaHastaKanbanPro.value = ''
+  fechaPuntualKardex.value = ''
+  filtroOperadorKanbanPro.value = ''
+  filtroRiggerKanbanPro.value = ''
+  filtroEquipoKanbanPro.value = ''
+  filtroClienteKanbanPro.value = ''
+  filtroVendedorKanbanPro.value = ''
+  busquedaKanban.value = ''
+  kardexLevantarTodas.value = false
+  kardexPinesManuales.value = new Set()
+}
+
+const todosProyectosTableroList = computed(() => [
+  ...preventa.value,
+  ...verificacion.value,
+  ...asignados.value,
+  ...desplazamiento.value,
+  ...maniobra.value,
+  ...completados.value
+])
+
+const totalProyectosTablero = computed(() => todosProyectosTableroList.value.length)
+
+const opcionesOperadoresKanban = computed(() => {
+  const s = new Set()
+  todosProyectosTableroList.value.forEach(p => {
+    const op = getFichaOperativa(p).operadorNombre
+    if (op) s.add(op)
+  })
+  return Array.from(s).sort()
+})
+
+const opcionesRiggersKanban = computed(() => {
+  const s = new Set()
+  todosProyectosTableroList.value.forEach(p => {
+    const rg = getFichaOperativa(p).riggerNombre
+    if (rg) s.add(rg)
+  })
+  return Array.from(s).sort()
+})
+
+const opcionesEquiposKanban = computed(() => {
+  const s = new Set()
+  todosProyectosTableroList.value.forEach(p => {
+    const f = getFichaOperativa(p)
+    if (f.equipoNombre) s.add(f.equipoNombre)
+    if (Array.isArray(f.equiposNombres)) {
+      f.equiposNombres.forEach(n => { if (n) s.add(n) })
+    }
+  })
+  return Array.from(s).sort()
+})
+
+const opcionesClientesKanban = computed(() => {
+  const s = new Set()
+  todosProyectosTableroList.value.forEach(p => {
+    if (p.nombre_cliente) s.add(p.nombre_cliente)
+  })
+  return Array.from(s).sort()
+})
+
+const opcionesVendedoresKanban = computed(() => {
+  const s = new Set()
+  todosProyectosTableroList.value.forEach(p => {
+    const v = getNombreVendedor(p)
+    if (v) s.add(v)
+  })
+  return Array.from(s).sort()
+})
+
+const fechasDisponiblesKardex = computed(() => {
+  const counts = new Map()
+  todosProyectosTableroList.value.forEach(p => {
+    const f = getFichaOperativa(p)
+    const iso = tipoFechaKanbanPro.value === 'EJECUCION' ? f.fechaEjecIniIso : f.fechaVentaIso
+    if (iso) {
+      counts.set(iso, (counts.get(iso) || 0) + 1)
+    }
+  })
+  return Array.from(counts.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, 12)
+    .map(([iso, count]) => ({
+      iso,
+      label: formatIsoToDdMm(iso),
+      count
+    }))
+})
+
+const tieneFiltrosActivosKanbanPro = computed(() => {
+  return Boolean(
+    presetFechaKanbanPro.value !== 'TODOS' ||
+    fechaDesdeKanbanPro.value ||
+    fechaHastaKanbanPro.value ||
+    filtroOperadorKanbanPro.value ||
+    filtroRiggerKanbanPro.value ||
+    filtroEquipoKanbanPro.value ||
+    filtroClienteKanbanPro.value ||
+    filtroVendedorKanbanPro.value ||
+    busquedaKanban.value.trim()
+  )
+})
+
+const tieneCriterioActivoKardex = computed(() => {
+  return Boolean(
+    tieneFiltrosActivosKanbanPro.value ||
+    fechaPuntualKardex.value ||
+    kardexLevantarTodas.value ||
+    kardexPinesManuales.value.size > 0
+  )
+})
+
+const coincideFiltrosKanbanPro = (p) => {
+  if (!p) return false
+  if (filtroTipoProyecto.value === 'INTERNOS' && !esProyectoInterno(p)) return false
+  if (filtroTipoProyecto.value === 'COMERCIALES' && esProyectoInterno(p)) return false
+
+  const ficha = getFichaOperativa(p)
+
+  // 1. Búsqueda de texto enriquecida (incluye Operador, Rigger, Equipo principal y auxiliares, Folio, Cliente, Obra)
+  if (busquedaKanban.value.trim()) {
+    const q = busquedaKanban.value.trim().toLowerCase()
+    const hayMatchTexto =
+      coincideBusqueda(p, q) ||
+      ficha.operadorLabel.toLowerCase().includes(q) ||
+      ficha.riggerLabel.toLowerCase().includes(q) ||
+      ficha.equipoLabel.toLowerCase().includes(q) ||
+      (Array.isArray(ficha.equiposNombres) && ficha.equiposNombres.some(n => n.toLowerCase().includes(q)))
+    if (!hayMatchTexto) return false
+  }
+
+  // 2. Filtro por Fecha (Ejecución o Venta)
+  if (fechaDesdeKanbanPro.value || fechaHastaKanbanPro.value) {
+    const desde = fechaDesdeKanbanPro.value || '0000-01-01'
+    const hasta = fechaHastaKanbanPro.value || '9999-12-31'
+    if (tipoFechaKanbanPro.value === 'VENTA') {
+      if (!ficha.fechaVentaIso) return false
+      if (ficha.fechaVentaIso < desde || ficha.fechaVentaIso > hasta) return false
+    } else {
+      const ini = ficha.fechaEjecIniIso
+      const fin = ficha.fechaEjecFinIso || ini
+      if (!ini) return false
+      // Traslape de rangos: [ini, fin] se solapa con [desde, hasta]
+      if (fin < desde || ini > hasta) return false
+    }
+  }
+
+  // 3. Filtro por Operador
+  if (filtroOperadorKanbanPro.value) {
+    if (filtroOperadorKanbanPro.value === '__SIN_OPERADOR__') {
+      if (!ficha.sinOperador) return false
+    } else if (ficha.operadorNombre !== filtroOperadorKanbanPro.value) {
+      return false
+    }
+  }
+
+  // 4. Filtro por Rigger
+  if (filtroRiggerKanbanPro.value) {
+    if (filtroRiggerKanbanPro.value === '__SOLO_RIGGER__') {
+      if (!ficha.esSoloRigger) return false
+    } else if (filtroRiggerKanbanPro.value === '__FALTA_RIGGER__') {
+      if (!ficha.faltaRigger) return false
+    } else if (ficha.riggerNombre !== filtroRiggerKanbanPro.value) {
+      return false
+    }
+  }
+
+  // 5. Filtro por Equipo / Patente (principal o auxiliar/flete)
+  if (filtroEquipoKanbanPro.value) {
+    const matchEq = ficha.equipoNombre === filtroEquipoKanbanPro.value ||
+      (Array.isArray(ficha.equiposNombres) && ficha.equiposNombres.includes(filtroEquipoKanbanPro.value))
+    if (!matchEq) return false
+  }
+
+  // 6. Filtro por Cliente
+  if (filtroClienteKanbanPro.value && p.nombre_cliente !== filtroClienteKanbanPro.value) {
+    return false
+  }
+
+  // 7. Filtro por Ejecutivo Comercial
+  if (filtroVendedorKanbanPro.value && getNombreVendedor(p) !== filtroVendedorKanbanPro.value) {
+    return false
+  }
+
+  return true
+}
+
+const columnasKanbanPro = computed(() => {
+  const defs = [
+    {
+      id: 'preventa',
+      titulo: 'Requerimiento Registrado',
+      subtab: 'comercial',
+      esOperativa: false,
+      borderTopClass: 'border-[#6366f1]',
+      dotClass: 'bg-[#6366f1]',
+      badgeCountClass: 'text-[#818cf8] border-[#6366f1]/30',
+      codeTextClass: 'text-[#818cf8]',
+      etiquetaPie: 'Preventa',
+      source: preventa.value
+    },
+    {
+      id: 'verificacion',
+      titulo: 'En Verificación Operaciones',
+      subtab: 'validacion',
+      esOperativa: false,
+      borderTopClass: 'border-amber-500',
+      dotClass: 'bg-amber-500',
+      badgeCountClass: 'text-amber-400 border-amber-500/30',
+      codeTextClass: 'text-amber-400',
+      etiquetaPie: 'Validación',
+      source: verificacion.value
+    },
+    {
+      id: 'asignacion',
+      titulo: 'En Asignación Recursos',
+      subtab: 'asignacion',
+      esOperativa: true,
+      borderTopClass: 'border-blue-500',
+      dotClass: 'bg-blue-500',
+      badgeCountClass: 'text-blue-400 border-blue-500/30',
+      codeTextClass: 'text-blue-400',
+      etiquetaPie: 'Asignando OT',
+      source: asignados.value
+    },
+    {
+      id: 'preparacion',
+      titulo: 'En Preparación Operaciones',
+      subtab: 'preparacion_salida',
+      esOperativa: true,
+      borderTopClass: 'border-cyan-500',
+      dotClass: 'bg-cyan-400',
+      badgeCountClass: 'text-cyan-400 border-cyan-500/30',
+      codeTextClass: 'text-cyan-400',
+      etiquetaPie: 'Patio / Salida',
+      source: desplazamiento.value
+    },
+    {
+      id: 'ejecucion',
+      titulo: 'En Ejecución / Faena',
+      subtab: 'reports',
+      esOperativa: true,
+      borderTopClass: 'border-purple-400',
+      dotClass: 'bg-purple-400',
+      badgeCountClass: 'text-purple-300 border-purple-500/30',
+      codeTextClass: 'text-purple-300',
+      etiquetaPie: 'Izaje / Faena',
+      source: maniobra.value
+    },
+    {
+      id: 'finalizado',
+      titulo: 'Finalizado / Contabilidad',
+      subtab: 'liquidacion',
+      esOperativa: true,
+      borderTopClass: 'border-emerald-500',
+      dotClass: 'bg-emerald-400',
+      badgeCountClass: 'text-emerald-300 border-emerald-500/30',
+      codeTextClass: 'text-emerald-400',
+      etiquetaPie: 'Liquidación & EDP',
+      source: completados.value
+    }
+  ]
+
+  return defs.map(col => ({
+    ...col,
+    totalSinFiltro: col.source.length,
+    items: col.source.filter(p => coincideFiltrosKanbanPro(p))
+  }))
+})
+
+const totalCoincidenciasKanbanPro = computed(() => {
+  return columnasKanbanPro.value.reduce((acc, col) => acc + col.items.length, 0)
+})
+
+// Lógica de elevación 3D en Cardex:
+// Una tarjeta se levanta si hay algún filtro/criterio activo y la tarjeta coincide con él,
+// o si el usuario hizo clic/hover sobre ella, o si activó "Levantar todas".
+const esTarjetaCoincidenteCriterio = (p) => {
+  if (!tieneFiltrosActivosKanbanPro.value) return false
+  return coincideFiltrosKanbanPro(p)
+}
+
+const esTarjetaLevantadaKardex = (p) => {
+  if (!p) return false
+  if (kardexLevantarTodas.value) return true
+  if (hoveredKardexId.value === p.id_proyecto) return true
+  if (kardexPinesManuales.value.has(p.id_proyecto)) return true
+  if (tieneFiltrosActivosKanbanPro.value && coincideFiltrosKanbanPro(p)) return true
+  return false
+}
+
+const columnasKardex3D = computed(() => {
+  return columnasKanbanPro.value.map(col => {
+    const baseList = col.source.filter(p => {
+      if (filtroTipoProyecto.value === 'INTERNOS' && !esProyectoInterno(p)) return false
+      if (filtroTipoProyecto.value === 'COMERCIALES' && esProyectoInterno(p)) return false
+      return true
+    })
+    const itemsVisibles = kardexSoloLevantadas.value
+      ? baseList.filter(p => esTarjetaLevantadaKardex(p))
+      : baseList
+    const levantadasCount = baseList.filter(p => esTarjetaLevantadaKardex(p)).length
+    return {
+      ...col,
+      items: itemsVisibles,
+      levantadasCount
+    }
+  })
+})
+
+const totalLevantadasKardex = computed(() => {
+  return columnasKardex3D.value.reduce((acc, col) => acc + col.levantadasCount, 0)
+})
+
+
 onMounted(async () => {
   await Promise.allSettled([cargarProyectos(), cargarPendientesAnalista()])
   if (route.query.id_proyecto) {
@@ -3857,3 +4565,73 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* =========================================================================
+   ESTILOS DE VISTA CARDEX (TARJETERO INDEXADO)
+   ========================================================================= */
+.kardex-cabinet-column {
+  background: linear-gradient(180deg, #0d1428 0%, #070b16 100%);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+
+.kardex-drawer-viewport {
+  perspective: 1100px;
+  transform-style: preserve-3d;
+}
+
+.kardex-card-3d {
+  position: relative;
+  transform-origin: bottom center;
+  transition:
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+
+/* Estado Reposo: Ficha guardada en el cajón mostrando la ceja superior */
+.kardex-card-3d.is-resting {
+  transform: rotateX(-16deg) scale(0.975);
+  margin-bottom: -3px;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.65);
+}
+
+.kardex-card-3d.is-resting .kardex-tab-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+/* Fichas no coincidentes cuando hay un criterio activo se atenúan */
+.kardex-card-3d.is-resting.is-dimmed {
+  opacity: 0.38;
+  transform: rotateX(-22deg) scale(0.94);
+  filter: saturate(0.5);
+}
+
+/* Estado Levantado: La ficha emerge y despliega su cuerpo completo */
+.kardex-card-3d.is-lifted {
+  transform: translateY(-6px) translateZ(28px) rotateX(0deg) scale(1.015);
+  margin-top: 8px;
+  margin-bottom: 12px;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.kardex-card-body {
+  animation: kardexUnfold 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes kardexUnfold {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+
