@@ -21,8 +21,6 @@ const ensureTables = async () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    ALTER TABLE ${schema}.tcfg_backlog ADD COLUMN IF NOT EXISTS adjuntos JSONB DEFAULT '[]'::jsonb;
-
     CREATE TABLE IF NOT EXISTS ${schema}.tcfg_releases (
       id SERIAL PRIMARY KEY,
       version VARCHAR(30) UNIQUE NOT NULL,
@@ -81,7 +79,6 @@ const backlogController = {
   // 1. Obtener todos los requerimientos
   async getRequerimientos(req, res) {
     try {
-      await ensureTables();
       const schema = process.env.DB_SCHEMA || 'sch_leangsp';
       const result = await db.query(`
         SELECT * FROM ${schema}.tcfg_backlog 
@@ -105,7 +102,6 @@ const backlogController = {
   // 2. Crear un nuevo requerimiento
   async crearRequerimiento(req, res) {
     try {
-      await ensureTables();
       const schema = process.env.DB_SCHEMA || 'sch_leangsp';
       const {
         nombre_requerimiento,
@@ -146,7 +142,6 @@ const backlogController = {
   // 3. Actualizar requerimiento existente
   async actualizarRequerimiento(req, res) {
     try {
-      await ensureTables();
       const schema = process.env.DB_SCHEMA || 'sch_leangsp';
       const { id } = req.params;
       const {
