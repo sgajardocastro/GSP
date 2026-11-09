@@ -2097,20 +2097,28 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         let subDev = 0;
         if (lineas.length > 0) {
           const diasFaena = Math.max(1, totalReports);
+          const lineasHorariasCount = Math.max(1, lineas.filter(l => {
+            const u = String(l.unidad || '').trim().toLowerCase();
+            const v = Number(l.valorUnitario || l.precio_unitario || 0);
+            return ['hora', 'horas', 'hr', 'hrs'].includes(u) && v > 0 && v < 350000;
+          }).length);
           for (const l of lineas) {
             const valUnit = Number(l.valorUnitario || l.precio_unitario || 0);
             const cant = Number(l.cantidad || 1);
             const tipoUpper = String(l.tipo || '').toUpperCase();
             const subcatUpper = String(l.subcategoria || '').toUpperCase();
+            const unidadLower = String(l.unidad || '').trim().toLowerCase();
 
             if (tipoUpper === 'TRASLADOS' || subcatUpper.includes('FLETE') || subcatUpper.includes('ESCOLTA')) {
               subDev += valUnit * cant;
             } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(tipoUpper)) {
-              if (String(l.unidad || '').toLowerCase() === 'diario') {
+              if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
                 subDev += valUnit * diasFaena * cant;
-              } else {
-                const hrsAplicar = horasFacturablesPry > 0 ? horasFacturablesPry : (cant * 8);
+              } else if (['hora', 'horas', 'hr', 'hrs'].includes(unidadLower) && valUnit < 350000) {
+                const hrsAplicar = horasFacturablesPry > 0 ? (horasFacturablesPry / lineasHorariasCount) : (cant * 8);
                 subDev += valUnit * hrsAplicar;
+              } else {
+                subDev += Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
               }
             } else {
               subDev += Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
@@ -2130,10 +2138,19 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         montoDevengadoReports = Math.round(itsIngresosNeto);
       }
 
+      // Invariante contable: el devengado operativo no puede superar el comprometido contractual salvo override explícito de Tesorería
+      const tieneOverrideTesoreria = Boolean(jf.edp_ajustes_v1?.lineas_ajustadas?.length || jf.edp_ajustes_v1?.sobretiempo_override);
+      if (!tieneOverrideTesoreria && montoComprometido > 0 && montoDevengadoReports > montoComprometido) {
+        montoDevengadoReports = montoComprometido;
+      }
+
       // 3. Cerrado en ITS (Gestión Interna)
       const tieneIts = Boolean(p.id_its);
       const itsCerrado = p.estado_its === 'CONCLUIDO' || p.estado_its === 'EN_REVISION_CONTABILIDAD' || p.estado_its === 'EN_REVISION_OPERACIONES';
-      const montoItsNeto = itsIngresosNeto > 0 ? Math.round(itsIngresosNeto) : 0;
+      const rawItsNeto = itsIngresosNeto > 0 ? Math.round(itsIngresosNeto) : 0;
+      const montoItsNeto = (!tieneOverrideTesoreria && montoComprometido > 0 && rawItsNeto > montoComprometido)
+        ? montoComprometido
+        : rawItsNeto;
       const montoItsCostos = Math.round(Number(p.its_costos_operacionales || 0));
       const margenItsPct = Number(p.its_margen_pct || (montoItsNeto > 0 ? (((montoItsNeto - montoItsCostos) / montoItsNeto) * 100).toFixed(1) : 0));
 

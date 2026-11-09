@@ -2,6 +2,22 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.203
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-08 22:00:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1132` (`SPEC-061` v2.0), `REQ-1133` (`SPEC-061` v2.1)
+- **Especificación Técnica:** Rediseño UX Torre PMO y Agrupación Jerárquica por OT en Reports Diarios (`Torre.vue` y `estadoPagoController.js`):
+  1. **REQ-1132 (Rediseño UX Torre PMO, Unificación Kanban, Vista Cardex, Flota Gantt e Invariante Contable):**
+     - **Unificación Kanban:** Eliminada la vista simple y unificada `Kanban + Filtros` como vista única `Kanban`, integrando la barra de fechas con fichas disponibles.
+     - **Renombrado Vista Cardex:** Erradicado el término engañoso "3D" en toda la interfaz, formalizándose como `Vista Cardex`.
+     - **Flota Gantt:** Incorporados 5 KPIs superiores (Equipos con movimiento, sin movimiento, OTs activas, horas operadas y devengado valorizado), filtro de fechas Desde-Hasta, toggle Ocultar sin movimiento, acordeón colapsable por categoría operativa y columna Devengado ($) computada de reports reales.
+     - **Invariante Contable Nov 2026:** En `estadoPagoController.js`, corregido cómputo de líneas globales/diarias y distribución de horas para garantizar que el Devengado no sobrepase el Comprometido contractual.
+  2. **REQ-1133 (Agrupación Jerárquica por OT en Bandeja de Reports Diarios):**
+     - En la bandeja `1. Reports Diarios` de Torre PMO (`pmoVistaSecundaria === 'pendientes_reports'`), erradicada la grilla plana. Los reportes se agrupan en nivel 1 bajo la OT con cabecera de datos ejecutivos (código OT, cliente mandante, faena, rango de fechas, conteo de reports, horas facturables/operadas y botón directo `🏢 Abrir OT`).
+     - En nivel 2, las fechas de cada report cuelgan ordenadas cronológicamente bajo su respectiva OT (`↳ Fecha · Día correlativo #N`), con acceso a su PDF oficial con firma FES y visor de auditoría.
+     - Botón `📂 Expandir OTs / 📁 Colapsar OTs` y contador reactivo de OTs agrupadas.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.202
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-07 18:15:00 (-03:00)

@@ -872,11 +872,21 @@
       <!-- Sub-vista 1: Inbox de Reports Diarios -->
       <div v-if="pmoVistaSecundaria === 'pendientes_reports'" class="bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-xl">
         <div class="p-3 border-b border-white/5 flex flex-col md:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/60">
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-black uppercase text-white tracking-wider">Bandeja de Entrada de Reports Diarios</span>
+            <span class="text-[10px] text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 font-mono font-bold">
+              {{ gruposReportsPorOT.length }} OTs
+            </span>
             <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5 font-mono">
               {{ reportsFiltradosInbox.length }} reportes
             </span>
+            <button
+              v-if="gruposReportsPorOT.length > 0"
+              @click="toggleTodasOtsReportsPMO"
+              class="px-2 py-0.5 rounded text-[10px] font-bold border border-white/10 bg-[#070b14] text-slate-300 hover:text-white hover:border-blue-500/40 transition-all cursor-pointer"
+            >
+              {{ todasOtsReportsAbiertas ? '📁 Colapsar OTs' : '📂 Expandir OTs' }}
+            </button>
           </div>
           
           <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
@@ -932,8 +942,7 @@
           <table class="w-full text-left text-xs border-collapse">
             <thead class="bg-[#070b14] text-slate-400 uppercase text-[10px] tracking-wider font-bold border-b border-white/10 sticky top-0 z-10 select-none">
               <tr>
-                <th class="py-2.5 px-3">OT / Mandante</th>
-                <th class="py-2.5 px-3">Fecha & Día</th>
+                <th class="py-2.5 px-3">OT / Fecha de Report</th>
                 <th class="py-2.5 px-3">Grúa & Operador</th>
                 <th class="py-2.5 px-3 text-center">Horas Terreno</th>
                 <th class="py-2.5 px-3 text-center">Horómetro</th>
@@ -942,95 +951,160 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5 text-slate-300">
-              <tr v-for="r in reportsFiltradosInbox" :key="r.id_reporte_avance" class="hover:bg-white/5 transition-colors">
-                <!-- OT / Mandante -->
-                <td class="py-2.5 px-3">
-                  <div class="font-mono font-bold text-blue-400 text-xs">{{ r.codi_proyecto || `OT-${r.id_proyecto}` }}</div>
-                  <div class="font-bold text-white text-xs truncate max-w-[190px]" :title="r.cliente_nombre">{{ r.cliente_nombre || 'Cliente Mandante' }}</div>
-                  <div class="text-[10px] text-slate-400 truncate max-w-[190px]">{{ r.obra_nombre || r.nombre_proyecto }}</div>
-                </td>
+              <template v-for="grupo in gruposReportsPorOT" :key="grupo.id_proyecto">
+                <!-- Fila Cabecera de la OT (Nivel Padre) -->
+                <tr
+                  @click="toggleOtReportPMO(grupo.id_proyecto)"
+                  class="bg-[#090e1d] hover:bg-[#111a33] cursor-pointer select-none border-y border-blue-500/20 transition-colors"
+                >
+                  <td colspan="6" class="py-2.5 px-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div class="flex flex-wrap items-center gap-2.5 min-w-0">
+                        <span
+                          class="text-blue-400 font-mono text-xs transition-transform duration-200 inline-block"
+                          :class="esOtReportAbiertaPMO(grupo.id_proyecto) ? 'rotate-90' : ''"
+                        >
+                          ▶
+                        </span>
+                        <span class="font-mono font-black text-blue-400 text-xs px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/30">
+                          {{ grupo.codi_proyecto }}
+                        </span>
+                        <span class="font-bold text-white text-xs truncate max-w-[260px]" :title="grupo.cliente_nombre">
+                          {{ grupo.cliente_nombre }}
+                        </span>
+                        <span class="text-[11px] text-slate-400 truncate max-w-[260px]" :title="grupo.obra_nombre">
+                          · {{ grupo.obra_nombre }}
+                        </span>
+                      </div>
 
-                <!-- Fecha & Día -->
-                <td class="py-2.5 px-3 whitespace-nowrap">
-                  <div class="text-white font-medium">{{ formatFecha(r.fecha_reporte) }}</div>
-                  <div class="text-slate-400 text-[10px] font-mono">Día correlativo #{{ r.dia_correlativo || 1 }}</div>
-                </td>
+                      <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono">
+                        <span class="text-slate-400">
+                          Período: <strong class="text-slate-200">{{ grupo.rangoFechasLabel }}</strong>
+                        </span>
+                        <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-300">
+                          <strong>{{ grupo.reports.length }}</strong> report(s)
+                        </span>
+                        <span
+                          v-if="grupo.pendientesCount > 0"
+                          class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold"
+                        >
+                          🟡 {{ grupo.pendientesCount }} pendiente(s)
+                        </span>
+                        <span
+                          v-else
+                          class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold"
+                        >
+                          ✓ {{ grupo.validadosCount }} validado(s)
+                        </span>
+                        <span class="text-slate-400">
+                          Total: <strong class="text-emerald-400">{{ grupo.totalHorasFacturables }} hrs fact.</strong>
+                          <span class="text-slate-500">({{ grupo.totalHorasOperadas }} oper.)</span>
+                        </span>
+                        <button
+                          @click.stop="abrirProyecto(grupo.id_proyecto, 'reports')"
+                          class="px-2 py-0.5 rounded bg-white/5 hover:bg-blue-600/30 text-slate-300 hover:text-white border border-white/10 text-[10px] font-sans font-bold transition-colors cursor-pointer"
+                          title="Abrir OT en Gestor"
+                        >
+                          🏢 Abrir OT
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
 
-                <!-- Grúa & Operador -->
-                <td class="py-2.5 px-3">
-                  <div class="font-mono font-bold text-slate-200 text-xs">{{ r.equipo_patente || 'S/P' }}</div>
-                  <div class="text-slate-400 text-[10px] truncate max-w-[150px]">{{ r.operador_nombre || 'Operador GSP' }}</div>
-                </td>
+                <!-- Filas Hijas: Fechas de cada Report colgando bajo la OT -->
+                <tr
+                  v-for="r in (esOtReportAbiertaPMO(grupo.id_proyecto) ? grupo.reports : [])"
+                  :key="r.id_reporte_avance"
+                  class="hover:bg-white/5 transition-colors bg-[#0f1629]/60"
+                >
+                  <!-- Fecha & Día (colgando bajo la OT) -->
+                  <td class="py-2.5 pl-8 pr-3 whitespace-nowrap border-l-2 border-blue-500/30">
+                    <div class="flex items-center gap-2">
+                      <span class="text-blue-400/70 font-mono text-xs">↳</span>
+                      <div>
+                        <div class="text-white font-bold font-mono text-xs">{{ formatFecha(r.fecha_reporte) }}</div>
+                        <div class="text-slate-400 text-[10px] font-mono">Día correlativo #{{ r.dia_correlativo || 1 }}</div>
+                      </div>
+                    </div>
+                  </td>
 
-                <!-- Horas Terreno -->
-                <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                  <div class="font-mono font-bold text-xs" :class="r.ajustes_analista?.modificado ? 'text-indigo-400' : 'text-emerald-400'">
-                    {{ r.horas_facturables }} hrs fact.
-                  </div>
-                  <div class="text-[10px] text-slate-400 font-mono">
-                    {{ r.horas_operadas }} oper. / {{ r.horas_colacion || 0 }} col.
-                  </div>
-                </td>
+                  <!-- Grúa & Operador -->
+                  <td class="py-2.5 px-3">
+                    <div class="font-mono font-bold text-slate-200 text-xs">{{ r.equipo_patente || 'S/P' }}</div>
+                    <div class="text-slate-400 text-[10px] truncate max-w-[150px]">{{ r.operador_nombre || 'Operador GSP' }}</div>
+                  </td>
 
-                <!-- Horómetro -->
-                <td class="py-2.5 px-3 text-center whitespace-nowrap font-mono text-[11px]">
-                  <div v-if="r.horometro_inicio || r.horometro_termino" class="text-slate-300">
-                    {{ r.horometro_inicio || '—' }} ➔ {{ r.horometro_termino || '—' }}
-                  </div>
-                  <div v-else class="text-slate-600">—</div>
-                </td>
+                  <!-- Horas Terreno -->
+                  <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <div class="font-mono font-bold text-xs" :class="r.ajustes_analista?.modificado ? 'text-indigo-400' : 'text-emerald-400'">
+                      {{ r.horas_facturables }} hrs fact.
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">
+                      {{ r.horas_operadas }} oper. / {{ r.horas_colacion || 0 }} col.
+                    </div>
+                  </td>
 
-                <!-- Estado Auditoría -->
-                <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                  <div v-if="r.estado_reporte === 'PENDIENTE_VALIDACION'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold text-[10px] animate-pulse">
-                    <span>🟡</span>
-                    <span>Pendiente Analista</span>
-                  </div>
-                  <div v-else-if="r.ajustes_analista?.modificado" class="inline-flex flex-col items-center">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold text-[10px]">
-                      <span>✏️</span>
-                      <span>Validado con Ajustes</span>
-                    </span>
-                    <span class="text-[9px] text-slate-400 mt-0.5">por {{ r.validador_nombre || 'Analista' }}</span>
-                  </div>
-                  <div v-else class="inline-flex flex-col items-center">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">
-                      <span>✓</span>
-                      <span>Validado Conforme</span>
-                    </span>
-                    <span class="text-[9px] text-slate-400 mt-0.5">por {{ r.validador_nombre || 'Analista' }}</span>
-                  </div>
-                </td>
+                  <!-- Horómetro -->
+                  <td class="py-2.5 px-3 text-center whitespace-nowrap font-mono text-[11px]">
+                    <div v-if="r.horometro_inicio || r.horometro_termino" class="text-slate-300">
+                      {{ r.horometro_inicio || '—' }} ➔ {{ r.horometro_termino || '—' }}
+                    </div>
+                    <div v-else class="text-slate-600">—</div>
+                  </td>
 
-                <!-- Acción -->
-                <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                  <div class="flex items-center justify-end gap-1.5">
-                    <a
-                      v-if="r.id_doc_pdf"
-                      :href="getUrlStoragePdf(r.id_doc_pdf)"
-                      target="_blank"
-                      class="px-2 py-1 rounded bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/40 text-[10px] font-mono font-bold transition-all flex items-center gap-1 shadow-sm"
-                      title="Abrir PDF Oficial con Doble Firma FES"
-                      @click.stop
-                    >
-                      <span>📄 PDF</span>
-                    </a>
-                    <button 
-                      @click="abrirVisorReportPMO(r)"
-                      class="px-3 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1"
-                      :class="r.estado_reporte === 'PENDIENTE_VALIDACION' 
-                        ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20 font-black' 
-                        : 'bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30'"
-                    >
-                      <span>{{ r.estado_reporte === 'PENDIENTE_VALIDACION' ? 'Auditar y Validar' : 'Ver Detalle' }}</span>
-                      <span>➔</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  <!-- Estado Auditoría -->
+                  <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <div v-if="r.estado_reporte === 'PENDIENTE_VALIDACION'" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold text-[10px] animate-pulse">
+                      <span>🟡</span>
+                      <span>Pendiente Analista</span>
+                    </div>
+                    <div v-else-if="r.ajustes_analista?.modificado" class="inline-flex flex-col items-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold text-[10px]">
+                        <span>✏️</span>
+                        <span>Validado con Ajustes</span>
+                      </span>
+                      <span class="text-[9px] text-slate-400 mt-0.5">por {{ r.validador_nombre || 'Analista' }}</span>
+                    </div>
+                    <div v-else class="inline-flex flex-col items-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">
+                        <span>✓</span>
+                        <span>Validado Conforme</span>
+                      </span>
+                      <span class="text-[9px] text-slate-400 mt-0.5">por {{ r.validador_nombre || 'Analista' }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Acción -->
+                  <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <a
+                        v-if="r.id_doc_pdf"
+                        :href="getUrlStoragePdf(r.id_doc_pdf)"
+                        target="_blank"
+                        class="px-2 py-1 rounded bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/40 text-[10px] font-mono font-bold transition-all flex items-center gap-1 shadow-sm"
+                        title="Abrir PDF Oficial con Doble Firma FES"
+                        @click.stop
+                      >
+                        <span>📄 PDF</span>
+                      </a>
+                      <button 
+                        @click="abrirVisorReportPMO(r)"
+                        class="px-3 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        :class="r.estado_reporte === 'PENDIENTE_VALIDACION' 
+                          ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20 font-black' 
+                          : 'bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30'"
+                      >
+                        <span>{{ r.estado_reporte === 'PENDIENTE_VALIDACION' ? 'Auditar y Validar' : 'Ver Detalle' }}</span>
+                        <span>➔</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
 
               <tr v-if="reportsFiltradosInbox.length === 0">
-                <td colspan="7" class="text-center py-12 text-slate-500 italic">
+                <td colspan="6" class="text-center py-12 text-slate-500 italic">
                   No hay reportes diarios que coincidan con los criterios seleccionados.
                 </td>
               </tr>
@@ -2215,6 +2289,86 @@ const reportsFiltradosInbox = computed(() => {
   }
   return list
 })
+
+const otsReportsColapsadasPMO = ref({})
+
+const esOtReportAbiertaPMO = (idProyecto) => {
+  return !otsReportsColapsadasPMO.value[idProyecto]
+}
+
+const toggleOtReportPMO = (idProyecto) => {
+  otsReportsColapsadasPMO.value = {
+    ...otsReportsColapsadasPMO.value,
+    [idProyecto]: !otsReportsColapsadasPMO.value[idProyecto]
+  }
+}
+
+const gruposReportsPorOT = computed(() => {
+  const map = new Map()
+  for (const r of reportsFiltradosInbox.value) {
+    const idPry = Number(r.id_proyecto || 0)
+    if (!map.has(idPry)) {
+      map.set(idPry, {
+        id_proyecto: idPry,
+        codi_proyecto: r.codi_proyecto || `OT-${idPry}`,
+        cliente_nombre: r.cliente_nombre || 'Cliente Mandante',
+        obra_nombre: r.obra_nombre || r.nombre_proyecto || 'Faena',
+        reports: []
+      })
+    }
+    map.get(idPry).reports.push(r)
+  }
+
+  const grupos = Array.from(map.values()).map(g => {
+    g.reports.sort((a, b) => {
+      const fa = String(a.fecha_reporte_fmt || a.fecha_reporte || '').slice(0, 10)
+      const fb = String(b.fecha_reporte_fmt || b.fecha_reporte || '').slice(0, 10)
+      if (fa !== fb) return fa.localeCompare(fb)
+      return Number(a.dia_correlativo || 0) - Number(b.dia_correlativo || 0)
+    })
+    const pendientesCount = g.reports.filter(r => r.estado_reporte === 'PENDIENTE_VALIDACION').length
+    const validadosCount = g.reports.length - pendientesCount
+    const totalHorasFacturables = Math.round(g.reports.reduce((acc, r) => acc + Number(r.horas_facturables || 0), 0) * 10) / 10
+    const totalHorasOperadas = Math.round(g.reports.reduce((acc, r) => acc + Number(r.horas_operadas || 0), 0) * 10) / 10
+    const primeraFecha = g.reports[0]?.fecha_reporte
+    const ultimaFecha = g.reports[g.reports.length - 1]?.fecha_reporte
+    const fIniLabel = formatFecha(primeraFecha)
+    const fFinLabel = formatFecha(ultimaFecha)
+    const rangoFechasLabel = fIniLabel === fFinLabel ? fIniLabel : `${fIniLabel} al ${fFinLabel}`
+    const maxFechaIso = String(ultimaFecha || '').slice(0, 10)
+
+    return {
+      ...g,
+      pendientesCount,
+      validadosCount,
+      totalHorasFacturables,
+      totalHorasOperadas,
+      rangoFechasLabel,
+      maxFechaIso
+    }
+  })
+
+  return grupos.sort((a, b) => {
+    if (a.pendientesCount > 0 && b.pendientesCount === 0) return -1
+    if (a.pendientesCount === 0 && b.pendientesCount > 0) return 1
+    if (b.maxFechaIso !== a.maxFechaIso) return b.maxFechaIso.localeCompare(a.maxFechaIso)
+    return b.id_proyecto - a.id_proyecto
+  })
+})
+
+const todasOtsReportsAbiertas = computed(() => {
+  if (gruposReportsPorOT.value.length === 0) return false
+  return gruposReportsPorOT.value.every(g => esOtReportAbiertaPMO(g.id_proyecto))
+})
+
+const toggleTodasOtsReportsPMO = () => {
+  const colapsar = todasOtsReportsAbiertas.value
+  const next = { ...otsReportsColapsadasPMO.value }
+  gruposReportsPorOT.value.forEach(g => {
+    next[g.id_proyecto] = colapsar
+  })
+  otsReportsColapsadasPMO.value = next
+}
 
 const otsFiltradasPMO = computed(() => {
   let list = datosAnalistaPMO.value.ots_liquidacion || []
