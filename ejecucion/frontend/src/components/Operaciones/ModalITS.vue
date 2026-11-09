@@ -1337,7 +1337,7 @@
                         />
                       </td>
                       <td class="p-1.5 text-center">
-                        <button type="button" @click="eliminarItemCosto(tabCostoActiva, idx)" class="text-rose-400 hover:text-rose-200 cursor-pointer">🗑️</button>
+                        <button type="button" @click="eliminarItemCosto(tabCostoActiva, idx)" class="text-rose-400 hover:text-rose-200 cursor-pointer" title="Eliminar ítem de costo">🗑️</button>
                       </td>
                     </tr>
                     <tr v-if="(costos[tabCostoActiva] || []).length === 0">
@@ -1868,18 +1868,28 @@ const categoriasCostosTabs = [
   { key: 'costo_hora_operador', label: 'Hora Operador' }
 ];
 
+const normalizarCatKey = (cat) => {
+  const raw = (typeof cat === 'object' && cat !== null && 'value' in cat) ? cat.value : cat;
+  const str = String(raw || '').trim();
+  if (str === 'subcontrato_flete') return 'subcontratacion_flete';
+  if (str === 'gastos_extra') return 'gastos_extraordinarios';
+  return str;
+};
+
 const getEstadoCategoria = (catKey) => {
-  const count = (costos.value[catKey] || []).length;
+  const k = normalizarCatKey(catKey);
+  const count = (costos.value[k] || []).length;
   if (count > 0) return 'CON_COSTOS';
-  if (categoriasSinCosto.value[catKey] === true) return 'SIN_COSTO';
+  if (categoriasSinCosto.value[k] === true) return 'SIN_COSTO';
   return 'PENDIENTE';
 };
 
 const toggleDeclararSinCosto = (catKey) => {
-  if (categoriasSinCosto.value[catKey]) {
-    delete categoriasSinCosto.value[catKey];
+  const k = normalizarCatKey(catKey);
+  if (categoriasSinCosto.value[k]) {
+    delete categoriasSinCosto.value[k];
   } else {
-    categoriasSinCosto.value[catKey] = true;
+    categoriasSinCosto.value[k] = true;
   }
 };
 
@@ -2142,8 +2152,8 @@ const cargarITS = async () => {
         pensiones: formatearItems(rawCostos.pensiones),
         personal_externo: formatearItems(rawCostos.personal_externo),
         feriados: formatearItems(rawCostos.feriados),
-        subcontratacion_flete: formatearItems(rawCostos.subcontratacion_flete),
-        gastos_extraordinarios: formatearItems(rawCostos.gastos_extraordinarios),
+        subcontratacion_flete: formatearItems(rawCostos.subcontratacion_flete || rawCostos.subcontrato_flete),
+        gastos_extraordinarios: formatearItems(rawCostos.gastos_extraordinarios || rawCostos.gastos_extra),
         costo_hora_operador: formatearItems(rawCostos.costo_hora_operador)
       };
       // Recalcular pensiones según condiciones comerciales
@@ -2697,11 +2707,12 @@ const subirComprobante = async (event, item) => {
 };
 
 const agregarItemCosto = (cat) => {
+  const catKey = normalizarCatKey(cat);
   const hoy = new Date().toISOString().split('T')[0];
-  if (!costos.value[cat]) costos.value[cat] = [];
+  if (!costos.value[catKey]) costos.value[catKey] = [];
   
-  if (cat === 'combustible') {
-    costos.value[cat].push({
+  if (catKey === 'combustible') {
+    costos.value[catKey].push({
       fecha: hoy,
       patente: patentesAsignadas.value?.[0]?.patente || '',
       tipo_estanque: 'PRINCIPAL_CHASIS',
@@ -2713,8 +2724,8 @@ const agregarItemCosto = (cat) => {
       monto_total: 0,
       origen_registro: 'MANUAL'
     });
-  } else if (cat === 'movilizacion') {
-    costos.value[cat].push({
+  } else if (catKey === 'movilizacion') {
+    costos.value[catKey].push({
       fecha: hoy,
       nombre_personal: personalAsignadoLista.value?.[0]?.nombre || '',
       concepto_detalle: 'UBER / TAXI',
@@ -2723,8 +2734,8 @@ const agregarItemCosto = (cat) => {
       archivo_comprobante_url: '',
       monto_total: 0
     });
-  } else if (cat === 'pensiones') {
-    costos.value[cat].push({
+  } else if (catKey === 'pensiones') {
+    costos.value[catKey].push({
       fecha: hoy,
       numero_oc: '',
       nombre_personal: personalAsignadoLista.value?.[0]?.nombre || '',
@@ -2737,11 +2748,11 @@ const agregarItemCosto = (cat) => {
       monto_total_cliente: 0,
       monto_total: 0
     });
-  } else if (cat === 'costo_hora_operador') {
+  } else if (catKey === 'costo_hora_operador') {
     const defaultTripulante = personalAsignadoLista.value?.[0]?.nombre || '';
     const defaultPat = patentesAsignadas.value?.[0]?.patente || '';
     const tarifaSugerida = tarifaOperadorComercial.value?.valor_hora || 5000;
-    costos.value[cat].push({
+    costos.value[catKey].push({
       fecha: hoy,
       patente: defaultPat,
       nombre_personal: defaultTripulante,
@@ -2765,8 +2776,8 @@ const agregarItemCosto = (cat) => {
       cantidad_unidades: 8,
       monto_total: tarifaSugerida * 8
     });
-  } else if (cat === 'alimentacion') {
-    costos.value[cat].push({
+  } else if (catKey === 'alimentacion') {
+    costos.value[catKey].push({
       fecha: hoy,
       patente: patentesAsignadas.value?.[0]?.patente || '',
       nombre_personal: personalAsignadoLista.value?.[0]?.nombre || '',
@@ -2788,9 +2799,9 @@ const agregarItemCosto = (cat) => {
       monto_total: 7000
     });
   } else {
-    costos.value[cat].push({
+    costos.value[catKey].push({
       fecha: hoy,
-      patente: cat === 'peajes' ? (patentesAsignadas.value?.[0]?.patente || '') : '',
+      patente: catKey === 'peajes' ? (patentesAsignadas.value?.[0]?.patente || '') : '',
       numero_oc: '',
       nombre_personal: '',
       concepto_detalle: '',
@@ -2811,8 +2822,9 @@ const recalcularCombustible = (it) => {
 };
 
 const eliminarItemCosto = (cat, idx) => {
-  if (costos.value[cat]) {
-    costos.value[cat].splice(idx, 1);
+  const catKey = normalizarCatKey(cat);
+  if (costos.value[catKey] && Array.isArray(costos.value[catKey])) {
+    costos.value[catKey].splice(idx, 1);
     recalcularTotales();
   }
 };
@@ -2980,7 +2992,8 @@ const recalcularViaticoAlimentacion = (it) => {
 };
 
 const getSubtotalCategoria = (cat) => {
-  return (costos.value[cat] || []).reduce((acc, it) => acc + (parseFloat(it.monto_total) || 0), 0);
+  const catKey = normalizarCatKey(cat);
+  return (costos.value[catKey] || []).reduce((acc, it) => acc + (parseFloat(it.monto_total) || 0), 0);
 };
 
 const getPctSobreVenta = (monto) => {
@@ -2995,7 +3008,8 @@ const getTabActualLabel = () => {
 };
 
 const necesitaColumnaOC = (cat) => {
-  return ['pensiones', 'personal_externo', 'subcontratacion_flete'].includes(cat);
+  const catKey = normalizarCatKey(cat);
+  return ['pensiones', 'personal_externo', 'subcontratacion_flete', 'subcontrato_flete'].includes(catKey);
 };
 
 // Plantillas y Contexto (Recalcula Hora Operador según Régimen URBANO vs RURAL)
