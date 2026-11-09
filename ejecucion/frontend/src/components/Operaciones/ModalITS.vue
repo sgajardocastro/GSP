@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" :class="embedded ? 'w-full animate-fadeIn' : 'fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 animate-fadeIn'">
-    <div :class="embedded ? 'bg-[#0b1021] border border-blue-500/30 rounded-2xl w-full flex flex-col shadow-xl text-slate-200' : 'bg-[#0b1021] border border-blue-500/40 rounded-2xl w-full max-w-[98vw] 2xl:max-w-[1750px] max-h-[96vh] flex flex-col overflow-hidden shadow-2xl shadow-black text-slate-200'">
+    <div :class="embedded ? 'bg-[#0b1021] border border-blue-500/30 rounded-2xl w-full flex flex-col shadow-xl text-slate-200' : ['bg-[#0b1021] border border-blue-500/40 rounded-2xl w-full max-w-[98vw] 2xl:max-w-[1750px] flex flex-col overflow-hidden shadow-2xl shadow-black text-slate-200', esModoRevisionEjecutiva && vistaRevisionActiva === 'PDF' ? 'h-[94vh]' : 'max-h-[96vh]']">
       
       <!-- HEADER / ACCIONES GLOBALES -->
       <header class="bg-[#050810] px-5 py-3.5 border-b border-white/10 flex flex-wrap justify-between items-center gap-3 flex-shrink-0" :class="embedded ? 'rounded-t-2xl' : ''">
@@ -214,64 +214,143 @@
         <p class="text-sm font-mono">Cargando datos relacionales del ITS...</p>
       </div>
 
-      <!-- CUERPO EN MODO REVISIÓN EJECUTIVA: VISTA OFICIAL PDF A PANTALLA COMPLETA -->
-      <div v-else-if="esModoRevisionEjecutiva && vistaRevisionActiva === 'PDF'" class="flex-1 flex flex-col min-h-0 bg-slate-950">
-        <div class="bg-slate-900/90 border-b border-white/10 px-5 py-2 flex items-center justify-between text-xs font-mono flex-shrink-0">
-          <span class="text-slate-300 flex items-center gap-2">
-            <span>📄</span> <span>Documento oficial formalizado y firmado con PIN FES en Paso 1 (Yiara Mendoza).</span>
-          </span>
-          <div class="flex items-center gap-2">
-            <button 
-              type="button" 
-              @click="recargarPreviewPdf" 
-              class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <span>🔄</span> <span>Actualizar Vista</span>
-            </button>
-            <a 
-              :href="urlPdfOficial"
-              target="_blank"
-              rel="noopener"
-              class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-white/10 flex items-center gap-1 cursor-pointer no-underline"
-            >
-              <span>↗</span> <span>Abrir en Pestaña</span>
-            </a>
+      <!-- CUERPO EN MODO REVISIÓN EJECUTIVA: LAYOUT DE DOS PANELES (PDF NORMAL + PANEL LATERAL DE FIRMA Y OBSERVACIONES) -->
+      <div v-else-if="esModoRevisionEjecutiva && vistaRevisionActiva === 'PDF'" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden bg-slate-950">
+        
+        <!-- PANEL IZQUIERDO: VISOR DOCUMENTAL EXPANDIDO (PDF NORMAL) -->
+        <div class="flex-1 flex flex-col min-w-0 bg-[#0c1222] border-r border-white/10 relative overflow-hidden">
+          <div class="bg-slate-900/90 border-b border-white/10 px-4 py-2 flex items-center justify-between text-xs font-mono shrink-0">
+            <span class="text-slate-300 flex items-center gap-2">
+              <span class="text-blue-400">📄</span> 
+              <span class="font-bold text-white">Documento Oficial ITS Formalizado</span>
+              <span class="text-slate-500">·</span>
+              <span class="text-slate-400">Firmado con PIN FES en Paso 1 (Yiara Mendoza)</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <button 
+                type="button" 
+                @click="recargarPreviewPdf" 
+                class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Recargar visualización del documento"
+              >
+                <span>🔄</span> <span>Actualizar</span>
+              </button>
+              <a 
+                :href="urlPdfOficial"
+                target="_blank"
+                rel="noopener"
+                class="px-2.5 py-1 rounded bg-blue-600/30 hover:bg-blue-600 text-blue-200 hover:text-white text-xs border border-blue-500/40 flex items-center gap-1 cursor-pointer no-underline transition-colors"
+                title="Abrir PDF en pestaña completa"
+              >
+                <span>↗</span> <span>Abrir en Pestaña</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Contenedor del PDF con Altura Completa y Aspecto de Hoja -->
+          <div class="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center p-2">
+            <iframe 
+              v-if="urlPdfPreviewIframe" 
+              :src="urlPdfPreviewIframe" 
+              class="w-full h-full rounded border border-white/10 shadow-2xl bg-white"
+              title="Documento Oficial ITS"
+            ></iframe>
+            <div v-else class="flex-1 flex items-center justify-center text-slate-500 text-xs font-mono p-8 text-center">
+              No se pudo cargar el documento PDF.
+            </div>
           </div>
         </div>
 
-        <!-- Visor del PDF Oficial Firmado -->
-        <div class="flex-1 relative bg-slate-900 overflow-hidden">
-          <iframe 
-            v-if="urlPdfPreviewIframe" 
-            :src="urlPdfPreviewIframe" 
-            class="w-full h-full border-0"
-            title="Documento Oficial ITS"
-          ></iframe>
-          <div v-else class="flex-1 flex items-center justify-center text-slate-500 text-xs font-mono p-8 text-center">
-            No se pudo cargar el documento PDF.
+        <!-- PANEL DERECHO LATERAL: FIRMA Y OBSERVACIONES A UN COSTADO -->
+        <aside class="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-[#050810] border-t lg:border-t-0 border-white/10 shrink-0 overflow-y-auto custom-scrollbar">
+          <div class="p-5 space-y-4 flex-1 flex flex-col">
+            <!-- 1. Cabecera del Panel de Control -->
+            <div class="border-b border-white/10 pb-3">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                  <span>⚖️</span> Revisión Ejecutiva
+                </span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                  Paso {{ pasoPendienteActual?.orden || 2 }} de {{ flujoData?.pasos?.length || 3 }}
+                </span>
+              </div>
+              <h3 class="text-sm font-extrabold text-white mt-1">
+                {{ pasoPendienteActual?.nombre_paso || 'Supervisión Directiva' }}
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Revise el documento a la izquierda y aplique su resolución mediante firma digital FES.
+              </p>
+            </div>
+
+            <!-- 2. Tarjeta Resumen del Trámite -->
+            <div class="bg-slate-900/60 border border-white/10 rounded-xl p-3.5 space-y-2 text-xs font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Folio ITS:</span>
+                <span class="font-bold text-white">{{ its.folio_its || 'ITS-S/F' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Versión:</span>
+                <span class="text-cyan-300 font-bold">v{{ its.version || '1.0' }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Total Venta Neta:</span>
+                <span class="text-emerald-400 font-black">{{ formatPesos(its.total_venta_neta) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Costos Operacionales:</span>
+                <span class="text-amber-400 font-black">{{ formatPesos(its.total_costos_operacionales) }}</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-white/10">
+                <span class="text-slate-400">Margen Bruto:</span>
+                <span :class="Number(its.margen_operacional_porcentaje || 0) >= 60 ? 'text-emerald-400' : 'text-amber-400'" class="font-black">
+                  {{ Number(its.margen_operacional_porcentaje || 0).toFixed(1) }}%
+                </span>
+              </div>
+            </div>
+
+            <!-- 3. Observaciones de Revisión y Devolución -->
+            <div class="space-y-2">
+              <label class="block text-xs font-mono font-bold text-slate-300 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <span>💬</span> Observaciones de Revisión:
+                </span>
+                <span class="text-[10px] text-slate-500 font-normal">Auditoría / Devolución</span>
+              </label>
+              <textarea 
+                v-model="obsRevisionDirecta"
+                rows="3"
+                placeholder="Escriba aquí sus observaciones o motivo en caso de requerir correcciones en faena..."
+                class="w-full bg-slate-900 border border-white/15 rounded-lg p-2.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-mono"
+              ></textarea>
+            </div>
+
+            <!-- Spacer -->
+            <div class="flex-1"></div>
+
+            <!-- 4. Botones de Decisión Ejecutiva -->
+            <div v-if="puedeFirmarPasoActual" class="pt-3 border-t border-white/10 space-y-2.5">
+              <button 
+                type="button"
+                @click="ejecutarAprobacionDirecta"
+                class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black font-mono flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xl shadow-emerald-950/60"
+              >
+                <span>🔏</span> <span>Aprobar ITS con PIN FES (Paso {{ pasoPendienteActual?.orden || 2 }})</span>
+              </button>
+
+              <button 
+                v-if="pasoPendienteActual?.orden > 1"
+                type="button"
+                @click="ejecutarDevolucionDirecta"
+                class="w-full py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 text-xs font-bold font-mono flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-lg"
+              >
+                <span>❌</span> <span>Devolver con Observaciones</span>
+              </button>
+            </div>
+            <div v-else class="pt-3 border-t border-white/10 text-center text-xs font-mono text-slate-500">
+              🔒 Modo Inspección: Usted no cuenta con rol de firma asignado para este paso.
+            </div>
           </div>
-        </div>
-
-        <!-- Barra Fija de Decisión Ejecutiva para Jefaturas (Operaciones / Contabilidad) -->
-        <div v-if="puedeFirmarPasoActual" class="bg-[#050810] border-t border-white/15 px-6 py-3.5 flex items-center justify-between gap-4 flex-shrink-0">
-          <button 
-            v-if="pasoPendienteActual?.orden > 1"
-            type="button"
-            @click="abrirModalFes('RECHAZA')"
-            class="px-4 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700/60 text-xs font-bold font-mono flex items-center gap-2 cursor-pointer transition-colors shadow-lg"
-          >
-            <span>❌</span> <span>Devolver con Observaciones</span>
-          </button>
-          <div v-else></div>
-
-          <button 
-            type="button"
-            @click="abrirModalFes('APRUEBA')"
-            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black font-mono flex items-center gap-2 cursor-pointer transition-all shadow-xl shadow-emerald-950/50"
-          >
-            <span>🔏</span> <span>Aprobar ITS (Paso {{ pasoPendienteActual?.orden || 2 }})</span>
-          </button>
-        </div>
+        </aside>
       </div>
 
       <div v-else class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6 custom-scrollbar">
@@ -1973,8 +2052,23 @@ const urlPdfPreviewIframe = computed(() => {
   return `${urlPdfOficial.value}?t=${pdfPreviewTimestamp.value}`;
 });
 
-// Modo de Revisión Ejecutiva (SPEC-116 / REQ-1127): Jefaturas y Contabilidad
+// Modo de Revisión Ejecutiva (SPEC-116 / REQ-1127 / SPEC-122 / REQ-1136): Jefaturas y Contabilidad
 const vistaRevisionActiva = ref('PDF');
+const obsRevisionDirecta = ref('');
+
+const ejecutarAprobacionDirecta = () => {
+  if (obsRevisionDirecta.value) {
+    formFes.value.observaciones = obsRevisionDirecta.value;
+  }
+  abrirModalFes('APRUEBA');
+};
+
+const ejecutarDevolucionDirecta = () => {
+  if (obsRevisionDirecta.value) {
+    formFes.value.observaciones = obsRevisionDirecta.value;
+  }
+  abrirModalFes('RECHAZA');
+};
 
 const esModoRevisionEjecutiva = computed(() => {
   // 1. Si el paso pendiente actual es directivo (Paso > 1: Jefatura de Operaciones o Contabilidad)

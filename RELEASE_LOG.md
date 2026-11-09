@@ -2,6 +2,26 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.205
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-09 14:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1135` (`SPEC-121`), `REQ-1136` (`SPEC-122`), `REQ-1139` (`CASO-20261109-04`)
+- **Casos de Soporte Vinculados:** `CASO-20261109-04`, `CASO-20261109-05`, `CASO-20261109-06`
+- **Especificación Técnica:** Proyección Temporal de Servicios Mensuales en Flota Gantt, Layout a Dos Paneles con PDF Amplio y Consola de Decisión en ModalITS, y Auditoría Forense de Salida de Planta en OT 17 (`Torre.vue`, `ModalITS.vue`, BD PostgreSQL):
+  1. **REQ-1135 (Proyección de Servicios Mensuales y Multiequipo en Flota Gantt — SPEC-121 / CASO-20261109-05):**
+     - **Resolución Operativa Real:** En `Torre.vue`, `getEventoEquipoEnDia` consume determinísticamente la ventana contractual calculada por `getFichaOperativa(p)` (`fechaEjecIniIso` a `fechaEjecFinIso`), subsanando el desfase con las columnas planas de cabecera en servicios mensuales (caso Inarco `GSP-2611-00006` y `GSP-2611-1830-001` de noviembre de 2026).
+     - **Asociación Exhaustiva de Flota:** Enriquecida `getFichaOperativa` con `equiposIds = Array.from(allEqIds)`, permitiendo proyectar barras de faena para equipos asignados mediante `lineas_servicio`, `recursos_asignados`, `flota_traslado_ids` o `equipos_ids`.
+     - **Visibilidad Permanente:** Los equipos con contratos mensuales se mantienen visibles aun con el toggle *"Ocultar sin movimiento"* activo.
+  2. **REQ-1136 (Reestructuración Layout a Dos Paneles y Visor PDF Amplio en ModalITS — SPEC-122 / CASO-20261109-06):**
+     - **Acuerdo Formal de Reunión Cumplido:** Erradicada la compresión vertical del visor documental. Implementado layout de 2 columnas en modo revisión ejecutiva (`esModoRevisionEjecutiva`):
+       - *Panel Izquierdo:* Visor PDF formalizado y firmado en Paso 1 (Yiara Mendoza) en alta resolución y aspecto vertical de hoja técnica (`w-full h-full`), con accesos directos `🔄 Actualizar` y `↗ Abrir en Pestaña`.
+       - *Panel Derecho Lateral:* Consola de decisión ejecutiva (`w-[380px]`) con tarjeta financiera resumida, caja de observaciones directas de revisión/devolución, historial cronológico de transiciones y botones destacados `🔏 Aprobar ITS con PIN FES` y `❌ Devolver con Observaciones`.
+     - **Altura Forzada:** Asignada altura fija `h-[94vh]` en el contenedor modal durante la revisión para asegurar óptima ergonomía visual.
+  3. **REQ-1139 (Auditoría Forense Determinista Salida de Planta OT 17 — CASO-20261109-04):**
+     - Auditoría en `sch_leangsp_prod` constató que el operador Nicolás Ceballos (`id_user = 45`) registró salida de patio (08:20:35 CLT) y llegada a faena (08:21:09 CLT) en el Log #53 con exactamente 34 segundos de diferencia y odómetro idéntico (618.888 km).
+     - Confirmado que los datos jamás se perdieron; el reporte #52 se sincronizó a las 11:00:33 CLT con 9.00 horas operativas. Ficha canónica emitida en `Soporte/CASO-20261109-04_Auditoria_Forense_OT17_Salida_Planta_Nicolas_Ceballos.md`.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.204
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-09 10:55:00 (-03:00)

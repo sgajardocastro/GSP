@@ -1285,4 +1285,26 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **2. Solución Estructural ("Cero Parches"):** Implementada la función pura `normalizarCatKey` en `ModalITS.vue` que desenvuelve de forma segura el identificador de categoría (soportando tanto `RefImpl` como cadenas primitivas) y homologa las divergencias de nomenclatura entre backend y frontend (`subcontrato_flete` <-> `subcontratacion_flete`, `gastos_extra` <-> `gastos_extraordinarios`). Blindadas igualmente `agregarItemCosto`, `toggleDeclararSinCosto`, `getEstadoCategoria`, `getSubtotalCategoria` y `necesitaColumnaOC`.
   - **3. Documentación y Despliegue:** Especificación canónica en `.agents/specs/120_normalizacion_costos_directos_y_eliminacion_reactiva_seccion3_its_spec.md` (`SPEC-120`), ficha de soporte canónica en `Soporte/CASO-20261109-03_Boton_Basurero_No_Funciona_Costos_Seccion3_ModalITS.md`, registrada en `Soporte/README.md`, versionado a `v1.0.204` en `package.json`, `RELEASE_LOG.md` y compilados bundles de frontend para producción y desarrollo.
 
+### 📅 Acuerdos y Plan de Acción — Reunión J. Ponce, A. Porperrello, Yara & S. Gajardo (09-Nov-2026 — Soporte Operacional, ITS y Flota)
+
+* [x] **106. `[REQ-1135]` [Flota Gantt — Proyección Servicios Mensuales Inarco] Corrección Proyección Temporal de Servicios Mensuales y Multiequipo en Torre PMO [SPEC-121 / Frontend v1.0.205 / COMPLETADO - 09-Nov-2026]:**
+  - **1. Especificación Canónica (`SPEC-121`):** Enriquecida `getFichaOperativa(p)` para exponer `equiposIds` y adaptada `getEventoEquipoEnDia(eq, fechaStr)` en `Torre.vue` para que resuelva la ventana operativa completa (`fechaEjecIniIso` -> `fechaEjecFinIso`) mediante comparación léxica ISO pura (cero desfaces horarias) y valide pertenencia de equipos multiasignación (`allEqIds`).
+  - **2. Proyección y Visibilidad:** Servicios mensuales como `GSP-2611-00006` y `GSP-2611-1830-001` de Constructora Inarco proyectan sus barras en todo noviembre y se mantienen visibles con el filtro "Ocultar sin movimiento".
+* [x] **107. `[REQ-1136]` [UX Editor ITS — Formato de Visualización y Firma] Reestructuración a Layout de Dos Paneles con PDF Amplio y Consola Lateral de Firma FES [SPEC-122 / Frontend v1.0.205 / COMPLETADO - 09-Nov-2026]:**
+  - **1. Especificación Canónica (`SPEC-122`):** En `ModalITS.vue`, transformado el modo de revisión ejecutiva (`esModoRevisionEjecutiva`) en un layout de 2 columnas: panel izquierdo con visor PDF amplio (`h-[94vh]` forzado) sin aplastamiento y aspecto vertical de hoja técnica, y panel lateral derecho (`w-[380px]`) con estado, observaciones de revisión, historial de rechazos y botones de decisión (`🔏 Aprobar ITS con PIN FES` y `❌ Devolver con Observaciones`).
+* [ ] **108. `[REQ-1137]` [Regla de Negocio — Viáticos de Alimentación ITS] Exclusión de Choferes de Camión en Sugerencia Automática de Viáticos [SPEC-123 / Backend]:**
+  - Filtrar en `itsController.js` y `reportDiarioController.js` la precarga de viáticos para que aplique exclusivamente a Operadores y Riggers, excluyendo roles `CHOFER`, `CONDUCTOR` y `CAMIONERO`.
+* [x] **109. `[REQ-1139]` [Soporte Producción — CASO-20261109-04 — OT 17 Nicolás Ceballos] Auditoría Forense en Base de Datos de Salida de Planta y Jornada Terreno [PostgreSQL PROD / COMPLETADO - 09-Nov-2026]:**
+  - **1. Auditoría SQL en Producción:** Verificado que el operario Nicolás Ceballos (`id_user = 45`) registró su salida de patio y llegada a faena en `tequ_log_desplazamiento` (Log #53) a las 08:20:35 CLT y 08:21:09 CLT con odómetro `618888 km` (ambas marcas con 34 segundos de diferencia).
+  - **2. Persistencia Confirmada:** El dato NUNCA se perdió; el reporte de avance (#52) fue sincronizado a las 11:00 CLT con 9.00 hrs facturables. Se emitió ficha de soporte `Soporte/CASO-20261109-04_Auditoria_Forense_OT17_Salida_Planta_Nicolas_Ceballos.md`.
+* [ ] **110. `[REQ-1138]` [Regla Comercial — Horas Mínimas en Arriendo / Valor Fijo] Supresión de Piso Mínimo de 8 Horas Diarias en Contratos Mensuales y Fijos [En espera de Alfonso]:**
+  - Supresión de sobretiempos ficticios diarios en arriendos puros a la espera del detalle técnico de tipos de arriendo por parte de Alfonso Porperrello.
+* [ ] **111. `[REQ-1140]` [Taller Mecánico — Certificados de Mantenimiento] Incorporación de Formatos de Certificación de Taller [En espera de Alfonso]:**
+  - A la espera de las muestras físicas recopiladas por Alfonso en taller mecánico para diseñar las plantillas PDF.
+* [ ] **112. `[REQ-1142]` [Soporte Taller — Tickets Observaciones Leonel Vergara] Canal de Incidencias Menores de Taller [En espera de Alfonso]:**
+  - Recepción de tickets de observaciones menores del taller mecánico para priorización.
+* [ ] **113. `[REQ-1141]` [Módulo Compras y Bodega] Flujo de Órdenes de Compra y Gestión de Stock [Pausado por 2 días]:**
+  - Postergado temporalmente por acuerdo de reunión para concentrar capacidad en soporte e ITS.
+
+
 

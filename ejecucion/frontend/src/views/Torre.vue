@@ -3724,42 +3724,58 @@ const toggleTodasCategoriasGantt = () => {
   }
 }
 
+const toLocalIsoDate = (val) => {
+  if (!val) return ''
+  const str = String(val).trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10)
+  const d = new Date(val)
+  if (Number.isNaN(d.getTime())) return ''
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 const getEventoEquipoEnDia = (eq, fechaStr) => {
-  const targetDate = new Date(fechaStr + 'T00:00:00')
   const patEq = (eq.patente || '').toUpperCase().trim()
   const idEq = Number(eq.id_equipo)
 
   const proyectosCoincidentes = []
 
   for (const p of todosLosProyectos.value) {
-    const rawIni = p.fecha_plan_ini || p.fecha_real_ini || p.fecha_creacion
-    if (!rawIni) continue
+    const f = getFichaOperativa(p)
+    const iniIso = f.fechaEjecIniIso || toLocalIsoDate(p.fecha_plan_ini || p.fecha_real_ini || p.fecha_creacion)
+    if (!iniIso) continue
 
-    const ini = new Date(rawIni.split('T')[0] + 'T00:00:00')
-    const rawFin = p.fecha_plan_fin || p.fecha_real_fin || rawIni
-    const fin = new Date(rawFin.split('T')[0] + 'T23:59:59')
+    const finIso = f.fechaEjecFinIso || iniIso
 
-    if (targetDate >= ini && targetDate <= fin) {
+    // Comparación léxica determinista ISO YYYY-MM-DD (cero desfase de huso horario)
+    if (fechaStr >= iniIso && fechaStr <= finIso) {
       const ej = p.json_field?.ejecucion_v1 || {}
       const crm = p.json_field?.crm_v1 || {}
-      
-      const esGrua = patEq && (ej.patente_grua || '').toUpperCase().trim() === patEq
-      const enLineas = crm.lineas_servicio?.some(l => {
+
+      const matchId = Boolean(idEq && f.equiposIds && f.equiposIds.includes(idEq))
+      const matchPatenteFicha = Boolean(patEq && (
+        (f.equipoNombre && f.equipoNombre.toUpperCase().includes(patEq)) ||
+        (Array.isArray(f.equiposNombres) && f.equiposNombres.some(en => en.toUpperCase().includes(patEq)))
+      ))
+      const esGrua = Boolean(patEq && (ej.patente_grua || '').toUpperCase().trim() === patEq)
+      const enLineas = Boolean(crm.lineas_servicio?.some(l => {
         const lp = (l.patente || '').toUpperCase().trim()
         const lid = Number(l.id_equipo || l.equipo_asignado_id)
         return (lp && lp === patEq) || (lid && lid === idEq)
-      })
-      const enRecursos = ej.recursos_asignados?.equipos?.some(re => {
+      }))
+      const enRecursos = Boolean(ej.recursos_asignados?.equipos?.some(re => {
         const rp = (re.patente || '').toUpperCase().trim()
         const rid = Number(re.id_equipo)
         return (rp && rp === patEq) || (rid && rid === idEq)
-      })
-      const enPatio = ej.preparacion_salida?.inspecciones_patio && (
+      }))
+      const enPatio = Boolean(ej.preparacion_salida?.inspecciones_patio && (
         Boolean(ej.preparacion_salida.inspecciones_patio[String(idEq)]) ||
         Boolean(ej.preparacion_salida.inspecciones_patio[idEq])
-      )
+      ))
 
-      if (esGrua || enLineas || enRecursos || enPatio) {
+      if (matchId || matchPatenteFicha || esGrua || enLineas || enRecursos || enPatio) {
         proyectosCoincidentes.push(p)
       }
     }
@@ -4014,18 +4030,6 @@ const toggleTarjetaKardexManual = (idProyecto) => {
   kardexPinesManuales.value = next
 }
 
-const toLocalIsoDate = (val) => {
-  if (!val) return ''
-  const str = String(val).trim()
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10)
-  const d = new Date(val)
-  if (Number.isNaN(d.getTime())) return ''
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
 // formatIsoToDdMmYyyy already defined above
 
 const formatIsoToDdMm = (iso) => {
@@ -4194,6 +4198,7 @@ const getFichaOperativa = (p) => {
 
   return {
     esSoloRigger,
+    equiposIds: Array.from(allEqIds),
     fechaVentaIso,
     fechaEjecIniIso,
     fechaEjecFinIso,
