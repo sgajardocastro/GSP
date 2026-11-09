@@ -3241,6 +3241,16 @@ const diasGantt = computed(() => {
   return dias
 })
 
+// Formato DD/MM/YYYY determinista seguro anti-timezone
+const formatIsoToDdMmYyyy = (fStr) => {
+  if (!fStr) return '—'
+  const partes = String(fStr).slice(0, 10).split('-')
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}/${partes[0]}`
+  }
+  return String(fStr)
+}
+
 // Resolver columna de Último Mantenimiento para cada equipo
 const resolverUltimoMantenimientoEquipo = (eq) => {
   const mnt = eq.mnt_info || {}
