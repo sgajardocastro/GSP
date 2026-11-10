@@ -156,3 +156,30 @@ $$\text{Horas de Presencia / Stand-by} = \text{Tiempo en Obra Sin Operar por Esp
    El botón de avance en PWA valida en tiempo real y despliega notificaciones visibles inmediatas indicando qué dato mandatorio falta (foto de superestructura, foto de chasis o lectura horométrica).
 3. **Servicio Multi-Día (Día > 1):**  
    El horómetro de inicio se hereda automáticamente del cierre de la jornada previa; el operador estampa exclusivamente la hora de inicio y queda exento de registrar viaje intermedio.
+
+---
+
+## 9. Resolución de Operador por Rango de Fechas y Hito de Llegada a Base en Matriz PMO (`REQ-1118` / `REQ-1119`)
+
+1. **Asignación Dinámica de Operadores por Rango de Fechas (`turnos_operadores` y `tripulacion_asignada`):**
+   - En la Torre de Control Operativo en Vivo (`controlVivoController.js` y `ControlOperativoVivo.vue`), la resolución del operador de cada equipo se evalúa por fecha (`fechaTarget`), priorizando el turno activo en `lineas_servicio[].turnos_operadores` (`fecha_ini <= fechaTarget <= fecha_fin`) y las filas de `ejecucion_v1.tripulacion_asignada` cuyo rango `[fecha_plan_ini, fecha_plan_fin]` cubra la fecha consultada o el día seleccionado en la cinta multidía (`franja_multidia`). Si no existen fechas definidas en los turnos, opera el fallback hacia `operador_asignado_id`.
+2. **Despliegue y Sincronización del Hito `LLEGADA_BASE` en Retorno:**
+   - En días `UNICO` y `TERMINO`, la matriz PMO despliega explícitamente tanto el inicio del retorno desde obra (`VIAJE_RETORNO` $\rightarrow$ `fecha_salida_faena`) como el arribo final a planta (`LLEGADA_BASE` $\rightarrow$ `fecha_llegada_patio`), permitiendo su override administrativo y sincronizándolo en `tequ_log_desplazamiento` para el cálculo de viáticos y horas de traslado, con fallback retrocompatible cuando `VIAJE_RETORNO` fue cerrado manualmente.
+3. **Exposición y Edición Bidireccional de `obs_validador` en la Tarjeta de Torre PMO (`REQ-1120`):**
+   - El comentario que registra el Analista de Control de Gestión (Yiara Mendoza) en el recuadro **`CONTROL DE GESTIÓN / AUDITORÍA FES -> OBSERVACIONES DE VALIDACIÓN`** (`tedp_reporte_avance.obs_validador`) se proyecta en cada jornada de `franja_multidia` (`obs_validador` y `validador_nombre`) y se visualiza al pie del día seleccionado en la tarjeta de `ControlOperativoVivo.vue`.
+   - El campo es editable tanto desde `ModalVisorReport.vue` (incluso cuando el Report ya se encuentra validado, al activar `✏️ Editar Datos Terreno`) como inline desde la tarjeta de la Torre PMO (`clave_actividad = 'OBS_VALIDADOR'` en `overrideHitoActividad`), sincronizando directamente `tedp_reporte_avance.obs_validador` (con respaldo en `json_field.obs_validador_por_dia[fecha]` si aún no existe fila de report para ese día).
+
+---
+
+## 10. Desacople Determinista de Operadores Salientes en Relevos Multidía (`REQ-1145` / Ticket `REQ-2888`)
+
+1. **Problema Operativo Resuelto:**
+   En OTs de arriendo mensual o multidía (ej. `GSP-2611-00007`), al producirse un cambio de turno u operador titular (ej. relevo de Claudio Gallardo por Ernesto Ríos a contar del 06-Nov), el endpoint `getReportsPendientesUsuario` (`reportDiarioController.js`) continuaba inyectando la OT en la lista de `pendientes` del operador saliente debido a que la OT computaba días pendientes globales (`cantReportes < totalDias`) y el operador saliente figuraba en el historial de reportes (`ra.id_user_operador = $1`) o en asignación estática inicial. Esto bloqueaba la disponibilidad del operador saliente para nuevos servicios.
+
+2. **Regla de Resolución y Filtrado por Vigencia de Turno:**
+   - Al evaluar cada OT para un operador consultado (`id_user`):
+     a) **Sin Jornada Abierta Propia:** Si el operador NO tiene una jornada en curso (`jornadaCanon == null`), se verifica la matriz de turnos (`lineas_servicio[].turnos_operadores` y `ejecucion_v1.tripulacion_asignada`).
+     b) **Turno Expirado / Relevado:** Si todos los turnos asignados al operador en la OT tienen fecha de término anterior a hoy (`fecha_fin < hoyStr`) y la fecha actual corresponde al turno de un operador relevo, la OT se clasifica como **concluida/histórica** (`motivo: 'TURNO_FINALIZADO'`, `puede_reportar: false`, `mensaje: 'Turno concluido. Relevado en faena.'`).
+     c) **Exclusión Absoluta de Pendientes:** El operador saliente queda 100% liberado de la OT; no se le exige reporte ni se le muestra la OT como pendiente.
+   - Sincronización en cabecera: La asignación activa del proyecto (`json_field->'ejecucion_v1'->>'operador_id'` y `lineas_servicio[0].operador_asignado_id`) debe reflejar dinámicamente al titular vigente según la fecha de operación.
+

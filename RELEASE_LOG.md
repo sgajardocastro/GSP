@@ -2,6 +2,31 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [PWA GSP & Backend] - Versión 1.0.65 (PWA) / 1.0.207 (Backend)
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-10 11:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-prod/`, `/var/www/html/pwa-gsp-dev/`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1143` (`SPEC-006`), `REQ-1145` (`SPEC-065`)
+- **Especificación Técnica:** Deshabilitación temporal de la regla de validación de odómetro incremental en PWA (`ViajeConductor.vue`) y backend (`reportDiarioController.js`, `viajeModel.js`), saneamiento correctivo en base de datos de lecturas corruptas de kilometraje en la flota (`tequ_equipo`, `tequ_log_desplazamiento`), e incremento formal de versión a `v1.0.65` para forzar la actualización de caché del Service Worker en los dispositivos móviles de los operadores en terreno.
+
+## [Portal Web GSP & Backend] - Versión 1.0.206
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-09 20:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod` & `/home/nodeadmin/proyectos/lean-services-gsp`
+- **Requerimientos Asociados:** `REQ-1144` (`SPEC-125`), `REQ-1137` (`SPEC-125`), `REQ-1140` (`SPEC-124`)
+- **Casos de Soporte Vinculados:** `CASO-20261109-05`
+- **Especificación Técnica:** Gobernanza Integral del ITS en Servicios a Valor Fijo (Suma Alzada), Regla Determinista de Flota con Report/Viaje, Campos de Registro de Viaje, Glosas Operacionales de Sección 3 y Resolución 100% Relacional ("Cero Parches" / Cero Hardcoding) (`GestorOportunidades.vue`, `proyectoModel.js`, `itsController.js`, `itsPdfService.js`, `ModalITS.vue`, BD PostgreSQL):
+  1. **REQ-1144 (Preventa y Servicios a Valor Fijo en ITS — SPEC-125 / CASO-20261109-05):**
+     - **Supresión de Líneas Fantasma de Rigger ($0):** En `GestorOportunidades.vue` (`onRequiereRiggerChange`) y `proyectoModel.js` (`generarCotizacionVersion`), marcar `"Con Rigger"` en una línea de grúa registra el atributo operativo sin insertar líneas comerciales separadas a `$0` ni heredarle el monto global del negocio en el ITS.
+     - **Modalidad Contractual `Valor Fijo (Suma Alzada)`:** En `itsController.js` e `itsPdfService.js`, los contratos a `Valor Fijo` (`VALOR_FIJO` / `SUMA_ALZADA` / `SERVICIO`) operan con `horas_minimas_diarias = 0`, imprimiendo en Sección 1 `SERVICIO VALOR FIJO (SUMA ALZADA)`, `NO APLICA (VALOR FIJO)` y `$1.000.000 (VALOR FIJO)`, y en Sección 2 `HRS REPORT = 00:00` (`Valor Fijo (S/Mín.)`).
+  2. **REQ-1144 (Regla Determinista de Flota con Report/Viaje y Campos de Registro de Viaje — SPEC-125):**
+     - **Exclusión de Semirremolques sin Motor:** En `itsController.js` e `itsPdfService.js`, la Sección 2 despliega únicamente vehículos motorizados que posean un Report Diario (`tedp_reporte_avance`) y/o un Registro de Viaje (`tequ_log_desplazamiento`) activo, excluyendo semirremolques, plataformas o camas bajas sin motor (`id_subcategoria = 84` / `JC.2796-2`).
+     - **Campos `tipo_viaje` y `comentario_viaje`:** Incorporados los controles editables de `Tipo de Viaje` (`IDA_Y_RETORNO`, `SOLO_IDA`, `SOLO_RETORNO`, `APOYO_CONTRAPESOS`) y `Comentario / Glosa del Viaje` (`obs_termino`) en `ModalITS.vue` e `itsPdfService.js`, y ampliado el constraint `tits_jornada_detalle_tipo_servicio_check` en PostgreSQL para admitir `'REGISTRO_VIAJE'`.
+  3. **REQ-1144 & REQ-1137 (Glosas Operacionales de Sección 3, Rol Rigger y Resolución 100% Relacional Cero Hardcoding — SPEC-125):**
+     - **Movilización Dual (`Tipo + Glosa`):** Separación e impresión simultánea de `tipo_movilizacion` y `ruta_detalle` (`[Tipo Movilización] — [Glosa / Ruta]`) en Web y PDF sin sobrescritura.
+     - **Condición Editable en Viático de Alimentación:** Columna `Condición Movimiento Día` (`concepto_detalle`) habilitada como campo editable con sugerencias `<datalist>` en `ModalITS.vue` y reflejada en el PDF Oficial.
+     - **Preservación de Rol `RIGGER` y Formato Reloj `hh:mm`:** Conservación estricta del rol `RIGGER` (`$0` sueldo fijo mensual / `tarifa_no_aplica = true`), exclusión de choferes de camión en sugerencia automática de viáticos (`REQ-1137`), formato reloj `hh:mm` en todas las tablas y erradicación del 100% de patentes y nombres hardcodeados en código fuente.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.205
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-09 14:35:00 (-03:00)
