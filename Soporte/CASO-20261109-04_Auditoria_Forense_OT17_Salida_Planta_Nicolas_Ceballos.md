@@ -79,11 +79,28 @@ Se ejecutó una inspección exhaustiva de solo lectura sobre las tablas transacc
 
 ---
 
-## 6. Recomendaciones Operacionales
-1. **Capacitación a Operadores:** Reforzar con la jefatura de operaciones que la salida de planta debe marcarse efectivamente **al salir de la base San Pablo**, y la llegada **al arribar a la obra mandante**, evitando marcar ambos hitos juntos en destino.
-2. **Feedback Visual Offline en PWA:** Asegurar que cuando un hito queda encolado localmente en IndexedDB, se muestre un badge visible `📶 Guardado en dispositivo (Pendiente de sincronizar)` para que el usuario no asuma que el dato desapareció.
+## 6. Resolución Estructural de Fondo ("Cero Parches") — REQ-1139
+
+Para erradicar la recurrencia de este incidente, se implementó una solución integral en sus 4 niveles de arquitectura:
+
+1. **Nivel 1 (Frontend PWA — `ViajeConductor.vue`):**
+   - Incorporado indicador de sincronización inicial (`v-if="cargandoViaje"`) que evita el parpadeo de formularios editables mientras la PWA consulta el estado con el backend.
+   - Condición estricta de bloqueo de fase: Si `viaje.fecha_salida_patio` o `viaje.fecha_salida_faena` ya existen en base de datos o en la sesión, el formulario editable de salida se bloquea de forma inmutable y la UI pasa directamente a la etapa de viaje en tránsito / arribo.
+   - Deshabilitación reactiva del botón al primer clic (`guardando = true`) para impedir reenvíos concurrentes.
+
+2. **Nivel 2 (Backend API — `viajeModel.js`):**
+   - Implementada idempotencia determinista en `registrarSalida` mediante `COALESCE(fecha_salida_patio, CURRENT_TIMESTAMP)` y `COALESCE(fecha_salida_faena, CURRENT_TIMESTAMP)`, preservando siempre la primera marca temporal fáctica capturada en patio.
+   - Blindaje de fotografías iniciales de tablero/odómetro (`COALESCE`).
+   - Protección de la máquina de estados: Si el viaje ya se encuentra en `ARRIBADO`, `LLEGADO` o `CONCLUIDO`, una llamada posterior no degrada el estado a `EN_RUTA`.
+
+3. **Nivel 3 (Base de Datos PostgreSQL — Saneamiento Histórico):**
+   - Regularizado el registro del Log #53 en `sch_leangsp_prod.tequ_log_desplazamiento` con la marca real verificada por Nginx (`2026-11-09 10:23:33 UTC` / `07:23:33 CLT`).
+   - El trayecto de Nicolás Ceballos queda normalizado con **57 minutos y 36 segundos reales de viaje**, eliminando la anomalía de los 34 segundos.
+
+4. **Nivel 4 (Consolidación y Vistas):**
+   - La Torre de Control PMO, la Ficha de Viaje y la perspectiva de liquidación/ITS reflejan el traslado y tiempos efectivos de desplazamiento.
 
 ---
 
 ## 7. Dictamen Técnico Final
-El incidente reportado por Nicolás Ceballos **NO constituyó pérdida de datos en la plataforma**. La transacción existe de forma íntegra, válida y auditable en la base de datos de producción (`tequ_log_desplazamiento` ID 53 y `tedp_reporte_avance` ID 52), con las horas operativas y registros intactos para facturación y liquidación.
+El incidente reportado por Nicolás Ceballos **NO constituyó pérdida de datos en la plataforma**. El operador completó su salida a las 07:23:33 CLT en el patio de la empresa. La discrepancia visual posterior se originó por falta de idempotencia en el backend ante la reapertura en obra, la cual ha quedado definitivamente subsanada y saneada en producción bajo **REQ-1139**.
