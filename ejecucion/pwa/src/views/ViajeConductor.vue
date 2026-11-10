@@ -1439,9 +1439,9 @@ const ejecutarInicioViaje = async () => {
   const horoSal = Number(formSalida.value.horometro)
   const minOdo = Number(viaje.value.odometro_acumulado || 0)
   const minHoro = Number(viaje.value.horometro_chasis_acumulado || 0)
+  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro de salida
   if (minOdo > 0 && odoSal < minOdo) {
-    alert(`🚨 Valor Incremental Inválido:\n\nEl Odómetro de Salida (${odoSal} KM) no puede ser menor al último registro acumulado del equipo (${minOdo} KM).`)
-    return
+    console.warn(`[REQ-1143] Odómetro de Salida (${odoSal} KM) menor al acumulado (${minOdo} KM). Registro permitido temporalmente.`)
   }
   if (minHoro > 0 && horoSal < minHoro) {
     alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Salida (${horoSal} HRS) no puede ser menor al último registro acumulado del equipo (${minHoro} HRS).`)
@@ -1585,9 +1585,9 @@ const ejecutarLlegadaFaena = async () => {
   const horoLleg = Number(formLlegada.value.horometro)
   const odoSal = Number(viaje.value.odometro_salida || 0)
   const horoSal = Number(viaje.value.horometro_salida || 0)
+  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro de llegada
   if (odoSal > 0 && odoLleg < odoSal) {
-    alert(`🚨 Valor Incremental Inválido:\n\nEl Odómetro de Llegada (${odoLleg} KM) no puede ser menor al Odómetro de Salida (${odoSal} KM).`)
-    return
+    console.warn(`[REQ-1143] Odómetro de Llegada (${odoLleg} KM) menor a Salida (${odoSal} KM). Registro permitido temporalmente.`)
   }
   if (horoSal > 0 && horoLleg < horoSal) {
     alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Llegada (${horoLleg} HRS) no puede ser menor al Horómetro de Salida (${horoSal} HRS).`)
@@ -1844,7 +1844,8 @@ onMounted(async () => {
         // Restaurar cualquier dato digitado o foto capturada en borrador ANTES de rellenar con acumulado por defecto
         restaurarBorradorViaje()
         if (viaje.value.estado_viaje === 'ASIGNADO') {
-          if (!formSalida.value.odometro && viaje.value.odometro_acumulado > 0) {
+          // REQ-1143 / SPEC-006 v1.6: Prellenar odómetro solo si es cifra válida y razonable (< 500.000 km)
+          if (!formSalida.value.odometro && viaje.value.odometro_acumulado > 0 && viaje.value.odometro_acumulado < 500000) {
             formSalida.value.odometro = viaje.value.odometro_acumulado
           }
           if (!formSalida.value.horometro && viaje.value.horometro_chasis_acumulado > 0) {

@@ -882,11 +882,9 @@ const reportDiarioController = {
               error: `El Horómetro de Inicio (${horometro_inicio} hrs) no puede ser menor al último registro acumulado del equipo (${minHoro} hrs).`
             });
           }
+          // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de validación incremental de odómetro al inicio
           if (odometro_inicio !== undefined && odometro_inicio !== null && odometro_inicio !== '' && Number(rowAcum.odo) > 0 && Number(odometro_inicio) < Number(rowAcum.odo)) {
-            return res.status(422).json({
-              success: false,
-              error: `El Odómetro de Inicio (${odometro_inicio} km) no puede ser menor al último registro acumulado del equipo (${rowAcum.odo} km).`
-            });
+            console.warn(`[REQ-1143] Odómetro inicio (${odometro_inicio} km) menor al acumulado (${rowAcum.odo} km) para equipo ${id_equipo}. Se permite registro temporalmente.`);
           }
         }
       }
@@ -1897,12 +1895,10 @@ const reportDiarioController = {
           });
         }
       }
+      // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de validación incremental de odómetro al cierre
       if (odometro_inicio !== undefined && odometro_inicio !== null && odometro_termino !== undefined && odometro_termino !== null) {
         if (Number(odometro_termino) < Number(odometro_inicio)) {
-          return res.status(422).json({
-            success: false,
-            error: `El Odómetro Final (${odometro_termino} km) no puede ser menor al Odómetro Inicial (${odometro_inicio} km).`
-          });
+          console.warn(`[REQ-1143] Odómetro final (${odometro_termino} km) menor al inicial (${odometro_inicio} km) en reporte ${id_reporte_avance || 'nuevo'}. Se permite registro temporalmente.`);
         }
       }
 

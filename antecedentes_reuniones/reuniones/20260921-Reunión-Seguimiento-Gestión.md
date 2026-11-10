@@ -49,12 +49,19 @@ Revisión operacional y pruebas del sistema con foco en la planificación comerc
 *   Se ratifica desacoplar el WMS físico en esta etapa: partir implementando las **Órdenes de Trabajo (OT) de Mantenimiento** vinculadas a los 110 equipos ya existentes en `tequ_equipo`, integradas con la Torre de Control y Gantt de Disponibilidad.
 *   El control físico de pañol, bodegas y etiquetado QR térmico de repuestos se abordará de forma modular una vez estabilizado el ciclo de OTs y taller.
 
+### 7. Report Diario Autónomo de Un Solo Uso & Mensajería WhatsApp
+*   Para evitar la fricción de instalar la PWA o recordar credenciales, el Report Diario de Avance se integra directamente como **continuidad web móvil de la Hoja de Ruta (`/viaje/:token`)**.
+*   **Mecanismo:** El operador accede al mismo enlace de su despacho. Al arribar a faena, la pantalla habilita el registro de horómetros, tiempos efectivos y firma manuscrita táctil del supervisor mandante en un lienzo Canvas.
+*   **Automatización Multi-Día:** Implementación del microservicio Node.js con Baileys (`gsp-whatsapp`) bajo PM2 en `servidor.leanglobal.cl` (usuario `nodeadmin`) para el despacho automático de recordatorios por WhatsApp a las 17:30 hrs con enlace directo a la jornada activa.
+
 ---
 
 ## 📋 Próximos Pasos y Asignación de Tareas
 
 ### Sergio Gajardo (LeanGlobal)
-- [ ] Habilitar en `Documentos.vue` la interfaz de carga y actualización de documentos institucionales de empresa (Opción A).
+- [x] Habilitar en `Documentos.vue` la interfaz de carga y actualización de documentos institucionales de empresa (Opción A) y corregir iconos corporativos.
+- [x] Implementar microservicio de WhatsApp en servidor (`servidor.leanglobal.cl`) y vincular sesión activa para despacho automático.
+- [x] Integrar módulo de Report Diario con firma táctil Canvas en la vista web de viaje (`ViajeConductor.vue`).
 - [ ] Ejecutar el enrolamiento y asignación de roles para Wilson, Yara, Marita y Dayana.
 - [ ] Ajustar permisos comerciales para restricción de edición por creador de cotización.
 - [ ] Avanzar en la estructura de Mantenimiento OTs (Spec 48) priorizando actividades, HH, servicios externos y cierre con PIN.

@@ -335,8 +335,9 @@ const viajeModel = {
       );
       if (eqAcumRes.rows.length > 0) {
         const acum = eqAcumRes.rows[0];
+        // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro de salida
         if (km_inicial !== undefined && km_inicial !== null && Number(km_inicial) > 0 && Number(acum.odo) > 0 && Number(km_inicial) < Number(acum.odo)) {
-          throw new Error(`El Odómetro de salida (${km_inicial} km) no puede ser menor al último registro acumulado del equipo (${acum.odo} km).`);
+          console.warn(`[REQ-1143] Odómetro de salida (${km_inicial} km) menor al acumulado (${acum.odo} km) para equipo ${eqIdVal}. Se permite registro temporalmente.`);
         }
         if (horometro_inicial !== undefined && horometro_inicial !== null && Number(horometro_inicial) > 0 && Number(acum.h_chasis) > 0 && Number(horometro_inicial) < Number(acum.h_chasis)) {
           throw new Error(`El Horómetro de salida (${horometro_inicial} hrs) no puede ser menor al último registro acumulado del equipo (${acum.h_chasis} hrs).`);
@@ -574,8 +575,9 @@ const viajeModel = {
     );
     if (prevViajeRes.rows.length > 0) {
       const pv = prevViajeRes.rows[0];
+      // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro de llegada
       if (km_final !== undefined && km_final !== null && pv.km_inicial !== null && Number(km_final) < Number(pv.km_inicial)) {
-        throw new Error(`El Odómetro de llegada (${km_final} km) no puede ser menor al Odómetro de salida (${pv.km_inicial} km).`);
+        console.warn(`[REQ-1143] Odómetro de llegada (${km_final} km) menor a salida (${pv.km_inicial} km) en viaje ${token_viaje}. Se permite registro temporalmente.`);
       }
       if (horometro_final !== undefined && horometro_final !== null && pv.horometro_inicial !== null && Number(horometro_final) < Number(pv.horometro_inicial)) {
         throw new Error(`El Horómetro de llegada (${horometro_final} hrs) no puede ser menor al Horómetro de salida (${pv.horometro_inicial} hrs).`);
