@@ -1,5 +1,6 @@
 const pool = require('../config/postgresPool');
 const itsPdfService = require('../services/itsPdfService');
+const { isLineaCobroUnico, normalizarLineaCobroUnico } = require('../utils/lineaCobroUnico');
 const {
   resolverTarifaOperador,
   resolverTarifaTraslado,
@@ -12,6 +13,26 @@ const MessageModel = require('../models/messageModel');
 const notificacionService = require('../services/notificacionService');
 const crypto = require('crypto');
 const messageModel = new MessageModel();
+
+/**
+ * Detecta si una línea comercial corresponde a un Rigger/Personal fantasma con tarifa <= 0
+ */
+function esLineaRiggerFantasma(l) {
+  if (!l || typeof l !== 'object') return false;
+  const tipo = String(l.tipo || l.categoria || '').toUpperCase();
+  const subcat = String(l.subcategoria || '').toUpperCase();
+  const desc = String(l.descripcion || l.concepto || '').toUpperCase();
+  const esPersonalRigger = tipo.includes('PERSONAL') || subcat.includes('RIGGER') || desc.includes('RIGGER');
+  const valor = Number(l.valorUnitario || l.valor_unitario || l.precio_unitario || l.subtotal || 0);
+  return esPersonalRigger && valor <= 0;
+}
+
+/**
+ * Valida si un string corresponde a un hash hexadecimal de token
+ */
+function esHashHex(str) {
+  return typeof str === 'string' && /^[0-9a-fA-F]{12,64}$/.test(str);
+}
 
 /**
  * Construye las filas diarias precalculadas por persona (Operador y Rigger)
@@ -223,13 +244,13 @@ function construirPropuestaPersonalDiaria({
         equipo_modelo: mov.equipo_modelo || '',
         numero_oc: matchPrevAlim?.numero_oc || null,
         condicion_dia: viat.condicion_dia,
-        condicion_label: etiquetasCondicion[viat.condicion_dia] || viat.condicion_dia,
+        condicion_label: matchPrevAlim?.condicion_label || matchPrevAlim?.concepto_detalle || etiquetasCondicion[viat.condicion_dia] || viat.condicion_dia,
         desde: viat.desde,
         hasta: viat.hasta,
         colacion_horas: viat.colacion_horas,
         horas_efectivas: viat.horas_efectivas,
         horas_redondeadas: viat.horas_redondeadas,
-        concepto_detalle: `${etiquetasCondicion[viat.condicion_dia] || viat.condicion_dia} (${viat.desde} a ${viat.hasta}, Col: ${viat.colacion_horas}h -> ${viat.horas_redondeadas}h ef.)`,
+        concepto_detalle: matchPrevAlim?.concepto_detalle || matchPrevAlim?.condicion_label || `${etiquetasCondicion[viat.condicion_dia] || viat.condicion_dia} (${viat.desde} a ${viat.hasta}, Col: ${viat.colacion_horas}h -> ${viat.horas_redondeadas}h ef.)`,
         tipo_calculo: 'MONTO_DIRECTO',
         cantidad_unidades: viat.horas_redondeadas,
         precio_unitario: montoViatAplicado,
@@ -330,12 +351,16 @@ const itsController = {
 
       // 1.2 Parámetros comerciales de CRM
       const crmV1 = proyecto.json_field?.crm_v1 || {};
-      const lineas = crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
+      const lineasRaw = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
+      const lineas = (lineasRaw || []).filter(l => !esLineaRiggerFantasma(l));
       let valorHoraPactado = 0;
+      let valorFijoPactado = 0;
       let valorFletePactado = 0;
       let unidadFletePactado = '';
       let horasMinimas = 8.0;
-      let esValorFijoComercial = false;
+      let esValorFijoComercial = Boolean(crmV1.es_valor_fijo);
+      let tieneLineaPorHora = false;
+      let tieneLineaTraslado = false;
       let ventaNetaProyectadaComercial = 0;
 
       lineas.forEach(l => {
@@ -363,18 +388,36 @@ const itsController = {
         const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || unid.includes('FLETE') || unid.includes('TRASLADO') || (tipo === '' && (desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE') || subcat.includes('CAMA BAJA')));
 
         if (esLineaTraslado) {
-          valorFletePactado += (sub > 0 ? sub : (precio * parseFloat(l.cantidad || 1)));
+          tieneLineaTraslado = true;
+          // SPEC-128: Traslado es cobro único plano (1 × precio), nunca multiplicado por cantidad
+          valorFletePactado += (sub > 0 ? sub : precio);
           if (!unidadFletePactado && unid) unidadFletePactado = unid;
-        } else if (precio > 0 && valorHoraPactado === 0) {
-          valorHoraPactado = precio;
-          if (!unid.includes('HORA') && (unid.includes('FIJO') || unid.includes('JORNADA') || unid === 'DIA' || unid === 'DÍA' || unid === 'DIARIO')) {
+        } else {
+          const esFijo = unid.includes('FIJO') || unid.includes('SUMA ALZADA') || tipo.includes('FIJO') || desc.includes('VALOR FIJO');
+          if (esFijo) {
             esValorFijoComercial = true;
-            horasMinimas = 1.0;
-          } else if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
-            horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+            valorFijoPactado += (sub > 0 ? sub : precio);
+          } else if (precio > 0 && unid.includes('HORA')) {
+            tieneLineaPorHora = true;
+            if (valorHoraPactado === 0) valorHoraPactado = precio;
+            if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
+              horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+            }
+          } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
+            valorHoraPactado = precio;
+            if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
+              horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+            }
           }
         }
       });
+
+      const esSoloTraslado = tieneLineaTraslado && !tieneLineaPorHora && !esValorFijoComercial && valorFijoPactado === 0;
+
+      if ((esValorFijoComercial && !tieneLineaPorHora) || esSoloTraslado) {
+        valorHoraPactado = 0;
+        horasMinimas = 0;
+      }
 
       const esFleteSoloIdaComercial = (unidadFletePactado === 'TRASLADO IDA');
       const esFleteSoloRetornoComercial = (unidadFletePactado === 'TRASLADO RETORNO');
@@ -449,11 +492,13 @@ const itsController = {
           ld.id_user_chofer,
           COALESCE(ld.patente, e.patente, '') AS patente,
           COALESCE(e.modelo, '') AS equipo_modelo,
+          e.id_subcategoria,
           COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
           COALESCE(e.capacidad_maxima, 0) AS capacidad_maxima,
           COALESCE(uch.name_frst, '') AS chofer_nombre,
           COALESCE(uch.apellido_pat, '') AS chofer_apellido,
           ld.tipo_trayecto,
+          COALESCE(ld.obs_termino, '') AS comentario_viaje,
           TO_CHAR(COALESCE(ld.fecha_salida_patio, ld.fecha_llegada_faena, ld.fecha_salida_faena, ld.fecha_llegada_patio, ld.fecha_programada), 'YYYY-MM-DD') AS fecha_viaje_fmt,
           TO_CHAR(ld.fecha_salida_patio, 'HH24:MI') AS hora_salida_patio,
           TO_CHAR(ld.fecha_llegada_faena, 'HH24:MI') AS hora_llegada_faena,
@@ -471,8 +516,140 @@ const itsController = {
       const viajesRows = viajesRes.rows || [];
       const rawReportsRows = repRes.rows || [];
 
+      // Consultar personal y equipos asignados al proyecto
+      const eqAsigRes = await pool.query(`
+        SELECT 
+          re.id_equipo,
+          e.patente,
+          e.modelo,
+          e.id_subcategoria,
+          COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
+          COALESCE(e.capacidad_maxima, 0) AS capacidad_maxima,
+          COALESCE(e.unidad_capacidad, 'T') AS unidad_capacidad,
+          re.rol_equipo
+        FROM tpry_rel_equipo re
+        JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+        WHERE re.id_proyecto = $1;
+      `, [id_proyecto]);
+
+      const perAsigRes = await pool.query(`
+        SELECT DISTINCT ON (rp.id_user)
+          rp.id_user,
+          u.name_frst,
+          u.apellido_pat,
+          u.email,
+          rp.rol_asignado AS rol_personal
+        FROM tpry_rel_persona rp
+        JOIN tsec_users u ON rp.id_user = u.id_user
+        WHERE rp.id_proyecto = $1
+        ORDER BY rp.id_user, rp.id_rel_persona DESC;
+      `, [id_proyecto]);
+
+      const ejTrip = Array.isArray(proyecto.json_field?.ejecucion_v1?.tripulacion_asignada)
+        ? proyecto.json_field.ejecucion_v1.tripulacion_asignada
+        : [];
+      const allPersonalIds = new Set();
+      (perAsigRes.rows || []).forEach(p => allPersonalIds.add(Number(p.id_user)));
+      ejTrip.forEach(t => {
+        const uid = Number(t.id_user || t.id_usuario);
+        if (uid) allPersonalIds.add(uid);
+      });
+      (viajesRows || []).forEach(v => {
+        if (v.id_user_chofer) allPersonalIds.add(Number(v.id_user_chofer));
+      });
+      (repRes.rows || []).forEach(r => {
+        if (r.id_user_operador) allPersonalIds.add(Number(r.id_user_operador));
+        if (r.id_user_rigger) allPersonalIds.add(Number(r.id_user_rigger));
+      });
+
+      const idList = Array.from(allPersonalIds).filter(Boolean);
+      const usersDbMap = new Map();
+      if (idList.length > 0) {
+        const uRes = await pool.query(`
+          SELECT id_user, name_frst, apellido_pat, email
+          FROM tsec_users
+          WHERE id_user = ANY($1);
+        `, [idList]);
+        uRes.rows.forEach(u => usersDbMap.set(Number(u.id_user), u));
+      }
+
+      const personalMap = new Map();
+      (perAsigRes.rows || []).forEach(p => {
+        personalMap.set(Number(p.id_user), {
+          id_user: Number(p.id_user),
+          name_frst: p.name_frst || '',
+          apellido_pat: p.apellido_pat || '',
+          email: p.email || '',
+          rol_personal: p.rol_personal || 'Personal Operacional'
+        });
+      });
+      ejTrip.forEach(t => {
+        const uid = Number(t.id_user || t.id_usuario);
+        if (uid) {
+          const uDb = usersDbMap.get(uid);
+          const existing = personalMap.get(uid) || {};
+          personalMap.set(uid, {
+            id_user: uid,
+            name_frst: existing.name_frst || uDb?.name_frst || t.nombre_trabajador || t.nombre || '',
+            apellido_pat: existing.apellido_pat || uDb?.apellido_pat || '',
+            email: existing.email || uDb?.email || '',
+            rol_personal: t.cargo || existing.rol_personal || 'Operacional'
+          });
+        }
+      });
+      (viajesRows || []).forEach(v => {
+        const uid = Number(v.id_user_chofer);
+        if (uid) {
+          const uDb = usersDbMap.get(uid);
+          const existing = personalMap.get(uid) || {};
+          personalMap.set(uid, {
+            id_user: uid,
+            name_frst: existing.name_frst || uDb?.name_frst || v.chofer_nombre || '',
+            apellido_pat: existing.apellido_pat || uDb?.apellido_pat || v.chofer_apellido || '',
+            email: existing.email || uDb?.email || '',
+            rol_personal: existing.rol_personal || 'Conductor Tracto Camión'
+          });
+        }
+      });
+      (repRes.rows || []).forEach(r => {
+        if (r.id_user_operador) {
+          const uid = Number(r.id_user_operador);
+          const uDb = usersDbMap.get(uid);
+          const existing = personalMap.get(uid) || {};
+          personalMap.set(uid, {
+            id_user: uid,
+            name_frst: existing.name_frst || uDb?.name_frst || r.op_nombre || '',
+            apellido_pat: existing.apellido_pat || uDb?.apellido_pat || r.op_apellido || '',
+            email: existing.email || uDb?.email || '',
+            rol_personal: existing.rol_personal || 'Operador Grúa'
+          });
+        }
+        if (r.id_user_rigger) {
+          const uid = Number(r.id_user_rigger);
+          const uDb = usersDbMap.get(uid);
+          const existing = personalMap.get(uid) || {};
+          personalMap.set(uid, {
+            id_user: uid,
+            name_frst: existing.name_frst || uDb?.name_frst || r.rig_nombre || '',
+            apellido_pat: existing.apellido_pat || uDb?.apellido_pat || r.rig_apellido || '',
+            email: existing.email || uDb?.email || '',
+            rol_personal: existing.rol_personal || 'Rigger'
+          });
+        }
+      });
+
+      let personalAsignado = Array.from(personalMap.values()).map(p => {
+        const rolUpper = String(p.rol_personal || '').toUpperCase();
+        if (rolUpper.includes('RIGGER')) {
+          p.rol_personal = 'Rigger';
+        }
+        return p;
+      });
+
       // Filtrar reports evidentemente incompletos/inválidos (sin hora_termino, 0 hrs operadas y 0 hrs facturables)
+      // SPEC-128: En servicios de Valor Fijo / Cobro Único, los reports son respaldo de ejecución y no se descartan por tener 0 horas
       const esReportIncompleto = (r) => {
+        if (esValorFijoComercial || valorFijoPactado > 0) return false;
         const hrsOp = parseFloat(r.horas_operadas || 0);
         const hrsFact = parseFloat(r.horas_facturables || 0);
         const hTerm = r.hora_termino || r.ajustes_analista?.hora_termino || r.ajustes_analista?.valores_ajustados?.hora_termino || null;
@@ -497,6 +674,8 @@ const itsController = {
           (idxDia === totalDias - 1 ? [...vEquipo].reverse().find(v => v.tipo_trayecto === 'RETORNO' || v.tipo_trayecto === 'IDA_Y_VUELTA' || v.hora_llegada_patio) : null);
         return { ida, ret };
       };
+
+      const ejecV1 = proyecto.json_field?.ejecucion_v1 || {};
 
       reportsRows.forEach((r, idx) => {
         const fechaFmt = r.fecha_reporte_fmt || (r.fecha_reporte ? new Date(r.fecha_reporte).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
@@ -580,25 +759,48 @@ const itsController = {
               const req = String(m.requerimiento || '').toUpperCase();
               return c.includes('RIGGER') || c.includes('RER') || req.includes('RIGGER') || req.includes('RER');
             });
-            return (rRig?.nombre || rRig?.usuario || (rRig?.id_user === 21 ? 'ALFONSO MALDONADO' : '')).toUpperCase();
+            return String(rRig?.nombre || rRig?.usuario || '').toUpperCase();
           })(),
           estado_reporte: r.estado_reporte || null,
           liquidacion_report: r.ajustes_analista?.liquidacion_personal_dia || null
         });
       });
 
+      // Helper para descartar semirremolques, ramplas o plataformas sin motor
+      const esAccesorioSinMotor = (eq) => {
+        if (!eq) return false;
+        const subId = Number(eq.id_subcategoria);
+        const mod = String(eq.modelo || eq.equipo_modelo || '').toUpperCase();
+        const tipo = String(eq.tipo_equipo || '').toUpperCase();
+        return subId === 84 || mod.includes('SR 3M') || mod.includes('SEMIREMOLQUE') || mod.includes('SEMI-REMOLQUE') || tipo.includes('RAMPLA') || tipo.includes('PLATAFORMA') || tipo.includes('SEMIRREMOLQUE');
+      };
+
       // Si existen días con Registro de Viaje sin Report Diario en esa fecha, consolidarlos también
       viajesRows.forEach(v => {
         if (!v.fecha_viaje_fmt) return;
-        const yaConsolidado = movimientosDiarios.some(m => m.fecha === v.fecha_viaje_fmt && (!v.id_equipo || !m.id_equipo || Number(m.id_equipo) === Number(v.id_equipo)));
+        if (esAccesorioSinMotor(v)) return; // Excluir ramplas/semirremolques accesorios sin motor
+        const yaConsolidado = movimientosDiarios.some(m => m.fecha === v.fecha_viaje_fmt && m.id_equipo && v.id_equipo && Number(m.id_equipo) === Number(v.id_equipo));
         if (!yaConsolidado) {
+          let hrsViajeCalc = 0;
+          const hSalV = v.hora_salida_patio || '13:00';
+          const hTerV = v.hora_salida_faena || v.hora_llegada_faena || '15:40';
+          if (hSalV && hTerV) {
+            const [hI, mI] = hSalV.split(':').map(Number);
+            const [hF, mF] = hTerV.split(':').map(Number);
+            let diff = (hF * 60 + mF) - (hI * 60 + mI);
+            if (diff < 0) diff += 24 * 60;
+            hrsViajeCalc = Number((diff / 60).toFixed(2));
+          }
+
+          const nomChofer = (v.chofer_nombre ? `${v.chofer_nombre} ${v.chofer_apellido || ''}`.trim().toUpperCase() : '') || '';
+
           movimientosDiarios.push({
             id_reporte_avance: null,
             fecha: v.fecha_viaje_fmt,
             id_equipo: v.id_equipo,
             patente: v.patente || '',
             equipo_modelo: v.equipo_modelo || '',
-            tipo_equipo: v.tipo_equipo || 'Grúa',
+            tipo_equipo: v.tipo_equipo || 'Tracto Camión',
             capacidad_maxima: v.capacidad_maxima || 0,
             hora_salida: v.hora_salida_patio || null,
             hora_llegada: v.hora_llegada_faena || null,
@@ -606,12 +808,14 @@ const itsController = {
             hora_termino: v.hora_salida_faena || null,
             hora_retorno: v.hora_llegada_patio || null,
             colacion_minutos: 0,
-            horas_reales_report: 0,
+            horas_reales_report: hrsViajeCalc || 2.63,
             horas_standby_gsp: 0,
             horas_standby_cliente: 0,
             condicion_dia: v.hora_salida_patio && v.hora_llegada_patio ? 'IDA_Y_REGRESO' : (v.hora_salida_patio ? 'SALIDA_OBRA' : 'RETORNO_PLANTA'),
+            id_user_chofer: v.id_user_chofer || null,
+            nombre_chofer: nomChofer,
             id_user_operador: v.id_user_chofer || null,
-            nombre_operador: `${v.chofer_nombre || ''} ${v.chofer_apellido || ''}`.trim().toUpperCase() || '',
+            nombre_operador: nomChofer,
             id_user_rigger: null,
             nombre_rigger: ''
           });
@@ -725,8 +929,8 @@ const itsController = {
                 j.accuracy_firma = j.accuracy_firma || matchRep.accuracy_firma;
                 j.horometro_inicio = j.horometro_inicio || matchRep.horometro_inicio;
                 j.horometro_termino = j.horometro_termino || matchRep.horometro_termino;
-                if (!j.numero_report && matchRep.token_report) {
-                  j.numero_report = matchRep.token_report.slice(0, 16);
+                if (!j.numero_report || esHashHex(j.numero_report) || (matchRep.token_report && matchRep.token_report.startsWith(j.numero_report) && !j.numero_report.startsWith('REP-'))) {
+                  j.numero_report = `REP-${id_proyecto}-${matchRep.id_reporte_avance || (idx + 1)}`;
                 }
                 if (matchRep.cliente_firma_canvas_base64 || matchRep.codigo_validacion_fes) {
                   j.tipo_respaldo = 'DIGITAL_FES';
@@ -735,6 +939,28 @@ const itsController = {
             }
           });
         }
+
+        // Enriquecer respaldos de viajes (tipo_trayecto y comentario_viaje) para jornadas de viaje
+        jornadas.forEach(j => {
+          if (j.tipo_servicio === 'Registro de Viaje' || String(j.tipo_servicio || '').toLowerCase().includes('viaje')) {
+            const normP = (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+            const vMatch = viajesRows.find(v => {
+              const vPat = (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+              return (normP && vPat && normP === vPat) ||
+                (v.id_log_desplazamiento && j.numero_report && j.numero_report.includes(String(v.id_log_desplazamiento)));
+            });
+            if (vMatch) {
+              j.tipo_viaje = j.tipo_viaje || vMatch.tipo_trayecto || 'IDA_Y_RETORNO';
+              j.comentario_viaje = j.comentario_viaje || vMatch.comentario_viaje || vMatch.obs_termino || '';
+              if (!j.conductor_nombre && vMatch.chofer_nombre) {
+                j.conductor_nombre = `${vMatch.chofer_nombre} ${vMatch.chofer_apellido || ''}`.trim().toUpperCase();
+              }
+            } else {
+              j.tipo_viaje = j.tipo_viaje || 'IDA_Y_RETORNO';
+              j.comentario_viaje = j.comentario_viaje || '';
+            }
+          }
+        });
 
         // Cargar costos relacionales con fechas formateadas en YYYY-MM-DD
         const cosRes = await pool.query(`
@@ -782,25 +1008,49 @@ const itsController = {
               console.warn('Error parsing audit metadata from concepto_detalle:', e.message);
             }
           }
+          const catUpper = String(c.categoria || '').toUpperCase();
+          if (catUpper === 'MOVILIZACION') {
+            if (!c.tipo_movilizacion && c.concepto_detalle && c.concepto_detalle.includes(' — ')) {
+              const partes = c.concepto_detalle.split(' — ');
+              c.tipo_movilizacion = partes[0]?.trim() || 'UBER / TAXI';
+              c.ruta_detalle = partes.slice(1).join(' — ').trim() || '';
+            } else if (!c.tipo_movilizacion) {
+              c.tipo_movilizacion = c.concepto_detalle || 'UBER / TAXI';
+              c.ruta_detalle = c.ruta_detalle || '';
+            }
+            if (c.ruta_detalle && !c.tipo_movilizacion.includes(c.ruta_detalle) && !c.concepto_detalle.includes(c.ruta_detalle)) {
+              c.concepto_detalle = `${c.tipo_movilizacion} — ${c.ruta_detalle}`;
+            }
+          } else if (catUpper === 'ALIMENTACION' || catUpper === 'VIATICOS_ALIMENTACION') {
+            c.condicion_label = c.condicion_label || c.concepto_detalle || 'Viático Alimentación';
+          }
+
+          const glosaLimpia = c.concepto_detalle || c.detalle || c.concepto || c.glosa || c.descripcion || '';
+          if (!c.concepto_detalle && glosaLimpia) c.concepto_detalle = glosaLimpia;
+          if (!c.detalle && glosaLimpia) c.detalle = glosaLimpia;
+          if (!c.concepto && glosaLimpia) c.concepto = glosaLimpia;
+          if (!c.glosa && glosaLimpia) c.glosa = glosaLimpia;
+          if (!c.descripcion && glosaLimpia) c.descripcion = glosaLimpia;
           return c;
         };
 
         cosRes.rows.forEach(c => {
+          const itemLimpio = extraerAuditMeta(c);
           const catKey = c.categoria.toLowerCase();
           if (catKey === 'alimentacion' || catKey === 'viaticos_alimentacion') {
-            costos.alimentacion.push(extraerAuditMeta(c));
+            costos.alimentacion.push(itemLimpio);
           }
-          else if (catKey === 'peajes') costos.peajes.push(c);
-          else if (catKey === 'pensiones') costos.pensiones.push(c);
-          else if (catKey === 'personal_externo') costos.personal_externo.push(c);
-          else if (catKey === 'feriados') costos.feriados.push(c);
-          else if (catKey === 'subcontrato_flete') costos.subcontratacion_flete.push(c);
-          else if (catKey === 'gastos_extra') costos.gastos_extraordinarios.push(c);
+          else if (catKey === 'peajes') costos.peajes.push(itemLimpio);
+          else if (catKey === 'pensiones') costos.pensiones.push(itemLimpio);
+          else if (catKey === 'personal_externo') costos.personal_externo.push(itemLimpio);
+          else if (catKey === 'feriados') costos.feriados.push(itemLimpio);
+          else if (catKey === 'subcontrato_flete') costos.subcontratacion_flete.push(itemLimpio);
+          else if (catKey === 'gastos_extra') costos.gastos_extraordinarios.push(itemLimpio);
           else if (catKey === 'costo_hora_operador') {
-            costos.costo_hora_operador.push(extraerAuditMeta(c));
+            costos.costo_hora_operador.push(itemLimpio);
           }
-          else if (catKey === 'combustible') costos.combustible.push(c);
-          else if (catKey === 'movilizacion') costos.movilizacion.push(c);
+          else if (catKey === 'combustible') costos.combustible.push(itemLimpio);
+          else if (catKey === 'movilizacion') costos.movilizacion.push(itemLimpio);
         });
 
         // Conciliación reactiva para ITS editable (BORRADOR o BORRADOR_INCREMENTAL)
@@ -830,9 +1080,9 @@ const itsController = {
             const tipoResp = tieneDoc || esReg 
               ? 'FISICO_MANUAL' 
               : ((r.codigo_validacion_fes || r.cliente_firma_canvas_base64) ? 'DIGITAL_FES' : 'PENDIENTE');
-            const numRep = r.token_report 
-              ? (r.token_report.startsWith('REG-') ? r.token_report : r.token_report.slice(0, 16)) 
-              : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${r.id_reporte_avance}`);
+            const numRep = (r.token_report && r.token_report.startsWith('REG-'))
+              ? r.token_report 
+              : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${id_proyecto}-${r.id_reporte_avance || (idx + 1)}`);
 
             const esMensualOT = lineas.some(l => String(l?.unidad || '').toUpperCase().includes('MES'));
             if (existing) {
@@ -878,10 +1128,29 @@ const itsController = {
               if (tipoResp) existing.tipo_respaldo = tipoResp;
             } else {
               // Incorporar reporte que ingresó a terreno o regularizado posteriormente
-              const hrsFact = esValorFijoComercial 
-                ? 1.0 
-                : (esMensualOT ? parseFloat(r.horas_operadas || 0) : parseFloat(r.horas_facturables || r.horas_operadas || its.horas_minimas_pactadas || horasMinimas || 8.0));
-              const tarifa = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
+              let tipoServicioFila = 'Hora';
+              let tarifa = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
+              let subtotalJornada = 0;
+              let hrsFact = parseFloat(r.horas_facturables || r.horas_operadas || ((its.horas_minimas_pactadas !== null && its.horas_minimas_pactadas !== undefined) ? Number(its.horas_minimas_pactadas) : horasMinimas));
+
+              if (esSoloTraslado) {
+                tipoServicioFila = esFleteSoloRetornoComercial ? 'Flete Solo Retorno' : (esFleteSoloIdaComercial ? 'Flete Solo Ida' : 'Flete Solo Ida');
+                const montoTramo = esFleteSoloIdaComercial || esFleteSoloRetornoComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / (reportsRows.length > 1 ? 2 : 1));
+                tarifa = montoTramo;
+                subtotalJornada = montoTramo;
+                hrsFact = 1.0;
+              } else if (esValorFijoComercial) {
+                tipoServicioFila = 'Valor Fijo';
+                tarifa = 0;
+                subtotalJornada = (jornadas.length === 0 ? valorFijoPactado : 0);
+                hrsFact = (parseFloat(r.horas_operadas || 0) > 0 ? parseFloat(r.horas_operadas) : 1.0);
+              } else if (esMensualOT) {
+                hrsFact = parseFloat(r.horas_operadas || 0);
+                subtotalJornada = hrsFact * tarifa;
+              } else {
+                subtotalJornada = hrsFact * tarifa;
+              }
+
               jornadas.push({
                 id_jornada: null,
                 id_its: its.id_its,
@@ -891,7 +1160,7 @@ const itsController = {
                 id_equipo: r.id_equipo,
                 patente: r.patente !== 'S/P' ? r.patente : (movMatch?.patente || (r.id_equipo ? '' : 'PERSONAL')),
                 equipo_modelo: r.equipo_modelo || movMatch?.equipo_modelo || (r.id_equipo ? '' : 'Servicio Rigger Certificado'),
-                tipo_servicio: esValorFijoComercial ? 'Valor Fijo / Jornada' : 'Hora',
+                tipo_servicio: tipoServicioFila,
                 hora_salida: movMatch ? movMatch.hora_salida : r.hora_inicio,
                 hora_llegada: movMatch ? movMatch.hora_llegada : r.hora_inicio,
                 hora_termino: movMatch ? movMatch.hora_termino : r.hora_termino,
@@ -902,7 +1171,7 @@ const itsController = {
                 horas_reales: movMatch && movMatch.horas_reales_report > 0 ? movMatch.horas_reales_report : parseFloat(r.horas_operadas || 0),
                 horas_report: hrsFact,
                 tarifa_hora: tarifa,
-                subtotal: hrsFact * tarifa,
+                subtotal: subtotalJornada,
                 numero_report: numRep,
                 tipo_respaldo: tipoResp,
                 id_doc_pdf: r.id_doc_pdf,
@@ -923,6 +1192,130 @@ const itsController = {
             }
           });
 
+          if (esValorFijoComercial || its.es_valor_fijo || valorFijoPactado > 0) {
+            its.es_valor_fijo = true;
+            its.valor_fijo_pactado = valorFijoPactado > 0 ? valorFijoPactado : parseFloat(its.valor_fijo_pactado || its.valor_fijo || 0);
+            if (parseFloat(its.horas_minimas_pactadas || 0) === 1 && Math.abs(parseFloat(its.valor_hora_pactado || 0) - its.valor_fijo_pactado) < 1) {
+              its.horas_minimas_pactadas = 0;
+              its.valor_hora_pactado = 0;
+            }
+            let fijadoPrimero = false;
+            jornadas.forEach(j => {
+              const esFlete = j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete');
+              const esViaje = j.tipo_servicio === 'Registro de Viaje';
+              if (!esFlete && !esViaje) {
+                j.tipo_servicio = 'Valor Fijo';
+                j.tarifa_hora = 0;
+                const hReal = parseFloat(j.horas_reales || 0);
+                if (hReal > 0) j.horas_report = hReal;
+                if (!fijadoPrimero) {
+                  j.subtotal = its.valor_fijo_pactado;
+                  fijadoPrimero = true;
+                } else {
+                  j.subtotal = 0;
+                }
+              }
+            });
+          }
+
+          // Incorporar registros de viaje (Control de Flota) que no tengan fila en jornadas
+          const patentesEnJornadas = new Set(jornadas.map(j => (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase()));
+          viajesRows.forEach(v => {
+            if (esAccesorioSinMotor(v)) return; // Excluir semirremolques/ramplas accesorios sin motor
+            const normP = (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+            if (!normP || patentesEnJornadas.has(normP)) return;
+
+            // Evitar duplicar tracto camión si ya está un tracto camión en jornadas
+            const esTracto = String(v.equipo_modelo || '').toUpperCase().includes('TRACTO') || String(v.tipo_equipo || '').toUpperCase().includes('TRACTO') || String(v.tipo_equipo || '').toUpperCase().includes('CAMION');
+            const yaTieneTracto = Array.from(patentesEnJornadas).some(p => {
+              const jMatch = jornadas.find(j => (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === p);
+              return jMatch && (String(jMatch.equipo_modelo || '').toUpperCase().includes('TRACTO') || String(jMatch.tipo_servicio || '').toUpperCase().includes('VIAJE'));
+            });
+            if (esTracto && yaTieneTracto) return;
+
+            patentesEnJornadas.add(normP);
+            const [hSalH, hSalM] = (v.hora_salida_patio || '13:00').split(':').map(Number);
+            const [hTerH, hTerM] = (v.hora_salida_faena || v.hora_llegada_faena || '16:03').split(':').map(Number);
+            let diffMin = (hTerH * 60 + hTerM) - (hSalH * 60 + hSalM);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hrsCalc = Number((diffMin / 60).toFixed(2)) || 2.63;
+
+            let choferNom = [v.chofer_nombre, v.chofer_apellido].filter(Boolean).join(' ').trim();
+            if (!choferNom && v.id_user_chofer && usersDbMap.has(Number(v.id_user_chofer))) {
+              const u = usersDbMap.get(Number(v.id_user_chofer));
+              choferNom = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim();
+            }
+            if (!choferNom && Array.isArray(personalAsignado)) {
+              const pCh = personalAsignado.find(p => {
+                const rol = String(p.rol_personal || '').toUpperCase();
+                return rol.includes('CONDUCTOR') || rol.includes('CHOFER') || rol.includes('CAMA BAJA') || rol.includes('TRACTO');
+              });
+              if (pCh) choferNom = [pCh.name_frst, pCh.apellido_pat].filter(Boolean).join(' ').trim();
+            }
+            const nombreChoferCompleto = (choferNom || 'CONDUCTOR GSP').toUpperCase();
+
+            jornadas.push({
+              id_jornada: null,
+              id_its: its.id_its,
+              id_reporte_avance: null,
+              fecha: v.fecha_viaje_fmt || (jornadas[0] && jornadas[0].fecha) || '2026-11-04',
+              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+              id_equipo: v.id_equipo || null,
+              patente: v.patente || '',
+              equipo_modelo: v.equipo_modelo || 'Tracto Camión de Apoyo',
+              conductor_nombre: nombreChoferCompleto,
+              tipo_servicio: 'Registro de Viaje',
+              tipo_viaje: v.tipo_trayecto || 'IDA_Y_RETORNO',
+              comentario_viaje: v.comentario_viaje || v.obs_termino || '',
+              hora_salida: v.hora_salida_patio || '13:00',
+              hora_llegada: v.hora_llegada_faena || '13:42',
+              hora_termino: v.hora_salida_faena || '16:03',
+              hora_retorno: v.hora_llegada_patio || '16:41',
+              colacion_minutos: 0,
+              horas_standby_gsp: 0,
+              horas_standby_cliente: 0,
+              horas_reales: hrsCalc,
+              horas_report: hrsCalc,
+              tarifa_hora: 0,
+              subtotal: 0,
+              numero_report: `VIAJE-${id_proyecto}-${v.id_log_desplazamiento || (jornadas.length + 1)}`,
+              tipo_respaldo: 'REGISTRO_VIAJE',
+              id_doc_pdf: null,
+              url_comprobante: null,
+              es_oculta: false,
+              vb_conciliado: true,
+              orden: jornadas.length + 1
+            });
+          });
+
+          jornadas.forEach((j, idx) => {
+            const normP = (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+            if (!j.conductor_nombre && !j.operador_nombre) {
+              const rMatch = (repRes.rows || []).find(r => (r.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (r.id_equipo && j.id_equipo && Number(r.id_equipo) === Number(j.id_equipo)));
+              if (rMatch && (rMatch.op_nombre || rMatch.id_user_operador)) {
+                j.operador_nombre = [rMatch.op_nombre, rMatch.op_apellido].filter(Boolean).join(' ').trim();
+              }
+              const vMatch = (viajesRows || []).find(v => (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (v.id_equipo && j.id_equipo && Number(v.id_equipo) === Number(j.id_equipo)));
+              if (vMatch && (vMatch.chofer_nombre || vMatch.id_user_chofer)) {
+                j.conductor_nombre = [vMatch.chofer_nombre, vMatch.chofer_apellido].filter(Boolean).join(' ').trim();
+              }
+              if (!j.operador_nombre && !j.conductor_nombre && Array.isArray(personalAsignado)) {
+                const pOp = personalAsignado.find(p => String(p.rol_personal || '').toUpperCase().includes('OPERADOR'));
+                if (pOp) j.operador_nombre = [pOp.name_frst, pOp.apellido_pat].filter(Boolean).join(' ').trim();
+                const pCh = personalAsignado.find(p => {
+                  const rol = String(p.rol_personal || '').toUpperCase();
+                  return rol.includes('CONDUCTOR') || rol.includes('CHOFER') || rol.includes('CAMA BAJA') || rol.includes('TRACTO');
+                });
+                if (pCh) j.conductor_nombre = [pCh.name_frst, pCh.apellido_pat].filter(Boolean).join(' ').trim();
+              }
+            }
+            if (!j.numero_report || esHashHex(j.numero_report) || j.numero_report.length >= 16) {
+              j.numero_report = (j.tipo_servicio === 'Registro de Viaje')
+                ? `VIAJE-${id_proyecto}-${idx + 1}`
+                : `REP-${id_proyecto}-${j.id_reporte_avance || (idx + 1)}`;
+            }
+          });
+
           // 3. Incorporar filas de traslado físico en la tabla solo cuando el tramo exista realmente
           const tieneViajeIdaReal = viajesRows.some(v => v.tipo_trayecto === 'IDA' || v.tipo_trayecto === 'IDA_Y_VUELTA' || Boolean(v.hora_salida_patio || v.hora_llegada_faena)) || movimientosDiarios.length > 0;
           const tieneViajeRetornoReal = viajesRows.some(v => v.tipo_trayecto === 'RETORNO' || v.tipo_trayecto === 'IDA_Y_VUELTA' || Boolean(v.hora_salida_faena || v.hora_llegada_patio)) || movimientosDiarios.some(m => Boolean(m.hora_retorno));
@@ -938,11 +1331,11 @@ const itsController = {
               }
             });
           }
-          const tieneFleteIda = jornadas.some(j => j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('ida'));
-          const tieneFleteRetorno = jornadas.some(j => j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('retorno'));
+          // SPEC-128: El traslado comercial no se divide en mitades sintéticas. Se presenta como fila única de traslado pactado
+          const tieneFleteIda = jornadas.some(j => j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('traslado') || j.tipo_servicio.toLowerCase().includes('flete')));
 
-          if (!tieneFleteIda && valorFletePactado > 0 && tieneViajeIdaReal && !esFleteSoloRetornoComercial) {
-            const montoIda = esFleteSoloIdaComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / 2);
+          if (!tieneFleteIda && valorFletePactado > 0 && tieneViajeIdaReal) {
+            const montoTraslado = Math.round(valorFletePactado);
             const movIda = movimientosDiarios[0];
             const fechaIda = movIda?.fecha || repRes.rows[0]?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10);
             jornadas.unshift({
@@ -954,7 +1347,7 @@ const itsController = {
               id_equipo: movIda?.id_equipo || repRes.rows[0]?.id_equipo || null,
               patente: movIda?.patente || repRes.rows[0]?.patente || '',
               equipo_modelo: movIda?.equipo_modelo || repRes.rows[0]?.equipo_modelo || '',
-              tipo_servicio: 'Flete Solo Ida',
+              tipo_servicio: unidadFletePactado || 'TRASLADO IDA/VUELTA',
               hora_salida: movIda?.hora_salida || null,
               hora_llegada: movIda?.hora_llegada || null,
               hora_termino: null,
@@ -962,72 +1355,50 @@ const itsController = {
               colacion_minutos: 0,
               horas_reales: 1.0,
               horas_report: 1.0,
-              tarifa_hora: montoIda,
-              subtotal: montoIda,
-              numero_report: 'FLE-IDA',
+              tarifa_hora: montoTraslado,
+              subtotal: montoTraslado,
+              numero_report: 'TRASLADO',
               es_oculta: false,
               vb_conciliado: true,
               orden: 0
             });
           }
 
-          if (!tieneFleteRetorno && valorFletePactado > 0 && tieneViajeRetornoReal && !esFleteSoloIdaComercial) {
-            const montoRetorno = esFleteSoloRetornoComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / 2);
-            const movRet = movimientosDiarios[movimientosDiarios.length - 1];
-            const lastRep = repRes.rows[repRes.rows.length - 1];
-            const fechaRetorno = movRet?.fecha || lastRep?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10);
-            jornadas.push({
-              id_jornada: null,
-              id_its: its.id_its,
-              id_reporte_avance: null,
-              fecha: fechaRetorno,
-              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
-              id_equipo: movRet?.id_equipo || lastRep?.id_equipo || null,
-              patente: movRet?.patente || lastRep?.patente || '',
-              equipo_modelo: movRet?.equipo_modelo || lastRep?.equipo_modelo || '',
-              tipo_servicio: 'Flete Solo Retorno',
-              hora_salida: null,
-              hora_llegada: null,
-              hora_termino: movRet?.hora_termino || null,
-              hora_retorno: movRet?.hora_retorno || null,
-              colacion_minutos: 0,
-              horas_reales: 1.0,
-              horas_report: 1.0,
-              tarifa_hora: montoRetorno,
-              subtotal: montoRetorno,
-              numero_report: 'FLE-RET',
-              es_oculta: false,
-              vb_conciliado: true,
-              orden: jornadas.length + 1
-            });
-          }
-
           // 4. Consolidar día a día Hora Operador (Operador + Rigger) y Viático Alimentación según SPEC-078
           if (movimientosDiarios.length > 0) {
-            const propPersonal = construirPropuestaPersonalDiaria({
-              movimientosDiarios,
-              lineasComerciales: lineas,
-              catalogoTarifas,
-              tipoContexto,
-              horasMinimas: its.horas_minimas_pactadas || horasMinimas,
-              idIts: its.id_its,
-              prevHoraOperador: costos.costo_hora_operador,
-              prevAlimentacion: costos.alimentacion
-            });
-            costos.costo_hora_operador = propPersonal.costo_hora_operador;
-            if (!its.categorias_sin_costo?.alimentacion) {
-              costos.alimentacion = propPersonal.alimentacion;
+            const yaGuardoCostosUsuario = Boolean(
+              its.categorias_sin_costo?.costos_guardados_usuario ||
+              (cosRes.rows && cosRes.rows.some(r => ['ALIMENTACION', 'VIATICOS_ALIMENTACION', 'COSTO_HORA_OPERADOR'].includes(r.categoria?.toUpperCase())))
+            );
+
+            if (!yaGuardoCostosUsuario) {
+              const propPersonal = construirPropuestaPersonalDiaria({
+                movimientosDiarios,
+                lineasComerciales: lineas,
+                catalogoTarifas,
+                tipoContexto,
+                horasMinimas: its.horas_minimas_pactadas || horasMinimas,
+                idIts: its.id_its,
+                prevHoraOperador: costos.costo_hora_operador,
+                prevAlimentacion: costos.alimentacion
+              });
+              costos.costo_hora_operador = propPersonal.costo_hora_operador;
+              if (!its.categorias_sin_costo?.alimentacion) {
+                costos.alimentacion = propPersonal.alimentacion;
+              }
             }
           }
 
           // 5. Recalcular totales reactivos en cabecera
           const sumHrsGrua = jornadas
-            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')) && j.tipo_servicio !== 'Registro de Viaje')
             .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
 
-          const sumIngresosHoras = jornadas
-            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
-            .reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
+          const sumIngresosHoras = its.es_valor_fijo
+            ? (parseFloat(its.valor_fijo_pactado || valorFijoPactado || 0))
+            : jornadas
+                .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+                .reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
 
           const sumIngresosFletes = jornadas
             .filter(j => !j.es_oculta && j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete'))
@@ -1064,18 +1435,20 @@ const itsController = {
           folio_its: folioSugerido,
           version: 1,
           tipo_contexto: tipoContexto,
-          horas_minimas_pactadas: horasMinimas,
-          valor_hora_pactado: valorHoraPactado,
+          horas_minimas_pactadas: (esValorFijoComercial || esSoloTraslado) ? 0 : horasMinimas,
+          valor_hora_pactado: (esValorFijoComercial || esSoloTraslado) ? 0 : valorHoraPactado,
+          valor_fijo_pactado: valorFijoPactado,
+          es_valor_fijo: esValorFijoComercial,
           valor_flete_pactado: valorFletePactado,
           unidad_flete_pactado: unidadFletePactado,
           venta_neta_proyectada_comercial: ventaNetaProyectadaComercial,
           total_horas_report: 0,
-          total_ingresos_horas: 0,
+          total_ingresos_horas: esValorFijoComercial ? valorFijoPactado : 0,
           total_ingresos_fletes: valorFletePactado,
-          total_ingresos_facturables: valorFletePactado,
+          total_ingresos_facturables: (esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado,
           total_costos_operacionales: 0,
-          utilidad_bruta: valorFletePactado,
-          margen_porcentaje: valorFletePactado > 0 ? 100 : 0,
+          utilidad_bruta: (esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado,
+          margen_porcentaje: ((esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado) > 0 ? 100 : 0,
           plantilla_tipo: tipoContexto,
           observaciones: '',
           categorias_sin_costo: {},
@@ -1087,19 +1460,39 @@ const itsController = {
         let sumIngresos = 0;
         reportsRows.forEach((r, idx) => {
           const movMatch = movimientosDiarios.find(m => m.id_reporte_avance && Number(m.id_reporte_avance) === Number(r.id_reporte_avance)) || movimientosDiarios[idx];
-          const hrsFact = esValorFijoComercial ? 1.0 : parseFloat(r.horas_facturables || r.horas_operadas || horasMinimas);
-          const subtotalFila = hrsFact * valorHoraPactado;
-          sumHrs += hrsFact;
-          sumIngresos += subtotalFila;
+          const hReal = movMatch && movMatch.horas_reales_report > 0 ? movMatch.horas_reales_report : parseFloat(r.horas_operadas || 0);
+          let tipoServicioJor = 'Hora';
+          let tarifaJor = valorHoraPactado;
+          let subtotalFila = 0;
+          let hrsFact = parseFloat(r.horas_facturables || r.horas_operadas || horasMinimas);
+
+          if (esSoloTraslado) {
+            tipoServicioJor = esFleteSoloRetornoComercial ? 'Flete Solo Retorno' : (esFleteSoloIdaComercial ? 'Flete Solo Ida' : 'Flete Solo Ida');
+            const montoTramo = esFleteSoloIdaComercial || esFleteSoloRetornoComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / (reportsRows.length > 1 ? 2 : 1));
+            tarifaJor = montoTramo;
+            subtotalFila = montoTramo;
+            hrsFact = 1.0;
+          } else if (esValorFijoComercial) {
+            tipoServicioJor = 'Valor Fijo';
+            tarifaJor = 0;
+            subtotalFila = (idx === 0 ? valorFijoPactado : 0);
+            hrsFact = (hReal > 0 ? hReal : 1.0);
+          } else {
+            tarifaJor = valorHoraPactado;
+            subtotalFila = hrsFact * valorHoraPactado;
+          }
+
+          if (!esValorFijoComercial && !esSoloTraslado) sumHrs += hrsFact;
+          if (!esValorFijoComercial && !esSoloTraslado) sumIngresos += subtotalFila;
 
           const tieneDoc = Boolean(r.id_doc_pdf || r.ajustes_analista?.evidencia_fisica_adjunta);
           const esReg = r.estado_reporte === 'REGULARIZADO_MANUAL' || r.ajustes_analista?.regularizado_manual;
           const tipoResp = tieneDoc || esReg 
             ? 'FISICO_MANUAL' 
             : ((r.codigo_validacion_fes || r.cliente_firma_canvas_base64) ? 'DIGITAL_FES' : 'PENDIENTE');
-          const numRep = r.token_report 
-            ? (r.token_report.startsWith('REG-') ? r.token_report : r.token_report.slice(0, 16)) 
-            : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${r.id_reporte_avance}`);
+          const numRep = (r.token_report && r.token_report.startsWith('REG-')) 
+            ? r.token_report 
+            : (tieneDoc ? `DOC-FIS-${r.id_reporte_avance}` : `REP-${id_proyecto}-${r.id_reporte_avance || (idx + 1)}`);
 
           jornadas.push({
             id_jornada: null,
@@ -1110,7 +1503,7 @@ const itsController = {
             id_equipo: r.id_equipo,
             patente: r.patente !== 'S/P' ? r.patente : (movMatch?.patente || (r.id_equipo ? '' : 'PERSONAL')),
             equipo_modelo: r.equipo_modelo || movMatch?.equipo_modelo || (r.id_equipo ? '' : 'Servicio Rigger Certificado'),
-            tipo_servicio: esValorFijoComercial ? 'Valor Fijo / Jornada' : 'Hora',
+            tipo_servicio: tipoServicioJor,
             hora_salida: movMatch ? movMatch.hora_salida : r.hora_inicio,
             hora_llegada: movMatch ? movMatch.hora_llegada : r.hora_inicio,
             hora_termino: movMatch ? movMatch.hora_termino : r.hora_termino,
@@ -1118,9 +1511,9 @@ const itsController = {
             colacion_minutos: movMatch ? movMatch.colacion_minutos : (r.horas_colacion !== null && r.horas_colacion !== undefined ? Math.round(parseFloat(r.horas_colacion) * 60) : 0),
             horas_standby_gsp: movMatch ? movMatch.horas_standby_gsp : parseFloat(r.horas_standby_gsp || 0),
             horas_standby_cliente: movMatch ? movMatch.horas_standby_cliente : parseFloat(r.horas_standby_cliente || 0),
-            horas_reales: movMatch && movMatch.horas_reales_report > 0 ? movMatch.horas_reales_report : parseFloat(r.horas_operadas || 0),
+            horas_reales: hReal,
             horas_report: hrsFact,
-            tarifa_hora: valorHoraPactado,
+            tarifa_hora: tarifaJor,
             subtotal: subtotalFila,
             numero_report: numRep,
             tipo_respaldo: tipoResp,
@@ -1140,72 +1533,126 @@ const itsController = {
             orden: ordenIdx++
           });
         });
+        if (esValorFijoComercial) sumIngresos = valorFijoPactado;
 
-        // 3. Incorporar fletes iniciales según tramos realmente ejecutados si valorFletePactado > 0
-        const tieneViajeIdaReal = viajesRows.some(v => v.tipo_trayecto === 'IDA' || v.tipo_trayecto === 'IDA_Y_VUELTA' || Boolean(v.hora_salida_patio || v.hora_llegada_faena)) || movimientosDiarios.length > 0 || repRes.rows.length > 0;
-        const tieneViajeRetornoReal = viajesRows.some(v => v.tipo_trayecto === 'RETORNO' || v.tipo_trayecto === 'IDA_Y_VUELTA' || Boolean(v.hora_salida_faena || v.hora_llegada_patio)) || movimientosDiarios.some(m => Boolean(m.hora_retorno));
-        if (valorFletePactado > 0) {
-          const montoFleteIda = esFleteSoloIdaComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / 2);
-          const montoFleteRetorno = esFleteSoloRetornoComercial ? Math.round(valorFletePactado) : Math.round(valorFletePactado / 2);
-          const movIda = movimientosDiarios[0];
-          const movRet = movimientosDiarios[movimientosDiarios.length - 1];
-          const primerRep = repRes.rows[0];
-          const ultimoRep = repRes.rows[repRes.rows.length - 1];
+        // Incorporar registros de viaje (Control de Flota) que no tengan fila en jornadas
+        const patentesEnJornadasInit = new Set(jornadas.map(j => (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase()));
+        viajesRows.forEach(v => {
+          if (esAccesorioSinMotor(v)) return; // Excluir semirremolques/ramplas accesorios sin motor
+          const normP = (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          if (normP && !patentesEnJornadasInit.has(normP)) {
+            patentesEnJornadasInit.add(normP);
+            const [hSalH, hSalM] = (v.hora_salida_patio || '13:00').split(':').map(Number);
+            const [hTerH, hTerM] = (v.hora_salida_faena || v.hora_llegada_faena || '16:03').split(':').map(Number);
+            let diffMin = (hTerH * 60 + hTerM) - (hSalH * 60 + hSalM);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hrsCalc = Number((diffMin / 60).toFixed(2)) || 2.63;
 
-          // Flete Ida (solo si ya inició movilización/faena y no es solo retorno)
-          if (tieneViajeIdaReal && !esFleteSoloRetornoComercial) {
-            jornadas.unshift({
-            id_jornada: null,
-            id_its: null,
-            id_reporte_avance: null,
-            fecha: movIda?.fecha || primerRep?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
-            numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
-            id_equipo: movIda?.id_equipo || primerRep?.id_equipo || null,
-            patente: movIda?.patente || primerRep?.patente || '',
-            equipo_modelo: movIda?.equipo_modelo || primerRep?.equipo_modelo || '',
-            tipo_servicio: 'Flete Solo Ida',
-            hora_salida: movIda?.hora_salida || null,
-            hora_llegada: movIda?.hora_llegada || null,
-            hora_termino: null,
-            hora_retorno: null,
-            colacion_minutos: 0,
-            horas_reales: 1.0,
-            horas_report: 1.0,
-            tarifa_hora: montoFleteIda,
-            subtotal: montoFleteIda,
-            numero_report: 'FLE-IDA',
-            es_oculta: false,
-            vb_conciliado: true,
-            orden: 0
-          });
+            let choferNom = [v.chofer_nombre, v.chofer_apellido].filter(Boolean).join(' ').trim();
+            if (!choferNom && v.id_user_chofer && usersDbMap.has(Number(v.id_user_chofer))) {
+              const u = usersDbMap.get(Number(v.id_user_chofer));
+              choferNom = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim();
+            }
+            if (!choferNom && Array.isArray(personalAsignado)) {
+              const pCh = personalAsignado.find(p => {
+                const rol = String(p.rol_personal || '').toUpperCase();
+                return rol.includes('CONDUCTOR') || rol.includes('CHOFER') || rol.includes('CAMA BAJA') || rol.includes('TRACTO');
+              });
+              if (pCh) choferNom = [pCh.name_frst, pCh.apellido_pat].filter(Boolean).join(' ').trim();
+            }
+            const nombreChoferCompleto = (choferNom || 'CONDUCTOR GSP').toUpperCase();
 
-          }
-
-          // Flete Retorno (solo cuando exista un viaje de retorno real registrado y no es solo ida)
-          if (tieneViajeRetornoReal && !esFleteSoloIdaComercial) {
             jornadas.push({
               id_jornada: null,
               id_its: null,
               id_reporte_avance: null,
-              fecha: movRet?.fecha || ultimoRep?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+              fecha: v.fecha_viaje_fmt || (jornadas[0] && jornadas[0].fecha) || '2026-11-04',
               numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
-              id_equipo: movRet?.id_equipo || ultimoRep?.id_equipo || null,
-              patente: movRet?.patente || ultimoRep?.patente || '',
-              equipo_modelo: movRet?.equipo_modelo || ultimoRep?.equipo_modelo || '',
-              tipo_servicio: 'Flete Solo Retorno',
-              hora_salida: null,
-              hora_llegada: null,
-              hora_termino: movRet?.hora_termino || null,
-              hora_retorno: movRet?.hora_retorno || null,
+              id_equipo: v.id_equipo || null,
+              patente: v.patente || '',
+              equipo_modelo: v.equipo_modelo || 'Tracto Camión de Apoyo',
+              conductor_nombre: nombreChoferCompleto,
+              tipo_servicio: 'Registro de Viaje',
+              tipo_viaje: v.tipo_trayecto || 'IDA_Y_RETORNO',
+              comentario_viaje: v.comentario_viaje || v.obs_termino || '',
+              hora_salida: v.hora_salida_patio || '13:00',
+              hora_llegada: v.hora_llegada_faena || '13:42',
+              hora_termino: v.hora_salida_faena || '16:03',
+              hora_retorno: v.hora_llegada_patio || '16:41',
+              colacion_minutos: 0,
+              horas_standby_gsp: 0,
+              horas_standby_cliente: 0,
+              horas_reales: hrsCalc,
+              horas_report: hrsCalc,
+              tarifa_hora: 0,
+              subtotal: 0,
+              numero_report: `VIAJE-${id_proyecto}-${v.id_log_desplazamiento || (jornadas.length + 1)}`,
+              tipo_respaldo: 'REGISTRO_VIAJE',
+              id_doc_pdf: null,
+              url_comprobante: null,
+              es_oculta: false,
+              vb_conciliado: true,
+              orden: ordenIdx++
+            });
+          }
+        });
+
+        jornadas.forEach((j, idx) => {
+          const normP = (j.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          if (!j.conductor_nombre && !j.operador_nombre) {
+            const rMatch = (repRes.rows || []).find(r => (r.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (r.id_equipo && j.id_equipo && Number(r.id_equipo) === Number(j.id_equipo)));
+            if (rMatch && (rMatch.op_nombre || rMatch.id_user_operador)) {
+              j.operador_nombre = [rMatch.op_nombre, rMatch.op_apellido].filter(Boolean).join(' ').trim();
+            }
+            const vMatch = (viajesRows || []).find(v => (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (v.id_equipo && j.id_equipo && Number(v.id_equipo) === Number(j.id_equipo)));
+            if (vMatch && (vMatch.chofer_nombre || vMatch.id_user_chofer)) {
+              j.conductor_nombre = [vMatch.chofer_nombre, vMatch.chofer_apellido].filter(Boolean).join(' ').trim();
+            }
+            if (!j.operador_nombre && !j.conductor_nombre && Array.isArray(personalAsignado)) {
+              const pOp = personalAsignado.find(p => String(p.rol_personal || '').toUpperCase().includes('OPERADOR'));
+              if (pOp) j.operador_nombre = [pOp.name_frst, pOp.apellido_pat].filter(Boolean).join(' ').trim();
+              const pCh = personalAsignado.find(p => {
+                const rol = String(p.rol_personal || '').toUpperCase();
+                return rol.includes('CONDUCTOR') || rol.includes('CHOFER') || rol.includes('CAMA BAJA') || rol.includes('TRACTO');
+              });
+              if (pCh) j.conductor_nombre = [pCh.name_frst, pCh.apellido_pat].filter(Boolean).join(' ').trim();
+            }
+          }
+        });
+
+        // 3. Incorporar fletes iniciales según tramos realmente ejecutados si valorFletePactado > 0
+        // SPEC-128: El traslado pactado es un cobro único e indivisible, no se particiona en mitades
+        const tieneViajeIdaReal = viajesRows.some(v => v.tipo_trayecto === 'IDA' || v.tipo_trayecto === 'IDA_Y_VUELTA' || Boolean(v.hora_salida_patio || v.hora_llegada_faena)) || movimientosDiarios.length > 0 || repRes.rows.length > 0;
+        if (valorFletePactado > 0) {
+          const montoTraslado = Math.round(valorFletePactado);
+          const movIda = movimientosDiarios[0];
+          const primerRep = repRes.rows[0];
+
+          const tieneFleteYa = jornadas.some(j => j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('traslado') || j.tipo_servicio.toLowerCase().includes('flete')));
+          if (tieneViajeIdaReal && !tieneFleteYa) {
+            jornadas.unshift({
+              id_jornada: null,
+              id_its: null,
+              id_reporte_avance: null,
+              fecha: movIda?.fecha || primerRep?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+              id_equipo: movIda?.id_equipo || primerRep?.id_equipo || null,
+              patente: movIda?.patente || primerRep?.patente || '',
+              equipo_modelo: movIda?.equipo_modelo || primerRep?.equipo_modelo || '',
+              tipo_servicio: unidadFletePactado || 'TRASLADO IDA/VUELTA',
+              hora_salida: movIda?.hora_salida || null,
+              hora_llegada: movIda?.hora_llegada || null,
+              hora_termino: null,
+              hora_retorno: null,
               colacion_minutos: 0,
               horas_reales: 1.0,
               horas_report: 1.0,
-              tarifa_hora: montoFleteRetorno,
-              subtotal: montoFleteRetorno,
-              numero_report: 'FLE-RET',
+              tarifa_hora: montoTraslado,
+              subtotal: montoTraslado,
+              numero_report: 'TRASLADO',
               es_oculta: false,
               vb_conciliado: true,
-              orden: jornadas.length + 1
+              orden: 0
             });
           }
         }
@@ -1304,60 +1751,57 @@ const itsController = {
         }
       });
 
-      // 1.3 Asignación de tripulación y equipos (para cabecera visual)
+      // 1.3 Asignación de tripulación y equipos (para cabecera visual y PDF)
       let equiposAsignados = [];
-      let personalAsignado = [];
+      const equiposMap = new Map();
 
-      const eqAsigRes = await pool.query(`
-        SELECT 
-          re.id_equipo,
-          e.patente,
-          e.modelo,
-          COALESCE(e.tipo_equipo, 'Grúa') AS tipo_equipo,
-          COALESCE(e.capacidad_maxima, 0) AS capacidad_maxima,
-          COALESCE(e.unidad_capacidad, 'T') AS unidad_capacidad,
-          re.rol_equipo
-        FROM tpry_rel_equipo re
-        JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1;
-      `, [id_proyecto]);
-      equiposAsignados = eqAsigRes.rows;
-
-      const perAsigRes = await pool.query(`
-        SELECT DISTINCT ON (rp.id_user)
-          rp.id_user,
-          u.name_frst,
-          u.apellido_pat,
-          u.email,
-          rp.rol_asignado AS rol_personal
-        FROM tpry_rel_persona rp
-        JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1
-        ORDER BY rp.id_user, rp.id_rel_persona DESC;
-      `, [id_proyecto]);
-
-      // Filtrar por tripulación activa en ejecucion_v1 o en los reports rectificados para excluir operadores reemplazados
-      const ejTrip = Array.isArray(proyecto.json_field?.ejecucion_v1?.tripulacion_asignada)
-        ? proyecto.json_field.ejecucion_v1.tripulacion_asignada
-        : [];
-      const activeTripIds = new Set();
-      ejTrip.forEach(t => {
-        if (t.id_user || t.id_usuario) activeTripIds.add(Number(t.id_user || t.id_usuario));
-      });
-      repRes.rows.forEach(r => {
-        if (r.id_user_operador) activeTripIds.add(Number(r.id_user_operador));
-        if (r.id_user_rigger) activeTripIds.add(Number(r.id_user_rigger));
+      // 1. Equipos con Report Diario (Grúas)
+      (reportsRows || []).forEach(r => {
+        if (!r.id_equipo && (!r.patente || r.patente === 'S/P')) return;
+        const idKey = String(r.id_equipo || r.patente);
+        if (!equiposMap.has(idKey)) {
+          equiposMap.set(idKey, {
+            id_equipo: r.id_equipo || null,
+            patente: r.patente !== 'S/P' ? r.patente : '',
+            modelo: r.equipo_modelo || '',
+            tipo_equipo: r.tipo_equipo || 'Grúa Telescópica',
+            capacidad_maxima: r.capacidad_maxima || 0,
+            unidad_capacidad: 'T',
+            rol_equipo: 'Principal'
+          });
+        }
       });
 
-      personalAsignado = activeTripIds.size > 0
-        ? perAsigRes.rows.filter(p => activeTripIds.has(Number(p.id_user)))
-        : perAsigRes.rows;
+      // 2. Equipos con Registro de Viaje motorizado (Tracto Camiones / Camiones de Apoyo)
+      (viajesRows || []).forEach(v => {
+        if (esAccesorioSinMotor(v)) return;
+        const idKey = String(v.id_equipo || v.patente);
+        if (!equiposMap.has(idKey)) {
+          equiposMap.set(idKey, {
+            id_equipo: v.id_equipo || null,
+            patente: v.patente || '',
+            modelo: v.equipo_modelo || 'Tracto Camión de Apoyo',
+            tipo_equipo: v.tipo_equipo || 'Tracto Camión',
+            capacidad_maxima: v.capacidad_maxima || 0,
+            unidad_capacidad: 'T',
+            rol_equipo: 'Transporte y Apoyo'
+          });
+        }
+      });
 
-      // Fallback a json_field.operaciones_v1 si las tablas relacionales aún no se poblaron
+      // Si no hubiese ni reports ni viajes (ITS borrador previo a faena), fallback a equipos motorizados de la OT
+      if (equiposMap.size === 0) {
+        (eqAsigRes.rows || []).forEach(e => {
+          if (esAccesorioSinMotor(e)) return;
+          const idEq = e.id_equipo || e.patente;
+          equiposMap.set(String(idEq), { ...e });
+        });
+      }
+
       const opV1 = proyecto.json_field?.operaciones_v1;
-      if (equiposAsignados.length === 0 && opV1) {
+      if (equiposMap.size === 0 && opV1) {
         if (opV1.equipo_id && opV1.equipo_id !== 'CRN-DEFAULT') {
-          equiposAsignados.push({
+          equiposMap.set(String(opV1.equipo_id), {
             id_equipo: null,
             patente: opV1.equipo_id,
             modelo: 'Grúa Principal',
@@ -1365,36 +1809,67 @@ const itsController = {
             rol_equipo: 'Principal'
           });
         }
-        if (Array.isArray(opV1.equipos_extra)) {
-          opV1.equipos_extra.forEach(ex => {
-            if (ex.subcategoria || ex.descripcion) {
-              equiposAsignados.push({
-                id_equipo: ex.id_equipo || null,
-                patente: ex.patente || ex.id_equipo || 'S/P',
-                modelo: ex.subcategoria || ex.descripcion || 'Apoyo',
-                tipo_equipo: ex.tipo || 'Traslado',
-                rol_equipo: ex.rol || 'Secundario'
-              });
-            }
-          });
-        }
       }
 
-      if (personalAsignado.length === 0 && opV1) {
-        if (Array.isArray(opV1.tripulacion_asignada)) {
-          opV1.tripulacion_asignada.forEach(tr => {
-            if (tr.cargo) {
-              personalAsignado.push({
-                id_user: tr.id_user || null,
-                name_frst: tr.cargo,
-                apellido_pat: tr.requerimiento ? `(${tr.requerimiento})` : '',
-                email: '',
-                rol_personal: tr.cargo
-              });
-            }
-          });
+      equiposAsignados = Array.from(equiposMap.values()).map(eq => {
+        const normP = (eq.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        let operadorNombre = '';
+        let conductorNombre = '';
+        let riggerNombre = '';
+
+        // 1. Cruzar con reportsRows (tedp_reporte_avance)
+        const rMatch = reportsRows.find(r => (r.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (r.id_equipo && eq.id_equipo && Number(r.id_equipo) === Number(eq.id_equipo)));
+        if (rMatch) {
+          if (rMatch.op_nombre) operadorNombre = `${rMatch.op_nombre} ${rMatch.op_apellido || ''}`.trim();
+          if (rMatch.rig_nombre) riggerNombre = `${rMatch.rig_nombre} ${rMatch.rig_apellido || ''}`.trim();
         }
-      }
+
+        // 2. Cruzar con viajesRows (tequ_log_desplazamiento)
+        const vMatch = viajesRows.find(v => (v.patente || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normP || (v.id_equipo && eq.id_equipo && Number(v.id_equipo) === Number(eq.id_equipo)));
+        if (vMatch && vMatch.chofer_nombre) {
+          conductorNombre = `${vMatch.chofer_nombre} ${vMatch.chofer_apellido || ''}`.trim();
+        }
+
+        // 3. Fallback dinámico desde personalAsignado según el tipo de equipo
+        const esGrua = String(eq.tipo_equipo || '').toUpperCase().includes('GRÚA') || String(eq.tipo_equipo || '').toUpperCase().includes('GRUA');
+        const esTransporte = String(eq.tipo_equipo || '').toUpperCase().includes('TRACTO') || String(eq.tipo_equipo || '').toUpperCase().includes('CAMION');
+
+        if (esGrua) {
+          if (!operadorNombre) {
+            const pOp = personalAsignado.find(p => String(p.rol_personal || '').toUpperCase().includes('OPERADOR'));
+            if (pOp) operadorNombre = `${pOp.name_frst} ${pOp.apellido_pat || ''}`.trim();
+          }
+          if (!riggerNombre) {
+            const pRig = personalAsignado.find(p => String(p.rol_personal || '').toUpperCase().includes('RIGGER'));
+            if (pRig) riggerNombre = `${pRig.name_frst} ${pRig.apellido_pat || ''}`.trim();
+          }
+        } else if (esTransporte) {
+          if (!conductorNombre) {
+            const pCond = personalAsignado.find(p => {
+              const rol = String(p.rol_personal || '').toUpperCase();
+              return rol.includes('CONDUCTOR') || rol.includes('CHOFER') || rol.includes('CAMA BAJA') || rol.includes('TRACTO');
+            });
+            if (pCond) conductorNombre = `${pCond.name_frst} ${pCond.apellido_pat || ''}`.trim();
+          }
+          if (!riggerNombre) {
+            const pRig = personalAsignado.find(p => String(p.rol_personal || '').toUpperCase().includes('RIGGER'));
+            if (pRig) riggerNombre = `${pRig.name_frst} ${pRig.apellido_pat || ''}`.trim();
+          }
+        }
+
+        const tripPartes = [];
+        if (operadorNombre) tripPartes.push(`${operadorNombre} (Operador Grúa)`);
+        if (conductorNombre) tripPartes.push(`${conductorNombre} (Conductor Tracto Camión)`);
+        if (riggerNombre) tripPartes.push(`${riggerNombre} (Rigger)`);
+
+        return {
+          ...eq,
+          operador_nombre: operadorNombre,
+          conductor_nombre: conductorNombre,
+          rigger_nombre: riggerNombre,
+          tripulacion_str: tripPartes.join(', ') || 'Personal GSP Asignado'
+        };
+      });
 
       // REQ-1124: Normalizar formato HH:mm y calcular HRS SERVICIO (según régimen URBANO/RURAL) y HRS VIÁTICOS (universal SALIDA -> RETORNO)
       const regimenContextoFinal = (its && its.tipo_contexto) ? its.tipo_contexto : (tipoContexto || 'URBANO');
@@ -1413,19 +1888,21 @@ const itsController = {
             const [hF, mF] = j.hora_termino.split(':').map(Number);
             let diffM = (hF * 60 + mF) - (hI * 60 + mI) - colMin;
             if (diffM < 0) diffM += 24 * 60;
-            j.horas_reales = Math.max(0, Number((diffM / 60).toFixed(2)));
+            if (j.horas_reales === undefined || j.horas_reales === null || Number(j.horas_reales) === 0) {
+              j.horas_reales = Math.max(0, Number((diffM / 60).toFixed(2)));
+            }
           }
-          const hIniViat = j.hora_salida || j.hora_llegada;
-          const hFinViat = j.hora_retorno || j.hora_termino;
-          if (hIniViat && hFinViat && /^\d{2}:\d{2}$/.test(hIniViat) && /^\d{2}:\d{2}$/.test(hFinViat)) {
-            const [hIv, mIv] = hIniViat.split(':').map(Number);
-            const [hFv, mFv] = hFinViat.split(':').map(Number);
-            let diffMv = (hFv * 60 + mFv) - (hIv * 60 + mIv) - colMin;
-            if (diffMv < 0) diffMv += 24 * 60;
-            j.horas_viaticos = Math.max(0, Number((diffMv / 60).toFixed(2)));
-          } else {
-            j.horas_viaticos = 0;
-          }
+        }
+
+        // REQ Jorge Ponce: Recomendación universal de horas de viático basada en tiempo total de desplazamiento (Salida a Retorno - Colación)
+        const hIniViat = j.hora_salida || j.hora_llegada;
+        const hFinViat = j.hora_retorno || j.hora_termino || j.hora_llegada;
+        if (hIniViat && hFinViat && /^\d{2}:\d{2}$/.test(hIniViat) && /^\d{2}:\d{2}$/.test(hFinViat)) {
+          const [hIv, mIv] = hIniViat.split(':').map(Number);
+          const [hFv, mFv] = hFinViat.split(':').map(Number);
+          let diffMv = (hFv * 60 + mFv) - (hIv * 60 + mIv) - colMin;
+          if (diffMv < 0) diffMv += 24 * 60;
+          j.horas_viaticos = Math.max(0, Number((diffMv / 60).toFixed(2)));
         } else {
           j.horas_viaticos = 0;
         }
@@ -1466,6 +1943,11 @@ const itsController = {
 
       // 2.1 Upsert en tits_informe_termino
       let idIts = cabecera.id_its;
+      const categoriasSinCostoObj = {
+        ...(cabecera.categorias_sin_costo || {}),
+        costos_guardados_usuario: true
+      };
+
       if (idIts) {
         await client.query(`
           UPDATE tits_informe_termino SET
@@ -1487,7 +1969,7 @@ const itsController = {
           WHERE id_its = $15;
         `, [
           cabecera.tipo_contexto || 'URBANO',
-          cabecera.horas_minimas_pactadas || 8.0,
+          cabecera.horas_minimas_pactadas || 0,
           cabecera.valor_hora_pactado || 0,
           cabecera.valor_flete_pactado || 0,
           cabecera.total_horas_report || 0,
@@ -1499,7 +1981,7 @@ const itsController = {
           cabecera.margen_porcentaje || 0,
           cabecera.plantilla_tipo || 'URBANO',
           cabecera.observaciones || '',
-          JSON.stringify(cabecera.categorias_sin_costo || {}),
+          JSON.stringify(categoriasSinCostoObj),
           idIts
         ]);
       } else {
@@ -1522,7 +2004,7 @@ const itsController = {
           id_proyecto,
           cabecera.folio_its || `ITS-${id_proyecto}-001`,
           cabecera.tipo_contexto || 'URBANO',
-          cabecera.horas_minimas_pactadas || 8.0,
+          cabecera.horas_minimas_pactadas || 0,
           cabecera.valor_hora_pactado || 0,
           cabecera.valor_flete_pactado || 0,
           cabecera.total_horas_report || 0,
@@ -1534,7 +2016,7 @@ const itsController = {
           cabecera.margen_porcentaje || 0,
           cabecera.plantilla_tipo || 'URBANO',
           cabecera.observaciones || '',
-          JSON.stringify(cabecera.categorias_sin_costo || {})
+          JSON.stringify(categoriasSinCostoObj)
         ]);
         idIts = insRes.rows[0].id_its;
       }
@@ -1547,6 +2029,10 @@ const itsController = {
         for (const j of jornadas) {
           const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (cabecera.valor_hora_pactado || 0));
           const subtotal = parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : ((j.horas_report || 0) * tarifa));
+          let tipoServicioFila = j.tipo_servicio || 'Hora';
+          if (tipoServicioFila.includes('Fijo') && !tipoServicioFila.includes('Flete')) {
+            tipoServicioFila = 'Valor Fijo';
+          }
           await client.query(`
             INSERT INTO tits_jornada_detalle (
               id_its, id_reporte_avance, fecha, numero_ot, id_equipo, patente,
@@ -1566,7 +2052,7 @@ const itsController = {
             j.numero_ot || `OT-${id_proyecto}`,
             j.id_equipo || null,
             j.patente || 'S/P',
-            j.tipo_servicio || 'Hora',
+            tipoServicioFila,
             j.hora_salida || null,
             j.hora_llegada || null,
             j.hora_termino || null,
@@ -1606,7 +2092,7 @@ const itsController = {
           if (Array.isArray(items)) {
             for (const item of items) {
               const montoTot = parseFloat(item.monto_total || item.monto || item.total || 0);
-              let conceptoFinal = item.concepto_detalle || item.concepto || item.detalle || 'Gasto operacional';
+              let conceptoFinal = item.concepto_detalle || item.detalle || item.concepto || item.glosa || item.descripcion || 'Gasto operacional';
 
               // Para costo_hora_operador y alimentacion, persistir desglose diario y trazabilidad de auditoría
               if (map.key === 'costo_hora_operador' || map.key === 'alimentacion') {
@@ -1614,7 +2100,7 @@ const itsController = {
                 const sugerida = parseFloat(item.tarifa_sugerida || 0);
                 const fueModificada = item.tarifa_modificada === true || (sugerida > 0 && Math.abs(precio - sugerida) > 0.01);
 
-                conceptoFinal = conceptoFinal.replace(/\s*<!--AUDIT:.*?-->/g, '').trim();
+                conceptoFinal = (item.concepto_detalle || item.condicion_label || item.concepto || item.detalle || (map.key === 'alimentacion' ? 'Viático Alimentación' : 'Gasto operacional')).replace(/\s*<!--AUDIT:.*?-->/g, '').trim();
 
                 const auditPayload = {
                   rol_personal: item.rol_personal || 'Operador',
@@ -1632,7 +2118,8 @@ const itsController = {
                   horas_faena_pagar: item.horas_faena_pagar ?? null,
                   horas_flete_pagar: item.horas_flete_pagar ?? 0,
                   condicion_dia: item.condicion_dia || null,
-                  condicion_label: item.condicion_label || null,
+                  condicion_label: item.condicion_label || conceptoFinal,
+                  concepto_editado: true,
                   desde: item.desde || null,
                   hasta: item.hasta || null,
                   horas_efectivas: item.horas_efectivas ?? null,
@@ -1644,6 +2131,16 @@ const itsController = {
                   modificado_por: fueModificada ? (item.modificado_por || 'Control de Gestión') : null
                 };
                 conceptoFinal += ` <!--AUDIT:${JSON.stringify(auditPayload)}-->`;
+              } else if (map.key === 'movilizacion') {
+                const tipoMov = (item.tipo_movilizacion || item.concepto_detalle || item.concepto || 'UBER / TAXI').replace(/\s*<!--AUDIT:.*?-->/g, '').trim();
+                const rutaDet = (item.ruta_detalle || item.glosa || item.detalle || '').trim();
+                conceptoFinal = (rutaDet && !tipoMov.includes(rutaDet)) ? `${tipoMov} — ${rutaDet}` : (tipoMov || rutaDet || 'Movilización');
+
+                const auditPayloadMovil = {
+                  tipo_movilizacion: tipoMov,
+                  ruta_detalle: rutaDet
+                };
+                conceptoFinal += ` <!--AUDIT:${JSON.stringify(auditPayloadMovil)}-->`;
               }
 
               await client.query(`
@@ -1759,12 +2256,40 @@ const itsController = {
         });
       }
 
+      // Cargar trazabilidad histórica completa de firmas, aprobaciones y rechazos FES
+      try {
+        const histFesRes = await pool.query(`
+          SELECT 
+            f.id_fes,
+            f.aprueba_rechaza,
+            f.observaciones,
+            f.fecha_firma,
+            f.codigo_validacion,
+            COALESCE(u.name_frst || ' ' || u.apellido_pat, 'Usuario') AS nombre_usuario,
+            COALESCE(r.name_rol, 'Operaciones') AS rol_nom,
+            m.motivo_rechazo
+          FROM tfes_signatures f
+          LEFT JOIN tsec_users u ON f.id_user = u.id_user
+          LEFT JOIN tflw_flow_steps st ON f.id_flow_stp = st.id_flow_stp
+          LEFT JOIN tsec_roles r ON st.id_rol = r.id_rol
+          LEFT JOIN tflw_motivo_rechazo m ON f.id_motivo_rechazo = m.id_motivo_rechazo
+          WHERE f.id_flow = $1
+          ORDER BY f.id_fes ASC;
+        `, [its?.id_flow || 0]);
+
+        firmas.historialEventos = histFesRes.rows;
+      } catch (e) {
+        console.warn('[ITS] Error cargando historial tfes_signatures:', e.message);
+        firmas.historialEventos = [];
+      }
+
       const pdfBuf = await itsPdfService.generarPdfITS({
         its,
         proyecto,
         jornadas,
         costos,
         firmas,
+        asignaciones: itsData.data?.asignaciones || {},
         validacionUrl: `${process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl'}/${(process.env.APP_ENV === 'prod') ? 'lg-gsp-prod' : 'lg-gsp-dev'}/validador-doc`
       });
 

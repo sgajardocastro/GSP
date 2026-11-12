@@ -4,6 +4,15 @@ const fs = require("fs");
 const { exec } = require("child_process");
 const archivoModel = require("./archivoModel");
 const { buildStoragePath, STORAGE_ROOT } = require("../config/storageConfig");
+const { normalizarLineaCobroUnico, isLineaCobroUnico } = require("../utils/lineaCobroUnico");
+
+function esLineaRiggerFantasma(l) {
+  if (!l || typeof l !== 'object') return false;
+  const esPersonalORigger = String(l.tipo || l.categoria || '').toUpperCase().includes('PERSONAL') || 
+                            String(l.subcategoria || l.descripcion || '').toUpperCase().includes('RIGGER');
+  const valorUnitario = Number(l.valorUnitario || l.valor_unitario || l.precio_unitario || l.subtotal || 0);
+  return esPersonalORigger && valorUnitario <= 0;
+}
 
 class ProyectoModel {
   constructor() {
@@ -28,6 +37,10 @@ class ProyectoModel {
               )
               AND COALESCE(rep.reports_abiertos, 0) = 0
               AND COALESCE(rep.reports_cerrados, 0) > 0
+              AND (
+                COALESCE(p.fecha_plan_fin, (p.json_field->'crm_v1'->>'fecha_plan_fin')::timestamptz, (p.json_field->'ejecucion_v1'->>'fecha_fin_plan')::timestamptz) IS NULL
+                OR COALESCE(p.fecha_plan_fin, (p.json_field->'crm_v1'->>'fecha_plan_fin')::timestamptz, (p.json_field->'ejecucion_v1'->>'fecha_fin_plan')::timestamptz) <= CURRENT_TIMESTAMP
+              )
             )
           ) THEN 6
           ELSE p.id_proyecto_estado
@@ -80,15 +93,15 @@ class ProyectoModel {
             COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad_dias', ''), '[^0-9]', '', 'g'), '')::int, 0),
             COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad_meses', ''), '[^0-9]', '', 'g'), '')::int, 0) * 30,
             CASE
-              WHEN (elem->>'fecha_plan_ini') ~ '^\d{4}-\d{2}-\d{2}' AND (elem->>'fecha_plan_fin') ~ '^\d{4}-\d{2}-\d{2}'
+              WHEN (elem->>'fecha_plan_ini') ~ '^\\d{4}-\\d{2}-\\d{2}' AND (elem->>'fecha_plan_fin') ~ '^\\d{4}-\\d{2}-\\d{2}'
               THEN GREATEST(1, (LEFT(elem->>'fecha_plan_fin', 10)::date - LEFT(elem->>'fecha_plan_ini', 10)::date) + 1)
               ELSE 0
             END,
             COALESCE(NULLIF(regexp_replace(COALESCE(elem->>'cantidad', ''), '[^0-9]', '', 'g'), '')::int, 0)
           )), 0),
           CASE
-            WHEN (p.json_field->'crm_v1'->>'fecha_hora_inicio') ~ '^\d{4}-\d{2}-\d{2}'
-             AND (p.json_field->'crm_v1'->>'fecha_hora_termino') ~ '^\d{4}-\d{2}-\d{2}'
+            WHEN (p.json_field->'crm_v1'->>'fecha_hora_inicio') ~ '^\\d{4}-\\d{2}-\\d{2}'
+             AND (p.json_field->'crm_v1'->>'fecha_hora_termino') ~ '^\\d{4}-\\d{2}-\\d{2}'
             THEN GREATEST(1, (LEFT(p.json_field->'crm_v1'->>'fecha_hora_termino', 10)::date - LEFT(p.json_field->'crm_v1'->>'fecha_hora_inicio', 10)::date) + 1)
             ELSE 0
           END
@@ -467,8 +480,9 @@ class ProyectoModel {
     const currentPry = await this.getProyectoById(id_proyecto);
     const estadoDB = Number(currentPry?.id_proyecto_estado || 1);
     const estadoEntrante = (id_proyecto_estado !== null && id_proyecto_estado !== undefined) ? Number(id_proyecto_estado) : null;
+    const allowRegression = data.allowStateRegression === true;
     let final_id_proyecto_estado = estadoEntrante;
-    if (estadoDB > 1 && estadoDB < 90 && estadoEntrante !== null && estadoEntrante !== 99 && estadoEntrante < estadoDB) {
+    if (!allowRegression && estadoDB > 1 && estadoDB < 90 && estadoEntrante !== null && estadoEntrante !== 99 && estadoEntrante < estadoDB) {
       console.warn(`[updateProyecto] Bloqueando regresión de estado (${estadoDB} -> ${estadoEntrante}) en proyecto #${id_proyecto} (pestaña obsoleta). Se preserva estado ${estadoDB}.`);
       final_id_proyecto_estado = estadoDB;
     }
@@ -528,7 +542,7 @@ class ProyectoModel {
               mergedEjec.preparacion_salida = prevEjec.preparacion_salida;
             }
           }
-          if (prevEjec.regimen_operacional_confirmado && !inEjec.regimen_operacional_confirmado) {
+          if (!allowRegression && prevEjec.regimen_operacional_confirmado && !inEjec.regimen_operacional_confirmado) {
             mergedEjec.regimen_operacional_confirmado = true;
             if (!inEjec.regimen_operacional && prevEjec.regimen_operacional) {
               mergedEjec.regimen_operacional = prevEjec.regimen_operacional;
@@ -536,7 +550,7 @@ class ProyectoModel {
           }
           if (prevEjec.decision && !inEjec.decision) mergedEjec.decision = prevEjec.decision;
           if (prevEjec.asignacion_confirmada && !inEjec.asignacion_confirmada) mergedEjec.asignacion_confirmada = prevEjec.asignacion_confirmada;
-          if (estadoDB >= 4 && (!inEjec.subtab_activa || inEjec.subtab_activa === 'validacion') && prevEjec.subtab_activa && prevEjec.subtab_activa !== 'validacion') {
+          if (!allowRegression && estadoDB >= 4 && (!inEjec.subtab_activa || inEjec.subtab_activa === 'validacion') && prevEjec.subtab_activa && prevEjec.subtab_activa !== 'validacion') {
             mergedEjec.subtab_activa = prevEjec.subtab_activa;
             mergedEjec.subtab_actual_view = prevEjec.subtab_actual_view || prevEjec.subtab_activa;
           }
@@ -551,7 +565,7 @@ class ProyectoModel {
         // REQ-1100 & REQ-1103: Gobernanza de vigencia de cotizaciones en servicios en operación (Estado >= 3)
         if (parsed.crm_v1) {
           const prevCrm = currentPry?.json_field?.crm_v1 || {};
-          if (prevCrm.regimen_operacional_confirmado && !parsed.crm_v1.regimen_operacional_confirmado) {
+          if (!allowRegression && prevCrm.regimen_operacional_confirmado && !parsed.crm_v1.regimen_operacional_confirmado) {
             parsed.crm_v1.regimen_operacional_confirmado = true;
             if (!parsed.crm_v1.regimen_operacional && prevCrm.regimen_operacional) {
               parsed.crm_v1.regimen_operacional = prevCrm.regimen_operacional;
@@ -614,17 +628,50 @@ class ProyectoModel {
           const fueRecienEnviada = Boolean(versionRecienEnviada > 0 || enviosAumentaron);
           delete parsed.crm_v1.cotizacion_recien_enviada_version;
 
+          const requiereRiggerActivo = Boolean(parsed.crm_v1?.requiere_rigger || parsed.crm_v1?.requiereRigger);
+
           if (Array.isArray(parsed.crm_v1.lineas_servicio) && prevLineasOp.length > 0) {
             parsed.crm_v1.lineas_servicio = this._mergeAsignacionesOperativas(parsed.crm_v1.lineas_servicio, prevLineasOp);
           }
 
+          if (requiereRiggerActivo) {
+            if (Array.isArray(parsed.crm_v1.lineas_servicio)) {
+              parsed.crm_v1.lineas_servicio = parsed.crm_v1.lineas_servicio.filter(l => !esLineaRiggerFantasma(l));
+            }
+            if (Array.isArray(parsed.crm_v1.lineas_borrador_comercial)) {
+              parsed.crm_v1.lineas_borrador_comercial = parsed.crm_v1.lineas_borrador_comercial.filter(l => !esLineaRiggerFantasma(l));
+            }
+          }
+
+          const esLineaEquipoGrua = (l) => {
+            if (!l || typeof l !== 'object') return false;
+            const cat = String(l.tipo || l.categoria || '').toUpperCase();
+            const sub = String(l.subcategoria || l.descripcion || '').toUpperCase();
+            if (cat.includes('PERSONAL') || sub.includes('RIGGER')) return false;
+            if (cat.includes('TRASLADO') || cat.includes('FLETE') || sub.includes('TRASLADO') || sub.includes('FLETE')) return false;
+            return true;
+          };
+
+          const esFijoGrua = (l) => {
+            if (!l) return false;
+            const unid = String(l.unidad || l.tipo_unidad || '').toUpperCase();
+            const desc = String(l.descripcion || l.concepto || '').toUpperCase();
+            return unid.includes('FIJO') || unid.includes('SUMA ALZADA') || unid.includes('GLOBAL') || desc.includes('VALOR FIJO') || desc.includes('SUMA ALZADA');
+          };
+
           if (fueRecienEnviada && ultimaEnviada) {
-            const snapshotBase = (Array.isArray(ultimaEnviada.lineas_snapshot) && ultimaEnviada.lineas_snapshot.length > 0)
+            let snapshotBase = (Array.isArray(ultimaEnviada.lineas_snapshot) && ultimaEnviada.lineas_snapshot.length > 0)
               ? JSON.parse(JSON.stringify(ultimaEnviada.lineas_snapshot))
               : (Array.isArray(parsed.crm_v1.lineas_borrador_comercial) && parsed.crm_v1.lineas_borrador_comercial.length > 0
                   ? JSON.parse(JSON.stringify(parsed.crm_v1.lineas_borrador_comercial))
                   : JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio || [])));
-            const lineasPromovidas = this._mergeAsignacionesOperativas(snapshotBase, prevLineasOp);
+            if (requiereRiggerActivo) {
+              snapshotBase = snapshotBase.filter(l => !esLineaRiggerFantasma(l));
+            }
+            let lineasPromovidas = this._mergeAsignacionesOperativas(snapshotBase, prevLineasOp);
+            if (requiereRiggerActivo) {
+              lineasPromovidas = lineasPromovidas.filter(l => !esLineaRiggerFantasma(l));
+            }
             parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(lineasPromovidas));
             parsed.crm_v1.lineas_servicio = JSON.parse(JSON.stringify(lineasPromovidas));
             parsed.crm_v1.version_cotizacion_vigente_operaciones = Number(ultimaEnviada.version);
@@ -632,30 +679,67 @@ class ProyectoModel {
             delete parsed.crm_v1._modo_borrador_comercial_operaciones;
 
             if (estadoActual >= 3) {
-              const lineaGrua = lineasPromovidas.find(l => Number(l.pisoMinimo || l.cantidad_horas || 0) > 0);
-              if (lineaGrua) {
-                const pm = Number(lineaGrua.pisoMinimo || lineaGrua.cantidad_horas || 0);
-                if (pm > 0 && pm <= 24) nuevoPisoMinimoParaReports = pm;
+              const lineaGruaPrincipal = lineasPromovidas.find(esLineaEquipoGrua);
+              if (lineaGruaPrincipal && esFijoGrua(lineaGruaPrincipal)) {
+                nuevoPisoMinimoParaReports = 0;
+                parsed.crm_v1.pisoMinimo = 0;
+                parsed.crm_v1.es_valor_fijo = true;
+              } else {
+                const lineaGrua = lineasPromovidas.filter(esLineaEquipoGrua).find(l => Number(l.pisoMinimo || l.cantidad_horas || 0) > 0);
+                if (lineaGrua) {
+                  const pm = Number(lineaGrua.pisoMinimo || lineaGrua.cantidad_horas || 0);
+                  if (pm > 0 && pm <= 24) nuevoPisoMinimoParaReports = pm;
+                }
               }
             }
           } else if (estadoActual >= 3 && parsed.crm_v1._modo_borrador_comercial_operaciones) {
-            const borradorConAsignaciones = this._mergeAsignacionesOperativas(
+            let borradorConAsignaciones = this._mergeAsignacionesOperativas(
               JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio || [])),
               prevLineasOp
             );
+            if (requiereRiggerActivo) {
+              borradorConAsignaciones = borradorConAsignaciones.filter(l => !esLineaRiggerFantasma(l));
+            }
             parsed.crm_v1.lineas_borrador_comercial = borradorConAsignaciones;
             if (prevLineasOp.length > 0) {
-              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(prevLineasOp));
-              parsed.crm_v1.lineas_servicio = JSON.parse(JSON.stringify(prevLineasOp));
+              let opVig = JSON.parse(JSON.stringify(prevLineasOp));
+              if (requiereRiggerActivo) opVig = opVig.filter(l => !esLineaRiggerFantasma(l));
+              parsed.crm_v1.lineas_operativas_vigentes = opVig;
+              parsed.crm_v1.lineas_servicio = opVig;
             }
             delete parsed.crm_v1._modo_borrador_comercial_operaciones;
           } else if (estadoActual >= 3) {
             if (Array.isArray(parsed.crm_v1.lineas_servicio) && parsed.crm_v1.lineas_servicio.length > 0) {
-              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+              let opVig = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+              if (requiereRiggerActivo) opVig = opVig.filter(l => !esLineaRiggerFantasma(l));
+              parsed.crm_v1.lineas_operativas_vigentes = opVig;
+              parsed.crm_v1.lineas_servicio = opVig;
             }
           } else {
             if (Array.isArray(parsed.crm_v1.lineas_servicio)) {
-              parsed.crm_v1.lineas_operativas_vigentes = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+              let opVig = JSON.parse(JSON.stringify(parsed.crm_v1.lineas_servicio));
+              if (requiereRiggerActivo) opVig = opVig.filter(l => !esLineaRiggerFantasma(l));
+              parsed.crm_v1.lineas_operativas_vigentes = opVig;
+              parsed.crm_v1.lineas_servicio = opVig;
+            }
+          }
+
+          // SPEC-128: Blindaje de líneas de cobro único (Valor Fijo y TRASLADOS -> cantidad = 1)
+          if (Array.isArray(parsed.crm_v1.lineas_servicio)) {
+            parsed.crm_v1.lineas_servicio = parsed.crm_v1.lineas_servicio.map(normalizarLineaCobroUnico);
+          }
+          if (Array.isArray(parsed.crm_v1.lineas_operativas_vigentes)) {
+            parsed.crm_v1.lineas_operativas_vigentes = parsed.crm_v1.lineas_operativas_vigentes.map(normalizarLineaCobroUnico);
+          }
+
+          // Validación transversal: si la grúa principal es Valor Fijo, asegurar pisoMinimo = 0 y es_valor_fijo = true
+          const lineasFinales = parsed.crm_v1.lineas_operativas_vigentes || parsed.crm_v1.lineas_servicio || [];
+          if (Array.isArray(lineasFinales)) {
+            const gruaP = lineasFinales.find(esLineaEquipoGrua);
+            if (gruaP && esFijoGrua(gruaP)) {
+              parsed.crm_v1.pisoMinimo = 0;
+              parsed.crm_v1.es_valor_fijo = true;
+              nuevoPisoMinimoParaReports = 0;
             }
           }
         }
@@ -790,9 +874,15 @@ class ProyectoModel {
       const version = jsonField.crm_v1.cotizaciones_historicas.length + 1;
       const fileName = `${codi}V${version}-${nextId}.pdf`;
       
-      const lineasParaSnapshot = (Number(p.id_proyecto_estado) >= 3 && Array.isArray(jsonField.crm_v1.lineas_borrador_comercial) && jsonField.crm_v1.lineas_borrador_comercial.length > 0)
+      let lineasParaSnapshot = (Number(p.id_proyecto_estado) >= 3 && Array.isArray(jsonField.crm_v1.lineas_borrador_comercial) && jsonField.crm_v1.lineas_borrador_comercial.length > 0)
         ? JSON.parse(JSON.stringify(jsonField.crm_v1.lineas_borrador_comercial))
         : JSON.parse(JSON.stringify(jsonField.crm_v1.lineas_servicio || []));
+
+      if (Boolean(jsonField.crm_v1?.requiere_rigger || jsonField.crm_v1?.requiereRigger)) {
+        lineasParaSnapshot = lineasParaSnapshot.filter(l => !esLineaRiggerFantasma(l));
+      }
+
+      lineasParaSnapshot = lineasParaSnapshot.map(normalizarLineaCobroUnico);
 
       const nuevaCotizacion = {
         id_cotizacion: Number(nextId),
@@ -1002,6 +1092,11 @@ class ProyectoModel {
           cantBaseTexto = `${cant} ${cant === 1 ? 'Viaje' : 'Viajes'}`;
           tarifaTexto = formatCLP(price);
           totalLine = cant * price;
+        } else if (isLineaCobroUnico(line)) {
+          // SPEC-128: Cobro único (Valor Fijo o TRASLADOS) -> indivisible, 1 servicio plano
+          cantBaseTexto = `1 Servicio`;
+          tarifaTexto = formatCLP(price);
+          totalLine = price;
         } else {
           // Cobro Fijo u otro
           const cant = Number(line.cantidad) || 1;

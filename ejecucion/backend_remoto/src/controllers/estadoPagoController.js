@@ -5,6 +5,7 @@ const edpPdfService = require('../services/edpPdfService');
 const { parsearFacturaDtePdf } = require('../services/dtePdfParserService');
 const db = require('../config/postgresPool');
 const notificacionService = require('../services/notificacionService');
+const { isLineaCobroUnico, calcularSubtotalLinea } = require('../utils/lineaCobroUnico');
 
 exports.registrarPingDesplazamiento = async (req, res) => {
   try {
@@ -221,7 +222,7 @@ exports.generarPdfEdp = async (req, res) => {
     }
 
     // 5. Calcular montos conciliados (priorizando ITS aprobado + Ajustes de Tesorería + Líneas Comerciales)
-    const snapLines = crmV1.lineas_servicio || jf.snapshot_comercial?.lines || jf.lines || [];
+    const snapLines = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || jf.snapshot_comercial?.lines || jf.lines || [];
     const ajustesTesoreria = jf.edp_ajustes_v1 || null;
     const descuentoMonto = Number(ajustesTesoreria?.descuento_tesoreria || 0);
     const descuentoMotivo = ajustesTesoreria?.motivo_descuento || '';
@@ -252,9 +253,18 @@ exports.generarPdfEdp = async (req, res) => {
         let cantMostrar = cant;
         let unidadMostrar = l.unidad || 'GL';
 
-        if (l.tipo === 'TRASLADOS' || (l.subcategoria || '').includes('FLETE') || (l.subcategoria || '').includes('ESCOLTA')) {
-          sub = valUnit * cant;
-        } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(l.tipo)) {
+        const tipoL = String(l.tipo || '').toUpperCase();
+        const subcatL = String(l.subcategoria || '').toUpperCase();
+        const descL = String(l.descripcion || '').toUpperCase();
+        const esLineaTraslado = tipoL === 'TRASLADOS' || tipoL.includes('TRASLADO') || tipoL.includes('FLETE') || subcatL.includes('FLETE') || descL.includes('FLETE');
+        const esLineaEquipo = tipoL.includes('GRUA') || tipoL.includes('CAMION') || subcatL.includes('GRUA') || subcatL.includes('CAMION') || subcatL.includes('PLUMA') || ['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(l.tipo);
+
+        if (isLineaCobroUnico(l)) {
+          // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
+          sub = valUnit;
+          cantMostrar = 1;
+          unidadMostrar = l.unidad || (esLineaTraslado ? 'TRASLADO IDA/VUELTA' : 'Valor Fijo');
+        } else if (esLineaEquipo) {
           if (l.unidad === 'Diario') {
             sub = valUnit * diasFaena * cant;
             cantMostrar = `${diasFaena} d`;
@@ -844,7 +854,7 @@ exports.firmarComercialEdp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'El usuario comercial no tiene PIN FES enrolado' });
     }
 
-    if (pass_fes !== usuario.pass_hash_fes) {
+    if (String(pass_fes).trim().toLowerCase() !== String(usuario.pass_hash_fes).trim().toLowerCase()) {
       return res.status(401).json({ success: false, message: 'PIN de firma FES incorrecto' });
     }
 
@@ -969,16 +979,15 @@ exports.firmarComercialEdp = async (req, res) => {
   }
 };
 
-// 9.B Circuito de 3 Hitos / Firmas FES del Estado de Pago (Desacoplado de ITS)
-// Paso 1: Control de Gestión (Yara) elabora y firma el EDP -> Notifica a Contabilidad
-// Paso 2: Contabilidad valida y firma el EDP (o devuelve con observaciones) -> Notifica a Comercial y habilita Facturación Inmediata si cumple regla OC
-// Paso 3: Comercial firma y despacha el EDP al Cliente Mandante
+// 9.B Circuito de 2 Hitos / Firmas FES del Estado de Pago (SPEC-127 / REQ-1165 — Comercial fuera del flujo)
+// Paso 1: Control de Gestión (Yiara Mendoza) valida 100% de Reports y firma el EDP -> Pasa a Contabilidad y notifica con link PDF + Deep Link Contabilidad
+// Paso 2: Contabilidad (Maritza Seguel) emite en Laudus, sube Factura DTE y firma con PIN FES (o devuelve con observaciones a Control de Gestión)
 exports.firmarPasoEdp = async (req, res) => {
   try {
     const {
       id_proyecto,
       id_user,
-      paso, // 1: Control de Gestión, 2: Contabilidad, 3: Comercial
+      paso, // 1: Control de Gestión (Yiara), 2: Contabilidad y Facturación (Maritza Seguel)
       accion = 'FIRMAR', // 'FIRMAR' | 'DEVOLVER'
       pass_fes,
       es_pago_anticipado,
@@ -992,10 +1001,10 @@ exports.firmarPasoEdp = async (req, res) => {
 
     const pasoNum = Number(paso);
     if (![1, 2, 3].includes(pasoNum)) {
-      return res.status(400).json({ success: false, message: 'Paso inválido. Debe ser 1 (Control de Gestión), 2 (Contabilidad) o 3 (Comercial).' });
+      return res.status(400).json({ success: false, message: 'Paso inválido. Debe ser 1 (Control de Gestión) o 2 (Contabilidad y Facturación).' });
     }
 
-    // 1. Obtener usuario
+    // 1. Obtener usuario firmante / ejecutor
     const uRes = await db.query(`
       SELECT id_user, name_frst, apellido_pat, email, rut, pass_hash_fes
       FROM tsec_users
@@ -1016,26 +1025,29 @@ exports.firmarPasoEdp = async (req, res) => {
       if (!usuario.pass_hash_fes) {
         return res.status(400).json({ success: false, message: 'El usuario no tiene PIN FES enrolado' });
       }
-      if (pass_fes !== usuario.pass_hash_fes) {
+      if (String(pass_fes).trim().toLowerCase() !== String(usuario.pass_hash_fes).trim().toLowerCase()) {
         return res.status(401).json({ success: false, message: 'PIN de firma FES incorrecto' });
       }
     } else {
       if (!observaciones || !String(observaciones).trim()) {
-        return res.status(400).json({ success: false, message: 'Debe indicar las observaciones para devolver el EDP' });
+        return res.status(400).json({ success: false, message: 'Debe indicar las observaciones para devolver el EDP a Control de Gestión' });
       }
     }
 
-    // 2. Obtener proyecto y datos del cliente / comercial
+    // 2. Obtener proyecto y datos del cliente / responsable comercial
     const proyRes = await db.query(`
       SELECT p.*,
              COALESCE(c.razon_social, c.name_empresa, p.json_field->'crm_v1'->>'cliente_nombre', 'Cliente Mandante') AS cliente_nombre,
              COALESCE(c.rut_empresa, p.json_field->'crm_v1'->>'cliente_rut', '') AS cliente_rut,
              COALESCE(p.json_field->'crm_v1'->>'contacto_email', p.json_field->>'cliente_email', '') AS cliente_email,
              u_crea.email AS creador_email,
-             COALESCE(u_crea.name_frst || ' ' || u_crea.apellido_pat, '') AS creador_nombre
+             COALESCE(u_crea.name_frst || ' ' || u_crea.apellido_pat, '') AS creador_nombre,
+             u_jefe.email AS jefe_email,
+             COALESCE(u_jefe.name_frst || ' ' || u_jefe.apellido_pat, '') AS jefe_nombre
       FROM tpry_proyecto p
       LEFT JOIN tpar_empresas c ON p.id_empresa_cliente = c.id_empresa
-      LEFT JOIN tsec_users u_crea ON p.id_user_crea = u_crea.id_user
+      LEFT JOIN tsec_users u_crea ON p.id_usuario_creacion = u_crea.id_user
+      LEFT JOIN tsec_users u_jefe ON p.id_usuario_jefe_proyecto = u_jefe.id_user
       WHERE p.id_proyecto = $1;
     `, [id_proyecto]);
 
@@ -1046,13 +1058,54 @@ exports.firmarPasoEdp = async (req, res) => {
     const jf = typeof proyecto.json_field === 'string' ? JSON.parse(proyecto.json_field || '{}') : (proyecto.json_field || {});
     const crmV1 = jf.crm_v1 || {};
 
+    // 3. Resolver dinámicamente correos institucionales desde tsec_users (SPEC-127: Cero Hardcoding ciego)
+    const idComercialRef = Number(crmV1.id_ejecutivo_comercial || proyecto.id_usuario_creacion || proyecto.id_usuario_jefe_proyecto || 0);
+    const destDbRes = await db.query(`
+      SELECT id_user, name_frst, apellido_pat, email
+      FROM tsec_users
+      WHERE id_user IN (2, 3, 17, 61, 65, $1)
+         OR email ILIKE 'mseguel@%'
+         OR email ILIKE 'omar.ghiselini@%'
+         OR email ILIKE 'jponce@%'
+         OR email ILIKE 'logistica@%'
+         OR email ILIKE 'controlflota@%';
+    `, [idComercialRef]);
+
+    const findEmailByUser = (targetId, emailPrefix, fallbackEmail) => {
+      const byId = destDbRes.rows.find(r => Number(r.id_user) === Number(targetId) && r.email && r.email.includes('@'));
+      if (byId) return String(byId.email).trim().toLowerCase();
+      if (emailPrefix) {
+        const byMail = destDbRes.rows.find(r => String(r.email || '').toLowerCase().startsWith(emailPrefix.toLowerCase()));
+        if (byMail) return String(byMail.email).trim().toLowerCase();
+      }
+      return fallbackEmail;
+    };
+
+    const emailMaritza = findEmailByUser(61, 'mseguel@', 'mseguel@arriendosanpablo.cl');
+    const emailOmar = findEmailByUser(2, 'omar.ghiselini@', 'omar.ghiselini@arriendosanpablo.cl');
+    const emailJonathan = findEmailByUser(17, 'logistica@', 'logistica@arriendosanpablo.cl');
+    const emailJorge = findEmailByUser(3, 'jponce@', 'jponce@arriendosanpablo.cl');
+    const emailYiara = findEmailByUser(65, 'controlflota@', 'controlflota@arriendosanpablo.cl');
+
+    const rowComercial = idComercialRef > 0 ? destDbRes.rows.find(r => Number(r.id_user) === idComercialRef && r.email) : null;
+    const emailComercialResp = String(
+      crmV1.vendedor_email ||
+      rowComercial?.email ||
+      proyecto.creador_email ||
+      proyecto.jefe_email ||
+      emailOmar
+    ).trim().toLowerCase();
+    const nombreComercialResp = crmV1.vendedor_nombre ||
+      (rowComercial ? `${rowComercial.name_frst || ''} ${rowComercial.apellido_pat || ''}`.trim() : '') ||
+      proyecto.creador_nombre?.trim() ||
+      'Ejecutivo Comercial';
+
     // Evaluar condición de OC / HES y disponibilidad actual de OC
     const requiereOc = Boolean(crmV1.requiere_oc_hes ?? jf.datos_generales?.requiere_oc_hes ?? false);
     const ordenesCompra = Array.isArray(jf.ordenes_compra)
       ? jf.ordenes_compra
       : (Array.isArray(crmV1.ordenes_compra) ? crmV1.ordenes_compra : []);
     const tieneOc = ordenesCompra.length > 0 || Boolean(jf.oc_v1?.numero_oc);
-    const montoTotalOcs = ordenesCompra.reduce((acc, item) => acc + (Number(item.monto_neto) || 0), 0) || Number(jf.oc_v1?.monto_neto || 0);
 
     const flujoActual = jf.edp_flujo_v1 || {
       estado: 'BORRADOR',
@@ -1069,16 +1122,27 @@ exports.firmarPasoEdp = async (req, res) => {
     const codigoFes = `FES-EDP-P${pasoNum}-${id_proyecto}-${usuario.id_user}-${timestamp}`;
     const ahoraIso = new Date().toISOString();
 
-    const baseUrl = process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl';
-    const envPrefix = (process.env.APP_ENV === 'prod') ? '/lg-gsp-prod' : '/lg-gsp-dev';
-    const edpPdfUrl = `${baseUrl}${envPrefix}/api/operaciones/edp/proyecto/${id_proyecto}/pdf`;
-    const torreUrl = `${baseUrl}${envPrefix}/torre`;
+    const { BASE_URL_WEB } = notificacionService.getBaseUrls();
+    const edpPdfUrl = `${BASE_URL_WEB}/api/operaciones/edp/proyecto/${id_proyecto}/pdf`;
+    const deepLinkContabilidadUrl = notificacionService.construirDeepLink({
+      tipoApp: 'WEB',
+      ruta: 'torre',
+      params: { view: 'contabilidad', id_proyecto, accion: 'caratula' }
+    });
+    const deepLinkPmoAnalistaUrl = notificacionService.construirDeepLink({
+      tipoApp: 'WEB',
+      ruta: 'torre',
+      params: { view: 'pmo', id_proyecto, accion: 'caratula' }
+    });
 
-    // CASO DEVOLUCIÓN (Contabilidad devuelve a Control de Gestión con observaciones)
+    // CASO DEVOLUCIÓN (Contabilidad devuelve a Control de Gestión — Yiara Mendoza con observaciones)
     if (accion === 'DEVOLVER') {
+      const firmaAnalistaPrevia = flujoActual.firma_1_analista || null;
       flujoActual.estado = 'OBSERVADO_CONTABILIDAD';
       flujoActual.paso_actual = 1;
+      flujoActual.firma_1_analista = null;
       flujoActual.firma_2_contabilidad = null;
+      flujoActual.habilitado_facturar = false;
       flujoActual.observacion_devolucion = {
         id_user: usuario.id_user,
         nombre_usuario: nombreUsuario,
@@ -1091,47 +1155,48 @@ exports.firmarPasoEdp = async (req, res) => {
         accion: 'DEVOLVER',
         usuario: nombreUsuario,
         fecha: ahoraIso,
-        observaciones: String(observaciones).trim()
+        observaciones: String(observaciones).trim(),
+        firma_1_invalidada: firmaAnalistaPrevia?.codigo_fes || null
       });
 
       jf.edp_flujo_v1 = flujoActual;
       await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
 
-      // Notificar a Control de Gestión (Yara)
-      const destAnalista = new Set(['logistica@arriendosanpablo.cl']);
-      if (flujoActual.firma_1_analista?.email_firmante) {
-        destAnalista.add(flujoActual.firma_1_analista.email_firmante);
+      const paraDevolucionSet = new Set([emailYiara]);
+      if (firmaAnalistaPrevia?.email_firmante && firmaAnalistaPrevia.email_firmante.includes('@')) {
+        paraDevolucionSet.add(String(firmaAnalistaPrevia.email_firmante).trim().toLowerCase());
       }
-      for (const emailDest of destAnalista) {
-        notificacionService.despacharEmailSmtp({
-          para: emailDest,
-          cc: 'mseguel@arriendosanpablo.cl',
-          asunto: `[GSP] ⚠️ EDP Devuelto con Observaciones por Contabilidad: ${proyecto.codi_proyecto}`,
-          titulo: `EDP Observado por Contabilidad: ${proyecto.codi_proyecto}`,
-          subtitulo: `Devuelto por ${nombreUsuario} para corrección en Control de Gestión`,
-          contenido: `<p>El área de <strong>Contabilidad (${nombreUsuario})</strong> ha revisado el Estado de Pago de la OT <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) y lo ha devuelto a Control de Gestión con las siguientes observaciones:</p>
-          <div style="background:#450a0a; border:1px solid #dc2626; border-radius:8px; padding:14px; margin:14px 0; color:#fecaca;">
-            <strong>📝 Observación de Contabilidad:</strong><br/>
-            ${String(observaciones).trim()}
-          </div>
-          <p>Por favor ingrese a la Carátula EDP en la Torre de Control para ajustar los datos y volver a emitir la firma de Control de Gestión.</p>`,
-          botonTexto: 'ABRIR TORRE DE CONTROL',
-          botonUrl: torreUrl
-        }).catch(e => console.warn('[EDP Mail Devolución]', e.message));
-      }
+      const ccDevolucionList = [emailMaritza, emailJonathan, emailJorge]
+        .filter(Boolean)
+        .filter((em, i, arr) => arr.indexOf(em) === i && !paraDevolucionSet.has(em));
+
+      notificacionService.despacharEmailSmtp({
+        para: Array.from(paraDevolucionSet),
+        cc: ccDevolucionList,
+        asunto: `[GSP] ⚠️ EDP Devuelto con Observaciones por Contabilidad: ${proyecto.codi_proyecto} — ${proyecto.cliente_nombre}`,
+        titulo: `EDP Observado por Contabilidad: ${proyecto.codi_proyecto}`,
+        subtitulo: `Devuelto por ${nombreUsuario} para corrección y re-firma en Control de Gestión`,
+        contenido: `<p>El área de <strong>Contabilidad (${nombreUsuario})</strong> ha revisado el Estado de Pago del servicio <strong>${proyecto.codi_proyecto}</strong> (Cliente: <strong>${proyecto.cliente_nombre}</strong>) y lo ha devuelto a <strong>Control de Gestión (Yiara Mendoza)</strong> con la siguiente observación:</p>
+        <div style="background:#450a0a; border:1px solid #dc2626; border-radius:8px; padding:14px; margin:14px 0; color:#fecaca;">
+          <strong>📝 Observación de Contabilidad:</strong><br/>
+          ${String(observaciones).trim()}
+        </div>
+        <p>Por favor abra directamente el Estado de Pago desde el botón inferior, ajuste los antecedentes observados y vuelva a emitir la firma FES de Control de Gestión.</p>`,
+        botonTexto: 'ABRIR EDP OBSERVADO PARA CORREGIR',
+        botonUrl: deepLinkPmoAnalistaUrl
+      }).catch(e => console.warn('[EDP Mail Devolución]', e.message));
 
       return res.status(200).json({
         success: true,
-        message: 'EDP devuelto a Control de Gestión con observaciones.',
+        message: 'EDP devuelto a Control de Gestión (Yiara Mendoza) con observaciones.',
         edp_flujo_v1: flujoActual
       });
     }
 
-    // CASO FIRMA FES POR PASO (1, 2 o 3)
+    // CASO FIRMA FES POR PASO (1 o 2)
     const cargosPorPaso = {
       1: 'Control de Gestión / Analista Operativo',
-      2: 'Contabilidad y Facturación',
-      3: 'Ejecutivo Comercial Responsable'
+      2: 'Contabilidad y Facturación'
     };
 
     const datosFirma = {
@@ -1140,23 +1205,21 @@ exports.firmarPasoEdp = async (req, res) => {
       nombre_firmante: nombreUsuario,
       rut_firmante: usuario.rut || '',
       email_firmante: usuario.email || '',
-      cargo: cargosPorPaso[pasoNum],
+      cargo: cargosPorPaso[pasoNum] || 'Certificación FES',
       codigo_fes: codigoFes,
       fecha_firma: ahoraIso,
-      observaciones: observaciones || `Validado y firmado en Paso ${pasoNum} (${cargosPorPaso[pasoNum]})`
+      observaciones: observaciones || `Validado y firmado en Paso ${pasoNum} (${cargosPorPaso[pasoNum] || 'FES'})`
     };
 
     if (pasoNum === 1) {
-      // HITO 1: Yara (Control de Gestión) da el OK de reports y genera el EDP con su firma FES
+      // HITO 1: Yiara Mendoza (Control de Gestión) firma el EDP -> Queda en etapa CONTABILIDAD (Maritza Seguel)
       flujoActual.firma_1_analista = datosFirma;
+      flujoActual.firma_2_contabilidad = null;
       flujoActual.observacion_devolucion = null;
 
-      // Desacople total (Acuerdo Maritza Seguel / Jorge Ponce):
-      // Al validar Control de Gestión, el EDP queda liberado automáticamente para Facturación
-      // y Despacho Comercial sin requerir una 2° firma contable.
       const habilitadoFacturarInmediato = !requiereOc || tieneOc;
-      flujoActual.estado = habilitadoFacturarInmediato ? 'LIBERADO_FACTURAR' : 'ESPERANDO_OC_CLIENTE';
-      flujoActual.paso_actual = 2; // Pasa directo al Despacho Comercial
+      flujoActual.estado = 'EN_CONTABILIDAD';
+      flujoActual.paso_actual = 2; // Siguiente firmante: Contabilidad (Maritza Seguel)
       flujoActual.requiere_oc = requiereOc;
       flujoActual.tiene_oc = tieneOc;
       flujoActual.habilitado_facturar = habilitadoFacturarInmediato;
@@ -1175,131 +1238,132 @@ exports.firmarPasoEdp = async (req, res) => {
       jf.edp_flujo_v1 = flujoActual;
       await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
 
-      // Notificar a Contabilidad: EDP Liberado para Facturar (o retenido por OC)
       const badgeOcHtml = !requiereOc
-        ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">NO REQUIERE OC (Facturación Inmediata Habilitada)</span>`
+        ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">NO REQUIERE OC (Facturación Directa Habilitada)</span>`
         : (tieneOc
           ? `<span style="background:#065f46; color:#a7f3d0; padding:4px 8px; border-radius:4px; font-weight:bold;">REQUIERE OC — OC YA CARGADA (#${jf.oc_v1?.numero_oc || ordenesCompra[0]?.numero_oc})</span>`
           : `<span style="background:#78350f; color:#fde68a; padding:4px 8px; border-radius:4px; font-weight:bold;">REQUIERE OC — PENDIENTE RECEPCIÓN DE OC DEL CLIENTE</span>`);
 
-      const asuntoConta = habilitadoFacturarInmediato
-        ? `[GSP] 🟢 LISTO PARA FACTURAR: ${proyecto.codi_proyecto} — ${proyecto.cliente_nombre}`
-        : `[GSP] ⏳ EDP Liberado (${proyecto.codi_proyecto}) — Esperando OC Comercial`;
+      const montoEdpFmt = Number(flujoActual.monto_edp_neto || 0) > 0
+        ? `$${Math.round(Number(flujoActual.monto_edp_neto)).toLocaleString('es-CL')} + IVA`
+        : 'Según liquidación en PDF adjunto';
+
+      // Destinatarios oficiales acordados:
+      // Para: Contabilidad (Maritza Seguel), Responsable Comercial del negocio, Gerencia (Omar), Coordinador Operaciones (Jonathan), Operaciones (Jorge)
+      // CC: Yiara Mendoza (firmante Control de Gestión)
+      const paraPaso1 = [emailMaritza, emailComercialResp, emailOmar, emailJonathan, emailJorge]
+        .filter(em => em && em.includes('@'))
+        .map(em => em.trim().toLowerCase())
+        .filter((em, idx, arr) => arr.indexOf(em) === idx);
+
+      const emailFirmantePaso1 = (usuario.email && usuario.email.includes('@'))
+        ? String(usuario.email).trim().toLowerCase()
+        : emailYiara;
+      const ccPaso1 = [emailYiara, emailFirmantePaso1]
+        .filter(em => em && em.includes('@'))
+        .map(em => em.trim().toLowerCase())
+        .filter((em, idx, arr) => arr.indexOf(em) === idx && !paraPaso1.includes(em));
 
       notificacionService.despacharEmailSmtp({
-        para: 'mseguel@arriendosanpablo.cl',
-        cc: 'omar.ghiselini@arriendosanpablo.cl, logistica@arriendosanpablo.cl',
-        asunto: asuntoConta,
-        titulo: `Estado de Pago Liberado: ${proyecto.codi_proyecto}`,
-        subtitulo: `Validado por ${nombreUsuario} (Control de Gestión) — Facturación Desacoplada`,
-        contenido: `<p><strong>Control de Gestión (${nombreUsuario})</strong> ha validado el 100% de los Reports Diarios del servicio <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) y ha emitido el EDP con Firma FES (<code>${codigoFes}</code>).</p>
+        para: paraPaso1,
+        cc: ccPaso1,
+        asunto: `[GSP] 📑 EDP Firmado (${proyecto.codi_proyecto}) — En Contabilidad para Facturación Laudus (${proyecto.cliente_nombre})`,
+        titulo: `Estado de Pago Firmado: ${proyecto.codi_proyecto}`,
+        subtitulo: `Emitido por ${nombreUsuario} (Control de Gestión) — Etapa Actual: Contabilidad (Maritza Seguel)`,
+        contenido: `<p><strong>Control de Gestión (${nombreUsuario})</strong> ha validado los Reports Diarios y ha firmado el <strong>Estado de Pago</strong> del servicio <strong>${proyecto.codi_proyecto}</strong> con código FES <code>${codigoFes}</code>, quedando en etapa de <strong>Contabilidad (Maritza Seguel)</strong>.</p>
         <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px; margin:14px 0; color:#e2e8f0;">
           <p style="margin:4px 0;"><strong>Cliente Mandante:</strong> ${proyecto.cliente_nombre} (${proyecto.cliente_rut || 'S/R'})</p>
           <p style="margin:4px 0;"><strong>Obra / Faena:</strong> ${crmV1.obra_nombre || proyecto.nombre_proyecto || 'Faena'}</p>
+          <p style="margin:4px 0;"><strong>Responsable Comercial:</strong> ${nombreComercialResp} (${emailComercialResp})</p>
+          <p style="margin:4px 0;"><strong>Monto Neto EDP:</strong> <span style="color:#fbbf24; font-weight:bold;">${montoEdpFmt}</span></p>
+          ${observaciones ? `<p style="margin:4px 0;"><strong>Nota Control de Gestión:</strong> ${String(observaciones).trim()}</p>` : ''}
           <p style="margin:8px 0 4px 0;"><strong>Condición de Orden de Compra:</strong> ${badgeOcHtml}</p>
         </div>
-        <p>${habilitadoFacturarInmediato ? '<strong>Acción Contable:</strong> El servicio se encuentra habilitado para subir la Factura DTE oficial sin esperar firmas adicionales.' : '<strong>Estado:</strong> A la espera de que Comercial cargue la Orden de Compra.'}</p>`,
-        botonTexto: 'ABRIR BANDEJA CONTABLE',
-        botonUrl: torreUrl
-      }).catch(e => console.warn('[EDP Mail Paso 1 -> Contabilidad]', e.message));
-
-      // Notificar al Ejecutivo Comercial para despacho al cliente
-      const emailComercial = crmV1.vendedor_email || proyecto.creador_email || 'omar.ghiselini@arriendosanpablo.cl';
-      notificacionService.despacharEmailSmtp({
-        para: emailComercial,
-        cc: 'mseguel@arriendosanpablo.cl, logistica@arriendosanpablo.cl',
-        asunto: `[GSP] 📑 EDP Disponible para Despacho al Cliente: ${proyecto.codi_proyecto}`,
-        titulo: `EDP Listo para Despacho: ${proyecto.codi_proyecto}`,
-        subtitulo: `Validado por Control de Gestión (${codigoFes})`,
-        contenido: `<p>El Estado de Pago del servicio <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}) ha sido emitido por Control de Gestión y se encuentra disponible para su firma y despacho formal al mandante.</p>
-        ${requiereOc && !tieneOc ? `<div style="background:#451a03; border:1px solid #f59e0b; border-radius:8px; padding:12px; margin:12px 0; color:#fef3c7;"><strong>⚠️ ATENCIÓN COMERCIAL:</strong> Este servicio requiere Orden de Compra. Por favor cárguela en la plataforma para destrabar la facturación en Contabilidad.</div>` : ''}`,
-        botonTexto: 'VER Y DESPACHAR EDP AL CLIENTE',
-        botonUrl: edpPdfUrl
-      }).catch(e => console.warn('[EDP Mail Paso 1 -> Comercial]', e.message));
+        <div style="background:#064e3b; border:1px solid #10b981; border-radius:8px; padding:12px 14px; margin:14px 0; color:#ecfdf5; font-size:13px;">
+          <strong>🧾 Gestión Contabilidad (Maritza Seguel):</strong> Use el botón azul principal inferior para abrir directamente este EDP en la plataforma, subir el PDF de la factura emitida en <strong>Laudus</strong> y firmar su carga (o devolverlo con observaciones a Control de Gestión si corresponde).
+        </div>
+        <div style="text-align:center; margin:18px 0 6px 0;">
+          <a href="${edpPdfUrl}" target="_blank" style="display:inline-block; background:#1e293b; color:#38bdf8 !important; font-weight:700; font-size:13px; text-decoration:none; padding:12px 24px; border-radius:8px; border:1px solid #38bdf8; text-transform:uppercase; letter-spacing:0.5px;">📄 VER / DESCARGAR PDF DEL ESTADO DE PAGO FIRMADO</a>
+        </div>`,
+        botonTexto: 'ABRIR EDP EN CONTABILIDAD PARA FACTURAR',
+        botonUrl: deepLinkContabilidadUrl
+      }).catch(e => console.warn('[EDP Mail Paso 1 -> Contabilidad y Áreas]', e.message));
 
       return res.status(200).json({
         success: true,
-        message: 'EDP generado y firmado por Control de Gestión. Liberado automáticamente para facturación y despacho comercial.',
+        message: 'EDP firmado por Control de Gestión y derivado a Contabilidad (Maritza Seguel). Notificaciones enviadas con link al PDF y Deep Link de facturación.',
         codigo_fes: codigoFes,
         edp_flujo_v1: flujoActual
       });
     }
 
     if (pasoNum === 2 || pasoNum === 3) {
-      // HITO COMERCIAL: Comercial firma y despacha el EDP al Cliente Mandante (Paso 2 o 3)
-      const estadoDespacho = es_pago_anticipado ? 'INTERNO_PAGO_PREVIO' : 'DESPACHADO_CLIENTE';
-      const firmaComercial = {
+      // HITO 2: Contabilidad (Maritza Seguel) certifica con PIN FES que generó en Laudus y subió la Factura DTE al sistema
+      const facturasDteActuales = Array.isArray(jf.facturas_dte) ? jf.facturas_dte : [];
+      const folioPrincipal = facturasDteActuales.length > 0
+        ? facturasDteActuales.map(f => f.folio_dte).join(', ')
+        : (jf.liquidacion_v1?.factura_numero || null);
+
+      if (!folioPrincipal) {
+        return res.status(400).json({
+          success: false,
+          message: 'Antes de firmar el Hito 2 de Contabilidad, debe subir y guardar el documento PDF de la Factura emitida en Laudus.'
+        });
+      }
+
+      const firmaContabilidad = {
         ...datosFirma,
         paso: 2,
-        cargo: 'Ejecutivo Comercial Responsable',
-        es_pago_anticipado: !!es_pago_anticipado,
-        estado_despacho: estadoDespacho
+        cargo: 'Contabilidad y Facturación',
+        factura_numero: folioPrincipal
       };
 
-      flujoActual.firma_3_comercial = firmaComercial;
-      flujoActual.estado = estadoDespacho;
+      flujoActual.firma_2_contabilidad = firmaContabilidad;
+      flujoActual.observacion_devolucion = null;
+      flujoActual.estado = 'FACTURADO_CONFORME';
       flujoActual.paso_actual = 3;
       flujoActual.requiere_oc = requiereOc;
       flujoActual.tiene_oc = tieneOc;
-      flujoActual.habilitado_facturar = !requiereOc || tieneOc;
+      flujoActual.habilitado_facturar = true;
 
       flujoActual.historial.unshift({
         paso: 2,
-        accion: es_pago_anticipado ? 'FIRMAR_COMERCIAL_INTERNO' : 'FIRMAR_Y_DESPACHAR_CLIENTE',
+        accion: 'FIRMAR_CONTABILIDAD_FACTURA',
         usuario: nombreUsuario,
         codigo_fes: codigoFes,
+        factura_numero: folioPrincipal,
         fecha: ahoraIso,
         observaciones: datosFirma.observaciones
       });
 
       jf.edp_flujo_v1 = flujoActual;
-      jf.edp_firma_comercial = firmaComercial;
 
-      await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), id_proyecto]);
-
-      const ccInstitucionales = [
-        'omar.ghiselini@arriendosanpablo.cl',
-        'mseguel@arriendosanpablo.cl',
-        'logistica@arriendosanpablo.cl'
-      ];
-
-      if (!es_pago_anticipado && proyecto.cliente_email) {
-        notificacionService.despacharEmailSmtp({
-          para: proyecto.cliente_email,
-          cc: ccInstitucionales.join(', '),
-          asunto: `[Grúas San Pablo] Estado de Pago Oficial — Servicio ${proyecto.codi_proyecto}`,
-          titulo: `Estado de Pago Oficial: ${proyecto.codi_proyecto}`,
-          subtitulo: `Emitido y despachado por Área Comercial (${nombreUsuario})`,
-          contenido: `<p>Estimado Cliente Mandante (<strong>${proyecto.cliente_nombre}</strong>),</p>
-          <p>Junto con saludar, remitimos el <strong>Estado de Pago Oficial</strong> correspondiente a los servicios prestados en la obra/faena <strong>${crmV1.obra_nombre || proyecto.nombre_proyecto || 'Faena en Terreno'}</strong>.</p>
-          <div style="background:#1e293b; border:1px solid #475569; border-radius:8px; padding:12px; margin:12px 0; color:#e2e8f0;">
-            📄 <strong>Certificación Triple Firma FES:</strong> Este Estado de Pago cuenta con validación de Control de Gestión, Contabilidad y Área Comercial bajo el código <code>${codigoFes}</code>.
-          </div>
-          ${requiereOc && !tieneOc ? `<p>Agradecemos emitir y enviarnos la correspondiente <strong>Orden de Compra (OC / HES)</strong> para proceder con la emisión de la Factura Electrónica DTE.</p>` : `<p>El documento se encuentra disponible para su descarga directa en el siguiente botón:</p>`}`,
-          botonTexto: 'DESCARGAR DOSSIER EDP OFICIAL (PDF)',
-          botonUrl: edpPdfUrl
-        }).catch(e => console.warn('[EDP Mail Paso 3 -> Cliente]', e.message));
-      } else {
-        for (const ccEmail of ccInstitucionales) {
-          notificacionService.despacharEmailSmtp({
-            para: ccEmail,
-            asunto: `[GSP] 📄 EDP Firmado por Comercial (${proyecto.codi_proyecto}) - ${proyecto.cliente_nombre}`,
-            titulo: `Circuito de 3 Firmas EDP Completado: ${proyecto.codi_proyecto}`,
-            subtitulo: `Firmado por Comercial (${nombreUsuario}) — ${es_pago_anticipado ? 'Pago Anticipado' : 'Despachado al Cliente'}`,
-            contenido: `<p>El Ejecutivo Comercial <strong>${nombreUsuario}</strong> ha completado el Hito 3 del Estado de Pago para el proyecto <strong>${proyecto.codi_proyecto}</strong> (${proyecto.cliente_nombre}).</p>`,
-            botonTexto: 'VER DOSSIER EDP OFICIAL',
-            botonUrl: edpPdfUrl
-          }).catch(e => console.warn('[EDP Mail Paso 3 Interno]', e.message));
-        }
+      // Consolidar estado de facturación en liquidacion_v1 y estado del proyecto (7 = Facturado) salvo facturación parcial explícita
+      let nuevoEstadoProyecto = proyecto.id_proyecto_estado;
+      const esParcialExplicita = jf.liquidacion_v1?.estado_financiero === 'FACTURACION_PARCIAL';
+      if (!esParcialExplicita) {
+        nuevoEstadoProyecto = 7;
+        jf.liquidacion_v1 = {
+          ...(jf.liquidacion_v1 || {}),
+          factura_numero: folioPrincipal,
+          estado_financiero: 'FACTURADO_CONFORME',
+          firma_fes_contabilidad: codigoFes,
+          firmado_por_contabilidad: nombreUsuario,
+          fecha_firma_contabilidad: ahoraIso
+        };
+        jf.liquidacion_guardada = jf.liquidacion_v1;
       }
+
+      await db.query(
+        'UPDATE tpry_proyecto SET id_proyecto_estado = $1, json_field = $2 WHERE id_proyecto = $3',
+        [nuevoEstadoProyecto, JSON.stringify(jf), id_proyecto]
+      );
 
       return res.status(200).json({
         success: true,
-        message: es_pago_anticipado
-          ? 'EDP visado exitosamente por Comercial (Pago Anticipado).'
-          : 'EDP firmado por Comercial y despachado al Cliente Mandante con copia a Contabilidad.',
+        message: `Carga de Factura Laudus (#${folioPrincipal}) certificada exitosamente con Firma FES por Contabilidad (${nombreUsuario}).`,
         codigo_fes: codigoFes,
-        firma: firmaComercial,
+        firma: firmaContabilidad,
         edp_flujo_v1: flujoActual
       });
     }
@@ -2057,7 +2121,17 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       for (const l of lineas) {
         const valUnit = Number(l.valorUnitario || l.precio_unitario || l.tarifa || 0);
         const cant = Number(l.cantidad || 1);
-        const sub = Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
+        const hrsOpm = Number(l.cantidad_horas ?? l.pisoMinimo ?? l.horas_minimas ?? 0);
+        const dias = Number(l.cantidad_dias ?? 1);
+        let sub = Number(l.subtotal_calculado || l.subtotal || 0);
+        if (!sub) {
+          const unidadStr = String(l.unidad || '').toLowerCase();
+          if (hrsOpm > 0 && (unidadStr.includes('hora') || unidadStr.includes('minima') || unidadStr.includes('diari'))) {
+            sub = valUnit * hrsOpm * dias * cant;
+          } else {
+            sub = valUnit * cant;
+          }
+        }
         montoLineasCotizadas += sub;
 
         const tipoUpper = String(l.tipo || '').toUpperCase();
@@ -2073,9 +2147,22 @@ exports.getPerspectivaContabilidad = async (req, res) => {
 
       const netoCrm = Number(crmV1.totales?.neto || jf.totales?.neto || 0);
       const itsIngresosNeto = Number(p.its_ingresos_neto || 0);
-      const montoComprometido = montoLineasCotizadas > 0
-        ? Math.round(montoLineasCotizadas)
-        : (netoCrm > 0 ? Math.round(netoCrm) : Math.round(itsIngresosNeto));
+      const ordenesCompra = Array.isArray(jf.ordenes_compra)
+        ? jf.ordenes_compra
+        : (Array.isArray(crmV1.ordenes_compra) ? crmV1.ordenes_compra : []);
+      const montoOcNeto = ordenesCompra.reduce((acc, o) => acc + (Number(o.monto_neto) || 0), 0) || Number(jf.oc_v1?.monto_neto || 0);
+
+      // Priorizar el valor oficial contractual más fidedigno (OC mandante > Cotización > ITS)
+      let montoComprometido = montoLineasCotizadas > 0 ? Math.round(montoLineasCotizadas) : 0;
+      if (montoOcNeto > 0 && montoComprometido < montoOcNeto) {
+        montoComprometido = Math.round(montoOcNeto);
+      }
+      if (netoCrm > 0 && montoComprometido < netoCrm) {
+        montoComprometido = Math.round(netoCrm);
+      }
+      if (itsIngresosNeto > 0 && montoComprometido < itsIngresosNeto) {
+        montoComprometido = Math.round(itsIngresosNeto);
+      }
 
       // 2. Calcular Devengado por Reports Diarios
       const totalReports = repsProyecto.length;
@@ -2093,49 +2180,68 @@ exports.getPerspectivaContabilidad = async (req, res) => {
 
       let montoDevengadoReports = 0;
       if (totalReports > 0) {
-        // Valorizar según líneas tarifarias y horas reales de reports
-        let subDev = 0;
-        if (lineas.length > 0) {
-          const diasFaena = Math.max(1, totalReports);
-          const lineasHorariasCount = Math.max(1, lineas.filter(l => {
-            const u = String(l.unidad || '').trim().toLowerCase();
-            const v = Number(l.valorUnitario || l.precio_unitario || 0);
-            return ['hora', 'horas', 'hr', 'hrs'].includes(u) && v > 0 && v < 350000;
-          }).length);
-          for (const l of lineas) {
-            const valUnit = Number(l.valorUnitario || l.precio_unitario || 0);
-            const cant = Number(l.cantidad || 1);
-            const tipoUpper = String(l.tipo || '').toUpperCase();
-            const subcatUpper = String(l.subcategoria || '').toUpperCase();
-            const unidadLower = String(l.unidad || '').trim().toLowerCase();
-
-            if (tipoUpper === 'TRASLADOS' || subcatUpper.includes('FLETE') || subcatUpper.includes('ESCOLTA')) {
-              subDev += valUnit * cant;
-            } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(tipoUpper)) {
-              if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
-                subDev += valUnit * diasFaena * cant;
-              } else if (['hora', 'horas', 'hr', 'hrs'].includes(unidadLower) && valUnit < 350000) {
-                const hrsAplicar = horasFacturablesPry > 0 ? (horasFacturablesPry / lineasHorariasCount) : (cant * 8);
-                subDev += valUnit * hrsAplicar;
-              } else {
-                subDev += Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
+        if (itsIngresosNeto > 0) {
+          montoDevengadoReports = Math.round(itsIngresosNeto);
+        } else {
+          // Valorizar según líneas tarifarias y horas reales de reports
+          let subDev = 0;
+          if (lineas.length > 0) {
+            const diasFaena = Math.max(1, totalReports);
+            const lineasHorariasCount = Math.max(1, lineas.filter(l => {
+              const u = String(l.unidad || '').trim().toLowerCase();
+              const v = Number(l.valorUnitario || l.precio_unitario || 0);
+              return (u.includes('hora') || u.includes('minima')) && v > 0 && v < 350000;
+            }).length);
+            for (const l of lineas) {
+              const valUnit = Number(l.valorUnitario || l.precio_unitario || 0);
+              const cant = Number(l.cantidad || 1);
+              const hrsOpm = Number(l.cantidad_horas ?? l.pisoMinimo ?? l.horas_minimas ?? 0);
+              const dias = Number(l.cantidad_dias ?? 1);
+              let sub = Number(l.subtotal_calculado || l.subtotal || 0);
+              if (!sub) {
+                const unidadStr = String(l.unidad || '').toLowerCase();
+                if (hrsOpm > 0 && (unidadStr.includes('hora') || unidadStr.includes('minima') || unidadStr.includes('diari'))) {
+                  sub = valUnit * hrsOpm * dias * cant;
+                } else {
+                  sub = valUnit * cant;
+                }
               }
-            } else {
-              subDev += Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
+
+              const tipoUpper = String(l.tipo || '').toUpperCase();
+              const subcatUpper = String(l.subcategoria || '').toUpperCase();
+              const unidadLower = String(l.unidad || '').trim().toLowerCase();
+
+              if (isLineaCobroUnico(l)) {
+                // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
+                subDev += valUnit;
+              } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(tipoUpper)) {
+                if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
+                  subDev += valUnit * diasFaena * cant;
+                } else if ((unidadLower.includes('hora') || unidadLower.includes('minima')) && valUnit < 350000) {
+                  const hrsAplicar = horasFacturablesPry > 0 ? (horasFacturablesPry / lineasHorariasCount) : (hrsOpm > 0 ? hrsOpm : (cant * 8));
+                  subDev += valUnit * hrsAplicar;
+                } else {
+                  subDev += sub;
+                }
+              } else {
+                subDev += sub;
+              }
+            }
+            const stOverride = (jf.edp_ajustes_v1?.sobretiempo_override !== null && jf.edp_ajustes_v1?.sobretiempo_override !== undefined)
+              ? Number(jf.edp_ajustes_v1.sobretiempo_override)
+              : 0;
+            if (stOverride > 0) {
+              subDev += stOverride;
             }
           }
-          // Erradicación de sobretiempo hardcodeado ($65.000). Las horas facturables (horasFacturablesPry)
-          // ya incorporan la totalidad de horas operadas y de sobretiempo liquidables.
-          const stOverride = (jf.edp_ajustes_v1?.sobretiempo_override !== null && jf.edp_ajustes_v1?.sobretiempo_override !== undefined)
-            ? Number(jf.edp_ajustes_v1.sobretiempo_override)
-            : 0;
-          if (stOverride > 0) {
-            subDev += stOverride;
-          }
+          montoDevengadoReports = subDev > 0 ? Math.round(subDev) : montoComprometido;
         }
-        montoDevengadoReports = subDev > 0 ? Math.round(subDev) : montoComprometido;
       } else if (p.id_proyecto_estado >= 6 && itsIngresosNeto > 0) {
         montoDevengadoReports = Math.round(itsIngresosNeto);
+      }
+
+      if (montoOcNeto > 0 && totalReports > 0 && montoDevengadoReports < montoOcNeto) {
+        montoDevengadoReports = Math.round(montoOcNeto);
       }
 
       // Invariante contable: el devengado operativo no puede superar el comprometido contractual salvo override explícito de Tesorería
@@ -2147,21 +2253,17 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       // 3. Cerrado en ITS (Gestión Interna)
       const tieneIts = Boolean(p.id_its);
       const itsCerrado = p.estado_its === 'CONCLUIDO' || p.estado_its === 'EN_REVISION_CONTABILIDAD' || p.estado_its === 'EN_REVISION_OPERACIONES';
-      const rawItsNeto = itsIngresosNeto > 0 ? Math.round(itsIngresosNeto) : 0;
+      const rawItsNeto = itsIngresosNeto > 0 ? Math.round(itsIngresosNeto) : (montoDevengadoReports > 0 ? montoDevengadoReports : 0);
       const montoItsNeto = (!tieneOverrideTesoreria && montoComprometido > 0 && rawItsNeto > montoComprometido)
         ? montoComprometido
-        : rawItsNeto;
+        : (rawItsNeto > 0 ? rawItsNeto : montoComprometido);
       const montoItsCostos = Math.round(Number(p.its_costos_operacionales || 0));
       const margenItsPct = Number(p.its_margen_pct || (montoItsNeto > 0 ? (((montoItsNeto - montoItsCostos) / montoItsNeto) * 100).toFixed(1) : 0));
 
       // 4. Estado de Pago (EDP) y Circuito de 3 Firmas FES + OC
       const requiereOcHes = Boolean(crmV1.requiere_oc_hes ?? jf.datos_generales?.requiere_oc_hes ?? false);
-      const ordenesCompra = Array.isArray(jf.ordenes_compra)
-        ? jf.ordenes_compra
-        : (Array.isArray(crmV1.ordenes_compra) ? crmV1.ordenes_compra : []);
       const tieneOc = ordenesCompra.length > 0 || Boolean(jf.oc_v1?.numero_oc);
       const numeroOc = jf.oc_v1?.numero_oc || ordenesCompra[0]?.numero_oc || null;
-      const montoOcNeto = ordenesCompra.reduce((acc, o) => acc + (Number(o.monto_neto) || 0), 0) || Number(jf.oc_v1?.monto_neto || 0);
 
       const edpFlujo = jf.edp_flujo_v1 || null;
       const liqV1 = jf.liquidacion_v1 || jf.liquidacion_guardada || null;
@@ -2246,7 +2348,8 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       );
       const esFacturacionParcial = Boolean(tieneFacturasEmitidas && !esCierreTotalFacturado);
       const facturado = tieneFacturasEmitidas;
-      const habilitadoFacturar = Boolean(!esCierreTotalFacturado && edpLiberado && (!requiereOcHes || tieneOc));
+      const esDevueltoConObs = ['DEVUELTO_CONTABILIDAD', 'OBSERVADO_CONTABILIDAD'].includes(edpFlujo?.estado);
+      const habilitadoFacturar = Boolean(!esCierreTotalFacturado && !esDevueltoConObs && edpLiberado && (!requiereOcHes || tieneOc));
 
       // Estado / Semáforo Contable
       let semaforoContable = 'ADJUDICADO_SIN_REPORTS';
@@ -2257,7 +2360,7 @@ exports.getPerspectivaContabilidad = async (req, res) => {
       } else if (esFacturacionParcial) {
         semaforoContable = 'FACTURACION_PARCIAL';
         semaforoLabel = `Facturación Parcial (${facturasDteLista.length} DTE · Saldo ${ '$' + saldoPendienteFacturar.toLocaleString('es-CL') })`;
-      } else if (edpFlujo?.estado === 'DEVUELTO_CONTABILIDAD') {
+      } else if (esDevueltoConObs) {
         semaforoContable = 'DEVUELTO_OBS';
         semaforoLabel = 'Devuelto con Obs. a Control Gestión';
       } else if (habilitadoFacturar) {

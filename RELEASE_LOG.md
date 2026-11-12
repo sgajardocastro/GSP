@@ -2,6 +2,221 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.223
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-11-12 18:38:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`, `/var/www/html/lg-gsp-dev` y `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1166` (`SPEC-128`)
+- **Especificación Técnica:** Invariante Estructural de Líneas de Cobro Único (Valor Fijo y Traslados) en Cotizaciones, ITS y Estados de Pago:
+  - **[Módulo de Utilidad Backend Canónica (`lineaCobroUnico.js`)]**: Implementadas las funciones `isLineaCobroUnico(linea)`, `normalizarLineaCobroUnico(linea)` y `calcularSubtotalLinea(linea)` para forzar de forma determinista `cantidad = 1`, `subtotal = valorUnitario` y prevenir multiplicaciones espurias en cualquier servicio de tipo `TRASLADOS` o modalidad `Valor Fijo`.
+  - **[Estructurador Comercial & Gestor de Oportunidades (`EstructuradorArbolServicios.vue`, `GestorOportunidades.vue`)]**: Ocultado el campo de ingreso de cantidad cuando la línea es `TRASLADOS` o `Valor Fijo`, mostrando la etiqueta informativa "Cobro Único", forzando `cantidad = 1` y preestableciendo `cantidad = 1` por omisión en ramas hijas de traslado.
+  - **[Carátula y PDF de Estado de Pago (`ModalCaratulaEDP.vue`, `estadoPagoController.js`, `reportDiarioController.js`)]**: Normalización estricta en el cómputo de la carátula y el generador de PDF del EDP para líneas de cobro único a `1 × valor_unitario`, eliminando la multiplicación por número de días u orómetros reportados en servicios pactados a suma alzada (Caso 002 Plaenge).
+  - **[Consolidación y P&L de ITS (`itsController.js`, `ModalITS.vue`)]**: Blindaje del cálculo de fletes y servicios a valor fijo en el Informe de Término de Servicio, evitando particiones artificiales por día y reconociendo el total acordado sin requerir desglose horario cuando no aplica.
+  - **[Saneamiento y Respaldo en BD (`sch_leangsp_prod`, `sch_leangsp`)]**: Saneamiento de proyectos afectados (Negocio 002 Plaenge id 31, Negocio 005 Besalco id 34 ITS 10, y Negocio 031 Pocuro id 77) con respaldo automático previo en tabla de auditoría `_backup_spec128_proyectos`.
+
+## [Portal Web GSP & Backend] - Versión 1.0.222
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-11-12 16:12:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`, `/var/www/html/lg-gsp-dev` y `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1165` (`SPEC-127`)
+- **Especificación Técnica:** Rediseño de Flujo de Estados de Pago (2 Hitos FES: Control de Gestión ➔ Contabilidad), Carga y Certificación de Factura Laudus, Deep Link Contextual y Devolución con Observaciones:
+  - **[Circuito EDP 2 Hitos sin Comercial]**: Al firmar Yiara Mendoza el Hito 1 (Control de Gestión), el EDP pasa directamente a etapa `EN_CONTABILIDAD` (`paso_actual = 2`). En el Hito 2, Contabilidad (Maritza Seguel) genera la factura en Laudus, sube el PDF DTE en el sistema (con lectura automática de folio, RUTs y montos) y firma con PIN FES (`firma_2_contabilidad`) certificando la carga (`FACTURADO_CONFORME`), con validación dura `INV-EDP-CONTA-01` que exige factura cargada antes de firmar.
+  - **[Notificación Multidestinatario con Deep Link y PDF]**: Soporte de `CC` en `notificacionService.despacharEmailSmtp` y envío automático al firmar el Hito 1 a Contabilidad (Maritza Seguel), Responsable Comercial de la OT, Gerencia (Omar Ghiselini), Coordinador de Operaciones (Jonathan Castillo) y Operaciones (Jorge Ponce), con copia (`CC`) a Yiara Mendoza, incluyendo Deep Link contextual (`/torre?view=contabilidad&id_proyecto=:id&accion=caratula`) y enlace directo al PDF del EDP firmado (`/api/operaciones/edp/proyecto/:id/pdf`).
+  - **[Devolución con Observaciones y PDF Oficial]**: Submodal estructurado en `ModalCaratulaEDP.vue` para que Contabilidad rechace/devuelva el EDP con observaciones obligatorias a Control de Gestión (`OBSERVADO_CONTABILIDAD`, limpiando `firma_1_analista` y notificando con Deep Link a Yiara Mendoza), más actualización de `Torre.vue`, `PerspectivaContabilidad.vue` y recuadro 2 de `edpPdfService.js`.
+
+## [Portal Web GSP & Backend] - Versión 1.0.221
+- **Ambiente:** `prod` (Hotfix Backend Quirúrgico) & `dev` (Web + Backend)
+- **Fecha de Despliegue:** 2026-11-12 14:33:00 (-03:00)
+- **Ruta de Despliegue:** `/home/nodeadmin/proyectos/lean-services-gsp-prod/src/controllers/estadoPagoController.js`, `/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/estadoPagoController.js` y `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1164` (`SPEC-126` / `CASO-20261112-04`)
+- **Especificación Técnica:** Hotfix Crítico en Circuito de Firma FES de Estado de Pago (`estadoPagoController.js`):
+  1. **Corrección de Columna SQL `id_usuario_creacion` en `firmarPasoEdp` (`estadoPagoController.js`):**
+     - Corregido el `LEFT JOIN` sobre `tpry_proyecto` en `POST /api/operaciones/edp/firmar-paso` (`L1044`), reemplazando la columna inexistente `p.id_user_crea` por la columna real `p.id_usuario_creacion`. Se erradica el error PostgreSQL `42703` (`HTTP 500: Error al procesar paso de firma del EDP`) que bloqueaba la emisión de firma FES del Hito 1 (Control de Gestión) y la habilitación para facturar DTE.
+  2. **Normalización Criptográfica Hexadecimal de PIN FES (`estadoPagoController.js`):**
+     - Normalizada la comparación SHA-256 (`String(pass_fes).trim().toLowerCase() !== String(usuario.pass_hash_fes).trim().toLowerCase()`) en `firmarComercialEdp` (`L853`) y `firmarPasoEdp` (`L1025`).
+
+## [Portal Web & Backend GSP] - Versión 1.0.220
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-12 12:20:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev` y `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1162`, `REQ-1163`
+- **Especificación Técnica:** Persistencia de Horas a Facturar en PDF/Visor y Segmentación de Observaciones de Validación vs Observaciones para Mandante:
+  1. **Persistencia y Sincronización de Horas Facturables (`reportDiarioPdfService.js` & `ModalVisorReport.vue`):**
+     - Corregido el servicio PDF para evaluar prioritariamente el ajuste manual de horas a facturar (`ajustes_analista.valores_ajustados.horas_facturables ?? horas_facturables`), eliminando el override con horas operadas en contratos mensuales sin mínimo diario.
+     - Corregido el cómputo reactivo `horasFacturablesCalculadas` en el visor modal para respetar el valor manual guardado incluso cuando `modoAjuste = false`, garantizando que al recargar o regresar de la previsualización del PDF no se revierta al cálculo automático.
+  2. **Segmentación de Observaciones Internas vs Observaciones para el Cliente (`ModalVisorReport.vue` & `reportDiarioController.js` & `reportDiarioPdfService.js`):**
+     - Incorporado en la tarjeta de Control de Gestión / Auditoría FES el campo independiente *"Observaciones para el Cliente (Visible en PDF Oficial)"* debajo de las observaciones internas de validación/justificación FES (Caso 005 Besalco).
+     - Despliegue en Sección 4 del PDF oficial (*"4. Detalle de Maniobras de Izaje & Observaciones"*) del bloque complementario *"Observaciones para el Mandante / Control de Gestión"*, manteniendo estrictamente confidencial la justificación interna de validación FES.
+     - Persistencia y reemisión de PDF oficial con ambas capas de notas al certificar con PIN FES.
+
+## [Portal Web GSP] - Versión 1.0.219
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-12 11:07:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1161`
+- **Especificación Técnica:** Incorporación de Subcategoría CAMIONETA en Traslados y Filtro de Flota Sugerida (`GestorOportunidades.vue`):
+  1. **Incorporación de Subcategoría CAMIONETA en Traslados (`GestorOportunidades.vue`):**
+     - Añadida `{ id_subcategoria: 906, nombre_subcategoria: 'CAMIONETA' }` al catálogo de la categoría `TRASLADOS`, permitiendo seleccionar directamente vehículos menores/apoyo en cotizaciones y órdenes de trabajo sin obligar a seleccionar Camión Plataforma (Caso 028 Comaza Lautaro - Héctor Beltrán / Jorge Ponce).
+  2. **Resolución Semántica de Flota Sugerida (`GestorOportunidades.vue`):**
+     - Al seleccionar `subcategoria = 'CAMIONETA'` (o `ESCOLTA / GUÍA`), el selector clasifica automáticamente en *"🎯 Equipos Sugeridos"* todas las camionetas activas de la flota (Maxus, Silverado, Poer, Jimny, Hilux, L-200), delegando la búsqueda especializada en `getEquiposFiltradosPorLinea`.
+
+## [Portal Web GSP] - Versión 1.0.218
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 23:59:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1158`
+- **Especificación Técnica:** Rotulación Canónica "Días de Arriendo" e Inclusión de Rango Fechas Inicio/Fin en Carátula EDP (`ModalCaratulaEDP.vue`):
+  1. **Rotulación Canónica "Días de Arriendo" (`ModalCaratulaEDP.vue`):**
+     - Sustituido el término impropio "Jornadas de Faena" por la denominación contractual canónica del giro de la empresa: `"Días de Arriendo"`.
+  2. **Incorporación Dinámica de Rango de Fechas Inicio y Fin (`ModalCaratulaEDP.vue`):**
+     - Añadido el cómputo reactivo `periodoArriendoTexto` que extrae la fecha de inicio y término a partir de las jornadas validadas de reports (o de las fechas maestras del proyecto), desplegando en la tarjeta: `📅 DD/MM/AAAA` (para servicios de 1 día) o `📅 DD/MM/AAAA al DD/MM/AAAA` (para arriendos multi-día).
+
+## [Portal Web GSP] - Versión 1.0.217
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 23:32:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1157`
+- **Especificación Técnica:** Contextualización Semántica de Tarjetas Comerciales en Carátula EDP para Modalidades a Valor Fijo (`ModalCaratulaEDP.vue`):
+  1. **Inclusión de Leyenda Explícita "No aplica tarificación por hora" (`ModalCaratulaEDP.vue`):**
+     - En la tarjeta "Horas Facturables", cuando la modalidad de contratación es `"Valor Fijo"` / `"Suma Alzada"`, se suprime la cifra engañosa de horas a cobrar (ej. 8.0 hrs) y se despliega explícitamente: `"No aplica tarificación por hora"` con subtítulo `"Tarifa Plana / Suma Alzada"`.
+  2. **Supresión de Sobretiempos y Ajuste de Jornadas (`ModalCaratulaEDP.vue`):**
+     - La tarjeta de "Sobretiempo Extra" pasa a indicar `"No aplica"` con subtítulo `"Servicio a Valor Fijo"`, eliminando cualquier sugerencia de recargo horario para el cliente mandante.
+     - La tarjeta de "Días Operados" se rotula como `"Jornadas de Faena"` y en los respaldos de firma de terreno se despliega `"Respaldo de Ejecución"`, ratificando que el documento acredita la entrega conforme del servicio pactado a precio cerrado.
+
+## [Portal Web GSP] - Versión 1.0.216
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 20:07:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1156`
+- **Especificación Técnica:** Corrección de Lógica de Cálculo en Modal de Carátula y Firma FES de EDP (`ModalCaratulaEDP.vue`):
+  1. **Alineación con Subtotales Canónicos del Backend (`ModalCaratulaEDP.vue`):**
+     - Se prioriza el subtotal canónico devuelto por el backend (`linea.subtotal_calculado`) cuando no existe edición manual activa en modo ajuste de tesorería (`!modoAjusteTesoreria.value`), asegurando cuadratura exacta entre la pantalla principal del EDP y la carátula de firma.
+  2. **Protección Estricta para Modalidades de Valor Fijo y Contratos Mensuales (`ModalCaratulaEDP.vue`):**
+     - Corregida la función `calcularSubtotalLinea(linea)` para que líneas con modalidad `"Valor Fijo"`, `"Fijo"` o `"Suma Alzada"` calculen su subtotal estrictamente como $\text{tarifa unitaria} \times \text{cantidad}$ ($1.000.000), erradicando la multiplicación anómala por las 8.0 horas de la faena que inflaba el subtotal a $8.000.000 (caso testigo `GSP-2611-00003`).
+     - Protegidas también las líneas de modalidad mensual (`"MES"` / `"MENSUAL"`) para evitar multiplicaciones distorsionadas por horas de faena.
+
+## [Portal Web GSP & Backend] - Versión 1.0.215
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 18:48:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1155`
+- **Especificación Técnica:** Alineación Integral del Motor de Ingresos y Conciliación Financiera en Estado de Pago (EDP) sin Afectar ITS (`reportDiarioController.js` y `estadoPagoController.js`):
+  1. **Motor de Cálculo de Ingresos Comercial en EDP (`reportDiarioController.js`):**
+     - Homologada la extracción de tarifas desde `lineas_operativas_vigentes` de CRM, reconociendo categorías compuestas como `CAMIONES` y `CAMION PLUMA`.
+     - Implementado el soporte para modalidad mensual (`esMensualOT`): erradicación de pisos mínimos diarios ficticios (`horas_minimas: 0` $\to$ `"Sin mín. (Mensual)"`) y eliminación de sobretiempos falsos por jornada en contratos mensuales.
+     - Cálculo exacto del subtotal devengado por cada jornada ($\text{horas} \times \text{tarifa pactada}$), eliminando los subtotales en `$0`.
+     - Liquidación precisa de fletes devengados (regla 50% ida / 50% retorno) y supresión del recargo hardcodeado de \$50.000 de sobretiempo.
+  2. **Consistencia en Emisión PDF de EDP (`estadoPagoController.js`):**
+     - Sincronizada la lectura de `lineas_operativas_vigentes` y la clasificación universal de equipos en `generarPdfEdp`, garantizando cuadratura entre la vista web y el documento impreso del mandante.
+
+## [Portal Web GSP & Backend] - Versión 1.0.214
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 17:55:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1154`
+- **Especificación Técnica:** Supresión de Tabla de Auditoría Amarilla y Eliminación de Columna "Horas Efectivas" en PDF Oficial (`reportDiarioPdfService.js`):
+  1. **Supresión Definitiva de Tabla de Auditoría Amarilla en PDF Oficial (`reportDiarioPdfService.js`):**
+     - Eliminada por completo la sección *"7. REGISTRO DE AUDITORÍA & AJUSTES DE CONTROL DE GESTIÓN"* (bloque `tablaAuditoriaHtml`) del PDF oficial entregable al cliente mandante, garantizando que los ajustes internos de Control de Gestión y telemetría no se expongan en el documento final.
+  2. **Eliminación de Columna "Horas Efectivas" en Sección 3 (`reportDiarioPdfService.js`):**
+     - Suprimida la cabecera `<th>Horas Efectivas</th>` y su celda de contenido `<td>${horasOperadas} hrs</td>` de la tabla de Liquidación de Jornada, manteniendo una estructura limpia orientada exclusivamente a los horarios de servicio, colación, piso mínimo contractual, total facturable y sobretiempo.
+
+## [Portal Web GSP & Backend] - Versión 1.0.213
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 16:48:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1153`
+- **Especificación Técnica:** Hotfix Crítico de Columna `mimetype` en `tfmg_file` y Robustecimiento de Selección de Adjuntos en PDF (`reportDiarioPdfService.js` y `ModalVisorReport.vue`):
+  1. **Corrección de Columna SQL `mimetype` en `tfmg_file` (`reportDiarioPdfService.js`):**
+     - Corregido el nombre de columna de `mime_type` a `mimetype` (sin guion bajo) en las consultas SQL de resolución de archivos y fotos (`tfmg_file`). Dicho error provocaba `error: no existe la columna «mime_type»` en PostgreSQL, bloqueando la resolución de adjuntos e impidiendo que los documentos (como imágenes JPEG o PDFs) se incorporaran al informe.
+     - Verificado empíricamente con el caso real de OT `GSP-2611-00005` Día 5 (Documento ID 1801): el motor `wkhtmltopdf` generó exitosamente el PDF con un tamaño de 525 KB incluyendo el anexo fotográfico completo en alta resolución.
+  2. **Robustecimiento de Checkbox de Inclusión en Frontend (`ModalVisorReport.vue`):**
+     - Actualizado `toggleDocEnPdf(doc.id_doc, $event.target.checked)` para enlazar directamente el valor booleano del evento nativo del checkbox, evitando desincronizaciones de estado entre el click de la etiqueta y el arreglo `privacidadPdf.docs_incluidos_pdf`.
+
+## [Portal Web GSP & Backend] - Versión 1.0.212
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 16:35:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1152`
+- **Especificación Técnica:** Corrección Estructural de Anexos Documentales e Inclusión Polimórfica de Fotos en PDF Oficial (`reportDiarioPdfService.js` y `ModalVisorReport.vue`):
+  1. **Corrección de Columna SQL y Ruta Canónica en `tfmg_file` (`reportDiarioPdfService.js`):**
+     - Corregido el nombre de columna en la consulta PostgreSQL de `name_doc_save` (inexistente) a `name_doc_interno` (columna oficial del estándar de almacenamiento LeanGlobal), eliminando el fallo silencioso que impedía adjuntar cualquier imagen o archivo seleccionado en `privacidad.docs_incluidos_pdf`.
+     - Implementado el resolvedor canónico `resolveStoragePath(fRow.path_doc, fRow.name_doc_interno)` para asegurar la lectura exacta en el sistema de archivos Linux.
+  2. **Resolución Polimórfica de Fotos de Tablero / Horómetro (`reportDiarioPdfService.js`):**
+     - Implementada la función `resolverFotoComoDataUri()` para soportar fotografías provistas tanto en Base64 nativo (`data:image/`), como vía URLs de storage (`/v1/storage/view/:id`), IDs numéricos de `tfmg_file` o rutas físicas en disco.
+  3. **Trazabilidad Reactiva y Clarificación UI (`ModalVisorReport.vue`):**
+     - Incorporada la propiedad computada `esPrivacidadModificada` dentro de `hayModificaciones`, garantizando que marcar o desmarcar cualquier adjunto u horómetro active el botón de guardado con PIN FES.
+     - Clarificada la etiqueta de la casilla del horómetro a `[x] ✓ Adjuntar en PDF Mandante` / `[ ] ✗ No adjuntar en PDF`.
+
+## [Portal Web GSP & Backend] - Versión 1.0.211
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 13:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1151`
+- **Especificación Técnica:** Soporte Urgencias Report Diario - Acuerdos Reunión Yara Mendoza 11-Nov 13:14 (`reportDiarioPdfService.js` y `ModalVisorReport.vue`):
+  1. **Inclusión Integral de Evidencias Fotográficas y Anexos en PDF Oficial (`reportDiarioPdfService.js`):**
+     - Corregida la resolución de anexos en el motor de renderizado de PDF oficial para iterar sobre la totalidad del arreglo `privacidad.docs_incluidos_pdf` consultando `tfmg_file` en lugar de esperar un único identificador aislado.
+     - Conversión automática de imágenes a Base64 e inclusión en `anexosImagenes` del informe oficial.
+     - Incorporación de respaldo automático de `foto_horometro` hacia `fotoIni` cuando se solicita incluir foto inicial y viene registrada desde terreno en la PWA.
+  2. **Editabilidad de Horas a Facturar para Redondeo Contable (`ModalVisorReport.vue`):**
+     - Habilitado input numérico interactivo para el campo `horas_facturables` en la tarjeta "💰 A Facturar" cuando el analista se encuentra en modo ajuste.
+     - Integración del valor en `formAjustes` y en la detección reactiva de modificaciones (`esHorasFacturablesModificadas` y `hayModificaciones`).
+     - Incorporación de botón "Auto" para restablecer de forma inmediata el cálculo automático basado en base mínima y horas computables al mandante.
+     - Despacho y persistencia directa en PostgreSQL mediante la validación con firma PIN FES en el endpoint `/operaciones/reports/:id/ajustar`.
+
+## [Portal Web GSP] - Versión 1.0.210
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 12:40:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1150`
+- **Especificación Técnica:** Hotfix Crítico de Apertura de Reportes Diarios Digitales (`ModalVisorReport.vue` y `Torre.vue`):
+  1. **Corrección de Referencia Faltante `reactive` (`ModalVisorReport.vue`):**
+     - Corregido `ReferenceError: reactive is not defined` importando formalmente `reactive` desde `'vue'`. Dicha omisión provocaba una excepción fatal no controlada durante el ciclo `setup()` del componente, impidiendo que el visor se montara al hacer clic en cualquier botón de auditoría.
+  2. **Teleportación Global al Body (`ModalVisorReport.vue`):**
+     - Envuelto el contenedor raíz del modal en `<Teleport to="body">` para romper el confinamiento de contexto de apilamiento CSS generado por ancestros con `transform` y animaciones (`animate-fadeIn`), garantizando que la superposición modal ocupe la totalidad del viewport (`fixed inset-0 z-[100]`).
+  3. **Activación Explícita de Modo Auditoría Interactiva (`Torre.vue`):**
+     - Pasados explícitamente los atributos `:readonly="false"` y `:modo-edicion-inicial="true"` en la invocación de `ModalVisorReport` dentro de la Torre de Control para abrir inmediatamente el formulario interactivo al presionar "Auditar y Validar".
+
+## [Portal Web GSP & Backend] - Versión 1.0.209
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 11:58:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1149`
+- **Especificación Técnica:** Desbloqueo y Habilitación de Modo Edición en Reportes Diarios Digitales desde Control Operativo Vivo e Inbox PMO (`ModalVisorReport.vue` y `ControlOperativoVivo.vue`):
+  1. **Apertura Directa en Modo Edición (`ModalVisorReport.vue`):**
+     - Incorporada la propiedad reactiva `modoEdicionInicial` (por defecto `true`). Al abrir el Report Diario desde `Auditar y Validar` en Torre de Control o `Report D1` en Control Operativo Vivo, el visor se inicializa con `modoAjuste = true`, desplegando de inmediato los campos interactivos de horarios, horómetros, odómetros, tripulación y standby para su auditoría y ajuste sin requerir clics adicionales.
+     - Blindaje del parseo defensivo de `ajustes_analista` para formatos string u objeto provenientes de la base de datos PostgreSQL.
+  2. **Resolución de Bloqueo en Apertura desde Control Operativo Vivo (`ControlOperativoVivo.vue`):**
+     - Sustituida la regla restrictiva de fecha en `buscarReportDelDia` por resolución escalonada: búsqueda por `id_reporte_avance`, normalización ISO a 10 caracteres (`YYYY-MM-DD`), coincidencia por correlativo de día o selección del reporte único de la OT.
+     - Generación de borrador contextual en memoria en caso de que aún no exista fila previa en base de datos para la jornada, garantizando que el botón `[ 📋 Report D1 ]` siempre abra el formulario editable para registrar la auditoría operativa.
+
+## [Portal Web GSP & Backend] - Versión 1.0.208
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-11 11:25:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1148`
+- **Especificación Técnica:** Ajustes Operativos y Gobernanza en ITS (Eliminación Viático Sec 2 PDF, Recomendación Universal Viáticos, Editabilidad Yara) y Desbloqueo de Reportes en Matriz PMO (`controlVivoController.js`, `itsPdfService.js`, `itsController.js`, `ModalITS.vue`):
+  1. **Hotfix Desbloqueo Reportes Matriz PMO (`controlVivoController.js`):**
+     - **Resolución de Error SQL en Observaciones:** Eliminada la referencia a la columna inexistente `updated_at = NOW()` en `tedp_reporte_avance` que causaba error HTTP 500 al guardar observaciones y bloqueaba la apertura de reportes en la bandeja de entrada PMO.
+  2. **Eliminación de Columna Viático en Sección 2 PDF (`itsPdfService.js`):**
+     - **Ajuste de Tabla de Control de Flota:** Eliminada la columna `Viático ($)` (cabecera, fila y celda de totalizador), reduciendo el ancho total a 13 columnas (`colspan="13"`). La liquidación financiera de viáticos queda centralizada exclusivamente en la Sección 3 (Costos Operacionales).
+  3. **Recomendación Automática Universal de Horas de Viático (`ModalITS.vue` e `itsController.js`):**
+     - **Cálculo de Desplazamiento Total:** Las horas de viático ahora calculan automáticamente el tiempo total de desplazamiento desde la salida hasta el retorno a la base descontando colación (`diffMinutes(hora_salida, hora_retorno) - colacion_minutos`), aplicando universalmente a faenas, fletes y traslados sin forzar 0.
+  4. **Gobernanza RBAC de Editabilidad en Front (`ModalITS.vue`):**
+     - **Control Exclusivo para Yara Mendoza:** Habilitada la edición manual de las columnas `Hrs Servicio` y `Hrs Viáticos` exclusivamente para el perfil de Yara Mendoza (`ymendoza@gruassanpablo.com` / `id_user = 65`), con recálculo dinámico en caliente de los totales del ITS, manteniéndose en modo solo lectura para el resto de usuarios.
+
+## [Portal Web GSP & Backend] - Versión 1.0.207
+- **Ambiente:** `dev` & `prod`
+- **Fecha de Despliegue:** 2026-11-10 16:05:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod`
+- **Requerimientos Asociados:** `REQ-1147` (`SPEC-098 v1.1.0`)
+- **Especificación Técnica:** Filtro de Privacidad Granular para Fotografías y Documentos en PDF Oficial de Report Diario y Corrección Crítica en ModalITS (`reportDiarioPdfService.js`, `reportDiarioController.js`, `ModalVisorReport.vue`, `ModalITS.vue`):
+  1. **REQ-1147 (Filtro de Privacidad y Selección Granular en PDF Report — SPEC-098 v1.1.0):**
+     - **Resguardo de Telemetría Interna (INV-PRIV-01):** Fotografías de tablero, horómetro y odómetro capturadas en terreno se excluyen por defecto del PDF oficial del cliente para proteger la información interna de flota de GSP. Solo se incorporan si el analista activa explícitamente el flag en la consola de validación.
+     - **Selección Granular en UI (ModalVisorReport.vue):** Incorporados switches interactivos en Bloque 2 para Foto Inicio y Término (`[ ] Incluir en PDF Mandante`) y casillas individuales por fila en Bloque 2.B (`Documentos y Fotografías del Día`).
+     - **Persistencia y Motor PDF (reportDiarioPdfService.js & reportDiarioController.js):** Persistencia estructurada en `tedp_reporte_avance.ajustes_analista.privacidad_pdf` y filtrado condicional en `resolverAnexosDelReporte`.
+  2. **Hotfix ModalITS (TypeError formatPesos is not a function):**
+     - **Corrección en ModalITS.vue:** Sustitución de `formatPesos` por `formatMoneda` en tarjeta de resumen financiero (líneas 297 y 301) y declaración de alias defensivo `const formatPesos = formatMoneda;`, restaurando la apertura inmediata del formulario de ITS en Torre de Control (Caso Ferrocarriles del Pacífico `GSP-2611-00001`).
+
 ## [PWA GSP & Backend] - Versión 1.0.65 (PWA) / 1.0.207 (Backend)
 - **Ambiente:** `dev` & `prod`
 - **Fecha de Despliegue:** 2026-11-10 11:45:00 (-03:00)

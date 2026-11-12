@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const notificacionService = require('../services/notificacionService');
 const { generarPdfReportDiario } = require('../services/reportDiarioPdfService');
+const { isLineaCobroUnico, calcularSubtotalLinea } = require('../utils/lineaCobroUnico');
 const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
 const archivoModel = require('../models/archivoModel');
 const slaAuditorService = require('../services/slaAuditorService');
@@ -25,7 +26,7 @@ function obtenerLineasOperativasVigentes(jsonField = {}) {
   }
   const cots = Array.isArray(crmV1.cotizaciones_historicas) ? crmV1.cotizaciones_historicas : [];
   const enviadas = cots
-    .filter(c => (Array.isArray(c?.eventos_envio) && c.eventos_envio.length > 0) || Boolean(c?.evento_envio))
+    .filter(c => (c && Array.isArray(c.eventos_envio) && c.eventos_envio.length > 0) || Boolean(c && c.evento_envio))
     .sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
   if (enviadas.length > 0 && Array.isArray(enviadas[0].lineas_snapshot) && enviadas[0].lineas_snapshot.length > 0) {
     return enviadas[0].lineas_snapshot;
@@ -40,18 +41,19 @@ function resolverPisoMinimoContractualOT(jsonField = {}, targetIdEquipo = null) 
     const eqIdNum = Number(targetIdEquipo || 0);
 
     let lineaEquipo = eqIdNum > 0
-      ? lineas.find(l => (Number(l?.equipo_asignado_id) === eqIdNum || Number(l?.id_equipo) === eqIdNum) && (Number(l?.pisoMinimo || l?.cantidad_horas || 0) > 0 || String(l?.unidad || '').toUpperCase().includes('MES')))
+      ? lineas.find(l => l && (Number(l.equipo_asignado_id) === eqIdNum || Number(l.id_equipo) === eqIdNum) && (Number(l.pisoMinimo || l.cantidad_horas || 0) > 0 || String(l.unidad || '').toUpperCase().includes('MES')))
       : null;
 
     if (!lineaEquipo) {
       lineaEquipo = lineas.find(l => {
-        const t = String(l?.tipo || '').toUpperCase();
+        if (!l) return false;
+        const t = String(l.tipo || '').toUpperCase();
         return (t.includes('GRUA') || t.includes('GRÚA') || t.includes('CAMION') || t.includes('CAMIÓN') || t.includes('MAQUINARIA')) &&
-               (Number(l?.pisoMinimo || l?.cantidad_horas || 0) > 0 || String(l?.unidad || '').toUpperCase().includes('MES'));
+               (Number(l.pisoMinimo || l.cantidad_horas || 0) > 0 || String(l.unidad || '').toUpperCase().includes('MES'));
       });
     }
     if (!lineaEquipo) {
-      lineaEquipo = lineas.find(l => Number(l?.pisoMinimo || l?.cantidad_horas || 0) > 0 || String(l?.unidad || '').toUpperCase().includes('MES'));
+      lineaEquipo = lineas.find(l => l && (Number(l.pisoMinimo || l.cantidad_horas || 0) > 0 || String(l.unidad || '').toUpperCase().includes('MES')));
     }
 
     const esUnidadMensual = lineaEquipo
@@ -1309,6 +1311,15 @@ const reportDiarioController = {
         LEFT JOIN tits_informe_termino its ON p.id_proyecto = its.id_proyecto
         LEFT JOIN tedp_reporte_avance ra ON p.id_proyecto = ra.id_proyecto
         WHERE p.id_proyecto_estado >= 4
+          AND (
+            its.id_its IS NOT NULL
+            OR p.id_proyecto_estado >= 6
+            OR (p.json_field->'ejecucion_v1'->>'retorno_concluido')::boolean = true
+            OR (
+              COALESCE(p.fecha_plan_fin, (p.json_field->'crm_v1'->>'fecha_plan_fin')::timestamptz, (p.json_field->'ejecucion_v1'->>'fecha_fin_plan')::timestamptz) IS NOT NULL
+              AND COALESCE(p.fecha_plan_fin, (p.json_field->'crm_v1'->>'fecha_plan_fin')::timestamptz, (p.json_field->'ejecucion_v1'->>'fecha_fin_plan')::timestamptz) <= CURRENT_TIMESTAMP
+            )
+          )
         GROUP BY p.id_proyecto, p.codi_proyecto, p.nombre_proyecto, p.id_proyecto_estado, clt.razon_social, clt.name_empresa, p.json_field, its.id_its, its.folio_its, its.estado_its, its.total_ingresos_facturables, its.total_costos_operacionales, its.utilidad_bruta, its.margen_porcentaje
         ORDER BY p.id_proyecto DESC
         LIMIT 50;
@@ -1397,38 +1408,34 @@ const reportDiarioController = {
         LEFT JOIN tpar_empresas clt ON p.id_empresa_cliente = clt.id_empresa
         LEFT JOIN tequ_log_desplazamiento v ON p.id_proyecto = v.id_proyecto AND v.id_user_chofer = $1
         WHERE (
-          v.id_user_chofer = $1
-          OR (p.json_field->'ejecucion_v1'->>'operador_id')::text = $1::text
-          OR (p.json_field->'ejecucion_v1'->>'rigger_id')::text = $1::text
-          OR EXISTS (
+          -- 1. Asignacion vigente en tabla relacional tpry_rel_persona
+          EXISTS (
             SELECT 1 
-            FROM jsonb_array_elements(
-              CASE 
-                WHEN jsonb_typeof(p.json_field->'ejecucion_v1'->'tripulacion_asignada') = 'array' 
-                THEN p.json_field->'ejecucion_v1'->'tripulacion_asignada' 
-                ELSE '[]'::jsonb 
-              END
-            ) elem 
-            WHERE (elem->>'id_user')::text = $1::text
+            FROM tpry_rel_persona rp
+            WHERE rp.id_proyecto = p.id_proyecto
+              AND rp.id_user = $1
+              AND rp.estado_real = 'PROGRAMADO'
+              AND (
+                (rp.fecha_plan_ini IS NULL AND rp.fecha_plan_fin IS NULL)
+                OR CURRENT_DATE BETWEEN rp.fecha_plan_ini::date AND rp.fecha_plan_fin::date
+              )
           )
+          -- 2. Traslado de equipo activo asignado como chofer
           OR EXISTS (
-            SELECT 1 
-            FROM jsonb_array_elements(
-              CASE 
-                WHEN jsonb_typeof(p.json_field->'crm_v1'->'lineas_servicio') = 'array' 
-                THEN p.json_field->'crm_v1'->'lineas_servicio' 
-                ELSE '[]'::jsonb 
-              END
-            ) l 
-            WHERE (l->>'operador_asignado_id')::text = $1::text
-               OR (l->>'rigger_asignado_id')::text = $1::text
-               OR (l->>'chofer_asignado_id')::text = $1::text
+            SELECT 1
+            FROM tequ_log_desplazamiento d
+            WHERE d.id_proyecto = p.id_proyecto
+              AND d.id_user_chofer = $1
+              AND d.estado_trayecto IN ('INICIADO', 'EN_TRAYECTO')
           )
+          -- 3. Jornada en curso iniciada por este operador
           OR EXISTS (
-            SELECT 1 
-            FROM tedp_reporte_avance ra 
-            WHERE ra.id_proyecto = p.id_proyecto 
-              AND (ra.id_user_operador = $1 OR ra.id_user_rigger = $1)
+            SELECT 1
+            FROM tedp_reporte_avance ra
+            WHERE ra.id_proyecto = p.id_proyecto
+              AND ra.id_user_operador = $1
+              AND ra.estado_jornada = 'INICIADA'
+              AND ra.estado_reporte = 'JORNADA_EN_CURSO'
           )
         )
         AND p.id_proyecto_estado IN (4, 5, 6)
@@ -1575,6 +1582,28 @@ const reportDiarioController = {
           estado_trayecto: r.estado_trayecto || 'ARRIBADO'
         };
 
+        // REQ-1145: Si el operador no tiene jornada abierta y sus turnos asignados ya expiraron,
+        // clasificar como conclusión de turno y no inyectar en pendientes.
+        let turnoExpirado = false;
+        if (!jornadaEnCurso) {
+          const turnosDelUsuario = [];
+          for (const l of lines) {
+            if (Array.isArray(l.turnos_operadores)) {
+              for (const to of l.turnos_operadores) {
+                if (Number(to.id_user) === uidNum && to.fecha_fin) {
+                  turnosDelUsuario.push(to);
+                }
+              }
+            }
+          }
+          if (turnosDelUsuario.length > 0) {
+            const tieneTurnoVigenteOFuturo = turnosDelUsuario.some(to => String(to.fecha_fin) >= hoyStr);
+            if (!tieneTurnoVigenteOFuturo) {
+              turnoExpirado = true;
+            }
+          }
+        }
+
         if (jornadaEnCurso) {
           item.puede_reportar = true;
           item.motivo = 'JORNADA_EN_CURSO';
@@ -1583,6 +1612,11 @@ const reportDiarioController = {
             ? `Jornada del ${jEnCursoRes.rows[0].fecha_reporte_str} SIN CERRAR (iniciada ${horaIniStr}). Registre su término y firma con mandante.`
             : `Jornada en curso (iniciada ${horaIniStr}). Pendiente registrar término y firmar report con mandante.`;
           pendientes.push(item);
+        } else if (turnoExpirado) {
+          item.puede_reportar = false;
+          item.motivo = 'TURNO_FINALIZADO';
+          item.mensaje = `Turno concluido. Relevado en faena (${cantReportes} de ${totalDias} días globales).`;
+          concluidos.push(item);
         } else if (cantReportes >= totalDias) {
           item.puede_reportar = false;
           item.motivo = 'SERVICIO_CONCLUIDO';
@@ -2226,7 +2260,7 @@ const reportDiarioController = {
   async validarReportDiario(req, res) {
     try {
       const { id } = req.params;
-      const { id_user_validador, obs_validador, ajustes } = req.body;
+      const { id_user_validador, obs_validador, observaciones_cliente, obs_cliente, ajustes } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: 'id_reporte_avance es requerido' });
@@ -2330,6 +2364,12 @@ const reportDiarioController = {
       let nuevoRigApellido = rep.rig_apellido || '';
       let payloadAjustes = rep.ajustes_analista || null;
 
+      const obsCliReq = req.body.observaciones_cliente !== undefined 
+        ? req.body.observaciones_cliente 
+        : (req.body.obs_cliente !== undefined ? req.body.obs_cliente : (ajustes && typeof ajustes === 'object' ? (ajustes.observaciones_cliente !== undefined ? ajustes.observaciones_cliente : (ajustes.obs_cliente ?? null)) : null));
+      const origObsCliente = rep.observaciones_cliente || rep.ajustes_analista?.observaciones_cliente || '';
+      const difObsCliente = obsCliReq !== null && String(obsCliReq).trim() !== String(origObsCliente).trim();
+
       if (ajustes && typeof ajustes === 'object') {
         const hInicio = ajustes.hora_inicio || null;
         const hTermino = ajustes.hora_termino || null;
@@ -2381,7 +2421,7 @@ const reportDiarioController = {
         const difOperador = reqOpId !== null && reqOpId !== nuevoIdOperador;
         const difRigger = tieneAjusteRigger && reqRigId !== nuevoIdRigger;
 
-        if (difHInicio || difHTermino || difCol || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper || difOperador || difRigger) {
+        if (difHInicio || difHTermino || difCol || difHoroIni || difHoroFin || difOdoIni || difOdoFin || difFact || difOper || difOperador || difRigger || difObsCliente) {
           huboAjustes = true;
 
           const fechaBase = rep.fecha_reporte ? (new Date(rep.fecha_reporte).toISOString().split('T')[0]) : (new Date().toISOString().split('T')[0]);
@@ -2423,6 +2463,7 @@ const reportDiarioController = {
             fecha_ajuste: new Date().toISOString(),
             id_user_analista: validValidadorId,
             nombre_analista: `${validadorUser.name_frst} ${validadorUser.apellido_pat || ''}`.trim(),
+            observaciones_cliente: obsCliReq !== null ? String(obsCliReq).trim() : origObsCliente,
             valores_originales: {
               hora_inicio: origHInicio,
               hora_termino: origHTermino,
@@ -2436,7 +2477,8 @@ const reportDiarioController = {
               id_user_operador: rep.id_user_operador ? Number(rep.id_user_operador) : null,
               operador_nombre: origOperadorNombre,
               id_user_rigger: rep.id_user_rigger ? Number(rep.id_user_rigger) : null,
-              rigger_nombre: origRiggerNombre
+              rigger_nombre: origRiggerNombre,
+              observaciones_cliente: origObsCliente
             },
             valores_ajustados: {
               hora_inicio: hInicio || origHInicio,
@@ -2451,7 +2493,8 @@ const reportDiarioController = {
               id_user_operador: nuevoIdOperador,
               operador_nombre: ajustadoOperadorNombre,
               id_user_rigger: nuevoIdRigger,
-              rigger_nombre: ajustadoRiggerNombre
+              rigger_nombre: ajustadoRiggerNombre,
+              observaciones_cliente: obsCliReq !== null ? String(obsCliReq).trim() : origObsCliente
             },
             observacion_ajuste: obs_validador || 'Ajustes validados por Control de Gestión'
           };
@@ -2559,9 +2602,25 @@ const reportDiarioController = {
         nombre_validador_rrhh: `${validadorUser.name_frst} ${validadorUser.apellido_pat || ''}`.trim()
       };
 
+      // SPEC-098 v1.1.0 / REQ-1147: Filtro de privacidad de fotos y anexos para PDF de cliente
+      const reqPrivacidad = req.body.privacidad_pdf || (ajustes && ajustes.privacidad_pdf) || null;
+      const privacidadFinal = {
+        incluir_foto_inicio: reqPrivacidad ? reqPrivacidad.incluir_foto_inicio === true : false,
+        incluir_foto_termino: reqPrivacidad ? reqPrivacidad.incluir_foto_termino === true : false,
+        docs_incluidos_pdf: Array.isArray(reqPrivacidad?.docs_incluidos_pdf)
+          ? reqPrivacidad.docs_incluidos_pdf.map(Number)
+          : []
+      };
+
+      const finalObsCliente = (obsCliReq !== null && obsCliReq !== undefined)
+        ? String(obsCliReq).trim()
+        : (payloadAjustes?.observaciones_cliente || rep.ajustes_analista?.observaciones_cliente || rep.observaciones_cliente || '');
+
       payloadAjustes = {
         ...(payloadAjustes && typeof payloadAjustes === 'object' ? payloadAjustes : {}),
+        observaciones_cliente: finalObsCliente,
         modificado: Boolean(huboAjustes || payloadAjustes?.modificado || tarifaModificada || viaticoModificado || viaticoRiggerModificado),
+        privacidad_pdf: privacidadFinal,
         liquidacion_personal_dia: liqFinal
       };
 
@@ -2619,6 +2678,8 @@ const reportDiarioController = {
       reportActualizado.operador_nombre = `${nuevoOpNombre || ''} ${nuevoOpApellido || ''}`.trim() || 'Operador';
       reportActualizado.rigger_nombre = nuevoIdRigger ? (`${nuevoRigNombre || ''} ${nuevoRigApellido || ''}`.trim() || null) : null;
       reportActualizado.liquidacion_personal_dia = liqFinal;
+      reportActualizado.privacidad_pdf = privacidadFinal;
+      reportActualizado.observaciones_cliente = finalObsCliente;
 
       // 4.6 Generar PDF Oficial del Report Diario con Doble Firma (Mandante GPS + FES Analista)
       let idDocPdf = null;
@@ -2630,6 +2691,7 @@ const reportDiarioController = {
           report: {
             ...rep,
             ...reportActualizado,
+            observaciones_cliente: finalObsCliente,
             equipo_patente: rep.equipo_patente,
             equipo_modelo: rep.equipo_modelo,
             op_nombre: nuevoOpNombre,
@@ -2641,6 +2703,7 @@ const reportDiarioController = {
             val_rut: validadorUser.rut,
             ajustes_analista: payloadAjustes
           },
+          privacidad_pdf: privacidadFinal,
           proyecto: {
             codi_proyecto: rep.codi_proyecto,
             cliente_nombre: rep.cliente_nombre_empresa || rep.cliente_nombre,
@@ -2904,9 +2967,53 @@ const reportDiarioController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 5.2 Obtener líneas cotizadas
+      // 5.2 Obtener líneas cotizadas y parámetros comerciales
       const crmV1 = proyecto.json_field?.crm_v1 || {};
-      const lineasCotizadas = crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || [];
+      const lineasCotizadas = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
+      const lineas = (lineasCotizadas || []).filter(l => {
+        const desc = (l?.descripcion || l?.concepto || l?.subcategoria || '').toUpperCase();
+        return !desc.includes('RIGGER FANTASMA');
+      });
+
+      // Clasificación de parámetros comerciales pactados
+      let valorHoraPactado = 0;
+      let valorFijoPactado = 0;
+      let valorFletePactado = 0;
+      let horasMinimasPactadas = 8.0;
+      let esValorFijoComercial = Boolean(crmV1.es_valor_fijo);
+      const esMensualOT = lineas.some(l => String(l?.unidad || l?.unidad_cobro || '').toUpperCase().includes('MES'));
+
+      lineas.forEach(l => {
+        const tipo = (l.tipo || l.categoria || '').toUpperCase().trim();
+        const desc = (l.descripcion || l.concepto || '').toUpperCase();
+        const unid = (l.unidad || l.unidad_cobro || '').toUpperCase().trim();
+        const subcat = (l.subcategoria || '').toUpperCase();
+        const precio = parseFloat(l.valorUnitario || l.precio_unitario || l.valor_unitario || l.tarifa || 0);
+        const sub = parseFloat(l.subtotal || 0);
+
+        const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || unid.includes('FLETE') || unid.includes('TRASLADO') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE');
+
+        if (esLineaTraslado) {
+          // SPEC-128: El traslado es cobro único (1 × precio), nunca multiplicado por cantidad
+          valorFletePactado += (sub > 0 ? sub : precio);
+        } else {
+          const esFijo = unid.includes('FIJO') || unid.includes('SUMA ALZADA') || tipo.includes('FIJO') || desc.includes('VALOR FIJO');
+          if (esFijo) {
+            esValorFijoComercial = true;
+            valorFijoPactado += (sub > 0 ? sub : precio);
+          } else if (precio > 0 && (unid.includes('HORA') || unid.includes('MES'))) {
+            if (valorHoraPactado === 0) valorHoraPactado = precio;
+            const pm = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+            if (pm > 0) horasMinimasPactadas = pm;
+          } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
+            valorHoraPactado = precio;
+          }
+        }
+      });
+
+      if (esMensualOT) {
+        horasMinimasPactadas = 0; // Sin piso diario en contratos mensuales
+      }
 
       // 5.3 Obtener todos los reports emitidos y fallback a jornadas ITS
       const repSql = `
@@ -2970,91 +3077,76 @@ const reportDiarioController = {
         }
       } catch (_) {}
 
-      // 5.4 Motor de Conciliación Financiera
+      // 5.4 Motor de Conciliación Financiera y Liquidación de Jornadas de EDP
       let totalHorasFacturables = 0;
       let totalHorasSobretiempo = 0;
-      reports.forEach(r => {
-        totalHorasFacturables += Number(r.horas_facturables) || 0;
-        totalHorasSobretiempo += Number(r.horas_sobretiempo) || 0;
-      });
-      if (totalHorasFacturables === 0 && Number(itsRow?.total_horas_report) > 0) {
-        totalHorasFacturables = Number(itsRow.total_horas_report);
-      }
-
-      // Calcular montos por línea
       let montoNetoEquipos = 0;
-      let montoNetoFlete = 0;
-      let montoNetoOtros = 0;
 
-      let lineasCalculadas = lineasCotizadas.map(l => {
-        const valUnit = Number(l.valorUnitario) || 0;
-        const cant = Number(l.cantidad) || 1;
+      const detalleJornadas = reports.map((r, idx) => {
+        const efectivas = Number(r.horas_operadas || 0);
+        const st = esMensualOT ? 0 : Number(r.horas_sobretiempo || 0);
+        const fact = esMensualOT 
+          ? efectivas 
+          : (Number(r.horas_facturables) || efectivas || (horasMinimasPactadas > 0 ? horasMinimasPactadas : 0));
+
+        totalHorasFacturables += fact;
+        totalHorasSobretiempo += st;
+
+        let subtotalFila = 0;
+        if (esValorFijoComercial) {
+          subtotalFila = idx === 0 ? valorFijoPactado : 0;
+        } else {
+          subtotalFila = Math.round(fact * valorHoraPactado);
+        }
+        montoNetoEquipos += subtotalFila;
+
+        return {
+          ...r,
+          patente: r.equipo_patente || r.patente || 'GRÚA',
+          modelo_equipo: r.equipo_modelo || r.modelo || 'Grúa',
+          horas_efectivas: efectivas,
+          horas_minimas: esMensualOT ? 0 : horasMinimasPactadas,
+          horas_sobretiempo: st,
+          horas_facturables: fact,
+          tarifa_hora: valorHoraPactado,
+          subtotal_neto: subtotalFila
+        };
+      });
+
+      // Fletes devengados: SPEC-128 traslados son cobro único plano
+      let montoNetoFlete = valorFletePactado;
+
+      const totalNeto = montoNetoEquipos + montoNetoFlete;
+      const iva19 = Math.round(totalNeto * 0.19);
+      const totalBruto = totalNeto + iva19;
+
+      let lineasCalculadas = lineas.map(l => {
+        const valUnit = Number(l.valorUnitario || l.precio_unitario || 0) || 0;
+        const tipo = (l.tipo || l.categoria || '').toUpperCase().trim();
+        const desc = (l.descripcion || l.concepto || '').toUpperCase();
+        const subcat = (l.subcategoria || '').toUpperCase();
+        const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE');
+
         let subtotal = 0;
         let horasCalculo = 0;
-
-        if (l.tipo === 'TRASLADOS' || l.subcategoria?.includes('ESCOLTA') || l.subcategoria?.includes('FLETE')) {
-          subtotal = valUnit * cant;
-          montoNetoFlete += subtotal;
-        } else if (l.tipo === 'GRUAS TELESCOPICAS' || l.tipo === 'GRUA HORQUILLA' || l.tipo === 'MANIPULADOR TELESCOPICO' || l.tipo === 'CAMION PLUMA') {
-          if (l.unidad === 'Diario') {
-            const diasFaena = Math.max(1, reports.length);
-            subtotal = valUnit * diasFaena * cant;
-            horasCalculo = totalHorasFacturables;
-          } else {
-            subtotal = valUnit * (totalHorasFacturables > 0 ? totalHorasFacturables : (cant * 8));
-            horasCalculo = totalHorasFacturables;
-          }
-          montoNetoEquipos += subtotal;
+        if (esLineaTraslado) {
+          subtotal = valUnit;
+        } else if (isLineaCobroUnico(l)) {
+          subtotal = valUnit;
+        } else if (esValorFijoComercial) {
+          subtotal = valorFijoPactado;
         } else {
-          subtotal = valUnit * cant;
-          montoNetoOtros += subtotal;
+          subtotal = montoNetoEquipos;
+          horasCalculo = totalHorasFacturables;
         }
 
         return {
           ...l,
+          cantidad: isLineaCobroUnico(l) ? 1 : (Number(l.cantidad) || 1),
           subtotal_calculado: subtotal,
           horas_aplicadas: horasCalculo
         };
       });
-
-      if (lineasCalculadas.length === 0 && itsRow && Number(itsRow.total_ingresos_facturables) > 0) {
-        const ingHoras = Number(itsRow.total_ingresos_horas || 0);
-        const ingFlete = Number(itsRow.total_ingresos_fletes || itsRow.valor_flete_pactado || 0);
-        montoNetoEquipos = ingHoras > 0 ? ingHoras : Number(itsRow.total_ingresos_facturables) - ingFlete;
-        montoNetoFlete = ingFlete;
-        lineasCalculadas = [
-          {
-            tipo: 'GRUAS TELESCOPICAS',
-            subcategoria: itsRow.folio_its || 'Servicio Izaje',
-            unidad: 'Hora',
-            cantidad: 1,
-            valorUnitario: Number(itsRow.valor_hora_pactado || 0),
-            subtotal_calculado: montoNetoEquipos,
-            horas_aplicadas: totalHorasFacturables
-          }
-        ];
-        if (ingFlete > 0) {
-          lineasCalculadas.push({
-            tipo: 'TRASLADOS',
-            subcategoria: 'FLETE MOVILIZACIÓN / DESMOVILIZACIÓN',
-            unidad: 'GL',
-            cantidad: 1,
-            valorUnitario: ingFlete,
-            subtotal_calculado: ingFlete,
-            horas_aplicadas: 0
-          });
-        }
-      }
-
-      // Cálculo de sobretiempo (tarifa estimada sobretiempo = 1.5x o pactada)
-      const tarifaSobretiempoPromedio = montoNetoEquipos > 0 && totalHorasFacturables > 0 
-        ? (montoNetoEquipos / totalHorasFacturables) * 1.5 
-        : 50000;
-      const montoSobretiempoNeto = Math.round(totalHorasSobretiempo * tarifaSobretiempoPromedio);
-
-      const totalNeto = montoNetoEquipos + montoNetoFlete + montoNetoOtros + montoSobretiempoNeto;
-      const iva19 = Math.round(totalNeto * 0.19);
-      const totalBruto = totalNeto + iva19;
 
       const liquidacionGuardada = proyecto.json_field?.liquidacion_v1 || null;
       const jfProy = proyecto.json_field || {};
@@ -3090,24 +3182,15 @@ const reportDiarioController = {
           habilitado_facturar: habilitadoFacturar,
           lineas_cotizadas: lineasCalculadas,
           reports_validados: reports,
-          detalle_jornadas: reports.map(r => ({
-            ...r,
-            patente: r.equipo_patente || r.patente || 'GRÚA',
-            modelo_equipo: r.equipo_modelo || r.modelo || 'Grúa',
-            horas_efectivas: r.horas_operadas || r.horas_facturables || 0,
-            horas_minimas: 8,
-            subtotal_neto: totalHorasFacturables > 0
-              ? Math.round((montoNetoEquipos / totalHorasFacturables) * Number(r.horas_facturables || 0))
-              : 0
-          })),
+          detalle_jornadas: detalleJornadas,
           resumen_financiero: {
             dias_totales: reports.length,
             horas_facturables_totales: totalHorasFacturables.toFixed(1),
             horas_sobretiempo_totales: totalHorasSobretiempo.toFixed(1),
             monto_equipos_neto: montoNetoEquipos,
             monto_flete_neto: montoNetoFlete,
-            monto_otros_neto: montoNetoOtros,
-            monto_sobretiempo_neto: montoSobretiempoNeto,
+            monto_otros_neto: 0,
+            monto_sobretiempo_neto: 0,
             total_neto: totalNeto,
             iva_19: iva19,
             total_bruto: totalBruto

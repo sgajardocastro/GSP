@@ -224,7 +224,7 @@
               <span class="text-blue-400">📄</span> 
               <span class="font-bold text-white">Documento Oficial ITS Formalizado</span>
               <span class="text-slate-500">·</span>
-              <span class="text-slate-400">Firmado con PIN FES en Paso 1 (Yiara Mendoza)</span>
+              <span class="text-slate-400">Firmado con PIN FES en Paso 1 (Control de Gestión)</span>
             </span>
             <div class="flex items-center gap-2">
               <button 
@@ -294,11 +294,11 @@
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">Total Venta Neta:</span>
-                <span class="text-emerald-400 font-black">{{ formatPesos(its.total_venta_neta) }}</span>
+                <span class="text-emerald-400 font-black">{{ formatMoneda(its.total_venta_neta) }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">Costos Operacionales:</span>
-                <span class="text-amber-400 font-black">{{ formatPesos(its.total_costos_operacionales) }}</span>
+                <span class="text-amber-400 font-black">{{ formatMoneda(its.total_costos_operacionales) }}</span>
               </div>
               <div class="flex items-center justify-between pt-1 border-t border-white/10">
                 <span class="text-slate-400">Margen Bruto:</span>
@@ -402,7 +402,12 @@
 
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-white/10">
               <label class="text-[10px] text-slate-400 uppercase font-mono block">Horas Mínimas Base</label>
-              <div class="flex items-center gap-1 mt-0.5">
+              <div v-if="esServicioValorFijo" class="mt-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-mono font-bold">
+                  No Aplica (Valor Fijo - 0 hrs)
+                </span>
+              </div>
+              <div v-else class="flex items-center gap-1 mt-0.5">
                 <input 
                   type="number" 
                   step="0.5" 
@@ -415,14 +420,28 @@
             </div>
 
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-white/10">
-              <label class="text-[10px] text-slate-400 uppercase font-mono block">Valor Hora Pactado ($/hr)</label>
-              <input 
-                type="number" 
-                step="1000" 
-                v-model.number="its.valor_hora_pactado" 
-                @input="recalcularTotales"
-                class="w-full bg-slate-950 border border-blue-500/40 rounded px-2 py-1 font-mono font-bold text-blue-300 text-xs mt-0.5"
-              />
+              <template v-if="esServicioValorFijo">
+                <label class="text-[10px] text-purple-300 uppercase font-mono font-bold block flex items-center gap-1">
+                  <span>💰</span> Valor Fijo Pactado ($)
+                </label>
+                <input 
+                  type="number" 
+                  step="10000" 
+                  v-model.number="its.valor_fijo_pactado" 
+                  @input="recalcularTotales"
+                  class="w-full bg-slate-950 border border-purple-500/50 rounded px-2 py-1 font-mono font-bold text-purple-300 text-xs mt-0.5"
+                />
+              </template>
+              <template v-else>
+                <label class="text-[10px] text-slate-400 uppercase font-mono block">Valor Hora Pactado ($/hr)</label>
+                <input 
+                  type="number" 
+                  step="1000" 
+                  v-model.number="its.valor_hora_pactado" 
+                  @input="recalcularTotales"
+                  class="w-full bg-slate-950 border border-blue-500/40 rounded px-2 py-1 font-mono font-bold text-blue-300 text-xs mt-0.5"
+                />
+              </template>
             </div>
 
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-white/10">
@@ -501,10 +520,14 @@
               Recursos Asignados en Faena
             </span>
             <div class="flex flex-wrap items-center gap-3">
-              <div v-for="eq in asignaciones.equipos" :key="eq.id_equipo" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-white/15 text-xs">
+              <div v-for="eq in asignaciones.equipos" :key="eq.id_equipo || eq.patente" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-white/15 text-xs">
                 <span class="text-amber-400">🚜</span>
                 <span class="font-mono font-bold text-white">{{ eq.patente }}</span>
                 <span class="text-slate-400 text-[11px]">{{ eq.modelo }}</span>
+                <span v-if="resolverConductorOperadorEquipo(eq)" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                  <span>👷</span>
+                  <span>{{ resolverConductorOperadorEquipo(eq) }}</span>
+                </span>
               </div>
 
               <div v-for="per in asignaciones.personal" :key="per.id_user" class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-md border border-white/15 text-xs">
@@ -613,17 +636,44 @@
                     <select v-model="j.tipo_servicio" @change="calcularHorasReales(j)" class="bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-white">
                       <option value="Hora">Hora</option>
                       <option value="Mensual">Mensual</option>
+                      <option value="Valor Fijo">Valor Fijo</option>
                       <option value="Fijo">Fijo</option>
+                      <option value="Registro de Viaje">Registro de Viaje</option>
+                      <option value="Traslado">Traslado</option>
                       <option value="Flete Ida y Retorno">Flete Ida y Retorno</option>
                       <option value="Flete Solo Ida">Flete Solo Ida</option>
                       <option value="Flete Solo Retorno">Flete Solo Retorno</option>
                       <option value="Visita Terreno">Visita Terreno</option>
                       <option value="Interno">Interno</option>
                     </select>
+
+                    <!-- Punto 4: Detalle compacto de Registro de Viaje / Traslado -->
+                    <div v-if="j.tipo_servicio === 'Registro de Viaje' || j.tipo_servicio === 'Traslado'" class="mt-1 flex flex-col gap-1">
+                      <select 
+                        v-model="j.tipo_viaje" 
+                        class="bg-slate-900 border border-cyan-500/40 rounded px-1 py-0.5 text-[10px] text-cyan-300 font-bold font-mono outline-none"
+                        title="Tipo de Viaje / Trayecto"
+                      >
+                        <option value="" disabled>-- Tipo Viaje --</option>
+                        <option value="IDA Y VUELTA">Ida y Vuelta</option>
+                        <option value="SOLO IDA">Solo Ida</option>
+                        <option value="SOLO RETORNO">Solo Retorno</option>
+                        <option value="APOYO / CONTRAPESOS">Apoyo / Contrapesos</option>
+                      </select>
+                      <input 
+                        type="text" 
+                        v-model="j.comentario_viaje" 
+                        placeholder="Comentario del viaje..." 
+                        class="bg-slate-900 border border-white/15 rounded px-1.5 py-0.5 text-[10px] text-slate-200 outline-none focus:border-cyan-500" 
+                      />
+                    </div>
                   </td>
 
                   <td class="p-2">
                     <input type="text" v-model="j.patente" placeholder="GH-JK-88" class="w-20 bg-slate-950 border border-white/10 rounded px-1.5 py-1 text-xs text-white font-bold" />
+                    <div v-if="j.conductor_nombre || j.equipo_modelo" class="text-[9px] text-slate-400 font-mono mt-0.5 truncate max-w-[130px]" :title="j.conductor_nombre ? `${j.conductor_nombre} (${j.equipo_modelo || ''})` : j.equipo_modelo">
+                      {{ j.conductor_nombre || j.equipo_modelo }}
+                    </div>
                   </td>
 
                   <td class="p-2">
@@ -655,11 +705,43 @@
                   </td>
 
                   <td class="p-2 font-bold text-slate-300 font-mono">
-                    {{ formatHorasHHMM(j.horas_reales) }} hrs
+                    <template v-if="esPerfilYara">
+                      <div class="flex items-center gap-1">
+                        <input 
+                          type="number" 
+                          step="0.1" 
+                          min="0"
+                          v-model.number="j.horas_reales" 
+                          @input="onHorasRealesManualChange(j)"
+                          class="w-16 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded px-1.5 py-0.5 text-xs text-white font-mono text-right"
+                          title="Hora de Servicio editable (Perfil Yara)"
+                        />
+                        <span class="text-[10px] text-slate-400">h</span>
+                      </div>
+                    </template>
+                    <template v-else>
+                      {{ formatHorasHHMM(j.horas_reales) }} hrs
+                    </template>
                   </td>
 
                   <td class="p-2 font-bold text-cyan-300 font-mono">
-                    {{ formatHorasHHMM(j.horas_viaticos) }} hrs
+                    <template v-if="esPerfilYara">
+                      <div class="flex items-center gap-1">
+                        <input 
+                          type="number" 
+                          step="0.1" 
+                          min="0"
+                          v-model.number="j.horas_viaticos" 
+                          @input="onHorasViaticosManualChange(j)"
+                          class="w-16 bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded px-1.5 py-0.5 text-xs text-cyan-300 font-mono text-right"
+                          title="Hora de Viático editable (Perfil Yara)"
+                        />
+                        <span class="text-[10px] text-cyan-400">h</span>
+                      </div>
+                    </template>
+                    <template v-else>
+                      {{ formatHorasHHMM(j.horas_viaticos) }} hrs
+                    </template>
                   </td>
 
                   <td class="p-2">
@@ -977,7 +1059,7 @@
                         </select>
                       </td>
                       <td class="p-1.5">
-                        <select v-model="it.concepto_detalle" class="bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white">
+                        <select v-model="it.tipo_movilizacion" @change="sincronizarGlosaMovilizacion(it)" class="bg-slate-900 border border-white/10 rounded px-1 py-1 text-xs text-white">
                           <option value="UBER / TAXI">Uber / Taxi</option>
                           <option value="PASAJE BUS">Pasaje Bus Interurbano</option>
                           <option value="PASAJE AVION">Pasaje Aéreo</option>
@@ -985,7 +1067,7 @@
                           <option value="OTROS">Otro Gasto de Traslado</option>
                         </select>
                       </td>
-                      <td class="p-1.5"><input type="text" v-model="it.ruta_detalle" placeholder="Ruta / Tramo" class="w-full bg-slate-900 border border-white/10 rounded px-1.5 py-1 text-xs text-white" /></td>
+                      <td class="p-1.5"><input type="text" v-model="it.ruta_detalle" placeholder="Glosa / Ruta / Tramo" @input="sincronizarGlosaMovilizacion(it)" class="w-full bg-slate-900 border border-white/10 rounded px-1.5 py-1 text-xs text-white" /></td>
                       <td class="p-1.5"><input type="text" v-model="it.numero_oc" placeholder="Boleta #1234" class="w-28 bg-slate-900 border border-white/10 rounded px-1.5 py-1 text-xs text-white font-mono" /></td>
                       <td class="p-1.5 text-center">
                         <div class="flex items-center justify-center gap-1.5">
@@ -1174,15 +1256,24 @@
                         </td>
                         <td class="p-1.5">
                           <div class="flex items-center gap-1">
-                            <span :class="[
-                              'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
-                              (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica)
-                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                                : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                            ]">
-                              {{ (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) ? 'Rigger' : 'Operador' }}
-                            </span>
-                            <input type="text" v-model="it.nombre_personal" placeholder="Tripulante" class="w-32 bg-slate-900 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-white font-bold" />
+                            <select 
+                              v-model="it.rol_personal" 
+                              @change="onRolPersonalChange(it)"
+                              :class="[
+                                'px-1 py-0.5 rounded text-[9px] font-bold uppercase cursor-pointer outline-none transition-colors border',
+                                (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica)
+                                  ? 'bg-purple-950/80 text-purple-300 border-purple-500/50'
+                                  : (String(it.rol_personal || '').toUpperCase().includes('CONDUCTOR') 
+                                      ? 'bg-amber-950/80 text-amber-300 border-amber-500/50' 
+                                      : 'bg-sky-950/80 text-sky-300 border-sky-500/50')
+                              ]"
+                              title="Cambiar rol operacional del tripulante"
+                            >
+                              <option value="OPERADOR" class="bg-slate-900 text-sky-300 font-bold">Operador</option>
+                              <option value="RIGGER" class="bg-slate-900 text-purple-300 font-bold">Rigger</option>
+                              <option value="CONDUCTOR" class="bg-slate-900 text-amber-300 font-bold">Conductor</option>
+                            </select>
+                            <input type="text" v-model="it.nombre_personal" @input="onNombrePersonalInput(it)" placeholder="Tripulante" class="w-28 bg-slate-900 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-white font-bold" />
                             <span v-if="it.report_validado" class="px-1 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Traspasado desde Report Diario Validado">
                               ✓ Report
                             </span>
@@ -1270,6 +1361,13 @@
                   <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-200 font-mono">Auditoría Control de Gestión</span>
                 </div>
 
+                <datalist id="datalist-condicion-viatico">
+                  <option value="Ida y Regreso en el Día"></option>
+                  <option value="Salida a Obra"></option>
+                  <option value="Permanencia en Obra"></option>
+                  <option value="Retorno a Planta"></option>
+                </datalist>
+
                 <div class="overflow-x-auto">
                   <table class="w-full text-xs text-left">
                     <thead class="bg-slate-900 text-slate-400 font-mono uppercase text-[10px] border-b border-white/10">
@@ -1297,9 +1395,9 @@
                               'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
                               it.rol_personal === 'RIGGER'
                                 ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                                : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                                : (String(it.rol_personal || '').toUpperCase().includes('CONDUCTOR') ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-sky-500/20 text-sky-300 border border-sky-500/40')
                             ]">
-                              {{ it.rol_personal === 'RIGGER' ? 'Rigger' : 'Operador' }}
+                              {{ it.rol_personal === 'RIGGER' ? 'Rigger' : (it.rol_personal || 'Operador') }}
                             </span>
                             <input type="text" v-model="it.nombre_personal" class="w-32 bg-slate-900 border border-white/10 rounded px-1.5 py-0.5 text-[11px] text-white font-bold" />
                             <span v-if="it.report_validado" class="px-1 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Traspasado desde Report Diario Validado">
@@ -1308,7 +1406,14 @@
                           </div>
                         </td>
                         <td class="p-1.5">
-                          <div class="text-[11px] text-slate-200 font-sans">{{ it.condicion_label || it.concepto_detalle || 'Jornada Diaria' }}</div>
+                          <input 
+                            type="text" 
+                            v-model="it.concepto_detalle" 
+                            list="datalist-condicion-viatico" 
+                            @input="onCondicionViaticoChange(it)" 
+                            class="w-full min-w-[220px] bg-slate-900 border border-white/15 rounded px-2 py-1 text-[11px] text-white font-sans focus:border-emerald-500 focus:outline-none" 
+                            placeholder="Condición o glosa de movimiento..." 
+                          />
                         </td>
                         <td class="p-1 text-center text-[11px] text-slate-300">{{ it.desde || '--:--' }}</td>
                         <td class="p-1 text-center text-[11px] text-slate-300">{{ it.hasta || '--:--' }}</td>
@@ -1851,6 +1956,8 @@ const its = ref({
   tipo_contexto: 'URBANO',
   horas_minimas_pactadas: 8.0,
   valor_hora_pactado: 0,
+  valor_fijo_pactado: 0,
+  es_valor_fijo: false,
   valor_flete_pactado: 0,
   total_horas_report: 0,
   total_ingresos_horas: 0,
@@ -1868,6 +1975,15 @@ const its = ref({
 const jornadas = ref([]);
 const asignaciones = ref({ equipos: [], personal: [] });
 
+// Detección reactiva de Servicio Valor Fijo (REQ-1104)
+const esServicioValorFijo = computed(() => {
+  return Boolean(
+    its.value?.es_valor_fijo ||
+    Number(its.value?.valor_fijo_pactado || 0) > 0 ||
+    (jornadas.value || []).some(j => String(j.tipo_servicio || '').toUpperCase().includes('FIJO'))
+  );
+});
+
 // Computeds de Asignaciones para selectores
 const patentesAsignadas = computed(() => {
   return asignaciones.value.equipos || [];
@@ -1880,6 +1996,83 @@ const personalAsignadoLista = computed(() => {
     rol: p.rol_personal || 'Tripulación'
   }));
 });
+
+const resolverRolTripulante = (nombreOId) => {
+  if (!nombreOId) return 'OPERADOR';
+  const busqueda = String(nombreOId).trim().toUpperCase();
+  const per = (asignaciones.value?.personal || []).find(p => {
+    const nombreCompleto = `${p.name_frst || ''} ${p.apellido_pat || ''}`.trim().toUpperCase();
+    return String(p.id_user) === busqueda || 
+           (nombreCompleto && (nombreCompleto === busqueda || busqueda.includes(nombreCompleto) || nombreCompleto.includes(busqueda)));
+  });
+  if (per && per.rol_personal) {
+    const rolNorm = String(per.rol_personal).toUpperCase();
+    if (rolNorm.includes('RIGGER')) return 'RIGGER';
+    if (rolNorm.includes('CONDUCTOR') || rolNorm.includes('CHOFER') || rolNorm.includes('TRANSPORTISTA')) return 'CONDUCTOR';
+    if (rolNorm.includes('OPERADOR')) return 'OPERADOR';
+  }
+  if (busqueda.includes('RIGGER')) return 'RIGGER';
+  if (busqueda.includes('CONDUCTOR') || busqueda.includes('CHOFER')) return 'CONDUCTOR';
+  return 'OPERADOR';
+};
+
+const resolverConductorOperadorEquipo = (eq) => {
+  if (!eq) return '';
+  if (eq.conductor_nombre) return eq.conductor_nombre;
+  if (eq.operador_nombre) return eq.operador_nombre;
+  if (eq.personal_asociado) return eq.personal_asociado;
+  
+  const pat = String(eq.patente || '').trim().toUpperCase();
+  if (!pat) return '';
+
+  // 1. Buscar en jornadas
+  const jMatch = (jornadas.value || []).find(j => 
+    String(j.patente || '').trim().toUpperCase() === pat && (j.conductor_nombre || j.operador_nombre || j.nombre_personal)
+  );
+  if (jMatch) {
+    return jMatch.conductor_nombre || jMatch.operador_nombre || jMatch.nombre_personal;
+  }
+
+  // 2. Buscar en costo_hora_operador
+  const cMatch = (costos.value?.costo_hora_operador || []).find(c => 
+    String(c.patente || '').trim().toUpperCase() === pat && c.nombre_personal
+  );
+  if (cMatch) {
+    return cMatch.nombre_personal;
+  }
+
+  // 3. Buscar en proyecto.json_field (ejecucion_v1 / operaciones_v1)
+  const ejV1 = proyecto.value?.json_field?.ejecucion_v1;
+  const opV1 = proyecto.value?.json_field?.operaciones_v1;
+  const eqList = [...(ejV1?.equipos || []), ...(opV1?.equipos_extra || [])];
+  const eqJson = eqList.find(e => 
+    String(e.patente || e.id_equipo || '').trim().toUpperCase() === pat
+  );
+  if (eqJson && (eqJson.conductor_nombre || eqJson.operador_nombre || eqJson.nombre_conductor || eqJson.chofer)) {
+    return eqJson.conductor_nombre || eqJson.operador_nombre || eqJson.nombre_conductor || eqJson.chofer;
+  }
+
+  // 4. Mapeo contextual con asignaciones.personal por rol
+  const tipoNorm = String(eq.tipo_equipo || eq.modelo || '').toUpperCase();
+  const esGrua = tipoNorm.includes('GRUA') || eq.rol_equipo === 'Principal' || tipoNorm.includes('IZAJ') || tipoNorm.includes('PLUMA');
+  const esCamion = tipoNorm.includes('CAMION') || tipoNorm.includes('TRACTO') || tipoNorm.includes('RAMPLA') || tipoNorm.includes('FLETE');
+
+  if (esGrua) {
+    const op = (asignaciones.value?.personal || []).find(p => 
+      String(p.rol_personal || '').toUpperCase().includes('OPERADOR')
+    );
+    if (op) return `${op.name_frst || ''} ${op.apellido_pat || ''}`.trim();
+  }
+  if (esCamion) {
+    const cond = (asignaciones.value?.personal || []).find(p => {
+      const r = String(p.rol_personal || '').toUpperCase();
+      return r.includes('CONDUCTOR') || r.includes('CHOFER') || r.includes('TRANSPORTISTA');
+    });
+    if (cond) return `${cond.name_frst || ''} ${cond.apellido_pat || ''}`.trim();
+  }
+
+  return '';
+};
 
 // Resúmenes multiestanque reactivos
 const totalLitrosChasis = computed(() => {
@@ -2175,9 +2368,25 @@ const cargarITS = async () => {
     if (res.data && res.data.success) {
       proyecto.value = res.data.data.proyecto || {};
       its.value = { ...its.value, ...res.data.data.its };
+      // REQ-1104: Normalización y detección de servicio Valor Fijo
+      const esFijoDetectado = Boolean(
+        its.value.es_valor_fijo ||
+        Number(its.value.valor_fijo_pactado || 0) > 0 ||
+        (res.data.data.jornadas || []).some(j => String(j.tipo_servicio || '').toUpperCase().includes('FIJO'))
+      );
+      if (esFijoDetectado) {
+        its.value.es_valor_fijo = true;
+        if ((!its.value.valor_fijo_pactado || Number(its.value.valor_fijo_pactado) === 0) && Number(its.value.horas_minimas_pactadas) === 1) {
+          its.value.valor_fijo_pactado = Number(its.value.valor_hora_pactado || 0);
+          its.value.horas_minimas_pactadas = 0;
+        } else if (Number(its.value.horas_minimas_pactadas) === 1 && Number(its.value.valor_fijo_pactado) > 0) {
+          its.value.horas_minimas_pactadas = 0;
+        }
+      }
       crmPensiones.value = res.data.data.crm_pensiones || res.data.data.proyecto?.json_field?.crm_v1?.pensiones || {};
       categoriasSinCosto.value = res.data.data.its?.categorias_sin_costo || {};
       tarifaOperadorComercial.value = res.data.data.tarifa_operador_comercial || null;
+      let valorFijoAsignadoLoad = false;
       jornadas.value = (res.data.data.jornadas || []).map(j => {
         let f = j.fecha;
         if (f) {
@@ -2211,8 +2420,39 @@ const cargarITS = async () => {
             hrsViat = parseFloat((minV / 60).toFixed(2));
           }
         }
+        let tipoServicioNorm = j.tipo_servicio;
+        const esViajeOTraslado = tipoServicioNorm === 'Registro de Viaje' || tipoServicioNorm === 'Traslado' || String(tipoServicioNorm || '').toUpperCase().includes('REGISTRO DE VIAJE');
+        if (esFijoDetectado && !esViajeOTraslado) {
+          const tUp = String(j.tipo_servicio || '').trim().toUpperCase();
+          if (tUp.includes('FIJO')) {
+            tipoServicioNorm = 'Valor Fijo';
+          }
+        }
+        const esJornadaFija = !esViajeOTraslado && (esFijoDetectado || String(tipoServicioNorm || '').toUpperCase().includes('FIJO'));
+        const vFijo = Number(its.value.valor_fijo_pactado || its.value.valor_hora_pactado || 0);
+        let subtotalCalc = 0;
+        let tarifaCalc = tarifa;
+
+        if (esViajeOTraslado) {
+          subtotalCalc = 0;
+          tarifaCalc = 0;
+        } else if (esJornadaFija) {
+          tarifaCalc = vFijo > 0 ? vFijo : tarifa;
+          if (!valorFijoAsignadoLoad) {
+            subtotalCalc = vFijo > 0 ? vFijo : (parseFloat(j.subtotal) || tarifa);
+            valorFijoAsignadoLoad = true;
+          } else {
+            subtotalCalc = 0;
+          }
+        } else {
+          subtotalCalc = parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (hrs * tarifa));
+        }
+
         return {
           ...j,
+          tipo_servicio: tipoServicioNorm,
+          tipo_viaje: j.tipo_viaje || (esViajeOTraslado ? 'IDA Y VUELTA' : ''),
+          comentario_viaje: j.comentario_viaje || '',
           fecha: f || '',
           hora_salida: hSal,
           hora_llegada: hLle,
@@ -2221,10 +2461,12 @@ const cargarITS = async () => {
           colacion_minutos: colMin,
           horas_reales: hrsServ,
           horas_viaticos: hrsViat,
-          tarifa_hora: tarifa,
-          subtotal: parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : (hrs * tarifa))
+          horas_report: esViajeOTraslado ? hrsServ : (parseFloat(j.horas_report || 0) || (hrsServ > 0 ? hrsServ : 0)),
+          tarifa_hora: tarifaCalc,
+          subtotal: subtotalCalc
         };
       });
+      asignaciones.value = res.data.data.asignaciones || { equipos: [], personal: [] };
       const rawCostos = res.data.data.costos || {};
       const formatearItems = (lista) => (lista || []).map(it => {
         let f = it.fecha;
@@ -2238,21 +2480,118 @@ const cargarITS = async () => {
         return { ...it, fecha: f || '' };
       });
 
+      const formatearItemsMovilizacion = (lista) => (lista || []).map(it => {
+        let f = it.fecha;
+        if (f) {
+          if (typeof f === 'string') {
+            f = f.split('T')[0];
+          } else if (f instanceof Date) {
+            f = f.toISOString().split('T')[0];
+          }
+        }
+        let tipo = it.tipo_movilizacion;
+        let ruta = it.ruta_detalle;
+        const conc = String(it.concepto_detalle || '').trim();
+        const opciones = ['UBER / TAXI', 'PASAJE BUS', 'PASAJE AVION', 'TRANSFER', 'OTROS'];
+
+        if (!tipo || !ruta) {
+          if (conc.includes(' — ')) {
+            const [t, ...rest] = conc.split(' — ');
+            tipo = tipo || t.trim();
+            ruta = (ruta !== undefined && ruta !== null && ruta !== '') ? ruta : rest.join(' — ').trim();
+          } else if (opciones.includes(conc.toUpperCase())) {
+            tipo = tipo || conc.toUpperCase();
+            ruta = ruta || '';
+          } else if (conc) {
+            tipo = tipo || 'UBER / TAXI';
+            ruta = (ruta !== undefined && ruta !== null && ruta !== '') ? ruta : conc;
+          } else {
+            tipo = tipo || 'UBER / TAXI';
+            ruta = ruta || '';
+          }
+        }
+
+        const conceptoFinal = (ruta || '').trim() ? `${tipo} — ${(ruta || '').trim()}` : tipo;
+
+        return {
+          ...it,
+          fecha: f || '',
+          tipo_movilizacion: tipo,
+          ruta_detalle: ruta || '',
+          concepto_detalle: conceptoFinal
+        };
+      });
+
+      const formatearItemsAlimentacion = (lista) => (lista || []).map(it => {
+        let f = it.fecha;
+        if (f) {
+          if (typeof f === 'string') {
+            f = f.split('T')[0];
+          } else if (f instanceof Date) {
+            f = f.toISOString().split('T')[0];
+          }
+        }
+        return {
+          ...it,
+          fecha: f || '',
+          concepto_detalle: it.concepto_detalle || it.condicion_label || 'Ida y Regreso en el Día',
+          condicion_label: it.condicion_label || it.concepto_detalle || 'Ida y Regreso en el Día'
+        };
+      });
+
+      const formatearItemsOperador = (lista) => (lista || []).map(it => {
+        let f = it.fecha;
+        if (f) {
+          if (typeof f === 'string') {
+            f = f.split('T')[0];
+          } else if (f instanceof Date) {
+            f = f.toISOString().split('T')[0];
+          }
+        }
+        let rol = it.rol_personal;
+        if (!rol) {
+          rol = resolverRolTripulante(it.nombre_personal || it.id_user);
+        } else {
+          const rolNorm = String(rol).toUpperCase();
+          if (rolNorm.includes('RIGGER')) rol = 'RIGGER';
+          else if (rolNorm.includes('CONDUCTOR') || rolNorm.includes('CHOFER')) rol = 'CONDUCTOR';
+          else if (rolNorm.includes('OPERADOR')) rol = 'OPERADOR';
+          else rol = resolverRolTripulante(it.nombre_personal || it.id_user);
+        }
+        const esRigger = rol === 'RIGGER' || it.tarifa_no_aplica;
+        const faena = it.horas_faena_pagar !== undefined && it.horas_faena_pagar !== null ? parseFloat(it.horas_faena_pagar) : (parseFloat(it.horas_reales_equipo) || 0);
+        const flete = parseFloat(it.horas_flete_pagar || 0);
+        let cant = it.cantidad_unidades !== undefined && it.cantidad_unidades !== null ? parseFloat(it.cantidad_unidades) : (faena + flete);
+        if (isNaN(cant)) cant = 0;
+        const precio = esRigger ? 0 : (parseFloat(it.precio_unitario) || 0);
+        const monto = esRigger ? 0 : (it.monto_total !== undefined && it.monto_total !== null ? parseFloat(it.monto_total) : Math.round(cant * precio));
+        return {
+          ...it,
+          fecha: f || '',
+          rol_personal: rol,
+          tarifa_no_aplica: esRigger,
+          cantidad_unidades: cant,
+          horas_faena_pagar: faena,
+          horas_flete_pagar: flete,
+          precio_unitario: precio,
+          monto_total: monto
+        };
+      });
+
       costos.value = {
-        alimentacion: formatearItems(rawCostos.alimentacion),
+        alimentacion: formatearItemsAlimentacion(rawCostos.alimentacion),
         combustible: formatearItems(rawCostos.combustible),
-        movilizacion: formatearItems(rawCostos.movilizacion),
+        movilizacion: formatearItemsMovilizacion(rawCostos.movilizacion),
         peajes: formatearItems(rawCostos.peajes),
         pensiones: formatearItems(rawCostos.pensiones),
         personal_externo: formatearItems(rawCostos.personal_externo),
         feriados: formatearItems(rawCostos.feriados),
         subcontratacion_flete: formatearItems(rawCostos.subcontratacion_flete || rawCostos.subcontrato_flete),
         gastos_extraordinarios: formatearItems(rawCostos.gastos_extraordinarios || rawCostos.gastos_extra),
-        costo_hora_operador: formatearItems(rawCostos.costo_hora_operador)
+        costo_hora_operador: formatearItemsOperador(rawCostos.costo_hora_operador)
       };
       // Recalcular pensiones según condiciones comerciales
       (costos.value.pensiones || []).forEach(it => recalcularPension(it));
-      asignaciones.value = res.data.data.asignaciones || { equipos: [], personal: [] };
       recalcularTotales();
       await cargarFlujo();
     }
@@ -2266,6 +2605,31 @@ const cargarITS = async () => {
 const guardar = async (cerrarModal = false) => {
   try {
     guardando.value = true;
+    // Sincronizar movilización
+    if (Array.isArray(costos.value?.movilizacion)) {
+      costos.value.movilizacion.forEach(it => sincronizarGlosaMovilizacion(it));
+    }
+    // Sincronizar viático alimentación
+    if (Array.isArray(costos.value?.alimentacion)) {
+      costos.value.alimentacion.forEach(it => {
+        if (!it.condicion_label && it.concepto_detalle) {
+          it.condicion_label = it.concepto_detalle;
+        }
+      });
+    }
+    // REQ-1104: Consolidar y recalcular costos de operadores antes de enviar payload
+    if (Array.isArray(costos.value?.costo_hora_operador)) {
+      costos.value.costo_hora_operador.forEach(it => {
+        if (it.rol_personal === 'RIGGER' || it.tarifa_no_aplica) {
+          it.precio_unitario = 0;
+          it.monto_total = 0;
+        } else {
+          const precio = parseFloat(it.precio_unitario) || 0;
+          const horas = parseFloat(it.cantidad_unidades) || 0;
+          it.monto_total = Math.round(precio * horas);
+        }
+      });
+    }
     recalcularTotales();
     its.value.categorias_sin_costo = categoriasSinCosto.value;
     const payload = {
@@ -2471,6 +2835,11 @@ const etiquetaModalidadFlete = computed(() => {
 });
 
 const ventaNetaProyectadaComercial = computed(() => {
+  if (esServicioValorFijo.value) {
+    const valFijo = parseFloat(its.value?.valor_fijo_pactado || its.value?.valor_hora_pactado || 0);
+    const valFlete = parseFloat(its.value?.valor_flete_pactado || 0);
+    return Math.round(valFijo + valFlete);
+  }
   const hrsBase = parseFloat(its.value?.horas_minimas_pactadas || 0);
   const valHora = parseFloat(its.value?.valor_hora_pactado || 0);
   const valFlete = parseFloat(its.value?.valor_flete_pactado || 0);
@@ -2489,15 +2858,52 @@ const recalcularTotales = () => {
   let totalIngHoras = 0;
   let totalIngFletes = 0;
   const vHoraDefault = parseFloat(its.value.valor_hora_pactado || 0);
+  const esFijo = esServicioValorFijo.value;
+  const vFijo = Number(its.value.valor_fijo_pactado || its.value.valor_hora_pactado || 0);
+  let fijoAsignado = false;
 
   jornadas.value.forEach(j => {
-    const esFlete = j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete');
+    const tipo = j.tipo_servicio || '';
+    const esViajeOTraslado = tipo === 'Registro de Viaje' || tipo === 'Traslado' || String(tipo).toUpperCase().includes('REGISTRO DE VIAJE');
+
+    if (esViajeOTraslado) {
+      j.tarifa_hora = 0;
+      j.subtotal = 0;
+      const hrs = parseFloat(j.horas_report || j.horas_reales || 0);
+      if (!j.es_oculta) {
+        totalHrs += hrs;
+      }
+      return;
+    }
+
+    const esFlete = tipo && tipo.toLowerCase().includes('flete');
+    const esJornadaFija = esFijo || String(tipo).toUpperCase().includes('FIJO');
+
     if (j.tarifa_hora === undefined || j.tarifa_hora === null || isNaN(j.tarifa_hora)) {
-      j.tarifa_hora = esFlete ? Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2) : vHoraDefault;
+      if (esFlete) {
+        j.tarifa_hora = Math.round(parseFloat(its.value.valor_flete_pactado || 400000) / 2);
+      } else if (esJornadaFija && vFijo > 0) {
+        j.tarifa_hora = vFijo;
+      } else {
+        j.tarifa_hora = vHoraDefault;
+      }
     }
     const hrs = parseFloat(j.horas_report || 0);
     const tarifa = parseFloat(j.tarifa_hora || 0);
-    j.subtotal = hrs * tarifa;
+
+    if (esFlete) {
+      j.subtotal = hrs * tarifa;
+    } else if (esJornadaFija) {
+      // REQ-1104: En servicio valor fijo, el subtotal comercial es el valor fijo pactado, NO hrs * tarifa
+      if (!fijoAsignado && !j.es_oculta) {
+        j.subtotal = vFijo > 0 ? vFijo : tarifa;
+        fijoAsignado = true;
+      } else {
+        j.subtotal = 0;
+      }
+    } else {
+      j.subtotal = hrs * tarifa;
+    }
 
     if (!j.es_oculta) {
       if (esFlete) {
@@ -2510,6 +2916,10 @@ const recalcularTotales = () => {
   });
 
   its.value.total_horas_report = totalHrs;
+  // SPEC-128: En servicio de Valor Fijo, si no hay jornadas cargadas o subtotal acumuló 0, el ingreso facturable de horas es el valor_fijo_pactado
+  if (esFijo && totalIngHoras === 0 && Number(its.value.valor_fijo_pactado || 0) > 0) {
+    totalIngHoras = Number(its.value.valor_fijo_pactado);
+  }
   its.value.total_ingresos_horas = totalIngHoras;
 
   // 2. Ingresos
@@ -2551,11 +2961,24 @@ const calcularDiferenciaMinutos = (hInicio, hFin) => {
 const calcularHorasReales = (j) => {
   let minTotales = 0;
   const tipo = j.tipo_servicio || 'Hora';
+  const esViajeOTraslado = tipo === 'Registro de Viaje' || tipo === 'Traslado' || String(tipo).toUpperCase().includes('REGISTRO DE VIAJE');
 
-  if (tipo === 'Flete Solo Ida') {
+  if (esViajeOTraslado) {
+    // REQ-1104: Registro de Viaje o Traslado (tracto/rampla)
+    const horaInicioServicio = j.hora_salida || j.hora_llegada;
+    minTotales = Math.max(0, calcularDiferenciaMinutos(horaInicioServicio, j.hora_termino) - (Number(j.colacion_minutos) || 0));
+    if (!j.horas_reales_manual) {
+      j.horas_reales = parseFloat((minTotales / 60).toFixed(2));
+    }
+    j.horas_report = j.horas_reales;
+    j.tarifa_hora = 0;
+    j.subtotal = 0;
+  } else if (tipo === 'Flete Solo Ida') {
     // Tramo de carretera de ida: Salida de Patio a Llegada a Faena
     minTotales = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
+    if (!j.horas_reales_manual) {
+      j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
+    }
     if (!j.horas_report || j.horas_report === 0) {
       j.horas_report = 1.0;
     }
@@ -2565,7 +2988,9 @@ const calcularHorasReales = (j) => {
   } else if (tipo === 'Flete Solo Retorno') {
     // Tramo de carretera de regreso: Término de Faena a Retorno a Patio
     minTotales = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
+    if (!j.horas_reales_manual) {
+      j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 1.0;
+    }
     if (!j.horas_report || j.horas_report === 0) {
       j.horas_report = 1.0;
     }
@@ -2577,7 +3002,9 @@ const calcularHorasReales = (j) => {
     const minIda = calcularDiferenciaMinutos(j.hora_salida, j.hora_llegada);
     const minRetorno = calcularDiferenciaMinutos(j.hora_termino, j.hora_retorno);
     minTotales = minIda + minRetorno;
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 2.0;
+    if (!j.horas_reales_manual) {
+      j.horas_reales = parseFloat((minTotales / 60).toFixed(1)) || 2.0;
+    }
     if (!j.horas_report || j.horas_report === 0) {
       j.horas_report = 1.0;
     }
@@ -2590,24 +3017,42 @@ const calcularHorasReales = (j) => {
       ? (j.hora_salida || j.hora_llegada)
       : (j.hora_llegada || j.hora_salida);
     minTotales = Math.max(0, calcularDiferenciaMinutos(horaInicioServicio, j.hora_termino) - (Number(j.colacion_minutos) || 0));
-    j.horas_reales = parseFloat((minTotales / 60).toFixed(2));
-
-    // HRS VIÁTICOS: Independiente de Urbano/Rural, desde Salida San Pablo hasta Retorno San Pablo descontando colación
-    const iniViatico = j.hora_salida || j.hora_llegada;
-    const finViatico = j.hora_retorno || j.hora_termino;
-    const minViaticos = Math.max(0, calcularDiferenciaMinutos(iniViatico, finViatico) - (Number(j.colacion_minutos) || 0));
-    j.horas_viaticos = parseFloat((minViaticos / 60).toFixed(2));
-
-    const pisoMin = parseFloat(its.value.horas_minimas_pactadas || 4.0);
-    if (!j.id_reporte_avance) {
-      // Fila insertada manualmente: actualizar horas_report reactivamente con las horas reales
-      j.horas_report = j.horas_reales > 0 ? j.horas_reales : pisoMin;
-    } else if (!j.horas_report || j.horas_report === 0 || j.horas_reales > j.horas_report) {
-      // Fila de Report validado: nunca reducir por debajo del mínimo/horas validadas en el Report, solo subir si horas_reales lo supera
-      j.horas_report = Math.max(parseFloat(j.horas_report || 0), j.horas_reales, pisoMin);
+    if (!j.horas_reales_manual) {
+      j.horas_reales = parseFloat((minTotales / 60).toFixed(2));
     }
-    if (!j.tarifa_hora || j.tarifa_hora > 150000) {
-      j.tarifa_hora = parseFloat(its.value.valor_hora_pactado || 85000);
+
+    const esFijo = esServicioValorFijo.value || String(j.tipo_servicio || '').toUpperCase().includes('FIJO');
+    if (esFijo) {
+      // REQ-1104: En valor fijo, j.horas_report refleja las horas reales de terreno sin forzar piso mínimo
+      j.horas_report = j.horas_reales > 0 ? j.horas_reales : (parseFloat(j.horas_report || 0) || 0);
+      const vFijo = Number(its.value.valor_fijo_pactado || its.value.valor_hora_pactado || 0);
+      if (!j.tarifa_hora || j.tarifa_hora === 0) {
+        j.tarifa_hora = vFijo;
+      }
+    } else {
+      const pisoMin = parseFloat(its.value.horas_minimas_pactadas || 4.0);
+      if (!j.id_reporte_avance) {
+        // Fila insertada manualmente: actualizar horas_report reactivamente con las horas reales
+        j.horas_report = j.horas_reales > 0 ? j.horas_reales : pisoMin;
+      } else if (!j.horas_report || j.horas_report === 0 || j.horas_reales > j.horas_report) {
+        // Fila de Report validado: nunca reducir por debajo del mínimo/horas validadas en el Report, solo subir si horas_reales lo supera
+        j.horas_report = Math.max(parseFloat(j.horas_report || 0), j.horas_reales, pisoMin);
+      }
+      if (!j.tarifa_hora || j.tarifa_hora > 150000) {
+        j.tarifa_hora = parseFloat(its.value.valor_hora_pactado || 85000);
+      }
+    }
+  }
+
+  // RECOMENDACIÓN AUTOMÁTICA UNIVERSAL DE HORAS DE VIÁTICO (Salida a Retorno descontando colación)
+  if (!j.horas_viaticos_manual) {
+    const iniViatico = j.hora_salida || j.hora_llegada;
+    const finViatico = j.hora_retorno || j.hora_termino || j.hora_llegada;
+    if (iniViatico && finViatico) {
+      const minViaticos = Math.max(0, calcularDiferenciaMinutos(iniViatico, finViatico) - (Number(j.colacion_minutos) || 0));
+      j.horas_viaticos = parseFloat((minViaticos / 60).toFixed(2));
+    } else {
+      j.horas_viaticos = 0;
     }
   }
 
@@ -2628,8 +3073,8 @@ const agregarJornada = () => {
     id_its: its.value.id_its,
     fecha: hoy,
     numero_ot: proyecto.value.codi_proyecto || 'OT',
-    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
-    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    patente: asignaciones.value.equipos?.[0]?.patente || '',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || '',
     tipo_servicio: 'Hora',
     hora_salida: '08:00',
     hora_llegada: '08:30',
@@ -2657,8 +3102,8 @@ const agregarJornadaDocFisico = () => {
     id_its: its.value.id_its,
     fecha: hoy,
     numero_ot: proyecto.value.codi_proyecto || 'OT',
-    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
-    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    patente: asignaciones.value.equipos?.[0]?.patente || '',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || '',
     tipo_servicio: 'Hora',
     tipo_respaldo: 'FISICO_MANUAL',
     hora_salida: '08:00',
@@ -2687,8 +3132,8 @@ const agregarJornadaPisoMinimo = () => {
     id_its: its.value.id_its,
     fecha: hoy,
     numero_ot: proyecto.value.codi_proyecto || 'OT',
-    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
-    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    patente: asignaciones.value.equipos?.[0]?.patente || '',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || '',
     tipo_servicio: 'Hora',
     tipo_respaldo: 'PISO_MINIMO',
     hora_salida: null,
@@ -2716,8 +3161,8 @@ const agregarFlete = (tipo = 'Flete Solo Ida') => {
     id_its: its.value.id_its,
     fecha: hoy,
     numero_ot: proyecto.value.codi_proyecto || 'OT',
-    patente: asignaciones.value.equipos?.[0]?.patente || 'VCTR.81-9',
-    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || 'ATF 50 G3',
+    patente: asignaciones.value.equipos?.[0]?.patente || '',
+    equipo_modelo: asignaciones.value.equipos?.[0]?.modelo || '',
     tipo_servicio: tipo,
     hora_salida: tipo.includes('Ida') ? '07:00' : null,
     hora_llegada: tipo.includes('Ida') ? '08:00' : null,
@@ -2822,8 +3267,9 @@ const agregarItemCosto = (cat) => {
     costos.value[catKey].push({
       fecha: hoy,
       nombre_personal: personalAsignadoLista.value?.[0]?.nombre || '',
-      concepto_detalle: 'UBER / TAXI',
+      tipo_movilizacion: 'UBER / TAXI',
       ruta_detalle: '',
+      concepto_detalle: 'UBER / TAXI',
       numero_oc: '',
       archivo_comprobante_url: '',
       monto_total: 0
@@ -3051,6 +3497,10 @@ const recalcularCostoOperador = (it, forzarModificado = false) => {
   }
   const precio = parseFloat(it.precio_unitario) || 0;
   const horas = parseFloat(it.cantidad_unidades) || 0;
+  if (forzarModificado && horas >= 0) {
+    const flete = parseFloat(it.horas_flete_pagar) || 0;
+    it.horas_faena_pagar = Math.max(0, parseFloat((horas - flete).toFixed(2)));
+  }
   it.monto_total = Math.round(precio * horas);
 
   if (forzarModificado) {
@@ -3083,6 +3533,52 @@ const recalcularViaticoAlimentacion = (it) => {
     }
   }
   recalcularTotales();
+};
+
+const sincronizarGlosaMovilizacion = (it) => {
+  const tipo = (it.tipo_movilizacion || 'UBER / TAXI').trim();
+  const ruta = (it.ruta_detalle || '').trim();
+  it.concepto_detalle = ruta ? `${tipo} — ${ruta}` : tipo;
+};
+
+const onCondicionViaticoChange = (it) => {
+  it.condicion_label = it.concepto_detalle;
+  it.tarifa_modificada = true;
+  it.modificado_por = 'Control de Gestión';
+};
+
+const onRolPersonalChange = (it) => {
+  if (it.rol_personal === 'RIGGER') {
+    it.tarifa_no_aplica = true;
+    it.precio_unitario = 0;
+    it.monto_total = 0;
+  } else {
+    it.tarifa_no_aplica = false;
+    const sug = tarifaOperadorComercial.value?.valor_hora || 5000;
+    it.precio_unitario = sug;
+    const cant = parseFloat(it.cantidad_unidades) || 0;
+    it.monto_total = Math.round(cant * sug);
+  }
+  recalcularTotales();
+};
+
+const onNombrePersonalInput = (it) => {
+  const rolDetectado = resolverRolTripulante(it.nombre_personal);
+  if (rolDetectado === 'RIGGER') {
+    it.rol_personal = 'RIGGER';
+    it.tarifa_no_aplica = true;
+    it.precio_unitario = 0;
+    it.monto_total = 0;
+    recalcularTotales();
+  } else if (!it.rol_personal || it.rol_personal === 'RIGGER') {
+    it.rol_personal = rolDetectado;
+    it.tarifa_no_aplica = false;
+    const sug = tarifaOperadorComercial.value?.valor_hora || 5000;
+    it.precio_unitario = sug;
+    const cant = parseFloat(it.cantidad_unidades) || 0;
+    it.monto_total = Math.round(cant * sug);
+    recalcularTotales();
+  }
 };
 
 const getSubtotalCategoria = (cat) => {
@@ -3170,6 +3666,7 @@ const inyectarPlantilla = (tipo) => {
 const formatMoneda = (monto) => {
   return '$ ' + Math.round(monto || 0).toLocaleString('es-CL');
 };
+const formatPesos = formatMoneda;
 
 const formatHorasHHMM = (val) => {
   const num = parseFloat(val);
@@ -3178,6 +3675,33 @@ const formatHorasHHMM = (val) => {
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+// Restricción de gobernanza: Editabilidad de Horas de Servicio y Viáticos exclusiva para Yara Mendoza
+const esPerfilYara = computed(() => {
+  try {
+    const raw = localStorage.getItem('user') || localStorage.getItem('user_data') || localStorage.getItem('usuario') || '{}';
+    const u = JSON.parse(raw);
+    const email = String(u.email || '').toLowerCase();
+    const name = String(u.nombre || u.name_usuario || u.name || '').toLowerCase();
+    const uid = Number(u.id_user || u.id);
+    return email.includes('ymendoza') || email.includes('yara') || name.includes('yara') || uid === 65;
+  } catch {
+    return false;
+  }
+});
+
+const onHorasRealesManualChange = (j) => {
+  j.horas_reales_manual = true;
+  if (!j.id_reporte_avance) {
+    j.horas_report = Number(j.horas_reales) || 0;
+  }
+  recalcularTotales();
+};
+
+const onHorasViaticosManualChange = (j) => {
+  j.horas_viaticos_manual = true;
+  recalcularTotales();
 };
 
 // REQ-1122: Restricción del Resumen Ejecutivo Financiero exclusivamente para el perfil SECRETARIA

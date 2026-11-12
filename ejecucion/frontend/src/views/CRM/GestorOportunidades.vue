@@ -6,11 +6,57 @@
         <h2 class="text-2xl font-black text-white flex items-center flex-wrap gap-2">
           <span>{{ isModoOperaciones ? 'Requerimiento & Preparación de Operaciones' : 'Gestor de Oportunidades & Cotizaciones' }}</span>
           <span v-if="antecedentes.identificador_formal" class="text-amber-500 font-mono text-xl font-black">[{{ antecedentes.identificador_formal }}]</span>
-          <span v-if="nombreEjecutivoComercial" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+          <span v-if="nombreEjecutivoComercial || puedeSeleccionarEjecutivoResponsable" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
             <span>👤</span>
             <span class="text-[10px] uppercase text-indigo-400 font-bold">Ejecutivo:</span>
-            <span class="text-white font-bold">{{ nombreEjecutivoComercial }}</span>
+            <select
+              v-if="puedeSeleccionarEjecutivoResponsable && ejecutivosComercialesDisponibles.length > 0"
+              v-model="opportunity.id_usuario_creacion"
+              @change="onCambiarEjecutivoResponsable"
+              :disabled="reasignandoEjecutivo"
+              class="bg-[#0a0f1e] text-white font-bold text-xs rounded px-2 py-0.5 border border-indigo-500/40 focus:border-amber-400 outline-none cursor-pointer"
+              title="Seleccionar o reasignar Ejecutivo Comercial Responsable"
+            >
+              <option v-for="u in ejecutivosComercialesDisponibles" :key="u.id_unico" :value="u.id_unico">
+                {{ u.nombre_mostrar }}
+              </option>
+            </select>
+            <span v-else class="text-white font-bold">{{ nombreEjecutivoComercial }}</span>
           </span>
+          <!-- Badge Global de Estado Contractual en Header -->
+          <button 
+            v-if="esArriendo || esProyectoPlataforma || contratoData.folio"
+            @click="topTab = 'comercial'; activeTab = 'contrato'"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:scale-105 shadow-sm"
+            :class="badgeEstadoContrato.clase"
+            title="Hacer clic para revisar Contrato & Actas 360°"
+          >
+            <span>📜</span>
+            <span class="text-[10px] uppercase font-bold">Contrato:</span>
+            <span>{{ badgeEstadoContrato.texto }}</span>
+          </button>
+          <!-- Spec 87: Badge Requerimiento Interno -->
+          <span
+            v-if="esRequerimientoInternoActual"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500/20 text-amber-300 border border-dashed border-amber-400"
+          >
+            <span>🔁 MOVIMIENTO INTERNO · COSTO PROPIO</span>
+            <span class="text-[10px] bg-black/40 px-1.5 py-0.5 rounded text-amber-200">🚫 NO FACTURABLE</span>
+          </span>
+          <!-- Spec 87: Badge Estado V°B° Gerencia (Omar) -->
+          <span
+            v-if="!esRequerimientoInternoActual && estadoVbGerenciaActual && estadoVbGerenciaActual !== 'NO_REQUERIDO'"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black border shadow-sm cursor-pointer"
+            :class="badgeVbGerencia.classes"
+            @click="abrirEnlaceVbOmar"
+            title="Estado de visación ejecutiva de Gerencia (Luis Omar Ghisellini)"
+          >
+            <span>{{ badgeVbGerencia.icon }}</span>
+            <span>V°B° Omar: {{ badgeVbGerencia.label }}</span>
+          </span>
+          <button v-if="false">
+          </button>
         </h2>
         <p class="text-sm text-slate-300 mt-1">
           {{ isModoOperaciones ? 'Revisión técnica de antecedentes, auditoría de modificaciones y asignación de flota.' : 'Estructuración B2B de requerimientos de izaje y logística.' }}
@@ -21,7 +67,35 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
           <span>Volver al Kanban</span>
         </button>
-        <!-- BOTONES DE RETROCESO / EXCEPCIÓN -->
+        <button v-if="false">
+        </button>
+        <!-- BOTONES DE RETROCESO / EXCEPCIÓN Y EDICIÓN COMERCIAL EN OPERACIÓN (REQ-1100) -->
+        <template v-if="isModoOperaciones && topTab === 'comercial'">
+          <button
+            v-if="!modoEdicionComercialEnOperacion"
+            @click="activarEdicionComercialEnOperacion"
+            class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+            title="Habilita modificar la estructura comercial y generar una nueva versión de cotización sin detener ni reiniciar la operación en curso"
+          >
+            <span>✏️ Modificar Cotización (En Operación)</span>
+          </button>
+          <template v-else>
+            <button
+              @click="generarPDF"
+              class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-lg shadow-amber-500/20"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              <span>Generar Nueva Versión Cotización</span>
+            </button>
+            <button
+              @click="cancelarEdicionComercialEnOperacion"
+              class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              Cerrar Edición Comercial
+            </button>
+          </template>
+        </template>
+
         <button v-if="isModoOperaciones" @click="volverACotizar" class="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors flex items-center gap-2" title="Devuelve el requerimiento a Preventa Comercial para permitir ediciones">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"></path></svg>
           <span>Devolver a Preventa</span>
@@ -75,10 +149,52 @@
 
         <!-- ACCIONES ETAPA 5+: PREPARACIÓN SALIDA / PATIO -->
         <template v-else-if="estadoDbActual >= ESTADOS_DB.PREPARACION_PATIO">
+          <button @click="abrirModalExtenderServicio" type="button" class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer" title="Extender duración del servicio en días adicionales para reportes en terreno">
+            ➕ Extender Servicio
+          </button>
           <button @click="guardarCambiosAsignacion" type="button" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-sm uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
             💾 Guardar Cambios
           </button>
         </template>
+      </div>
+    </div>
+
+    <!-- Spec 87: Banner de Observación / Estado de V°B° Gerencia (Omar) -->
+    <div
+      v-if="!esRequerimientoInternoActual && (observacionVbGerenciaActual || (estadoVbGerenciaActual && estadoVbGerenciaActual !== 'NO_REQUERIDO'))"
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-xs flex-shrink-0"
+      :class="badgeVbGerencia.bannerClasses"
+    >
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-black uppercase tracking-wider">{{ badgeVbGerencia.icon }} V°B° Gerencia (Omar): {{ badgeVbGerencia.label }}</span>
+        <span v-if="observacionVbGerenciaActual" class="text-white font-semibold bg-black/30 px-2.5 py-1 rounded-lg border border-white/10">
+          💬 "{{ observacionVbGerenciaActual }}"
+        </span>
+      </div>
+      <div v-if="urlAprobacionGerenciaActual" class="flex items-center gap-2 shrink-0 flex-wrap">
+        <a
+          v-if="urlCotizacionGerenciaActual"
+          :href="urlCotizacionGerenciaActual"
+          target="_blank"
+          class="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 font-bold text-[11px] uppercase tracking-wider transition-colors"
+        >
+          📄 Cotización (PDF)
+        </a>
+        <a
+          v-if="urlOtGerenciaActual"
+          :href="urlOtGerenciaActual"
+          target="_blank"
+          class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 font-bold text-[11px] uppercase tracking-wider transition-colors"
+        >
+          🛠️ OT (PDF)
+        </a>
+        <a
+          :href="urlAprobacionGerenciaActual"
+          target="_blank"
+          class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] uppercase tracking-wider transition-colors"
+        >
+          🔗 Ver Vista Móvil 1-Toque
+        </a>
       </div>
     </div>
 
@@ -97,6 +213,20 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         <span>1. Preventa Comercial</span>
         <span v-if="estadoDbActual >= 3" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">Lectura</span>
+      </button>
+
+      <!-- ACCESO DIRECTO CONTRATO & ACTAS 360° (Transversal para Arriendos / Plataformas / Caso 5) -->
+      <button 
+        v-if="esArriendo || esProyectoPlataforma || contratoData.folio"
+        @click="topTab = 'comercial'; activeTab = 'contrato'" 
+        :class="[
+          topTab === 'comercial' && activeTab === 'contrato' ? 'text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02]' : 'text-slate-400 hover:text-white',
+          'py-2.5 px-3.5 text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none cursor-pointer rounded-t'
+        ]"
+      >
+        <span class="text-xs">📜</span>
+        <span>Contrato & Actas 360°</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded" :class="badgeEstadoContrato.clase">{{ badgeEstadoContrato.texto }}</span>
       </button>
 
       <!-- 2. VALIDACIÓN & DIFF -->
@@ -224,6 +354,12 @@
               </div>
               <div class="text-[11px] text-slate-400 mt-0.5 flex gap-4">
                 <span>Cotización: <strong class="text-amber-500 font-mono">{{ antecedentes.identificador_formal || 'COT-2026-042' }}</strong></span>
+                <span>Antecedente Distancia: <strong class="text-amber-400 font-mono">{{ opportunity.distancia_km ? opportunity.distancia_km + ' km' : 'S/I' }}</strong></span>
+                <span>Política Operacional:
+                  <strong v-if="operacionesAssignment.regimen_operacional === 'RURAL'" class="font-mono text-amber-400">RURAL</strong>
+                  <strong v-else-if="operacionesAssignment.regimen_operacional === 'URBANO'" class="font-mono text-blue-400">URBANO</strong>
+                  <strong v-else class="font-mono text-red-400 animate-pulse">PENDIENTE (OBLIGATORIO)</strong>
+                </span>
                 <span>Moneda: <strong class="text-white font-mono">{{ comercial.moneda }}</strong></span>
                 <span>Total Net Cotizado: <strong class="text-amber-400 font-mono">{{ formatCurrency(totalNetoComercial) }}</strong></span>
               </div>
@@ -244,6 +380,121 @@
           <span class="flex items-center gap-2">
             <span>🔒</span> Etapa Concluida y Aprobada (Solo Lectura) — Los antecedentes del servicio están convalidados.
           </span>
+        </div>
+
+        <!-- BANNER TRAZA DE DEVOLUCIÓN PREVIA DESDE OPERACIONES -->
+        <div v-if="opportunity.motivo_reverso_verificacion" class="bg-red-950/35 border border-red-500/40 rounded-xl p-3.5 flex flex-wrap items-start justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] font-black uppercase tracking-wider">↩️ Antecedente de Devolución a Comercial</span>
+              <span v-if="opportunity.fecha_reverso_verificacion" class="text-[11px] text-slate-300 font-mono">
+                📅 Fecha Devolución: <strong class="text-amber-300">{{ formatearFechaHoraReverso(opportunity.fecha_reverso_verificacion) }}</strong>
+              </span>
+              <span v-if="opportunity.usuario_reverso_verificacion?.nombre" class="text-[11px] text-slate-400">
+                | Devuelto por: <strong class="text-white">{{ opportunity.usuario_reverso_verificacion.nombre }}</strong>
+              </span>
+            </div>
+            <p class="text-xs text-red-200 leading-relaxed">
+              <strong class="text-red-300">Motivo de Rechazo / Devolución:</strong> {{ opportunity.motivo_reverso_verificacion }}
+            </p>
+          </div>
+        </div>
+
+        <!-- PANEL DE DEFINICIÓN DE POLÍTICA OPERACIONAL (URBANO / RURAL) Y FACULTAD DE DEVOLUCIÓN A COMERCIAL -->
+        <div
+          class="bg-[#050810] border rounded-xl p-4 space-y-3 transition-all"
+          :class="!operacionesAssignment.regimen_operacional ? 'border-red-500/60 ring-1 ring-red-500/30' : 'border-indigo-500/30'"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🧭</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-xs font-black text-white uppercase tracking-wider">Definición de Política Operacional (Urbana / Rural) <span class="text-red-400">*</span></h4>
+                  <span v-if="!operacionesAssignment.regimen_operacional" class="px-2 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-red-300 text-[10px] font-black uppercase tracking-wider">
+                    ⚠️ Respuesta Obligatoria de Operaciones
+                  </span>
+                  <span v-else class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+                    ✓ Respondida: {{ operacionesAssignment.regimen_operacional }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400">El Coordinador de Operaciones debe seleccionar obligatoriamente la política aplicable para el cobro al cliente (EDP) y el pago de horas del operador (RRHH).</p>
+              </div>
+            </div>
+            <button
+              v-if="estadoDbActual === ESTADOS_DB.VALIDACION_DIFF"
+              type="button"
+              @click="volverACotizar"
+              class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/40 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Devolver la oportunidad a Preventa Comercial si la estructura cotizada no se ajusta a la realidad operativa"
+            >
+              <span>↩️ Devolver a Preventa Comercial</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
+            <!-- Antecedente de Distancia -->
+            <div class="bg-[#0a0f1e] border border-white/10 rounded-lg p-3 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Antecedente Distancia (Ida desde Base)</span>
+                <div class="flex items-center gap-2 mt-1">
+                  <input
+                    type="number"
+                    v-model.number="opportunity.distancia_km"
+                    :disabled="isRequerimientoAprobado"
+                    min="1"
+                    class="w-24 bg-[#050810] border border-white/15 rounded px-2 py-1 text-xs text-amber-400 font-mono font-bold outline-none focus:border-amber-500 disabled:opacity-60"
+                  />
+                  <span class="text-xs text-slate-300 font-mono">km</span>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-1 rounded bg-white/5 text-slate-300 border border-white/10">
+                Ref: {{ Number(opportunity.distancia_km || 0) > 30 ? '&gt; 30 km' : '≤ 30 km' }}
+              </span>
+            </div>
+
+            <!-- Opción Política Urbana -->
+            <button
+              type="button"
+              :disabled="isRequerimientoAprobado"
+              @click="seleccionarPoliticaOperacional('URBANO')"
+              class="text-left rounded-lg p-3 border transition-all cursor-pointer disabled:cursor-not-allowed"
+              :class="operacionesAssignment.regimen_operacional === 'URBANO'
+                ? 'bg-blue-500/15 border-blue-500 ring-1 ring-blue-500/40'
+                : 'bg-[#0a0f1e] border-white/10 hover:border-white/25 opacity-75'"
+            >
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-black uppercase text-blue-300">🏙️ Política Urbana</span>
+                <span v-if="operacionesAssignment.regimen_operacional === 'URBANO'" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500 text-white">Seleccionada</span>
+                <span v-else class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">Clic para elegir</span>
+              </div>
+              <p class="text-[10px] text-slate-300 leading-relaxed">
+                • <strong>Cliente (EDP):</strong> Cobro desde salida de base hasta término en obra.<br>
+                • <strong>Operador (RRHH):</strong> Sin pago de traslado (solo horas reportadas).
+              </p>
+            </button>
+
+            <!-- Opción Política Rural -->
+            <button
+              type="button"
+              :disabled="isRequerimientoAprobado"
+              @click="seleccionarPoliticaOperacional('RURAL')"
+              class="text-left rounded-lg p-3 border transition-all cursor-pointer disabled:cursor-not-allowed"
+              :class="operacionesAssignment.regimen_operacional === 'RURAL'
+                ? 'bg-amber-500/15 border-amber-500 ring-1 ring-amber-500/40'
+                : 'bg-[#0a0f1e] border-white/10 hover:border-white/25 opacity-75'"
+            >
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-black uppercase text-amber-300">🌲 Política Rural</span>
+                <span v-if="operacionesAssignment.regimen_operacional === 'RURAL'" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-black">Seleccionada</span>
+                <span v-else class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">Clic para elegir</span>
+              </div>
+              <p class="text-[10px] text-slate-300 leading-relaxed">
+                • <strong>Cliente (EDP):</strong> Cobro desde inicio hasta término en obra.<br>
+                • <strong>Operador (RRHH):</strong> Si hrs reales &lt; mínimas, solo se paga la diferencia positiva.
+              </p>
+            </button>
+          </div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Columna Izquierda: Pestaña A (Datos Servicio & Visita con MAPA Completo) -->
@@ -421,6 +672,7 @@
                         >
                           <template v-if="line.tipo === 'TRASLADOS'">
                             <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
+                            <option value="TRASLADO RETORNO" class="bg-[#0a0f1e] text-white">TRASLADO RETORNO</option>
                             <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
                             <option v-if="line.unidad === 'Traslado'" value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
                           </template>
@@ -498,7 +750,13 @@
                             </div>
                           </div>
                         </template>
-                        <!-- Traslado o Valor Fijo: Cantidad (>= 1) -->
+                        <!-- Valor Fijo / Traslado: Cobro Único (SPEC-128: Sin Cantidad) -->
+                        <template v-else-if="line.unidad === 'Valor Fijo' || line.tipo === 'TRASLADOS' || String(line.unidad || '').startsWith('TRASLADO')">
+                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 px-2 py-1.5 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
+                            <span class="text-[10px] text-amber-400 font-mono font-bold uppercase">Cobro Único</span>
+                          </div>
+                        </template>
+                        <!-- Cantidad (>= 1) -->
                         <template v-else>
                           <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
                             <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
@@ -537,6 +795,85 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <!-- CONDICIÓN DEL SERVICIO (PROGRAMADO / DISPONIBLE) E INDICADORES DE VIÁTICOS EDITABLES EN VALIDACIÓN DE OPERACIONES -->
+              <div class="bg-[#0a0f1e]/90 border border-white/10 rounded-xl p-3.5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-2.5">
+                  <div>
+                    <label class="block text-[11px] font-bold text-white uppercase tracking-wider">
+                      1. Condición del Servicio (Validación Operaciones) <span class="text-red-400">*</span>
+                      <span v-if="hasDiff('condicion_servicio')" class="line-through text-red-400 font-mono text-[10px] bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 ml-1">
+                        Orig: {{ getOriginalValue('condicion_servicio') }}
+                      </span>
+                    </label>
+                    <span class="text-[10px] text-slate-400">Operaciones puede confirmar o corregir si el servicio es Programado o A Disponibilidad</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <label
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-pointer font-bold transition-all"
+                      :class="comercial.condicion_servicio === 'programado'
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-500/40'
+                        : 'bg-[#050810] border-white/10 text-slate-300 hover:border-white/25'"
+                    >
+                      <input type="radio" v-model="comercial.condicion_servicio" value="programado" class="accent-amber-500" />
+                      <span>{{ comercial.condicion_servicio === 'programado' ? '✓ ' : '' }}Programado (Reserva a todo evento)</span>
+                    </label>
+                    <label
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs cursor-pointer font-bold transition-all"
+                      :class="comercial.condicion_servicio === 'disponibilidad'
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-500/40'
+                        : 'bg-[#050810] border-white/10 text-slate-300 hover:border-white/25'"
+                    >
+                      <input type="radio" v-model="comercial.condicion_servicio" value="disponibilidad" class="accent-amber-500" />
+                      <span>{{ comercial.condicion_servicio === 'disponibilidad' ? '✓ ' : '' }}A Disponibilidad (Sujeto a disponibilidad)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex flex-wrap justify-between items-center gap-2">
+                    <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                      2. Indicadores de Traslado, Alimentación y Alojamiento (Validación / Modificación Operativa)
+                    </span>
+                    <span class="text-[10px] text-slate-400">Permite a Operaciones asignar o corregir Alimentación, Traslado y Alojamiento</span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="hasDiff('traslado_costeado') ? 'border-red-500/60 bg-red-500/5' : (!comercial.pensiones.traslado_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10')">
+                      <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">
+                        Traslado <span class="text-red-400">*</span>
+                        <span v-if="hasDiff('traslado_costeado')" class="line-through text-red-400 font-mono text-[9px] ml-1">Orig: {{ getOriginalValue('traslado_costeado') }}</span>
+                      </label>
+                      <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="CLIENTE">Costeado por Cliente</option>
+                        <option value="SAN_PABLO">Costeado por San Pablo</option>
+                      </select>
+                    </div>
+                    <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="hasDiff('alimentacion_costeado') ? 'border-red-500/60 bg-red-500/5' : (!comercial.pensiones.alimentacion_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10')">
+                      <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">
+                        Alimentación <span class="text-red-400">*</span>
+                        <span v-if="hasDiff('alimentacion_costeado')" class="line-through text-red-400 font-mono text-[9px] ml-1">Orig: {{ getOriginalValue('alimentacion_costeado') }}</span>
+                      </label>
+                      <select v-model="comercial.pensiones.alimentacion_costeado" @change="sincronizarAlimentacionPensiones" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="CLIENTE">Costeado por Cliente</option>
+                        <option value="SAN_PABLO">Costeado por San Pablo</option>
+                      </select>
+                    </div>
+                    <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="hasDiff('alojamiento_costeado') ? 'border-red-500/60 bg-red-500/5' : (!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10')">
+                      <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">
+                        Alojamiento <span class="text-red-400">*</span>
+                        <span v-if="hasDiff('alojamiento_costeado')" class="line-through text-red-400 font-mono text-[9px] ml-1">Orig: {{ getOriginalValue('alojamiento_costeado') }}</span>
+                      </label>
+                      <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="CLIENTE">Costeado por Cliente</option>
+                        <option value="SAN_PABLO">Costeado por San Pablo</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -858,6 +1195,63 @@
             </div>
           </div>
 
+          <!-- DISTANCIA COMERCIAL Y RESPONSABILIDAD DE PENSIONES (PACTADA EN COTIZACIÓN) -->
+          <div class="bg-[#0a0f1e] border border-white/10 rounded-lg p-2.5 grid grid-cols-1 lg:grid-cols-4 gap-2.5 text-xs">
+            <div class="bg-[#050810] p-2 rounded border border-amber-500/30 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] text-amber-400 uppercase font-mono font-bold block">Distancia Estimada Comercial</span>
+                <strong class="text-white font-mono text-xs">{{ opportunity.distancia_km ? opportunity.distancia_km + ' km (Ida desde Base)' : 'No especificada' }}</strong>
+              </div>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border" :class="(operacionesAssignment.regimen_operacional || (Number(opportunity.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')) === 'RURAL' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40'">
+                {{ (operacionesAssignment.regimen_operacional || (Number(opportunity.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO')) === 'RURAL' ? 'POLÍTICA RURAL' : 'POLÍTICA URBANA' }}
+              </span>
+            </div>
+            <div class="lg:col-span-3 bg-[#050810] p-2 rounded border border-white/10 flex flex-wrap items-center justify-between gap-2">
+              <span class="text-[10px] text-amber-400 uppercase font-mono font-bold">Verificación Operativa — Traslado, Alimentación y Alojamiento:</span>
+              <div v-if="esPensionesLegacy" class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+                <span class="bg-slate-900 px-2 py-0.5 rounded border border-white/10">Traslado: <strong :class="comercial.pensiones?.traslado_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.traslado_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">{{ comercial.pensiones?.traslado_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (comercial.pensiones?.traslado_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Pendiente Definir') }}</strong></span>
+                <span class="bg-slate-900 px-2 py-0.5 rounded border border-white/10">Desayuno: <strong :class="comercial.pensiones?.desayuno_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.desayuno_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">{{ comercial.pensiones?.desayuno_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (comercial.pensiones?.desayuno_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Pendiente Definir') }}</strong></span>
+                <span class="bg-slate-900 px-2 py-0.5 rounded border border-white/10">Almuerzo: <strong :class="comercial.pensiones?.almuerzo_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.almuerzo_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">{{ comercial.pensiones?.almuerzo_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (comercial.pensiones?.almuerzo_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Pendiente Definir') }}</strong></span>
+                <span class="bg-slate-900 px-2 py-0.5 rounded border border-white/10">Cena: <strong :class="comercial.pensiones?.cena_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.cena_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">{{ comercial.pensiones?.cena_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (comercial.pensiones?.cena_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Pendiente Definir') }}</strong></span>
+                <span class="bg-slate-900 px-2 py-0.5 rounded border border-white/10">Alojamiento: <strong :class="comercial.pensiones?.alojamiento_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.alojamiento_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">{{ comercial.pensiones?.alojamiento_costeado === 'CLIENTE' ? 'Costeado por Cliente' : (comercial.pensiones?.alojamiento_costeado === 'SAN_PABLO' ? 'Costeado por San Pablo' : 'Pendiente Definir') }}</strong></span>
+              </div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-auto flex-1 max-w-2xl font-mono text-[11px]">
+                <div class="bg-slate-900 px-2.5 py-1 rounded border border-white/10 flex items-center justify-between gap-2">
+                  <span class="text-slate-300 font-bold">Traslado:</span>
+                  <select v-model="comercial.pensiones.traslado_costeado" @change="marcarDirtyAsignacion" class="bg-transparent font-bold outline-none cursor-pointer" :class="comercial.pensiones?.traslado_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.traslado_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">
+                    <option value="" class="bg-[#0a0f1e] text-slate-400">Pendiente</option>
+                    <option value="CLIENTE" class="bg-[#0a0f1e] text-emerald-400">Costeado por Cliente</option>
+                    <option value="SAN_PABLO" class="bg-[#0a0f1e] text-amber-400">Costeado por San Pablo</option>
+                  </select>
+                </div>
+                <div class="bg-slate-900 px-2.5 py-1 rounded border border-white/10 flex items-center justify-between gap-2">
+                  <span class="text-slate-300 font-bold">Alimentación:</span>
+                  <select v-model="comercial.pensiones.alimentacion_costeado" @change="sincronizarAlimentacionPensiones(); marcarDirtyAsignacion()" class="bg-transparent font-bold outline-none cursor-pointer" :class="comercial.pensiones?.alimentacion_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.alimentacion_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">
+                    <option value="" class="bg-[#0a0f1e] text-slate-400">Pendiente</option>
+                    <option value="CLIENTE" class="bg-[#0a0f1e] text-emerald-400">Costeado por Cliente</option>
+                    <option value="SAN_PABLO" class="bg-[#0a0f1e] text-amber-400">Costeado por San Pablo</option>
+                  </select>
+                </div>
+                <div class="bg-slate-900 px-2.5 py-1 rounded border border-white/10 flex items-center justify-between gap-2">
+                  <span class="text-slate-300 font-bold">Alojamiento:</span>
+                  <select v-model="comercial.pensiones.alojamiento_costeado" @change="marcarDirtyAsignacion" class="bg-transparent font-bold outline-none cursor-pointer" :class="comercial.pensiones?.alojamiento_costeado === 'CLIENTE' ? 'text-emerald-400' : (comercial.pensiones?.alojamiento_costeado === 'SAN_PABLO' ? 'text-amber-400' : 'text-red-400')">
+                    <option value="" class="bg-[#0a0f1e] text-slate-400">Pendiente</option>
+                    <option value="CLIENTE" class="bg-[#0a0f1e] text-emerald-400">Costeado por Cliente</option>
+                    <option value="SAN_PABLO" class="bg-[#0a0f1e] text-amber-400">Costeado por San Pablo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <!-- REQ-1104: DESCRIPCIÓN COMERCIAL DEL SERVICIO HEREDADA AUTOMÁTICAMENTE A LA OT -->
+            <div class="lg:col-span-4 bg-[#050810] p-2.5 rounded border border-amber-500/30 flex flex-col gap-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-amber-400 uppercase font-mono font-bold">📋 Descripción Comercial del Servicio & Instrucciones para el Operador (Heredada de Preventa a la OT):</span>
+                <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Visible en PDF Orden de Trabajo</span>
+              </div>
+              <p class="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-sans">{{ opportunity.descripcion || siteVisit.detalle_servicio || 'Sin descripción comercial registrada.' }}</p>
+            </div>
+          </div>
+
           <!-- TABLA ÚNICA DE ALTA DENSIDAD LINEAL (UNA SOLA CABECERA GLOBAL) -->
           <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden shadow-xl shadow-black/50">
             <div class="overflow-x-auto">
@@ -897,9 +1291,9 @@
                           <template v-if="line.is_linea_base !== false">
                             <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
                             <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <span class="text-blue-400 font-mono font-bold">{{ line.tipo }}</span>
+                              <span class="text-blue-400 font-mono font-bold">{{ [line.tipo, line.subcategoria].filter(Boolean).join(' - ') }}</span>
                               <span>•</span>
-                              <span>{{ line.cantidad }} {{ line.unidad }}</span>
+                              <span>{{ formatResumenCantidadLinea(line) }}</span>
                             </div>
                           </template>
                           <!-- Línea agregada en Operaciones: Categoría y Subcategoría Lado a Lado -->
@@ -948,28 +1342,65 @@
                     </td>
                     <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
                       <div class="space-y-1.5 min-w-0">
-                        <!-- Fila 1: Operador -->
-                        <div class="flex items-center gap-1.5 min-w-0">
-                          <span class="text-[10px] text-amber-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador del Equipo">
-                            👷 Op:
-                          </span>
-                          <select v-model="line.operador_asignado_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
-                            <optgroup v-if="getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                              </option>
-                            </optgroup>
-                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados(line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                              </option>
-                            </optgroup>
-                          </select>
-                          <template v-if="line.operador_asignado_id">
-                            <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                            <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (line.tipo.includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                        <!-- Fila 1: Operador (Oculto para Plataformas - Arriendo Sin Operador) -->
+                        <div v-if="esLineaPlataforma(line)" class="flex items-center gap-1.5 min-w-0 py-1.5 px-2.5 bg-slate-900/80 border border-slate-700/60 rounded text-[11px] text-slate-300 font-bold">
+                          <span class="flex-shrink-0">🏢</span>
+                          <span class="truncate">Arriendo Sin Operador (Plataforma no lleva conductor)</span>
+                        </div>
+                        <div v-else class="space-y-1.5 min-w-0">
+                          <!-- Operador Titular / Turno 1 -->
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[10px] text-amber-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador del Equipo">
+                              👷 {{ (Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1) ? 'Op 1:' : 'Op:' }}
+                            </span>
+                            <select v-model="line.operador_asignado_id" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                              <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
+                              <optgroup v-if="getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                                <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                                  {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                                </option>
+                              </optgroup>
+                              <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                                <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                                  {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                                </option>
+                              </optgroup>
+                            </select>
+                            <template v-if="line.operador_asignado_id">
+                              <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                              <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
+                              <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
+                            </template>
+                            <button
+                              type="button"
+                              @click.stop="agregarTurnoRelevoOperador(line)"
+                              class="px-1.5 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-0.5 flex-shrink-0 cursor-pointer"
+                              title="Agregar relevo de operador por tramo de fechas en este mismo equipo (sin duplicar máquina)"
+                            >
+                              + Relevo
+                            </button>
+                          </div>
+                          <!-- Relevos adicionales (Turno 2+) sobre el mismo equipo -->
+                          <template v-if="Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1">
+                            <div v-for="(turno, tIdx) in line.turnos_operadores.slice(1)" :key="'turno-op-'+idx+'-'+tIdx" class="flex items-center gap-1.5 min-w-0 pt-1 border-t border-white/5">
+                              <span class="text-[10px] text-amber-300 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador de Relevo">
+                                🔄 Op {{ tIdx + 2 }}:
+                              </span>
+                              <select v-model="turno.operador_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-amber-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-400 truncate">
+                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador Relevo --</option>
+                                <optgroup v-if="getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
+                                  <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-rel-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
+                                    {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                                  </option>
+                                </optgroup>
+                                <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
+                                  <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-rel-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
+                                    {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                                  </option>
+                                </optgroup>
+                              </select>
+                              <button type="button" @click.stop="eliminarTurnoRelevoOperador(line, tIdx + 1)" class="text-slate-500 hover:text-red-400 px-1 text-xs font-bold cursor-pointer" title="Quitar relevo">✕</button>
+                            </div>
                           </template>
                         </div>
 
@@ -1009,10 +1440,18 @@
                       </div>
                     </td>
                     <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
-                        <input type="date" v-model="line.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                      <div v-if="Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1" class="space-y-1.5 min-w-0">
+                        <div v-for="(turno, tIdx) in line.turnos_operadores" :key="'turno-fec-'+idx+'-'+tIdx" class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
+                          <span class="text-[9px] text-amber-400 font-bold flex-shrink-0">T{{ tIdx + 1 }}:</span>
+                          <input type="date" v-model="turno.fecha_ini" @change="sincronizarFechasDesdeTurnos(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                          <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
+                          <input type="date" v-model="turno.fecha_fin" @change="sincronizarFechasDesdeTurnos(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        </div>
+                      </div>
+                      <div v-else class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
+                        <input type="date" v-model="line.fecha_plan_ini" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                         <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
-                        <input type="date" v-model="line.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
+                        <input type="date" v-model="line.fecha_plan_fin" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
                       </div>
                     </td>
                     <td class="py-2 px-2 text-center">
@@ -1051,9 +1490,7 @@
                           <template v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base">
                             <div class="font-bold text-white text-xs leading-tight truncate" :title="eqEx.descripcion || eqEx.subcategoria">{{ eqEx.descripcion || eqEx.subcategoria || 'Servicio de Traslado / Flete' }}</div>
                             <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <span class="text-blue-400 font-mono font-bold">{{ eqEx.tipo || 'TRASLADOS' }}</span>
-                              <span>•</span>
-                              <span v-if="eqEx.subcategoria">{{ eqEx.subcategoria }}</span>
+                              <span class="text-blue-400 font-mono font-bold">{{ [eqEx.tipo || 'TRASLADOS', eqEx.subcategoria].filter(Boolean).join(' - ') }}</span>
                               <span v-if="eqEx.cantidad">• {{ eqEx.cantidad }} {{ eqEx.unidad || 'Viaje' }}</span>
                             </div>
                           </template>
@@ -1074,6 +1511,14 @@
                               </select>
                             </div>
                           </template>
+                          <div class="mt-1.5 flex items-center gap-1.5">
+                            <span class="text-[9px] font-bold uppercase text-slate-400 flex-shrink-0">Tramo:</span>
+                            <select v-model="eqEx.modalidad_traslado" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-1.5 py-0.5 text-[10px] font-bold outline-none" :class="eqEx.modalidad_traslado === 'SOLO_IDA' ? 'text-amber-300 border-amber-500/40' : 'text-blue-300'">
+                              <option value="IDA_VUELTA" class="bg-[#0a0f1e] text-white">🔄 Ida y Vuelta Completa</option>
+                              <option value="SOLO_IDA" class="bg-[#0a0f1e] text-amber-300">➡️ Solo Ida — Entrega en Obra (Retiro Pendiente)</option>
+                              <option value="SOLO_RETORNO" class="bg-[#0a0f1e] text-cyan-300">⬅️ Solo Retorno — Retiro desde Obra</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -1177,21 +1622,31 @@
                     </td>
                     <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <select v-model="esp.id_user" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
+                        <select v-model="esp.id_user" @change="onEspecialistaCambiado(esp)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': esp.cargo === 'Rigger' && esp.id_user }">
                           <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
                           <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
                             <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
                             </option>
                           </optgroup>
                           <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
                             <option v-for="u in getUsuariosAgrupados(esp.cargo).otros" :key="'esp-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
+                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
                             </option>
                           </optgroup>
                         </select>
+                        <button
+                          v-if="esp.cargo === 'Rigger'"
+                          type="button"
+                          @click.stop="abrirModalRiggerExterno(esp)"
+                          class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 flex-shrink-0 cursor-pointer transition-all shadow-xs"
+                          title="Enrolar y asignar rápidamente un Rigger Externo contratado para esta faena"
+                        >
+                          <span>➕</span> Ext
+                        </button>
                         <template v-if="esp.id_user">
-                          <button type="button" v-if="getSemaforoTripulante(esp.id_user) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
+                          <span v-if="esp.cargo === 'Rigger' && isRiggerExterno(esp.id_user)" class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0" title="Rigger Externo / Subcontratista">🏢 EXT</span>
+                          <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
                           <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
                           <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
                         </template>
@@ -1795,6 +2250,58 @@
 
               <!-- Lista de Tarjetas de Inspección por Equipo (Formato Acordeón Compacto) -->
               <div class="space-y-2.5 flex-1 overflow-y-auto max-h-[65vh] pr-1">
+                <!-- Modalidad Servicio Exclusivo de Personal Certificado / Solo Rigger (Sin Maquinaria - REQ-1090) -->
+                <div
+                  v-if="equiposAsignadosLista.length === 0"
+                  class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-3"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-lg">👷</span>
+                      <div>
+                        <div class="text-xs font-black text-emerald-300 uppercase tracking-wider">
+                          Servicio Exclusivo de Personal Certificado en Terreno
+                        </div>
+                        <div class="text-[10px] text-slate-300 mt-0.5">
+                          Orden de Trabajo sin maquinaria asignada (Exenta de Checklist de Patio y Hoja de Ruta GPS).
+                        </div>
+                      </div>
+                    </div>
+                    <span class="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold uppercase whitespace-nowrap">
+                      🟢 Exento de Flota
+                    </span>
+                  </div>
+
+                  <div class="bg-[#050810] border border-white/10 rounded-lg p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Especialista(s) Asignado(s):</span>
+                      <button
+                        type="button"
+                        @click="operacionesSubTab = 'asignacion'"
+                        class="text-[9px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 transition-colors"
+                      >
+                        ✏️ Modificar en Asignación
+                      </button>
+                    </div>
+                    <div v-if="tripulacionAsignada.filter(t => t.id_user).length > 0" class="space-y-1.5">
+                      <div
+                        v-for="(pers, pIdx) in tripulacionAsignada.filter(t => t.id_user)"
+                        :key="'pers-patio-'+pIdx"
+                        class="flex items-center justify-between text-xs text-white bg-white/[0.03] px-2.5 py-1.5 rounded border border-white/5"
+                      >
+                        <span class="font-bold text-slate-200 truncate">
+                          🦺 {{ getNombrePersonaAsignada(pers.id_user) }}
+                          <span class="text-cyan-400 text-[10px] ml-1">({{ pers.cargo || 'Rigger Certificado' }})</span>
+                        </span>
+                        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold">🟢 ASIGNADO</span>
+                      </div>
+                    </div>
+                    <div v-else class="text-xs text-amber-300 italic">
+                      ⚠️ Aún no se ha seleccionado el especialista en la pestaña 3. Asignación.
+                    </div>
+                  </div>
+                </div>
+
                 <div 
                   v-for="eqId in equiposAsignadosLista" 
                   :key="'insp-eq-'+eqId" 
@@ -2191,11 +2698,11 @@
           </div>
           <button 
             @click="finalizarPreparacionSalida" 
-            :disabled="preparacionSalidaState.preparacion_finalizada || !preparacionSalidaState.validacion_estricta" 
-            class="w-full md:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/20 disabled:text-emerald-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+            :disabled="preparacionSalidaState.preparacion_finalizada" 
+            class="w-full md:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/20 disabled:text-emerald-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            <span>{{ preparacionSalidaState.preparacion_finalizada ? '🎉 Preparación de Salida Completada' : '🚀 FINALIZAR PREPARACIÓN & LIBERAR FLOTA A EJECUCIÓN TERRENO' }}</span>
+            <span>{{ preparacionSalidaState.preparacion_finalizada ? '🎉 Preparación de Salida Completada' : (equiposAsignadosLista.length === 0 ? '🚀 LIBERAR PERSONAL CERTIFICADO A EJECUCIÓN EN TERRENO' : '🚀 FINALIZAR PREPARACIÓN & LIBERAR FLOTA A EJECUCIÓN TERRENO') }}</span>
           </button>
         </div>
 
@@ -2378,6 +2885,14 @@
           </div>
 
           <div class="flex items-center gap-2">
+            <button
+              @click="abrirModalExtenderServicio"
+              class="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-300 rounded-xl text-xs font-bold font-mono flex items-center gap-2 transition-colors cursor-pointer"
+              title="Extender duración del servicio agregando días adicionales"
+            >
+              <span>➕</span>
+              <span>Extender Días Servicio</span>
+            </button>
             <button
               @click="abrirModalDespachoWhatsApp('REPORTE')"
               class="px-3.5 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold font-mono flex items-center gap-2 transition-colors cursor-pointer"
@@ -2684,12 +3199,13 @@
             <table class="w-full text-left text-sm border-collapse font-sans">
               <thead>
                 <tr class="bg-[#0b1021] text-slate-300 border-b border-white/10 text-xs font-bold uppercase tracking-wider">
-                  <th class="py-3 px-3.5 font-mono">Día</th>
+                  <th class="py-3 px-3.5 font-mono">Día / ID</th>
                   <th class="py-3 px-3.5">Fecha</th>
                   <th class="py-3 px-3.5">Equipo / Grúa</th>
                   <th class="py-3 px-3.5 font-mono">Horario</th>
                   <th class="py-3 px-3 text-center font-mono">Colac.</th>
                   <th class="py-3 px-3.5 text-right font-mono">Efectivas</th>
+                  <th class="py-3 px-3.5 text-center font-mono text-amber-300">Standby (Cli/GSP)</th>
                   <th class="py-3 px-3.5 text-right text-amber-400 font-mono">Facturables</th>
                   <th class="py-3 px-3.5 text-right font-mono">Sobretiempo</th>
                   <th class="py-3 px-3.5 font-mono">Horómetro</th>
@@ -2706,7 +3222,12 @@
                 >
                   <!-- Día -->
                   <td class="py-3.5 px-3.5 font-bold font-mono text-amber-400 text-sm whitespace-nowrap">
-                    Día {{ rep.dia_correlativo || 1 }}
+                    <div class="flex items-center gap-1.5">
+                      <span>Día {{ rep.dia_correlativo || 1 }}</span>
+                      <span class="text-[10px] text-slate-400 font-normal bg-white/10 px-1.5 py-0.5 rounded border border-white/15" :title="'ID Reporte en BD: #' + rep.id_reporte_avance">
+                        #{{ rep.id_reporte_avance }}
+                      </span>
+                    </div>
                   </td>
 
                   <!-- Fecha -->
@@ -2716,8 +3237,8 @@
 
                   <!-- Equipo / Grúa (Spec 35) -->
                   <td class="py-3.5 px-3.5">
-                    <div class="text-amber-300 font-bold font-mono text-sm">{{ rep.equipo_patente || 'S/P' }}</div>
-                    <div class="text-xs text-slate-400 truncate max-w-[140px]">{{ rep.equipo_modelo || 'Grúa' }}</div>
+                    <div class="text-amber-300 font-bold font-mono text-sm">{{ rep.equipo_patente || (rep.id_equipo ? 'S/P' : 'PERSONAL') }}</div>
+                    <div class="text-xs text-slate-400 truncate max-w-[140px]">{{ rep.equipo_modelo || (rep.id_equipo ? 'Grúa' : (rep.rigger_nombre || rep.operador_nombre || 'Servicio Rigger')) }}</div>
                   </td>
 
                   <!-- Horario -->
@@ -2733,6 +3254,19 @@
                   <!-- Horas Efectivas -->
                   <td class="py-3.5 px-3.5 text-right text-white font-black font-mono text-sm">
                     {{ rep.horas_operadas }}h
+                  </td>
+
+                  <!-- Standby Cliente / GSP (Spec 84) -->
+                  <td class="py-3.5 px-3.5 font-mono text-xs whitespace-nowrap text-center">
+                    <div v-if="Number(rep.horas_standby_cliente) > 0 || Number(rep.horas_standby_gsp) > 0" class="inline-flex flex-col gap-0.5 text-left" :title="rep.motivo_standby">
+                      <span v-if="Number(rep.horas_standby_cliente) > 0" class="text-amber-300 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                        ⏳ Cli: {{ Number(rep.horas_standby_cliente).toFixed(1) }}h
+                      </span>
+                      <span v-if="Number(rep.horas_standby_gsp) > 0" class="text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                        🛠️ GSP: {{ Number(rep.horas_standby_gsp).toFixed(1) }}h
+                      </span>
+                    </div>
+                    <span v-else class="text-slate-600">—</span>
                   </td>
 
                   <!-- Horas Facturables -->
@@ -2794,27 +3328,27 @@
                   <!-- Acciones -->
                   <td class="py-3.5 px-3.5 text-center whitespace-nowrap">
                     <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                      <!-- Botón Principal: Ver PDF Oficial (SPEC-098) -->
+                      <a
+                        :href="getUrlReportPdf(rep)"
+                        target="_blank"
+                        class="px-2.5 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-300 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 shadow-sm"
+                        title="Abrir PDF Oficial del Reporte Diario"
+                      >
+                        <span>📄</span>
+                        <span>PDF</span>
+                      </a>
+
+                      <!-- Botón Secundario: Auditar Formulario Web y Firma -->
                       <button
                         type="button"
                         @click="abrirVisorReport(rep)"
                         class="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-                        title="Ver Documento Digital y Firma"
+                        title="Auditar Formulario Web y Firma"
                       >
                         <span>👁️</span>
-                        <span>Ver</span>
+                        <span>Auditar</span>
                       </button>
-
-                      <!-- Ver documento físico si existe -->
-                      <a
-                        v-if="rep.id_doc_pdf"
-                        :href="getUrlDocFisico(rep.id_doc_pdf)"
-                        target="_blank"
-                        class="px-2.5 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-300 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-1 shadow-sm"
-                        title="Abrir respaldo físico escaneado (PDF/Imagen)"
-                      >
-                        <span>📄</span>
-                        <span>Doc</span>
-                      </a>
 
                       <!-- Botón Adjuntar Respaldo Físico si falta o está regularizado -->
                       <button
@@ -2832,6 +3366,121 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- TARJETA ACTA DE ENTREGA Y RECEPCIÓN 360° (PLATAFORMAS / ARRIENDO BSM) -->
+        <div v-if="esProyectoPlataforma" class="bg-[#050810] border border-teal-500/40 rounded-xl overflow-hidden shadow-lg mt-6">
+          <div class="px-5 py-3.5 border-b border-teal-500/20 flex flex-wrap justify-between items-center bg-[#06151f] gap-3">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📋</span>
+              <div>
+                <h4 class="text-sm font-black text-teal-300 uppercase tracking-wider font-mono flex items-center gap-2">
+                  <span>Acta de Entrega y Recepción de Maquinaria 360°</span>
+                  <span v-if="actaPlataformaProyecto?.folio_acta" class="text-xs bg-teal-500/20 text-teal-200 border border-teal-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                    {{ actaPlataformaProyecto.folio_acta }}
+                  </span>
+                </h4>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  Documento contractual de entrega en faena, 19 ítems de inspección, registro fotográfico 360° y recepción conforme.
+                </p>
+              </div>
+            </div>
+
+            <!-- Badges de Estado -->
+            <div class="flex items-center gap-2">
+              <span v-if="actaPlataformaProyecto?.estado_acta === 'CERRADA_FINAL'" class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                <span>✅</span> CERRADA (ENTREGA Y RETIRO)
+              </span>
+              <span v-else-if="actaPlataformaProyecto?.estado_acta === 'EMITIDA_ENTREGA'" class="text-xs bg-teal-500/20 text-teal-300 border border-teal-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                <span>🟢</span> PLATAFORMA EN ARRIENDO ACTIVO
+              </span>
+              <span v-else class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                <span>🟡</span> EMISIÓN PENDIENTE EN TERRENO (PWA)
+              </span>
+            </div>
+          </div>
+
+          <!-- Contenido de la Tarjeta del Acta -->
+          <div class="p-5 space-y-4">
+            <div v-if="actaPlataformaProyecto" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <!-- Datos de Entrega -->
+              <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider block font-mono">1. Entrega en Faena</span>
+                <div class="text-xs text-slate-300">
+                  <div>Horómetro IN: <strong class="text-white font-mono">{{ actaPlataformaProyecto.horometro_in || 'S/I' }} hrs</strong></div>
+                  <div>Combustible: <strong class="text-white font-mono">{{ actaPlataformaProyecto.combustible_in || '4/4' }}</strong></div>
+                  <div class="text-[11px] text-slate-400 truncate mt-1">Receptor: {{ actaPlataformaProyecto.receptor_entrega_nombre }} ({{ actaPlataformaProyecto.receptor_entrega_rut }})</div>
+                </div>
+                <div class="pt-2">
+                  <a
+                    v-if="actaPlataformaProyecto.id_file_pdf_entrega"
+                    :href="getFullStaticUrl(`/archivo/ver/${actaPlataformaProyecto.id_file_pdf_entrega}`)"
+                    target="_blank"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/40 text-teal-200 rounded-lg text-xs font-bold font-mono transition-colors"
+                  >
+                    <span>📄</span>
+                    <span>Ver Acta Entrega (PDF)</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Datos de Retiro -->
+              <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                <span class="text-[10px] text-purple-400 font-bold uppercase tracking-wider block font-mono">2. Retiro & Recuperación</span>
+                <div class="text-xs text-slate-300">
+                  <div>Horómetro OUT: <strong class="text-white font-mono">{{ actaPlataformaProyecto.horometro_out || '---' }} hrs</strong></div>
+                  <div>Combustible: <strong class="text-white font-mono">{{ actaPlataformaProyecto.combustible_out || '---' }}</strong></div>
+                  <div class="text-[11px] text-slate-400 truncate mt-1" v-if="actaPlataformaProyecto.receptor_retiro_nombre">
+                    Devuelve: {{ actaPlataformaProyecto.receptor_retiro_nombre }} ({{ actaPlataformaProyecto.receptor_retiro_rut }})
+                  </div>
+                  <div class="text-[11px] text-slate-500 italic mt-1" v-else>
+                    Pendiente de retiro en faena
+                  </div>
+                </div>
+                <div class="pt-2">
+                  <a
+                    v-if="actaPlataformaProyecto.id_file_pdf_final"
+                    :href="getFullStaticUrl(`/archivo/ver/${actaPlataformaProyecto.id_file_pdf_final}`)"
+                    target="_blank"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-purple-200 rounded-lg text-xs font-bold font-mono transition-colors"
+                  >
+                    <span>📄</span>
+                    <span>Ver Acta Cierre (PDF)</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Evidencias Fotográficas 360° -->
+              <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5 md:col-span-2">
+                <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block font-mono">3. Registro Fotográfico 360°</span>
+                <div class="flex items-center gap-2 overflow-x-auto py-1">
+                  <template v-if="Array.isArray(actaPlataformaProyecto.fotos_entrega) && actaPlataformaProyecto.fotos_entrega.length > 0">
+                    <a
+                      v-for="(f, fIdx) in actaPlataformaProyecto.fotos_entrega"
+                      :key="'foto-ent-' + fIdx"
+                      :href="getFullStaticUrl(f.url_path || `/archivo/ver/${f.id_doc}`)"
+                      target="_blank"
+                      class="shrink-0 group relative rounded-lg overflow-hidden border border-white/20 hover:border-teal-400 transition-all"
+                      :title="f.label || `Foto ${fIdx + 1}`"
+                    >
+                      <img :src="getFullStaticUrl(f.url_path || `/archivo/ver/${f.id_doc}`)" class="w-16 h-12 object-cover group-hover:scale-105 transition-transform" />
+                      <span class="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center text-slate-300 font-mono truncate px-1">{{ f.label || `F${fIdx + 1}` }}</span>
+                    </a>
+                  </template>
+                  <div v-else class="text-xs text-slate-500 italic py-2">
+                    Sin fotografías adjuntas registradas.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Si no hay acta emitida aún -->
+            <div v-else class="text-center py-4 space-y-2">
+              <p class="text-xs text-slate-400">
+                Esta Orden de Trabajo corresponde al arriendo de una plataforma. El Acta de Entrega 360° debe ser emitida por el chofer desde la PWA una vez que el camión arribe a faena.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -2916,36 +3565,34 @@
             :visible="true"
             :embedded="true"
             :id-proyecto="activeProjectId"
-            :readonly="true"
+            :readonly="itsEstadoActual === 'CONCLUIDO'"
             @avanzar-edp="pasoCierreActivo = 'edp'"
             @actualizado="cargarResumenEDP"
           />
         </div>
 
-        <!-- PASO 2: CONCILIACIÓN & ESTADO DE PAGO (EDP MANDANTE) -->
+        <!-- PASO 2: CONCILIACIÓN & ESTADO DE PAGO (EDP MANDANTE — DESACOPLADO DE ITS) -->
         <div v-else-if="pasoCierreActivo === 'edp'" class="space-y-6">
 
-          <!-- BANNER CANDADO CRIPTOGRÁFICO FES (SPEC 47) -->
-          <div v-if="!itsAprobadoPorOperaciones" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-lg">
+          <!-- BANNER FLUJO COMERCIAL DE EDP INDEPENDIENTE DE ITS -->
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-lg">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl flex-shrink-0">
-                🔒
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xl flex-shrink-0">
+                ⚡
               </div>
               <div>
-                <span class="font-bold text-amber-300 block text-sm">Candado Criptográfico FES Activo</span>
-                <span class="text-slate-400 block">
-                  La Carátula Oficial de EDP se desbloquea una vez que Jefatura de Operaciones (Richard) vise el ITS con su PIN FES. Estado actual: <strong class="text-white font-mono uppercase">{{ itsEstadoActual }}</strong>.
+                <span class="font-bold text-emerald-300 block text-sm">Estado de Pago (Prefactura Cliente) Desacoplado del ITS Interno</span>
+                <span class="text-slate-300 block">
+                  Circuito Oficial: <strong>1° Control de Gestión (Yara)</strong> genera y firma EDP ➔ <strong>2° Contabilidad</strong> valida y firma ➔ <strong>3° Comercial</strong> firma y envía al cliente.
                 </span>
               </div>
             </div>
-            <button 
-              type="button" 
-              @click="pasoCierreActivo = 'its'"
-              class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg uppercase tracking-wider text-xs flex items-center gap-2 cursor-pointer shadow flex-shrink-0 transition-all"
+            <span
+              :class="edpData?.habilitado_facturar ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'"
+              class="px-3 py-1.5 rounded-lg border font-mono font-bold text-xs flex-shrink-0"
             >
-              <span>🔏</span>
-              <span>Ir a Visar ITS con PIN FES</span>
-            </button>
+              {{ edpData?.habilitado_facturar ? '🟢 Habilitado Facturación Inmediata' : (edpData?.requiere_oc_hes && !edpData?.tiene_oc ? '🟠 Requiere Subir OC Cliente' : '⏳ En Circuito de Firmas EDP') }}
+            </span>
           </div>
 
           <!-- CABECERA DE LIQUIDACIÓN Y ESTADO DE CIERRE (PASO 2) -->
@@ -2962,10 +3609,10 @@
                 <span 
                   :class="estadoDbActual === 7 || edpData?.liquidacion_guardada 
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'" 
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'" 
                   class="text-xs font-mono font-bold uppercase px-3 py-1 rounded-md border"
                 >
-                  {{ estadoDbActual === 7 || edpData?.liquidacion_guardada ? '✅ Facturado y Concluido' : '⏳ Listo para Liquidar y Facturar' }}
+                  {{ estadoDbActual === 7 || edpData?.liquidacion_guardada ? '✅ Facturado y Concluido' : '⚡ Disponible para Emitir / Firmar EDP' }}
                 </span>
               </div>
               <p class="text-xs text-slate-400 mt-1">
@@ -2974,30 +3621,26 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2.5">
+            <button
+              @click="modalCaratulaEDPAbierto = true"
+              class="px-3.5 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 cursor-pointer"
+              title="Abrir Carátula de EDP para Firmar o Enviar al Cliente"
+            >
+              <span>🔏</span>
+              <span>Abrir Carátula EDP / Firmar (3 Pasos)</span>
+            </button>
             <button
               @click="descargarDossierPdfGlobal"
               :disabled="descargandoPdfEDP"
-              class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer"
+              class="px-3 py-2 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/40 disabled:opacity-50 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Ver PDF Oficial del EDP"
             >
-              <span>📥</span>
-              <span>{{ descargandoPdfEDP ? 'Generando PDF...' : 'Descargar Dossier PDF' }}</span>
-            </button>
-            <button
-              @click="modalCaratulaEDPAbierto = true"
-              :disabled="!itsAprobadoPorOperaciones"
-              :class="!itsAprobadoPorOperaciones 
-                ? 'opacity-50 cursor-not-allowed bg-slate-800 border-white/10 text-slate-400' 
-                : 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/50 text-amber-300 cursor-pointer'"
-              class="px-4 py-2.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow flex items-center gap-2"
-              :title="!itsAprobadoPorOperaciones ? 'Bloqueado: Requiere V°B° con PIN FES de Jefatura de Operaciones en ITS' : 'Ver Carátula Oficial de EDP'"
-            >
-              <span>{{ itsAprobadoPorOperaciones ? '📄' : '🔒' }}</span>
-              <span>Ver Carátula Oficial de EDP</span>
+              <span>📄 {{ descargandoPdfEDP ? 'Generando...' : 'PDF Oficial ↗' }}</span>
             </button>
             <button
               @click="cargarResumenEDP"
-              class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
               title="Recargar datos"
             >
               🔄
@@ -3083,7 +3726,7 @@
                     {{ j.horas_efectivas || 0 }} hrs
                   </td>
                   <td class="py-3 px-3 text-center text-slate-300">
-                    {{ j.horas_minimas || 8 }} hrs
+                    {{ (j.horas_minimas !== null && j.horas_minimas !== undefined && Number(j.horas_minimas) <= 0) ? 'Sin mín. (Mensual)' : `${j.horas_minimas ?? 8} hrs` }}
                   </td>
                   <td class="py-3 px-3 text-center font-bold" :class="Number(j.horas_sobretiempo) > 0 ? 'text-yellow-400' : 'text-slate-500'">
                     +{{ j.horas_sobretiempo || 0 }} hrs
@@ -3136,7 +3779,7 @@
         </div>
       </div>
 
-        <!-- PASO 3: RESPALDO DE ÓRDENES DE COMPRA (OC / HES DEL MANDANTE — SOLO LECTURA EN KANBAN) -->
+        <!-- PASO 3: RESPALDO DE ÓRDENES DE COMPRA (OC / HES DEL MANDANTE — CARGA COMERCIAL CON COPIA A CONTABILIDAD) -->
         <div v-else-if="pasoCierreActivo === 'oc'" class="space-y-6">
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
           <div class="flex flex-wrap justify-between items-center gap-3 border-b border-white/10 pb-3">
@@ -3146,19 +3789,19 @@
               </div>
               <div>
                 <h4 class="text-sm font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                  <span>Paso 3: Órdenes de Compra del Cliente (OC / HES)</span>
+                  <span>Paso 3: Órdenes de Compra del Cliente (OC / HES) — Carga Comercial</span>
                   <span v-if="ordenesCompra.length > 0" class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-mono">
                     {{ ordenesCompra.length }} Registrada(s)
                   </span>
                 </h4>
                 <p class="text-[11px] text-slate-400">
-                  Respaldo legal de cobro: archivo PDF y monto autorizado por el mandante para emitir DTE.
+                  El Ejecutivo Comercial sube la OC recibida del cliente; el sistema envía copia y constancia formal automática a Contabilidad.
                 </p>
               </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <div v-if="edpData?.resumen_financiero?.total_neto > 0" class="text-right">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <div v-if="edpData?.resumen_financiero?.total_neto > 0" class="text-right mr-2">
                 <div class="text-[10px] font-mono text-slate-400">
                   Total OCs: <strong class="text-white">{{ formatCurrency(totalMontoOCs) }}</strong> / EDP: <strong class="text-amber-400">{{ formatCurrency(edpData?.resumen_financiero?.total_neto) }}</strong>
                 </div>
@@ -3166,23 +3809,35 @@
                   {{ totalMontoOCs >= (edpData?.resumen_financiero?.total_neto || 0) ? '✔ 100% Cubierto' : '⚠️ Saldo pendiente: ' + formatCurrency((edpData?.resumen_financiero?.total_neto || 0) - totalMontoOCs) }}
                 </div>
               </div>
-              <span class="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg font-mono font-bold text-[10px] uppercase">
-                Solo Lectura
-              </span>
+              <button
+                type="button"
+                @click="asumirSinOC"
+                class="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg font-mono font-bold text-xs cursor-pointer transition-colors"
+                title="Declarar cliente sin OC formal y asumir el monto del EDP"
+              >
+                ⚖️ Sin OC (Asumir EDP)
+              </button>
+              <button
+                type="button"
+                @click="abrirModalNuevaOC"
+                class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-mono font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/30 cursor-pointer flex items-center gap-1.5 transition-all"
+              >
+                <span>📎 + Subir Orden de Compra (OC)</span>
+              </button>
             </div>
           </div>
 
-          <!-- BANNER SOLO LECTURA KANBAN -->
+          <!-- BANNER CONSTANCIA AUTOMÁTICA A CONTABILIDAD -->
           <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-200">
             <div class="flex items-center gap-2.5">
-              <span class="text-lg">ℹ️</span>
+              <span class="text-lg">📩</span>
               <span>
-                <strong>Modo Consulta (Kanban):</strong> La recepción, registro y validación formal de las Órdenes de Compra se gestionan exclusivamente en la <strong>Torre de Control PMO</strong>.
+                <strong>Constancia Automática a Contabilidad:</strong> Al adjuntar y guardar la Orden de Compra aquí, el sistema la registra en el expediente y envía automáticamente por correo una copia con constancia de recepción a <strong>Contabilidad</strong> para habilitar la facturación inmediata.
               </span>
             </div>
           </div>
 
-          <!-- Listado de OCs (Solo Lectura) -->
+          <!-- Listado de OCs -->
           <div v-if="ordenesCompra.length > 0" class="space-y-2">
             <div v-for="(oc, ocIdx) in ordenesCompra" :key="ocIdx" class="bg-black/30 border border-white/5 rounded-lg p-3 flex flex-wrap justify-between items-center gap-3 text-xs">
               <div>
@@ -3200,17 +3855,28 @@
                 <div v-if="oc.centro_costo" class="text-[11px] text-slate-400 mt-1">
                   Faena / Centro Costo: <span class="text-slate-200">{{ oc.centro_costo }}</span>
                 </div>
+                <div v-if="oc.registrado_por_nombre" class="text-[10px] text-emerald-400/90 mt-0.5 font-mono">
+                  ✔ Subida por {{ oc.registrado_por_nombre }} • Copia enviada a Contabilidad
+                </div>
               </div>
               <div class="flex items-center gap-2">
                 <a v-if="oc.archivo?.url" :href="getFullStaticUrl(oc.archivo.url)" target="_blank" class="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs font-bold flex items-center gap-1 no-underline">
                   📄 Ver PDF
                 </a>
+                <button
+                  type="button"
+                  @click="eliminarOC(ocIdx)"
+                  class="px-2 py-1 bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/30 rounded text-xs font-bold cursor-pointer"
+                  title="Eliminar OC"
+                >
+                  🗑️
+                </button>
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-6 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-400 text-xs space-y-1.5">
+          <div v-else class="text-center py-6 bg-black/20 border border-dashed border-white/10 rounded-lg text-slate-400 text-xs space-y-2">
             <p class="font-medium text-slate-300">Sin Órdenes de Compra registradas del mandante.</p>
-            <p class="text-slate-500 text-[11px]">La carga de OC y respaldo legal se realiza por el Analista de Control de Gestión en la Torre de Control PMO.</p>
+            <p class="text-slate-500 text-[11px]">Haz clic en <strong>"+ Subir Orden de Compra (OC)"</strong> para cargar el documento recibido del cliente y notificar a Contabilidad.</p>
           </div>
         </div>
 
@@ -3235,8 +3901,49 @@
         </div>
       </div>
 
-        <!-- INFORMACIÓN DE FACTURACIÓN Y CIERRE (PASO 4 — SOLO LECTURA EN KANBAN) -->
+        <!-- INFORMACIÓN DE FACTURACIÓN Y CIERRE (PASO 4 — DESACOPLADO DE ITS) -->
         <div v-else-if="pasoCierreActivo === 'factura'" class="space-y-6">
+          <div
+            :class="edpData?.habilitado_facturar
+              ? 'bg-emerald-500/15 border-emerald-500/40'
+              : 'bg-amber-500/15 border-amber-500/40'"
+            class="border rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-lg"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-xl flex-shrink-0">
+                {{ edpData?.habilitado_facturar ? '🟢' : '🟠' }}
+              </div>
+              <div>
+                <span class="font-bold text-white block text-sm">
+                  {{ edpData?.habilitado_facturar ? 'Servicio Habilitado para Facturar Inmediatamente (Sin esperar ITS)' : 'Condición Previa de Facturación (EDP + Regla de OC)' }}
+                </span>
+                <span class="text-slate-300 block">
+                  {{ edpData?.habilitado_facturar
+                    ? 'El Estado de Pago ya está validado y la condición de Orden de Compra está cumplida. Contabilidad puede emitir la Factura DTE de inmediato.'
+                    : (edpData?.requiere_oc_hes && ordenesCompra.length === 0
+                      ? 'Este servicio requiere Orden de Compra (OC / HES). Súbela en el Paso 3 para habilitar la facturación inmediata.'
+                      : 'Pendiente firma de validación del Estado de Pago (EDP) en el Paso 2.') }}
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button
+                v-if="edpData?.requiere_oc_hes && ordenesCompra.length === 0"
+                type="button"
+                @click="pasoCierreActivo = 'oc'"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-lg uppercase tracking-wider text-xs flex items-center gap-2 cursor-pointer shadow transition-all"
+              >
+                📎 Subir OC en Paso 3
+              </button>
+              <button
+                type="button"
+                @click="modalCaratulaEDPAbierto = true"
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg uppercase tracking-wider text-xs flex items-center gap-2 cursor-pointer shadow transition-all"
+              >
+                📑 Abrir Carátula EDP
+              </button>
+            </div>
+          </div>
           <div class="bg-[#050810] border border-white/10 rounded-xl p-5 shadow-lg space-y-4">
             <div class="border-b border-white/10 pb-3 flex justify-between items-center">
               <div class="flex items-center gap-2.5">
@@ -3340,7 +4047,7 @@
   </div>
 
     <!-- Banner Modo Solo Lectura en Comercial (Inmutabilidad Etapa Concluida) -->
-    <div v-if="topTab === 'comercial' && isModoOperaciones" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200 flex-shrink-0">
+    <div v-if="topTab === 'comercial' && isModoOperaciones && activeTab !== 'contrato'" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-200 flex-shrink-0">
       <div class="flex items-center gap-2.5">
         <span class="text-lg">🔒</span>
         <div>
@@ -3354,6 +4061,27 @@
       </button>
     </div>
 
+    <!-- Banner de Devolución / Rechazo desde Operaciones visible en 1. Preventa Comercial -->
+    <div v-if="topTab === 'comercial' && opportunity.motivo_reverso_verificacion" class="bg-red-950/40 border border-red-500/50 rounded-xl p-3.5 flex flex-wrap justify-between items-start gap-3 text-xs">
+      <div class="flex items-start gap-2.5">
+        <span class="text-lg">↩️</span>
+        <div class="space-y-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-black uppercase tracking-wider text-red-300">Requerimiento Devuelto / Rechazado por Operaciones</span>
+            <span v-if="opportunity.fecha_reverso_verificacion" class="px-2 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-amber-300 font-mono text-[11px]">
+              📅 Fecha Devolución: {{ formatearFechaHoraReverso(opportunity.fecha_reverso_verificacion) }}
+            </span>
+            <span v-if="opportunity.usuario_reverso_verificacion?.nombre" class="text-slate-300 text-[11px]">
+              | Responsable: <strong class="text-white">{{ opportunity.usuario_reverso_verificacion.nombre }}</strong>
+            </span>
+          </div>
+          <p class="text-red-200 text-xs">
+            <strong class="text-red-300">Motivo de Rechazo:</strong> {{ opportunity.motivo_reverso_verificacion }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Grid (Comercial / Preventa) -->
     <div v-if="topTab === 'comercial'" 
          class="grid grid-cols-1 gap-6 flex-1 min-h-0 w-full overflow-hidden transition-all duration-300"
@@ -3361,21 +4089,42 @@
       
       <!-- LEFT: CLIENTE & VERSION -->
       <div v-show="!panelClienteMinimizado" class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
-        <fieldset :disabled="isModoOperaciones" :class="{ 'pointer-events-none opacity-80 select-none': isModoOperaciones }" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
-        <div class="space-y-4">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
-            1. Datos de la Oportunidad
+        <div class="space-y-3">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 flex items-center justify-between">
+            <span>1. Datos de la Oportunidad</span>
+            <span v-if="reasignandoEjecutivo" class="text-[10px] text-amber-400 font-mono animate-pulse">Guardando ejecutivo...</span>
           </div>
           
-          <!-- Ejecutivo Comercial Responsable -->
+          <!-- Ejecutivo Comercial Responsable (REQ-1113: Selección al crear por otro usuario o reasignación por Administrador) -->
           <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Ejecutivo Comercial Responsable:</label>
-            <div class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-indigo-300 font-medium flex items-center gap-2">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[11px] text-slate-400 font-semibold">Ejecutivo Comercial Responsable:</label>
+              <span v-if="puedeSeleccionarEjecutivoResponsable" class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                {{ (props.proyectoId || currentProyectoId) ? 'Reasignable (Admin)' : 'Asignable' }}
+              </span>
+            </div>
+            <div v-if="puedeSeleccionarEjecutivoResponsable && ejecutivosComercialesDisponibles.length > 0" class="relative">
+              <select
+                v-model="opportunity.id_usuario_creacion"
+                @change="onCambiarEjecutivoResponsable"
+                :disabled="reasignandoEjecutivo"
+                class="w-full bg-[#0a0f1e] border border-indigo-500/40 hover:border-indigo-400 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-white font-bold outline-none transition-colors cursor-pointer"
+              >
+                <option v-for="u in ejecutivosComercialesDisponibles" :key="u.id_unico" :value="u.id_unico">
+                  👤 {{ u.nombre_mostrar }}{{ u.email ? ` (${u.email})` : '' }}
+                </option>
+              </select>
+            </div>
+            <div v-else class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-indigo-300 font-medium flex items-center gap-2">
               <span>👤</span>
               <span class="font-bold text-white">{{ nombreEjecutivoComercial || 'No asignado' }}</span>
-              <span class="text-[10px] text-slate-400 ml-auto font-mono">(Creador del Requerimiento)</span>
+              <span class="text-[10px] text-slate-400 ml-auto font-mono">(Ejecutivo Responsable)</span>
             </div>
           </div>
+        </div>
+
+        <fieldset :disabled="isBloqueadoComercial" :class="{ 'opacity-80': isBloqueadoComercial }" class="space-y-6 border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200">
+        <div class="space-y-4">
           
           <div>
             <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Empresa Emisora (Cotizar a nombre de):</label>
@@ -3553,6 +4302,71 @@
                 </select>
               </div>
 
+              <!-- Bloque Carga y Vista de OC en Preventa cuando Requiere OC/HES = SÍ -->
+              <div
+                v-if="opportunity.requiere_oc_hes === true || ordenesCompra.length > 0"
+                class="sm:col-span-2 bg-[#050810] border border-blue-500/30 rounded-lg p-2.5 space-y-2"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-mono font-bold text-blue-300 uppercase flex items-center gap-1.5">
+                    <span>📑 Orden de Compra (OC / HES) Cliente</span>
+                    <span class="px-1.5 py-0.2 bg-blue-500/20 text-blue-300 rounded text-[9px]">{{ ordenesCompra.length }}</span>
+                  </span>
+                  <div
+                    role="button"
+                    tabindex="0"
+                    @click="abrirModalNuevaOC"
+                    class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center gap-1 shadow-sm select-none"
+                  >
+                    <span>📎 + Subir OC Cliente</span>
+                  </div>
+                </div>
+
+                <div v-if="ordenesCompra.length > 0" class="space-y-1.5">
+                  <div
+                    v-for="(oc, idxOc) in ordenesCompra"
+                    :key="oc.id || idxOc"
+                    class="flex items-center justify-between gap-2 bg-[#0a0f1e] border border-white/10 rounded-md px-2.5 py-1.5 text-[11px]"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <div class="font-mono font-bold text-white truncate">
+                        {{ oc.numero_oc }}
+                        <span v-if="oc.monto_neto" class="text-emerald-400 ml-1">({{ formatCurrency(oc.monto_neto) }})</span>
+                      </div>
+                      <div class="text-[10px] text-slate-400 font-mono truncate">
+                        Fecha: {{ oc.fecha_emision || 'S/F' }}
+                        <span v-if="oc.archivo?.nombre"> • {{ oc.archivo.nombre }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                      <a
+                        v-if="oc.archivo?.url"
+                        :href="getFullStaticUrl(oc.archivo.url)"
+                        target="_blank"
+                        class="px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded text-[10px] font-mono font-bold no-underline flex items-center gap-1 transition-colors"
+                        title="Abrir documento OC en nueva pestaña"
+                      >
+                        📄 Ver OC ↗
+                      </a>
+                      <span v-else class="text-[9px] font-mono text-slate-500 italic px-1.5">Sin PDF</span>
+                      <div
+                        v-if="!isModoOperaciones"
+                        role="button"
+                        tabindex="0"
+                        @click="eliminarOC(idxOc)"
+                        class="px-1.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded text-[10px] cursor-pointer transition-colors"
+                        title="Eliminar OC"
+                      >
+                        🗑️
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-[10px] text-slate-400 italic">
+                  Aún no se ha adjuntado la OC. Puedes subirla aquí mismo ahora o cuando el cliente la envíe.
+                </div>
+              </div>
+
               <!-- 2. Requiere Acreditación -->
               <div>
                 <label class="text-[10px] text-slate-300 font-bold block mb-1">
@@ -3577,12 +4391,9 @@
                   </label>
                   <span 
                     v-if="opportunity.distancia_km !== null && opportunity.distancia_km !== ''"
-                    class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border"
-                    :class="(parseFloat(opportunity.distancia_km) || 0) <= 30 
-                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' 
-                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'"
+                    class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
                   >
-                    {{ (parseFloat(opportunity.distancia_km) || 0) <= 30 ? '🏙️ URBANO (≤30km)' : '🚜 RURAL (>30km)' }}
+                    📍 Antecedente Operaciones
                   </span>
                 </div>
                 <div class="relative">
@@ -3650,36 +4461,83 @@
 
           <div>
             <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">
-              Descripción del Proyecto / Faena <span class="text-red-400">*</span>:
+              Descripción del Servicio / Faena <span class="text-red-400">*</span>:
             </label>
             <textarea 
               v-model="opportunity.descripcion" 
+              @input="siteVisit.detalle_servicio = opportunity.descripcion"
               rows="3" 
-              placeholder="Ej. Montaje Reactores Planta, detalles operativos..." 
+              placeholder="Ej. Detalle del servicio a realizar, maniobra, condiciones de viáticos, autorización de Uber, horas dobles..." 
               class="w-full bg-[#0a0f1e] border rounded-lg p-3 text-xs outline-none text-white resize-none transition-colors"
               :class="!opportunity.descripcion ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
             ></textarea>
+            <p class="mt-1.5 text-[10px] text-amber-400/95 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5 leading-snug">
+              ⚠️ <strong>Campo obligatorio:</strong> Esta descripción e instrucciones comerciales (detalle maniobra, viáticos, autorización Uber, horas dobles, etc.) se reflejarán directamente en la <strong>Orden de Trabajo (OT)</strong> para el operador.
+            </p>
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Prioridad:</label>
+              <select v-model="opportunity.prioridad" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white">
+                <option value="normal">Normal</option>
+                <option value="alta" class="text-amber-500 font-bold">🔥 Alta</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Fecha Tentativa:</label>
+              <input type="date" v-model="opportunity.fecha_tentativa" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white font-mono" />
+            </div>
+          </div>
+        </div>
+        </fieldset>
 
-          <!-- VERSION CONTROL & ENVÍO DE EMAIL -->
-          <div class="space-y-4 mt-2">
+          <!-- VERSION CONTROL & ENVÍO DE EMAIL (REQ-1100: SIEMPRE HABILITADO PARA PERMITIR ENVIAR NUEVAS VERSIONES EN OPERACIÓN) -->
+          <div class="space-y-3 mt-1">
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 flex justify-between items-center">
               <span>2. Control de Versiones & Envíos</span>
               <span class="text-[10px] text-slate-500 font-mono font-normal">Mostrando más nueva primero</span>
             </div>
+
+            <!-- Alerta de Versión en Borrador sin Enviar en Servicio en Operación -->
+            <div
+              v-if="isModoOperaciones && tieneBorradorCotizacionSinEnviar"
+              class="bg-amber-500/15 border border-amber-500/50 rounded-xl p-3 text-[11px] text-amber-200 space-y-1 shadow-md"
+            >
+              <div class="font-black text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                <span>⚠️ Cotización Pendiente de Envío (Sin Validez Operativa)</span>
+              </div>
+              <p class="leading-relaxed text-amber-100/90">
+                Existe una nueva versión de cotización generada que <strong>aún no ha sido enviada al cliente</strong>. Mientras no presione <strong>[ENVIAR COTIZACIÓN]</strong>, esta versión no tiene validez operativa y el Report Diario se mantiene regido por la última cotización enviada
+                <span v-if="versionCotizacionVigenteOperaciones" class="font-mono font-bold text-emerald-300">(v{{ versionCotizacionVigenteOperaciones.version }})</span>.
+              </p>
+            </div>
+
             <div class="flex flex-col gap-2">
               <div
                 v-for="(v, i) in sortedCotizacionesHistoricas"
                 :key="i"
-                class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2 w-full shadow-md"
+                class="bg-slate-950/80 border rounded-xl p-3 space-y-2 w-full shadow-md transition-colors"
+                :class="esVersionVigenteOperaciones(v) ? 'border-emerald-500/40' : (!esVersionEnviada(v) ? 'border-amber-500/40' : 'border-slate-800')"
               >
                 <div class="flex justify-between items-center w-full gap-2">
-                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
                     <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black font-mono rounded">
                       {{ v.version_codigo || ('v' + v.version) }}
                     </span>
                     <span class="text-xs text-emerald-400 font-black font-mono">{{ formatCurrency(v.monto) }}</span>
                     <span class="text-[10px] text-slate-400 font-mono">{{ new Date(v.fecha).toLocaleString() }}</span>
+                    <span
+                      v-if="esVersionVigenteOperaciones(v)"
+                      class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-black uppercase rounded tracking-wider"
+                    >
+                      🟢 Vigente en Operaciones
+                    </span>
+                    <span
+                      v-else-if="!esVersionEnviada(v)"
+                      class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase rounded tracking-wider"
+                    >
+                      🟠 Borrador (No Válida hasta Enviar)
+                    </span>
                   </div>
 
                   <div class="flex items-center gap-2 flex-shrink-0">
@@ -3696,8 +4554,9 @@
                     <!-- Botón Enviar Cotización (Solo en la última versión i === 0) -->
                     <button
                       v-if="i === 0"
+                      type="button"
                       @click="openModalEnviar(v)"
-                      class="text-[10px] px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg transition-all flex items-center gap-1 uppercase shadow"
+                      class="text-[10px] px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg transition-all flex items-center gap-1 uppercase shadow cursor-pointer"
                     >
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       <span>Enviar Cotización</span>
@@ -3723,29 +4582,13 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Prioridad:</label>
-              <select v-model="opportunity.prioridad" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white">
-                <option value="normal">Normal</option>
-                <option value="alta" class="text-amber-500 font-bold">🔥 Alta</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Fecha Tentativa:</label>
-              <input type="date" v-model="opportunity.fecha_tentativa" class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs focus:border-amber-500 outline-none text-white font-mono" />
-            </div>
-          </div>
-
-          <div class="mt-4 bg-white/5 border border-white/5 p-4 rounded-lg">
+          <div class="mt-2 bg-white/5 border border-white/5 p-4 rounded-lg">
             <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Total Resumen Comercial</div>
             <div class="flex justify-between items-center">
               <span class="text-xs text-slate-500">Neto Cotizado:</span>
               <span class="text-xl font-black text-amber-500 font-mono">{{ formatCurrency(totalNeto) }}</span>
             </div>
           </div>
-        </div>
-      </fieldset>
       </div>
 
       <!-- RIGHT: TABBED CONTAINER -->
@@ -3759,8 +4602,9 @@
             <button @click="activeTab = 'servicios'" :class="activeTab === 'servicios' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
               Estructurador de Servicios
             </button>
-            <button @click="activeTab = 'comercial'" :class="activeTab === 'comercial' || activeTab === 'condiciones' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
-              Condiciones Comerciales
+            <button @click="activeTab = 'comercial'" :class="activeTab === 'comercial' || activeTab === 'condiciones' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap flex items-center gap-1.5">
+              <span>Condiciones Comerciales</span>
+              <span v-if="!comercial.condicion_servicio || !comercial.pensiones.alojamiento_costeado || !comercial.pensiones.desayuno_costeado || !comercial.pensiones.almuerzo_costeado || !comercial.pensiones.cena_costeado || !comercial.pensiones.traslado_costeado" class="px-1.5 py-0.2 rounded text-[8px] font-black bg-red-500/20 text-red-400 border border-red-500/40 uppercase">Requerido *</span>
             </button>
             <button @click="activeTab = 'antecedentes'" :class="activeTab === 'antecedentes' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-slate-400 hover:text-white'" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap">
               Antecedentes Licitación
@@ -3786,7 +4630,7 @@
         <!-- Tab Body -->
         <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="flex-1 min-h-0 overflow-y-auto p-5 scrollbar-hide space-y-6">
-            <fieldset :disabled="isModoOperaciones" :class="{ 'pointer-events-none opacity-80 select-none': isModoOperaciones }" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
+            <fieldset :disabled="isBloqueadoComercial && activeTab !== 'contrato'" :class="{ 'opacity-80': isBloqueadoComercial && activeTab !== 'contrato' }" class="border-0 p-0 m-0 disabled:opacity-100 disabled:text-slate-200 block w-full">
           
           <!-- TAB 0: ANTECEDENTES -->
           <div v-if="activeTab === 'antecedentes'" class="space-y-6">
@@ -3839,340 +4683,122 @@
 
           <!-- TAB 1: ESTRUCTURADOR -->
           <div v-if="activeTab === 'servicios'" class="h-full flex flex-col space-y-4">
-            <div class="flex justify-between items-center">
-              <span class="text-xs font-bold text-white uppercase tracking-wider">Líneas de Servicio a Cotizar</span>
+            <div class="flex flex-wrap justify-between items-center gap-2">
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-white uppercase tracking-wider">Líneas de Servicio a Cotizar</span>
+
+                <!-- Switch sutil de Modo de Vista (solo si puedeUsarEstructuradorArbol) -->
+                <div v-if="puedeUsarEstructuradorArbol" class="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5 text-[11px]">
+                  <span class="text-[10px] text-slate-400 font-mono px-2">Vista:</span>
+                  <button
+                    type="button"
+                    @click="setModoEstructurador('clasico')"
+                    :class="modoEstructurador === 'clasico' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-white border border-transparent'"
+                    class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>📋</span>
+                    <span>Clásica</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="setModoEstructurador('arbol')"
+                    :class="modoEstructurador === 'arbol' ? 'bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40 shadow-sm' : 'text-slate-400 hover:text-white border border-transparent'"
+                    class="px-2.5 py-1 rounded transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>🌳</span>
+                    <span>Árbol por Servicios (Beta)</span>
+                  </button>
+                </div>
+              </div>
+
+              <a
+                :href="`${baseUrlDoc}tratamiento_riggers_y_prevencionistas_estructurador.html`"
+                target="_blank"
+                class="text-[10px] px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 font-bold no-underline flex items-center gap-1.5 transition-colors"
+                title="Abrir especificación oficial: Tratamiento de Riggers y Prevencionistas en el Estructurador"
+              >
+                <span>📖 Tratamiento de Riggers y Prevencionistas en el Estructurador ↗</span>
+              </a>
             </div>
 
-            <!-- ASISTENTE VISUAL: MATRIZ DE COBRO Y ESTRUCTURACIÓN GSP -->
-            <div class="rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-3">
-              <!-- Encabezado del Asistente -->
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-sm">🧭</span>
-                  <span class="text-xs font-bold text-white uppercase tracking-wider">Asistente de Estructuración (Matriz Canónica GSP)</span>
-                  <span v-if="opportunity.distancia_km" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    {{ opportunity.distancia_km }} km ({{ (parseFloat(opportunity.distancia_km) || 0) > 30 ? 'Régimen Rural' : 'Régimen Urbano' }})
-                  </span>
-                  
-                  <!-- Switch explícito de contrapeso -->
-                  <label class="flex items-center gap-1.5 cursor-pointer select-none px-2 py-0.5 rounded bg-black/40 border border-white/10 text-xs">
-                    <input 
-                      type="checkbox" 
-                      v-model="opportunity.lleva_contrapeso" 
-                      class="w-3.5 h-3.5 accent-amber-500 rounded cursor-pointer"
-                    />
-                    <span class="text-[10px] font-bold" :class="opportunity.lleva_contrapeso ? 'text-amber-300' : 'text-slate-400'">
-                      {{ opportunity.lleva_contrapeso ? '🚜 Con Camión(es) de Contrapeso' : 'Sin Camiones de Contrapeso' }}
-                    </span>
+            <!-- VISTA EN ÁRBOL POR LÍNEAS DE SERVICIO (REQ-1109) -->
+            <div v-if="modoEstructurador === 'arbol' && puedeUsarEstructuradorArbol" class="space-y-3">
+              <!-- Barra de Distancia Estimada para Operaciones en Modo Árbol -->
+              <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 border border-white/10 rounded-xl px-3.5 py-2">
+                <div class="text-[11px] text-slate-300">
+                  <span class="font-bold text-white uppercase tracking-wider text-[11px]">Estructuración en Árbol por Líneas de Servicio (Capa 1 + Capa 2)</span>
+                  <p class="text-[10px] text-slate-400">Sincronización dual automática en memoria hacia la tabla plana para Operaciones e ITS.</p>
+                </div>
+
+                <div class="flex items-center gap-2 bg-[#050810] border rounded-lg px-2.5 py-1.5" :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'border-red-500/80 bg-red-500/10' : 'border-indigo-500/40'">
+                  <label class="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap" :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'text-red-300' : 'text-indigo-300'">
+                    📍 Distancia Estimada Obra (Ida) <span class="text-red-400">*</span>:
                   </label>
-                </div>
-                <button 
-                  type="button"
-                  @click="mostrarMatrizOficial = !mostrarMatrizOficial"
-                  class="px-2.5 py-1 rounded text-[11px] font-medium transition-colors border cursor-pointer"
-                  :class="mostrarMatrizOficial ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'"
-                >
-                  {{ mostrarMatrizOficial ? '▲ Ocultar Matriz Canónica' : '📋 Ver Tabla Canónica Oficial' }}
-                </button>
-              </div>
-
-              <!-- Cuadrícula de las 5 Tarjetas de Caso -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-                <!-- Tarjeta Caso 1 -->
-                <div 
-                  @click="!esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(1)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
-                  :class="[
-                    esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
-                    casoCobroActual === 1 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
-                  ]"
-                >
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-[11px]" :class="casoCobroActual === 1 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 1: URBANO (SIN FLETE)</span>
-                      <span v-if="casoCobroActual === 1" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                      <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
-                      <div>• Distancia: ≤ 30 km</div>
-                      <div>• Grúa Normal (Sin contrapesos)</div>
-                      <div>• Taxímetro: Salida de Matriz</div>
-                      <div class="font-bold text-slate-200">• 1 Línea ($0 Flete)</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[9px] text-slate-500 font-mono">Urbano</span>
-                    <button 
-                      type="button"
-                      :disabled="esRuralActual || isModoOperaciones"
-                      @click.stop="seleccionarYAplicarCaso(1)"
-                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
-                      :class="[
-                        esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
-                        (casoCobroActual === 1 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
-                      ]"
-                    >
-                      <span v-if="casoCobroActual === 1">✓ Caso Activo</span>
-                      <span v-else>⬇️ Aplicar Caso</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Tarjeta Caso 2 -->
-                <div 
-                  @click="!esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(2)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
-                  :class="[
-                    esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
-                    casoCobroActual === 2 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (!esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
-                  ]"
-                >
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-[11px]" :class="casoCobroActual === 2 ? 'text-amber-300' : (esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 2: URBANO (CON FLETE CONTRAPESOS)</span>
-                      <span v-if="casoCobroActual === 2" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                      <span v-else-if="esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (> 30km)</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="esRuralActual ? 'opacity-50' : ''">
-                      <div>• Distancia: ≤ 30 km</div>
-                      <div>• Grúa con Contrapesos (Cama baja)</div>
-                      <div>• Taxímetro: Salida de Matriz</div>
-                      <div class="font-bold text-slate-200">• 2 Líneas (Flete Contrap.)</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[9px] text-slate-500 font-mono">Urbano</span>
-                    <button 
-                      type="button"
-                      :disabled="esRuralActual || isModoOperaciones"
-                      @click.stop="seleccionarYAplicarCaso(2)"
-                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
-                      :class="[
-                        esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
-                        (casoCobroActual === 2 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
-                      ]"
-                    >
-                      <span v-if="casoCobroActual === 2">✓ Caso Activo</span>
-                      <span v-else>⬇️ Aplicar Caso</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Tarjeta Caso 3 -->
-                <div 
-                  @click="esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(3)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
-                  :class="[
-                    !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
-                    casoCobroActual === 3 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
-                  ]"
-                >
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-[11px]" :class="casoCobroActual === 3 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 3: RURAL (CON FLETE GRÚA)</span>
-                      <span v-if="casoCobroActual === 3" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                      <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
-                      <div>• Distancia: &gt; 30 km</div>
-                      <div>• Grúa Normal (Sin contrapesos)</div>
-                      <div>• Taxímetro: Llegada Faena</div>
-                      <div class="font-bold text-slate-200">• 2 Líneas (Flete Grúa Obl.)</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[9px] text-slate-500 font-mono">Rural</span>
-                    <button 
-                      type="button"
-                      :disabled="!esRuralActual || isModoOperaciones"
-                      @click.stop="seleccionarYAplicarCaso(3)"
-                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
-                      :class="[
-                        !esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
-                        (casoCobroActual === 3 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
-                      ]"
-                    >
-                      <span v-if="casoCobroActual === 3">✓ Caso Activo</span>
-                      <span v-else>⬇️ Aplicar Caso</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Tarjeta Caso 4 -->
-                <div 
-                  @click="esRuralActual && !isModoOperaciones && seleccionarYAplicarCaso(4)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between"
-                  :class="[
-                    !esRuralActual ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'cursor-pointer',
-                    casoCobroActual === 4 ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-1 ring-amber-500/30' : (esRuralActual ? 'border-white/5 bg-black/20 hover:border-white/20' : '')
-                  ]"
-                >
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-[11px]" :class="casoCobroActual === 4 ? 'text-amber-300' : (!esRuralActual ? 'text-slate-500' : 'text-slate-300')">CASO 4: RURAL (CON FLETES GRÚA Y CONTRAPESOS)</span>
-                      <span v-if="casoCobroActual === 4" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
-                      <span v-else-if="!esRuralActual" class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5">Inactivo (≤ 30km)</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 space-y-0.5" :class="!esRuralActual ? 'opacity-50' : ''">
-                      <div>• Distancia: &gt; 30 km</div>
-                      <div>• Grúa con Contrapesos (Cama baja)</div>
-                      <div>• Taxímetro: Llegada Faena</div>
-                      <div class="font-bold text-slate-200">• 3 Líneas (Piso 8h + Fletes)</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[9px] text-slate-500 font-mono">Rural</span>
-                    <button 
-                      type="button"
-                      :disabled="!esRuralActual || isModoOperaciones"
-                      @click.stop="seleccionarYAplicarCaso(4)"
-                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1"
-                      :class="[
-                        !esRuralActual ? 'opacity-30 cursor-not-allowed bg-white/5 text-slate-500' :
-                        (casoCobroActual === 4 ? 'bg-amber-500 text-black shadow-sm cursor-default' : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 cursor-pointer')
-                      ]"
-                    >
-                      <span v-if="casoCobroActual === 4">✓ Caso Activo</span>
-                      <span v-else>⬇️ Aplicar Caso</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Tarjeta Caso 5 (Especial / Mixto Libre / Flete Puro) -->
-                <div 
-                  @click="!isModoOperaciones && seleccionarYAplicarCaso(5)"
-                  class="rounded-lg p-2.5 border text-xs transition-all relative flex flex-col justify-between cursor-pointer"
-                  :class="[
-                    casoCobroActual === 5 
-                      ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-1 ring-cyan-500/30' 
-                      : 'border-white/5 bg-black/20 hover:border-cyan-500/40'
-                  ]"
-                >
-                  <div>
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-bold text-[11px]" :class="casoCobroActual === 5 ? 'text-cyan-300' : 'text-slate-300'">CASO 5: ESPECIAL / MIXTO LIBRE</span>
-                      <span v-if="casoCobroActual === 5" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-400 text-black">Activo</span>
-                      <span v-else class="text-[8px] font-mono uppercase px-1 py-0.2 rounded bg-cyan-950/40 text-cyan-400/80 border border-cyan-500/20">Personalizado</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 space-y-0.5">
-                      <div>• Distancia: Libre (Urbana / Rural)</div>
-                      <div>• Flete Puro / Carga de Terceros</div>
-                      <div>• Canasta Abierta (Sin grúa oblig.)</div>
-                      <div class="font-bold text-cyan-200">• Metadato: Auditoría &amp; Control</div>
-                    </div>
-                  </div>
-                  <div class="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between">
-                    <span class="text-[9px] text-cyan-400/70 font-mono">Especial</span>
-                    <button 
-                      type="button"
-                      :disabled="isModoOperaciones"
-                      @click.stop="seleccionarYAplicarCaso(5)"
-                      class="px-2 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                      :class="[
-                        casoCobroActual === 5 ? 'bg-cyan-400 text-black shadow-sm cursor-default' : 'bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-500/30'
-                      ]"
-                    >
-                      <span v-if="casoCobroActual === 5">✓ Caso Activo</span>
-                      <span v-else>⬇️ Aplicar Caso</span>
-                    </button>
-                  </div>
+                  <input
+                    type="number"
+                    v-model.number="opportunity.distancia_km"
+                    :disabled="isBloqueadoComercial"
+                    min="1"
+                    placeholder="Ej: 15"
+                    class="w-20 bg-[#0a0f1e] border border-white/15 rounded px-2 py-0.5 text-xs text-white font-mono font-bold text-right outline-none focus:border-amber-500"
+                  />
+                  <span class="text-[10px] text-slate-400 font-mono">km</span>
                 </div>
               </div>
 
-              <!-- Banner de Acción Proactiva (1 Clic) -->
-              <div class="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-black/40 border border-white/5 text-xs">
-                <div class="flex items-center gap-2">
-                  <span class="text-base">{{ esEstructuraValidaParaCaso ? '✅' : '⚡' }}</span>
-                  <div class="text-slate-300 text-[11px]">
-                    <span v-if="casoCobroActual === 1">
-                      <strong>Régimen Urbano (Sin Flete):</strong> El viaje está cubierto en las horas de arriendo desde salida de Casa Matriz ($0 Flete).
-                    </span>
-                    <span v-else-if="casoCobroActual === 2">
-                      <strong>Régimen Urbano con Contrapesos:</strong> Requiere línea de <em>Traslado Contrapesos</em> ($500.000) por cama baja.
-                    </span>
-                    <span v-else-if="casoCobroActual === 3">
-                      <strong>Régimen Rural con Flete Grúa:</strong> El viaje carretero NO corre en horas de arriendo; exige línea de <em>Flete de Grúa</em>.
-                    </span>
-                    <span v-else-if="casoCobroActual === 4">
-                      <strong>Régimen Rural con Fletes Grúa y Contrapesos:</strong> Exige piso mín. 8 hrs + <em>Flete de Grúa</em> + <em>Traslado Contrapesos</em>.
-                    </span>
-                    <span v-else-if="casoCobroActual === 5">
-                      <strong>Régimen Especial / Mixto Libre:</strong> Canasta abierta y personalizada para fletes de terceros, cuadrillas o servicios no estándar. Registrado en metadatos para Control de Gestión.
-                    </span>
-                    <span v-else>
-                      Ingresa la distancia en km para que el asistente identifique el caso automáticamente.
-                    </span>
-                  </div>
-                </div>
-                
-                <!-- Botón + Agregar Línea Reubicado en esta franja -->
-                <button 
-                  type="button" 
-                  @click="agregarLinea"
-                  :disabled="isModoOperaciones"
-                  class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all shadow flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ml-auto"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                  <span>+ Agregar Línea</span>
-                </button>
-              </div>
+              <!-- Componente Árbol -->
+              <EstructuradorArbolServicios
+                ref="estructuradorArbolRef"
+                v-model:lines="lines"
+                v-model:servicios="serviciosArbol"
+                :db-categories="dbCategories"
+                :disabled="isBloqueadoComercial"
+                :format-currency="formatCurrency"
+                :format-input-miles="formatInputMiles"
+              />
+            </div>
 
-              <!-- Tabla Canónica Oficial Desplegable (Imagen 2 de la Planilla) -->
-              <div v-if="mostrarMatrizOficial" class="mt-2 rounded-lg border border-white/10 bg-slate-950/80 p-3 overflow-x-auto text-xs">
-                <table class="w-full text-left border-collapse">
-                  <thead>
-                    <tr class="border-b border-white/10 text-[10px] text-slate-400 uppercase font-mono">
-                      <th class="p-2">Caso</th>
-                      <th class="p-2">Régimen &amp; Configuración</th>
-                      <th class="p-2">¿Qué se cobra?</th>
-                      <th class="p-2">¿Desde cuándo?</th>
-                      <th class="p-2">¿Hasta cuándo?</th>
-                      <th class="p-2">Representación en Estructurador, ITS y EDP</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5 text-[11px]">
-                    <tr :class="casoCobroActual === 1 ? 'bg-amber-500/10' : ''">
-                      <td class="p-2 font-bold text-amber-400">CASO 1</td>
-                      <td class="p-2">≤ 30 km (URBANO)<br><span class="text-slate-400 text-[10px]">Grúa Normal (Sin camiones de contrapeso)</span></td>
-                      <td class="p-2">1. Horas Arriendo Grúa (no hay mín)<br>2. Rigger adicional si aplica</td>
-                      <td class="p-2">Salida Casa Matriz GSP</td>
-                      <td class="p-2">Término maniobra en obra</td>
-                      <td class="p-2 text-slate-300"><strong>$0 (Sin Flete).</strong> El viaje por la ciudad se paga 100% como horas de arriendo. (1 línea).</td>
-                    </tr>
-                    <tr :class="casoCobroActual === 2 ? 'bg-amber-500/10' : ''">
-                      <td class="p-2 font-bold text-amber-400">CASO 2</td>
-                      <td class="p-2">≤ 30 km (URBANO)<br><span class="text-slate-400 text-[10px]">Grúa con Contrapesos (Camas Bajas)</span></td>
-                      <td class="p-2">1. Horas Arriendo Grúa<br>2. Flete Tracto Camión (por cama baja)<br>3. Escolta si aplica</td>
-                      <td class="p-2">Grúa: Salida Casa Matriz<br>Tracto: Flete fijo ida/vuelta</td>
-                      <td class="p-2">Grúa: Desmontaje en obra<br>Camas: Retorno a patio GSP</td>
-                      <td class="p-2 text-slate-300">Grúa: $0 flete. Camas: <strong>Línea obligatoria "Traslado Contrapesos"</strong> ($500.000). (2 líneas).</td>
-                    </tr>
-                    <tr :class="casoCobroActual === 3 ? 'bg-amber-500/10' : ''">
-                      <td class="p-2 font-bold text-amber-400">CASO 3</td>
-                      <td class="p-2">&gt; 30 km (RURAL)<br><span class="text-slate-400 text-[10px]">Grúa Normal (Sin camiones de contrapeso)</span></td>
-                      <td class="p-2">1. Horas Arriendo Grúa<br>2. Flete Grúa (OBLIGATORIO)</td>
-                      <td class="p-2">Grúa: <strong>Llegada a faena</strong><br>Flete: Valor cerrado pactado</td>
-                      <td class="p-2">Término maniobra en faena</td>
-                      <td class="p-2 text-slate-300"><strong>Línea de Flete OBLIGATORIA.</strong> El viaje por carretera no corre en horas de arriendo. (2 líneas: Horas Grúa + "Traslado de Grúa").</td>
-                    </tr>
-                    <tr :class="casoCobroActual === 4 ? 'bg-amber-500/10' : ''">
-                      <td class="p-2 font-bold text-amber-400">CASO 4</td>
-                      <td class="p-2">&gt; 30 km (RURAL)<br><span class="text-slate-400 text-[10px]">Grúa con Contrapesos (Camas Bajas)</span></td>
-                      <td class="p-2">1. Horas Grúa (Piso mín. 8 hrs)<br>2. Flete Grúa (OBLIGATORIO)<br>3. Flete Contrapesos (OBLIGATORIO)</td>
-                      <td class="p-2">Grúa: <strong>Llegada a faena</strong><br>Fletes: Valores cerrados</td>
-                      <td class="p-2">Desmontaje final en faena</td>
-                      <td class="p-2 text-slate-300"><strong>Líneas obligatorias para todo el convoy:</strong> 1. Horas Grúa (mín. 8h) + 2. "Traslado de Grúa" + 3. "Traslado de Contrapesos". (3 líneas).</td>
-                    </tr>
-                    <tr :class="casoCobroActual === 5 ? 'bg-cyan-500/10' : ''">
-                      <td class="p-2 font-bold text-cyan-400">CASO 5</td>
-                      <td class="p-2">Cualquier distancia (Libre)<br><span class="text-slate-400 text-[10px]">Fletes de Terceros / Mixto Libre</span></td>
-                      <td class="p-2">1. Flete Cama Baja / Tracto directo<br>2. Partidas abiertas según necesidad</td>
-                      <td class="p-2">Según convenio (Alzado / Por km)</td>
-                      <td class="p-2">Término de traslado o servicio</td>
-                      <td class="p-2 text-cyan-200"><strong>Régimen abierto:</strong> Permite operar sin grúa GSP. Tipificado en metadatos para Control de Gestión y Yiara.</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <!-- VISTA CLÁSICA PREEXISTENTE -->
+            <template v-else>
+            <!-- BARRA DE ESTRUCTURACIÓN COMERCIAL LIBRE -->
+            <div class="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="space-y-0.5 flex-1 min-w-[260px]">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-white uppercase tracking-wider">Estructuración Comercial de Servicios (Modalidad Autónoma)</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400">
+                    Configura libremente las líneas de servicio (horas de grúa, fletes de contrapesos o equipos, camiones complementarios, etc.). La definición de <strong>Política Urbana o Rural</strong> se realiza en la etapa de <strong>Verificación de Operaciones</strong>.
+                  </p>
+                </div>
+
+                <!-- Input directo de Distancia Estimada a la Obra (Antecedente Obligatorio para Operaciones) -->
+                <div class="flex flex-wrap items-center gap-3 ml-auto">
+                  <div class="flex items-center gap-2 bg-[#050810] border rounded-lg px-2.5 py-1.5" :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'border-red-500/80 bg-red-500/10' : 'border-indigo-500/40'">
+                    <label class="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap" :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'text-red-300' : 'text-indigo-300'">
+                      📍 Distancia Estimada Obra (Ida) <span class="text-red-400">*</span>:
+                    </label>
+                    <input
+                      type="number"
+                      v-model.number="opportunity.distancia_km"
+                      :disabled="isBloqueadoComercial"
+                      min="1"
+                      placeholder="Ej: 15"
+                      class="w-20 bg-[#0a0f1e] border border-white/15 rounded px-2 py-0.5 text-xs text-white font-mono font-bold text-right outline-none focus:border-amber-500"
+                    />
+                    <span class="text-[10px] text-slate-400 font-mono">km</span>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    @click="agregarLinea"
+                    :disabled="isBloqueadoComercial"
+                    class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all shadow flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>+ Agregar Línea</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -4237,6 +4863,7 @@
                       >
                         <template v-if="line.tipo === 'TRASLADOS'">
                           <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
+                          <option value="TRASLADO RETORNO" class="bg-[#0a0f1e] text-white">TRASLADO RETORNO</option>
                           <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
                           <option v-if="line.unidad === 'Traslado'" value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
                         </template>
@@ -4310,7 +4937,13 @@
                           </div>
                         </div>
                       </template>
-                      <!-- Traslado o Valor Fijo: Cantidad (>= 1) -->
+                      <!-- Valor Fijo / Traslado: Cobro Único (SPEC-128: Sin Cantidad) -->
+                      <template v-else-if="line.unidad === 'Valor Fijo' || line.tipo === 'TRASLADOS' || String(line.unidad || '').startsWith('TRASLADO')">
+                        <div class="flex items-center justify-center gap-1 bg-slate-900/50 px-2 py-1.5 rounded border border-white/5">
+                          <span class="text-[10px] text-amber-400 font-mono font-bold uppercase">Cobro Único</span>
+                        </div>
+                      </template>
+                      <!-- Cantidad (>= 1) -->
                       <template v-else>
                         <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border border-white/5">
                           <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
@@ -4348,6 +4981,113 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+            </template>
+
+            <!-- REQ-1103 & V2_3_INDICADORES: CONDICIÓN DEL SERVICIO Y TABLA DE 3 INDICADORES (TRASLADO, ALIMENTACIÓN, ALOJAMIENTO) -->
+            <div class="mt-3 bg-[#0a0f1e]/90 border rounded-xl p-3.5 space-y-3 transition-colors" :class="(!comercial.condicion_servicio || !comercial.pensiones.traslado_costeado || !comercial.pensiones.alimentacion_costeado || !comercial.pensiones.alojamiento_costeado) ? 'border-red-500/50' : 'border-white/10'">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-2.5">
+                <div>
+                  <label class="block text-[11px] font-bold text-white uppercase tracking-wider">
+                    1. Condición del Servicio <span class="text-red-400">*</span>
+                  </label>
+                  <span class="text-[10px] text-slate-400">Seleccione obligatoriamente si el servicio es Programado o A Disponibilidad</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 p-2 rounded-lg border transition-colors" :class="!comercial.condicion_servicio ? 'border-red-500/80 bg-red-500/10' : 'border-white/10 bg-[#050810]'">
+                  <label
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs cursor-pointer font-bold transition-all"
+                    :class="comercial.condicion_servicio === 'programado' ? 'bg-amber-500/20 border-amber-400 text-amber-300' : 'border-transparent text-slate-300'"
+                  >
+                    <input type="radio" v-model="comercial.condicion_servicio" value="programado" class="accent-amber-500" />
+                    <span>{{ comercial.condicion_servicio === 'programado' ? '✓ ' : '' }}Programado (Reservamos equipo a todo evento)</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs cursor-pointer font-bold transition-all"
+                    :class="comercial.condicion_servicio === 'disponibilidad' ? 'bg-amber-500/20 border-amber-400 text-amber-300' : 'border-transparent text-slate-300'"
+                  >
+                    <input type="radio" v-model="comercial.condicion_servicio" value="disponibilidad" class="accent-amber-500" />
+                    <span>{{ comercial.condicion_servicio === 'disponibilidad' ? '✓ ' : '' }}A Disponibilidad (Sujeto a disponibilidad)</span>
+                  </label>
+                  <span v-if="!comercial.condicion_servicio" class="text-[10px] font-bold text-red-400">⚠️ Obligatorio</span>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                    2. Indicadores de Traslado, Alimentación y Alojamiento <span class="text-red-400">*</span> (Obligatorio definir responsable)
+                  </span>
+                  <span class="text-[10px] text-slate-400">Defina quién asume cada ítem antes de generar la cotización</span>
+                </div>
+                <div v-if="esPensionesLegacy" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.desayuno_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Desayuno <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.desayuno_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.almuerzo_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Almuerzo <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.almuerzo_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.cena_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Cena <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.cena_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                </div>
+                <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.alimentacion_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alimentación <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alimentacion_costeado" @change="sincronizarAlimentacionPensiones" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alimentacion_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#050810] p-2 rounded border transition-colors space-y-1" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/10'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#0a0f1e] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- CONDICIONES Y ACUERDOS COMERCIALES (DEBAJO DEL ESTRUCTURADOR) -->
@@ -4449,7 +5189,7 @@
                       :class="!siteVisit.obra_direccion ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                     />
                   </div>
-                  <div class="col-span-2">
+                  <div>
                     <label class="block text-[10px] text-slate-400 font-semibold mb-1">
                       Ciudad de la Obra <span class="text-red-400">*</span>:
                     </label>
@@ -4461,6 +5201,22 @@
                       class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white outline-none transition-colors" 
                       :class="!siteVisit.obra_ciudad ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
                     />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Distancia Estimada a la Obra (km ida) <span class="text-red-400">*</span>:
+                    </label>
+                    <div class="relative">
+                      <input 
+                        type="number" 
+                        v-model.number="opportunity.distancia_km" 
+                        min="1"
+                        placeholder="Ej: 15 km (ida desde base)"
+                        class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1.5 text-xs text-white font-mono outline-none transition-colors" 
+                        :class="(!opportunity.distancia_km || opportunity.distancia_km <= 0) ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                      />
+                      <span class="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono pointer-events-none">km ida</span>
+                    </div>
                   </div>
                   <!-- Horarios de Inicio y Término Obligatorios del Servicio -->
                   <div>
@@ -4562,8 +5318,20 @@
                     </div>
                   </div>
                   <div class="col-span-2">
-                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Detalle del Servicio a realizar</label>
-                    <textarea v-model="siteVisit.detalle_servicio" rows="2" placeholder="Describa la maniobra..." class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none resize-none"></textarea>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Detalle del Servicio a realizar <span class="text-red-400">*</span>:
+                    </label>
+                    <textarea
+                      v-model="siteVisit.detalle_servicio"
+                      @input="opportunity.descripcion = siteVisit.detalle_servicio"
+                      rows="3"
+                      placeholder="Describa la maniobra, viáticos, autorización de Uber, horas dobles u observaciones operativas..."
+                      class="w-full bg-[#0a0f1e] border rounded-lg p-2.5 text-xs text-white outline-none resize-none transition-colors"
+                      :class="(!siteVisit.detalle_servicio && !opportunity.descripcion) ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
+                    ></textarea>
+                    <p class="mt-1 text-[10px] text-amber-400/95 bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1 leading-snug">
+                      ⚠️ <strong>Campo obligatorio:</strong> Esta descripción se sincroniza con Preventa y se reflejará directamente en la <strong>Orden de Trabajo (OT)</strong> para el operador.
+                    </p>
                   </div>
                 </div>
 
@@ -4747,89 +5515,116 @@
                 </select>
               </div>
               <div class="col-span-2">
-                <label class="block text-[10px] text-slate-400 font-semibold mb-1">Condición del Servicio:</label>
-                <div class="flex gap-4 mt-2">
-                  <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                  Condición del Servicio <span class="text-red-400">*</span>:
+                </label>
+                <div
+                  class="flex flex-wrap items-center gap-4 mt-2 p-2.5 rounded-lg border transition-colors"
+                  :class="!comercial.condicion_servicio ? 'border-red-500/80 bg-red-500/10' : 'border-white/10 bg-[#0a0f1e]'"
+                >
+                  <label
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs cursor-pointer font-bold transition-all"
+                    :class="comercial.condicion_servicio === 'programado' ? 'bg-amber-500/20 border-amber-400 text-amber-300' : 'border-transparent text-slate-300'"
+                  >
                     <input type="radio" v-model="comercial.condicion_servicio" value="programado" class="accent-amber-500" />
-                    <span>Programado (Reservamos equipo a todo evento)</span>
+                    <span>{{ comercial.condicion_servicio === 'programado' ? '✓ ' : '' }}Programado (Reservamos equipo a todo evento)</span>
                   </label>
-                  <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                  <label
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs cursor-pointer font-bold transition-all"
+                    :class="comercial.condicion_servicio === 'disponibilidad' ? 'bg-amber-500/20 border-amber-400 text-amber-300' : 'border-transparent text-slate-300'"
+                  >
                     <input type="radio" v-model="comercial.condicion_servicio" value="disponibilidad" class="accent-amber-500" />
-                    <span>A Disponibilidad (No aseguramos equipo)</span>
+                    <span>{{ comercial.condicion_servicio === 'disponibilidad' ? '✓ ' : '' }}A Disponibilidad (No aseguramos equipo)</span>
                   </label>
+                  <span v-if="!comercial.condicion_servicio" class="text-[10px] font-bold text-red-400 ml-auto">⚠️ Selección obligatoria</span>
                 </div>
               </div>
 
-              <!-- PROYECCIÓN DE COSTOS DE PENSIONES (ALOJAMIENTO, DESAYUNO, ALMUERZO, CENA, TRASLADO) -->
+              <!-- INDICADORES DE TRASLADO, ALIMENTACIÓN Y ALOJAMIENTO -->
               <div 
                 class="col-span-2 mt-2 bg-white/[0.02] border rounded-lg p-3.5 space-y-3 transition-all"
-                :class="esServicioUnDia ? 'border-amber-500/30 bg-amber-500/[0.02]' : 'border-white/10'"
+                :class="(!comercial.pensiones.traslado_costeado || !comercial.pensiones.alimentacion_costeado || !comercial.pensiones.alojamiento_costeado) ? 'border-red-500/60 bg-red-500/[0.03]' : 'border-white/10'"
               >
                 <div class="flex flex-wrap justify-between items-center gap-2 border-b border-white/5 pb-2">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-amber-500 uppercase tracking-wider block">
-                      🏠 Proyección de Costos de Pensiones (Base para EDP)
-                    </span>
-                    <span 
-                      v-if="esServicioUnDia" 
-                      class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider"
-                    >
-                      ⚠️ NO APLICA (Servicio de 1 Día)
+                      🏠 Indicadores de Traslado, Alimentación y Alojamiento <span class="text-red-400">*</span>
                     </span>
                   </div>
-                  <span class="text-[9px] text-slate-400">Relevante para devengado y estados de pago</span>
+                  <span class="text-[9px] text-slate-400">Obligatorio definir quién asume el costo de cada ítem antes de cotizar</span>
                 </div>
 
-                <div 
-                  class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 transition-all"
-                >
+                <div v-if="esPensionesLegacy" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 transition-all">
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.desayuno_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Desayuno <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.desayuno_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.almuerzo_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Almuerzo <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.almuerzo_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.cena_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Cena <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.cena_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 transition-all">
+                  <!-- Traslado -->
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.traslado_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+
+                  <!-- Alimentación -->
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.alimentacion_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alimentación <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alimentacion_costeado" @change="sincronizarAlimentacionPensiones" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alimentacion_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
+                      <option value="CLIENTE">Costeado por Cliente</option>
+                      <option value="SAN_PABLO">Costeado por San Pablo</option>
+                    </select>
+                  </div>
+
                   <!-- Alojamiento -->
-                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento</label>
-                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
+                  <div class="bg-[#0a0f1e] p-2.5 rounded border transition-colors space-y-1.5" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 bg-red-500/10' : 'border-white/5'">
+                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Alojamiento <span class="text-red-400">*</span></label>
+                    <select v-model="comercial.pensiones.alojamiento_costeado" class="w-full bg-[#050810] border rounded px-2 py-1.5 text-[11px] outline-none transition-colors" :class="!comercial.pensiones.alojamiento_costeado ? 'border-red-500/80 text-red-300' : 'border-white/10 text-white focus:border-amber-500'">
+                      <option value="" disabled>-- Seleccionar --</option>
                       <option value="CLIENTE">Costeado por Cliente</option>
                       <option value="SAN_PABLO">Costeado por San Pablo</option>
-                      <option value="NA">No Aplica (N/A)</option>
-                    </select>
-                  </div>
-
-                  <!-- Desayuno -->
-                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Desayuno</label>
-                    <select v-model="comercial.pensiones.desayuno_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
-                      <option value="CLIENTE">Costeado por Cliente</option>
-                      <option value="SAN_PABLO">Costeado por San Pablo</option>
-                      <option value="NA">No Aplica (N/A)</option>
-                    </select>
-                  </div>
-
-                  <!-- Almuerzo -->
-                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Almuerzo</label>
-                    <select v-model="comercial.pensiones.almuerzo_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
-                      <option value="CLIENTE">Costeado por Cliente</option>
-                      <option value="SAN_PABLO">Costeado por San Pablo</option>
-                      <option value="NA">No Aplica (N/A)</option>
-                    </select>
-                  </div>
-
-                  <!-- Cena -->
-                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Cena</label>
-                    <select v-model="comercial.pensiones.cena_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
-                      <option value="CLIENTE">Costeado por Cliente</option>
-                      <option value="SAN_PABLO">Costeado por San Pablo</option>
-                      <option value="NA">No Aplica (N/A)</option>
-                    </select>
-                  </div>
-
-                  <!-- Traslado Personal -->
-                  <div class="bg-[#0a0f1e] p-2.5 rounded border border-white/5 space-y-1.5">
-                    <label class="block text-[10px] text-slate-300 font-bold uppercase truncate">Traslado Personal</label>
-                    <select v-model="comercial.pensiones.traslado_costeado" class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1.5 text-[11px] text-white outline-none focus:border-amber-500">
-                      <option value="CLIENTE">Costeado por Cliente</option>
-                      <option value="SAN_PABLO">Costeado por San Pablo</option>
-                      <option value="NA">No Aplica (N/A)</option>
                     </select>
                   </div>
                 </div>
@@ -4885,7 +5680,7 @@
             </div>
           </div>
 
-          <!-- TAB 5: CONTRATO DE ARRENDAMIENTO & FORMALIZACIÓN (REQ-1037 / TSK-COT-04) -->
+          <!-- TAB 5: CONTRATO DE ARRENDAMIENTO & FORMALIZACIÓN (REQ-1036 / REQ-1037 / REQ-1038 / TSK-COT-04) -->
           <div v-if="activeTab === 'contrato'" class="space-y-4">
             
             <!-- Cabecera de Estado y Folio -->
@@ -4894,17 +5689,23 @@
                 <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl">📜</div>
                 <div>
                   <div class="flex items-center gap-2">
-                    <h3 class="text-sm font-black text-white uppercase tracking-wide">Contrato de Arrendamiento de Maquinaria</h3>
+                    <h3 class="text-sm font-black text-white uppercase tracking-wide">Contrato de Arrendamiento de Maquinaria (Plataforma)</h3>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded" :class="badgeEstadoContrato.clase">{{ badgeEstadoContrato.texto }}</span>
                   </div>
                   <p class="text-xs text-slate-400">Folio Oficial: <strong class="text-slate-200">{{ contratoData.folio || 'Pendiente de Emisión' }}</strong> · Empresa Emisora: <strong class="text-amber-400">{{ infoEmisorContrato.nombre }}</strong></p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <button v-if="contratoData.estado === 'FIRMADO_DIGITAL' || contratoData.url_pdf_firmado" type="button" @click="verContratoFirmadoPdf" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-black transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer">
+                  <span>📄</span> Ver Contrato Firmado (PDF)
+                </button>
+                <button type="button" @click="refrescarEstadoContrato" title="Consultar si el cliente ya firmó el contrato" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 border border-amber-500/30 cursor-pointer">
+                  <span>🔄</span> Actualizar Estado
+                </button>
                 <button type="button" :disabled="generandoPdfContrato" @click="previsualizarContrato" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
                   <span v-if="generandoPdfContrato" class="animate-spin">⏳</span>
                   <span v-else>👁️</span>
-                  {{ generandoPdfContrato ? 'Generando PDF...' : 'Previsualizar (2 Págs)' }}
+                  {{ generandoPdfContrato ? 'Generando PDF...' : 'Previsualizar (3 Págs)' }}
                 </button>
                 <button type="button" @click="descargarContratoPdf" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 border border-white/10 cursor-pointer">
                   <span>🖨️</span> Descargar PDF Físico
@@ -4921,6 +5722,16 @@
                   <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">🏢 Arrendador (Holding)</span>
                   <span class="text-[10px] font-mono text-slate-400">RUT: {{ infoEmisorContrato.rut }}</span>
                 </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-amber-300/90 uppercase mb-1">Empresa Emisora del Contrato (Holding) *</label>
+                  <select v-model.number="contratoData.id_empresa_arrendador" class="w-full bg-slate-900 border border-amber-500/30 rounded px-2.5 py-1.5 text-xs text-white font-bold">
+                    <option :value="11">Royal Rental Limitada (78.254.535-3)</option>
+                    <option :value="9">Grúas San Pablo — Luis Omar Ghisellini Jara E.I.R.L. (52.004.162-1)</option>
+                    <option :value="7">Sociedad Bestmaq Venta de Maquinaria Usada Ltda. (76.209.534-3)</option>
+                    <option :value="8">Servicios Integrados Logísticos del Sur Ltda. (76.218.576-8)</option>
+                  </select>
+                  <span class="text-[10px] text-slate-500 block mt-0.5">Permite emitir el contrato de plataforma bajo la razón social donde el cliente tenga línea de crédito habilitada.</span>
+                </div>
                 <div class="text-xs space-y-1 text-slate-300">
                   <p><strong>Razón Social:</strong> {{ infoEmisorContrato.nombre }}</p>
                   <p><strong>Dirección:</strong> {{ infoEmisorContrato.direccion }}</p>
@@ -4931,7 +5742,7 @@
               <!-- Arrendatario (Mandante) -->
               <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
                 <div class="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">🏗️ Arrendatario (Mandante)</span>
+                  <span class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">🏛️ Arrendatario (Mandante)</span>
                   <span class="text-[10px] font-mono text-slate-400">RUT: {{ selectedClient?.rut || opportunity.rut_cliente || 'Sin RUT' }}</span>
                 </div>
                 <div class="text-xs space-y-2">
@@ -4970,11 +5781,20 @@
             <!-- Maquinaria y Condiciones -->
             <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-2.5">
               <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-white/10 pb-2">🚜 Maquinaria & Condiciones Operacionales (Anexo Pág 2)</span>
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs text-slate-300">
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-3 text-xs text-slate-300 items-start">
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Equipo Principal</span>{{ linesEquiposPrincipales[0]?.descripcion || 'Equipo según cotización' }}</div>
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Modalidad / Plazo</span>{{ linesEquiposPrincipales[0]?.unidad || 'Horas Mes Mínimas' }}</div>
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Tarifa Pactada</span>{{ formatCurrency(linesEquiposPrincipales[0]?.valorUnitario || 0) }}</div>
                 <div><span class="text-slate-500 block text-[10px] uppercase font-bold">Lugar de Faena</span>{{ siteVisit.obra_ciudad || siteVisit.obra_nombre || 'Según acuerdo comercial' }}</div>
+                <div>
+                  <label class="text-amber-400 block text-[10px] uppercase font-bold mb-0.5">Fecha Inicio Arriendo *</label>
+                  <input v-model="contratoData.fecha_inicio" type="date" class="w-full bg-slate-900 border border-white/15 rounded px-2 py-1 text-xs text-white font-mono" />
+                </div>
+                <div>
+                  <label class="text-emerald-400 block text-[10px] uppercase font-bold mb-0.5">Fecha Término Exacta *</label>
+                  <input v-model="contratoData.fecha_termino" type="date" class="w-full bg-slate-900 border border-emerald-500/40 rounded px-2 py-1 text-xs text-white font-mono" />
+                  <span class="text-[9px] text-slate-500 block mt-0.5">Obligatoria en Anexo Pág. 2 (sin "A CONVENIR").</span>
+                </div>
               </div>
             </div>
 
@@ -4998,7 +5818,7 @@
                     <button 
                       type="button" 
                       @click="despacharContratoDigital" 
-                      :disabled="despachandoContrato || !contratoData.representante_nombre || !contratoData.representante_rut || !contratoData.representante_telefono || !contratoData.representante_email"
+                      :disabled="despachandoContrato || !contratoData.representante_nombre || !contratoData.representante_rut || !contratoData.representante_telefono || !contratoData.representante_email || !contratoData.fecha_termino"
                       class="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black rounded-lg text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
                     >
                       <span v-if="despachandoContrato" class="animate-spin">⏳</span>
@@ -5045,15 +5865,191 @@
               </div>
 
               <!-- Ficha de Auditoría si ya está firmado -->
-              <div v-if="contratoData.estado === 'FIRMADO_DIGITAL' || contratoData.estado === 'FIRMADO_FISICO'" class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-200 mt-2 space-y-1">
-                <div class="font-bold flex items-center gap-2 text-sm text-emerald-400">
-                  <span>✅</span> Contrato Suscrito y Validado
+              <div v-if="contratoData.estado === 'FIRMADO_DIGITAL' || contratoData.estado === 'FIRMADO_FISICO'" class="bg-emerald-500/15 border-2 border-emerald-500/50 rounded-xl p-4 text-xs text-emerald-100 mt-2 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+                <div class="space-y-1">
+                  <div class="font-black flex items-center gap-2 text-sm text-emerald-400 uppercase tracking-wide">
+                    <span>✅</span> Contrato Firmado por el Cliente y Validado Digitalmente (FES)
+                  </div>
+                  <p><strong>Firmante Registrado:</strong> {{ contratoData.firma_digital?.nombre || contratoData.firma_digital?.firmado_por_nombre || contratoData.representante_nombre }} ({{ contratoData.firma_digital?.cargo || contratoData.firma_digital?.firmado_por_cargo || contratoData.representante_cargo }})</p>
+                  <p><strong>RUT Firmante:</strong> {{ contratoData.firma_digital?.rut || contratoData.firma_digital?.firmado_por_rut || contratoData.representante_rut }} · <strong>Fecha/Hora:</strong> {{ contratoData.firma_digital?.timestamp || contratoData.firma_digital?.fecha_hora_firma || contratoData.fecha_firma }}</p>
+                  <p class="text-[10px] font-mono text-emerald-300/80" v-if="contratoData.firma_digital?.hash_auditoria || contratoData.firma_digital?.hash_documento_sha256">Hash Auditoría SHA-256: {{ contratoData.firma_digital?.hash_auditoria || contratoData.firma_digital?.hash_documento_sha256 }}</p>
                 </div>
-                <p><strong>Firmante Registrado:</strong> {{ contratoData.firma_digital?.firmado_por_nombre || contratoData.representante_nombre }} ({{ contratoData.firma_digital?.firmado_por_cargo || contratoData.representante_cargo }})</p>
-                <p><strong>RUT Firmante:</strong> {{ contratoData.firma_digital?.firmado_por_rut || contratoData.representante_rut }} · <strong>Fecha/Hora:</strong> {{ contratoData.firma_digital?.fecha_hora_firma || contratoData.fecha_firma }}</p>
-                <p class="text-[10px] font-mono text-emerald-300/70" v-if="contratoData.firma_digital?.hash_documento_sha256">Hash SHA-256: {{ contratoData.firma_digital.hash_documento_sha256 }}</p>
+                <button type="button" @click="verContratoFirmadoPdf" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer">
+                  <span>📄</span> VER / DESCARGAR CONTRATO FIRMADO (PDF)
+                </button>
               </div>
 
+              <!-- Historial de Versiones del Contrato -->
+              <div v-if="contratoVersionesList.length > 0" class="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3 mt-3">
+                <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm">📜</span>
+                    <span class="text-xs font-bold text-white uppercase tracking-wider">Historial de Versiones del Contrato</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {{ contratoVersionesList.length }} {{ contratoVersionesList.length === 1 ? 'Versión' : 'Versiones' }}
+                    </span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 font-mono">Más reciente primero</span>
+                </div>
+
+                <div class="space-y-2">
+                  <div
+                    v-for="(cV, cvIdx) in contratoVersionesList"
+                    :key="'ctr-ver-' + cvIdx"
+                    class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#0e1628]/60 hover:bg-[#131e36] border border-white/5 gap-3 transition-all"
+                  >
+                    <div class="flex items-center gap-3 min-w-0">
+                      <span class="text-lg">📄</span>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black font-mono rounded">
+                            {{ cV.version_label || ('v' + (contratoVersionesList.length - cvIdx)) }}
+                          </span>
+                          <span class="text-xs font-bold text-white font-mono">{{ cV.folio || contratoData.folio || 'CTR-2026' }}</span>
+                          <span class="text-[10px] font-bold px-2 py-0.5 rounded font-mono" :class="getBadgeClaseContratoVersion(cV.estado)">
+                            {{ getBadgeTextoContratoVersion(cV.estado) }}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-400 mt-1">
+                          <span>📅 {{ cV.fecha ? new Date(cV.fecha).toLocaleDateString('es-CL') : 'S/I' }}</span>
+                          <span>•</span>
+                          <span>Receptor: {{ cV.representante_nombre || contratoData.representante_nombre || 'Cliente' }}</span>
+                          <span v-if="cV.firmante">• Firmado por: <strong class="text-emerald-300">{{ cV.firmante }}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <a
+                        v-if="cV.url_pdf"
+                        :href="getFullStaticUrl(cV.url_pdf)"
+                        target="_blank"
+                        class="text-[10px] px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg font-bold transition-all no-underline flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>📕</span>
+                        <span>Ver PDF</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- BLOQUE B: ACTAS OPERATIVAS 360° DE TERRENO (ENTREGA Y RETIRO DE PLATAFORMA) -->
+            <div v-if="esProyectoPlataforma || esArriendo" class="bg-[#050810] border border-teal-500/40 rounded-xl overflow-hidden shadow-lg mt-6">
+              <div class="px-5 py-3.5 border-b border-teal-500/20 flex flex-wrap justify-between items-center bg-[#06151f] gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">📋</span>
+                  <div>
+                    <h4 class="text-sm font-black text-teal-300 uppercase tracking-wider font-mono flex items-center gap-2">
+                      <span>Acta de Entrega y Recepción de Maquinaria 360°</span>
+                      <span v-if="actaPlataformaProyecto?.folio_acta" class="text-xs bg-teal-500/20 text-teal-200 border border-teal-500/40 px-2 py-0.5 rounded font-mono font-bold">
+                        {{ actaPlataformaProyecto.folio_acta }}
+                      </span>
+                    </h4>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      Documento operacional de entrega en faena, 19 ítems de inspección, registro fotográfico 360° y recepción conforme.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Badges de Estado -->
+                <div class="flex items-center gap-2">
+                  <span v-if="actaPlataformaProyecto?.estado_acta === 'CERRADA_FINAL'" class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                    <span>✅</span> CERRADA (ENTREGA Y RETIRO CONCLUIDOS)
+                  </span>
+                  <span v-else-if="actaPlataformaProyecto?.estado_acta === 'EMITIDA_ENTREGA'" class="text-xs bg-teal-500/20 text-teal-300 border border-teal-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                    <span>🟢</span> PLATAFORMA EN ARRIENDO ACTIVO
+                  </span>
+                  <span v-else class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-md font-mono font-bold flex items-center gap-1.5">
+                    <span>🟡</span> EMISIÓN PENDIENTE EN TERRENO (PWA)
+                  </span>
+                </div>
+              </div>
+
+              <!-- Contenido de la Tarjeta del Acta -->
+              <div class="p-5 space-y-4">
+                <div v-if="actaPlataformaProyecto" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <!-- 1. Entrega en Faena -->
+                  <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                    <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider block font-mono">1. Entrega en Faena</span>
+                    <div class="text-xs text-slate-300">
+                      <div>Horómetro IN: <strong class="text-white font-mono">{{ actaPlataformaProyecto.horometro_in || 'S/I' }} hrs</strong></div>
+                      <div>Combustible: <strong class="text-white font-mono">{{ actaPlataformaProyecto.combustible_in || '4/4' }}</strong></div>
+                      <div class="text-[11px] text-slate-400 truncate mt-1">Receptor: {{ actaPlataformaProyecto.receptor_entrega_nombre }} ({{ actaPlataformaProyecto.receptor_entrega_rut }})</div>
+                    </div>
+                    <div class="pt-2">
+                      <a
+                        v-if="actaPlataformaProyecto.id_file_pdf_entrega"
+                        :href="getFullStaticUrl(`/archivo/ver/${actaPlataformaProyecto.id_file_pdf_entrega}`)"
+                        target="_blank"
+                        class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/40 text-teal-200 rounded-lg text-xs font-bold font-mono transition-colors"
+                      >
+                        <span>📄</span>
+                        <span>Ver Acta Entrega (PDF)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- 2. Retiro & Recuperación -->
+                  <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                    <span class="text-[10px] text-purple-400 font-bold uppercase tracking-wider block font-mono">2. Retiro & Recuperación</span>
+                    <div class="text-xs text-slate-300">
+                      <div>Horómetro OUT: <strong class="text-white font-mono">{{ actaPlataformaProyecto.horometro_out || '---' }} hrs</strong></div>
+                      <div>Combustible: <strong class="text-white font-mono">{{ actaPlataformaProyecto.combustible_out || '---' }}</strong></div>
+                      <div class="text-[11px] text-slate-400 truncate mt-1" v-if="actaPlataformaProyecto.receptor_retiro_nombre">
+                        Devuelve: {{ actaPlataformaProyecto.receptor_retiro_nombre }} ({{ actaPlataformaProyecto.receptor_retiro_rut }})
+                      </div>
+                      <div class="text-[11px] text-slate-500 italic mt-1" v-else>
+                        Pendiente de retiro en faena
+                      </div>
+                    </div>
+                    <div class="pt-2">
+                      <a
+                        v-if="actaPlataformaProyecto.id_file_pdf_final"
+                        :href="getFullStaticUrl(`/archivo/ver/${actaPlataformaProyecto.id_file_pdf_final}`)"
+                        target="_blank"
+                        class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-purple-200 rounded-lg text-xs font-bold font-mono transition-colors"
+                      >
+                        <span>📄</span>
+                        <span>Ver Acta Cierre (PDF)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- 3. Evidencias Fotográficas 360° -->
+                  <div class="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-1.5 md:col-span-2">
+                    <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block font-mono">3. Registro Fotográfico 360°</span>
+                    <div class="flex items-center gap-2 overflow-x-auto py-1">
+                      <template v-if="(Array.isArray(actaPlataformaProyecto.fotos_entrega) && actaPlataformaProyecto.fotos_entrega.length > 0) || (Array.isArray(actaPlataformaProyecto.fotos_retiro) && actaPlataformaProyecto.fotos_retiro.length > 0)">
+                        <a
+                          v-for="(f, fIdx) in [...(actaPlataformaProyecto.fotos_entrega || []), ...(actaPlataformaProyecto.fotos_retiro || [])]"
+                          :key="'acta-f-tab-' + fIdx"
+                          :href="getFullStaticUrl(f.url_path || `/archivo/ver/${f.id_doc}`)"
+                          target="_blank"
+                          class="shrink-0 group relative rounded-lg overflow-hidden border border-white/20 hover:border-teal-400 transition-all"
+                          :title="f.label || `Foto ${fIdx + 1}`"
+                        >
+                          <img :src="getFullStaticUrl(f.url_path || `/archivo/ver/${f.id_doc}`)" class="w-16 h-12 object-cover group-hover:scale-105 transition-transform" />
+                          <span class="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center text-slate-300 font-mono truncate px-1">{{ f.label || `F${fIdx + 1}` }}</span>
+                        </a>
+                      </template>
+                      <div v-else class="text-xs text-slate-500 italic py-2">
+                        Sin fotografías adjuntas registradas.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Si no hay acta emitida aún -->
+                <div v-else class="text-center py-6 bg-black/20 rounded-xl border border-white/5 space-y-1">
+                  <span class="text-2xl block mb-1">🚚</span>
+                  <p class="text-xs text-slate-300 font-bold font-mono">Arriendo de Plataforma Elevadora</p>
+                  <p class="text-[11px] text-slate-400">
+                    El chofer registrará el Acta de Entrega 360° en terreno desde la PWA una vez que el camión de traslado arribe a la obra.
+                  </p>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -5232,14 +6228,19 @@
         </div>
         
         <div class="space-y-4">
+          <div class="bg-[#0a0f1e] border border-white/10 rounded-lg p-3 flex items-center justify-between">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">📅 Fecha de Devolución:</span>
+            <span class="text-xs font-mono font-bold text-amber-400">{{ fechaReversoDisplay }}</span>
+          </div>
+
           <div>
             <label class="block text-xs text-amber-300 font-semibold mb-1">
-              Motivo de la Devolución a Comercial <span class="text-red-400">*</span>:
+              Motivo de Rechazo / Devolución a Comercial <span class="text-red-400">*</span>:
             </label>
             <textarea 
               v-model="motivoReversoTexto" 
               rows="4" 
-              placeholder="Indique detalladamente por qué se regresa la cotización (ej: Falta definir modelo de grúa alternativo, cliente solicita cambiar fecha a faena, tarifa de traslado desactualizada)..."
+              placeholder="Indique detalladamente el motivo de rechazo o devolución (ej: Falta incluir traslado rural, requiere equipo de apoyo adicional, cliente solicita modificar fecha de faena)..."
               class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg p-3 text-xs text-white resize-none focus:border-amber-400 outline-none transition-colors placeholder-slate-500"
             ></textarea>
             <p v-if="errorMotivoReverso" class="text-xs text-red-400 mt-1 font-semibold">{{ errorMotivoReverso }}</p>
@@ -5855,11 +6856,11 @@
     @close="modalMapaViajeAbierto = false" 
   />
 
-  <!-- MODAL VISOR DE REPORT DIARIO & FIRMA MANDANTE (SOLO LECTURA EN KANBAN) -->
+  <!-- MODAL VISOR DE REPORT DIARIO & FIRMA MANDANTE (EDITABLE CON PIN FES) -->
   <ModalVisorReport
     :visible="modalVisorReportAbierto"
     :report="reportSeleccionadoParaVisor"
-    :readonly="true"
+    :readonly="false"
     @close="modalVisorReportAbierto = false"
     @report-validado="onReportValidado"
   />
@@ -6057,7 +7058,7 @@
   <ModalCaratulaEDP
     :visible="modalCaratulaEDPAbierto"
     :edp-data="edpData"
-    :solo-lectura="true"
+    :solo-lectura="false"
     @close="modalCaratulaEDPAbierto = false"
     @edp-actualizado="cargarResumenEDP"
   />
@@ -6137,6 +7138,136 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: EXTENSIÓN DE SERVICIO (SPEC 84) -->
+  <div v-if="mostrarModalExtensionServicio" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#0a0f1e] border border-indigo-500/40 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+      <!-- Header del modal -->
+      <div class="bg-[#050810] border-b border-white/10 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">➕</span>
+          <div>
+            <h3 class="text-base font-black text-white uppercase tracking-wider font-mono">
+              Extensión de Duración del Servicio
+            </h3>
+            <p class="text-xs text-slate-400">
+              Agrega jornadas adicionales a la OT sin reiniciar el negocio
+            </p>
+          </div>
+        </div>
+        <button @click="mostrarModalExtensionServicio = false" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 text-lg cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Formulario de extensión -->
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Resumen de fechas actuales -->
+        <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
+          <div class="flex justify-between items-center text-slate-300">
+            <span>📅 Salida / Inicio Planificado:</span>
+            <span class="font-mono font-bold text-white">{{ operacionesAssignment.fecha_salida_plan || 'Sin fecha' }}</span>
+          </div>
+          <div class="flex justify-between items-center text-slate-300">
+            <span>🏁 Término Planificado Actual:</span>
+            <span class="font-mono font-bold text-amber-300">{{ operacionesAssignment.fecha_fin_plan || operacionesAssignment.fecha_salida_plan || 'Sin fecha' }}</span>
+          </div>
+          <div class="flex justify-between items-center text-slate-300 border-t border-indigo-500/20 pt-2">
+            <span>📊 Días Hábiles Actuales OT:</span>
+            <span class="font-mono font-bold text-indigo-300">{{ planDiarioGenerado.length || 1 }} día(s)</span>
+          </div>
+        </div>
+
+        <!-- Días a adicionar -->
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+            Días Adicionales a Sumar <span class="text-red-400">*</span>
+          </label>
+          <div class="flex items-center gap-3">
+            <input
+              v-model.number="formExtension.dias_adicionales"
+              type="number"
+              min="1"
+              max="30"
+              @input="recalcularNuevaFechaFinExtension"
+              class="w-28 bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-center text-indigo-400 font-mono font-black focus:border-indigo-400 outline-none"
+            />
+            <span class="text-slate-400">día(s) adicional(es) a la planificación</span>
+          </div>
+        </div>
+
+        <!-- Nueva fecha de término resultante -->
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+            Nueva Fecha de Término Planificada <span class="text-red-400">*</span>
+          </label>
+          <input
+            v-model="formExtension.nueva_fecha_fin"
+            type="date"
+            class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-sm text-white font-mono font-bold focus:border-indigo-400 outline-none [color-scheme:dark]"
+          />
+          <span class="text-[11px] text-slate-400 mt-1 block">
+            Calculada automáticamente sumando los días (puedes ajustarla manualmente si aplica).
+          </span>
+        </div>
+
+        <!-- Motivo de la extensión -->
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+            Justificación / Motivo de la Extensión <span class="text-red-400">*</span>
+          </label>
+          <textarea
+            v-model="formExtension.motivo"
+            rows="3"
+            placeholder="Indique motivo (ej. 'Cliente solicita extensión de faena por desfase de montaje')..."
+            class="w-full bg-[#050810] border border-white/20 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:border-indigo-400 outline-none"
+          ></textarea>
+        </div>
+
+        <!-- Historial previo de extensiones si existen -->
+        <div v-if="historialExtensionesList.length > 0" class="border-t border-white/10 pt-3">
+          <span class="text-[11px] font-mono font-bold text-slate-400 uppercase block mb-1.5">
+            Historial de Extensiones Anteriores:
+          </span>
+          <div class="max-h-28 overflow-y-auto space-y-1.5 pr-1 text-[11px] font-mono scrollbar-hide">
+            <div
+              v-for="(ext, eIdx) in historialExtensionesList"
+              :key="'hist-ext-' + eIdx"
+              class="bg-black/40 border border-white/5 p-2 rounded flex justify-between items-start"
+            >
+              <div>
+                <span class="text-indigo-400 font-bold">+{{ ext.dias_agregados }} días</span>
+                <span class="text-slate-400"> (hasta {{ ext.nueva_fecha_fin }})</span>
+                <p class="text-slate-300 italic text-[10px] mt-0.5">{{ ext.motivo }}</p>
+              </div>
+              <span class="text-slate-500 text-[10px]">{{ ext.usuario }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer con acciones -->
+      <div class="bg-[#050810] border-t border-white/10 px-6 py-3 flex justify-end gap-3">
+        <button
+          type="button"
+          @click="mostrarModalExtensionServicio = false"
+          class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          @click="confirmarExtensionServicio"
+          :disabled="guardandoExtension || !formExtension.motivo || formExtension.dias_adicionales < 1"
+          class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+        >
+          <span v-if="guardandoExtension" class="animate-spin">⏳</span>
+          <span v-else>✔</span>
+          <span>Confirmar y Extender Servicio</span>
+        </button>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
@@ -6160,6 +7291,7 @@ import ModalVisorReport from '../../components/Operaciones/ModalVisorReport.vue'
 import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
 import ModalITS from '../../components/Operaciones/ModalITS.vue'
 import ModalDespachoWhatsApp from '../../components/Operaciones/ModalDespachoWhatsApp.vue'
+import EstructuradorArbolServicios from '../../components/CRM/EstructuradorArbolServicios.vue'
 
 const panelClienteMinimizado = ref(false)
 const modalWhatsAppVisible = ref(false)
@@ -6171,6 +7303,7 @@ const modalMapaViajeAbierto = ref(false)
 const viajeSeleccionadoParaMapa = ref(null)
 
 const reportsProyecto = ref([])
+const actaPlataformaProyecto = ref(null)
 const filtroEquipoReports = ref('TODOS')
 const cargandoReports = ref(false)
 const modalVisorReportAbierto = ref(false)
@@ -6182,6 +7315,14 @@ const modalCaratulaEDPAbierto = ref(false)
 const modalITSAbierto = ref(false)
 const itsEstadoActual = ref('BORRADOR')
 const itsAprobadoPorOperaciones = computed(() => ['EN_REVISION_CONTABILIDAD', 'CONCLUIDO'].includes(itsEstadoActual.value))
+
+const urlPdfItsDirecto = computed(() => {
+  const id = activeProjectId.value
+  if (!id) return '#'
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+  return `${base}/operaciones/its/preview-pdf/${id}`
+})
 
 const activeProjectId = computed(() => {
   const pId = props.proyectoId
@@ -6268,6 +7409,7 @@ const guardarOC = async () => {
     return
   }
   
+  const uActual = JSON.parse(localStorage.getItem('user') || '{}')
   const nuevaOC = {
     id: 'oc-' + Date.now(),
     numero_oc: formOC.numero_oc,
@@ -6275,14 +7417,32 @@ const guardarOC = async () => {
     monto_neto: Number(formOC.monto_neto) || 0,
     centro_costo: formOC.centro_costo,
     archivo: formOC.archivo ? { ...formOC.archivo } : null,
-    observaciones: formOC.observaciones
+    observaciones: formOC.observaciones,
+    registrado_por: uActual.id_user || 1,
+    registrado_por_nombre: `${uActual.name_frst || ''} ${uActual.apellido_pat || ''}`.trim() || uActual.email || 'Comercial',
+    fecha_registro: new Date().toISOString()
   }
   
   ordenesCompra.value.push(nuevaOC)
   mostrarModalOC.value = false
   
-  // Auto-guardado en PostgreSQL
-  const projectId = props.proyectoId || currentProyectoId.value
+  // Auto-guardado en PostgreSQL y envío de constancia formal + copia a Contabilidad
+  let projectId = props.proyectoId || currentProyectoId.value
+  if (!projectId && (selectedClient.value?.id_empresa || opportunity.value.rut_cliente)) {
+    try {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      const { data } = await apiAxios.post('/proyectos/preventa', payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (data?.proyecto?.id_proyecto) {
+        projectId = data.proyecto.id_proyecto
+        currentProyectoId.value = projectId
+      }
+    } catch (eAuto) {
+      console.warn('Auto-guardado preventa previo a OC no completado:', eAuto)
+    }
+  }
   if (projectId) {
     try {
       const token = localStorage.getItem('token') || ''
@@ -6290,10 +7450,20 @@ const guardarOC = async () => {
       await apiAxios.put(`/proyectos/${projectId}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      alert(`✅ Orden de Compra "${nuevaOC.numero_oc}" registrada exitosamente.`)
+      await apiAxios.post('/operaciones/edp/soporte-documental', {
+        id_proyecto: projectId,
+        id_user: uActual.id_user || 1,
+        oc: nuevaOC
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      await cargarResumenEDP(projectId)
+      alert(`✅ Orden de Compra "${nuevaOC.numero_oc}" registrada exitosamente.\n📩 Se ha enviado copia y constancia formal de recepción a Contabilidad.`)
     } catch (e) {
       console.warn('Error al auto-guardar OC:', e)
     }
+  } else {
+    alert(`✅ Orden de Compra "${nuevaOC.numero_oc}" adjuntada en la preventa. Quedará guardada al guardar la oportunidad.`)
   }
 }
 
@@ -6311,6 +7481,110 @@ const eliminarOC = async (idx) => {
     } catch (e) {
       console.warn('Error al guardar eliminación de OC:', e)
     }
+  }
+}
+
+// SPEC 84: EXTENSIÓN DE DURACIÓN DEL SERVICIO
+const mostrarModalExtensionServicio = ref(false)
+const guardandoExtension = ref(false)
+const formExtension = reactive({
+  dias_adicionales: 1,
+  nueva_fecha_fin: '',
+  motivo: ''
+})
+
+const historialExtensionesList = computed(() => {
+  return opportunity.value?.json_field?.ejecucion_v1?.historial_extensiones ||
+         opportunity.value?.json_field?.crm_v1?.historial_extensiones ||
+         []
+})
+
+const recalcularNuevaFechaFinExtension = () => {
+  const fechaBaseStr = operacionesAssignment.value?.fecha_fin_plan ||
+                       operacionesAssignment.value?.fecha_salida_plan ||
+                       new Date().toISOString().split('T')[0]
+  const d = new Date(fechaBaseStr + 'T00:00:00')
+  const dias = Math.max(1, Number(formExtension.dias_adicionales) || 1)
+  d.setDate(d.getDate() + dias)
+  formExtension.nueva_fecha_fin = d.toISOString().split('T')[0]
+}
+
+const abrirModalExtenderServicio = () => {
+  formExtension.dias_adicionales = 1
+  formExtension.motivo = ''
+  recalcularNuevaFechaFinExtension()
+  mostrarModalExtensionServicio.value = true
+}
+
+const confirmarExtensionServicio = async () => {
+  if (!formExtension.motivo || formExtension.motivo.trim().length === 0) {
+    alert('Debe indicar un motivo o justificación para la extensión del servicio.')
+    return
+  }
+  if (!formExtension.dias_adicionales || formExtension.dias_adicionales < 1) {
+    alert('La cantidad de días a extender debe ser mayor o igual a 1.')
+    return
+  }
+
+  guardandoExtension.value = true
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const diasSumar = Number(formExtension.dias_adicionales)
+    const nuevaFin = formExtension.nueva_fecha_fin
+
+    // 1. Actualizar fecha_fin_plan en operacionesAssignment y propagar
+    operacionesAssignment.value.fecha_fin_plan = nuevaFin
+    propagarFechasPlanificadas()
+
+    // 2. Incrementar cantidad_dias en líneas de servicio
+    if (lines.value && Array.isArray(lines.value)) {
+      lines.value.forEach(l => {
+        if (l.unidad === 'Horas Diarias Minimas' || l.cantidad_dias !== undefined) {
+          const actual = Number(l.cantidad_dias || l.cantidad || 1)
+          l.cantidad_dias = actual + diasSumar
+          l.cantidad = l.cantidad_dias
+        }
+      })
+    }
+
+    // 3. Registrar entrada en historial_extensiones
+    const nuevaEntradaHistorial = {
+      fecha_registro: new Date().toISOString(),
+      usuario: currentUser.nombre || currentUser.email || 'Usuario',
+      dias_agregados: diasSumar,
+      nueva_fecha_fin: nuevaFin,
+      motivo: formExtension.motivo.trim()
+    }
+
+    if (!opportunity.value.json_field) opportunity.value.json_field = {}
+    if (!opportunity.value.json_field.ejecucion_v1) opportunity.value.json_field.ejecucion_v1 = {}
+    if (!opportunity.value.json_field.crm_v1) opportunity.value.json_field.crm_v1 = {}
+
+    if (!Array.isArray(opportunity.value.json_field.ejecucion_v1.historial_extensiones)) {
+      opportunity.value.json_field.ejecucion_v1.historial_extensiones = []
+    }
+    opportunity.value.json_field.ejecucion_v1.historial_extensiones.push(nuevaEntradaHistorial)
+
+    if (!Array.isArray(opportunity.value.json_field.crm_v1.historial_extensiones)) {
+      opportunity.value.json_field.crm_v1.historial_extensiones = []
+    }
+    opportunity.value.json_field.crm_v1.historial_extensiones.push(nuevaEntradaHistorial)
+
+    // 4. Persistir a backend en PostgreSQL
+    await guardarCambiosAsignacion()
+
+    mostrarModalExtensionServicio.value = false
+    alert(`✔ Servicio extendido exitosamente en +${diasSumar} día(s). Nueva fecha término: ${nuevaFin}.`)
+
+    // Refrescar lista de reports si estamos en el proyecto
+    if (typeof cargarReportsProyecto === 'function') {
+      cargarReportsProyecto()
+    }
+  } catch (err) {
+    console.error('Error al extender servicio:', err)
+    alert('Error al guardar la extensión del servicio: ' + (err.message || err))
+  } finally {
+    guardandoExtension.value = false
   }
 }
 
@@ -6542,10 +7816,17 @@ const opportunity = ref({
     return u.id_user || u.id || null
   })(),
   vendedor_nombre: '',
-  vendedor_email: ''
+  vendedor_email: '',
+  vendedor_telefono: '',
+  motivo_reverso_verificacion: '',
+  fecha_reverso_verificacion: '',
+  usuario_reverso_verificacion: null
 })
 
 const lines = ref([])
+const serviciosArbol = ref([])
+const estructuradorArbolRef = ref(null)
+const modoEstructurador = ref(localStorage.getItem('gsp_cotizador_modo') || 'clasico')
 const usuarios = ref([])
 
 const nombreEjecutivoComercial = computed(() => {
@@ -6589,11 +7870,13 @@ const getInitialImplementos = () => {
 
 const operacionesAssignment = ref({
   tipo_decision: 'APROBADO',
-  equipo_id: 'CRN-DEFAULT',
+  regimen_operacional: '',
+  regimen_operacional_confirmado: false,
+  equipo_id: '',
   equipo_adicional: '',
   equipos_extra: [],
-  operador_id: 'OP-101',
-  rigger_id: 'RIG-201',
+  operador_id: '',
+  rigger_id: '',
   fecha_salida_plan: '',
   hora_salida_plan: '08:00',
   hora_llegada_plan: '09:30',
@@ -6607,6 +7890,13 @@ const operacionesAssignment = ref({
   implementos_survey: getInitialImplementos()
 })
 
+const formatearFechaIsoLocal = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 const generarPlanDiario = () => {
   const iniStr = operacionesAssignment.value?.fecha_salida_plan
   const finStr = operacionesAssignment.value?.fecha_fin_plan || iniStr
@@ -6617,17 +7907,21 @@ const generarPlanDiario = () => {
   if (isNaN(dIni.getTime()) || isNaN(dFin.getTime()) || dFin < dIni) return []
 
   const dias = []
+  const todosDias = []
   let curr = new Date(dIni)
-  while (curr <= dFin) {
+  while (curr <= dFin && todosDias.length < 366) {
     const dayOfWeek = curr.getDay()
+    const fStr = formatearFechaIsoLocal(curr)
+    todosDias.push(fStr)
     if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0=Dom, 6=Sab
-      dias.push(curr.toISOString().split('T')[0])
+      dias.push(fStr)
     }
     curr.setDate(curr.getDate() + 1)
   }
 
-  const total = dias.length
-  return dias.map((fStr, idx) => {
+  const listaFinal = dias.length > 0 ? dias : todosDias
+  const total = listaFinal.length
+  return listaFinal.map((fStr, idx) => {
     const diaNum = idx + 1
     let tipo = 'INTERMEDIO'
     if (total === 1) tipo = 'UNICO'
@@ -6654,7 +7948,8 @@ const dbCategories = ref([])
 const getSubcategoriaGruaActual = () => {
   const l = (lines.value || []).find(it => {
     const t = (it.tipo || '').toUpperCase()
-    return t.includes('GRUA') || t === 'GRUAS TELESCOPICAS' || t === 'CAMIONES PLUMA'
+    const s = (it.subcategoria || '').toUpperCase()
+    return t.includes('GRUA') || t === 'GRUAS TELESCOPICAS' || t === 'CAMIONES' || t === 'CAMIONES PLUMA' || s.includes('PLUMA')
   })
   return l?.subcategoria || 'GRUA 75 TON'
 }
@@ -6744,6 +8039,31 @@ const estadoDbActual = computed(() => {
 const isModoOperaciones = computed(() => {
   return estadoDbActual.value >= 3 && estadoDbActual.value < 90
 })
+
+const baseUrlDoc = (import.meta.env.BASE_URL || '/').endsWith('/')
+  ? (import.meta.env.BASE_URL || '/')
+  : `${import.meta.env.BASE_URL}/`
+
+// REQ-1100: Edición comercial controlada cuando el servicio ya está en Operación (sin retroceder estado ni reiniciar flujo)
+const modoEdicionComercialEnOperacion = ref(false)
+const snapshotLineasAntesDeEdicionComercial = ref([])
+
+const isBloqueadoComercial = computed(() => {
+  return isModoOperaciones.value && !modoEdicionComercialEnOperacion.value
+})
+
+const activarEdicionComercialEnOperacion = () => {
+  snapshotLineasAntesDeEdicionComercial.value = JSON.parse(JSON.stringify(lines.value || []))
+  modoEdicionComercialEnOperacion.value = true
+  activeTab.value = 'servicios'
+}
+
+const cancelarEdicionComercialEnOperacion = () => {
+  if (snapshotLineasAntesDeEdicionComercial.value.length > 0) {
+    lines.value = JSON.parse(JSON.stringify(snapshotLineasAntesDeEdicionComercial.value))
+  }
+  modoEdicionComercialEnOperacion.value = false
+}
 
 const resolveFaseDeDominio = (estadoDb) => {
   const dbState = parseInt(estadoDb) || 1;
@@ -6879,6 +8199,30 @@ const guardarCambiosAsignacion = async () => {
       console.warn('Advertencia en sincronización relacional de equipos:', relEqErr)
     }
 
+    // 3. Propagación retroactiva de Operador y Rigger a Reportes Diarios y Despachos (SPEC-077 / REQ-1043)
+    if (Number(estadoDbActual.value) >= 5 && (linesEquiposPrincipales.value || []).length > 0) {
+      const deseaPropagar = window.confirm(
+        '🔄 ¿Deseas propagar y rectificar el Operador y Rigger asignados en los Reportes Diarios y PDFs ya emitidos de esta OT?\n\n' +
+        '• [Aceptar]: Actualizar Operador/Rigger en los reportes diarios, despachos y regenerar sus PDFs oficiales.\n' +
+        '• [Cancelar]: Aplicar únicamente para asignaciones futuras.'
+      )
+      if (deseaPropagar) {
+        for (const eqLine of (linesEquiposPrincipales.value || [])) {
+          if (eqLine.operador_asignado_id || eqLine.rigger_asignado_id !== undefined) {
+            await apiAxios.post(`/operaciones/report/proyecto/${projectId}/rectificar-tripulacion`, {
+              id_equipo: eqLine.equipo_asignado_id ? parseInt(eqLine.equipo_asignado_id) : null,
+              id_user_operador_nuevo: eqLine.operador_asignado_id ? parseInt(eqLine.operador_asignado_id) : null,
+              id_user_rigger_nuevo: eqLine.rigger_asignado_id ? parseInt(eqLine.rigger_asignado_id) : null,
+              Alcance: 'TODOS',
+              id_user_autor: currentUser.id_user || 1,
+              motivo_rectificacion: 'Rectificación de Operador/Rigger desde Asignación de Recursos OT'
+            }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.warn('Error rectificando tripulación:', e))
+          }
+        }
+        await cargarReportsProyecto(projectId)
+      }
+    }
+
     isDirtyAsignacion.value = false
     alert('💾 Cambios de Asignación guardados exitosamente en Base de Datos PostgreSQL.')
   } catch (err) {
@@ -6952,12 +8296,12 @@ const getEquiposFiltradosPorLinea = (line) => {
         const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
         return text.includes('PLATAFORMA') || text.includes('CAMION') || text.includes('CAMIÓN') || text.includes('RAMPLA') || text.includes('PLANA') || (eq.nombre_categoria || '').toUpperCase().includes('TRANSPORTE')
       })
-    } else if (subTarget.includes('ESCOLTA') || subTarget.includes('GUIA')) {
+    } else if (subTarget.includes('CAMIONETA') || subTarget.includes('ESCOLTA') || subTarget.includes('GUIA')) {
       match = master.filter(eq => {
         const text = `${eq.nombre_categoria || ''} ${eq.nombre_subcategoria || ''} ${eq.subcategoria || ''} ${eq.modelo || ''} ${eq.marca || ''} ${eq.nombre_equipo || ''} ${eq.tipo || ''}`.toUpperCase()
-        const isVehLiviano = (eq.nombre_categoria || '').toUpperCase().includes('LIVIANO') || (eq.tipo || '').toUpperCase().includes('LIVIANO')
-        const isCamionetaOJeep = text.includes('CAMIONETA') || text.includes('JEEP') || text.includes('MAXUS') || text.includes('POER') || text.includes('SILVERADO') || text.includes('JIMNY') || text.includes('ESCOLTA')
-        return isVehLiviano && isCamionetaOJeep
+        const isVehLiviano = (eq.nombre_categoria || '').toUpperCase().includes('LIVIANO') || (eq.tipo || '').toUpperCase().includes('LIVIANO') || (eq.tipo_equipo || '').toUpperCase().includes('LIVIANO')
+        const isCamionetaOJeep = text.includes('CAMIONETA') || text.includes('JEEP') || text.includes('MAXUS') || text.includes('POER') || text.includes('SILVERADO') || text.includes('JIMNY') || text.includes('ESCOLTA') || text.includes('HILUX') || text.includes('L-200')
+        return isVehLiviano || isCamionetaOJeep
       })
     } else {
       // Si no especificó subcategoría, mostrar todos los vehículos logísticos (Tractos, Semirremolques, Camionetas Escolta)
@@ -7023,6 +8367,11 @@ const getEquiposSugeridosPuros = (line) => {
 
   let catTarget = (line.tipo || line.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
   let subTarget = (line.subcategoria || line.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+  // Delegar resolución semántica especializada para TRASLADOS y FLETES
+  if (catTarget.includes('TRASLADO') || catTarget.includes('FLETE')) {
+    return getEquiposFiltradosPorLinea(line)
+  }
 
   if (catTarget === 'GRUA' || catTarget === 'GRUAS') catTarget = 'GRUA TELESCOPICA'
 
@@ -7149,21 +8498,20 @@ const tieneDocumentosVencidosOPendientes = computed(() => {
 
 const isPersonalLine = (l) => {
   if (!l) return false
-  const tipo = (l.tipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const tipo = (l.tipo || l.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
   const sub = (l.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  const desc = (l.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  
-  return tipo === 'PERSONAL CERTIFICADO' ||
-         tipo === 'PERSONAL' ||
-         tipo.includes('PERSONAL') ||
-         sub.includes('RIGGER') ||
-         sub.includes('PREVENCIONISTA') ||
-         sub.includes('OPERADOR') ||
-         sub.includes('SUPERVISOR') ||
-         desc.includes('RIGGER') ||
-         desc.includes('PREVENCIONISTA') ||
-         desc.includes('OPERADOR') ||
-         desc.includes('SUPERVISOR')
+
+  if (tipo === 'PERSONAL CERTIFICADO' || tipo === 'PERSONAL' || tipo.includes('PERSONAL')) {
+    return true
+  }
+  // Si la línea ya tiene una categoría explícita de maquinaria, vehículo, traslado o accesorio, jamás es línea de personal por su descripción
+  if (tipo !== '') {
+    return false
+  }
+  return sub === 'RIGGER' ||
+         sub === 'PREVENCIONISTA' ||
+         sub === 'OPERADOR' ||
+         sub === 'SUPERVISOR'
 }
 
 // 1. Flota & Equipos: Únicamente maquinaria, grúas y vehículos físicos
@@ -7178,9 +8526,15 @@ const linesValidas = computed(() => {
 
 const isTrasladoLine = (l) => {
   if (!l) return false
-  const tipo = (l.tipo || l.categoria || '').toUpperCase()
-  const desc = (l.descripcion || l.subcategoria || '').toUpperCase()
-  return tipo.includes('TRASLADO') || tipo.includes('FLETE') || desc.includes('TRASLADO') || desc.includes('FLETE')
+  const tipo = (l.tipo || l.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  const unidad = (l.unidad || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+  return tipo === 'TRASLADOS' ||
+         tipo === 'TRASLADO' ||
+         tipo.includes('TRASLADO') ||
+         tipo.includes('FLETE') ||
+         unidad.includes('TRASLADO') ||
+         unidad === 'FLETE' ||
+         unidad === 'VIAJE'
 }
 
 // Líneas de equipo principal (excluyendo traslados que se manejan en el grupo logístico)
@@ -8431,8 +9785,13 @@ const guardarRiggerExterno = async () => {
       }
 
       if (lineaObjetivoRigger.value) {
-        lineaObjetivoRigger.value.rigger_asignado_id = nuevo.id_user
-        onRiggerEquipoCambiado(lineaObjetivoRigger.value)
+        if ('cargo' in lineaObjetivoRigger.value && !('equipo_asignado_id' in lineaObjetivoRigger.value)) {
+          lineaObjetivoRigger.value.id_user = nuevo.id_user
+          onEspecialistaCambiado(lineaObjetivoRigger.value)
+        } else {
+          lineaObjetivoRigger.value.rigger_asignado_id = nuevo.id_user
+          onRiggerEquipoCambiado(lineaObjetivoRigger.value)
+        }
         marcarDirtyAsignacion()
         // Auto-guardar la asignación en la OT para persistir inmediatamente en BD
         await guardarCambiosAsignacion()
@@ -8464,8 +9823,11 @@ const onRiggerEquipoCambiado = (line) => {
 
 const onEspecialistaCambiado = (esp) => {
   marcarDirtyAsignacion()
-  if (esp?.cargo === 'Rigger' && esp.id_user && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
-    linesEquiposPrincipales.value[0].rigger_asignado_id = esp.id_user
+  if (esp?.cargo === 'Rigger') {
+    operacionesAssignment.value.rigger_id = esp.id_user || ''
+    if (esp.id_user && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
+      linesEquiposPrincipales.value[0].rigger_asignado_id = esp.id_user
+    }
   }
 }
 
@@ -8602,24 +9964,69 @@ const equiposAsignadosTotales = computed(() => {
   return result;
 });
 
+// Helper canónico: Las plataformas elevadoras / alza hombres se arriendan sin operador (Dry Lease)
+const esLineaPlataforma = (line) => {
+  if (!line) return false;
+  const tipoNorm = (line.tipo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const subNorm = (line.subcategoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  // Un Camión Plataforma o línea de Traslados/Camiones jamás es una Plataforma Elevadora Dry Lease
+  if (tipoNorm === 'TRASLADOS' || tipoNorm === 'CAMIONES' || subNorm.includes('CAMION PLATAFORMA')) {
+    return false;
+  }
+  if (tipoNorm === 'PLATAFORMAS' || subNorm.includes('ALZA HOMBRE') || subNorm.includes('ALZAHOMBRE') || subNorm.includes('MANLIFT') || subNorm.includes('TIJERA') || subNorm.includes('ARTICULAD')) {
+    return true;
+  }
+  if (line.equipo_asignado_id) {
+    const eq = getEquipoObj(line.equipo_asignado_id);
+    const eqCat = `${eq?.nombre_categoria || ''} ${eq?.tipo || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    const eqSub = `${eq?.nombre_subcategoria || ''} ${eq?.subcategoria || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    if (eqCat.includes('CAMION') || eqSub.includes('CAMION PLATAFORMA')) return false;
+    if (eqCat.includes('PLATAFORMA') || eqSub.includes('ALZA HOMBRE') || eqSub.includes('ALZAHOMBRE') || eqSub.includes('MANLIFT') || eqSub.includes('TIJERA') || eqSub.includes('ARTICULAD')) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Tripulación completa unificada y computada linealmente
 const tripulacionAsignada = computed(() => {
   const list = [];
   const lPrincipal = linesEquiposPrincipales.value || [];
   
-    // 1. Operadores de líneas de equipos principales (Segmento 1)
+  // 1. Operadores de líneas de equipos principales (Segmento 1 - Excluye Plataformas Dry Lease)
   lPrincipal.forEach(line => {
-    const cargo = (line.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa';
-    list.push({
-      id_user: line.operador_asignado_id || null,
-      cargo,
-      requerimiento: line.descripcion || line.subcategoria || cargo,
-      equipo_asignado_id: line.equipo_asignado_id || '',
-      semaforo: getSemaforoTripulante(line.operador_asignado_id),
-      is_linea_base: line.is_linea_base !== false,
-      fecha_plan_ini: line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
-      fecha_plan_fin: line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
-    });
+    if (!esLineaPlataforma(line)) {
+      const tipoSub = `${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase();
+      const cargo = (tipoSub.includes('PLUMA') || tipoSub.includes('CAMION')) ? 'Operador Camión Pluma' : 'Operador Grúa';
+      const turnos = Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1
+        ? line.turnos_operadores.filter(t => t && (t.operador_id || t.fecha_ini || t.fecha_fin))
+        : [];
+      if (turnos.length > 1) {
+        turnos.forEach((t, tIdx) => {
+          list.push({
+            id_user: t.operador_id || null,
+            cargo,
+            requerimiento: `${line.descripcion || line.subcategoria || cargo} (Turno #${tIdx + 1}: ${t.fecha_ini || ''} al ${t.fecha_fin || ''})`,
+            equipo_asignado_id: line.equipo_asignado_id || '',
+            semaforo: getSemaforoTripulante(t.operador_id),
+            is_linea_base: line.is_linea_base !== false,
+            fecha_plan_ini: t.fecha_ini || line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
+            fecha_plan_fin: t.fecha_fin || line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
+          });
+        });
+      } else {
+        list.push({
+          id_user: line.operador_asignado_id || null,
+          cargo,
+          requerimiento: line.descripcion || line.subcategoria || cargo,
+          equipo_asignado_id: line.equipo_asignado_id || '',
+          semaforo: getSemaforoTripulante(line.operador_asignado_id),
+          is_linea_base: line.is_linea_base !== false,
+          fecha_plan_ini: line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '',
+          fecha_plan_fin: line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || ''
+        });
+      }
+    }
 
     // Rigger vinculado al equipo principal si está seleccionado
     if (line.rigger_asignado_id) {
@@ -8709,6 +10116,22 @@ const agregarEquipoPrincipal = () => {
   marcarDirtyAsignacion();
 };
 
+const formatResumenCantidadLinea = (line) => {
+  if (!line) return '';
+  const u = String(line.unidad || '').toUpperCase().trim();
+  if (u.includes('MES')) {
+    const meses = Number(line.cantidad_meses ?? line.cantidad ?? 1) || 1;
+    const hrs = Number(line.cantidad_horas ?? line.pisoMinimo ?? 180) || 180;
+    return `${meses} ${meses === 1 ? 'Mes' : 'Meses'} × ${hrs} hrs/mes (${line.unidad})`;
+  }
+  if (u.includes('DIA') || u.includes('DÍA') || u.includes('JORNADA')) {
+    const dias = Number(line.cantidad_dias ?? line.cantidad ?? 1) || 1;
+    const hrs = Number(line.cantidad_horas ?? line.pisoMinimo ?? 8) || 8;
+    return `${dias} ${dias === 1 ? 'Día' : 'Días'} × ${hrs} hrs/día (${line.unidad})`;
+  }
+  return `${line.cantidad || 1} ${line.unidad || ''}`.trim();
+};
+
 const eliminarEquipoPrincipal = (line) => {
   if (line?.is_linea_base !== false && line?.is_linea_base) {
     alert('🔒 Este equipo proviene de la cotización comercial base y no puede eliminarse.');
@@ -8724,20 +10147,38 @@ const eliminarEquipoPrincipal = (line) => {
 };
 
 const sincronizarTrasladosComerciales = () => {
-  // Spec 65: Excluir traslados de grúas autopropulsadas (Casos 1, 2, 3 y 4)
-  // Únicamente sincronizar traslados que requieren vehículo físico auxiliar (Contrapesos o Flete de Terceros)
-  const trasladosComerciales = (lines.value || []).filter(l => {
+  // SPEC-065 §4.1 & SPEC-016 §20.3: Matriz de visibilidad de líneas TRASLADOS en Sección 2
+  // gobernada 100% por Categoría (l.tipo) y Subcategoría (l.subcategoria) — Cero lectura de l.descripcion
+  const allLines = lines.value || []
+  const lineasPrincipales = allLines.filter(l => !isPersonalLine(l) && !isTrasladoLine(l))
+
+  const tieneGruaTelescopica = lineasPrincipales.some(l => {
+    const t = (l.tipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    return t === 'GRUAS TELESCOPICAS'
+  })
+  const tieneEquipoNoAutopropulsado = lineasPrincipales.some(l => {
+    if (esLineaPlataforma(l)) return true
+    const t = (l.tipo || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const s = (l.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    return t === 'PLATAFORMAS' || s.includes('HORQUILLA') || s.includes('ORUGA')
+  })
+  const esFletePuroSinEquipoPrincipal = lineasPrincipales.length === 0
+
+  const requiereVehiculoEnSeccion2 = (l) => {
     if (!isTrasladoLine(l)) return false
     if (l.es_traslado_grua) return false
-    const subcat = (l.subcategoria || '').toUpperCase()
-    // Una grúa o pluma jamás es un vehículo auxiliar en equipos_extra
+    const subcat = (l.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    // Regla 2: Si la subcategoría del traslado es la propia Grúa o Camión Pluma (autopropulsados), NUNCA requiere segundo vehículo
     if (subcat.includes('GRUA') || subcat.includes('PLUMA') || subcat.includes('LTM')) return false
-    const desc = (l.descripcion || l.subcategoria || '').toUpperCase()
-    const esContrapeso = desc.includes('CONTRAPESO') || subcat.includes('CONTRAPESO')
-    const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
-    if (!esContrapeso && !esFleteTercero) return false
-    return true
-  })
+    // Regla 5: Si es un Flete Puro (sin equipos en Sección 1), SÍ requiere vehículo en Sección 2
+    if (esFletePuroSinEquipoPrincipal) return true
+    // Reglas 3 y 4: Si hay Equipos No Autopropulsados (Plataformas / Horquillas) o Grúa Telescópica (que usa Cama Baja/Camión Plataforma auxiliar para contrapesos), SÍ requiere vehículo en Sección 2
+    if (tieneEquipoNoAutopropulsado || tieneGruaTelescopica) return true
+    // Regla 1: Si en Sección 1 solo hay Camiones autopropulsados (ej. Camión Pluma), el traslado es cobro comercial y NO genera segundo vehículo en Sección 2
+    return false
+  }
+
+  const trasladosComerciales = allLines.filter(l => requiereVehiculoEnSeccion2(l))
 
   const currentExtras = Array.isArray(operacionesAssignment.value?.equipos_extra) 
     ? [...operacionesAssignment.value.equipos_extra] 
@@ -8746,27 +10187,24 @@ const sincronizarTrasladosComerciales = () => {
   const defaultIni = operacionesAssignment.value?.fecha_salida_plan || opportunity.value?.fecha_tentativa || ''
   const defaultFin = operacionesAssignment.value?.fecha_fin_plan || opportunity.value?.fecha_tentativa || ''
 
-  // Depurar de equipos_extra líneas obsoletas que correspondan a grúas autopropulsadas o equipos ya asignados en Sección 1
+  // Depurar de equipos_extra líneas base que no requieran vehículo en Sección 2 o que ya estén en Sección 1
   const extrasDepurados = currentExtras.filter(ex => {
-    const subcatEx = (ex.subcategoria || '').toUpperCase()
-    const desc = (ex.descripcion || ex.subcategoria || '').toUpperCase()
-    // Erradicar de equipos_extra cualquier grúa autopropulsada o equipo que ya esté en Sección 1
+    const subcatEx = (ex.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
     if (subcatEx.includes('GRUA') || subcatEx.includes('PLUMA') || subcatEx.includes('LTM')) return false
     const idEqEx = String(ex.id_equipo || '')
     if (idEqEx && linesEquiposPrincipales.value.some(lp => String(lp.equipo_asignado_id) === idEqEx)) return false
     if (!ex.is_linea_base) return true
-    const esContrapeso = desc.includes('CONTRAPESO') || subcatEx.includes('CONTRAPESO') || subcatEx.includes('TRACTO')
-    const esFleteTercero = desc.includes('CLIENTE') || desc.includes('TERCERO') || desc.includes('MAQUINARIA') || opportunity.value?.tipo_caso === 5
-    if (!esContrapeso && !esFleteTercero) return false
-    return true
+    return requiereVehiculoEnSeccion2({
+      tipo: ex.tipo || 'TRASLADOS',
+      subcategoria: ex.subcategoria || '',
+      unidad: ex.unidad || 'TRASLADO IDA/VUELTA'
+    })
   })
 
-  // Sincronizar traslados auxiliares válidos (Contrapesos o Flete Terceros)
+  // Sincronizar traslados auxiliares válidos hacia Sección 2
   trasladosComerciales.forEach((tc, idx) => {
-    const descTc = (tc.descripcion || tc.subcategoria || '').toUpperCase()
-    const esContrapeso = descTc.includes('CONTRAPESO')
-    const subcat = tc.subcategoria || (esContrapeso ? 'TRACTO CONTRAPESOS' : 'CAMA BAJA')
-    const desc = tc.descripcion || tc.subcategoria || (esContrapeso ? 'Traslado de Contrapesos' : `Servicio de Flete #${idx + 1}`)
+    const subcat = tc.subcategoria || 'CAMA BAJA'
+    const desc = tc.descripcion || tc.subcategoria || `Servicio de Traslado #${idx + 1}`
     
     // Verificar si ya existe en equipos_extra
     const match = extrasDepurados.find(ex => 
@@ -8796,7 +10234,7 @@ const sincronizarTrasladosComerciales = () => {
       if (!match.subcategoria) match.subcategoria = subcat
       if (!match.descripcion) match.descripcion = desc
       if (!match.cantidad) match.cantidad = tc.cantidad || 1
-      if (!match.unidad) match.unidad = tc.unidad || 'Viaje'
+      match.unidad = tc.unidad || match.unidad || 'Viaje'
       if (tc.equipo_asignado_id && !match.id_equipo) match.id_equipo = tc.equipo_asignado_id
       if (tc.operador_asignado_id && !match.chofer_id) match.chofer_id = tc.operador_asignado_id
     }
@@ -8836,14 +10274,82 @@ const eliminarEquipoTraslado = (idx) => {
   marcarDirtyAsignacion();
 };
 
+const sincronizarTurnoTitular = (line) => {
+  if (!line) return;
+  if (Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 0) {
+    line.turnos_operadores[0].operador_id = line.operador_asignado_id || '';
+    if (!line.turnos_operadores[0].fecha_ini) {
+      line.turnos_operadores[0].fecha_ini = line.fecha_plan_ini || '';
+    }
+    if (!line.turnos_operadores[0].fecha_fin) {
+      line.turnos_operadores[0].fecha_fin = line.fecha_plan_fin || '';
+    }
+  }
+};
+
+const sincronizarFechasDesdeTurnos = (line) => {
+  if (!line || !Array.isArray(line.turnos_operadores) || line.turnos_operadores.length === 0) return;
+  const inis = line.turnos_operadores.map(t => t.fecha_ini).filter(Boolean).sort();
+  const fins = line.turnos_operadores.map(t => t.fecha_fin).filter(Boolean).sort();
+  if (inis.length > 0) line.fecha_plan_ini = inis[0];
+  if (fins.length > 0) line.fecha_plan_fin = fins[fins.length - 1];
+};
+
+const agregarTurnoRelevoOperador = (line) => {
+  if (!line) return;
+  const defaultIni = line.fecha_plan_ini || operacionesAssignment.value?.fecha_salida_plan || '';
+  const defaultFin = line.fecha_plan_fin || operacionesAssignment.value?.fecha_fin_plan || '';
+  if (!Array.isArray(line.turnos_operadores) || line.turnos_operadores.length === 0) {
+    line.turnos_operadores = [
+      {
+        operador_id: line.operador_asignado_id || '',
+        fecha_ini: defaultIni,
+        fecha_fin: defaultIni || defaultFin
+      }
+    ];
+  }
+  line.turnos_operadores.push({
+    operador_id: '',
+    fecha_ini: defaultFin || defaultIni,
+    fecha_fin: defaultFin || defaultIni
+  });
+  marcarDirtyAsignacion();
+};
+
+const eliminarTurnoRelevoOperador = (line, index) => {
+  if (!line || !Array.isArray(line.turnos_operadores)) return;
+  line.turnos_operadores.splice(index, 1);
+  if (line.turnos_operadores.length <= 1) {
+    if (line.turnos_operadores[0]) {
+      line.operador_asignado_id = line.turnos_operadores[0].operador_id || line.operador_asignado_id || '';
+    }
+    line.turnos_operadores = [];
+  } else {
+    sincronizarFechasDesdeTurnos(line);
+  }
+  marcarDirtyAsignacion();
+};
+
 const onEquipoPrincipalCambiado = (line) => {
   marcarDirtyAsignacion();
   if (line) {
+    // Bloquear duplicidad de mismo id_equipo en distintas filas de Flota Principal
+    if (line.equipo_asignado_id) {
+      const duplicado = (linesEquiposPrincipales.value || []).find(
+        other => other !== line && String(other.equipo_asignado_id || '') === String(line.equipo_asignado_id)
+      );
+      if (duplicado) {
+        alert('⚠️ Este equipo ya se encuentra asignado en otra fila de Flota Principal.\n\nSi necesitas asignar un segundo operador por relevo o cambio de fechas sobre esta misma máquina, utiliza el botón "+ Relevo" en la fila del equipo original (sin duplicar la máquina).');
+        line.equipo_asignado_id = '';
+        return;
+      }
+    }
     const norm = (line.tipo || '').toUpperCase()
-    if (norm.includes('GRUA') || norm === 'GRUAS TELESCOPICAS' || norm === 'CAMIONES PLUMA') {
+    const subNorm = (line.subcategoria || '').toUpperCase()
+    if (norm.includes('GRUA') || norm === 'GRUAS TELESCOPICAS' || norm === 'CAMIONES' || norm === 'CAMIONES PLUMA' || subNorm.includes('PLUMA')) {
       const eqId = line.equipo_asignado_id
       lines.value.forEach(l => {
-        if (l.tipo === 'TRASLADOS' && (l.es_traslado_grua || (l.descripcion || '').toLowerCase().includes('grúa') || (l.descripcion || '').toLowerCase().includes('grua'))) {
+        if (l.tipo === 'TRASLADOS' && (l.es_traslado_grua || (l.descripcion || '').toLowerCase().includes('grúa') || (l.descripcion || '').toLowerCase().includes('grua') || (l.descripcion || '').toLowerCase().includes('pluma'))) {
           l.equipo_asignado_id = eqId
         }
       })
@@ -8869,7 +10375,7 @@ const actualizarSemaforoTripulante = (t) => {
     return
   }
   const u = usuarios.value.find(user => user.id_user === t.id_user)
-  if (u && u.flag_activo === false) {
+  if (u && (u.flag_activo === false || u.activo === false)) {
     t.semaforo = 'RED'
   } else {
     t.semaforo = 'GREEN'
@@ -8879,7 +10385,7 @@ const actualizarSemaforoTripulante = (t) => {
 const getSemaforoTripulante = (id_user) => {
   if (!id_user) return 'RED'
   const u = usuarios.value.find(user => user.id_user === id_user)
-  if (u && u.flag_activo === false) {
+  if (u && (u.flag_activo === false || u.activo === false)) {
     return 'RED'
   }
   return 'GREEN'
@@ -8985,11 +10491,14 @@ const validarDatosPreventaParaCotizar = () => {
     return false
   }
 
-  // 5. Descripción del Proyecto / Faena
-  if (!opportunity.value.descripcion || String(opportunity.value.descripcion).trim() === '') {
-    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Descripción del Proyecto / Faena.')
+  // 5. Descripción del Servicio / Faena (REQ-1104: Sincronizada hacia la OT del operador)
+  const descTexto = String(opportunity.value.descripcion || siteVisit.value.detalle_servicio || '').trim()
+  if (!descTexto) {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Descripción del Servicio / Faena (este texto se reflejará en la Orden de Trabajo para el operador).')
     return false
   }
+  opportunity.value.descripcion = descTexto
+  siteVisit.value.detalle_servicio = descTexto
 
   // 6. Datos de Operación e Ingeniería (Obra y Horarios)
   if (!siteVisit.value.obra_nombre || String(siteVisit.value.obra_nombre).trim() === '') {
@@ -9044,30 +10553,32 @@ const validarDatosPreventaParaCotizar = () => {
     }
   }
 
-  // 8. Validación Anti-Fuga de Fletes según los Casos (Spec 16 §4.4)
-  // Caso 5: Régimen Especial / Mixto Libre (Permite fletes de terceros, cuadrillas o convoy libre sin grúa obligatoria)
-  if (casoCobroActual.value === 5) {
-    if (!lines.value || lines.value.length === 0) {
-      alert('⚠️ El Caso 5 (Especial / Mixto Libre) requiere estructurar al menos 1 partida de servicio o flete.')
-      activeTab.value = 'servicios'
-      return false
-    }
-    return true
+  // 8. REQ-1103: Condición del Servicio y Responsabilidad de Pensiones obligatorias (Sin Prellenado ni "No Aplica")
+  if (!comercial.value.condicion_servicio || !['programado', 'disponibilidad'].includes(comercial.value.condicion_servicio)) {
+    alert('⚠️ Requerimiento Obligatorio: Debe seleccionar la Condición del Servicio ("Programado" o "A Disponibilidad") antes de generar la cotización.')
+    activeTab.value = 'comercial'
+    return false
   }
 
-  if (casoCobroActual.value === 4 && (!tieneFleteGrua.value || !tieneFleteContrapeso.value)) {
-    alert('⚠️ Alerta Anti-Fuga (Caso 4: Rural con Grúa Pesada):\n\nEste servicio requiere 3 LÍNEAS OBLIGATORIAS en el Estructurador:\n1. Horas de Arriendo Grúa\n2. Flete / Traslado Grúa\n3. Traslado de Contrapesos\n\nPor favor, presione "+ Inyectar Fletes Caso 4" en la pestaña de Servicios.')
-    activeTab.value = 'servicios'
-    return false
+  const pensionesFaltantes = []
+  const p = comercial.value.pensiones || {}
+  if (esPensionesLegacy.value) {
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.traslado_costeado)) pensionesFaltantes.push('Traslado')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.desayuno_costeado)) pensionesFaltantes.push('Desayuno')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.almuerzo_costeado)) pensionesFaltantes.push('Almuerzo')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.cena_costeado)) pensionesFaltantes.push('Cena')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.alojamiento_costeado)) pensionesFaltantes.push('Alojamiento')
+  } else {
+    const alimVal = p.alimentacion_costeado || p.almuerzo_costeado || p.desayuno_costeado || p.cena_costeado || ''
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.traslado_costeado)) pensionesFaltantes.push('Traslado')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(alimVal)) pensionesFaltantes.push('Alimentación')
+    if (!['CLIENTE', 'SAN_PABLO'].includes(p.alojamiento_costeado)) pensionesFaltantes.push('Alojamiento')
+    sincronizarAlimentacionPensiones()
   }
-  if (casoCobroActual.value === 3 && !tieneFleteGrua.value) {
-    alert('⚠️ Alerta Anti-Fuga (Caso 3: Rural sin Contrapeso):\n\nLa faena supera los 30 km y no contiene la partida obligatoria de Flete / Traslado de Grúa.\n\nPor favor, presione "+ Inyectar Flete Grúa" en la pestaña de Servicios.')
-    activeTab.value = 'servicios'
-    return false
-  }
-  if (casoCobroActual.value === 2 && !tieneFleteContrapeso.value) {
-    alert('⚠️ Requerimiento Operativo (Caso 2: Urbano con Grúa Pesada):\n\nLas grúas pesadas (≥ 90T) requieren transporte de contrapesos en cama baja.\n\nPor favor, presione "+ Inyectar Traslado Contrapesos ($500.000)" en la pestaña de Servicios.')
-    activeTab.value = 'servicios'
+
+  if (pensionesFaltantes.length > 0) {
+    alert(`⚠️ Requerimiento Obligatorio en Alimentación y Pensiones:\n\nDebe definir obligatoriamente si el costo es asumido por Cliente o por San Pablo en:\n\n• ${pensionesFaltantes.join('\n• ')}`)
+    activeTab.value = 'comercial'
     return false
   }
 
@@ -9148,10 +10659,13 @@ const confirmarGenerarRequerimiento = async () => {
     equipo_descripcion: lines.value[0]?.descripcion || '',
     equipo_cantidad: lines.value[0]?.cantidad || 1,
     equipo_valor: lines.value[0]?.valorUnitario || 0,
+    condicion_servicio: comercial.value.condicion_servicio || '',
     pensiones: { ...comercial.value.pensiones }
   }
 
   opportunity.value.id_proyecto_estado = ESTADO_DB_OPERACIONES
+  operacionesAssignment.value.regimen_operacional = ''
+  operacionesAssignment.value.regimen_operacional_confirmado = false
   await guardarEnPreventa()
   
   const htmlBody = `
@@ -9192,7 +10706,30 @@ const confirmarGenerarRequerimiento = async () => {
   operacionesSubTab.value = 'validacion'
 }
 
+const seleccionarPoliticaOperacional = (regimen) => {
+  if (isRequerimientoAprobado.value) return
+  operacionesAssignment.value.regimen_operacional = regimen
+  operacionesAssignment.value.regimen_operacional_confirmado = true
+}
+
+const formatearFechaHoraReverso = (isoStr) => {
+  if (!isoStr) return ''
+  const d = new Date(isoStr)
+  if (isNaN(d.getTime())) return String(isoStr)
+  return d.toLocaleString('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 const abrirModalAprobarRequerimiento = () => {
+  if (!['URBANO', 'RURAL'].includes(operacionesAssignment.value.regimen_operacional)) {
+    alert('⚠️ Respuesta Obligatoria de Operaciones: Debe seleccionar explícitamente la Política Operacional (🏙️ Política Urbana o 🌲 Política Rural) antes de autorizar el requerimiento.')
+    return
+  }
   // Pre-seleccionar por defecto: Comercial creador de la OT y Coordinador de Operaciones
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   const idComercial = Number(opportunity.value.id_usuario_creacion || opportunity.value.id_user_creacion || currentUser.id_user)
@@ -9264,12 +10801,26 @@ const usuariosNotificablesGestion = computed(() => {
   if (!Array.isArray(usuarios.value)) return []
   return usuarios.value.filter(u => {
     if (!u || u.flag_activo === false || u.activo === false) return false
-    if (!u.email || !u.email.includes('@')) return false
+    const email = String(u.email || '').trim().toLowerCase()
+    if (!email || !email.includes('@') || email.startsWith('rigger.ext.')) return false
     if (!u.nombre_user && !u.name_frst) return false
 
-    // Excluir terminantemente personal de faena (operadores, choferes y riggers)
-    const cargo = (u.json_data?.cargo || u.cargo || '').toLowerCase()
-    if (cargo.includes('operador') || cargo.includes('rigger') || cargo.includes('chofer')) {
+    const jd = typeof u.json_data === 'string' ? (() => { try { return JSON.parse(u.json_data) } catch { return {} } })() : (u.json_data || {})
+    if (u.is_externo === true || jd.is_externo === true || String(jd.is_externo) === 'true') return false
+
+    // Excluir terminantemente personal de faena y taller (operadores, choferes, riggers, técnicos)
+    const cargo = String(jd.cargo || u.cargo || '').toLowerCase()
+    if (
+      cargo.includes('operador') ||
+      cargo.includes('rigger') ||
+      cargo.includes('chofer') ||
+      cargo.includes('técnico') ||
+      cargo.includes('tecnico') ||
+      cargo.includes('mecanico') ||
+      cargo.includes('mecánico') ||
+      cargo.includes('mantención') ||
+      cargo.includes('mantencion')
+    ) {
       return false
     }
 
@@ -9282,8 +10833,156 @@ const usuariosNotificablesGestion = computed(() => {
 
 const usuariosEnroladosFes = computed(() => {
   if (!Array.isArray(usuarios.value)) return []
-  return usuarios.value.filter(u => u && u.flag_activo !== false && (u.pass_hash_fes || u.flag_proc_enrol === true || u.pin_fes || u.pin || u.flag_enrolado === true))
+  return usuarios.value.filter(u => esUsuarioActivo(u) && (u.pass_hash_fes || u.flag_proc_enrol === true || u.pin_fes || u.pin || u.flag_enrolado === true))
 })
+
+// REQ-1113: Selección de Ejecutivo Comercial al crear cotización (Usuario A -> Usuario B) y Reasignación por Administrador
+const rolesUsuarioActual = ref([])
+const reasignandoEjecutivo = ref(false)
+
+const cargarRolesUsuarioActual = async () => {
+  try {
+    const { data } = await apiAxios.get('/auth/roles')
+    if (Array.isArray(data?.roles)) {
+      rolesUsuarioActual.value = data.roles
+    } else if (Array.isArray(data)) {
+      rolesUsuarioActual.value = data
+    }
+  } catch (_) {}
+}
+
+const obtenerNombreCompletoUsuario = (u) => {
+  if (!u) return ''
+  const completo = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim()
+  return completo || u.nombre_user || u.name_user || u.nombre || u.email || u.username || `Usuario #${u.id_user || u.id}`
+}
+
+const ejecutivosComercialesDisponibles = computed(() => {
+  const base = Array.isArray(usuariosNotificablesGestion.value) ? [...usuariosNotificablesGestion.value] : []
+  const idActual = Number(opportunity.value.id_usuario_creacion || opportunity.value.id_user_creacion)
+  if (idActual && !base.some(u => Number(u.id_user || u.id) === idActual)) {
+    const uActual = (usuarios.value || []).find(u => Number(u.id_user || u.id) === idActual)
+    if (uActual) base.push(uActual)
+  }
+  return base
+    .map(u => ({
+      ...u,
+      id_unico: Number(u.id_user || u.id),
+      nombre_mostrar: obtenerNombreCompletoUsuario(u)
+    }))
+    .filter(u => u.id_unico > 0)
+    .sort((a, b) => a.nombre_mostrar.localeCompare(b.nombre_mostrar, 'es'))
+})
+
+const esUsuarioAdministrador = computed(() => {
+  const u = JSON.parse(localStorage.getItem('user') || '{}')
+  const textosRol = [
+    u.rol,
+    u.role,
+    u.cargo,
+    u.perfil,
+    u.json_data?.cargo,
+    u.json_data?.rol,
+    ...(Array.isArray(u.roles) ? u.roles.map(r => (typeof r === 'string' ? r : `${r?.codi_rol || ''} ${r?.nombre_rol || ''}`)) : []),
+    ...(Array.isArray(rolesUsuarioActual.value) ? rolesUsuarioActual.value.map(r => (typeof r === 'string' ? r : `${r?.codi_rol || ''} ${r?.nombre_rol || ''}`)) : [])
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toUpperCase()
+
+  return Boolean(
+    u.is_admin === true ||
+    u.es_admin === true ||
+    textosRol.includes('ADMIN') ||
+    textosRol.includes('GEREN') ||
+    textosRol.includes('DIRECTOR') ||
+    textosRol.includes('SISTEMA') ||
+    textosRol.includes('SOPORTE') ||
+    textosRol.includes('JEFE COMERCIAL') ||
+    textosRol.includes('COMERCIAL_APROB')
+  )
+})
+
+const puedeUsarEstructuradorArbol = computed(() => {
+  const isDevEnv = Boolean(
+    import.meta.env.DEV || 
+    (typeof window !== 'undefined' && (
+      window.location.pathname.includes('/lg-gsp-dev') || 
+      localStorage.getItem('gsp_enable_tree_cotizador') === 'true'
+    ))
+  )
+  const u = JSON.parse(localStorage.getItem('user') || '{}')
+  const email = String(u.email || u.correo || '').toLowerCase().trim()
+  const isGerenciaOAdmin = ['jponce@arriendosanpablo.cl', 'sgajardoc@gmail.com'].includes(email) || esUsuarioAdministrador.value
+  return Boolean(isDevEnv || isGerenciaOAdmin)
+})
+
+const setModoEstructurador = (modo) => {
+  modoEstructurador.value = modo
+  try {
+    localStorage.setItem('gsp_cotizador_modo', modo)
+  } catch (_) {}
+  if (modo === 'arbol' && (!serviciosArbol.value || serviciosArbol.value.length === 0) && lines.value.length > 0) {
+    if (estructuradorArbolRef.value?.hidratarArbolDesdeLineasPlanas) {
+      serviciosArbol.value = estructuradorArbolRef.value.hidratarArbolDesdeLineasPlanas(lines.value)
+    }
+  }
+}
+
+const puedeSeleccionarEjecutivoResponsable = computed(() => {
+  const esNuevaCotizacion = !props.proyectoId && !currentProyectoId.value
+  const esPreventaEditable = Number(opportunity.value.id_proyecto_estado || 1) <= 2 && !isBloqueadoComercial.value
+  return esNuevaCotizacion || esPreventaEditable || esUsuarioAdministrador.value
+})
+
+const onCambiarEjecutivoResponsable = async () => {
+  const idSel = Number(opportunity.value.id_usuario_creacion)
+  if (!idSel) return
+  const uSel = (usuarios.value || []).find(u => Number(u.id_user || u.id) === idSel)
+  if (!uSel) return
+
+  const jd = typeof uSel.json_data === 'string'
+    ? (() => { try { return JSON.parse(uSel.json_data) } catch { return {} } })()
+    : (uSel.json_data || {})
+
+  const nuevoNombre = obtenerNombreCompletoUsuario(uSel)
+  const nuevoEmail = uSel.email || uSel.correo || ''
+  const nuevoTel = uSel.telefono || uSel.celular || uSel.movil || jd.telefono || jd.celular || ''
+
+  opportunity.value.id_usuario_creacion = idSel
+  opportunity.value.vendedor_nombre = nuevoNombre
+  opportunity.value.vendedor_email = nuevoEmail
+  opportunity.value.vendedor_telefono = nuevoTel
+
+  if (!opportunity.value.json_field) opportunity.value.json_field = {}
+  if (!opportunity.value.json_field.crm_v1) opportunity.value.json_field.crm_v1 = {}
+  opportunity.value.json_field.crm_v1.id_vendedor = idSel
+  opportunity.value.json_field.crm_v1.vendedor_nombre = nuevoNombre
+  opportunity.value.json_field.crm_v1.vendedor_email = nuevoEmail
+  opportunity.value.json_field.crm_v1.vendedor_telefono = nuevoTel
+
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (projectId) {
+    reasignandoEjecutivo.value = true
+    try {
+      const token = localStorage.getItem('token') || ''
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+      const payload = buildPayload()
+      payload.id_usuario_creacion = idSel
+      payload.id_user_creacion = idSel
+      payload.id_user_modificacion = currentUser.id_user || null
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      alert(`✅ Ejecutivo Comercial Responsable reasignado exitosamente a: ${nuevoNombre}`)
+    } catch (err) {
+      console.error('Error al reasignar ejecutivo responsable:', err)
+      alert('⚠️ No se pudo guardar la reasignación del ejecutivo en el servidor.')
+    } finally {
+      reasignandoEjecutivo.value = false
+    }
+  }
+}
 
 const tieneObservacionesOMotivos = computed(() => {
   const tieneTextoObs = operacionesAssignment.value.observaciones_operaciones && operacionesAssignment.value.observaciones_operaciones.trim().length > 0
@@ -9331,6 +11030,26 @@ const hasDiff = (field, index = 0) => {
   if (field === 'obra_nombre') return cleanVal(siteVisit.value.obra_nombre) !== cleanVal(snapshotComercial.value.obra_nombre)
   if (field === 'obra_direccion') return cleanVal(siteVisit.value.obra_direccion) !== cleanVal(snapshotComercial.value.obra_direccion)
   if (field === 'obra_ciudad') return cleanVal(siteVisit.value.obra_ciudad) !== cleanVal(snapshotComercial.value.obra_ciudad)
+  if (field === 'condicion_servicio') {
+    const orig = cleanVal(snapshotComercial.value.condicion_servicio)
+    if (!orig) return false
+    return cleanVal(comercial.value.condicion_servicio) !== orig
+  }
+  if (field === 'traslado_costeado') {
+    const orig = cleanVal(snapshotComercial.value.pensiones?.traslado_costeado)
+    if (!orig) return false
+    return cleanVal(comercial.value.pensiones?.traslado_costeado) !== orig
+  }
+  if (field === 'alimentacion_costeado') {
+    const orig = cleanVal(snapshotComercial.value.pensiones?.alimentacion_costeado || snapshotComercial.value.pensiones?.almuerzo_costeado)
+    if (!orig) return false
+    return cleanVal(comercial.value.pensiones?.alimentacion_costeado) !== orig
+  }
+  if (field === 'alojamiento_costeado') {
+    const orig = cleanVal(snapshotComercial.value.pensiones?.alojamiento_costeado)
+    if (!orig) return false
+    return cleanVal(comercial.value.pensiones?.alojamiento_costeado) !== orig
+  }
   
   // Diff en Líneas del Estructurador (Tabla B) - Si es línea nueva, no es un diff de celda
   if (field.startsWith('equipo_') && !isOriginalLine(index)) {
@@ -9381,6 +11100,22 @@ const getOriginalValue = (field, index = 0) => {
   if (field === 'obra_nombre') return snapshotComercial.value.obra_nombre || ''
   if (field === 'obra_direccion') return snapshotComercial.value.obra_direccion || ''
   if (field === 'obra_ciudad') return snapshotComercial.value.obra_ciudad || ''
+  if (field === 'condicion_servicio') {
+    const orig = snapshotComercial.value.condicion_servicio || ''
+    return orig === 'programado' ? 'Programado' : (orig === 'disponibilidad' ? 'A Disponibilidad' : orig)
+  }
+  if (field === 'traslado_costeado') {
+    const orig = snapshotComercial.value.pensiones?.traslado_costeado || ''
+    return orig === 'CLIENTE' ? 'Cliente' : (orig === 'SAN_PABLO' ? 'San Pablo' : orig)
+  }
+  if (field === 'alimentacion_costeado') {
+    const orig = snapshotComercial.value.pensiones?.alimentacion_costeado || snapshotComercial.value.pensiones?.almuerzo_costeado || ''
+    return orig === 'CLIENTE' ? 'Cliente' : (orig === 'SAN_PABLO' ? 'San Pablo' : orig)
+  }
+  if (field === 'alojamiento_costeado') {
+    const orig = snapshotComercial.value.pensiones?.alojamiento_costeado || ''
+    return orig === 'CLIENTE' ? 'Cliente' : (orig === 'SAN_PABLO' ? 'San Pablo' : orig)
+  }
   if (field === 'equipo_descripcion') return snapshotComercial.value.lines?.[index]?.descripcion || snapshotComercial.value.equipo_descripcion || ''
   if (field === 'equipo_cantidad') return snapshotComercial.value.lines?.[index]?.cantidad || snapshotComercial.value.equipo_cantidad || 1
   if (field === 'equipo_valor') return snapshotComercial.value.lines?.[index]?.valorUnitario || snapshotComercial.value.equipo_valor || 0
@@ -9401,6 +11136,10 @@ const diffsCount = computed(() => {
   if (hasDiff('obra_nombre')) count++
   if (hasDiff('obra_direccion')) count++
   if (hasDiff('obra_ciudad')) count++
+  if (hasDiff('condicion_servicio')) count++
+  if (hasDiff('traslado_costeado')) count++
+  if (hasDiff('alimentacion_costeado')) count++
+  if (hasDiff('alojamiento_costeado')) count++
   
   lines.value.forEach((l, idx) => {
     if (!isOriginalLine(idx)) {
@@ -9461,7 +11200,8 @@ const fetchCategories = async () => {
       { id_subcategoria: 902, nombre_subcategoria: 'RAMPLA' },
       { id_subcategoria: 903, nombre_subcategoria: 'TRACTO CAMIÓN' },
       { id_subcategoria: 904, nombre_subcategoria: 'ESCOLTA / GUÍA' },
-      { id_subcategoria: 905, nombre_subcategoria: 'CAMIÓN PLATAFORMA' }
+      { id_subcategoria: 905, nombre_subcategoria: 'CAMIÓN PLATAFORMA' },
+      { id_subcategoria: 906, nombre_subcategoria: 'CAMIONETA' }
     ])
     upsertCat(151, 'PERSONAL CERTIFICADO', [
       { id_subcategoria: 2001, nombre_subcategoria: 'RIGGER' },
@@ -9594,11 +11334,20 @@ const abrirPDFInspeccion = async (idSurvey, eqId) => {
   }
 }
 
+const esUsuarioActivo = (u) => {
+  if (!u) return false
+  if (u.activo === false || u.activo === 0 || u.activo === 'f' || u.activo === 'false') return false
+  if (u.flag_activo === false || u.is_active === false) return false
+  const estLab = String(u.estado_laboral || u.json_data?.estado_laboral || '').toUpperCase().trim()
+  if (estLab === 'INACTIVO' || estLab === 'DESVINCULADO') return false
+  return true
+}
+
 const fetchUsuarios = async () => {
   try {
     const { data } = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
     const userArray = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : (data?.usuarios || []))
-    usuarios.value = userArray.filter(u => u.flag_activo !== false)
+    usuarios.value = userArray.filter(esUsuarioActivo)
   } catch (error) {
     console.error('Error fetching users:', error)
   }
@@ -9647,6 +11396,26 @@ const sortedCotizacionesHistoricas = computed(() => {
   })
 })
 
+const esVersionEnviada = (v) => {
+  if (!v) return false
+  return (Array.isArray(v.eventos_envio) && v.eventos_envio.length > 0) || Boolean(v.evento_envio)
+}
+
+const versionCotizacionVigenteOperaciones = computed(() => {
+  const enviadas = sortedCotizacionesHistoricas.value.filter(v => esVersionEnviada(v))
+  return enviadas.length > 0 ? enviadas[0] : null
+})
+
+const esVersionVigenteOperaciones = (v) => {
+  if (!v || !esVersionEnviada(v)) return false
+  return versionCotizacionVigenteOperaciones.value && Number(versionCotizacionVigenteOperaciones.value.version) === Number(v.version)
+}
+
+const tieneBorradorCotizacionSinEnviar = computed(() => {
+  if (sortedCotizacionesHistoricas.value.length === 0) return false
+  return !esVersionEnviada(sortedCotizacionesHistoricas.value[0])
+})
+
 const openModalEnviar = (v) => {
   selectedVersionForEmail.value = v
   showModalEnviar.value = true
@@ -9662,6 +11431,7 @@ const onEmailSent = async (eventoData) => {
     }
     selectedVersionForEmail.value.eventos_envio.push(eventoData)
     selectedVersionForEmail.value.evento_envio = eventoData
+    selectedVersionForEmail.value.estado_vigencia = 'ENVIADA_VIGENTE'
   }
 
   const projectId = props.proyectoId || currentProyectoId.value
@@ -9671,14 +11441,73 @@ const onEmailSent = async (eventoData) => {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     const payload = buildPayload()
-    
+
+    // REQ-1103 / CASO-20261104-02: Sincronizar primero con el estado vigente en BD para evitar que
+    // una pestaña obsoleta sobrescriba el estado operacional (id_proyecto_estado >= 3), ejecucion_v1
+    // o versiones posteriores de cotizaciones_historicas al solo reenviar una cotización por correo.
+    try {
+      const { data: freshPry } = await apiAxios.get(`/proyectos/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (freshPry) {
+        const estadoFresh = parseInt(freshPry.id_proyecto_estado) || 1
+        if (estadoFresh > (parseInt(payload.id_proyecto_estado) || 1)) {
+          payload.id_proyecto_estado = estadoFresh
+          opportunity.value.id_proyecto_estado = estadoFresh
+        }
+        if (freshPry.json_field?.ejecucion_v1 && Object.keys(freshPry.json_field.ejecucion_v1).length > 0) {
+          payload.json_field.ejecucion_v1 = {
+            ...freshPry.json_field.ejecucion_v1,
+            ...(isModoOperaciones.value ? payload.json_field.ejecucion_v1 : {})
+          }
+        }
+        const dbCots = Array.isArray(freshPry.json_field?.crm_v1?.cotizaciones_historicas)
+          ? freshPry.json_field.crm_v1.cotizaciones_historicas
+          : []
+        if (dbCots.length > 0) {
+          const mapCots = new Map()
+          dbCots.forEach(c => { if (c && c.version != null) mapCots.set(Number(c.version), c) })
+          ;(cotizaciones_historicas.value || []).forEach(c => {
+            if (!c || c.version == null) return
+            const ver = Number(c.version)
+            const prev = mapCots.get(ver) || {}
+            mapCots.set(ver, {
+              ...prev,
+              ...c,
+              eventos_envio: Array.isArray(c.eventos_envio) && c.eventos_envio.length >= (Array.isArray(prev.eventos_envio) ? prev.eventos_envio.length : 0)
+                ? c.eventos_envio
+                : (prev.eventos_envio || c.eventos_envio || [])
+            })
+          })
+          cotizaciones_historicas.value = Array.from(mapCots.values()).sort((a, b) => Number(b.version) - Number(a.version))
+        }
+      }
+    } catch (eSync) {
+      console.warn('Advertencia al pre-sincronizar proyecto antes de guardar traza de envío:', eSync)
+    }
+
     // Inyectar cotizaciones_historicas actualizadas con traza acumulada en crm_v1
     payload.json_field.crm_v1.cotizaciones_historicas = cotizaciones_historicas.value
+    payload.json_field.crm_v1.cotizacion_recien_enviada_version = selectedVersionForEmail.value?.version || null
     payload.id_user_modificacion = currentUser.id_user || null
 
-    await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    const { data: pryUpdated } = await apiAxios.put(`/proyectos/${projectId}`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    if (pryUpdated?.json_field?.crm_v1?.lineas_servicio) {
+      isHydrating.value = true
+      lines.value = JSON.parse(JSON.stringify(pryUpdated.json_field.crm_v1.lineas_servicio))
+      if (Array.isArray(pryUpdated.json_field.crm_v1.servicios)) {
+        serviciosArbol.value = JSON.parse(JSON.stringify(pryUpdated.json_field.crm_v1.servicios))
+      }
+      cotizaciones_historicas.value = [...(pryUpdated.json_field.crm_v1.cotizaciones_historicas || cotizaciones_historicas.value)].sort((a, b) => b.version - a.version)
+      setTimeout(() => { isHydrating.value = false }, 50)
+    }
+    if (isModoOperaciones.value) {
+      modoEdicionComercialEnOperacion.value = false
+      await cargarReportsProyecto(projectId)
+      alert(`✅ Cotización v${selectedVersionForEmail.value?.version || ''} enviada formalmente al cliente y activada como VIGENTE en Operaciones.\nLos parámetros comerciales (horas mínimas y tarifas) han sido sincronizados con el Report Diario preservando los recursos asignados.`)
+    }
     console.log('✔ Traza acumulada de envíos guardada en PostgreSQL para proyecto', projectId)
   } catch (error) {
     console.error('Error al guardar traza acumulada de envíos en PostgreSQL:', error)
@@ -9919,7 +11748,31 @@ const obtenerFechasComercialesDefecto = () => {
   }
 
   if (!finFecha && iniFecha) {
-    finFecha = iniFecha
+    const dIniBase = new Date(String(iniFecha).split('T')[0] + 'T00:00:00')
+    const arrLineas = Array.isArray(lines.value) ? lines.value : []
+    const tieneMes = arrLineas.some(l => String(l.unidad || '').toUpperCase().includes('MES'))
+    const maxDias = arrLineas.reduce((max, l) => Math.max(max, Number(l.cantidad_dias || l.dias || 0)), 0)
+
+    if (!isNaN(dIniBase.getTime()) && tieneMes) {
+      const finMes = new Date(dIniBase.getFullYear(), dIniBase.getMonth() + 1, 0)
+      finFecha = formatearFechaIsoLocal(finMes)
+    } else if (!isNaN(dIniBase.getTime()) && maxDias > 1) {
+      let curr = new Date(dIniBase)
+      let cont = 0
+      let guard = 0
+      while (cont < maxDias && guard < 366) {
+        const dow = curr.getDay()
+        if (dow !== 0 && dow !== 6) {
+          cont++
+          finFecha = formatearFechaIsoLocal(curr)
+        }
+        curr.setDate(curr.getDate() + 1)
+        guard++
+      }
+      if (!finFecha) finFecha = iniFecha
+    } else {
+      finFecha = iniFecha
+    }
   }
 
   return { iniFecha, iniHora, finFecha, finHora }
@@ -10421,21 +12274,46 @@ const cargarVisitaDesdeBD = async () => {
 const comercial = ref({
   validez_dias: 5,
   moneda: 'CLP',
-  condicion_servicio: 'programado',
+  condicion_servicio: '',
   condiciones_texto_pdf: '',
   pensiones: {
-    alojamiento_costeado: 'CLIENTE',
+    formato_viaticos: 'V2_3_INDICADORES',
+    traslado_costeado: '',
+    traslado_monto: 0,
+    alimentacion_costeado: '',
+    alimentacion_monto: 0,
+    alojamiento_costeado: '',
     alojamiento_monto: 0,
-    desayuno_costeado: 'CLIENTE',
+    desayuno_costeado: '',
     desayuno_monto: 0,
-    almuerzo_costeado: 'SAN_PABLO',
+    almuerzo_costeado: '',
     almuerzo_monto: 0,
-    cena_costeado: 'CLIENTE',
-    cena_monto: 0,
-    traslado_costeado: 'CLIENTE',
-    traslado_monto: 0
+    cena_costeado: '',
+    cena_monto: 0
   }
 })
+
+// Convivencia V1 (5 ítems legacy diferenciados) vs V2 (Tabla de 3 indicadores: Traslado, Alimentación, Alojamiento)
+const esPensionesLegacy = computed(() => {
+  const p = comercial.value?.pensiones || {}
+  if (p.formato_viaticos === 'V2_3_INDICADORES') return false
+  const d = p.desayuno_costeado || ''
+  const a = p.almuerzo_costeado || ''
+  const c = p.cena_costeado || ''
+  if (!d && !a && !c) return false
+  return p.formato_viaticos === 'V1_5_ITEMS' && (d !== a || a !== c)
+})
+
+const sincronizarAlimentacionPensiones = () => {
+  if (!comercial.value?.pensiones) return
+  const val = comercial.value.pensiones.alimentacion_costeado || ''
+  comercial.value.pensiones.formato_viaticos = 'V2_3_INDICADORES'
+  if (val === 'CLIENTE' || val === 'SAN_PABLO') {
+    comercial.value.pensiones.desayuno_costeado = val
+    comercial.value.pensiones.almuerzo_costeado = val
+    comercial.value.pensiones.cena_costeado = val
+  }
+}
 
 // Detección reactiva de servicios de 1 solo día (Spec Reglas Marcha Blanca)
 const esServicioUnDia = computed(() => {
@@ -10571,9 +12449,12 @@ watch(
 )
 
 
-// Contrato de Arrendamiento & Formalización (REQ-1037 / TSK-COT-04 / REQ-1039)
+// Contrato de Arrendamiento & Formalización (REQ-1036 / REQ-1037 / REQ-1038 / TSK-COT-04 / REQ-1039)
 const contratoData = ref({
   folio: '',
+  id_empresa_arrendador: 11,
+  fecha_inicio: '',
+  fecha_termino: '',
   representante_nombre: '',
   representante_rut: '',
   representante_cargo: 'Administrador de Contrato',
@@ -10588,6 +12469,39 @@ const contratoData = ref({
   firma_digital: null,
   firma_fisica: null
 })
+
+const contratoVersionesList = computed(() => {
+  const crm = opportunity.value?.json_field?.crm_v1 || {}
+  const jf = opportunity.value?.json_field || {}
+  const historicos = Array.isArray(crm.contratos_historicos) ? crm.contratos_historicos : (Array.isArray(jf.contratos_historicos) ? jf.contratos_historicos : [])
+  const list = [...historicos]
+  const actualUrl = contratoData.value?.url_pdf_firmado || contratoData.value?.url_pdf
+  if (actualUrl && !list.some(h => (h.url_pdf_firmado || h.url_pdf || h.url) === actualUrl)) {
+    list.unshift({
+      version_label: `v${list.length + 1} (Actual)`,
+      folio: contratoData.value.folio || 'CTR-2026',
+      estado: contratoData.value.estado || 'BORRADOR',
+      fecha: contratoData.value.fecha_firma || contratoData.value.fecha_inicio || new Date().toISOString(),
+      url_pdf: actualUrl,
+      representante_nombre: contratoData.value.representante_nombre,
+      firmante: contratoData.value.firma_digital?.nombre || contratoData.value.firma_digital?.firmado_por_nombre || null
+    })
+  }
+  return list.sort((a, b) => new Date(b.fecha || 0).getTime() - new Date(a.fecha || 0).getTime())
+})
+
+const getBadgeClaseContratoVersion = (st) => {
+  if (st === 'FIRMADO_DIGITAL' || st === 'FIRMADO_FISICO') return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+  if (st === 'ENVIADO_FES' || st === 'PENDIENTE') return 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+  return 'bg-slate-700/40 text-slate-300 border border-slate-600/40'
+}
+
+const getBadgeTextoContratoVersion = (st) => {
+  if (st === 'FIRMADO_DIGITAL') return 'FIRMADO DIGITAL (FES) ✅'
+  if (st === 'FIRMADO_FISICO') return 'FIRMADO FÍSICO 📄'
+  if (st === 'ENVIADO_FES' || st === 'PENDIENTE') return 'PENDIENTE FIRMA ⏳'
+  return 'BORRADOR'
+}
 
 // Sincronizar por defecto datos del receptor desde el contacto seleccionado en Preventa
 watch(
@@ -10607,6 +12521,42 @@ watch(
     }
     if (newObj?.cargo && (!contratoData.value.representante_cargo || contratoData.value.representante_cargo === 'Administrador de Contrato')) {
       contratoData.value.representante_cargo = newObj.cargo
+    }
+  },
+  { immediate: true }
+)
+
+// REQ-1038: Sincronizar automáticamente Fecha Inicio y Fecha Término Exacta del contrato desde la cotización
+watch(
+  [
+    () => siteVisit.value?.fecha_hora_inicio,
+    () => siteVisit.value?.fecha_hora_termino,
+    () => opportunity.value?.fecha_tentativa,
+    () => lines.value?.[0]?.unidad,
+    () => lines.value?.[0]?.cantidad_dias,
+    () => lines.value?.[0]?.cantidad_meses,
+    () => lines.value?.[0]?.cantidad
+  ],
+  ([fIni, fFin, fTent, unidad, cDias, cMeses, cant]) => {
+    if (!contratoData.value.fecha_inicio) {
+      const baseIni = (fIni ? String(fIni).split('T')[0] : '') || (fTent ? String(fTent).split('T')[0] : '') || new Date().toISOString().split('T')[0]
+      contratoData.value.fecha_inicio = baseIni
+    }
+    if (!contratoData.value.fecha_termino || String(contratoData.value.fecha_termino).toUpperCase().includes('CONVENIR')) {
+      if (fFin && String(fFin).trim() !== '') {
+        contratoData.value.fecha_termino = String(fFin).split('T')[0]
+      } else if (contratoData.value.fecha_inicio) {
+        const d = new Date(`${contratoData.value.fecha_inicio}T12:00:00`)
+        if (!isNaN(d.getTime())) {
+          const esMes = String(unidad || '').toLowerCase().includes('mes')
+          if (esMes) {
+            d.setMonth(d.getMonth() + Math.max(1, Number(cMeses || cant || 1)))
+          } else {
+            d.setDate(d.getDate() + Math.max(1, Number(cDias || cant || 1)))
+          }
+          contratoData.value.fecha_termino = d.toISOString().split('T')[0]
+        }
+      }
     }
   },
   { immediate: true }
@@ -10633,19 +12583,24 @@ const badgeEstadoContrato = computed(() => {
 })
 
 const infoEmisorContrato = computed(() => {
-  const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+  const idEmisora = Number(contratoData.value?.id_empresa_arrendador || opportunity.value?.id_empresa_emisora || activeEmpresa.value || 11)
   const CATALOGO_EMPRESAS = {
     9: { nombre: 'LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)', rut: '52.004.162-1', direccion: 'Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco', fono: '+56 9 9443 7725', logo: 'logo-sanpablo.png' },
     11: { nombre: 'ARRIENDO ROYAL RENTAL LIMITADA (ROYAL RENTAL)', rut: '78.254.535-3', direccion: 'Camino Labranza KM 9.5, Temuco', fono: '+56 9 9443 7725', logo: 'logo-royalrental.png' },
     7: { nombre: 'SOCIEDAD BESTMAQ VENTA DE MAQUINARIA USADA LIMITADA (BESTMAQ)', rut: '76.209.534-3', direccion: 'Camino Labranza KM 9.5, Temuco', fono: '+56 9 9443 7725', logo: 'logo-bestmaq.png' },
     8: { nombre: 'SERVICIOS INTEGRADOS LOGÍSTICOS DEL SUR LTDA. (LOGÍSTICA DEL SUR)', rut: '76.218.576-8', direccion: 'KM 9.5 Camino Labranza Hj 24 Lugar Botrolhue, Temuco', fono: '+56 9 9443 7725', logo: 'logo-logisticadelsur.png' }
   }
-  return CATALOGO_EMPRESAS[idEmisora] || CATALOGO_EMPRESAS[9]
+  return CATALOGO_EMPRESAS[idEmisora] || CATALOGO_EMPRESAS[11]
 })
 
 const calcularSubtotalLinea = (line) => {
   if (!line) return 0
   const val = Number(line.valor_unitario !== undefined ? line.valor_unitario : line.valorUnitario) || 0
+  const unidad = String(line.unidad || '').toUpperCase()
+  const tipo = String(line.tipo || '').toUpperCase()
+  if (unidad.includes('FIJO') || unidad.includes('ALZADA') || tipo.includes('FIJO') || tipo === 'TRASLADOS' || unidad.startsWith('TRASLADO')) {
+    return val
+  }
   if (line.unidad === 'Horas Diarias Minimas') {
     const dias = Number(line.cantidad_dias !== undefined ? line.cantidad_dias : line.cantidad) || 1
     const horas = Number(line.cantidad_horas !== undefined ? line.cantidad_horas : line.pisoMinimo) || 8
@@ -10662,7 +12617,13 @@ const calcularSubtotalLinea = (line) => {
 
 const onUnidadChange = (line) => {
   if (!line) return
-  if (line.unidad === 'Horas Diarias Minimas') {
+  if (line.unidad === 'Valor Fijo' || line.tipo === 'TRASLADOS' || String(line.unidad || '').startsWith('TRASLADO')) {
+    line.cantidad = 1
+    line.cantidad_dias = null
+    line.cantidad_meses = null
+    line.cantidad_horas = null
+    line.pisoMinimo = 0
+  } else if (line.unidad === 'Horas Diarias Minimas') {
     if (!line.cantidad_dias || line.cantidad_dias < 1) line.cantidad_dias = 1
     if (!line.cantidad_horas || line.cantidad_horas < 1) line.cantidad_horas = 8
     line.cantidad = line.cantidad_dias
@@ -10682,9 +12643,29 @@ const onUnidadChange = (line) => {
   }
 }
 
+const esDescripcionAutoGenerada = (desc) => {
+  const d = String(desc || '').trim()
+  if (!d) return true
+  const upper = d.toUpperCase()
+  return (
+    upper === 'SERVICIO DE RIGGER CERTIFICADO' ||
+    upper === 'SERVICIO DE PREVENCIONISTA CERTIFICADO' ||
+    upper.startsWith('HORAS MINIMAS DIARIAS ') ||
+    upper.startsWith('SERVICIO GRUA ') ||
+    upper.startsWith('SERVICIO CAMION ') ||
+    upper.startsWith('FLETE / TRASLADO ') ||
+    upper.startsWith('TRASLADO GRÚA ') ||
+    upper.startsWith('TRASLADO GRUA ')
+  )
+}
+
 const onTipoChange = (line) => {
   if (!line) return
   line.subcategoria = ''
+  // REQ-1100: Si la descripción tenía una glosa por defecto de otra categoría (ej. "Servicio de Rigger Certificado"), limpiarla automáticamente
+  if (esDescripcionAutoGenerada(line.descripcion)) {
+    line.descripcion = ''
+  }
   if (line.tipo === 'TRASLADOS') {
     line.unidad = 'TRASLADO IDA/VUELTA'
     onUnidadChange(line)
@@ -10765,7 +12746,7 @@ const enviarCotizacionPorCorreo = async () => {
 }
 
 const agregarLinea = () => {
-  if (isModoOperaciones.value) return
+  if (isBloqueadoComercial.value) return
   lines.value.push({ 
     tipo: '', 
     subcategoria: '', 
@@ -10782,7 +12763,7 @@ const agregarLinea = () => {
 }
 
 const eliminarLinea = (idx) => {
-  if (isModoOperaciones.value) return
+  if (isBloqueadoComercial.value) return
   lines.value.splice(idx, 1)
 }
 
@@ -10868,18 +12849,7 @@ const tieneFleteEnLineas = computed(() => {
 })
 
 const casoCobroActual = computed(() => {
-  if (opportunity.value?.tipo_caso) {
-    return Number(opportunity.value.tipo_caso)
-  }
-  const km = parseFloat(opportunity.value?.distancia_km) || 0
-  if (km <= 0) return null
-  const esRural = km > 30
-  const conContrapeso = !!opportunity.value?.lleva_contrapeso
-  if (!esRural) {
-    return conContrapeso ? 2 : 1
-  } else {
-    return conContrapeso ? 4 : 3
-  }
+  return 5
 })
 
 const esRuralActual = computed(() => (parseFloat(opportunity.value?.distancia_km) || 0) > 30)
@@ -10893,19 +12863,7 @@ const tieneLineaGrua = computed(() => {
 })
 
 const esEstructuraValidaParaCaso = computed(() => {
-  if (!casoCobroActual.value) return true
-  // Caso 5: Régimen Libre / Especial. Es válido si tiene al menos 1 línea de servicio
-  if (casoCobroActual.value === 5) {
-    return (lines.value || []).length > 0
-  }
-  // Todos los casos canónicos (1 al 4) exigen al menos 1 grúa
-  if (!tieneLineaGrua.value) return false
-
-  if (casoCobroActual.value === 4) return tieneFleteGrua.value && tieneFleteContrapeso.value
-  if (casoCobroActual.value === 3) return tieneFleteGrua.value && !tieneFleteContrapeso.value
-  if (casoCobroActual.value === 2) return tieneFleteContrapeso.value && !tieneFleteGrua.value
-  if (casoCobroActual.value === 1) return !tieneFleteGrua.value && !tieneFleteContrapeso.value
-  return true
+  return (lines.value || []).length > 0
 })
 
 const asegurarLineaGruaBase = () => {
@@ -11045,9 +13003,15 @@ const aplicarConfiguracionCaso = (casoParam = null) => {
 const onSubcategoriaChange = (line) => {
   if (!line) return
   const normTipo = (line.tipo || '').toUpperCase()
+  const nuevaSub = (line.subcategoria || '').trim()
   if (normTipo.includes('GRUA') || normTipo === 'GRUAS TELESCOPICAS' || normTipo === 'CAMIONES PLUMA') {
-    const nuevaSub = line.subcategoria
     if (nuevaSub) {
+      // REQ-1100: Sugerir/actualizar descripción coherente si estaba vacía o tenía glosa de Rigger/Prevencionista/anterior
+      if (esDescripcionAutoGenerada(line.descripcion)) {
+        line.descripcion = line.unidad === 'Horas Diarias Minimas'
+          ? `HORAS MINIMAS DIARIAS ${nuevaSub}`
+          : `SERVICIO ${nuevaSub}`
+      }
       lines.value.forEach(l => {
         if (l.tipo === 'TRASLADOS' && (l.es_traslado_grua || (l.descripcion || '').toLowerCase().includes('grúa') || (l.descripcion || '').toLowerCase().includes('grua'))) {
           l.subcategoria = nuevaSub
@@ -11057,24 +13021,30 @@ const onSubcategoriaChange = (line) => {
         }
       })
     }
+  } else if (normTipo === 'PERSONAL CERTIFICADO' && nuevaSub) {
+    if (esDescripcionAutoGenerada(line.descripcion)) {
+      if (nuevaSub.toUpperCase() === 'RIGGER') {
+        line.descripcion = 'Servicio de Rigger Certificado'
+      } else if (nuevaSub.toUpperCase().includes('PREVENCIONISTA')) {
+        line.descripcion = 'Servicio de Prevencionista Certificado'
+      }
+    }
   }
 }
 
 const inyectarFleteRecomendado = aplicarConfiguracionCaso
 
 watch(() => opportunity.value.requiere_rigger, (newVal) => {
-  if (newVal) {
-    const hasRigger = lines.value.some(l => l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger')))
-    if (!hasRigger) {
-      lines.value.push({ 
-        tipo: 'PERSONAL CERTIFICADO', subcategoria: 'RIGGER', descripcion: 'Servicio de Rigger Certificado', 
-        cantidad: 1, unidad: 'Diario', valorUnitario: 0 
-      })
-    }
-  } else {
-    lines.value = lines.value.filter(l => !(l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger'))))
+  // REQ-1100 & REQ-1101 & REQ-1104: No inyectar línea comercial a $0 de Rigger.
+  // El selector de Rigger de la grúa opera a nivel operacional gobernado por opportunity.requiere_rigger.
+  if (isHydrating.value) return
+  if (!newVal) {
+    lines.value = lines.value.filter(l => !(isPersonalLine(l) && String(l.subcategoria || '').toUpperCase().includes('RIGGER')))
     if (linesEquiposPrincipales.value[0]) {
       linesEquiposPrincipales.value[0].rigger_asignado_id = ''
+    }
+    if (operacionesAssignment.value) {
+      operacionesAssignment.value.rigger_id = null
     }
     if (Array.isArray(especialistasTerreno.value)) {
       especialistasTerreno.value = especialistasTerreno.value.filter(e => e.cargo !== 'Rigger' || e.id_user)
@@ -11083,8 +13053,10 @@ watch(() => opportunity.value.requiere_rigger, (newVal) => {
 })
 
 watch(() => opportunity.value.requiere_prevencionista, (newVal) => {
+  // REQ-1100 & REQ-1101: No re-inyectar Prevencionista durante la hidratación/apertura del proyecto y evaluar solo líneas de personal
+  if (isHydrating.value) return
   if (newVal) {
-    const hasPrev = lines.value.some(l => l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista')))
+    const hasPrev = lines.value.some(l => isPersonalLine(l) && String(l.subcategoria || '').toUpperCase().includes('PREVENCIONISTA'))
     if (!hasPrev) {
       lines.value.push({ 
         tipo: 'PERSONAL CERTIFICADO', subcategoria: 'PREVENCIONISTA', descripcion: 'Servicio de Prevencionista Certificado', 
@@ -11092,7 +13064,7 @@ watch(() => opportunity.value.requiere_prevencionista, (newVal) => {
       })
     }
   } else {
-    lines.value = lines.value.filter(l => !(l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista'))))
+    lines.value = lines.value.filter(l => !(isPersonalLine(l) && String(l.subcategoria || '').toUpperCase().includes('PREVENCIONISTA')))
     if (Array.isArray(especialistasTerreno.value)) {
       especialistasTerreno.value = especialistasTerreno.value.filter(e => e.cargo !== 'Prevencionista de Riesgos' || e.id_user)
     }
@@ -11100,11 +13072,12 @@ watch(() => opportunity.value.requiere_prevencionista, (newVal) => {
 })
 
 watch(lines, (newLines) => {
-  const hasRigger = newLines.some(l => l.subcategoria === 'RIGGER' || (l.descripcion && l.descripcion.toLowerCase().includes('rigger')))
+  if (isHydrating.value) return
+  const hasRigger = newLines.some(l => isPersonalLine(l) && String(l.subcategoria || '').toUpperCase().includes('RIGGER'))
   if (hasRigger && !opportunity.value.requiere_rigger) {
     opportunity.value.requiere_rigger = true
   }
-  const hasPrev = newLines.some(l => l.subcategoria === 'PREVENCIONISTA' || (l.descripcion && l.descripcion.toLowerCase().includes('prevencionista')))
+  const hasPrev = newLines.some(l => isPersonalLine(l) && String(l.subcategoria || '').toUpperCase().includes('PREVENCIONISTA'))
   if (hasPrev && !opportunity.value.requiere_prevencionista) {
     opportunity.value.requiere_prevencionista = true
   }
@@ -11209,10 +13182,11 @@ const cargarDatosCotizacion = async () => {
         opportunity.value.fecha_tentativa       = p.fecha_plan_ini ? p.fecha_plan_ini.split('T')[0] : ''
         opportunity.value.id_empresa_emisora    = String(p.id_empresa || '9')
         opportunity.value.id_proyecto_estado    = p.id_proyecto_estado
-        opportunity.value.id_usuario_creacion   = p.id_usuario_creacion || p.id_user_creacion || (() => {
+        const crmInit = (typeof p.json_field === 'object' && p.json_field !== null ? p.json_field : {})?.crm_v1 || {}
+        opportunity.value.id_usuario_creacion   = Number(crmInit.id_vendedor || p.id_usuario_creacion || p.id_user_creacion || (() => {
           const u = JSON.parse(localStorage.getItem('user') || '{}')
           return u.id_user || u.id || 1
-        })()
+        })())
         if (parseInt(p.id_proyecto_estado) >= 3) {
           topTab.value = 'operaciones'
         } else {
@@ -11236,6 +13210,10 @@ const cargarDatosCotizacion = async () => {
           try { jsonField = JSON.parse(jsonField) } catch(e) { jsonField = {} }
         }
         opportunity.value.json_field = jsonField || {}
+        opportunity.value.es_interno = Boolean(p.es_interno || jsonField?.crm_v1?.es_requerimiento_interno)
+        opportunity.value.estado_vb_gerencia = p.estado_vb_gerencia || jsonField?.crm_v1?.aprobacion_gerencia?.estado || 'NO_REQUERIDO'
+        opportunity.value.observacion_vb_gerencia = p.observacion_vb_gerencia || jsonField?.crm_v1?.aprobacion_gerencia?.observacion || ''
+        opportunity.value.aprobacion_gerencia = jsonField?.crm_v1?.aprobacion_gerencia || null
 
         // Mapear json_field.crm_v1
         const crm = jsonField?.crm_v1
@@ -11248,6 +13226,10 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.contacto_correo       = crm.contacto_correo || crm.contacto_email || ''
           opportunity.value.vendedor_nombre       = crm.vendedor_nombre || crm.vendedor || crm.usuario_creacion || p.creador_nombre || ''
           opportunity.value.vendedor_email        = crm.vendedor_email || ''
+          opportunity.value.vendedor_telefono     = crm.vendedor_telefono || ''
+          if (crm.id_vendedor) {
+            opportunity.value.id_usuario_creacion = Number(crm.id_vendedor)
+          }
           opportunity.value.contacto_obj          = crm.contacto_obj || null
           opportunity.value.tipo_pago             = crm.tipo_pago || 'transferencia'
           opportunity.value.requiere_oc_hes       = crm.requiere_oc_hes !== undefined ? crm.requiere_oc_hes : null
@@ -11258,6 +13240,15 @@ const cargarDatosCotizacion = async () => {
           opportunity.value.requiere_rigger       = crm.requiere_rigger !== undefined ? crm.requiere_rigger : null
           opportunity.value.requiere_prevencionista = crm.requiere_prevencionista !== undefined ? crm.requiere_prevencionista : null
           opportunity.value.cliente_pone_combustible = crm.cliente_pone_combustible !== undefined ? crm.cliente_pone_combustible : null
+          opportunity.value.motivo_reverso_verificacion = crm.motivo_reverso_verificacion || ''
+          opportunity.value.fecha_reverso_verificacion = crm.fecha_reverso_verificacion || ''
+          opportunity.value.usuario_reverso_verificacion = crm.usuario_reverso_verificacion || null
+          const estadoDbCrm = parseInt(p.id_proyecto_estado) || 1
+          const confirmadoCrm = jsonField?.ejecucion_v1?.regimen_operacional_confirmado === true || crm.regimen_operacional_confirmado === true || estadoDbCrm >= 4
+          operacionesAssignment.value.regimen_operacional_confirmado = confirmadoCrm
+          operacionesAssignment.value.regimen_operacional = confirmadoCrm
+            ? (jsonField?.ejecucion_v1?.regimen_operacional || crm.regimen_operacional || '')
+            : ''
           let adocs = crm.acreditacion_docs;
           if (Array.isArray(adocs)) {
             opportunity.value.acreditacion_docs = { empresa: adocs, equipos: [], personas: [] };
@@ -11275,7 +13266,21 @@ const cargarDatosCotizacion = async () => {
           antecedentes.value.tipo_proceso         = crm.tipo_proceso || 'Licitación Privada'
           antecedentes.value.archivos             = crm.archivos_licitacion || []
           if (crm.lineas_servicio?.length) {
-            lines.value = crm.lineas_servicio.map(l => {
+            // REQ-1104: Filtrar cualquier línea fantasma heredada de PERSONAL CERTIFICADO / RIGGER con valor <= 0
+            const lineasLimpias = crm.lineas_servicio.filter(l => {
+              const tipoStr = String(l.tipo || l.categoria || '').toUpperCase()
+              const subStr = String(l.subcategoria || '').toUpperCase()
+              const descStr = String(l.descripcion || '').toUpperCase()
+              const isRigger = (isPersonalLine(l) || tipoStr.includes('PERSONAL')) &&
+                (subStr.includes('RIGGER') || descStr.includes('RIGGER'))
+              const val = Number(l.valorUnitario !== undefined ? l.valorUnitario : (l.valor_unitario !== undefined ? l.valor_unitario : l.precio_unitario)) || 0
+              if (isRigger && val <= 0) {
+                opportunity.value.requiere_rigger = true
+                return false
+              }
+              return true
+            })
+            lines.value = lineasLimpias.map(l => {
               let mappedUnidad = l.unidad
               let pisoMin = Number(l.pisoMinimo) || 0
               let mappedTipo = l.tipo || ''
@@ -11335,17 +13340,18 @@ const cargarDatosCotizacion = async () => {
               } else if (mappedUnidad === 'Flete' || mappedUnidad === 'Viaje' || mappedUnidad === 'Traslados' || mappedUnidad === 'Traslado' || (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('TRASLADO'))) {
                 if (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('IDA/VUELTA')) {
                   mappedUnidad = 'TRASLADO IDA/VUELTA'
+                } else if (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('RETORNO')) {
+                  mappedUnidad = 'TRASLADO RETORNO'
                 } else if (typeof mappedUnidad === 'string' && mappedUnidad.toUpperCase().includes('IDA')) {
                   mappedUnidad = 'TRASLADO IDA'
                 } else {
-                  mappedUnidad = 'Traslado'
+                  mappedUnidad = 'TRASLADO IDA/VUELTA'
                 }
-                let cant = Number(l.cantidad) || 1
                 return {
                   ...l,
                   tipo: mappedTipo,
                   unidad: mappedUnidad,
-                  cantidad: cant,
+                  cantidad: 1,
                   cantidad_dias: null,
                   cantidad_meses: null,
                   cantidad_horas: null,
@@ -11355,12 +13361,11 @@ const cargarDatosCotizacion = async () => {
                 }
               } else {
                 mappedUnidad = 'Valor Fijo'
-                let cant = Number(l.cantidad) || 1
                 return {
                   ...l,
                   tipo: mappedTipo,
                   unidad: mappedUnidad,
-                  cantidad: cant,
+                  cantidad: 1,
                   cantidad_dias: null,
                   cantidad_meses: null,
                   cantidad_horas: null,
@@ -11373,15 +13378,25 @@ const cargarDatosCotizacion = async () => {
           } else {
             lines.value = []
           }
+
+          if (Array.isArray(crm.servicios) && crm.servicios.length > 0) {
+            serviciosArbol.value = JSON.parse(JSON.stringify(crm.servicios))
+            modoEstructurador.value = 'arbol'
+          } else {
+            serviciosArbol.value = []
+            modoEstructurador.value = 'clasico'
+          }
           
           if (crm.cotizaciones_historicas) cotizaciones_historicas.value = [...crm.cotizaciones_historicas].sort((a, b) => b.version - a.version)
           ordenesCompra.value = Array.isArray(crm.ordenes_compra) ? [...crm.ordenes_compra] : []
           
-          siteVisit.value.obra_nombre = crm.obra_nombre || p.nombre_proyecto || ''
+          siteVisit.value.obra_nombre = crm.obra_nombre || ''
           siteVisit.value.obra_direccion = crm.obra_direccion || p.observacion_proyecto || ''
           siteVisit.value.obra_ciudad = crm.obra_ciudad || ''
           siteVisit.value.tipo_carga = crm.tipo_carga || ''
-          siteVisit.value.detalle_servicio = crm.detalle_servicio || p.observacion_proyecto || ''
+          const descComercialUnificada = crm.descripcion || crm.detalle_servicio || p.objetivo_proyecto || p.observacion_proyecto || ''
+          opportunity.value.descripcion = descComercialUnificada
+          siteVisit.value.detalle_servicio = descComercialUnificada
           siteVisit.value.peso_carga = crm.peso_carga || ''
           siteVisit.value.volumen_carga = crm.volumen_carga || ''
           if (crm.dimensiones) {
@@ -11417,26 +13432,85 @@ const cargarDatosCotizacion = async () => {
             comercial.value.condiciones_texto_pdf = construirAcuerdosComercialesTexto()
           }
           comercial.value.validez_dias = crm.validez_dias !== undefined && crm.validez_dias !== null ? Number(crm.validez_dias) : 5
+          comercial.value.moneda = crm.moneda || 'CLP'
+          const rawCondicion = String(
+            crm.condicion_servicio ||
+            crm.snapshot_comercial?.condicion_servicio ||
+            crm.cotizaciones_historicas?.[0]?.condicion_servicio ||
+            ''
+          ).trim().toLowerCase()
+          if (rawCondicion.startsWith('prog')) {
+            comercial.value.condicion_servicio = 'programado'
+          } else if (rawCondicion.startsWith('disp')) {
+            comercial.value.condicion_servicio = 'disponibilidad'
+          } else {
+            comercial.value.condicion_servicio = ''
+          }
 
+          const normPension = (val) => (val === 'CLIENTE' || val === 'SAN_PABLO') ? val : ''
           if (crm.pensiones) {
+            const dVal = normPension(crm.pensiones.desayuno_costeado)
+            const aVal = normPension(crm.pensiones.almuerzo_costeado)
+            const cVal = normPension(crm.pensiones.cena_costeado)
+            const alimExp = normPension(crm.pensiones.alimentacion_costeado)
+            const tieneComidasDiferenciadasLegacy = Boolean(dVal || aVal || cVal) && !alimExp && crm.pensiones.formato_viaticos !== 'V2_3_INDICADORES' && (dVal !== aVal || aVal !== cVal)
+            const alimResuelto = alimExp || aVal || dVal || cVal || ''
             comercial.value.pensiones = {
-              alojamiento_costeado: crm.pensiones.alojamiento_costeado || 'CLIENTE',
+              formato_viaticos: crm.pensiones.formato_viaticos || (tieneComidasDiferenciadasLegacy ? 'V1_5_ITEMS' : 'V2_3_INDICADORES'),
+              traslado_costeado: normPension(crm.pensiones.traslado_costeado),
+              traslado_monto: crm.pensiones.traslado_monto || 0,
+              alimentacion_costeado: alimResuelto,
+              alimentacion_monto: crm.pensiones.alimentacion_monto || crm.pensiones.almuerzo_monto || 0,
+              alojamiento_costeado: normPension(crm.pensiones.alojamiento_costeado),
               alojamiento_monto: crm.pensiones.alojamiento_monto || 0,
-              desayuno_costeado: crm.pensiones.desayuno_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
+              desayuno_costeado: dVal || alimResuelto,
               desayuno_monto: crm.pensiones.desayuno_monto || 0,
-              almuerzo_costeado: crm.pensiones.almuerzo_costeado || crm.pensiones.alimentacion_costeado || 'SAN_PABLO',
+              almuerzo_costeado: aVal || alimResuelto,
               almuerzo_monto: crm.pensiones.almuerzo_monto || crm.pensiones.alimentacion_monto || 0,
-              cena_costeado: crm.pensiones.cena_costeado || crm.pensiones.alimentacion_costeado || 'CLIENTE',
-              cena_monto: crm.pensiones.cena_monto || 0,
-              traslado_costeado: crm.pensiones.traslado_costeado || 'CLIENTE',
-              traslado_monto: crm.pensiones.traslado_monto || 0
+              cena_costeado: cVal || alimResuelto,
+              cena_monto: crm.pensiones.cena_monto || 0
+            }
+          } else {
+            comercial.value.pensiones = {
+              formato_viaticos: 'V2_3_INDICADORES',
+              traslado_costeado: '',
+              traslado_monto: 0,
+              alimentacion_costeado: '',
+              alimentacion_monto: 0,
+              alojamiento_costeado: '',
+              alojamiento_monto: 0,
+              desayuno_costeado: '',
+              desayuno_monto: 0,
+              almuerzo_costeado: '',
+              almuerzo_monto: 0,
+              cena_costeado: '',
+              cena_monto: 0
             }
           }
-          if (crm.contrato) {
-            contratoData.value = { ...contratoData.value, ...crm.contrato }
+          const ctrCandidatos = [jsonField?.contrato_arriendo, crm?.contrato_arriendo, crm?.contrato].filter(Boolean)
+          const ctrFirmado = ctrCandidatos.find(c => c.estado === 'FIRMADO_DIGITAL' || c.estado === 'FIRMADO_FISICO')
+          const ctrEnviado = ctrCandidatos.find(c => c.estado === 'ENVIADO_FES')
+          const ctrMejor = ctrFirmado || ctrEnviado || ctrCandidatos[0] || null
+          if (ctrMejor) {
+            contratoData.value = {
+              ...contratoData.value,
+              ...ctrMejor,
+              url_publica_firma: ctrMejor.url_publica_firma || ctrMejor.url_firma || contratoData.value.url_publica_firma || '',
+              url_pdf_firmado: ctrMejor.url_pdf_firmado || ctrMejor.firma_digital?.url_pdf_firmado || '',
+              url_pdf: ctrMejor.url_pdf_firmado || ctrMejor.url_pdf || ''
+            }
+          }
+          if (!contratoData.value.id_empresa_arrendador) {
+            contratoData.value.id_empresa_arrendador = Number(ctrMejor?.id_empresa_arrendador || p.id_empresa || opportunity.value.id_empresa_emisora || 11)
           }
           if (crm.snapshot_comercial && Object.keys(crm.snapshot_comercial).length > 0) {
             snapshotComercial.value = JSON.parse(JSON.stringify(crm.snapshot_comercial))
+            if (!snapshotComercial.value.condicion_servicio && comercial.value.condicion_servicio) {
+              snapshotComercial.value.condicion_servicio = comercial.value.condicion_servicio
+            }
+            if (!snapshotComercial.value.pensiones && comercial.value.pensiones) {
+              snapshotComercial.value.pensiones = { ...comercial.value.pensiones }
+            }
             // Si el snapshot guardado tenía menos líneas que las líneas de servicio cotizadas en preventa, reconciliar
             if (Array.isArray(lines.value) && (!Array.isArray(snapshotComercial.value.lines) || snapshotComercial.value.lines.length < lines.value.length)) {
               snapshotComercial.value.lines = JSON.parse(JSON.stringify(lines.value))
@@ -11455,7 +13529,9 @@ const cargarDatosCotizacion = async () => {
               lines: JSON.parse(JSON.stringify(lines.value)),
               equipo_descripcion: lines.value[0]?.descripcion || '',
               equipo_cantidad: lines.value[0]?.cantidad || 1,
-              equipo_valor: lines.value[0]?.valorUnitario || 0
+              equipo_valor: lines.value[0]?.valorUnitario || 0,
+              condicion_servicio: comercial.value.condicion_servicio || '',
+              pensiones: { ...comercial.value.pensiones }
             }))
           }
         }
@@ -11481,9 +13557,12 @@ const cargarDatosCotizacion = async () => {
             } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
               requerimientoAprobado.value = true
               asignacionConfirmada.value = true
-              operacionesSubTab.value = props.initialSubTab || (estadoDb >= 5 ? (ejecucion.subtab_actual_view || 'reports') : 'preparacion_salida')
+              operacionesSubTab.value = route?.query?.subtab || props.initialSubTab || (estadoDb >= 5 ? (ejecucion.subtab_actual_view || 'reports') : 'preparacion_salida')
               if (operacionesSubTab.value === 'reports' || estadoDb >= 5) {
                 cargarReportsProyecto(targetId)
+              }
+              if (operacionesSubTab.value === 'liquidacion' || estadoDb >= 5) {
+                cargarResumenEDP(targetId)
               }
             }
           } else {
@@ -11495,10 +13574,15 @@ const cargarDatosCotizacion = async () => {
           if (ejecucion.observaciones) {
             operacionesAssignment.value.observaciones_operaciones = ejecucion.observaciones
           }
-          if (ejecucion.equipo_id) operacionesAssignment.value.equipo_id = ejecucion.equipo_id
-          if (ejecucion.operador_id) operacionesAssignment.value.operador_id = ejecucion.operador_id
-          if (ejecucion.rigger_id) operacionesAssignment.value.rigger_id = ejecucion.rigger_id
+          operacionesAssignment.value.equipo_id = (ejecucion.equipo_id && ejecucion.equipo_id !== 'CRN-DEFAULT') ? ejecucion.equipo_id : ''
+          operacionesAssignment.value.operador_id = (ejecucion.operador_id && ejecucion.operador_id !== 'OP-101') ? ejecucion.operador_id : ''
+          operacionesAssignment.value.rigger_id = (ejecucion.rigger_id && ejecucion.rigger_id !== 'RIG-201') ? ejecucion.rigger_id : ''
           if (ejecucion.chofer_id) operacionesAssignment.value.chofer_id = ejecucion.chofer_id
+          const confirmadoOp = ejecucion.regimen_operacional_confirmado === true || jsonField?.crm_v1?.regimen_operacional_confirmado === true || estadoDb >= 4
+          operacionesAssignment.value.regimen_operacional_confirmado = confirmadoOp
+          operacionesAssignment.value.regimen_operacional = confirmadoOp
+            ? (ejecucion.regimen_operacional || jsonField?.crm_v1?.regimen_operacional || (estadoDb >= 4 ? (Number(opportunity.value.distancia_km || 0) > 30 ? 'RURAL' : 'URBANO') : ''))
+            : ''
 
           // Sincronizar fechas planificadas desde ejecucion_v1 con fallback directo a Comercial
           const { iniFecha: comIniFecha, iniHora: comIniHora, finFecha: comFinFecha, finHora: comFinHora } = obtenerFechasComercialesDefecto()
@@ -11508,19 +13592,27 @@ const cargarDatosCotizacion = async () => {
           operacionesAssignment.value.fecha_fin_plan = ejecucion.fecha_fin_plan || comFinFecha || operacionesAssignment.value.fecha_salida_plan
           operacionesAssignment.value.hora_fin_plan = ejecucion.hora_fin_plan || comFinHora || '18:00'
           // 1. Asignar operadores y riggers a líneas de equipos principales
+          if (linesEquiposPrincipales.value[0]) {
+            if (ejecucion.equipo_id && ejecucion.equipo_id !== 'CRN-DEFAULT' && !linesEquiposPrincipales.value[0].equipo_asignado_id) {
+              linesEquiposPrincipales.value[0].equipo_asignado_id = ejecucion.equipo_id
+            }
+            if (ejecucion.operador_id && ejecucion.operador_id !== 'OP-101' && !linesEquiposPrincipales.value[0].operador_asignado_id) {
+              linesEquiposPrincipales.value[0].operador_asignado_id = ejecucion.operador_id
+            }
+          }
           if (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.length > 0) {
             const trip = ejecucion.tripulacion_asignada
             linesEquiposPrincipales.value.forEach(l => {
               const opMatch = trip.find(t => 
-                t.equipo_asignado_id && t.equipo_asignado_id === l.equipo_asignado_id &&
-                (t.cargo?.includes('Operador') || t.cargo?.includes('Grúa') || t.cargo?.includes('Pluma'))
-              ) || trip.find(t => (t.cargo?.includes('Operador') || t.cargo?.includes('Grúa')) && !l.operador_asignado_id)
+                t.equipo_asignado_id && String(t.equipo_asignado_id) === String(l.equipo_asignado_id) &&
+                (t.cargo?.includes('Operador') || t.cargo?.includes('Grúa') || t.cargo?.includes('Pluma') || t.cargo?.includes('Camión'))
+              ) || trip.find(t => (t.cargo?.includes('Operador') || t.cargo?.includes('Grúa') || t.cargo?.includes('Pluma')) && !l.operador_asignado_id)
               if (opMatch) {
                 l.operador_asignado_id = opMatch.id_user || ''
               }
 
               const rigMatch = trip.find(t => 
-                t.equipo_asignado_id && t.equipo_asignado_id === l.equipo_asignado_id &&
+                t.equipo_asignado_id && String(t.equipo_asignado_id) === String(l.equipo_asignado_id) &&
                 t.cargo?.includes('Rigger')
               ) || trip.find(t => t.cargo?.includes('Rigger') && !l.rigger_asignado_id)
               if (rigMatch) {
@@ -11529,11 +13621,20 @@ const cargarDatosCotizacion = async () => {
             })
           }
 
-          if (ejecucion.rigger_id && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
+          if (ejecucion.rigger_id && ejecucion.rigger_id !== 'RIG-201' && linesEquiposPrincipales.value[0] && !linesEquiposPrincipales.value[0].rigger_asignado_id) {
             linesEquiposPrincipales.value[0].rigger_asignado_id = ejecucion.rigger_id
           }
 
           // 2. Restaurar Especialistas de Terreno (priorizando ejecucion.especialistas_terreno)
+          // REQ-1090: Cuando la OT es exclusivamente de Personal Certificado sin grúa (linesEquiposPrincipales.length === 0),
+          // el Rigger se gestiona directamente en Sección 3 (especialistasTerreno).
+          const esServicioSoloPersonal = (linesEquiposPrincipales.value || []).length === 0
+          const savedRiggerId = (
+            (Array.isArray(ejecucion.especialistas_terreno) && ejecucion.especialistas_terreno.find(e => (e.cargo || '').toLowerCase().includes('rigger') && e.id_user && e.id_user !== 'RIG-201')?.id_user) ||
+            (Array.isArray(ejecucion.tripulacion_asignada) && ejecucion.tripulacion_asignada.find(t => (t.cargo || '').toLowerCase().includes('rigger') && t.id_user && t.id_user !== 'RIG-201')?.id_user) ||
+            (ejecucion.rigger_id && ejecucion.rigger_id !== 'RIG-201' ? ejecucion.rigger_id : '') ||
+            ''
+          )
           especialistasTerreno.value = []
           const reqPrev = opportunity.value.requiere_prevencionista === true ||
             (linesPersonalValidas.value || []).some(lp => {
@@ -11545,14 +13646,14 @@ const cargarDatosCotizacion = async () => {
             especialistasTerreno.value = ejecucion.especialistas_terreno
               .filter(esp => {
                 const c = (esp.cargo || '').toLowerCase()
-                // El Rigger se gestiona exclusivamente arriba en la grúa principal, NO en Sección 3
-                if (c.includes('rigger')) return false
+                // Si hay grúa principal, el Rigger se gestiona arriba en Sección 1; si es servicio Solo Personal, en Sección 3
+                if (c.includes('rigger')) return esServicioSoloPersonal
                 // Prevencionista solo si la cotización lo exige formalmente (con o sin usuario previo)
                 if (c.includes('prevencion') || c.includes('apr') || c.includes('seguridad')) return reqPrev
                 return true
               })
               .map(esp => ({
-                id_user: esp.id_user || '',
+                id_user: esp.id_user || ((esp.cargo || '').toLowerCase().includes('rigger') ? savedRiggerId : ''),
                 cargo: esp.cargo || 'Especialista',
                 requerimiento: esp.requerimiento || '',
                 is_linea_base: esp.is_linea_base === true,
@@ -11564,13 +13665,14 @@ const cargarDatosCotizacion = async () => {
             const trip = ejecucion.tripulacion_asignada
             const espList = trip.filter(t => {
               const c = (t.cargo || '').toLowerCase()
-              if (c.includes('operador') || c.includes('chofer') || c.includes('escolta') || c.includes('rigger')) return false
+              if (c.includes('operador') || c.includes('chofer') || c.includes('escolta')) return false
+              if (c.includes('rigger')) return esServicioSoloPersonal
               if (c.includes('prevencion') || c.includes('apr') || c.includes('seguridad')) return reqPrev
               return true
             })
             if (espList.length > 0) {
               especialistasTerreno.value = espList.map(esp => ({
-                id_user: esp.id_user || '',
+                id_user: esp.id_user || ((esp.cargo || '').toLowerCase().includes('rigger') ? savedRiggerId : ''),
                 cargo: esp.cargo || 'Especialista',
                 requerimiento: esp.requerimiento || '',
                 is_linea_base: esp.is_linea_base === true,
@@ -11581,7 +13683,7 @@ const cargarDatosCotizacion = async () => {
             }
           }
 
-          // Sincronizar requerimientos de personal cotizados comercialmente (SOLO si no son Rigger ni Operadores)
+          // Sincronizar requerimientos de personal cotizados comercialmente
           if (linesPersonalValidas.value && linesPersonalValidas.value.length > 0) {
             linesPersonalValidas.value.forEach(lp => {
               const desc = (lp.descripcion || lp.subcategoria || '').toLowerCase()
@@ -11592,15 +13694,16 @@ const cargarDatosCotizacion = async () => {
                 cargoDetectado = 'Supervisor Faena'
               } else if (desc.includes('maniobrista')) {
                 cargoDetectado = 'Maniobrista'
+              } else if (esServicioSoloPersonal && desc.includes('rigger')) {
+                cargoDetectado = 'Rigger'
               }
-              // NOTA: 'rigger' NO se agrega aquí porque se gestiona arriba en la grúa
 
               if (!cargoDetectado) return
 
               const matchReq = especialistasTerreno.value.find(t => t.cargo === cargoDetectado || t.requerimiento === (lp.descripcion || lp.subcategoria))
               if (!matchReq) {
                 especialistasTerreno.value.push({
-                  id_user: '',
+                  id_user: cargoDetectado === 'Rigger' ? savedRiggerId : '',
                   cargo: cargoDetectado,
                   requerimiento: lp.descripcion || lp.subcategoria || cargoDetectado,
                   semaforo: 'GREEN',
@@ -11609,11 +13712,26 @@ const cargarDatosCotizacion = async () => {
                   fecha_plan_fin: operacionesAssignment.value.fecha_fin_plan || ''
                 })
               } else {
+                if (cargoDetectado === 'Rigger' && !matchReq.id_user && savedRiggerId) {
+                  matchReq.id_user = savedRiggerId
+                }
                 if (!matchReq.requerimiento) {
                   matchReq.requerimiento = lp.descripcion || lp.subcategoria
                 }
                 matchReq.is_linea_base = true
               }
+            })
+          }
+
+          if (esServicioSoloPersonal && opportunity.value.requiere_rigger && !especialistasTerreno.value.some(t => (t.cargo || '').toLowerCase().includes('rigger'))) {
+            especialistasTerreno.value.push({
+              id_user: savedRiggerId,
+              cargo: 'Rigger',
+              requerimiento: 'Servicio de Rigger Certificado',
+              semaforo: 'GREEN',
+              is_linea_base: true,
+              fecha_plan_ini: operacionesAssignment.value.fecha_salida_plan || '',
+              fecha_plan_fin: operacionesAssignment.value.fecha_fin_plan || ''
             })
           }
           if (ejecucion.equipos_extra && Array.isArray(ejecucion.equipos_extra)) {
@@ -11794,7 +13912,7 @@ const cargarDatosCotizacion = async () => {
       console.error('Error al cargar proyecto:', e)
     }
     await cargarViajesProyecto(targetId)
-    await cargarReportsProyecto(targetId)
+    await cargarReportsProyecto(targetId); await cargarResumenEDP(targetId)
   } else if (opportunity.value.rut_cliente) {
     try {
       const { data } = await apiAxios.get('/empresas', {
@@ -11826,6 +13944,7 @@ const cargarDatosCotizacion = async () => {
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('click', handleCloseKebab)
+  cargarRolesUsuarioActual()
   fetchUsuarios()
   fetchCategories()
   cargarListaEquiposMaster()
@@ -11943,26 +14062,53 @@ const registrarTrazaCorreo = (tipo, para, asunto, resumen) => {
 
 const buildPayload = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const idEjecutivoResponsable = Number(opportunity.value.id_usuario_creacion || currentUser.id_user || 1)
+  const uEjecutivo = (usuarios.value || []).find(u => Number(u.id_user || u.id) === idEjecutivoResponsable)
+  const jdEjecutivo = uEjecutivo && typeof uEjecutivo.json_data === 'string'
+    ? (() => { try { return JSON.parse(uEjecutivo.json_data) } catch { return {} } })()
+    : (uEjecutivo?.json_data || {})
+  const nombreEjecutivoResuelto = uEjecutivo
+    ? obtenerNombreCompletoUsuario(uEjecutivo)
+    : (opportunity.value.vendedor_nombre || nombreEjecutivoComercial.value || currentUser.nombre || 'Ejecutivo Comercial')
+  const emailEjecutivoResuelto = uEjecutivo
+    ? (uEjecutivo.email || uEjecutivo.correo || opportunity.value.vendedor_email || '')
+    : (opportunity.value.vendedor_email || currentUser.correo || currentUser.email || '')
+  const telEjecutivoResuelto = uEjecutivo
+    ? (uEjecutivo.telefono || uEjecutivo.celular || uEjecutivo.movil || jdEjecutivo.telefono || jdEjecutivo.celular || opportunity.value.vendedor_telefono || '')
+    : (opportunity.value.vendedor_telefono || currentUser.telefono || currentUser.movil || currentUser.celular || '')
+
+  const descUnificada = opportunity.value.descripcion || siteVisit.value.detalle_servicio || ''
   return {
     // Columnas reales de la tabla tpry_proyecto (ver core_entities.md)
     id_empresa:           opportunity.value.id_empresa_emisora,
     id_empresa_cliente:   selectedClient.value?.id_empresa || null,
-    nombre_proyecto:      siteVisit.value.obra_nombre || opportunity.value.descripcion || 'Cotización Preventa',
+    nombre_proyecto:      siteVisit.value.obra_nombre || descUnificada || 'Cotización Preventa',
     codi_proyecto:        antecedentes.value.identificador_formal || null,
-    objetivo_proyecto:    opportunity.value.descripcion,
-    observacion_proyecto: siteVisit.value.detalle_servicio || null,
+    objetivo_proyecto:    descUnificada,
+    observacion_proyecto: descUnificada || null,
     fecha_plan_ini:       opportunity.value.fecha_tentativa || null,
     id_proyecto_estado:   opportunity.value.id_proyecto_estado || 1,
-    id_usuario_creacion:  opportunity.value.id_usuario_creacion || currentUser.id_user || 1,
-    id_user_creacion:     opportunity.value.id_usuario_creacion || currentUser.id_user || 1,
+    id_usuario_creacion:  idEjecutivoResponsable,
+    id_user_creacion:     idEjecutivoResponsable,
 
     // json_field: solo datos sin columna propia, convencion crm_v1
     json_field: {
+      ...(opportunity.value.json_field || {}),
+      contrato_arriendo: contratoData.value,
       crm_v1: {
-        vendedor_nombre:       opportunity.value.vendedor_nombre || nombreEjecutivoComercial.value || currentUser.nombre || 'Ejecutivo Comercial',
-        vendedor_email:        opportunity.value.vendedor_email || currentUser.correo || currentUser.email || '',
+        id_vendedor:           idEjecutivoResponsable,
+        vendedor_nombre:       nombreEjecutivoResuelto,
+        vendedor_email:        emailEjecutivoResuelto,
+        vendedor_telefono:     telEjecutivoResuelto,
         prioridad:             opportunity.value.prioridad,
-        familia_servicio:      opportunity.value.familia_servicio,
+        descripcion:           descUnificada,
+        familia_servicio:      (() => {
+          const lMain = (lines.value || []).find(l => !isPersonalLine(l) && !isTrasladoLine(l));
+          if (lMain && (lMain.subcategoria || lMain.tipo)) {
+            return lMain.subcategoria || lMain.tipo;
+          }
+          return opportunity.value.familia_servicio;
+        })(),
         contacto_nombre:       siteVisit.value.contacto_terreno_nombre || siteVisit.value.contacto_visita || opportunity.value.contacto_nombre || '',
         contacto_telefono:     siteVisit.value.contacto_terreno_telefono || siteVisit.value.telefono_contacto_visita || opportunity.value.contacto_telefono || '',
         contacto_email:        siteVisit.value.contacto_terreno_email || siteVisit.value.correo_contacto_visita || opportunity.value.contacto_correo || opportunity.value.contacto_obj?.email || '',
@@ -11982,8 +14128,13 @@ const buildPayload = () => {
         requiere_acreditacion: opportunity.value.requiere_acreditacion,
         distancia_km:          opportunity.value.distancia_km,
         lleva_contrapeso:      opportunity.value.lleva_contrapeso,
-        tipo_caso:             casoCobroActual.value || 1,
-        tipo_caso_glosa:       casoCobroActual.value === 5 ? 'ESPECIAL_MIXTO_LIBRE' : `CASO_${casoCobroActual.value || 1}`,
+        regimen_operacional:   operacionesAssignment.value.regimen_operacional || '',
+        regimen_operacional_confirmado: !!operacionesAssignment.value.regimen_operacional_confirmado,
+        motivo_reverso_verificacion: opportunity.value.motivo_reverso_verificacion || opportunity.value.json_field?.crm_v1?.motivo_reverso_verificacion || '',
+        fecha_reverso_verificacion: opportunity.value.fecha_reverso_verificacion || opportunity.value.json_field?.crm_v1?.fecha_reverso_verificacion || '',
+        usuario_reverso_verificacion: opportunity.value.usuario_reverso_verificacion || opportunity.value.json_field?.crm_v1?.usuario_reverso_verificacion || null,
+        tipo_caso:             5,
+        tipo_caso_glosa:       'ESPECIAL_MIXTO_LIBRE',
         requiere_rigger:       opportunity.value.requiere_rigger,
         requiere_prevencionista: opportunity.value.requiere_prevencionista,
         cliente_pone_combustible: opportunity.value.cliente_pone_combustible,
@@ -11992,6 +14143,8 @@ const buildPayload = () => {
         n_licitacion:          antecedentes.value.identificador || '',
         archivos_licitacion:   antecedentes.value.archivos,
         lineas_servicio:       lines.value,
+        servicios:             serviciosArbol.value,
+        lineas_servicio_activas: Array.from(new Set((serviciosArbol.value || []).map(s => s.linea_servicio).filter(Boolean))),
         cotizaciones_historicas: cotizaciones_historicas.value,
         ordenes_compra:        ordenesCompra.value,
         coordenadas_mapa: {
@@ -12005,7 +14158,7 @@ const buildPayload = () => {
         fecha_hora_inicio: siteVisit.value.fecha_hora_inicio,
         fecha_hora_termino: siteVisit.value.fecha_hora_termino,
         tipo_carga: siteVisit.value.tipo_carga,
-        detalle_servicio: siteVisit.value.detalle_servicio,
+        detalle_servicio: descUnificada,
         peso_carga: siteVisit.value.peso_carga,
         volumen_carga: siteVisit.value.volumen_carga,
         radios_trabajo: siteVisit.value.radios_trabajo,
@@ -12019,6 +14172,7 @@ const buildPayload = () => {
         condicion_servicio: comercial.value.condicion_servicio,
         pensiones: comercial.value.pensiones,
         contrato: contratoData.value,
+        contrato_arriendo: contratoData.value,
         snapshot_comercial: (estadoDbActual.value >= 3 && snapshotComercial.value && Object.keys(snapshotComercial.value).length > 0)
           ? JSON.parse(JSON.stringify(snapshotComercial.value))
           : {
@@ -12027,7 +14181,7 @@ const buildPayload = () => {
               radios_trabajo: siteVisit.value.radios_trabajo || '',
               alturas_trabajo: siteVisit.value.alturas_trabajo || '',
               tipo_carga: siteVisit.value.tipo_carga || '',
-              detalle_servicio: siteVisit.value.detalle_servicio || '',
+              detalle_servicio: descUnificada,
               obra_nombre: siteVisit.value.obra_nombre || '',
               obra_direccion: siteVisit.value.obra_direccion || '',
               obra_ciudad: siteVisit.value.obra_ciudad || '',
@@ -12035,6 +14189,7 @@ const buildPayload = () => {
               equipo_descripcion: lines.value[0]?.descripcion || '',
               equipo_cantidad: lines.value[0]?.cantidad || 1,
               equipo_valor: lines.value[0]?.valorUnitario || 0,
+              condicion_servicio: comercial.value.condicion_servicio || '',
               pensiones: { ...comercial.value.pensiones }
             }
       },
@@ -12042,13 +14197,15 @@ const buildPayload = () => {
         ...(rawEjecucionJson.value || {}),
         ...(opportunity.value.json_field?.ejecucion_v1 || {}),
         subtab_activa: rawEjecucionJson.value?.subtab_activa || opportunity.value.json_field?.ejecucion_v1?.subtab_activa || operacionesSubTab.value,
+        regimen_operacional: operacionesAssignment.value.regimen_operacional || '',
+        regimen_operacional_confirmado: !!operacionesAssignment.value.regimen_operacional_confirmado,
         traza_correos: trazaCorreosList.value,
         preparacion_salida: preparacionSalidaState.value,
-        equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipo_id || null,
+        equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipos_extra?.[0]?.id_equipo || (operacionesAssignment.value.equipo_id && operacionesAssignment.value.equipo_id !== 'CRN-DEFAULT' ? operacionesAssignment.value.equipo_id : null) || null,
         equipos_extra: operacionesAssignment.value.equipos_extra || [],
         especialistas_terreno: especialistasTerreno.value || [],
-        operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.operador_id || null,
-        rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || operacionesAssignment.value.rigger_id || null,
+        operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.equipos_extra?.[0]?.chofer_id || (operacionesAssignment.value.operador_id && operacionesAssignment.value.operador_id !== 'OP-101' ? operacionesAssignment.value.operador_id : null) || null,
+        rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || especialistasTerreno.value.find(e => (e.cargo || '').toLowerCase().includes('rigger') && e.id_user)?.id_user || (operacionesAssignment.value.rigger_id && operacionesAssignment.value.rigger_id !== 'RIG-201' ? operacionesAssignment.value.rigger_id : null) || null,
         chofer_id: operacionesAssignment.value.chofer_id,
         tripulacion_asignada: tripulacionAsignada.value || [],
         fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
@@ -12075,6 +14232,15 @@ const guardarEnPreventa = async () => {
     alert('⚠️ Requerimiento Obligatorio: Debe seleccionar un Cliente Mandante antes de guardar.')
     return
   }
+
+  // REQ-1104: Descripción del Servicio obligatoria en Preventa (se hereda a la OT del operador)
+  const descTexto = String(opportunity.value.descripcion || siteVisit.value.detalle_servicio || '').trim()
+  if (!descTexto) {
+    alert('⚠️ Requerimiento Obligatorio: Debe ingresar la Descripción del Servicio / Faena antes de guardar (este texto se reflejará en la Orden de Trabajo para el operador).')
+    return
+  }
+  opportunity.value.descripcion = descTexto
+  siteVisit.value.detalle_servicio = descTexto
 
   // REQ-735: Validar que cada fila estructurada tenga descripción antes de guardar
   for (let i = 0; i < (lines.value || []).length; i++) {
@@ -12166,11 +14332,14 @@ const generarRequerimiento = async () => {
     equipo_descripcion: lines.value[0]?.descripcion || '',
     equipo_cantidad: lines.value[0]?.cantidad || 1,
     equipo_valor: lines.value[0]?.valorUnitario || 0,
+    condicion_servicio: comercial.value.condicion_servicio || '',
     pensiones: { ...comercial.value.pensiones }
   }
 
   // Cambia el estado a Requerimiento Generado / Preparación en Operaciones
   opportunity.value.id_proyecto_estado = ESTADO_DB_OPERACIONES
+  operacionesAssignment.value.regimen_operacional = ''
+  operacionesAssignment.value.regimen_operacional_confirmado = false
   await guardarEnPreventa()
   
   try {
@@ -12188,6 +14357,11 @@ const generarRequerimiento = async () => {
 }
 
 const aprobarYGenerarOT = async () => {
+  if (!['URBANO', 'RURAL'].includes(operacionesAssignment.value.regimen_operacional)) {
+    alert('⚠️ Respuesta Obligatoria de Operaciones: Debe seleccionar explícitamente la Política Operacional (🏙️ Política Urbana o 🌲 Política Rural) antes de autorizar el requerimiento.')
+    return
+  }
+  operacionesAssignment.value.regimen_operacional_confirmado = true
   try {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -12361,8 +14535,17 @@ const getOperadorAsignadoAEquipo = (eqId) => {
     return lEqStr === idStr || (patStr && lEqStr === patStr) || (idEqStr && lEqStr === idEqStr)
   })
 
+  // Las plataformas de arriendo (Sin Operador) no llevan conductor ni operador
+  if (matchLine && esLineaPlataforma(matchLine)) {
+    return null
+  }
+  if (String(eqObj?.tipo_equipo || '').toUpperCase().includes('PLATAFORMA')) {
+    return null
+  }
+
   let targetUserId = matchLine?.operador_asignado_id || null
-  let targetCargo = (matchLine?.tipo || '').toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'
+  const matchTipoSub = `${matchLine?.tipo || ''} ${matchLine?.subcategoria || ''}`.toUpperCase()
+  let targetCargo = (matchTipoSub.includes('PLUMA') || matchTipoSub.includes('CAMION')) ? 'Operador Camión Pluma' : 'Operador Grúa'
 
   // 2. Si no está en flota principal, buscar en equipos extra (logística/traslados)
   if (!targetUserId) {
@@ -12400,8 +14583,8 @@ const getOperadorAsignadoAEquipo = (eqId) => {
     }
   }
 
-  // 5. Fallback a operacionesAssignment.operador_id si es el único equipo principal
-  if (!targetUserId && lPrincipal.length === 1 && operacionesAssignment.value?.operador_id) {
+  // 5. Fallback a operacionesAssignment.operador_id si es el único equipo principal (y no es plataforma)
+  if (!targetUserId && lPrincipal.length === 1 && !esCasoSoloPlataformas.value && operacionesAssignment.value?.operador_id) {
     targetUserId = operacionesAssignment.value.operador_id
   }
 
@@ -12567,7 +14750,9 @@ const statusSegmento1 = computed(() => preparacionSalidaState.value?.cc_notifica
 const statusSegmento2 = computed(() => {
   try {
     const eqList = equiposAsignadosLista.value || []
-    if (eqList.length === 0) return 'RED'
+    if (eqList.length === 0) {
+      return (tripulacionAsignada.value || []).some(t => t.id_user) ? 'GREEN' : 'RED'
+    }
     const states = eqList.map(eqId => getInspeccionEquipo(eqId))
     const allCompletado = states.every(s => s?.patio_checklist_completado || s?.estado_srv === 'APROBADO' || s?.estado_srv === 'COMPLETADO')
     if (allCompletado) {
@@ -12584,6 +14769,7 @@ const statusSegmento2 = computed(() => {
 
 const statusSegmento3 = computed(() => {
   if (preparacionSalidaState.value?.preparacion_finalizada) return 'GREEN'
+  if ((equiposAsignadosLista.value || []).length === 0 && (tripulacionAsignada.value || []).some(t => t.id_user)) return 'GREEN'
   if (preparacionSalidaState.value?.analista_notificado || preparacionSalidaState.value?.analista_revision_360) return 'YELLOW'
   return 'RED'
 })
@@ -12715,18 +14901,10 @@ const sincronizarInspeccionesPWA = async () => {
 // -------------------------------------------------------------
 // TELEMETRÍA DE CONVOY, ENLACES MÓVILES & AUTORIZACIÓN COPEC (SPEC 32)
 // -------------------------------------------------------------
-const solicitudesCopecPendientes = ref([
-  {
-    patente: 'HW-8842',
-    chofer_nombre: 'Carlos Mendoza',
-    odometro: 145920.0,
-    horometro: 3245.0,
-    id_autorizacion_input: '#COPEC-8492'
-  }
-])
+const solicitudesCopecPendientes = ref([])
 
 const cargarViajesProyecto = async (projId) => {
-  let id = projId || props.proyectoId || currentProyectoId.value
+  let id = projId || activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -12829,19 +15007,25 @@ const formatHoraCorta = (dtStr) => {
 }
 
 const cargarReportsProyecto = async (projId) => {
-  let id = projId || props.proyectoId || currentProyectoId.value
+  let id = projId || activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
   if (!id) return
   cargandoReports.value = true
   try {
-    const [repRes] = await Promise.allSettled([
+    const [repRes, actaRes] = await Promise.allSettled([
       apiAxios.get(`/operaciones/report/proyecto/${id}`),
+      apiAxios.get(`/operaciones/acta-plataforma/proyecto/${id}`),
       cargarViajesProyecto(id)
     ])
     if (repRes.status === 'fulfilled') {
       reportsProyecto.value = Array.isArray(repRes.value?.data?.data) ? repRes.value.data.data : []
+    }
+    if (actaRes.status === 'fulfilled' && actaRes.value?.data?.success) {
+      actaPlataformaProyecto.value = actaRes.value.data.acta || null
+    } else {
+      actaPlataformaProyecto.value = null
     }
   } catch (err) {
     console.warn('Error al cargar reports del proyecto:', err)
@@ -12907,6 +15091,7 @@ const calcularDevengadoTraslado = (line) => {
   const montoTotal = Number(calcularSubtotalLinea(line)) || 0
   const unidadNorm = String(line.unidad || '').trim().toUpperCase()
   const esIdaYVuelta = unidadNorm.includes('VUELTA') || unidadNorm === 'TRASLADO'
+  const esSoloRetorno = !esIdaYVuelta && unidadNorm.includes('RETORNO')
 
   const viajes = viajesProyecto.value || []
   
@@ -12919,8 +15104,29 @@ const calcularDevengadoTraslado = (line) => {
   // Viaje de Retorno realizado a base/patio
   const retornoRealizado = viajes.some(v => 
     (v.tipo_trayecto === 'RETORNO') && 
-    (v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_patio || v.estado_viaje === 'ARRIBADO_BASE' || v.estado_viaje === 'CONCLUIDO')
-  )
+    (v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_patio || v.fecha_llegada_faena || v.estado_viaje === 'ARRIBADO_BASE' || v.estado_viaje === 'ARRIBADO_FAENA' || v.estado_viaje === 'CONCLUIDO')
+  ) || (esSoloRetorno && (equiposParaStatusTraslado.value || []).some(eq => tieneViajeCompletado(eq.id_equipo)))
+
+  if (esSoloRetorno) {
+    if (!retornoRealizado) {
+      return {
+        porcentaje: 0,
+        devengado: 0,
+        pendiente: montoTotal,
+        estado: 'PENDIENTE_RETORNO',
+        label: '⏳ 0% Devengado (Retorno a Base Pendiente)',
+        badgeClass: 'bg-white/5 text-slate-400 border border-white/10'
+      }
+    }
+    return {
+      porcentaje: 100,
+      devengado: montoTotal,
+      pendiente: 0,
+      estado: 'COMPLETO',
+      label: '✓ 100% Devengado (Traslado Retorno Realizado)',
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+    }
+  }
 
   if (!idaRealizada) {
     return {
@@ -13013,6 +15219,14 @@ const listaEquiposUnicosReports = computed(() => {
     }
   })
   return Array.from(map.values())
+})
+
+const esProyectoPlataforma = computed(() => {
+  if (actaPlataformaProyecto.value) return true
+  const crm = opportunity.value?.json_field?.crm_v1 || {}
+  const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
+  const tienePlat = lineas.some(l => esLineaPlataforma(l))
+  return tienePlat || Number(opportunity.value?.id_empresa) === 11 || String(opportunity.value?.codi_proyecto || '').toUpperCase().startsWith('BMQ')
 })
 
 const reportsFiltrados = computed(() => {
@@ -13114,6 +15328,16 @@ const getUrlDocFisico = (idDoc) => {
   return `${base}/v1/storage/view/${idDoc}`
 }
 
+const getUrlReportPdf = (rep) => {
+  if (!rep) return '#'
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+  if (rep.id_doc_pdf) {
+    return `${base}/v1/storage/view/${rep.id_doc_pdf}`
+  }
+  return `${base}/operaciones/report/${rep.id_reporte_avance}/pdf`
+}
+
 // Modal Regularizar Reporte Manual
 const mostrarModalRegularizarManual = ref(false)
 const guardandoRegularizacion = ref(false)
@@ -13136,7 +15360,7 @@ const formRegularizar = ref({
 })
 
 const abrirModalRegularizarManual = () => {
-  let id = props.proyectoId || currentProyectoId.value
+  let id = activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -13169,7 +15393,7 @@ const onArchivoRegularizarChange = (e) => {
 }
 
 const guardarRegularizacionManual = async () => {
-  let id = props.proyectoId || currentProyectoId.value
+  let id = activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -13212,7 +15436,7 @@ const guardarRegularizacionManual = async () => {
 const descargandoPdfEDP = ref(false)
 
 const descargarDossierPdfGlobal = () => {
-  let id = props.proyectoId || currentProyectoId.value
+  let id = activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -13229,7 +15453,7 @@ const descargarDossierPdfGlobal = () => {
 }
 
 const cargarResumenEDP = async (projId) => {
-  let id = projId || props.proyectoId || currentProyectoId.value
+  let id = projId || activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -13252,6 +15476,9 @@ const cargarResumenEDP = async (projId) => {
       const itsRes = await apiAxios.get(`/operaciones/its/${id}`)
       if (itsRes?.data?.success && itsRes.data.data?.its) {
         itsEstadoActual.value = itsRes.data.data.its.estado_its || 'BORRADOR'
+        if (itsEstadoActual.value !== 'CONCLUIDO' && pasoCierreActivo.value === 'factura') {
+          pasoCierreActivo.value = 'its'
+        }
         if (edpData.value) {
           edpData.value.its = itsRes.data.data.its
         }
@@ -13267,7 +15494,7 @@ const cargarResumenEDP = async (projId) => {
 }
 
 const guardarCierreFacturacion = async () => {
-  let id = props.proyectoId || currentProyectoId.value
+  let id = activeProjectId.value || props.proyectoId || currentProyectoId.value || route?.query?.id_proyecto || route?.query?.id
   if (typeof id === 'object' && id !== null) {
     id = id.id_proyecto || id.id || id.id_cotizacion
   }
@@ -13448,7 +15675,7 @@ watch(() => operacionesSubTab.value, (newTab) => {
     }
     sincronizarTrasladosComerciales()
     cargarExpedientesAsignados()
-  } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') {
+  } else if (newTab === 'acreditaciones' || newTab === 'dossier_acreditacion') { cargarExpedientesAsignados() } else if (newTab === 'liquidacion') { cargarResumenEDP()
     cargarExpedientesAsignados()
   }
   if (newTab === 'preparacion_salida') {
@@ -13502,9 +15729,9 @@ const confirmarAsignacionOT = async () => {
   const equiposSinConductor = [];
   const lPrincipalVal = linesEquiposPrincipales.value || [];
   
-  // 1. Validar Flota Principal (Segmento 1)
+  // 1. Validar Flota Principal (Segmento 1 - Excluye Plataformas que no llevan operador)
   lPrincipalVal.forEach(l => {
-    if (l && l.equipo_asignado_id && !l.operador_asignado_id) {
+    if (l && !esLineaPlataforma(l) && l.equipo_asignado_id && !l.operador_asignado_id) {
       const eqObj = getEquipoObj(l.equipo_asignado_id);
       const pat = eqObj?.patente || l.equipo_asignado_id;
       const nom = eqObj?.nombre_equipo || eqObj?.modelo || l.descripcion || l.subcategoria || l.tipo || 'Equipo Principal';
@@ -13541,10 +15768,10 @@ const confirmarAsignacionOT = async () => {
     payload.json_field.ejecucion_v1 = {
       ...(payload.json_field?.ejecucion_v1 || {}),
       asignacion_confirmada: true,
-      equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipo_id || null,
+      equipo_id: linesEquiposPrincipales.value[0]?.equipo_asignado_id || operacionesAssignment.value.equipos_extra?.[0]?.id_equipo || (operacionesAssignment.value.equipo_id && operacionesAssignment.value.equipo_id !== 'CRN-DEFAULT' ? operacionesAssignment.value.equipo_id : null) || null,
       equipos_extra: operacionesAssignment.value.equipos_extra,
-      operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.operador_id,
-      rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || operacionesAssignment.value.rigger_id,
+      operador_id: linesEquiposPrincipales.value[0]?.operador_asignado_id || operacionesAssignment.value.equipos_extra?.[0]?.chofer_id || (operacionesAssignment.value.operador_id && operacionesAssignment.value.operador_id !== 'OP-101' ? operacionesAssignment.value.operador_id : null) || null,
+      rigger_id: linesEquiposPrincipales.value[0]?.rigger_asignado_id || especialistasTerreno.value.find(e => (e.cargo || '').toLowerCase().includes('rigger') && e.id_user)?.id_user || (operacionesAssignment.value.rigger_id && operacionesAssignment.value.rigger_id !== 'RIG-201' ? operacionesAssignment.value.rigger_id : null) || null,
       chofer_id: operacionesAssignment.value.chofer_id,
       fecha_salida_plan: operacionesAssignment.value.fecha_salida_plan,
       hora_salida_plan: operacionesAssignment.value.hora_salida_plan,
@@ -13622,7 +15849,7 @@ const confirmarAsignacionOT = async () => {
         if (l.equipo_asignado_id && !isNaN(parseInt(l.equipo_asignado_id))) {
           mapEquipos.set(parseInt(l.equipo_asignado_id), {
             id_equipo: l.equipo_asignado_id,
-            rol: l.tipo || 'Equipo Principal',
+            rol: [l.tipo, l.subcategoria].filter(Boolean).join(' - ') || 'Equipo Principal',
             f_ini: l.fecha_plan_ini,
             f_fin: l.fecha_plan_fin
           })
@@ -13764,10 +15991,81 @@ const confirmarAsignacionOT = async () => {
       `Notificación automática de inicio de preparación de salida enviada al Coordinador de Patio`
     )
 
-    alert('🚀 Asignación de Recursos Confirmada y notificada a la tripulación y al Coordinador de Patio.\n\nAvanzando a la etapa: Preparación de Salida.')
+    await sincronizarViajesAsignadosConBackend(projectId)
+
+    // Evento complementario no bloqueante: Notificar y solicitar V°B° a Gerencia (Omar) con links a Cotización y OT
+    if (!esRequerimientoInternoActual.value) {
+      await solicitarVbGerenciaOmar({ silencioso: true })
+    }
+
+    alert('🚀 Asignación de Recursos Confirmada y notificada a la tripulación, al Coordinador de Patio y a Gerencia (con enlaces a Cotización y OT).\n\nAvanzando a la etapa: Preparación de Salida.')
   } catch (error) {
     console.error('Error al confirmar asignación OT:', error)
     alert('Error al confirmar la asignación de recursos para la OT.')
+  }
+}
+
+const resolverTipoTrayectoEquipo = (idEquipo) => {
+  const allLines = lines.value || []
+  const lineaEq = allLines.find(l =>
+    l.tipo === 'TRASLADOS' && String(l.equipo_asignado_id || '') === String(idEquipo || '')
+  )
+  if (lineaEq && String(lineaEq.unidad || '').toUpperCase().includes('RETORNO')) {
+    return 'RETORNO'
+  }
+  const extraEq = (operacionesAssignment.value?.equipos_extra || []).find(ex =>
+    ex && typeof ex === 'object' && String(ex.id_equipo || '') === String(idEquipo || '')
+  )
+  if (extraEq && String(extraEq.unidad || '').toUpperCase().includes('RETORNO')) {
+    return 'RETORNO'
+  }
+  const lineasTras = allLines.filter(l => l.tipo === 'TRASLADOS')
+  if (lineasTras.length > 0 && lineasTras.every(l => String(l.unidad || '').toUpperCase().includes('RETORNO'))) {
+    return 'RETORNO'
+  }
+  return 'IDA'
+}
+
+const sincronizarViajesAsignadosConBackend = async (projectId) => {
+  if (!projectId) return
+  try {
+    const resViajes = await apiAxios.get(`/viajes/proyecto/${projectId}`).catch(() => ({ data: { data: [] } }))
+    const existentes = Array.isArray(resViajes.data?.data) ? resViajes.data.data : []
+    const yaTieneViaje = (eqId, trayecto) => existentes.some(v => Number(v.id_equipo) === Number(eqId) && String(v.tipo_trayecto || 'IDA').toUpperCase() === trayecto)
+
+    // 1. Equipos principales (excepto plataformas sin operador)
+    for (const l of (linesEquiposPrincipales.value || [])) {
+      if (esLineaPlataforma(l)) continue
+      const eqId = l.equipo_asignado_id || l.equipo_id
+      const opId = l.operador_asignado_id || operacionesAssignment.value?.operador_id
+      const trayecto = resolverTipoTrayectoEquipo(eqId)
+      if (eqId && opId && !yaTieneViaje(eqId, trayecto)) {
+        await apiAxios.post('/operaciones/viaje/asignar', {
+          id_proyecto: Number(projectId),
+          id_equipo: Number(eqId),
+          id_user_chofer: Number(opId),
+          tipo_trayecto: trayecto
+        }).catch(e => console.warn('No se pudo auto-registrar viaje de equipo principal:', e))
+      }
+    }
+
+    // 2. Vehículos de traslado / apoyo logístico (equipos_extra)
+    const extras = Array.isArray(operacionesAssignment.value?.equipos_extra) ? operacionesAssignment.value.equipos_extra : []
+    for (const ex of extras) {
+      const eqId = typeof ex === 'object' ? ex?.id_equipo : null
+      const chId = typeof ex === 'object' ? ex?.chofer_id : null
+      const trayecto = resolverTipoTrayectoEquipo(eqId)
+      if (eqId && chId && !yaTieneViaje(eqId, trayecto)) {
+        await apiAxios.post('/operaciones/viaje/asignar', {
+          id_proyecto: Number(projectId),
+          id_equipo: Number(eqId),
+          id_user_chofer: Number(chId),
+          tipo_trayecto: trayecto
+        }).catch(e => console.warn('No se pudo auto-registrar viaje de camión de traslado:', e))
+      }
+    }
+  } catch (err) {
+    console.warn('Error sincronizando viajes asignados con backend:', err)
   }
 }
 
@@ -14113,7 +16411,7 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
         id_user_chofer: targetUserId || 55,
         patente: eqPatente,
         token_viaje: ins.token_viaje,
-        tipo_trayecto: 'IDA',
+        tipo_trayecto: resolverTipoTrayectoEquipo(eqId),
         fecha_inspeccion_plan: ins.fecha_inspeccion_plan || null,
         hora_inspeccion_plan: ins.hora_inspeccion_plan || null
       })
@@ -14243,7 +16541,7 @@ const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
             if (rFono.startsWith('56') && rFono.length > 9) {} else if (rFono.length === 9 && rFono.startsWith('9')) { rFono = '56' + rFono }
             if (rFono && rFono.length >= 11 && rFono !== fonoLimpio) {
               const riggerNombre = riggerUser.name_frst ? `${riggerUser.name_frst} ${riggerUser.apellido_pat || ''}`.trim() : (riggerUser.nombre_user || 'Rigger')
-              const wspRigger = `🏗️ *GRÚAS SAN PABLO - SALIDA AUTORIZADA*\n\nEstimado(a) Rigger *${riggerNombre}*:\nSe ha autorizado la salida de base para el servicio:\n\n📋 *OT:* ${otTexto}\n🚚 *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n_Favor coordinarse con el operador ${opNombre} para la faena._`
+              const wspRigger = `🚛 *GRÚAS SAN PABLO - SALIDA AUTORIZADA*\n\nEstimado(a) Rigger *${riggerNombre}*:\nSe ha autorizado la salida de base para el servicio:\n\n📋 *OT:* ${otTexto}\n🚚 *Equipo:* ${eqPatente} (${eqNombre})\n🏢 *Cliente:* ${cliTexto}\n📍 *Destino:* ${obraTexto}\n\n_Favor coordinarse con el operador ${opNombre} para la faena._`
               axios.post(`${wspBase}/enviar`, { numero: rFono, mensaje: wspRigger }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }).catch(e => console.warn('Error WSP rigger:', e.message))
             }
           }
@@ -14367,19 +16665,41 @@ const notificarAnalistaOperaciones = async () => {
 const finalizarPreparacionSalida = async () => {
   preparacionSalidaState.value.analista_revision_360 = true
   preparacionSalidaState.value.analista_geocerca_activa = true
+  preparacionSalidaState.value.validacion_estricta = true
   preparacionSalidaState.value.preparacion_finalizada = true
+
+  operacionesSubTab.value = 'reports'
+  rawEjecucionJson.value = {
+    ...(rawEjecucionJson.value || {}),
+    subtab_activa: 'reports',
+    subtab_actual_view: 'reports',
+    preparacion_salida: { ...preparacionSalidaState.value }
+  }
+  if (!opportunity.value.json_field) opportunity.value.json_field = {}
+  opportunity.value.json_field.ejecucion_v1 = {
+    ...(opportunity.value.json_field.ejecucion_v1 || {}),
+    subtab_activa: 'reports',
+    subtab_actual_view: 'reports',
+    preparacion_salida: { ...preparacionSalidaState.value }
+  }
   
   const token = localStorage.getItem('token') || ''
   const payload = buildPayload()
   payload.json_field.ejecucion_v1 = payload.json_field.ejecucion_v1 || {}
-  payload.json_field.ejecucion_v1.preparacion_salida = preparacionSalidaState.value
+  payload.json_field.ejecucion_v1.subtab_activa = 'reports'
+  payload.json_field.ejecucion_v1.subtab_actual_view = 'reports'
+  payload.json_field.ejecucion_v1.preparacion_salida = { ...preparacionSalidaState.value }
   
   const projectId = props.proyectoId || currentProyectoId.value
   await apiAxios.put(`/proyectos/${projectId}`, payload, {
     headers: { Authorization: `Bearer ${token}` }
   })
+
+  await sincronizarViajesAsignadosConBackend(projectId)
+  await cargarReportsProyecto(projectId)
+  emit('creada', { id: projectId })
   
-  alert('🎉 Preparación de Salida Completada Exitosamente. El servicio pasa a estado En Tránsito / Ejecución Terreno PWA.')
+  alert('🎉 Preparación de Salida Completada Exitosamente. El servicio pasa a estado En Ejecución / Faena.')
 }
 
 const generarPDF = async () => {
@@ -14396,6 +16716,9 @@ const generarPDF = async () => {
     // los detalles del estructurador estén actualizados en la base de datos.
     const token = localStorage.getItem('token') || ''
     const payload = buildPayload()
+    if (isModoOperaciones.value && payload.json_field?.crm_v1) {
+      payload.json_field.crm_v1._modo_borrador_comercial_operaciones = true
+    }
     
     if (!projectId) {
       const { data } = await apiAxios.post('/proyectos/preventa', payload, {
@@ -14427,7 +16750,15 @@ const generarPDF = async () => {
       antecedentes.value.identificador_formal = data.proyecto.codi_proyecto
     }
     
-    alert(`Cotización v${data.cotizacion.version} generada con éxito.\nArchivo: ${data.cotizacion.nombre_archivo}`)
+    if (isModoOperaciones.value) {
+      alert(
+        `⚠️ ATENCIÓN COMERCIAL — Nueva Versión de Cotización (v${data.cotizacion.version}) generada.\n\n` +
+        `Usted está generando una nueva versión de cotización sobre un servicio que ya se encuentra en Operación.\n\n` +
+        `IMPORTANTE: Mientras NO envíe formalmente esta cotización al cliente mediante el botón [ENVIAR COTIZACIÓN], esta cotización NO es válida para Operaciones y el Report Diario seguirá rigiéndose por la última cotización enviada.`
+      )
+    } else {
+      alert(`Cotización v${data.cotizacion.version} generada con éxito.\nArchivo: ${data.cotizacion.nombre_archivo}`)
+    }
     
     // Abrir la URL del archivo
     window.open(getFullStaticUrl(data.cotizacion.url), '_blank')
@@ -14574,6 +16905,10 @@ const despacharContratoDigital = async () => {
     alert('Debe guardar o seleccionar una oportunidad antes de enviar el contrato.')
     return
   }
+  if (!contratoData.value.fecha_termino) {
+    alert('Debe indicar la Fecha de Término Exacta del arriendo antes de enviar el contrato (no se admite "A CONVENIR").')
+    return
+  }
   if (!contratoData.value.representante_email) {
     alert('Debe ingresar el correo electrónico del receptor para enviar el contrato.')
     return
@@ -14586,9 +16921,11 @@ const despacharContratoDigital = async () => {
   despachandoContrato.value = true
   despachoFeedback.value = false
   try {
-    const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+    const idEmisora = Number(contratoData.value.id_empresa_arrendador || opportunity.value?.id_empresa_emisora || activeEmpresa.value || 11)
     const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/despachar`, {
       id_empresa_arrendador: idEmisora,
+      fecha_inicio: contratoData.value.fecha_inicio,
+      fecha_termino: contratoData.value.fecha_termino,
       representante_nombre: contratoData.value.representante_nombre,
       representante_rut: contratoData.value.representante_rut,
       representante_cargo: contratoData.value.representante_cargo,
@@ -14634,7 +16971,7 @@ const compartirPorWhatsApp = async () => {
   }
   const cleanTel = tel.replace(/\D/g, '')
   const formattedTel = (cleanTel.length === 9 && cleanTel.startsWith('9')) ? `56${cleanTel}` : cleanTel
-  const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la revisión y firma digital del Contrato de Arrendamiento de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar para revisar las 14 cláusulas y firmar desde su celular (enlace válido por 72 hrs).`)
+  const msg = encodeURIComponent(`Estimado(a) ${clienteNombre}, le compartimos el enlace oficial para la revisión y firma digital del Contrato de Arrendamiento de Maquinaria (Plataforma) de ${empresaNombre}:\n\n${contratoData.value.url_publica_firma}\n\nFavor ingresar para revisar las 14 cláusulas y firmar desde su celular (enlace válido por 72 hrs).`)
   window.open(`https://wa.me/${formattedTel}?text=${msg}`, '_blank')
 }
 
@@ -14650,6 +16987,10 @@ const previsualizarContrato = async () => {
     alert('Debe guardar la oportunidad antes de generar el borrador del contrato.')
     return
   }
+  if (!contratoData.value.fecha_termino) {
+    alert('Debe indicar la Fecha de Término Exacta del arriendo antes de previsualizar o generar el PDF del contrato.')
+    return
+  }
 
   // Abrir ventana preventivamente antes del await para eludir bloqueo de popups del navegador
   let previewTab = null
@@ -14659,9 +17000,11 @@ const previsualizarContrato = async () => {
 
   generandoPdfContrato.value = true
   try {
-    const idEmisora = Number(opportunity.value?.id_empresa_emisora || activeEmpresa.value || 9)
+    const idEmisora = Number(contratoData.value.id_empresa_arrendador || opportunity.value?.id_empresa_emisora || activeEmpresa.value || 11)
     const { data } = await apiAxios.post(`/proyectos/${projectId}/contrato/generar-pdf`, {
       id_empresa_arrendador: idEmisora,
+      fecha_inicio: contratoData.value.fecha_inicio,
+      fecha_termino: contratoData.value.fecha_termino,
       representante_nombre: contratoData.value.representante_nombre,
       representante_rut: contratoData.value.representante_rut,
       representante_cargo: contratoData.value.representante_cargo,
@@ -14693,15 +17036,73 @@ const previsualizarContrato = async () => {
 }
 
 const descargarContratoPdf = () => {
-  if (contratoData.value.url_pdf) {
-    const pdfFullUrl = contratoData.value.url_pdf.startsWith('http') 
-      ? contratoData.value.url_pdf 
-      : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${contratoData.value.url_pdf}`
+  const targetUrl = contratoData.value.url_pdf_firmado || contratoData.value.url_pdf
+  if (targetUrl) {
+    const pdfFullUrl = targetUrl.startsWith('http') 
+      ? targetUrl 
+      : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${targetUrl}`
     window.open(pdfFullUrl, '_blank')
   } else {
     previsualizarContrato()
   }
 }
+
+const verContratoFirmadoPdf = () => {
+  const targetUrl = contratoData.value.url_pdf_firmado || contratoData.value.url_pdf
+  if (targetUrl) {
+    const pdfFullUrl = targetUrl.startsWith('http')
+      ? targetUrl
+      : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${targetUrl}`
+    window.open(pdfFullUrl, '_blank')
+  } else {
+    refrescarEstadoContrato(true)
+  }
+}
+
+const refrescarEstadoContrato = async (abrirPdfSiFirmado = false) => {
+  const projectId = activeProjectId.value || currentProyectoId.value || opportunity.value?.id_proyecto || props.proyectoId
+  if (!projectId) return
+  try {
+    const { data } = await apiAxios.get(`/proyectos/${projectId}`)
+    const p = data?.proyecto || data
+    if (!p) return
+    const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
+    const crm = jf?.crm_v1 || {}
+    const ctrCandidatos = [jf?.contrato_arriendo, crm?.contrato_arriendo, crm?.contrato].filter(Boolean)
+    const ctrFirmado = ctrCandidatos.find(c => c.estado === 'FIRMADO_DIGITAL' || c.estado === 'FIRMADO_FISICO')
+    const ctrEnviado = ctrCandidatos.find(c => c.estado === 'ENVIADO_FES')
+    const ctrMejor = ctrFirmado || ctrEnviado || ctrCandidatos[0] || null
+    if (ctrMejor) {
+      contratoData.value = {
+        ...contratoData.value,
+        ...ctrMejor,
+        url_publica_firma: ctrMejor.url_publica_firma || ctrMejor.url_firma || contratoData.value.url_publica_firma || '',
+        url_pdf_firmado: ctrMejor.url_pdf_firmado || ctrMejor.firma_digital?.url_pdf_firmado || '',
+        url_pdf: ctrMejor.url_pdf_firmado || ctrMejor.url_pdf || ''
+      }
+      if (abrirPdfSiFirmado) {
+        const targetUrl = contratoData.value.url_pdf_firmado || contratoData.value.url_pdf
+        if (targetUrl) {
+          const pdfFullUrl = targetUrl.startsWith('http')
+            ? targetUrl
+            : `${apiAxios.defaults.baseURL.replace(/\/api$/, '')}${targetUrl}`
+          window.open(pdfFullUrl, '_blank')
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error refrescando estado del contrato:', err)
+  }
+}
+
+watch(() => activeTab.value, (newTab) => {
+  if (newTab === 'contrato') {
+    refrescarEstadoContrato()
+    if (!actaPlataformaProyecto.value) {
+      cargarReportsProyecto()
+    }
+  }
+})
 
 const subirContratoFirmadoFisico = (e) => {
   const file = e.target.files?.[0]
@@ -14886,12 +17287,14 @@ const restaurarACotizar = async () => {
 
 const mostrarModalReverso = ref(false)
 const motivoReversoTexto = ref('')
+const fechaReversoDisplay = ref('')
 const errorMotivoReverso = ref('')
 const enviandoReverso = ref(false)
 
 const volverACotizar = () => {
   motivoReversoTexto.value = ''
   errorMotivoReverso.value = ''
+  fechaReversoDisplay.value = formatearFechaHoraReverso(new Date().toISOString())
   mostrarModalReverso.value = true
 }
 
@@ -14909,6 +17312,16 @@ const confirmarReversoACotizacion = async () => {
 
   try {
     const token = localStorage.getItem('token') || ''
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const fechaIso = new Date().toISOString()
+    opportunity.value.motivo_reverso_verificacion = motivoReversoTexto.value.trim()
+    opportunity.value.fecha_reverso_verificacion = fechaIso
+    opportunity.value.usuario_reverso_verificacion = {
+      id_user: currentUser.id_user || null,
+      nombre: currentUser.name_frst ? `${currentUser.name_frst} ${currentUser.apellido_pat || ''}`.trim() : (currentUser.nombre || 'Operaciones')
+    }
+    operacionesAssignment.value.regimen_operacional = ''
+    operacionesAssignment.value.regimen_operacional_confirmado = false
     const payload = buildPayload()
 
     await apiAxios.post(`/proyectos/${projectId}/reversar-a-cotizacion`, {
@@ -14919,9 +17332,17 @@ const confirmarReversoACotizacion = async () => {
     })
 
     mostrarModalReverso.value = false
-    isDirty.value = false
+    opportunity.value.id_proyecto_estado = ESTADOS_DB.COTIZANDO
     topTab.value = 'comercial'
-    alert('Cotización devuelta a Preventa Comercial exitosamente. Se ha notificado al equipo interno.')
+    await nextTick()
+    if (typeof initialSnapshot !== 'undefined' && typeof getFormSnapshot === 'function') {
+      initialSnapshot.value = getFormSnapshot()
+    }
+    isDirty.value = false
+    if (typeof isDirtyAsignacion !== 'undefined') {
+      isDirtyAsignacion.value = false
+    }
+    alert('Cotización devuelta a Preventa Comercial exitosamente. Se ha registrado el motivo de rechazo y fecha de devolución, y notificado al equipo interno.')
     emit('creada', { id: projectId })
     emit('close')
   } catch (error) {
@@ -14929,6 +17350,152 @@ const confirmarReversoACotizacion = async () => {
     errorMotivoReverso.value = error.response?.data?.error || 'Error al devolver la cotización.'
   } finally {
     enviandoReverso.value = false
+  }
+}
+// =========================================================================
+// SPEC 87: APROBADOR MÓVIL GERENCIA (OMAR - WEB TOKEN 1 SOLO USO)
+// =========================================================================
+const solicitandoVbOmar = ref(false)
+
+const esRequerimientoInternoActual = computed(() => {
+  return Boolean(
+    opportunity.value?.es_interno ||
+    opportunity.value?.json_field?.crm_v1?.es_requerimiento_interno ||
+    String(antecedentes.value?.identificador_formal || '').startsWith('INT-')
+  )
+})
+
+const estadoVbGerenciaActual = computed(() => {
+  return (
+    opportunity.value?.estado_vb_gerencia ||
+    opportunity.value?.aprobacion_gerencia?.estado ||
+    opportunity.value?.json_field?.crm_v1?.aprobacion_gerencia?.estado ||
+    'NO_REQUERIDO'
+  )
+})
+
+const observacionVbGerenciaActual = computed(() => {
+  return (
+    opportunity.value?.observacion_vb_gerencia ||
+    opportunity.value?.aprobacion_gerencia?.observacion ||
+    opportunity.value?.json_field?.crm_v1?.aprobacion_gerencia?.observacion ||
+    ''
+  )
+})
+
+const getBasePathPrefix = () => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')) {
+    return '/lg-gsp-prod'
+  }
+  return '/lg-gsp-dev'
+}
+
+const urlAprobacionGerenciaActual = computed(() => {
+  const apr = opportunity.value?.aprobacion_gerencia || opportunity.value?.json_field?.crm_v1?.aprobacion_gerencia
+  if (!apr) return ''
+  if (apr.url_aprobacion) return apr.url_aprobacion
+  if (apr.token_uuid) return `${getBasePathPrefix()}/aprobacion-gerencia/${apr.token_uuid}`
+  return ''
+})
+
+const urlCotizacionGerenciaActual = computed(() => {
+  const apr = opportunity.value?.aprobacion_gerencia || opportunity.value?.json_field?.crm_v1?.aprobacion_gerencia
+  if (!apr) return ''
+  if (apr.url_cotizacion) return apr.url_cotizacion
+  if (apr.token_uuid) return `${getBasePathPrefix()}/api/aprobaciones-gerencia/public/${apr.token_uuid}/cotizacion`
+  return ''
+})
+
+const urlOtGerenciaActual = computed(() => {
+  const apr = opportunity.value?.aprobacion_gerencia || opportunity.value?.json_field?.crm_v1?.aprobacion_gerencia
+  if (!apr) return ''
+  if (apr.url_ot) return apr.url_ot
+  if (apr.token_uuid) return `${getBasePathPrefix()}/api/aprobaciones-gerencia/public/${apr.token_uuid}/ot`
+  return ''
+})
+
+const badgeVbGerencia = computed(() => {
+  const est = estadoVbGerenciaActual.value
+  if (est === 'APROBADO') {
+    return {
+      icon: '🟢',
+      label: 'APROBADO',
+      classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      bannerClasses: 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200'
+    }
+  }
+  if (est === 'APROBADO_CON_OBS') {
+    return {
+      icon: '🟡',
+      label: 'APROBADO CON OBS.',
+      classes: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      bannerClasses: 'bg-amber-950/50 border-amber-500/40 text-amber-200'
+    }
+  }
+  if (est === 'RECHAZADO') {
+    return {
+      icon: '🔴',
+      label: 'RECHAZADO',
+      classes: 'bg-red-500/20 text-red-300 border-red-500/40',
+      bannerClasses: 'bg-red-950/50 border-red-500/40 text-red-200'
+    }
+  }
+  return {
+    icon: '⏳',
+    label: 'PENDIENTE VISACIÓN',
+    classes: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    bannerClasses: 'bg-purple-950/40 border-purple-500/30 text-purple-200'
+  }
+})
+
+const abrirEnlaceVbOmar = () => {
+  if (urlAprobacionGerenciaActual.value) {
+    window.open(urlAprobacionGerenciaActual.value, '_blank')
+  }
+}
+
+const solicitarVbGerenciaOmar = async (opts = {}) => {
+  const silencioso = Boolean(opts && opts.silencioso)
+  const projectId = props.proyectoId || currentProyectoId.value
+  if (!projectId) {
+    if (!silencioso) {
+      alert('Guarde primero la oportunidad o requerimiento antes de solicitar V°B° a Gerencia.')
+    }
+    return
+  }
+
+  solicitandoVbOmar.value = true
+  try {
+    const token = localStorage.getItem('token') || ''
+    const { data } = await apiAxios.post(`/proyectos/${projectId}/solicitar-vb-gerencia`, {
+      monto_neto: typeof totalNeto !== 'undefined' ? totalNeto.value : 0,
+      solicitante_nombre: nombreEjecutivoComercial.value || 'Coordinación de Operaciones GSP'
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (data && data.token) {
+      opportunity.value.estado_vb_gerencia = 'PENDIENTE'
+      opportunity.value.observacion_vb_gerencia = ''
+      opportunity.value.aprobacion_gerencia = {
+        id_token: data.token.id_token,
+        token_uuid: data.token_uuid,
+        url_aprobacion: data.url_aprobacion,
+        url_cotizacion: data.url_cotizacion,
+        url_ot: data.url_ot,
+        estado: 'PENDIENTE'
+      }
+      if (!silencioso) {
+        alert(`📱 Solicitud de V°B° enviada a Gerencia (Omar).\n\nEnlace de 1 solo uso generado:\n${data.url_completa || data.url_aprobacion}`)
+      }
+    }
+  } catch (err) {
+    console.error('Error al solicitar V°B° Gerencia:', err)
+    if (!silencioso) {
+      alert(err.response?.data?.error || 'Error al generar el enlace de aprobación para Gerencia.')
+    }
+  } finally {
+    solicitandoVbOmar.value = false
   }
 }
 </script>

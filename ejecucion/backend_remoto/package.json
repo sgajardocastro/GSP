@@ -1,6 +1,6 @@
 {
   "name": "lean-services-transmac-dev",
-  "version": "1.0.205",
+  "version": "1.0.223",
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",

@@ -23,18 +23,19 @@
               </span>
             </div>
             <p class="text-xs text-slate-400 mt-0.5">
-              Documento Comercial (Prefactura Cliente) independiente del ITS interno — Circuito de 3 Firmas FES.
+              Documento de Conciliación y Facturación — Circuito Oficial de 2 Hitos FES (Control de Gestión ➔ Contabilidad).
             </p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <button
+            v-if="!flujoEdp?.firma_2_contabilidad"
             type="button"
             @click="abrirModalPinFes(pasoSugeridoFirma)"
             class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-900/40 flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <span>🔏</span>
-            <span>Firmar Paso {{ pasoSugeridoFirma }} (FES)</span>
+            <span>{{ pasoSugeridoFirma === 1 ? 'Firmar Hito 1: Control de Gestión' : 'Firmar Hito 2: Contabilidad (Factura Subida)' }}</span>
           </button>
 
           <button
@@ -54,13 +55,13 @@
       <!-- CONTENIDO CON SCROLL -->
       <div class="flex-1 overflow-y-auto p-6 space-y-6 text-slate-200" id="caratula-edp-imprimible">
 
-        <!-- CIRCUITO DE 3 HITOS / FIRMAS FES DEL ESTADO DE PAGO + REGLA DE FACTURACIÓN INMEDIATA -->
+        <!-- CIRCUITO DE 2 HITOS / FIRMAS FES DEL ESTADO DE PAGO (SPEC-127 / REQ-1165) -->
         <div class="bg-[#070c1a] border border-emerald-500/30 rounded-xl p-4 space-y-4 shadow-lg">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs font-mono font-black uppercase tracking-wider text-emerald-400">
-                  ⚡ Circuito Oficial de Estado de Pago (Desacoplado de ITS)
+                  ⚡ Circuito Oficial de Estado de Pago (2 Hitos FES)
                 </span>
                 <span
                   :class="requiereOcProyecto ? (tieneOcCargada ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40') : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'"
@@ -70,18 +71,20 @@
                 </span>
               </div>
               <p class="text-[11px] text-slate-400 mt-0.5">
-                1° Control de Gestión (Yara) genera y firma EDP ➔ 2° Contabilidad valida y firma ➔ 3° Comercial firma y envía al Cliente.
+                1° Control de Gestión (Yiara Mendoza) valida Reports y firma EDP ➔ 2° Contabilidad (Maritza Seguel) emite en Laudus, sube Factura y firma (o devuelve con observaciones a Yiara).
               </p>
             </div>
 
-            <!-- Semáforo de Habilitación Inmediata para Facturar -->
+            <!-- Semáforo de Estado del Circuito -->
             <div
-              :class="esFacturado
+              :class="flujoEdp?.firma_2_contabilidad
                 ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'
-                : (habilitadoFacturarInmediato ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300')"
+                : (flujoEdp?.estado === 'OBSERVADO_CONTABILIDAD'
+                  ? 'bg-red-500/20 border-red-500/50 text-red-200'
+                  : (flujoEdp?.firma_1_analista ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'))"
               class="px-3 py-1.5 rounded-lg border text-xs font-mono font-bold flex items-center gap-2"
             >
-              <span>{{ esFacturado ? '✅ FACTURADO CONFORME' : (habilitadoFacturarInmediato ? '🟢 HABILITADO PARA FACTURAR INMEDIATAMENTE' : (requiereOcProyecto && !tieneOcCargada ? '🟠 ESPERANDO OC DEL CLIENTE PARA FACTURAR' : '⏳ PENDIENTE FIRMA DE VALIDACIÓN EDP')) }}</span>
+              <span>{{ flujoEdp?.firma_2_contabilidad ? '✅ FACTURADO EN LAUDUS Y FIRMADO CONTABILIDAD' : (flujoEdp?.estado === 'OBSERVADO_CONTABILIDAD' ? '↩️ DEVUELTO A CONTROL DE GESTIÓN CON OBSERVACIONES' : (flujoEdp?.firma_1_analista ? '🟢 EN CONTABILIDAD (MARITZA SEGUEL) — PENDIENTE FACTURA LAUDUS' : '⏳ PENDIENTE FIRMA HITO 1 (CONTROL DE GESTIÓN)')) }}</span>
             </div>
           </div>
 
@@ -92,21 +95,27 @@
                 ⚠️ EDP Devuelto con Observaciones por Contabilidad ({{ flujoEdp.observacion_devolucion.nombre_usuario }} — {{ formatearFechaHora(flujoEdp.observacion_devolucion.fecha) }})
               </div>
               <div class="mt-1 text-white">{{ flujoEdp.observacion_devolucion.motivo }}</div>
+              <div class="mt-1.5 text-[11px] text-red-300/90">
+                Control de Gestión (Yiara Mendoza) debe revisar/ajustar el antecedente observado y volver a emitir la firma del Hito 1.
+              </div>
             </div>
           </div>
 
-          <!-- 3 Tarjetas de Hitos y Estado de Facturación Desacoplado -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <!-- HITO 1: CONTROL DE GESTIÓN (YARA) -->
-            <div :class="flujoEdp?.firma_1_analista ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-[#0b1224] border-white/10'" class="border rounded-xl p-3.5 flex flex-col justify-between gap-2.5">
+          <!-- 2 Tarjetas de Hitos: Control de Gestión (Yiara) -> Contabilidad (Maritza Seguel) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- HITO 1: CONTROL DE GESTIÓN (YIARA MENDOZA) -->
+            <div :class="flujoEdp?.firma_1_analista ? 'bg-emerald-950/20 border-emerald-500/40' : (flujoEdp?.estado === 'OBSERVADO_CONTABILIDAD' ? 'bg-red-950/20 border-red-500/40' : 'bg-[#0b1224] border-white/10')" class="border rounded-xl p-4 flex flex-col justify-between gap-3">
               <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-mono font-black text-[11px] uppercase text-amber-400">Hito 1 • Control de Gestión</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono font-black text-[11px] uppercase text-amber-400">Hito 1 • Control de Gestión (Yiara Mendoza)</span>
                   <span v-if="flujoEdp?.firma_1_analista" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">✓ Firmado FES</span>
+                  <span v-else-if="flujoEdp?.estado === 'OBSERVADO_CONTABILIDAD'" class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-mono text-[10px] font-bold">↩️ Requiere Re-Firma</span>
                   <span v-else class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">Pendiente</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1">Verifica 100% de Reports Diarios de faena y libera el EDP con Firma FES.</p>
-                <div v-if="flujoEdp?.firma_1_analista" class="mt-2 pt-2 border-t border-white/10 text-[11px] space-y-0.5">
+                <p class="text-[11px] text-slate-400 mt-1">
+                  Verifica el 100% de Reports Diarios de faena, emite el EDP con Firma FES y deriva automáticamente a Contabilidad (enviando correo con PDF y Deep Link).
+                </p>
+                <div v-if="flujoEdp?.firma_1_analista" class="mt-2.5 pt-2 border-t border-white/10 text-[11px] space-y-0.5">
                   <div class="text-white font-bold">{{ flujoEdp.firma_1_analista.nombre_firmante }}</div>
                   <div class="font-mono text-emerald-400 text-[10px]">{{ flujoEdp.firma_1_analista.codigo_fes }}</div>
                   <div class="text-slate-400 text-[10px]">{{ formatearFechaHora(flujoEdp.firma_1_analista.fecha_firma) }}</div>
@@ -115,63 +124,78 @@
               <button
                 type="button"
                 @click="abrirModalPinFes(1)"
-                class="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider cursor-pointer transition-colors"
+                class="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider cursor-pointer transition-colors"
               >
-                {{ flujoEdp?.firma_1_analista ? '🔄 Re-Firmar Hito 1 (Analista)' : '🔏 Validar Reports y Emitir EDP (Yara)' }}
+                {{ flujoEdp?.firma_1_analista ? '🔄 Re-Firmar Hito 1 (Control de Gestión)' : '🔏 Validar Reports y Emitir EDP (Yiara)' }}
               </button>
             </div>
 
-            <!-- HITO 2: DESPACHO COMERCIAL (RESPONSABLE) -->
-            <div :class="flujoEdp?.firma_3_comercial || edpFeriaFirmado ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-[#0b1224] border-white/10'" class="border rounded-xl p-3.5 flex flex-col justify-between gap-2.5">
+            <!-- HITO 2: CONTABILIDAD Y FACTURACIÓN (MARITZA SEGUEL) -->
+            <div :class="flujoEdp?.firma_2_contabilidad ? 'bg-emerald-950/20 border-emerald-500/40' : (flujoEdp?.firma_1_analista ? 'bg-cyan-950/20 border-cyan-500/40' : 'bg-[#0b1224] border-white/10')" class="border rounded-xl p-4 flex flex-col justify-between gap-3">
               <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-mono font-black text-[11px] uppercase text-emerald-400">Hito 2 • Comercial</span>
-                  <span v-if="flujoEdp?.firma_3_comercial || edpFeriaFirmado" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">✓ Despachado</span>
-                  <span v-else class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] font-bold">Pendiente Envío</span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono font-black text-[11px] uppercase text-emerald-400">Hito 2 • Contabilidad (Maritza Seguel)</span>
+                  <span v-if="flujoEdp?.firma_2_contabilidad" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">✓ Facturado y Firmado FES</span>
+                  <span v-else-if="flujoEdp?.firma_1_analista" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold">En Contabilidad</span>
+                  <span v-else class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px] font-bold">En espera Hito 1</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1">Visación ejecutiva y despacho formal del dossier al Mandante.</p>
-                <div v-if="flujoEdp?.firma_3_comercial || edpFeriaFirmado" class="mt-2 pt-2 border-t border-white/10 text-[11px] space-y-0.5">
-                  <div class="text-white font-bold">{{ (flujoEdp?.firma_3_comercial || edpFeriaFirmado).nombre_firmante }}</div>
-                  <div class="font-mono text-emerald-400 text-[10px]">{{ (flujoEdp?.firma_3_comercial || edpFeriaFirmado).codigo_fes }}</div>
-                  <div class="text-slate-400 text-[10px]">{{ formatearFechaHora((flujoEdp?.firma_3_comercial || edpFeriaFirmado).fecha_firma) }}</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                @click="abrirModalPinFes(2)"
-                :disabled="!flujoEdp?.firma_1_analista"
-                class="w-full py-1.5 px-3 rounded-lg font-black text-[11px] uppercase tracking-wider transition-colors"
-                :class="!flujoEdp?.firma_1_analista ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'"
-              >
-                {{ (flujoEdp?.firma_3_comercial || edpFeriaFirmado) ? '🔄 Re-Enviar EDP al Cliente' : '🚀 Firmar y Despachar al Cliente' }}
-              </button>
-            </div>
+                <p class="text-[11px] text-slate-400 mt-1">
+                  Genera la factura en <strong>Laudus</strong>, sube el documento PDF al sistema y firma que subió la factura (o rechaza/devuelve a Yiara con observaciones).
+                </p>
 
-            <!-- ESTADO DE FACTURACIÓN (CONTABILIDAD DESACOPLADA) -->
-            <div :class="habilitadoFacturarInmediato ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-orange-950/20 border-orange-500/40'" class="border rounded-xl p-3.5 flex flex-col justify-between gap-2.5">
-              <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-mono font-black text-[11px] uppercase" :class="habilitadoFacturarInmediato ? 'text-emerald-400' : 'text-orange-400'">Facturación Contable</span>
-                  <span v-if="esFacturado" class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">DTE Emitido</span>
-                  <span v-else-if="habilitadoFacturarInmediato" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">🟢 Listo para Facturar</span>
-                  <span v-else class="px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 font-mono text-[10px] font-bold">⏳ Falta OC</span>
+                <div v-if="flujoEdp?.firma_2_contabilidad" class="mt-2.5 pt-2 border-t border-white/10 text-[11px] space-y-0.5">
+                  <div class="text-white font-bold">
+                    {{ flujoEdp.firma_2_contabilidad.nombre_firmante }}
+                    <span v-if="flujoEdp.firma_2_contabilidad.factura_numero" class="text-emerald-300 font-mono ml-1">· Factura #{{ flujoEdp.firma_2_contabilidad.factura_numero }}</span>
+                  </div>
+                  <div class="font-mono text-emerald-400 text-[10px]">{{ flujoEdp.firma_2_contabilidad.codigo_fes }}</div>
+                  <div class="text-slate-400 text-[10px]">{{ formatearFechaHora(flujoEdp.firma_2_contabilidad.fecha_firma) }}</div>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1">Desacople total: Contabilidad factura directamente sin requerir firmas intermedias en el EDP.</p>
-                <div class="mt-2 pt-2 border-t border-white/10 text-[11px] space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-400">Condición OC:</span>
-                    <span class="font-mono font-bold" :class="tieneOcCargada ? 'text-emerald-400' : (requiereOcProyecto ? 'text-orange-400' : 'text-slate-300')">
-                      {{ tieneOcCargada ? '✓ OC Cargada' : (requiereOcProyecto ? '⚠️ Requiere OC' : 'Exenta OC') }}
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-400">Firma Contabilidad:</span>
-                    <span class="font-mono text-emerald-400 font-bold">No requerida (SoD)</span>
-                  </div>
+                <div v-else class="mt-2.5 pt-2 border-t border-white/10 text-[11px] flex items-center justify-between">
+                  <span class="text-slate-400">Documento Laudus en Sistema:</span>
+                  <span v-if="tieneFacturaSubidaModal || formFactura.factura_numero" class="font-mono font-bold text-emerald-400">
+                    ✓ Factura #{{ formFactura.factura_numero || folioFacturaGuardada }} lista
+                  </span>
+                  <span v-else class="font-mono font-bold text-amber-300">
+                    ⏳ Pendiente subir PDF Laudus
+                  </span>
                 </div>
               </div>
-              <div class="py-1 px-2.5 rounded-lg bg-white/5 border border-white/10 text-center font-mono text-[10px] text-slate-300">
-                {{ habilitadoFacturarInmediato ? '✅ Habilitado en Bandeja "Por Facturar"' : '⏳ En espera de gestión comercial de OC' }}
+
+              <div class="space-y-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    @click="irABloqueFacturaYSubir"
+                    :disabled="soloLectura"
+                    class="py-1.5 px-2.5 rounded-lg bg-blue-600/25 hover:bg-blue-600 text-blue-200 hover:text-white border border-blue-500/40 font-bold text-[11px] transition-colors cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5"
+                  >
+                    <span>📤</span>
+                    <span>{{ formFactura.archivo ? 'Cambiar PDF Laudus' : '1. Subir PDF Laudus' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="abrirModalPinFes(2)"
+                    :disabled="!flujoEdp?.firma_1_analista"
+                    class="py-1.5 px-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1"
+                    :class="!flujoEdp?.firma_1_analista ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow'"
+                  >
+                    <span>🔏</span>
+                    <span>{{ flujoEdp?.firma_2_contabilidad ? 'Re-Firmar Carga' : '2. Firmar Subida' }}</span>
+                  </button>
+                </div>
+
+                <button
+                  v-if="!flujoEdp?.firma_2_contabilidad"
+                  type="button"
+                  @click="abrirModalDevolucionConta"
+                  :disabled="!flujoEdp?.firma_1_analista"
+                  class="w-full py-1.5 px-3 rounded-lg border text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                  :class="!flujoEdp?.firma_1_analista ? 'bg-slate-900/40 border-white/5 text-slate-600 cursor-not-allowed' : 'bg-red-950/40 hover:bg-red-600 text-red-300 hover:text-white border-red-500/40 cursor-pointer'"
+                >
+                  <span>↩️</span>
+                  <span>Rechazar / Devolver EDP a Yiara con Observación</span>
+                </button>
               </div>
             </div>
           </div>
@@ -391,27 +415,46 @@
         <!-- TARJETAS TOTALES DE COBRO -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
           <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1">
-            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Días Operados</span>
+            <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Días de Arriendo</span>
             <div class="text-2xl font-black font-mono text-white">
               {{ edpData?.resumen_financiero?.dias_totales || 0 }} <span class="text-xs text-slate-400 font-normal">DÍAS</span>
+            </div>
+            <div class="text-[11px] text-amber-300 font-mono font-medium truncate" :title="periodoArriendoTexto">
+              📅 {{ periodoArriendoTexto }}
             </div>
             <span class="text-xs text-emerald-400 block font-medium">100% Respaldados</span>
           </div>
 
           <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1">
             <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Horas Facturables</span>
-            <div class="text-2xl font-black font-mono text-white">
-              {{ edpData?.resumen_financiero?.horas_facturables_totales || 0 }} <span class="text-xs text-slate-400 font-normal">HRS</span>
-            </div>
-            <span class="text-xs text-slate-400 block">Netas a cobrar</span>
+            <template v-if="esValorFijo">
+              <div class="text-xs sm:text-sm font-black font-mono text-amber-300 py-1 leading-tight">
+                No aplica tarificación por hora
+              </div>
+              <span class="text-xs text-slate-400 block font-mono">Tarifa Plana / Suma Alzada</span>
+            </template>
+            <template v-else>
+              <div class="text-2xl font-black font-mono text-white">
+                {{ edpData?.resumen_financiero?.horas_facturables_totales || 0 }} <span class="text-xs text-slate-400 font-normal">HRS</span>
+              </div>
+              <span class="text-xs text-slate-400 block">Netas a cobrar</span>
+            </template>
           </div>
 
           <div class="bg-[#050810] border border-white/15 rounded-xl p-4 space-y-1">
             <span class="text-xs text-slate-400 font-bold uppercase font-mono block">Sobretiempo Extra</span>
-            <div class="text-2xl font-black font-mono text-yellow-400">
-              +{{ edpData?.resumen_financiero?.horas_sobretiempo_totales || 0 }} <span class="text-xs text-yellow-500 font-normal">HRS</span>
-            </div>
-            <span class="text-xs text-slate-400 block font-mono">{{ formatMoneda(edpData?.resumen_financiero?.monto_sobretiempo_neto) }}</span>
+            <template v-if="esValorFijo">
+              <div class="text-xs sm:text-sm font-black font-mono text-slate-400 py-1 leading-tight">
+                No aplica
+              </div>
+              <span class="text-xs text-slate-400 block font-mono">Servicio a Valor Fijo</span>
+            </template>
+            <template v-else>
+              <div class="text-2xl font-black font-mono text-yellow-400">
+                +{{ edpData?.resumen_financiero?.horas_sobretiempo_totales || 0 }} <span class="text-xs text-yellow-500 font-normal">HRS</span>
+              </div>
+              <span class="text-xs text-slate-400 block font-mono">{{ formatMoneda(edpData?.resumen_financiero?.monto_sobretiempo_neto) }}</span>
+            </template>
           </div>
 
           <div class="bg-amber-950/20 border border-amber-500/50 rounded-xl p-4 space-y-1 shadow-lg shadow-amber-500/5">
@@ -454,10 +497,10 @@
                     {{ l.tipo }}
                   </td>
                   <td class="py-3 px-3 text-center font-mono text-slate-300">
-                    {{ l.unidad }}
+                    {{ (l.tipo === 'TRASLADOS' || String(l.unidad || '').startsWith('TRASLADO')) ? (l.unidad || 'TRASLADO IDA/VUELTA') : (String(l.unidad || '').toUpperCase().includes('FIJO') ? 'Valor Fijo' : l.unidad) }}
                   </td>
                   <td class="py-3 px-3 text-center font-mono font-bold text-white">
-                    {{ l.cantidad }}
+                    {{ (l.tipo === 'TRASLADOS' || String(l.unidad || '').toUpperCase().includes('FIJO') || String(l.unidad || '').startsWith('TRASLADO')) ? 1 : l.cantidad }}
                   </td>
                   <td class="py-3 px-3.5 text-right font-mono text-slate-300">
                     <input 
@@ -556,7 +599,8 @@
             >
               <div class="flex justify-between items-center text-xs">
                 <span class="font-bold text-amber-400 font-mono">Día {{ rep.dia_correlativo }} • {{ formatearFecha(rep.fecha_reporte) }}</span>
-                <span class="text-emerald-400 font-mono font-bold">{{ rep.horas_facturables }} hrs</span>
+                <span v-if="esValorFijo" class="text-slate-400 font-mono text-[11px]">Respaldo de Ejecución</span>
+                <span v-else class="text-emerald-400 font-mono font-bold">{{ rep.horas_facturables }} hrs</span>
               </div>
               <div class="text-[11px] text-slate-400">
                 Grúa: <strong class="text-slate-200 font-mono">{{ rep.equipo_patente }}</strong> ({{ rep.equipo_modelo }})
@@ -721,15 +765,18 @@
               </div>
             </div>
 
-            <!-- BLOQUE 2: FACTURA ELECTRÓNICA (DTE ERP) -->
-            <div class="bg-[#050810] border border-white/10 rounded-xl p-4 space-y-3">
-              <div class="flex items-center justify-between">
+            <!-- BLOQUE 2: FACTURA ELECTRÓNICA (DTE LAUDUS ERP) -->
+            <div id="bloque-factura-laudus-edp" class="bg-[#050810] border border-emerald-500/25 rounded-xl p-4 space-y-3">
+              <div class="flex items-center justify-between gap-2">
                 <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <span>🧾</span>
-                  <span>2. Factura Electrónica (DTE)</span>
+                  <span>2. Factura Electrónica (DTE — Laudus)</span>
                 </span>
-                <span v-if="esFacturado" class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                  Registrada
+                <span v-if="reconociendoPdfLaudus" class="text-[10px] text-cyan-300 font-bold bg-cyan-500/15 px-2 py-0.5 rounded border border-cyan-500/30 animate-pulse">
+                  Analizando PDF Laudus...
+                </span>
+                <span v-else-if="tieneFacturaSubidaModal || esFacturado" class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  Registrada en Sistema
                 </span>
               </div>
 
@@ -824,24 +871,24 @@
                   />
                 </div>
 
-                <div class="pt-1 flex justify-end gap-2">
+                <div class="pt-1 flex flex-wrap justify-end gap-2">
                   <button
                     type="button"
                     @click="guardarFacturaYConcluir(false)"
                     :disabled="guardandoFactura || !formFactura.factura_numero"
                     class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold rounded-lg text-xs transition-colors cursor-pointer"
-                    title="Guardar datos de la factura sin concluir la OT"
+                    title="Guardar datos de la factura sin firmar aún"
                   >
                     Guardar Datos
                   </button>
                   <button
                     type="button"
-                    @click="guardarFacturaYConcluir(true)"
-                    :disabled="guardandoFactura || !formFactura.factura_numero"
+                    @click="guardarFacturaYAbrirFirmaPaso2"
+                    :disabled="guardandoFactura || !formFactura.factura_numero || !flujoEdp?.firma_1_analista"
                     class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black rounded-lg text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/30"
                   >
-                    <span>🏁</span>
-                    <span>{{ guardandoFactura ? 'Registrando...' : (esFacturado ? 'Actualizar Factura' : 'Declarar Facturado & Concluir') }}</span>
+                    <span>🔏</span>
+                    <span>{{ guardandoFactura ? 'Guardando...' : 'Guardar Factura y Firmar Carga (FES)' }}</span>
                   </button>
                 </div>
               </div>
@@ -966,6 +1013,58 @@
             class="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-black rounded-lg text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-lg shadow-blue-600/30"
           >
             <span>{{ procesandoFirma ? 'Certificando...' : 'Confirmar Firma' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMODAL: DEVOLVER / RECHAZAR EDP DE CONTABILIDAD A CONTROL DE GESTIÓN (YIARA MENDOZA) -->
+    <div v-if="modalDevolucionContaAbierto" class="fixed inset-0 z-[125] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+      <div class="bg-[#0b1021] border border-red-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4 text-slate-200">
+        <div class="flex justify-between items-start border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">↩️</span>
+            <div>
+              <h4 class="text-sm font-black text-white uppercase tracking-wider">Devolver EDP a Control de Gestión (Yiara Mendoza)</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                {{ edpData?.proyecto?.codi_proyecto || 'OT' }} — {{ edpData?.proyecto?.cliente_nombre || 'Mandante' }}
+              </p>
+            </div>
+          </div>
+          <button @click="modalDevolucionContaAbierto = false" class="text-slate-400 hover:text-white text-xl font-bold cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <label class="block text-red-300 font-bold uppercase tracking-wider text-[10px]">
+            Observación de Contabilidad (Motivo del Rechazo / Devolución) *
+          </label>
+          <textarea
+            v-model="observacionDevolucionTexto"
+            rows="4"
+            placeholder="Indica el motivo por el cual Contabilidad devuelve este EDP a Yiara Mendoza (ej. diferencia en horas facturables vs OC, tarifa a corregir, falta respaldo de report)..."
+            class="w-full bg-[#050810] border border-white/20 rounded-xl p-3 text-xs text-white outline-none focus:border-red-400 resize-none"
+          ></textarea>
+          <p class="text-[11px] text-slate-400">
+            Al confirmar, el EDP saldrá de la bandeja de facturación de Contabilidad, quedará observado para Yiara Mendoza y se enviará notificación automática por correo con Deep Link directo.
+          </p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            @click="modalDevolucionContaAbierto = false"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            @click="confirmarDevolucionEdpConta"
+            :disabled="procesandoDevolucionConta || !observacionDevolucionTexto.trim()"
+            class="px-5 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-black rounded-lg text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-lg shadow-red-600/30"
+          >
+            <span>↩️</span>
+            <span>{{ procesandoDevolucionConta ? 'Devolviendo...' : 'Confirmar Devolución a Yiara' }}</span>
           </button>
         </div>
       </div>
@@ -1120,17 +1219,26 @@ const formOC = ref({
 
 const fileInputFactura = ref(null)
 const subiendoArchivoFactura = ref(false)
+const reconociendoPdfLaudus = ref(false)
 const guardandoFactura = ref(false)
 const formFactura = ref({
   factura_numero: '',
   fecha_facturacion: new Date().toISOString().split('T')[0],
   monto_neto: 0,
+  monto_exento: 0,
+  monto_iva: 0,
   monto_bruto: 0,
+  formato_detectado: 'LAUDUS',
+  id_empresa_emisora: 9,
+  empresa_facturadora: 'Grúas San Pablo',
+  rut_emisor: '52.004.162-1',
+  cliente_receptor_rut: '',
+  cliente_receptor_nombre: '',
   archivo: null,
   observaciones: ''
 })
 
-// FES Circuito 3 Hitos EDP
+// FES Circuito 2 Hitos EDP (Control de Gestión -> Contabilidad)
 const modalFesAbierto = ref(false)
 const pasoFirmaSeleccionado = ref(1)
 const pinDigits = ref(['', '', '', ''])
@@ -1138,6 +1246,11 @@ const pinInputs = ref([])
 const pinError = ref('')
 const observacionesFirma = ref('')
 const procesandoFirma = ref(false)
+
+// Submodal Devolución Contabilidad -> Control de Gestión (Yiara Mendoza)
+const modalDevolucionContaAbierto = ref(false)
+const observacionDevolucionTexto = ref('')
+const procesandoDevolucionConta = ref(false)
 
 const currentUser = computed(() => {
   try {
@@ -1232,34 +1345,84 @@ const habilitadoFacturarInmediato = computed(() => {
   return Boolean(edpValidado && (!requiereOcProyecto.value || tieneOcCargada.value))
 })
 
+const folioFacturaGuardada = computed(() => {
+  const jf = props.edpData?.proyecto?.json_field || {}
+  const dtes = Array.isArray(jf.facturas_dte) ? jf.facturas_dte : []
+  if (dtes.length > 0) return dtes.map(d => d.folio_dte).filter(Boolean).join(', ')
+  return jf.liquidacion_v1?.factura_numero || props.edpData?.liquidacion_guardada?.factura_numero || ''
+})
+
+const tieneFacturaSubidaModal = computed(() => {
+  return Boolean(folioFacturaGuardada.value)
+})
+
 const etiquetaEstadoFlujoEdp = computed(() => {
   const f = flujoEdp.value
-  if (!f) return '⏳ Paso 1: Pendiente Emisión Control de Gestión'
-  if (f.estado === 'OBSERVADO_CONTABILIDAD') return '⚠️ Observado por Contabilidad'
-  if (f.firma_3_comercial) return '🚀 Despachado al Cliente'
-  if (f.firma_1_analista) return '🟢 EDP Liberado (Control de Gestión)'
-  return '⏳ Paso 1: Pendiente Emisión Control de Gestión'
+  if (!f) return '⏳ Hito 1: Pendiente Emisión Control de Gestión (Yiara Mendoza)'
+  if (f.firma_2_contabilidad) return '✅ Facturado en Laudus y Firmado Contabilidad (Maritza Seguel)'
+  if (f.estado === 'OBSERVADO_CONTABILIDAD') return '↩️ Devuelto con Observaciones a Control de Gestión (Yiara Mendoza)'
+  if (f.firma_1_analista) return '🟢 En Contabilidad (Maritza Seguel) — Pendiente Factura Laudus'
+  return '⏳ Hito 1: Pendiente Emisión Control de Gestión (Yiara Mendoza)'
 })
 
 const pasoSugeridoFirma = computed(() => {
   const f = flujoEdp.value
   if (!f || !f.firma_1_analista) return 1
-  return 2 // Despacho Comercial
+  return 2 // Hito 2: Contabilidad (Maritza Seguel)
 })
 
 const tituloPasoFirmaActual = computed(() => {
-  if (pasoFirmaSeleccionado.value === 1) return 'Hito 1: Control de Gestión (Yara) — Validar Reports y Emitir EDP'
-  return 'Hito 2: Comercial — Firmar y Despachar EDP al Cliente Mandante'
+  if (pasoFirmaSeleccionado.value === 1) {
+    return 'Hito 1: Control de Gestión (Yiara Mendoza) — Validar Reports y Emitir EDP'
+  }
+  return 'Hito 2: Contabilidad (Maritza Seguel) — Certificar Carga de Factura Laudus'
+})
+
+const esValorFijo = computed(() => {
+  const lineas = props.edpData?.lineas_cotizadas || []
+  if (lineas.length === 0) return false
+  return lineas.some(l => {
+    const u = String(l.unidad || '').toUpperCase()
+    const t = String(l.tipo || l.categoria || '').toUpperCase()
+    return u.includes('FIJO') || u.includes('ALZADA') || t.includes('FIJO')
+  })
+})
+
+const periodoArriendoTexto = computed(() => {
+  const reps = props.edpData?.reports_validados || []
+  if (reps.length > 0) {
+    const sorted = [...reps].sort((a, b) => new Date(a.fecha_reporte) - new Date(b.fecha_reporte))
+    const fMin = formatearFecha(sorted[0]?.fecha_reporte)
+    const fMax = formatearFecha(sorted[sorted.length - 1]?.fecha_reporte)
+    return fMin === fMax ? fMin : `${fMin} al ${fMax}`
+  }
+  const fIni = props.edpData?.proyecto?.fecha_inicio || props.edpData?.proyecto?.fecha_creacion
+  const fFin = props.edpData?.proyecto?.fecha_termino || fIni
+  return fIni ? (formatearFecha(fIni) === formatearFecha(fFin) ? formatearFecha(fIni) : `${formatearFecha(fIni)} al ${formatearFecha(fFin)}`) : '---'
 })
 
 const calcularSubtotalLinea = (linea) => {
   if (!linea) return 0
+  const unidad = String(linea.unidad || '').toUpperCase()
+  const tipo = String(linea.tipo || '').toUpperCase()
   const valUnit = Number(linea.valorUnitario ?? linea.precio_unitario ?? linea.tarifa ?? 0)
+
+  // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
+  if (unidad.includes('FIJO') || unidad.includes('ALZADA') || tipo.includes('FIJO') || tipo === 'TRASLADOS' || unidad.startsWith('TRASLADO')) {
+    return valUnit
+  }
+
+  // Si el backend ya calculó el subtotal canónico y no hay ajuste manual de tesorería, respetarlo
+  if (!modoAjusteTesoreria.value && linea.subtotal_calculado !== undefined && linea.subtotal_calculado !== null) {
+    return Number(linea.subtotal_calculado)
+  }
   const cant = Number(linea.cantidad ?? 1)
-  if (linea.unidad === 'Diario') {
+  if (unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('JORNADA')) {
     const diasFaena = Math.max(1, props.edpData?.reports_validados?.length || 1)
     return valUnit * diasFaena * cant
-  } else if (linea.tipo?.includes('GRUA')) {
+  } else if (unidad.includes('MES') || unidad.includes('MENSUAL')) {
+    return valUnit * cant
+  } else if (unidad.includes('HORA') || tipo.includes('GRUA')) {
     const hrs = Number(props.edpData?.resumen_financiero?.horas_facturables_totales) || (cant * 8)
     return valUnit * hrs
   }
@@ -1310,24 +1473,37 @@ watch(() => props.edpData, (nuevo) => {
 
   // Sincronizar Factura existente
   const liqGuardada = nuevo?.proyecto?.json_field?.liquidacion_v1 || nuevo?.liquidacion_guardada
-  if (liqGuardada) {
+  const dtePrincipal = nuevo?.proyecto?.json_field?.facturas_dte?.[0] || null
+  if (liqGuardada || dtePrincipal) {
     formFactura.value = {
-      factura_numero: liqGuardada.factura_numero || '',
-      fecha_facturacion: liqGuardada.fecha_facturacion ? String(liqGuardada.fecha_facturacion).split('T')[0] : new Date().toISOString().split('T')[0],
-      monto_neto: liqGuardada.monto_facturado_neto || totalNetoCalculado.value || 0,
-      monto_bruto: liqGuardada.monto_facturado_bruto || totalBrutoCalculado.value || 0,
-      archivo: liqGuardada.archivo_factura || null,
-      observaciones: liqGuardada.observaciones_facturacion || ''
+      factura_numero: liqGuardada?.factura_numero || dtePrincipal?.folio_dte || '',
+      fecha_facturacion: (liqGuardada?.fecha_facturacion || dtePrincipal?.fecha_emision)
+        ? String(liqGuardada?.fecha_facturacion || dtePrincipal?.fecha_emision).split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      monto_neto: liqGuardada?.monto_facturado_neto || dtePrincipal?.monto_neto || totalNetoCalculado.value || 0,
+      monto_exento: dtePrincipal?.monto_exento || 0,
+      monto_iva: liqGuardada?.monto_facturado_iva || dtePrincipal?.monto_iva || 0,
+      monto_bruto: liqGuardada?.monto_facturado_bruto || dtePrincipal?.monto_total || totalBrutoCalculado.value || 0,
+      formato_detectado: dtePrincipal?.formato_detectado || 'LAUDUS',
+      id_empresa_emisora: dtePrincipal?.id_empresa_emisora || nuevo?.proyecto?.id_empresa || 9,
+      empresa_facturadora: dtePrincipal?.empresa_facturadora || 'Grúas San Pablo',
+      rut_emisor: dtePrincipal?.rut_emisor || '52.004.162-1',
+      cliente_receptor_rut: dtePrincipal?.cliente_receptor_rut || nuevo?.proyecto?.cliente_rut || '',
+      cliente_receptor_nombre: dtePrincipal?.cliente_receptor_nombre || nuevo?.proyecto?.cliente_nombre || '',
+      archivo: liqGuardada?.archivo_factura || (dtePrincipal?.archivo_url ? { url: dtePrincipal.archivo_url, nombre: dtePrincipal.nombre_archivo || `Factura_${dtePrincipal.folio_dte}.pdf` } : null),
+      observaciones: liqGuardada?.observaciones_facturacion || dtePrincipal?.observaciones || ''
     }
-    if (liqGuardada.archivo_oc && !formOC.value.archivo) {
+    if (liqGuardada?.archivo_oc && !formOC.value.archivo) {
       formOC.value.archivo = liqGuardada.archivo_oc
     }
-    if (liqGuardada.hes_oc_numero && !formOC.value.numero_oc) {
+    if (liqGuardada?.hes_oc_numero && !formOC.value.numero_oc) {
       formOC.value.numero_oc = liqGuardada.hes_oc_numero
     }
   } else if (!formFactura.value.factura_numero) {
     formFactura.value.monto_neto = totalNetoCalculado.value || 0
     formFactura.value.monto_bruto = totalBrutoCalculado.value || 0
+    formFactura.value.cliente_receptor_rut = nuevo?.proyecto?.cliente_rut || ''
+    formFactura.value.cliente_receptor_nombre = nuevo?.proyecto?.cliente_nombre || ''
   }
 }, { immediate: true })
 
@@ -1475,11 +1651,95 @@ const onArchivoOCSeleccionado = async (e) => {
   }
 }
 
+const irABloqueFacturaYSubir = () => {
+  const el = document.getElementById('bloque-factura-laudus-edp')
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+  if (!props.soloLectura) {
+    setTimeout(() => {
+      triggerFileInputFactura()
+    }, 180)
+  }
+}
+
 const onArchivoFacturaSeleccionado = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
   subiendoArchivoFactura.value = true
+  const esPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf'
+  if (esPdf) reconociendoPdfLaudus.value = true
+
   try {
+    // 1. Si es PDF, parsear automáticamente DTE Laudus (extrae folio, RUT emisor/receptor, montos y guarda en storage)
+    if (esPdf) {
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const parseRes = await apiAxios.post('/operaciones/edp/parsear-dte-pdf', {
+        pdf_base64: b64,
+        nombre_archivo: file.name
+      })
+
+      if (parseRes.data?.success && parseRes.data.data) {
+        const d = parseRes.data.data
+        const limpiarRut = r => String(r || '').replace(/[^0-9kK]/g, '').toUpperCase()
+        const RUTS_HOLDING_VALIDOS = ['520041621', '762095343', '762185768', '782545353']
+
+        const rutEmisor = limpiarRut(d.rut_emisor)
+        if (rutEmisor && !RUTS_HOLDING_VALIDOS.includes(rutEmisor)) {
+          alert(
+            `❌ RECHAZO TRIBUTARIO: EMISOR NO PERTENECE AL HOLDING GSP\n\n` +
+            `El documento indica como emisor: ${d.empresa_facturadora || 'No identificada'} (RUT: ${d.rut_emisor || 'No detectado'}).\n` +
+            `Solo se admiten facturas emitidas por empresas oficiales del holding (Grúas San Pablo, Bestmaq, Logística del Sur, Royal Rental).`
+          )
+          if (e.target) e.target.value = ''
+          return
+        }
+
+        const rutDte = limpiarRut(d.cliente_receptor_rut)
+        const rutOt = limpiarRut(props.edpData?.proyecto?.cliente_rut)
+        if (rutDte && rutOt && rutDte !== rutOt) {
+          alert(
+            `❌ RECHAZO CONTABLE: INCONGRUENCIA DE CLIENTE MANDANTE\n\n` +
+            `La factura subida (N° ${d.folio_dte || 'S/N'}) fue emitida a ${d.cliente_receptor_nombre || 'Otro'} (RUT ${d.cliente_receptor_rut}), ` +
+            `pero esta OT corresponde a ${props.edpData?.proyecto?.cliente_nombre || 'Mandante'} (RUT ${props.edpData?.proyecto?.cliente_rut}).`
+          )
+          if (e.target) e.target.value = ''
+          return
+        }
+
+        formFactura.value = {
+          ...formFactura.value,
+          factura_numero: d.folio_dte || formFactura.value.factura_numero,
+          fecha_facturacion: d.fecha_emision || formFactura.value.fecha_facturacion,
+          monto_exento: Number(d.monto_exento) || 0,
+          monto_neto: Number(d.monto_neto) || formFactura.value.monto_neto || totalNetoCalculado.value || 0,
+          monto_iva: Number(d.monto_iva) || 0,
+          monto_bruto: Number(d.monto_total) || (Number(d.monto_neto) ? Math.round(Number(d.monto_neto) * 1.19) : formFactura.value.monto_bruto),
+          formato_detectado: d.formato_detectado || 'LAUDUS',
+          id_empresa_emisora: d.id_empresa_emisora || 9,
+          empresa_facturadora: d.empresa_facturadora || 'Grúas San Pablo',
+          rut_emisor: d.rut_emisor || '52.004.162-1',
+          cliente_receptor_rut: d.cliente_receptor_rut || props.edpData?.proyecto?.cliente_rut || '',
+          cliente_receptor_nombre: d.cliente_receptor_nombre || props.edpData?.proyecto?.cliente_nombre || '',
+          archivo: d.archivo_url
+            ? { nombre: d.nombre_archivo || file.name, url: d.archivo_url }
+            : formFactura.value.archivo
+        }
+
+        if (d.archivo_url) {
+          alert(`✅ Factura Laudus #${d.folio_dte || 'S/N'} reconocida y cargada correctamente. Ahora puedes pulsar "Firmar Subida" para certificar con tu PIN FES.`)
+          return
+        }
+      }
+    }
+
+    // 2. Respaldo estándar en /v1/storage/upload (para imágenes o PDFs sin URL previa)
     const formData = new FormData()
     formData.append('archivo', file)
     formData.append('tenant_code', 'gsp')
@@ -1497,12 +1757,14 @@ const onArchivoFacturaSeleccionado = async (e) => {
       nombre: doc.name_doc_orig || file.name,
       url: doc.url || `/api/v1/storage/view/${doc.id_doc}`
     }
-    alert('✅ Archivo PDF de Factura cargado exitosamente.')
+    alert('✅ Archivo de Factura cargado exitosamente.')
   } catch (err) {
     console.error('Error al subir archivo de Factura:', err)
     alert('Error al subir archivo de Factura: ' + (err.response?.data?.message || err.message))
   } finally {
     subiendoArchivoFactura.value = false
+    reconociendoPdfLaudus.value = false
+    if (e.target) e.target.value = ''
   }
 }
 
@@ -1545,46 +1807,89 @@ const guardarOcDirecta = async () => {
   }
 }
 
+const persistirFacturaSoporte = async (declararCerrado = false) => {
+  const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
+  if (!idProyecto) throw new Error('Proyecto no identificado')
+
+  const neto = Number(formFactura.value.monto_neto) || totalNetoCalculado.value || 0
+  const exento = Number(formFactura.value.monto_exento) || 0
+  const iva = Number(formFactura.value.monto_iva) || Math.round(neto * 0.19)
+  const total = Number(formFactura.value.monto_bruto) || (neto + exento + iva)
+
+  const { data } = await apiAxios.post('/operaciones/edp/soporte-documental', {
+    id_proyecto: idProyecto,
+    id_user: currentUser.value?.id_user || 1,
+    oc: formOC.value.numero_oc ? {
+      numero_oc: formOC.value.numero_oc,
+      fecha_emision: formOC.value.fecha_emision,
+      monto_neto: formOC.value.monto_neto,
+      archivo: formOC.value.archivo
+    } : null,
+    factura: {
+      folio_dte: formFactura.value.factura_numero,
+      factura_numero: formFactura.value.factura_numero,
+      formato_detectado: formFactura.value.formato_detectado || 'LAUDUS',
+      id_empresa_emisora: formFactura.value.id_empresa_emisora || props.edpData?.proyecto?.id_empresa || 9,
+      empresa_facturadora: formFactura.value.empresa_facturadora || 'Grúas San Pablo',
+      rut_emisor: formFactura.value.rut_emisor || '52.004.162-1',
+      cliente_receptor_rut: formFactura.value.cliente_receptor_rut || props.edpData?.proyecto?.cliente_rut || '',
+      cliente_receptor_nombre: formFactura.value.cliente_receptor_nombre || props.edpData?.proyecto?.cliente_nombre || '',
+      fecha_emision: formFactura.value.fecha_facturacion,
+      fecha_facturacion: formFactura.value.fecha_facturacion,
+      monto_exento: exento,
+      monto_neto: neto,
+      monto_iva: iva,
+      monto_total: total,
+      monto_bruto: total,
+      observaciones: formFactura.value.observaciones,
+      archivo: formFactura.value.archivo,
+      archivo_url: formFactura.value.archivo?.url || null,
+      nombre_archivo: formFactura.value.archivo?.nombre || null
+    },
+    declarar_facturado: declararCerrado
+  })
+  return data
+}
+
 const guardarFacturaYConcluir = async (declararCerrado = true) => {
   if (!formFactura.value.factura_numero) {
-    alert('Por favor ingresa el N° de Factura Emitida.')
+    alert('Por favor sube el PDF de la Factura Laudus o ingresa el N° de Factura Emitida.')
     return
   }
-  const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
-  if (!idProyecto) return
-
-  if (declararCerrado && !window.confirm(`¿Confirmas declarar la OT como FACTURADA con Factura N° ${formFactura.value.factura_numero} y concluir el servicio?`)) {
+  if (declararCerrado && !window.confirm(`¿Confirmas declarar la OT como FACTURADA con Factura N° ${formFactura.value.factura_numero}?`)) {
     return
   }
 
   guardandoFactura.value = true
   try {
-    const { data } = await apiAxios.post('/operaciones/edp/soporte-documental', {
-      id_proyecto: idProyecto,
-      id_user: currentUser.value?.id_user || 1,
-      oc: formOC.value.numero_oc ? {
-        numero_oc: formOC.value.numero_oc,
-        fecha_emision: formOC.value.fecha_emision,
-        monto_neto: formOC.value.monto_neto,
-        archivo: formOC.value.archivo
-      } : null,
-      factura: {
-        factura_numero: formFactura.value.factura_numero,
-        fecha_facturacion: formFactura.value.fecha_facturacion,
-        monto_neto: formFactura.value.monto_neto || totalNetoCalculado.value,
-        monto_bruto: formFactura.value.monto_bruto || totalBrutoCalculado.value,
-        observaciones: formFactura.value.observaciones,
-        archivo: formFactura.value.archivo
-      },
-      declarar_facturado: declararCerrado
-    })
+    const data = await persistirFacturaSoporte(declararCerrado)
     if (data?.success) {
-      alert(`🎉 ${data.message || 'Facturación registrada exitosamente'}`)
+      alert(`✅ ${data.message || 'Datos de Factura Laudus guardados exitosamente'}`)
       emit('edp-actualizado')
     }
   } catch (e) {
     console.error('Error guardando Factura:', e)
     alert('Error al guardar Factura: ' + (e.response?.data?.message || e.message))
+  } finally {
+    guardandoFactura.value = false
+  }
+}
+
+const guardarFacturaYAbrirFirmaPaso2 = async () => {
+  if (!formFactura.value.factura_numero) {
+    alert('Por favor sube primero el PDF de la Factura emitida en Laudus.')
+    return
+  }
+  guardandoFactura.value = true
+  try {
+    const data = await persistirFacturaSoporte(false)
+    if (data?.success) {
+      emit('edp-actualizado')
+      abrirModalPinFes(2)
+    }
+  } catch (e) {
+    console.error('Error guardando Factura previa a firma FES:', e)
+    alert('Error al guardar Factura Laudus: ' + (e.response?.data?.message || e.message))
   } finally {
     guardandoFactura.value = false
   }
@@ -1604,9 +1909,15 @@ const getUrlArchivoAdjunto = (archivo) => {
   return '#'
 }
 
-// Submodal PIN FES (Circuito 3 Pasos EDP)
+// Submodal PIN FES (Circuito 2 Pasos EDP)
 const abrirModalPinFes = (paso = null) => {
-  pasoFirmaSeleccionado.value = Number(paso) || pasoSugeridoFirma.value || 1
+  const pasoTarget = Number(paso) || pasoSugeridoFirma.value || 1
+  if (pasoTarget === 2 && !tieneFacturaSubidaModal.value && !formFactura.value.factura_numero) {
+    alert('⚠️ Antes de firmar el Hito 2 de Contabilidad, debes subir el PDF de la Factura generada en Laudus.')
+    irABloqueFacturaYSubir()
+    return
+  }
+  pasoFirmaSeleccionado.value = pasoTarget
   pinDigits.value = ['', '', '', '']
   pinError.value = ''
   observacionesFirma.value = ''
@@ -1616,28 +1927,41 @@ const abrirModalPinFes = (paso = null) => {
   }, 100)
 }
 
-const devolverEdpConObservaciones = async () => {
-  const obs = window.prompt('Indica las observaciones de Contabilidad para devolver el EDP a Control de Gestión (Yara):')
-  if (!obs || !obs.trim()) return
+const abrirModalDevolucionConta = () => {
+  observacionDevolucionTexto.value = ''
+  modalDevolucionContaAbierto.value = true
+}
+
+const confirmarDevolucionEdpConta = async () => {
+  const obs = observacionDevolucionTexto.value.trim()
+  if (!obs) {
+    alert('Debes ingresar la observación para devolver el EDP a Control de Gestión (Yiara Mendoza).')
+    return
+  }
 
   const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
   if (!idProyecto) return
 
+  procesandoDevolucionConta.value = true
   try {
     const res = await apiAxios.post('/operaciones/edp/firmar-paso', {
       id_proyecto: idProyecto,
       id_user: currentUser.value.id_user || 1,
       paso: 2,
       accion: 'DEVOLVER',
-      observaciones: obs.trim()
+      observaciones: obs
     })
     if (res.data?.success) {
-      alert(`⚠️ ${res.data.message}`)
+      modalDevolucionContaAbierto.value = false
+      observacionDevolucionTexto.value = ''
+      alert(`↩️ ${res.data.message}`)
       emit('edp-actualizado')
     }
   } catch (err) {
     console.error('Error al devolver EDP con observaciones:', err)
     alert('Error al devolver EDP: ' + (err.response?.data?.message || err.message))
+  } finally {
+    procesandoDevolucionConta.value = false
   }
 }
 
@@ -1672,6 +1996,16 @@ const procesarFirmaComercial = async () => {
   pinError.value = ''
 
   try {
+    // Si es Paso 2 (Contabilidad) y subió la factura en el formulario pero aún no había pulsado "Guardar Datos", guardarla automáticamente antes de firmar
+    if (Number(pasoFirmaSeleccionado.value) === 2 && !tieneFacturaSubidaModal.value) {
+      if (!formFactura.value.factura_numero) {
+        pinError.value = 'Debes subir primero el PDF de la Factura Laudus antes de firmar.'
+        procesandoFirma.value = false
+        return
+      }
+      await persistirFacturaSoporte(false)
+    }
+
     const pinHash = await sha256Hex(pin)
     const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
 
