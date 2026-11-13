@@ -2,10 +2,9 @@
 -- MIGRACIÓN DDL SQL: REMEDIACIÓN RELACIONAL, LÍNEAS DE SERVICIO Y ASIGNACIONES
 -- ESQUEMA: sch_leangsp
 -- FECHA: 13/11/2026
--- ESPECIFICACIÓN: .agents/specs/130_remediacion_relacional_y_motor_unico_valorizacion_e2e_spec.md
+-- ESPECIFICACIÓN: SPEC-130 (MANDATO SENIOR DE SANITIZACIÓN RELACIONAL E2E)
 -- =============================================================================
 
-CREATE SCHEMA IF NOT EXISTS sch_leangsp;
 SET search_path TO sch_leangsp, public;
 
 -- -----------------------------------------------------------------------------
@@ -21,10 +20,14 @@ CREATE TABLE IF NOT EXISTS sch_leangsp.tpry_linea_servicio (
     tipo_ot VARCHAR(30) NOT NULL CHECK (tipo_ot IN ('OT-MANIOBRA', 'OT-RENTAL', 'OT-FLETE', 'OT-STAFF')),
     rol_nodo VARCHAR(30) NOT NULL CHECK (rol_nodo IN ('RAIZ', 'HIJO_COMERCIAL', 'APOYO_OPERATIVO', 'ACCESORIO', 'PERSONAL', 'TRASLADO')),
     
-    -- Descripción y Metadatos Técnicos
+    -- Enlaces Relacionales Estrictos por ID numérico (Misión Crítica SPEC-130)
+    id_categoria INT REFERENCES sch_leangsp.tequ_categoria(id_categoria) ON DELETE SET NULL,
+    id_subcategoria INT REFERENCES sch_leangsp.tequ_subcategoria(id_subcategoria) ON DELETE SET NULL,
+    id_equipo_sugerido INT REFERENCES sch_leangsp.tequ_equipo(id_equipo) ON DELETE SET NULL,
+
+    -- Descripción y Glosas Descriptivas (NUNCA selectores lógicos)
     descripcion TEXT NOT NULL,
     subcategoria VARCHAR(100),
-    id_equipo_sugerido INT REFERENCES sch_leangsp.tequ_equipo(id_equipo) ON DELETE SET NULL,
     
     -- Modalidad de Cobro Canónica (10 Unidades Limpias)
     unidad VARCHAR(50) NOT NULL CHECK (unidad IN (
@@ -74,14 +77,26 @@ CREATE TABLE IF NOT EXISTS sch_leangsp.tpry_linea_servicio (
     )
 );
 
--- Índices de Rendimiento y Navegación del Árbol
+-- Asegurar columnas si la tabla ya había sido creada previamente sin ellas (Idempotencia Total)
+ALTER TABLE sch_leangsp.tpry_linea_servicio 
+    ADD COLUMN IF NOT EXISTS id_categoria INT REFERENCES sch_leangsp.tequ_categoria(id_categoria) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS id_subcategoria INT REFERENCES sch_leangsp.tequ_subcategoria(id_subcategoria) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS id_equipo_sugerido INT REFERENCES sch_leangsp.tequ_equipo(id_equipo) ON DELETE SET NULL;
+
+-- Índices de Rendimiento y Navegación del Árbol Relacional
 CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_proyecto ON sch_leangsp.tpry_linea_servicio(id_proyecto);
 CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_padre ON sch_leangsp.tpry_linea_servicio(id_linea_servicio_padre);
+CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_categoria ON sch_leangsp.tpry_linea_servicio(id_categoria);
+CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_subcategoria ON sch_leangsp.tpry_linea_servicio(id_subcategoria);
+CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_equipo_sug ON sch_leangsp.tpry_linea_servicio(id_equipo_sugerido);
 CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_linea ON sch_leangsp.tpry_linea_servicio(linea_negocio);
 CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_unidad ON sch_leangsp.tpry_linea_servicio(unidad);
 CREATE INDEX IF NOT EXISTS idx_tpry_linea_servicio_rol ON sch_leangsp.tpry_linea_servicio(rol_nodo);
 
-COMMENT ON TABLE sch_leangsp.tpry_linea_servicio IS 'Tabla canónica del árbol de servicios, cotizaciones y apoyos operativos por proyecto (SPEC-130).';
+COMMENT ON TABLE sch_leangsp.tpry_linea_servicio IS 'Tabla canónica del árbol de servicios, cotizaciones y apoyos operativos por proyecto estructurada 100% por IDs relacionales (SPEC-130).';
+COMMENT ON COLUMN sch_leangsp.tpry_linea_servicio.id_categoria IS 'FK numérico a tequ_categoria (SPEC-130)';
+COMMENT ON COLUMN sch_leangsp.tpry_linea_servicio.id_subcategoria IS 'FK numérico a tequ_subcategoria (SPEC-130)';
+COMMENT ON COLUMN sch_leangsp.tpry_linea_servicio.id_equipo_sugerido IS 'FK numérico a tequ_equipo (SPEC-130)';
 
 -- -----------------------------------------------------------------------------
 -- 2. NORMALIZACIÓN DE ASIGNACIONES: tpry_rel_equipo

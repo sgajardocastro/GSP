@@ -239,20 +239,20 @@
                       {{ srv.colapsado ? '+' : '−' }}
                     </button>
                     <div class="flex-1 min-w-0">
-                      <!-- Si PROFESIONAL: select directo de cargos -->
+                      <!-- Si PROFESIONAL: select directo de cargos por ID relacional -->
                       <select
                         v-if="srv.linea_servicio === 'PROFESIONAL'"
-                        v-model="srv.primario.recurso"
-                        @change="onCargoPrimarioChange(srv)"
+                        v-model="srv.primario.id_subcategoria"
+                        @change="onCargoPrimarioSubcatChange(srv)"
                         :disabled="disabled"
                         class="field-input w-full px-2.5 py-1.5 text-xs font-semibold cursor-pointer"
                       >
                         <option
-                          v-for="cargo in CARGOS_PERSONAL_GSP"
-                          :key="cargo"
-                          :value="cargo"
+                          v-for="cargo in listaPersonalOpciones"
+                          :key="cargo.id_subcategoria"
+                          :value="cargo.id_subcategoria"
                         >
-                          {{ cargo }}
+                          {{ cargo.nombre_subcategoria }}
                         </option>
                       </select>
 
@@ -439,23 +439,23 @@
                     </span>
                   </div>
 
-                  <!-- Rama Personal: Badge Personal + Selector de Cargos GSP -->
+                  <!-- Rama Personal: Badge Personal + Selector de Cargos por ID relacional -->
                   <div v-else class="flex items-center gap-2">
                     <span class="text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 bg-slate-800 text-slate-400 border border-slate-700">
                       Personal
                     </span>
                     <select
-                      v-model="rama.recurso"
-                      @change="onCargoRamaChange(rama)"
+                      v-model="rama.id_subcategoria"
+                      @change="onCargoRamaSubcatChange(rama)"
                       :disabled="disabled"
                       class="field-input flex-1 min-w-0 px-2.5 py-1.5 text-xs font-medium cursor-pointer"
                     >
                       <option
-                        v-for="cargo in CARGOS_PERSONAL_GSP"
-                        :key="cargo"
-                        :value="cargo"
+                        v-for="cargo in listaPersonalOpciones"
+                        :key="cargo.id_subcategoria"
+                        :value="cargo.id_subcategoria"
                       >
-                        {{ cargo }}
+                        {{ cargo.nombre_subcategoria }}
                       </option>
                     </select>
                   </div>
@@ -693,13 +693,13 @@
           </div>
           <button
             v-for="it in grupo.items"
-            :key="it"
+            :key="it.id_subcategoria"
             type="button"
             @click="seleccionarEquipoPrimario(it)"
             class="w-full text-left px-2.5 py-1.5 rounded text-xs cursor-pointer flex items-center justify-between transition-colors"
             :class="isEquipoSeleccionado(it) ? 'bg-slate-800 text-slate-100 font-semibold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'"
           >
-            <span>{{ it }}</span>
+            <span>{{ it.nombre_subcategoria }}</span>
             <span v-if="isEquipoSeleccionado(it)" class="font-bold text-amber-400">✓</span>
           </button>
         </div>
@@ -751,55 +751,8 @@ const props = defineProps({
 const emit = defineEmits(['update:lines', 'update:servicios'])
 
 // =========================================================================
-// 1. CATÁLOGOS CANÓNICOS DE GSP (100% ALINEADOS A LA MAQUETA Y REUNIÓN 11-NOV)
+// 1. CATÁLOGOS Y CLASIFICACIÓN RELACIONAL DESDE BASE DE DATOS (SPEC-130)
 // =========================================================================
-// Únicos 3 cargos reales de personal en GSP
-const CARGOS_PERSONAL_GSP = ['Operador', 'Rigger', 'Conductor']
-
-// Catálogo de Equipos por Línea (Acuerdo 11-Nov: Horquillas y Manipuladores en IZAJE; Plataformas en RENTAL)
-const CATALOGO_EQUIPOS_PRIMARIOS = {
-  IZAJE: [
-    {
-      grupo: 'Grúas Telescópicas',
-      items: [
-        'Grúa Telescópica 40 Ton', 'Grúa Telescópica 50 Ton', 'Grúa Telescópica 60 Ton',
-        'Grúa Telescópica 70 Ton', 'Grúa Telescópica 80 Ton', 'Grúa Telescópica 90 Ton',
-        'Grúa Telescópica 100 Ton', 'Grúa Telescópica 120 Ton', 'Grúa Telescópica 130 Ton',
-        'Grúa Telescópica 160 Ton', 'Grúa Telescópica 200 Ton', 'Grúa Telescópica 220 Ton',
-        'Grúa Telescópica 250 Ton', 'Grúa Telescópica 300 Ton', 'Grúa Telescópica 350 Ton',
-        'Grúa Telescópica 400 Ton'
-      ]
-    },
-    {
-      grupo: 'Camiones Pluma',
-      items: ['Camión Pluma']
-    },
-    {
-      grupo: 'Grúas Horquilla (En Izaje)',
-      items: ['Grúa Horquilla 3.5 Ton', 'Grúa Horquilla 5 Ton', 'Grúa Horquilla 7 Ton', 'Grúa Horquilla 10 Ton']
-    },
-    {
-      grupo: 'Manipuladores Telescópicos (En Izaje)',
-      items: ['Manipulador Telescópico']
-    }
-  ],
-  RENTAL: [
-    {
-      grupo: 'Plataformas Tijera',
-      items: ['Plataforma Tijera Eléctrica 8m', 'Plataforma Tijera Eléctrica 10m', 'Plataforma Tijera Eléctrica 12m', 'Plataforma Tijera Diesel 15m']
-    },
-    {
-      grupo: 'Brazos Articulados y Alza Hombres',
-      items: ['Brazo Articulado 16m', 'Brazo Articulado 20m', 'Brazo Telescópico 26m', 'Alza Hombre Eléctrico']
-    }
-  ],
-  TRANSPORTE: [
-    {
-      grupo: 'Transporte y Fletes',
-      items: ['Camión Cama Baja', 'Camión Rampla', 'Tractocamión']
-    }
-  ]
-}
 
 // ESTRICTAMENTE LAS 10 UNIDADES CANÓNICAS LIMPIAS (SIN SINÓNIMOS)
 const UNIDADES_COBRO_UNICO = new Set([
@@ -863,6 +816,145 @@ const LINEA_LABELS = {
   TRANSPORTE: 'Transporte',
   PROFESIONAL: 'Profesional'
 }
+
+// Opciones de Personal Certificado (Cat 151) derivadas directamente de BD
+const listaPersonalOpciones = computed(() => {
+  const cats = Array.isArray(props.dbCategories) ? props.dbCategories : []
+  const cat = cats.find(c => Number(c.id_categoria) === 151)
+  if (cat && Array.isArray(cat.subcategories) && cat.subcategories.length > 0) {
+    return cat.subcategories.map(s => ({
+      id_categoria: 151,
+      nombre_categoria: cat.nombre_categoria || 'PERSONAL CERTIFICADO',
+      id_subcategoria: Number(s.id_subcategoria),
+      nombre_subcategoria: s.nombre_subcategoria
+    }))
+  }
+  // Fallback determinista canónico de BD (sch_leangsp.tequ_subcategoria)
+  return [
+    { id_categoria: 151, nombre_categoria: 'PERSONAL CERTIFICADO', id_subcategoria: 160, nombre_subcategoria: 'RIGGER' },
+    { id_categoria: 151, nombre_categoria: 'PERSONAL CERTIFICADO', id_subcategoria: 161, nombre_subcategoria: 'OPERADOR' },
+    { id_categoria: 151, nombre_categoria: 'PERSONAL CERTIFICADO', id_subcategoria: 162, nombre_subcategoria: 'PREVENCIONISTA' },
+    { id_categoria: 151, nombre_categoria: 'PERSONAL CERTIFICADO', id_subcategoria: 163, nombre_subcategoria: 'OTROS' }
+  ]
+})
+
+// Catálogo Relacional Dinámico 100% derivado de props.dbCategories y BD real (SPEC-130)
+const catalogoEquiposPorLinea = computed(() => {
+  const cats = Array.isArray(props.dbCategories) ? props.dbCategories : []
+  const getCat = (id) => cats.find(c => Number(c.id_categoria) === Number(id))
+
+  // 1. RENTAL: id_categoria = 102 ('PLATAFORMAS') -> subcats reales (111, 126, 130, 131, 134, 150)
+  const catRental = getCat(102)
+  const rentalItems = (catRental?.subcategories || []).map(s => ({
+    id_categoria: 102,
+    nombre_categoria: catRental.nombre_categoria || 'PLATAFORMAS',
+    id_subcategoria: Number(s.id_subcategoria),
+    nombre_subcategoria: s.nombre_subcategoria
+  }))
+
+  // 2. IZAJE:
+  // - id_categoria = 40 ('GRUAS TELESCOPICAS') -> subcats 49 a 70
+  // - id_categoria = 62 ('CAMIONES') filtrado a pluma id 71 ('CAMION PLUMA')
+  // - id_categoria = 65 ('GRUA HORQUILLA') -> id 74
+  // - id_categoria = 70 ('MANIPULADOR TELESCOPICO') -> id 79
+  const catGruas = getCat(40)
+  const catCamiones = getCat(62)
+  const catHorquilla = getCat(65)
+  const catManipulador = getCat(70)
+
+  const izajeGrupos = []
+  if (catGruas && Array.isArray(catGruas.subcategories) && catGruas.subcategories.length > 0) {
+    izajeGrupos.push({
+      grupo: catGruas.nombre_categoria || 'Grúas Telescópicas',
+      items: catGruas.subcategories.map(s => ({
+        id_categoria: 40,
+        nombre_categoria: catGruas.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  }
+  if (catCamiones && Array.isArray(catCamiones.subcategories)) {
+    const plumas = catCamiones.subcategories.filter(s => Number(s.id_subcategoria) === 71 || s.nombre_subcategoria.toUpperCase().includes('PLUMA'))
+    if (plumas.length > 0) {
+      izajeGrupos.push({
+        grupo: 'Camiones Pluma',
+        items: plumas.map(s => ({
+          id_categoria: 62,
+          nombre_categoria: catCamiones.nombre_categoria,
+          id_subcategoria: Number(s.id_subcategoria),
+          nombre_subcategoria: s.nombre_subcategoria
+        }))
+      })
+    }
+  }
+  if (catHorquilla && Array.isArray(catHorquilla.subcategories) && catHorquilla.subcategories.length > 0) {
+    izajeGrupos.push({
+      grupo: catHorquilla.nombre_categoria || 'Grúas Horquilla',
+      items: catHorquilla.subcategories.map(s => ({
+        id_categoria: 65,
+        nombre_categoria: catHorquilla.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  }
+  if (catManipulador && Array.isArray(catManipulador.subcategories) && catManipulador.subcategories.length > 0) {
+    izajeGrupos.push({
+      grupo: catManipulador.nombre_categoria || 'Manipuladores Telescópicos',
+      items: catManipulador.subcategories.map(s => ({
+        id_categoria: 70,
+        nombre_categoria: catManipulador.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  }
+
+  // 3. TRANSPORTE:
+  // - id_categoria = 62 ('CAMIONES') con subcats reales de transporte (84, 91, 93, 95)
+  // - id_categoria = 99 ('TRASLADOS')
+  const catTraslados = getCat(99)
+  const transporteGrupos = []
+  if (catCamiones && Array.isArray(catCamiones.subcategories)) {
+    const camionesTransporte = catCamiones.subcategories.filter(s => Number(s.id_subcategoria) !== 71)
+    if (camionesTransporte.length > 0) {
+      transporteGrupos.push({
+        grupo: catCamiones.nombre_categoria || 'Camiones de Transporte',
+        items: camionesTransporte.map(s => ({
+          id_categoria: 62,
+          nombre_categoria: catCamiones.nombre_categoria,
+          id_subcategoria: Number(s.id_subcategoria),
+          nombre_subcategoria: s.nombre_subcategoria
+        }))
+      })
+    }
+  }
+  if (catTraslados && Array.isArray(catTraslados.subcategories) && catTraslados.subcategories.length > 0) {
+    transporteGrupos.push({
+      grupo: catTraslados.nombre_categoria || 'Traslados y Fletes',
+      items: catTraslados.subcategories.map(s => ({
+        id_categoria: 99,
+        nombre_categoria: catTraslados.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  }
+
+  // 4. PROFESIONAL: id_categoria = 151 ('PERSONAL CERTIFICADO')
+  const profesionalGrupos = listaPersonalOpciones.value.length > 0 ? [{
+    grupo: 'Personal Certificado',
+    items: listaPersonalOpciones.value
+  }] : []
+
+  return {
+    IZAJE: izajeGrupos,
+    RENTAL: rentalItems.length > 0 ? [{ grupo: catRental?.nombre_categoria || 'Plataformas de Trabajo en Altura', items: rentalItems }] : [],
+    TRANSPORTE: transporteGrupos,
+    PROFESIONAL: profesionalGrupos
+  }
+})
 
 // =========================================================================
 // 2. ESTADO LOCAL Y CONTROL DE POPOVERS FLOTANTES
@@ -969,19 +1061,22 @@ const getUnidadesDisponibles = (srv, rama = null) => {
 }
 
 // =========================================================================
-// 4. FILTRADO Y POPOVER DE EQUIPOS PRIMARIOS
+// 4. FILTRADO Y POPOVER DE EQUIPOS PRIMARIOS POR IDS RELACIONALES
 // =========================================================================
 const filteredEquiposGrupos = computed(() => {
   if (activeResourceSrvIdx.value === null) return []
   const srv = localServicios.value[activeResourceSrvIdx.value]
   if (!srv) return []
-  const grupos = CATALOGO_EQUIPOS_PRIMARIOS[srv.linea_servicio] || CATALOGO_EQUIPOS_PRIMARIOS.IZAJE
+  const catalogo = catalogoEquiposPorLinea.value
+  const grupos = catalogo[srv.linea_servicio] || catalogo.IZAJE || []
   const q = (resourceSearchQuery.value || '').toLowerCase().trim()
+
+  if (!q) return grupos
 
   return grupos
     .map(g => ({
       grupo: g.grupo,
-      items: g.items.filter(it => it.toLowerCase().includes(q))
+      items: g.items.filter(it => it.nombre_subcategoria.toLowerCase().includes(q))
     }))
     .filter(g => g.items.length > 0)
 })
@@ -989,7 +1084,11 @@ const filteredEquiposGrupos = computed(() => {
 const isEquipoSeleccionado = (it) => {
   if (activeResourceSrvIdx.value === null) return false
   const srv = localServicios.value[activeResourceSrvIdx.value]
-  return srv?.primario?.recurso === it
+  if (!srv?.primario) return false
+  if (srv.primario.id_subcategoria && it.id_subcategoria) {
+    return Number(srv.primario.id_subcategoria) === Number(it.id_subcategoria)
+  }
+  return srv.primario.recurso === it.nombre_subcategoria
 }
 
 const abrirEquipoPrimarioPopover = (ev, srvIdx) => {
@@ -1015,13 +1114,17 @@ const abrirEquipoPrimarioPopover = (ev, srvIdx) => {
   })
 }
 
-const seleccionarEquipoPrimario = (nombreEquipo) => {
+const seleccionarEquipoPrimario = (it) => {
   if (activeResourceSrvIdx.value === null) return
   const srv = localServicios.value[activeResourceSrvIdx.value]
   if (srv && srv.primario) {
-    srv.primario.recurso = nombreEquipo
+    srv.primario.id_categoria = it.id_categoria
+    srv.primario.id_subcategoria = it.id_subcategoria
+    srv.primario.tipo = it.nombre_categoria
+    srv.primario.subcategoria = it.nombre_subcategoria
+    srv.primario.recurso = it.nombre_subcategoria
     if (!srv.primario.descripcion || srv.primario.descripcion.startsWith('Servicio de ')) {
-      srv.primario.descripcion = `Servicio de ${nombreEquipo}`
+      srv.primario.descripcion = `Servicio de ${it.nombre_subcategoria}`
     }
   }
   cerrarTodosPopovers()
@@ -1141,12 +1244,25 @@ const agregarServicio = (linea) => {
   const idSrv = genId('srv')
   const idRoot = genId('lin_root')
 
+  // Obtener primera opción de la línea desde catalogoEquiposPorLinea (de BD)
+  const catalogo = catalogoEquiposPorLinea.value[linea] || catalogoEquiposPorLinea.value.IZAJE
+  const primerItem = catalogo?.[0]?.items?.[0] || null
+
+  let idCat = primerItem?.id_categoria || (linea === 'RENTAL' ? 102 : linea === 'TRANSPORTE' ? 62 : linea === 'PROFESIONAL' ? 151 : 40)
+  let idSubcat = primerItem?.id_subcategoria || (linea === 'RENTAL' ? 134 : linea === 'TRANSPORTE' ? 84 : linea === 'PROFESIONAL' ? 160 : 54)
+  let nomRecurso = primerItem?.nombre_subcategoria || (linea === 'RENTAL' ? 'PLATAFORMA TIJERA ELECTRICA' : linea === 'TRANSPORTE' ? 'SEMIREMOLQUE' : linea === 'PROFESIONAL' ? 'RIGGER' : 'GRUA 70 TON')
+  let nomTipo = primerItem?.nombre_categoria || (linea === 'RENTAL' ? 'PLATAFORMAS' : linea === 'TRANSPORTE' ? 'CAMIONES' : linea === 'PROFESIONAL' ? 'PERSONAL CERTIFICADO' : 'GRUAS TELESCOPICAS')
+
   const defaults = {
     IZAJE: {
       titulo: 'Servicio de Izaje y Maniobra',
       primario: {
-        recurso: 'Grúa Telescópica 70 Ton',
-        descripcion: 'Servicio de grúa con operador en faena',
+        id_categoria: idCat,
+        id_subcategoria: idSubcat,
+        tipo: nomTipo,
+        subcategoria: nomRecurso,
+        recurso: nomRecurso,
+        descripcion: `Servicio de ${nomRecurso} con operador en faena`,
         unidad: 'Horas Diarias Minimas',
         dias: 1, horas_min: 8, meses: 1, cantidad: 1,
         valor_unitario: 115000
@@ -1155,8 +1271,12 @@ const agregarServicio = (linea) => {
     RENTAL: {
       titulo: 'Arriendo de Plataforma en Obra',
       primario: {
-        recurso: 'Plataforma Tijera Eléctrica 12m',
-        descripcion: 'Arriendo mensual de plataforma sin operador (Contrato + Acta 360°)',
+        id_categoria: idCat,
+        id_subcategoria: idSubcat,
+        tipo: nomTipo,
+        subcategoria: nomRecurso,
+        recurso: nomRecurso,
+        descripcion: `Arriendo de ${nomRecurso} sin operador (Contrato + Acta)`,
         unidad: 'Valor Fijo Mensual',
         dias: 1, horas_min: 0, meses: 1, cantidad: 1,
         valor_unitario: 850000
@@ -1165,8 +1285,12 @@ const agregarServicio = (linea) => {
     TRANSPORTE: {
       titulo: 'Servicio de Transporte de Carga',
       primario: {
-        recurso: 'Camión Cama Baja',
-        descripcion: 'Transporte punto a punto',
+        id_categoria: idCat,
+        id_subcategoria: idSubcat,
+        tipo: nomTipo,
+        subcategoria: nomRecurso,
+        recurso: nomRecurso,
+        descripcion: `Transporte en ${nomRecurso} punto a punto`,
         unidad: 'Traslado Ida/Vuelta',
         dias: 1, horas_min: 0, meses: 1, cantidad: 1,
         valor_unitario: 380000
@@ -1175,7 +1299,11 @@ const agregarServicio = (linea) => {
     PROFESIONAL: {
       titulo: 'Servicio de Personal en Obra',
       primario: {
-        recurso: 'Rigger',
+        id_categoria: 151,
+        id_subcategoria: 160,
+        tipo: 'PERSONAL CERTIFICADO',
+        subcategoria: 'RIGGER',
+        recurso: 'RIGGER',
         descripcion: 'Servicio de Rigger en obra',
         unidad: 'Horas Diarias Minimas',
         dias: 1, horas_min: 8, meses: 1, cantidad: 1,
@@ -1195,6 +1323,10 @@ const agregarServicio = (linea) => {
       id_servicio: idSrv,
       id_padre: null,
       rol_arbol: 'PRIMARIO',
+      id_categoria: cfg.primario.id_categoria,
+      id_subcategoria: cfg.primario.id_subcategoria,
+      tipo: cfg.primario.tipo,
+      subcategoria: cfg.primario.subcategoria,
       recurso: cfg.primario.recurso,
       descripcion: cfg.primario.descripcion,
       unidad: cfg.primario.unidad,
@@ -1229,6 +1361,10 @@ const agregarRama = (srvIdx, recetaKey) => {
     TRASLADO_IDA_VUELTA: {
       rol: 'Traslado',
       rol_arbol: 'TRASLADO',
+      id_categoria: 99,
+      id_subcategoria: 901,
+      tipo: 'TRASLADOS',
+      subcategoria: 'MOVILIZACIÓN',
       recurso: 'Traslado',
       descripcion: 'Traslado de equipo a obra (Ida y Vuelta)',
       unidad: 'Traslado Ida/Vuelta',
@@ -1238,18 +1374,26 @@ const agregarRama = (srvIdx, recetaKey) => {
     PERSONAL_RIGGER: {
       rol: 'Personal',
       rol_arbol: 'PERSONAL',
-      recurso: 'Rigger',
+      id_categoria: 151,
+      id_subcategoria: 160,
+      tipo: 'PERSONAL CERTIFICADO',
+      subcategoria: 'RIGGER',
+      recurso: 'RIGGER',
       descripcion: 'Servicio de Rigger en obra',
       unidad: 'Horas Diarias Minimas',
       cantidad: 1,
-      dias: srv.primario.dias || srv.primario.cantidad_dias || 1,
-      horas_min: srv.primario.horas_min || srv.primario.cantidad_horas || 8,
+      dias: srv.primario?.dias || srv.primario?.cantidad_dias || 1,
+      horas_min: srv.primario?.horas_min || srv.primario?.cantidad_horas || 8,
       meses: 1,
       valor_unitario: 18000
     },
     FLETE_IDA: {
       rol: 'Traslado',
       rol_arbol: 'TRASLADO',
+      id_categoria: 99,
+      id_subcategoria: 901,
+      tipo: 'TRASLADOS',
+      subcategoria: 'FLETE IDA',
       recurso: 'Traslado',
       descripcion: 'Flete de entrega inicial en obra',
       unidad: 'Traslado Ida',
@@ -1259,6 +1403,10 @@ const agregarRama = (srvIdx, recetaKey) => {
     FLETE_VUELTA: {
       rol: 'Traslado',
       rol_arbol: 'TRASLADO',
+      id_categoria: 99,
+      id_subcategoria: 901,
+      tipo: 'TRASLADOS',
+      subcategoria: 'FLETE RETORNO',
       recurso: 'Traslado',
       descripcion: 'Flete de retiro desde obra',
       unidad: 'Traslado Vuelta',
@@ -1268,6 +1416,10 @@ const agregarRama = (srvIdx, recetaKey) => {
     TRASLADO_VUELTA: {
       rol: 'Traslado',
       rol_arbol: 'TRASLADO',
+      id_categoria: 99,
+      id_subcategoria: 901,
+      tipo: 'TRASLADOS',
+      subcategoria: 'TRAMO RETORNO',
       recurso: 'Traslado',
       descripcion: 'Tramo de vuelta',
       unidad: 'Traslado Vuelta',
@@ -1277,8 +1429,12 @@ const agregarRama = (srvIdx, recetaKey) => {
     PERSONAL_CONDUCTOR: {
       rol: 'Personal',
       rol_arbol: 'PERSONAL',
-      recurso: 'Conductor',
-      descripcion: 'Servicio de Conductor en obra',
+      id_categoria: 151,
+      id_subcategoria: 161,
+      tipo: 'PERSONAL CERTIFICADO',
+      subcategoria: 'OPERADOR',
+      recurso: 'OPERADOR',
+      descripcion: 'Servicio de Conductor / Operador en obra',
       unidad: 'Valor Fijo',
       cantidad: 1, dias: 1, horas_min: 0, meses: 1,
       valor_unitario: 0
@@ -1286,6 +1442,10 @@ const agregarRama = (srvIdx, recetaKey) => {
     TRASLADO_PERSONAL: {
       rol: 'Traslado',
       rol_arbol: 'TRASLADO',
+      id_categoria: 99,
+      id_subcategoria: 901,
+      tipo: 'TRASLADOS',
+      subcategoria: 'MOVILIZACIÓN PERSONAL',
       recurso: 'Traslado',
       descripcion: 'Movilización de personal a obra',
       unidad: 'Traslado Ida/Vuelta',
@@ -1295,7 +1455,11 @@ const agregarRama = (srvIdx, recetaKey) => {
     PERSONAL_EXTRA: {
       rol: 'Personal',
       rol_arbol: 'PERSONAL',
-      recurso: 'Operador',
+      id_categoria: 151,
+      id_subcategoria: 161,
+      tipo: 'PERSONAL CERTIFICADO',
+      subcategoria: 'OPERADOR',
+      recurso: 'OPERADOR',
       descripcion: 'Servicio de Operador en obra',
       unidad: 'Valor Fijo Diario',
       cantidad: 1, dias: 1, horas_min: 0, meses: 1,
@@ -1312,6 +1476,10 @@ const agregarRama = (srvIdx, recetaKey) => {
     id_padre: srv.primario?.id_linea || null,
     rol: template.rol,
     rol_arbol: template.rol_arbol,
+    id_categoria: template.id_categoria,
+    id_subcategoria: template.id_subcategoria,
+    tipo: template.tipo,
+    subcategoria: template.subcategoria,
     recurso: template.recurso,
     descripcion: template.descripcion,
     unidad: template.unidad,
@@ -1337,6 +1505,35 @@ const agregarRama = (srvIdx, recetaKey) => {
 // 7. HANDLERS DE EDICIÓN Y SINCRONIZACIÓN
 // =========================================================================
 const onFieldChange = () => {
+  sincronizarYProyectar()
+}
+
+const onCargoPrimarioSubcatChange = (srv) => {
+  const p = srv.primario
+  const sub = listaPersonalOpciones.value.find(s => Number(s.id_subcategoria) === Number(p.id_subcategoria))
+  if (sub) {
+    p.recurso = sub.nombre_subcategoria
+    p.subcategoria = sub.nombre_subcategoria
+    p.id_categoria = 151
+    p.tipo = 'PERSONAL CERTIFICADO'
+    if (!p.descripcion || p.descripcion.startsWith('Servicio de ')) {
+      p.descripcion = `Servicio de ${sub.nombre_subcategoria} en obra`
+    }
+  }
+  sincronizarYProyectar()
+}
+
+const onCargoRamaSubcatChange = (rama) => {
+  const sub = listaPersonalOpciones.value.find(s => Number(s.id_subcategoria) === Number(rama.id_subcategoria))
+  if (sub) {
+    rama.recurso = sub.nombre_subcategoria
+    rama.subcategoria = sub.nombre_subcategoria
+    rama.id_categoria = 151
+    rama.tipo = 'PERSONAL CERTIFICADO'
+    if (!rama.descripcion || rama.descripcion.startsWith('Servicio de ')) {
+      rama.descripcion = `Servicio de ${sub.nombre_subcategoria} en obra`
+    }
+  }
   sincronizarYProyectar()
 }
 
@@ -1469,10 +1666,13 @@ const sincronizarYProyectar = () => {
         id_servicio: srv.id_servicio,
         id_padre: null,
         rol_arbol: 'PRIMARIO',
+        id_categoria: p.id_categoria ? Number(p.id_categoria) : null,
+        id_subcategoria: p.id_subcategoria ? Number(p.id_subcategoria) : null,
         linea_servicio: srv.linea_servicio,
         tipo_ot: p.tipo_ot,
         tipo: p.tipo,
         subcategoria: p.subcategoria,
+        recurso: p.recurso,
         descripcion: p.descripcion,
         unidad: p.unidad,
         cantidad: p.cantidad || 1,
@@ -1498,11 +1698,18 @@ const sincronizarYProyectar = () => {
 
         if (rama.rol === 'Traslado') {
           rama.rol_arbol = 'TRASLADO'
-          rama.tipo = 'TRASLADOS'
-          rama.subcategoria = 'MOVILIZACIÓN GRÚA'
+          rama.tipo = rama.tipo || 'TRASLADOS'
+          rama.subcategoria = rama.subcategoria || 'MOVILIZACIÓN GRÚA'
+          rama.id_categoria = rama.id_categoria || 99
+          rama.id_subcategoria = rama.id_subcategoria || 901
         } else {
           rama.rol_arbol = 'PERSONAL'
           rama.tipo = 'PERSONAL CERTIFICADO'
+          rama.id_categoria = 151
+          if (!rama.id_subcategoria) {
+            const matchSub = listaPersonalOpciones.value.find(s => s.nombre_subcategoria === rama.recurso)
+            rama.id_subcategoria = matchSub ? matchSub.id_subcategoria : 160
+          }
           rama.subcategoria = rama.recurso
         }
 
@@ -1516,10 +1723,13 @@ const sincronizarYProyectar = () => {
           id_servicio: srv.id_servicio,
           id_padre: srv.primario?.id_linea || null,
           rol_arbol: rama.rol_arbol,
+          id_categoria: rama.id_categoria ? Number(rama.id_categoria) : null,
+          id_subcategoria: rama.id_subcategoria ? Number(rama.id_subcategoria) : null,
           linea_servicio: srv.linea_servicio,
           tipo_ot: rama.tipo_ot,
           tipo: rama.tipo,
           subcategoria: rama.subcategoria,
+          recurso: rama.recurso,
           descripcion: rama.descripcion,
           unidad: rama.unidad,
           cantidad: rama.cantidad || 1,
@@ -1547,12 +1757,47 @@ const sincronizarYProyectar = () => {
 }
 
 // =========================================================================
-// 9. HIDRATACIÓN RETROCOMPATIBLE DESDE LÍNEAS PLANAS
+// 9. HIDRATACIÓN RETROCOMPATIBLE DESDE LÍNEAS PLANAS CON RESOLUCIÓN DE IDS
 // =========================================================================
 const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
   if (!Array.isArray(lineasPlanas) || lineasPlanas.length === 0) return []
 
   const serviciosMap = new Map()
+
+  // Helper para resolver IDs relacionales en líneas legacy
+  const resolverIdsRelacionales = (l) => {
+    let idCat = l.id_categoria ? Number(l.id_categoria) : null
+    let idSubcat = l.id_subcategoria ? Number(l.id_subcategoria) : null
+
+    if (idCat && idSubcat) return { id_categoria: idCat, id_subcategoria: idSubcat }
+
+    const cats = Array.isArray(props.dbCategories) ? props.dbCategories : []
+    const subTexto = (l.subcategoria || l.recurso || l.descripcion || '').toUpperCase()
+
+    // Búsqueda determinista por subcategoría en props.dbCategories
+    for (const c of cats) {
+      if (Array.isArray(c.subcategories)) {
+        const found = c.subcategories.find(s => 
+          s.nombre_subcategoria && subTexto.includes(s.nombre_subcategoria.toUpperCase())
+        )
+        if (found) {
+          return { id_categoria: Number(c.id_categoria), id_subcategoria: Number(found.id_subcategoria) }
+        }
+      }
+    }
+
+    // Fallbacks canónicos
+    if (String(l.tipo).includes('PERSONAL') || subTexto.includes('RIGGER') || subTexto.includes('OPERADOR')) {
+      return { id_categoria: 151, id_subcategoria: subTexto.includes('OPERADOR') ? 161 : 160 }
+    }
+    if (String(l.unidad).includes('MES') || subTexto.includes('TIJERA') || subTexto.includes('PLATAFORMA')) {
+      return { id_categoria: 102, id_subcategoria: 134 }
+    }
+    if (String(l.tipo).includes('CAMION') || subTexto.includes('CAMA BAJA') || subTexto.includes('RAMPLA')) {
+      return { id_categoria: 62, id_subcategoria: 84 }
+    }
+    return { id_categoria: 40, id_subcategoria: 54 }
+  }
 
   lineasPlanas.forEach(l => {
     const idSrv = l.id_servicio || `srv_${l.id_linea || Math.random().toString(36).substring(2, 7)}`
@@ -1571,6 +1816,7 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
 
     const srv = serviciosMap.get(idSrv)
     const esPrimario = l.rol_arbol === 'PRIMARIO' || (!l.id_padre && !srv.primario)
+    const { id_categoria, id_subcategoria } = resolverIdsRelacionales(l)
 
     const nodoNormalizado = {
       id_linea: l.id_linea || genId('lin'),
@@ -1578,6 +1824,10 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
       id_padre: l.id_padre || null,
       rol_arbol: esPrimario ? 'PRIMARIO' : (l.rol_arbol || 'TRASLADO'),
       rol: (l.rol_arbol === 'PERSONAL' || String(l.tipo).includes('PERSONAL')) ? 'Personal' : 'Traslado',
+      id_categoria: id_categoria,
+      id_subcategoria: id_subcategoria,
+      tipo: l.tipo || '',
+      subcategoria: l.subcategoria || l.recurso || '',
       recurso: l.subcategoria || l.recurso || l.descripcion || 'Servicio',
       descripcion: l.descripcion || '',
       unidad: l.unidad || 'Horas Diarias Minimas',

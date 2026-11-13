@@ -287,7 +287,11 @@ function valorizarArbolCotizacion(servicios = []) {
     const esGrupoA = GRUPO_A_COBRO_UNICO.includes(unidad);
     const nodoNormalizado = {
       id_linea_servicio: idNodo,
+      id_servicio: raw.id_servicio || null,
       id_linea_servicio_padre: idPadre,
+      id_categoria: raw.id_categoria ? Number(raw.id_categoria) : null,
+      id_subcategoria: raw.id_subcategoria ? Number(raw.id_subcategoria) : null,
+      id_equipo_sugerido: raw.id_equipo_sugerido ? Number(raw.id_equipo_sugerido) : null,
       descripcion: String(raw.descripcion || raw.concepto || `Línea de Servicio #${idx + 1}`).trim(),
       subcategoria: raw.subcategoria || null,
       linea_negocio: raw.linea_negocio || lineaNegocio,
@@ -357,6 +361,31 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
     const presupuestado = calcularSubtotalNodo({ ...linea, unidad });
     totalPresupuestadoNeto += presupuestado;
 
+    const idLinea = linea.id_linea_servicio !== undefined ? linea.id_linea_servicio : (linea.id || linea.id_linea || null);
+    const idSrv = linea.id_servicio || null;
+
+    // Filtrado estricto por clave foránea (SPEC-130)
+    const reportesTienenFk = reportesAvance.some(r => r.id_linea_servicio !== undefined && r.id_linea_servicio !== null);
+    const reportesParaLinea = reportesTienenFk
+      ? reportesAvance.filter(r => String(r.id_linea_servicio) === String(idLinea))
+      : (reportesAvance.some(r => r.id_servicio !== undefined && r.id_servicio !== null)
+          ? reportesAvance.filter(r => String(r.id_servicio) === String(idSrv))
+          : reportesAvance);
+
+    const viajesTienenFk = registrosViaje.some(v => v.id_linea_servicio !== undefined && v.id_linea_servicio !== null);
+    const viajesParaLinea = viajesTienenFk
+      ? registrosViaje.filter(v => String(v.id_linea_servicio) === String(idLinea))
+      : (registrosViaje.some(v => v.id_servicio !== undefined && v.id_servicio !== null)
+          ? registrosViaje.filter(v => String(v.id_servicio) === String(idSrv))
+          : registrosViaje);
+
+    const actasTienenFk = actasRental.some(a => a.id_linea_servicio !== undefined && a.id_linea_servicio !== null);
+    const actasParaLinea = actasTienenFk
+      ? actasRental.filter(a => String(a.id_linea_servicio) === String(idLinea))
+      : (actasRental.some(a => a.id_servicio !== undefined && a.id_servicio !== null)
+          ? actasRental.filter(a => String(a.id_servicio) === String(idSrv))
+          : actasRental);
+
     const valorUnitario = Number(linea.valor_unitario !== undefined ? linea.valor_unitario : (linea.valorUnitario || linea.tarifa || 0)) || 0;
     let devengado = 0;
     const evidencias = [];
@@ -368,13 +397,13 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
     } else if (unidad === 'Valor Fijo') {
       // Invariante SPEC-128 / Caso Plaenge / Caso Barthou:
       // Si hay al menos un reporte (incluso con 0h) o acta, se devenga el 100% del valor unitario fijo.
-      const hayEjecucion = reportesAvance.length > 0 || actasRental.length > 0 || registrosViaje.length > 0;
+      const hayEjecucion = reportesParaLinea.length > 0 || actasParaLinea.length > 0 || viajesParaLinea.length > 0;
       devengado = hayEjecucion ? valorUnitario : 0;
       evidencias.push(hayEjecucion ? 'Valor Fijo devengado 100% por ejecución registrada' : 'Pendiente de inicio en terreno');
     } else if (unidad === 'Traslado Ida' || unidad === 'Traslado Vuelta' || unidad === 'Traslado Ida/Vuelta') {
       // Fletes y traslados: devengan el 100% al completarse el tramo de viaje
-      const viajesCompletados = registrosViaje.filter(v => v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_faena || v.fecha_llegada_patio);
-      if (viajesCompletados.length > 0 || reportesAvance.length > 0) {
+      const viajesCompletados = viajesParaLinea.filter(v => v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_faena || v.fecha_llegada_patio);
+      if (viajesCompletados.length > 0 || reportesParaLinea.length > 0) {
         devengado = valorUnitario;
         evidencias.push(`Traslado ejecutado con ${viajesCompletados.length} viaje(s) validado(s)`);
       } else {
@@ -386,8 +415,8 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       const pisoDiario = Math.max(1, Number(linea.piso_minimo_horas || linea.pisoMinimo || 8));
       let totalHorasDevengadas = 0;
 
-      if (reportesAvance.length > 0) {
-        for (const rep of reportesAvance) {
+      if (reportesParaLinea.length > 0) {
+        for (const rep of reportesParaLinea) {
           const hrsReport = Number(rep.total_horas_facturables !== undefined ? rep.total_horas_facturables : (rep.horas_reales || rep.horas || pisoDiario));
           const hrsJornada = Math.max(hrsReport, pisoDiario);
           totalHorasDevengadas += hrsJornada;
@@ -400,7 +429,7 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       }
     } else if (unidad === 'Hora Efectiva') {
       let totalHorasEfectivas = 0;
-      for (const rep of reportesAvance) {
+      for (const rep of reportesParaLinea) {
         const hrs = Number(rep.total_horas_facturables !== undefined ? rep.total_horas_facturables : (rep.horas_reales || 0));
         totalHorasEfectivas += hrs;
       }
@@ -410,7 +439,7 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       // Bolsa mensual (ej. 180h): max(bolsa, suma_horas_reales) * valorUnitario
       const bolsa = Math.max(1, Number(linea.piso_minimo_horas || linea.pisoMinimo || 180));
       let totalHorasMes = 0;
-      for (const rep of reportesAvance) {
+      for (const rep of reportesParaLinea) {
         totalHorasMes += Number(rep.horas_reales || rep.total_horas_facturables || 0);
       }
       const horasFacturables = Math.max(bolsa, totalHorasMes);
@@ -418,23 +447,23 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       evidencias.push(`Corte bolsa mes: ${totalHorasMes}h acumuladas vs ${bolsa}h mínimas -> ${horasFacturables}h facturables`);
     } else if (unidad === 'Valor Fijo Diario') {
       // Días efectivos respaldados con reportes diarios
-      const diasReportados = Math.max(0, reportesAvance.length);
+      const diasReportados = Math.max(0, reportesParaLinea.length);
       devengado = Math.round(diasReportados * valorUnitario);
       evidencias.push(`${diasReportados} jornada(s) diaria(s) respaldada(s) con reportes`);
     } else if (unidad === 'Valor Fijo Semanal') {
-      const diasReportados = Math.max(0, reportesAvance.length);
+      const diasReportados = Math.max(0, reportesParaLinea.length);
       const semanas = Math.ceil(diasReportados / 7) || (diasReportados > 0 ? 1 : 0);
       devengado = Math.round(semanas * valorUnitario);
       evidencias.push(`${diasReportados} día(s) -> ${semanas} semana(s) devengada(s)`);
     } else if (unidad === 'Valor Fijo Mensual') {
       // Rental mensual con pro-rata días (ej. 15 días = 15/30 de la tarifa mensual)
-      if (actasRental.length > 0) {
-        const acta = actasRental[0];
+      if (actasParaLinea.length > 0) {
+        const acta = actasParaLinea[0];
         const diasFaena = Number(acta.dias_arriendo_reales || acta.dias_totales || 30);
         devengado = Math.round((diasFaena / 30) * valorUnitario);
         evidencias.push(`Acta Rental: ${diasFaena} días en obra -> pro-rata (${diasFaena}/30)`);
       } else {
-        const diasReportados = Math.min(30, reportesAvance.length || 30);
+        const diasReportados = Math.min(30, reportesParaLinea.length || 30);
         devengado = Math.round((diasReportados / 30) * valorUnitario);
         evidencias.push(`Devengo mensual pro-rata ${diasReportados}/30 días`);
       }
@@ -446,9 +475,15 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
     totalDevengadoNeto += devengado;
 
     lineasConciliadas.push({
-      id_linea_servicio: linea.id_linea_servicio || null,
+      id_linea_servicio: idLinea,
+      id_servicio: idSrv,
+      id_categoria: linea.id_categoria ? Number(linea.id_categoria) : null,
+      id_subcategoria: linea.id_subcategoria ? Number(linea.id_subcategoria) : null,
+      id_equipo_sugerido: linea.id_equipo_sugerido ? Number(linea.id_equipo_sugerido) : null,
       descripcion: linea.descripcion,
       linea_negocio: linea.linea_negocio,
+      tipo_ot: linea.tipo_ot,
+      rol_nodo: linea.rol_nodo,
       unidad: unidad,
       presupuestadoNeto: presupuestado,
       devengadoNeto: devengado,

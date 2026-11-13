@@ -2,7 +2,7 @@
 -- MIGRACIÓN / BACKFILL DETERMINISTA E IDEMPOTENTE: LÍNEAS DE SERVICIO Y ASIGNACIONES
 -- ESQUEMA: sch_leangsp
 -- FECHA: 13/11/2026
--- ESPECIFICACIÓN: .agents/specs/130_remediacion_relacional_y_motor_unico_valorizacion_e2e_spec.md
+-- ESPECIFICACIÓN: SPEC-130 (MANDATO SENIOR DE SANITIZACIÓN RELACIONAL E2E)
 -- =============================================================================
 
 DO $$
@@ -27,12 +27,16 @@ DECLARE
     v_subtotal NUMERIC(14,2);
     v_incluido BOOLEAN;
     v_es_apoyo BOOLEAN;
+    v_id_categoria INT;
+    v_id_subcategoria INT;
+    v_id_equipo_sugerido INT;
+    v_glosa_subcategoria VARCHAR(100);
     v_proyectos_migrados INT := 0;
     v_lineas_migradas INT := 0;
     v_rel_equipos_vinculados INT := 0;
     v_rel_personas_vinculados INT := 0;
 BEGIN
-    RAISE NOTICE 'Iniciando Backfill Determinista de Líneas de Servicio (SPEC-130)...';
+    RAISE NOTICE 'Iniciando Backfill Determinista de Líneas de Servicio con IDs Relacionales (SPEC-130)...';
 
     -- Iterar proyectos que aún NO tengan líneas en tpry_linea_servicio
     FOR r_proy IN 
@@ -54,6 +58,10 @@ BEGIN
             v_lineas_json := r_proy.json_field->'cotizaciones'->-1->'lineas_snapshot';
         ELSIF r_proy.json_field ? 'crm' AND jsonb_typeof(r_proy.json_field->'crm'->'lineas_servicio') = 'array' THEN
             v_lineas_json := r_proy.json_field->'crm'->'lineas_servicio';
+        ELSIF r_proy.json_field ? 'crm_v1' AND jsonb_typeof(r_proy.json_field->'crm_v1'->'lineas_operativas_vigentes') = 'array' THEN
+            v_lineas_json := r_proy.json_field->'crm_v1'->'lineas_operativas_vigentes';
+        ELSIF r_proy.json_field ? 'crm_v1' AND jsonb_typeof(r_proy.json_field->'crm_v1'->'snapshot_comercial'->'lines') = 'array' THEN
+            v_lineas_json := r_proy.json_field->'crm_v1'->'snapshot_comercial'->'lines';
         ELSIF r_proy.json_field ? 'crm_v1' AND jsonb_typeof(r_proy.json_field->'crm_v1'->'lineas_servicio') = 'array' THEN
             v_lineas_json := r_proy.json_field->'crm_v1'->'lineas_servicio';
         ELSIF r_proy.json_field ? 'servicios' AND jsonb_typeof(r_proy.json_field->'servicios') = 'array' THEN
@@ -89,7 +97,7 @@ BEGIN
             v_incluido := COALESCE((r_linea.elem->>'incluido_en_tarifa')::boolean, (r_linea.elem->>'incluido')::boolean, FALSE);
             v_es_apoyo := COALESCE((r_linea.elem->>'es_apoyo_operativo')::boolean, FALSE);
 
-            -- 1. Normalización de las 10 Unidades Canónicas
+            -- 1. Normalización de las 10 Unidades Canónicas (SPEC-130)
             IF v_raw_unidad ILIKE '%IDA/VUELTA%' OR v_raw_unidad ILIKE '%IDA Y VUELTA%' OR (v_raw_unidad ILIKE '%TRASLADO%' AND v_raw_unidad ILIKE '%RETORNO%') THEN
                 v_unidad := 'Traslado Ida/Vuelta';
             ELSIF v_raw_unidad ILIKE '%IDA%' AND NOT (v_raw_unidad ILIKE '%VUELTA%' OR v_raw_unidad ILIKE '%RETORNO%') THEN
@@ -113,7 +121,6 @@ BEGIN
             ELSIF v_raw_unidad ILIKE '%FIJO%' OR v_raw_unidad ILIKE '%ALZADA%' OR v_raw_unidad ILIKE '%CERRADO%' THEN
                 v_unidad := 'Valor Fijo';
             ELSE
-                -- Regla de fallback
                 IF v_raw_desc ILIKE '%RIGGER%' OR v_raw_desc ILIKE '%ESTUDIO%' OR v_raw_desc ILIKE '%PLAN%' THEN
                     v_unidad := 'Valor Fijo';
                 ELSE
@@ -121,7 +128,7 @@ BEGIN
                 END IF;
             END IF;
 
-            -- 2. Clasificación de las 4 Líneas de Negocio (Acuerdo 11-Nov-2026)
+            -- 2. Clasificación de las 4 Líneas de Negocio Canónicas
             IF v_raw_desc ILIKE '%TIJERA%' OR v_raw_desc ILIKE '%PLATAFORMA%' OR v_raw_desc ILIKE '%BRAZO ARTIC%' OR v_raw_desc ILIKE '%ALZA HOMBRE%' OR v_raw_desc ILIKE '%RENTAL%' OR v_raw_desc ILIKE '%DRY LEASE%' THEN
                 v_linea_negocio := 'RENTAL';
                 v_tipo_ot := 'OT-RENTAL';
@@ -132,7 +139,6 @@ BEGIN
                 v_linea_negocio := 'PROFESIONAL';
                 v_tipo_ot := 'OT-STAFF';
             ELSE
-                -- Grúas telescópicas, camiones pluma, horquillas, manipuladores
                 v_linea_negocio := 'IZAJE';
                 v_tipo_ot := 'OT-MANIOBRA';
             END IF;
@@ -153,9 +159,106 @@ BEGIN
                 v_rol_nodo := 'HIJO_COMERCIAL';
             END IF;
 
-            -- 4. Invariantes de Cantidades y Fórmulas
+            -- 4. Resolución Determinista de IDs Relacionales (tequ_categoria / tequ_subcategoria / tequ_equipo)
+            v_id_categoria := NULL;
+            v_id_subcategoria := NULL;
+            v_id_equipo_sugerido := NULL;
+            v_glosa_subcategoria := NULL;
+
+            -- Si viene equipo_asignado_id o equipo_id numérico
+            IF r_linea.elem ? 'equipo_asignado_id' AND (r_linea.elem->>'equipo_asignado_id') ~ '^[0-9]+$' THEN
+                v_id_equipo_sugerido := (r_linea.elem->>'equipo_asignado_id')::int;
+            ELSIF r_linea.elem ? 'id_equipo_sugerido' AND (r_linea.elem->>'id_equipo_sugerido') ~ '^[0-9]+$' THEN
+                v_id_equipo_sugerido := (r_linea.elem->>'id_equipo_sugerido')::int;
+            END IF;
+
+            -- Si tenemos equipo sugerido, consultar directamente sus claves foráneas en tequ_equipo / tequ_subcategoria
+            IF v_id_equipo_sugerido IS NOT NULL THEN
+                SELECT s.id_categoria, e.id_subcategoria, s.nombre_subcategoria
+                INTO v_id_categoria, v_id_subcategoria, v_glosa_subcategoria
+                FROM sch_leangsp.tequ_equipo e
+                LEFT JOIN sch_leangsp.tequ_subcategoria s ON e.id_subcategoria = s.id_subcategoria
+                WHERE e.id_equipo = v_id_equipo_sugerido;
+            END IF;
+
+            -- Si no se resolvió por equipo, resolver según claves relacionales de la BD
+            IF v_id_categoria IS NULL THEN
+                IF v_linea_negocio = 'RENTAL' THEN
+                    v_id_categoria := 102; -- PLATAFORMAS
+                    IF v_raw_desc ILIKE '%ELECTRICA%' AND v_raw_desc ILIKE '%TIJERA%' THEN
+                        v_id_subcategoria := 134;
+                    ELSIF v_raw_desc ILIKE '%DIESEL%' AND v_raw_desc ILIKE '%TIJERA%' THEN
+                        v_id_subcategoria := 150;
+                    ELSIF v_raw_desc ILIKE '%ELECTRICA%' AND v_raw_desc ILIKE '%ARTICULADA%' THEN
+                        v_id_subcategoria := 126;
+                    ELSIF v_raw_desc ILIKE '%DIESEL%' AND v_raw_desc ILIKE '%ARTICULADA%' THEN
+                        v_id_subcategoria := 111;
+                    ELSIF v_raw_desc ILIKE '%TELESCOPICA%' THEN
+                        v_id_subcategoria := 130;
+                    ELSE
+                        v_id_subcategoria := 131; -- PLATAFORMA ELEVADORA
+                    END IF;
+                ELSIF v_linea_negocio = 'TRANSPORTE' THEN
+                    v_id_categoria := 62; -- CAMIONES
+                    IF v_raw_desc ILIKE '%SEMIREMOLQUE%' OR v_raw_desc ILIKE '%RAMPLA%' OR v_raw_desc ILIKE '%CAMA BAJA%' THEN
+                        v_id_subcategoria := 84;
+                    ELSIF v_raw_desc ILIKE '%PLATAFORMA%' THEN
+                        v_id_subcategoria := 91;
+                    ELSIF v_raw_desc ILIKE '%TRACTO%' THEN
+                        v_id_subcategoria := 95;
+                    ELSE
+                        v_id_subcategoria := 93; -- CAMION
+                    END IF;
+                ELSIF v_linea_negocio = 'PROFESIONAL' THEN
+                    v_id_categoria := 151; -- PERSONAL CERTIFICADO
+                    IF v_raw_desc ILIKE '%RIGGER%' THEN
+                        v_id_subcategoria := 160;
+                    ELSIF v_raw_desc ILIKE '%OPERADOR%' THEN
+                        v_id_subcategoria := 161;
+                    ELSIF v_raw_desc ILIKE '%PREVENCION%' OR v_raw_desc ILIKE '%APR%' THEN
+                        v_id_subcategoria := 162;
+                    ELSE
+                        v_id_subcategoria := 163;
+                    END IF;
+                ELSE
+                    -- IZAJE
+                    IF v_raw_desc ILIKE '%HORQUILLA%' THEN
+                        v_id_categoria := 65;
+                        v_id_subcategoria := 74;
+                    ELSIF v_raw_desc ILIKE '%MANIPULADOR%' THEN
+                        v_id_categoria := 70;
+                        v_id_subcategoria := 79;
+                    ELSIF v_raw_desc ILIKE '%PLUMA%' THEN
+                        v_id_categoria := 62;
+                        v_id_subcategoria := 71;
+                    ELSE
+                        v_id_categoria := 40; -- GRUAS TELESCOPICAS
+                        IF v_raw_desc ILIKE '%400%' THEN v_id_subcategoria := 70;
+                        ELSIF v_raw_desc ILIKE '%250%' THEN v_id_subcategoria := 68;
+                        ELSIF v_raw_desc ILIKE '%220%' THEN v_id_subcategoria := 67;
+                        ELSIF v_raw_desc ILIKE '%150%' THEN v_id_subcategoria := 66;
+                        ELSIF v_raw_desc ILIKE '%100%' THEN v_id_subcategoria := 62;
+                        ELSIF v_raw_desc ILIKE '%90%' THEN v_id_subcategoria := 60;
+                        ELSIF v_raw_desc ILIKE '%75%' THEN v_id_subcategoria := 59;
+                        ELSIF v_raw_desc ILIKE '%70%' THEN v_id_subcategoria := 54;
+                        ELSIF v_raw_desc ILIKE '%55%' THEN v_id_subcategoria := 52;
+                        ELSIF v_raw_desc ILIKE '%50%' THEN v_id_subcategoria := 50;
+                        ELSIF v_raw_desc ILIKE '%40%' THEN v_id_subcategoria := 49;
+                        ELSE v_id_subcategoria := 54; -- Default 70 Ton
+                        END IF;
+                    END IF;
+                END IF;
+            END IF;
+
+            -- Glosa descriptiva oficial desde la base de datos
+            IF v_glosa_subcategoria IS NULL AND v_id_subcategoria IS NOT NULL THEN
+                SELECT nombre_subcategoria INTO v_glosa_subcategoria
+                FROM sch_leangsp.tequ_subcategoria
+                WHERE id_subcategoria = v_id_subcategoria;
+            END IF;
+
+            -- 5. Invariantes de Cantidades y Fórmulas
             IF v_unidad IN ('Valor Fijo', 'Traslado Ida', 'Traslado Vuelta', 'Traslado Ida/Vuelta') THEN
-                -- Grupo A: Cobro Único Inmutable
                 v_cant := 1.00;
                 v_cant_dias := NULL;
                 v_cant_horas := NULL;
@@ -210,13 +313,16 @@ BEGIN
                 v_subtotal := v_val_unit;
             END IF;
 
-            -- Inserción relacional de la línea de servicio
+            -- Inserción relacional rigurosa en tpry_linea_servicio
             INSERT INTO sch_leangsp.tpry_linea_servicio (
                 id_proyecto,
                 id_linea_servicio_padre,
                 linea_negocio,
                 tipo_ot,
                 rol_nodo,
+                id_categoria,
+                id_subcategoria,
+                id_equipo_sugerido,
                 descripcion,
                 subcategoria,
                 unidad,
@@ -237,8 +343,11 @@ BEGIN
                 v_linea_negocio,
                 v_tipo_ot,
                 v_rol_nodo,
+                v_id_categoria,
+                v_id_subcategoria,
+                v_id_equipo_sugerido,
                 COALESCE(r_linea.elem->>'descripcion', r_linea.elem->>'concepto', 'Servicio Operativo'),
-                r_linea.elem->>'subcategoria',
+                COALESCE(v_glosa_subcategoria, r_linea.elem->>'subcategoria', 'General'),
                 v_unidad,
                 v_cant,
                 v_cant_dias,
@@ -260,7 +369,7 @@ BEGIN
             v_lineas_migradas := v_lineas_migradas + 1;
         END LOOP;
 
-        -- 5. Backfill de Asignaciones Físicas de Equipos a la Línea Raíz
+        -- 6. Backfill de Asignaciones Físicas de Equipos a la Línea Raíz
         IF v_id_linea_raiz IS NOT NULL THEN
             UPDATE sch_leangsp.tpry_rel_equipo
             SET id_linea_servicio = v_id_linea_raiz,
@@ -290,6 +399,6 @@ BEGIN
         v_proyectos_migrados := v_proyectos_migrados + 1;
     END LOOP;
 
-    RAISE NOTICE 'Backfill completado exitosamente: % proyectos procesados, % líneas de servicio creadas.', 
+    RAISE NOTICE 'Backfill completado exitosamente: % proyectos procesados, % líneas de servicio relacionales creadas.', 
                  v_proyectos_migrados, v_lineas_migradas;
 END $$;

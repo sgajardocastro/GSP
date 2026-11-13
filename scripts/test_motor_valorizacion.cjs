@@ -383,6 +383,117 @@ assertStrictEqual(edpAprobadoTotal.montoTotalFacturable, 2166000, 'Total Factura
 assertTrue(edpAprobadoTotal.esFacturable, '100% Facturable para emisión DTE en Laudus / SII');
 
 // -----------------------------------------------------------------------------
+// BLOQUE 7: Certificación Relacional por Identificadores Numéricos (SPEC-130)
+// -----------------------------------------------------------------------------
+console.log('\n--- BLOQUE 7: Certificación Relacional por IDs Numéricos (SPEC-130) ---');
+
+// 1. Preservación estricta de IDs en valorización de árbol
+const arbolRelacional = [
+  {
+    id_linea_servicio: 5001,
+    id_categoria: 40,
+    id_subcategoria: 54,
+    id_equipo_sugerido: 38,
+    descripcion: 'Grúa Telescópica 70 Ton',
+    linea_negocio: 'IZAJE',
+    unidad: 'Horas Diarias Minimas',
+    piso_minimo_horas: 8,
+    cantidad_dias: 1,
+    valor_unitario: 120000
+  },
+  {
+    id_linea_servicio: 5002,
+    id_linea_servicio_padre: 5001,
+    id_categoria: 62,
+    id_subcategoria: 84,
+    descripcion: 'Semirremolque Transporte',
+    linea_negocio: 'TRANSPORTE',
+    unidad: 'Traslado Ida/Vuelta',
+    valor_unitario: 250000
+  },
+  {
+    id_linea_servicio: 5003,
+    id_linea_servicio_padre: 5001,
+    id_categoria: 151,
+    id_subcategoria: 160,
+    descripcion: 'Rigger de Maniobra',
+    linea_negocio: 'PROFESIONAL',
+    unidad: 'Valor Fijo Diario',
+    cantidad_dias: 1,
+    valor_unitario: 80000
+  }
+];
+
+const resArbolRel = motor.valorizarArbolCotizacion(arbolRelacional);
+assertTrue(resArbolRel.esValido, 'Árbol relacional por IDs es válido');
+assertStrictEqual(resArbolRel.nodosNormalizados[0].id_categoria, 40, 'Línea 1 conserva id_categoria = 40 (GRUAS TELESCOPICAS)');
+assertStrictEqual(resArbolRel.nodosNormalizados[0].id_subcategoria, 54, 'Línea 1 conserva id_subcategoria = 54 (GRUA 70 TON)');
+assertStrictEqual(resArbolRel.nodosNormalizados[0].id_equipo_sugerido, 38, 'Línea 1 conserva id_equipo_sugerido = 38');
+assertStrictEqual(resArbolRel.nodosNormalizados[1].id_categoria, 62, 'Línea 2 conserva id_categoria = 62 (CAMIONES)');
+assertStrictEqual(resArbolRel.nodosNormalizados[1].id_subcategoria, 84, 'Línea 2 conserva id_subcategoria = 84 (SEMIREMOLQUE)');
+assertStrictEqual(resArbolRel.nodosNormalizados[2].id_categoria, 151, 'Línea 3 conserva id_categoria = 151 (PERSONAL CERTIFICADO)');
+assertStrictEqual(resArbolRel.nodosNormalizados[2].id_subcategoria, 160, 'Línea 3 conserva id_subcategoria = 160 (RIGGER)');
+
+// 2. Conciliación Multi-Línea Selectiva E2E por id_linea_servicio
+const conciliacionMultiLinea = motor.conciliarDevengadoProyectoE2E(88, {
+  lineasServicio: [
+    {
+      id_linea_servicio: 1001,
+      id_categoria: 40,
+      id_subcategoria: 54,
+      descripcion: 'Grúa 70T Faena Principal',
+      linea_negocio: 'IZAJE',
+      unidad: 'Horas Diarias Minimas',
+      piso_minimo_horas: 8,
+      cantidad_dias: 1,
+      valor_unitario: 100000 // Presupuesto: 1d * 8h * 100.000 = 800.000
+    },
+    {
+      id_linea_servicio: 1002,
+      id_categoria: 62,
+      id_subcategoria: 71,
+      descripcion: 'Camión Pluma Apoyo Faena',
+      linea_negocio: 'IZAJE',
+      unidad: 'Horas Diarias Minimas',
+      piso_minimo_horas: 5,
+      cantidad_dias: 1,
+      valor_unitario: 60000 // Presupuesto: 1d * 5h * 60.000 = 300.000
+    }
+  ],
+  reportesAvance: [
+    // Reporte de la Grúa 70T (supera piso de 8h con 10h efectivas) -> Devenga 10h * 100.000 = 1.000.000
+    { id_reporte_avance: 901, id_linea_servicio: 1001, total_horas_facturables: 10 },
+    // Reporte del Camión Pluma (bajo piso de 5h con 3h) -> Devenga 5h piso * 60.000 = 300.000
+    { id_reporte_avance: 902, id_linea_servicio: 1002, total_horas_facturables: 3 }
+  ]
+});
+
+assertStrictEqual(conciliacionMultiLinea.totalPresupuestadoNeto, 1100000, 'Presupuesto total combinado: $800.000 + $300.000 = $1.100.000');
+assertStrictEqual(conciliacionMultiLinea.lineasConciliadas[0].devengadoNeto, 1000000, 'Línea Grúa 1001 devenga exactamente $1.000.000 por su propio reporte');
+assertStrictEqual(conciliacionMultiLinea.lineasConciliadas[1].devengadoNeto, 300000, 'Línea Camión 1002 devenga exactamente $300.000 aplicando su piso de 5h');
+assertStrictEqual(conciliacionMultiLinea.totalDevengadoNeto, 1300000, 'Devengo total exacto: $1.000.000 + $300.000 = $1.300.000');
+assertStrictEqual(conciliacionMultiLinea.desviacionNeto, 200000, 'Desviación neta total: +$200.000');
+
+// 3. Liquidación formal de EDP con propagación de claves foráneas
+const edpRelacional = motor.liquidarEstadoPago2Hitos({
+  lineasConciliadas: conciliacionMultiLinea.lineasConciliadas,
+  hito1OperacionesAprobado: true,
+  hito2ContabilidadAprobado: true,
+  tasaIva: 0.19,
+  retencionGarantiaPorcentaje: 0
+});
+
+assertTrue(edpRelacional.esFacturable, 'EDP relacional 100% facturable');
+assertStrictEqual(edpRelacional.lineasFacturables.length, 2, '2 líneas facturables generadas');
+assertStrictEqual(edpRelacional.lineasFacturables[0].id_linea_servicio, 1001, 'Línea facturable 1 vinculada a FK id_linea_servicio = 1001');
+assertStrictEqual(edpRelacional.lineasFacturables[0].id_categoria, 40, 'Línea facturable 1 vinculada a FK id_categoria = 40');
+assertStrictEqual(edpRelacional.lineasFacturables[0].id_subcategoria, 54, 'Línea facturable 1 vinculada a FK id_subcategoria = 54');
+assertStrictEqual(edpRelacional.lineasFacturables[1].id_linea_servicio, 1002, 'Línea facturable 2 vinculada a FK id_linea_servicio = 1002');
+assertStrictEqual(edpRelacional.lineasFacturables[1].id_categoria, 62, 'Línea facturable 2 vinculada a FK id_categoria = 62');
+assertStrictEqual(edpRelacional.lineasFacturables[1].id_subcategoria, 71, 'Línea facturable 2 vinculada a FK id_subcategoria = 71');
+assertStrictEqual(edpRelacional.montoTotalFacturable, 1547000, 'Total facturable con IVA: $1.300.000 + 19% ($247.000) = $1.547.000');
+
+// -----------------------------------------------------------------------------
 // REPORTE DE RESULTADOS DE PRUEBAS
 // -----------------------------------------------------------------------------
 console.log('\n================================================================');
