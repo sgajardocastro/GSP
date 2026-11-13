@@ -1398,6 +1398,11 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **3. Blindaje de Liquidación en EDP y Generación de PDF (`ModalCaratulaEDP.vue`, `estadoPagoController.js` & `reportDiarioController.js`):** Eliminada la multiplicación espuria por días u orómetros trabajados en líneas de cobro único. En el visor modal y en el PDF oficial se liquida a `1 × valor_unitario` (Caso 002 Plaenge).
   - **4. Normalización en Informe de Término de Servicio ITS (`itsController.js` & `ModalITS.vue`):** Eliminada la partición artificial de traslados a la mitad y blindado el cómputo de ingresos facturables para proyectos pactados a valor fijo sin desglose diario horario.
   - **5. Saneamiento SQL en Base de Datos con Respaldo Automático:** Ejecutado script atómico en `sch_leangsp_prod` y `sch_leangsp` corrigiendo proyectos afectados (id 31 Plaenge, id 34 Besalco ITS 10, id 77 Pocuro) tras crear respaldo previo en `_backup_spec128_proyectos`. Documentado en `CASO-20261112-05` y `CASO-20261112-06`.
+* [x] **136. `[REQ-1167]` [Soporte Operacional — CASO-20261113-02 — Caso 04 Planta Ferrero] Reasignación Retroactiva de Camión Pluma RSPL.82-3 vs TRPS.20-8 y Regeneración Física de PDFs [PROD / COMPLETADO - 13-Nov-2026]:**
+  - **1. Respaldo Transaccional y Saneamiento BD (`sch_leangsp_prod`):** Respaldados los reportes en `_backup_caso_negocio04_reportes` y actualizado `id_equipo = 56` (`RSPL.82-3`) en `tedp_reporte_avance` para los 7 reportes del proyecto 33 (Días 7 al 13) cuya `fecha_reporte >= '2026-11-06'`, manteniendo intactos los Días 1 al 6 con `TRPS.20-8` (57).
+  - **2. Segmentación Relacional de Flota (`tpry_rel_equipo`):** Acotada la vigencia de `TRPS.20-8` hasta el `2026-11-05 23:59:59` y registrada la vigencia de `RSPL.82-3` del `2026-11-06` al `2026-11-28`.
+  - **3. Regeneración Física de 6 PDFs Oficiales en Producción:** Ejecutado Puppeteer en el servidor remoto regenerando y sobreescribiendo físicamente en `/u05/LeanDocs/GSP/prod/reports/2026/11/` los PDFs de los Días 7, 8, 9, 10, 11 y 13 con la patente `RSPL.82-3` y modelo Sinotruk, cuadrando la API y Carátula de Estado de Pago. Ficha canónica documentada en `CASO-20261113-02`.
+
 
 
 
