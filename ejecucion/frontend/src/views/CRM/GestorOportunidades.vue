@@ -360,8 +360,8 @@
                   <strong v-else-if="operacionesAssignment.regimen_operacional === 'URBANO'" class="font-mono text-blue-400">URBANO</strong>
                   <strong v-else class="font-mono text-red-400 animate-pulse">PENDIENTE (OBLIGATORIO)</strong>
                 </span>
-                <span>Moneda: <strong class="text-white font-mono">{{ comercial.moneda }}</strong></span>
-                <span>Total Net Cotizado: <strong class="text-amber-400 font-mono">{{ formatCurrency(totalNetoComercial) }}</strong></span>
+                <span v-if="topTab !== 'operaciones'">Moneda: <strong class="text-white font-mono">{{ comercial.moneda }}</strong></span>
+                <span v-if="topTab !== 'operaciones'">Total Net Cotizado: <strong class="text-amber-400 font-mono">{{ formatCurrency(totalNetoComercial) }}</strong></span>
               </div>
             </div>
           </div>
@@ -585,217 +585,32 @@
             </div>
           </fieldset>
 
-          <!-- Columna Derecha: Pestaña B (Estructurador de Servicios IDÉNTICO A PREVENTA) -->
+          <!-- Columna Derecha: Pestaña B (Estructura Jerárquica de Servicios en Árbol - Operaciones) -->
           <div class="space-y-6">
             <fieldset :disabled="isRequerimientoAprobado" class="bg-[#050810] border border-white/10 rounded-xl p-5 space-y-4">
               <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                  📋 Pestaña B: Estructurador de Servicios (Idéntico a Preventa)
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-5 rounded-sm inline-block bg-amber-500"></span>
+                  <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">
+                    Estructura Jerárquica de Servicios (Verificación Operativa)
+                  </span>
+                </div>
+                <span v-if="isRequerimientoAprobado" class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono font-bold uppercase">
+                  Requerimiento Aprobado (Solo Lectura)
                 </span>
-                <button @click="agregarLinea" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-all">
-                  + Agregar Línea
-                </button>
               </div>
 
-              <div class="border border-white/5 rounded-lg bg-black/20 overflow-x-auto overflow-y-auto">
-                <table class="w-full text-left text-xs min-w-[760px]">
-                  <thead>
-                    <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
-                      <th class="p-2 min-w-[120px]">Categoría</th>
-                      <th class="p-2 min-w-[120px]">Subcategoría</th>
-                      <th class="p-2 min-w-[140px]">Descripción / Equipo</th>
-                      <th class="p-2 min-w-[110px]">Unidad</th>
-                      <th class="p-2 text-center min-w-[130px]">Cantidad(es)</th>
-                      <th class="p-2 text-right min-w-[85px]">Valor Unit.</th>
-                      <th class="p-2 text-right min-w-[95px]">Subtotal</th>
-                      <th class="p-2 text-center min-w-[28px]"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5">
-                    <tr v-for="(line, idx) in lines" :key="idx" class="transition-colors" :class="!isOriginalLine(idx) ? 'bg-red-500/[0.04] border-l-2 border-l-red-500' : 'hover:bg-white/[0.02]'">
-                      <td class="p-2">
-                        <div v-if="!isOriginalLine(idx)" class="mb-1">
-                          <span class="inline-block px-1.5 py-0.5 bg-red-500/20 text-red-300 border border-red-500/40 rounded text-[9px] font-bold uppercase tracking-wider">
-                            ⚠️ + Nueva Línea Operativa
-                          </span>
-                        </div>
-                        <select 
-                          v-model="line.tipo" 
-                          @change="onTipoChange(line)" 
-                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-28 transition-colors" 
-                          :class="(hasDiff('equipo_tipo', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
-                        >
-                          <option value="" class="bg-[#0a0f1e] text-slate-300">-- Tipo --</option>
-                          <option v-for="cat in dbCategories" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                            {{ cat.nombre_categoria }}
-                          </option>
-                        </select>
-                        <div v-if="hasDiff('equipo_tipo', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
-                          Orig: {{ getOriginalValue('equipo_tipo', idx) || '(Vacío)' }}
-                        </div>
-                      </td>
-                      <td class="p-2">
-                        <select 
-                          v-model="line.subcategoria" 
-                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="(hasDiff('equipo_subcategoria', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
-                        >
-                          <option value="" class="bg-[#0a0f1e] text-slate-300">-- Seleccionar --</option>
-                          <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                            {{ sub.nombre_subcategoria }}
-                          </option>
-                        </select>
-                        <div v-if="hasDiff('equipo_subcategoria', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through truncate max-w-[120px]" :title="getOriginalValue('equipo_subcategoria', idx)">
-                          Orig: {{ getOriginalValue('equipo_subcategoria', idx) || '(Vacío)' }}
-                        </div>
-                      </td>
-                      <td class="p-2">
-                        <input 
-                          type="text" 
-                          v-model="line.descripcion" 
-                          placeholder="Ej: Liebherr LTM 1220..." 
-                          class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white transition-colors" 
-                          :class="(hasDiff('equipo_descripcion', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'" 
-                        />
-                        <div v-if="hasDiff('equipo_descripcion', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through truncate max-w-[200px]" :title="getOriginalValue('equipo_descripcion', idx)">
-                          Orig: {{ getOriginalValue('equipo_descripcion', idx) || '(Vacío)' }}
-                        </div>
-                      </td>
-                      <td class="p-2">
-                        <select 
-                          v-model="line.unidad" 
-                          @change="onUnidadChange(line)"
-                          class="bg-[#0a0f1e] border rounded px-2 py-1 text-[11px] text-white outline-none w-full transition-colors" 
-                          :class="[
-                            (hasDiff('equipo_unidad', idx) || !isOriginalLine(idx)) ? 'border-red-500 bg-red-500/10 ring-1 ring-red-500/40 text-red-200 font-semibold' : 'border-white/10'
-                          ]" 
-                        >
-                          <template v-if="line.tipo === 'TRASLADOS'">
-                            <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
-                            <option value="TRASLADO RETORNO" class="bg-[#0a0f1e] text-white">TRASLADO RETORNO</option>
-                            <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
-                            <option v-if="line.unidad === 'Traslado'" value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
-                          </template>
-                          <template v-else>
-                            <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
-                            <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
-                            <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
-                            <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
-                            <option value="Diario" class="bg-[#0a0f1e] text-white">Diario</option>
-                          </template>
-                        </select>
-                        <div v-if="hasDiff('equipo_unidad', idx)" class="text-[9px] text-red-400 font-mono mt-0.5 line-through">
-                          Orig: {{ getOriginalValue('equipo_unidad', idx) }}
-                        </div>
-                      </td>
-                      <td class="p-2">
-                        <!-- Horas Diarias Minimas: Días (1..30) y Horas (1..24) -->
-                        <template v-if="line.unidad === 'Horas Diarias Minimas'">
-                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
-                            <div class="flex items-center gap-1">
-                              <span class="text-[10px] text-slate-400 font-mono">Días:</span>
-                              <input 
-                                type="number" 
-                                v-model.number="line.cantidad_dias" 
-                                @input="line.cantidad = line.cantidad_dias"
-                                min="1" 
-                                max="30" 
-                                class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
-                                :class="(line.cantidad_dias < 1 || line.cantidad_dias > 30) ? 'border-red-500 text-red-300' : 'border-white/10'"
-                                title="Cantidad de Días (1 a 30)"
-                              />
-                            </div>
-                            <div class="flex items-center gap-1">
-                              <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
-                              <input 
-                                type="number" 
-                                v-model.number="line.cantidad_horas" 
-                                @input="line.pisoMinimo = line.cantidad_horas"
-                                min="1" 
-                                max="24" 
-                                step="0.5" 
-                                class="w-14 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
-                                :class="(line.cantidad_horas < 1 || line.cantidad_horas > 24) ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                                title="Cantidad de Horas (1 a 24)"
-                              />
-                            </div>
-                          </div>
-                        </template>
-                        <!-- Horas Mes Minimas: Meses (>= 1) y Horas (> 1) -->
-                        <template v-else-if="line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas'">
-                          <div class="flex items-center justify-center gap-1.5 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
-                            <div class="flex items-center gap-1">
-                              <span class="text-[10px] text-slate-400 font-mono">Meses:</span>
-                              <input 
-                                type="number" 
-                                v-model.number="line.cantidad_meses" 
-                                @input="line.cantidad = line.cantidad_meses"
-                                min="1" 
-                                class="w-12 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
-                                :class="line.cantidad_meses < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                                title="Cantidad de Meses (>= 1)"
-                              />
-                            </div>
-                            <div class="flex items-center gap-1">
-                              <span class="text-[10px] text-amber-400 font-mono">Horas:</span>
-                              <input 
-                                type="number" 
-                                v-model.number="line.cantidad_horas" 
-                                @input="line.pisoMinimo = line.cantidad_horas"
-                                min="2" 
-                                class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-amber-300 font-mono"
-                                :class="line.cantidad_horas <= 1 ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                                title="Cantidad de Horas (> 1)"
-                              />
-                            </div>
-                          </div>
-                        </template>
-                        <!-- Valor Fijo / Traslado: Cobro Único (SPEC-128: Sin Cantidad) -->
-                        <template v-else-if="line.unidad === 'Valor Fijo' || line.tipo === 'TRASLADOS' || String(line.unidad || '').startsWith('TRASLADO')">
-                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 px-2 py-1.5 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
-                            <span class="text-[10px] text-amber-400 font-mono font-bold uppercase">Cobro Único</span>
-                          </div>
-                        </template>
-                        <!-- Cantidad (>= 1) -->
-                        <template v-else>
-                          <div class="flex items-center justify-center gap-1 bg-slate-900/50 p-1 rounded border transition-colors" :class="!isOriginalLine(idx) ? 'border-red-500/50 bg-red-500/10 ring-1 ring-red-500/30' : 'border-white/5'">
-                            <span class="text-[10px] text-slate-400 font-mono">Cantidad:</span>
-                            <input 
-                              type="number" 
-                              v-model.number="line.cantidad" 
-                              min="1" 
-                              class="w-16 bg-[#0a0f1e] border rounded px-1 py-1 text-center text-xs text-white font-mono"
-                              :class="line.cantidad < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                              title="Cantidad (>= 1)"
-                            />
-                          </div>
-                        </template>
-                      </td>
-                      <td class="p-2">
-                        <div class="relative flex items-center">
-                          <span class="absolute left-2 text-slate-500 text-xs font-mono select-none pointer-events-none">$</span>
-                          <input 
-                            disabled 
-                            type="text" 
-                            :value="formatInputMiles(line.valorUnitario)" 
-                            class="w-full bg-[#0a0f1e] border rounded pl-5 pr-2 py-1 text-right text-xs text-slate-300 font-mono opacity-60 cursor-not-allowed transition-colors" 
-                            :class="(!isOriginalLine(idx) || hasDiff('equipo_valor', idx)) ? 'border-red-500/60 bg-red-500/5 ring-1 ring-red-500/30' : 'border-white/10'" 
-                            :title="hasDiff('equipo_valor', idx) ? ('Valor preventa: ' + formatCurrency(getOriginalValue('equipo_valor', idx))) : 'No puede modificar el precio base de la cotización en Operaciones.'" 
-                          />
-                        </div>
-                      </td>
-                      <td class="p-2 text-right font-bold text-amber-400 font-mono">
-                        {{ formatCurrency(calcularSubtotalOperaciones(line, idx)) }}
-                      </td>
-                      <td class="p-2 text-center">
-                        <button @click="eliminarLinea(idx)" class="text-slate-500 hover:text-red-400 cursor-pointer" title="Eliminar línea">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <!-- Componente Árbol Jerárquico en Validación Operativa -->
+              <EstructuradorArbolServicios
+                v-model:lines="lines"
+                v-model:servicios="serviciosArbol"
+                :db-categories="dbCategories"
+                :disabled="isRequerimientoAprobado"
+                :format-currency="formatCurrency"
+                :format-input-miles="formatInputMiles"
+                :ocultar-precios="topTab === 'operaciones'"
+                :snapshot-servicios="snapshotComercialServicios"
+              />
 
               <!-- CONDICIÓN DEL SERVICIO (PROGRAMADO / DISPONIBLE) E INDICADORES DE VIÁTICOS EDITABLES EN VALIDACIÓN DE OPERACIONES -->
               <div class="bg-[#0a0f1e]/90 border border-white/10 rounded-xl p-3.5 space-y-3">
@@ -1252,425 +1067,24 @@
             </div>
           </div>
 
-          <!-- TABLA ÚNICA DE ALTA DENSIDAD LINEAL (UNA SOLA CABECERA GLOBAL) -->
-          <div class="bg-[#080d1a] border border-white/10 rounded-lg overflow-hidden shadow-xl shadow-black/50">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs border-collapse table-fixed">
-                <thead>
-                  <tr class="bg-white/5 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-white/10">
-                    <th class="py-2.5 px-3 w-[22%]">Recurso / Requerimiento</th>
-                    <th class="py-2.5 px-3 w-[25%]">Equipo / Vehículo Asignado</th>
-                    <th class="py-2.5 px-3 w-[28%]">Operador & Rigger Asignado</th>
-                    <th class="py-2.5 px-3 w-[21%]">Ventana Planificada</th>
-                    <th class="py-2.5 px-2 w-[4%] text-center">Acc</th>
-                  </tr>
-                </thead>
-                <tbody class="font-mono">
-                  
-                  <!-- SECCIÓN 1: FLOTA PRINCIPAL & OPERADORES -->
-                  <tr class="bg-slate-900 border-y border-white/15">
-                    <td colspan="5" class="py-2 px-3">
-                      <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                          1. Flota Principal & Operadores de Servicio
-                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ linesEquiposPrincipales.length }} {{ linesEquiposPrincipales.length === 1 ? 'equipo' : 'equipos' }})</span>
-                        </span>
-                        <button @click="agregarEquipoPrincipal" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
-                          + Agregar Equipo
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- FILAS FLOTA PRINCIPAL -->
-                  <tr v-for="(line, idx) in linesEquiposPrincipales" :key="'eq-'+(line._uid||line.id_item||('base-'+idx))" class="hover:bg-white/[0.02] transition-colors border-b border-white/5">
-                    <td class="py-2.5 pr-3 pl-8 font-sans">
-                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
-                        <div class="min-w-0 flex-1">
-                          <!-- Línea base cotizada comercialmente -->
-                          <template v-if="line.is_linea_base !== false">
-                            <div class="font-bold text-white text-xs leading-tight truncate" :title="line.descripcion || line.subcategoria">{{ line.descripcion || line.subcategoria || 'Equipo de Servicio' }}</div>
-                            <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <span class="text-blue-400 font-mono font-bold">{{ [line.tipo, line.subcategoria].filter(Boolean).join(' - ') }}</span>
-                              <span>•</span>
-                              <span>{{ formatResumenCantidadLinea(line) }}</span>
-                            </div>
-                          </template>
-                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría Lado a Lado -->
-                          <template v-else>
-                            <div class="grid grid-cols-2 gap-1.5">
-                              <select v-model="line.tipo" @change="line.subcategoria = ''; line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/40 rounded px-1.5 py-1 text-[11px] text-amber-300 font-bold outline-none focus:border-amber-400 truncate" title="Seleccionar Categoría">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría --</option>
-                                <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO', 'TRASLADOS'].includes(c.nombre_categoria))" :key="cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                                  {{ cat.nombre_categoria }}
-                                </option>
-                              </select>
-                              <select v-model="line.subcategoria" :disabled="!line.tipo" @change="line.equipo_asignado_id = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-amber-500/20 rounded px-1.5 py-1 text-[11px] text-white outline-none focus:border-amber-400 truncate disabled:opacity-40" title="Seleccionar Subcategoría">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
-                                <option v-for="sub in getSubcategoriesForType(line.tipo)" :key="sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                                  {{ sub.nombre_subcategoria }}
-                                </option>
-                              </select>
-                            </div>
-                          </template>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <select v-model="line.equipo_asignado_id" @change="onEquipoPrincipalCambiado(line)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Equipo ({{ line.subcategoria || line.tipo || 'Todos' }}) --</option>
-                          <optgroup v-if="getEquiposAgrupados(line).sugeridos.length > 0" label="🎯 Equipos Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                            <option v-for="eq in getEquiposAgrupados(line).sugeridos" :key="'eq-sug-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </optgroup>
-                          <optgroup v-if="getEquiposAgrupados(line).otros.length > 0" label="🚜 Toda la Flota (Mayor Capacidad)" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="eq in getEquiposAgrupados(line).otros" :key="'eq-otr-'+(eq.id_equipo || eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-slate-200">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.modelo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </optgroup>
-                        </select>
-                        <button type="button" v-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                        <button type="button" v-else-if="line.equipo_asignado_id && getSemaforoEquipo(line.equipo_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                        <button type="button" v-else-if="line.equipo_asignado_id" @click.stop="abrirDetalleAcreditacion('equipo', line.equipo_asignado_id)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                      </div>
-                      <div v-if="esEquipoMayorPrestacion(line)" class="mt-1 flex items-center gap-1.5 text-[9px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded font-sans font-bold leading-tight min-w-0" title="Equipo de Mayor Capacidad (Alternativa Operativa — Tarifa Comercial Respaldada)">
-                        <span class="flex-shrink-0">⚠️</span>
-                        <span class="truncate">Equipo Mayor Capacidad (Tarifa Respaldada)</span>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="space-y-1.5 min-w-0">
-                        <!-- Fila 1: Operador (Oculto para Plataformas - Arriendo Sin Operador) -->
-                        <div v-if="esLineaPlataforma(line)" class="flex items-center gap-1.5 min-w-0 py-1.5 px-2.5 bg-slate-900/80 border border-slate-700/60 rounded text-[11px] text-slate-300 font-bold">
-                          <span class="flex-shrink-0">🏢</span>
-                          <span class="truncate">Arriendo Sin Operador (Plataforma no lleva conductor)</span>
-                        </div>
-                        <div v-else class="space-y-1.5 min-w-0">
-                          <!-- Operador Titular / Turno 1 -->
-                          <div class="flex items-center gap-1.5 min-w-0">
-                            <span class="text-[10px] text-amber-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador del Equipo">
-                              👷 {{ (Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1) ? 'Op 1:' : 'Op:' }}
-                            </span>
-                            <select v-model="line.operador_asignado_id" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate">
-                              <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador --</option>
-                              <optgroup v-if="getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                                <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                  {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                                </option>
-                              </optgroup>
-                              <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                                <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                  {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                                </option>
-                              </optgroup>
-                            </select>
-                            <template v-if="line.operador_asignado_id">
-                              <button type="button" v-if="getSemaforoTripulante(line.operador_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                              <button type="button" v-else-if="getSemaforoTripulante(line.operador_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                              <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.operador_asignado_id, cargo: (`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                            </template>
-                            <button
-                              type="button"
-                              @click.stop="agregarTurnoRelevoOperador(line)"
-                              class="px-1.5 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-0.5 flex-shrink-0 cursor-pointer"
-                              title="Agregar relevo de operador por tramo de fechas en este mismo equipo (sin duplicar máquina)"
-                            >
-                              + Relevo
-                            </button>
-                          </div>
-                          <!-- Relevos adicionales (Turno 2+) sobre el mismo equipo -->
-                          <template v-if="Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1">
-                            <div v-for="(turno, tIdx) in line.turnos_operadores.slice(1)" :key="'turno-op-'+idx+'-'+tIdx" class="flex items-center gap-1.5 min-w-0 pt-1 border-t border-white/5">
-                              <span class="text-[10px] text-amber-300 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Operador de Relevo">
-                                🔄 Op {{ tIdx + 2 }}:
-                              </span>
-                              <select v-model="turno.operador_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-amber-500/30 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-400 truncate">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Operador Relevo --</option>
-                                <optgroup v-if="getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos.length > 0" label="🎯 Operadores Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                                  <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').sugeridos" :key="'op-rel-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                    {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                                  </option>
-                                </optgroup>
-                                <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                                  <option v-for="u in getUsuariosAgrupados(`${line.tipo || ''} ${line.subcategoria || ''}`.toUpperCase().includes('PLUMA') ? 'Operador Camión Pluma' : 'Operador Grúa').otros" :key="'op-rel-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                    {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                                  </option>
-                                </optgroup>
-                              </select>
-                              <button type="button" @click.stop="eliminarTurnoRelevoOperador(line, tIdx + 1)" class="text-slate-500 hover:text-red-400 px-1 text-xs font-bold cursor-pointer" title="Quitar relevo">✕</button>
-                            </div>
-                          </template>
-                        </div>
-
-                        <!-- Fila 2: Rigger Vinculado al Equipo (Asociado a Grúa Principal a menos que se hayan vendido más riggers) -->
-                        <div v-if="opportunity.requiere_rigger && (idx === 0 || idx < cantidadRiggersVendidos)" class="flex items-center gap-1.5 pt-1 border-t border-white/5 min-w-0">
-                          <span class="text-[10px] text-cyan-400 font-bold uppercase w-12 flex-shrink-0 flex items-center gap-0.5" title="Rigger asociado al Equipo">
-                            🦺 Rig:
-                          </span>
-                          <select v-model="line.rigger_asignado_id" @change="onRiggerEquipoCambiado(line)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': line.rigger_asignado_id }">
-                            <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Rigger (Opcional) --</option>
-                            <optgroup v-if="getUsuariosAgrupados('Rigger').sugeridos.length > 0" label="🎯 Riggers Sugeridos" class="bg-[#0a0f1e] text-cyan-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados('Rigger').sugeridos" :key="'rig-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
-                              </option>
-                            </optgroup>
-                            <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                              <option v-for="u in getUsuariosAgrupados('Rigger').otros" :key="'rig-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                                {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
-                              </option>
-                            </optgroup>
-                          </select>
-                          <button
-                            type="button"
-                            @click.stop="abrirModalRiggerExterno(line)"
-                            class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 flex-shrink-0 cursor-pointer transition-all shadow-xs"
-                            title="Enrolar y asignar rápidamente un Rigger Externo contratado para esta faena"
-                          >
-                            <span>➕</span> Ext
-                          </button>
-                          <template v-if="line.rigger_asignado_id">
-                            <span v-if="isRiggerExterno(line.rigger_asignado_id)" class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0" title="Rigger Externo / Subcontratista">🏢 EXT</span>
-                            <button type="button" v-else-if="getSemaforoTripulante(line.rigger_asignado_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                            <button type="button" v-else-if="getSemaforoTripulante(line.rigger_asignado_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                            <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: line.rigger_asignado_id, cargo: 'Rigger', semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                          </template>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div v-if="Array.isArray(line.turnos_operadores) && line.turnos_operadores.length > 1" class="space-y-1.5 min-w-0">
-                        <div v-for="(turno, tIdx) in line.turnos_operadores" :key="'turno-fec-'+idx+'-'+tIdx" class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
-                          <span class="text-[9px] text-amber-400 font-bold flex-shrink-0">T{{ tIdx + 1 }}:</span>
-                          <input type="date" v-model="turno.fecha_ini" @change="sincronizarFechasDesdeTurnos(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                          <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
-                          <input type="date" v-model="turno.fecha_fin" @change="sincronizarFechasDesdeTurnos(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        </div>
-                      </div>
-                      <div v-else class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
-                        <input type="date" v-model="line.fecha_plan_ini" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
-                        <input type="date" v-model="line.fecha_plan_fin" @change="sincronizarTurnoTitular(line); marcarDirtyAsignacion()" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                      </div>
-                    </td>
-                    <td class="py-2 px-2 text-center">
-                      <button v-if="line.is_linea_base === false" @click="eliminarEquipoPrincipal(line)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar equipo adicional">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-
-                  <!-- SECCIÓN 2: TRASLADOS Y LOGÍSTICA -->
-                  <tr class="bg-slate-900 border-y border-white/15">
-                    <td colspan="5" class="py-2 px-3">
-                      <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                          2. Equipos de Traslado & Choferes (Logística)
-                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ operacionesAssignment.equipos_extra?.length || 0 }} {{ (operacionesAssignment.equipos_extra?.length || 0) === 1 ? 'vehículo' : 'vehículos' }})</span>
-                        </span>
-                        <button @click="agregarEquipoTraslado" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
-                          + Equipo Traslado
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- FILAS TRASLADOS -->
-                  <tr v-if="!operacionesAssignment.equipos_extra || operacionesAssignment.equipos_extra.length === 0" class="font-sans border-b border-white/5">
-                    <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
-                      Sin vehículos de traslado asignados. Haz clic en "+ Equipo Traslado" para incorporar camas bajas, ramplas o escoltas.
-                    </td>
-                  </tr>
-                  <tr v-for="(eqEx, idx) in operacionesAssignment.equipos_extra" :key="'eqex-'+(eqEx._uid||('ex-'+idx))" class="hover:bg-white/[0.02] transition-colors font-mono border-b border-white/5">
-                    <td class="py-2.5 pr-3 pl-8 font-sans">
-                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
-                        <div class="min-w-0 flex-1">
-                          <!-- Línea base cotizada comercialmente -->
-                          <template v-if="eqEx.is_linea_base !== false && eqEx.is_linea_base">
-                            <div class="font-bold text-white text-xs leading-tight truncate" :title="eqEx.descripcion || eqEx.subcategoria">{{ eqEx.descripcion || eqEx.subcategoria || 'Servicio de Traslado / Flete' }}</div>
-                            <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <span class="text-blue-400 font-mono font-bold">{{ [eqEx.tipo || 'TRASLADOS', eqEx.subcategoria].filter(Boolean).join(' - ') }}</span>
-                              <span v-if="eqEx.cantidad">• {{ eqEx.cantidad }} {{ eqEx.unidad || 'Viaje' }}</span>
-                            </div>
-                          </template>
-                          <!-- Línea agregada en Operaciones: Categoría y Subcategoría Lado a Lado -->
-                          <template v-else>
-                            <div class="grid grid-cols-2 gap-1.5">
-                              <select v-model="eqEx.tipo" @change="eqEx.subcategoria = ''; eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/40 rounded px-1.5 py-1 text-[11px] text-blue-300 font-bold outline-none focus:border-blue-400 truncate" title="Seleccionar Categoría">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría --</option>
-                                <option v-for="cat in dbCategories.filter(c => !['PERSONAL CERTIFICADO'].includes(c.nombre_categoria))" :key="'cat-ex-'+cat.id_categoria" :value="cat.nombre_categoria" class="bg-[#0a0f1e] text-white">
-                                  {{ cat.nombre_categoria }}
-                                </option>
-                              </select>
-                              <select v-model="eqEx.subcategoria" :disabled="!eqEx.tipo" @change="eqEx.id_equipo = ''; marcarDirtyAsignacion()" class="w-full bg-[#0a0f1e] border border-blue-500/20 rounded px-1.5 py-1 text-[11px] text-white outline-none focus:border-blue-400 truncate disabled:opacity-40" title="Seleccionar Subcategoría">
-                                <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría --</option>
-                                <option v-for="sub in getSubcategoriesForType(eqEx.tipo)" :key="'sub-ex-'+sub.id_subcategoria" :value="sub.nombre_subcategoria" class="bg-[#0a0f1e] text-white">
-                                  {{ sub.nombre_subcategoria }}
-                                </option>
-                              </select>
-                            </div>
-                          </template>
-                          <div class="mt-1.5 flex items-center gap-1.5">
-                            <span class="text-[9px] font-bold uppercase text-slate-400 flex-shrink-0">Tramo:</span>
-                            <select v-model="eqEx.modalidad_traslado" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-blue-500/30 rounded px-1.5 py-0.5 text-[10px] font-bold outline-none" :class="eqEx.modalidad_traslado === 'SOLO_IDA' ? 'text-amber-300 border-amber-500/40' : 'text-blue-300'">
-                              <option value="IDA_VUELTA" class="bg-[#0a0f1e] text-white">🔄 Ida y Vuelta Completa</option>
-                              <option value="SOLO_IDA" class="bg-[#0a0f1e] text-amber-300">➡️ Solo Ida — Entrega en Obra (Retiro Pendiente)</option>
-                              <option value="SOLO_RETORNO" class="bg-[#0a0f1e] text-cyan-300">⬅️ Solo Retorno — Retiro desde Obra</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <select v-model="eqEx.id_equipo" @change="onEquipoExtraCambiado(idx)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Vehículo ({{ eqEx.subcategoria || eqEx.tipo || 'Todos' }}) --</option>
-                          <optgroup v-if="getEquiposAgrupados(eqEx).sugeridos.length > 0" label="🎯 Vehículos Sugeridos (Logística)" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                            <option v-for="eq in getEquiposAgrupados(eqEx).sugeridos" :key="'exeq-sug-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-white">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </optgroup>
-                          <optgroup v-if="getEquiposAgrupados(eqEx).otros.length > 0" label="🚜 Toda la Flota Disponible" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="eq in getEquiposAgrupados(eqEx).otros" :key="'exeq-otr-'+(eq.id_equipo||eq.patente)" :value="eq.id_equipo || eq.patente" class="bg-[#0a0f1e] text-slate-200">
-                              {{ eq.patente || 'S/P' }} - {{ eq.nombre_equipo || eq.tipo }} [{{ eq.nombre_subcategoria || eq.nombre_categoria || eq.tipo }}]
-                            </option>
-                          </optgroup>
-                        </select>
-                        <button type="button" v-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                        <button type="button" v-else-if="eqEx.id_equipo && getSemaforoEquipo(eqEx.id_equipo) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                        <button type="button" v-else-if="eqEx.id_equipo" @click.stop="abrirDetalleAcreditacion('equipo', eqEx.id_equipo)" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <select v-model="eqEx.chofer_id" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-blue-500/50 truncate">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Chofer / Escolta --</option>
-                          <optgroup v-if="getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos.length > 0" label="🎯 Choferes Sugeridos" class="bg-[#0a0f1e] text-blue-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').sugeridos" :key="'ch-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }}
-                            </option>
-                          </optgroup>
-                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja').otros" :key="'ch-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }}
-                            </option>
-                          </optgroup>
-                        </select>
-                        <template v-if="eqEx.chofer_id">
-                          <button type="button" v-if="getSemaforoTripulante(eqEx.chofer_id) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                          <button type="button" v-else-if="getSemaforoTripulante(eqEx.chofer_id) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: eqEx.chofer_id, cargo: (((eqEx.subcategoria||'').toLowerCase().includes('escolta') || (eqEx.tipo||'').toLowerCase().includes('liviano')) ? 'Escolta / Guía' : 'Chofer Cama Baja'), semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                        </template>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-white/10 rounded px-1.5 py-1 min-w-0">
-                        <input type="date" v-model="eqEx.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
-                        <input type="date" v-model="eqEx.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                      </div>
-                    </td>
-                    <td class="py-2 px-2 text-center">
-                      <button v-if="!eqEx.is_linea_base" @click="eliminarEquipoTraslado(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar vehículo de traslado">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-
-                  <!-- SECCIÓN 3: ESPECIALISTAS EN TERRENO -->
-                  <tr class="bg-slate-900 border-y border-white/15">
-                    <td colspan="5" class="py-2 px-3">
-                      <div class="flex justify-between items-center">
-                        <span class="text-[11px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                          3. Especialistas & Personal Técnico en Terreno
-                          <span class="text-[10px] font-mono text-slate-400 font-normal bg-white/5 px-2 py-0.5 rounded border border-white/10">({{ especialistasTerreno?.length || 0 }} {{ (especialistasTerreno?.length || 0) === 1 ? 'persona' : 'personas' }})</span>
-                        </span>
-                        <button @click="agregarEspecialista" type="button" class="text-[10px] bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer flex items-center gap-1">
-                          + Añadir Especialista
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- FILAS ESPECIALISTAS -->
-                  <tr v-if="!especialistasTerreno || especialistasTerreno.length === 0" class="font-sans border-b border-white/5">
-                    <td colspan="5" class="py-2.5 pr-3 pl-8 text-xs text-slate-500 italic">
-                      Sin especialistas técnicos asignados. Haz clic en "+ Añadir Especialista" para incorporar personal en tierra.
-                    </td>
-                  </tr>
-                  <tr v-for="(esp, idx) in especialistasTerreno" :key="'esp-'+idx" class="hover:bg-white/[0.02] font-mono border-b border-white/5">
-                    <td class="py-2.5 pr-3 pl-8 font-sans">
-                      <div class="flex items-start border-l-2 border-slate-700/60 pl-3">
-                        <div class="min-w-0 flex-1">
-                          <div class="grid grid-cols-2 gap-1.5">
-                            <select v-model="esp.cargo" :disabled="esp.is_linea_base" @change="marcarDirtyAsignacion" class="w-full bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-[11px] text-white font-sans outline-none focus:border-amber-500/50 truncate" :class="{ 'opacity-85 cursor-not-allowed': esp.is_linea_base }" title="Cargo / Especialidad">
-                              <option value="Prevencionista de Riesgos" class="bg-[#0a0f1e] text-white">Prevencionista</option>
-                              <option value="Rigger" class="bg-[#0a0f1e] text-white">Rigger Certificado</option>
-                              <option value="Supervisor Faena" class="bg-[#0a0f1e] text-white">Supervisor Faena</option>
-                              <option value="Maniobrista" class="bg-[#0a0f1e] text-white">Maniobrista / Señalero</option>
-                            </select>
-                            <div class="bg-[#0a0f1e] border border-white/10 rounded px-1.5 py-1 text-[10px] text-slate-300 font-mono truncate flex items-center" :title="esp.requerimiento || 'Personal en tierra'">
-                              {{ esp.requerimiento ? 'Req: ' + esp.requerimiento : 'Personal Faena' }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans text-center min-w-0 overflow-hidden">
-                      <span class="text-slate-600 text-xs">—</span>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <select v-model="esp.id_user" @change="onEspecialistaCambiado(esp)" class="w-full min-w-0 bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500/50 truncate" :class="{ 'border-cyan-500/40 bg-cyan-950/20': esp.cargo === 'Rigger' && esp.id_user }">
-                          <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar Especialista ({{ esp.cargo }}) --</option>
-                          <optgroup v-if="getUsuariosAgrupados(esp.cargo).sugeridos.length > 0" label="🎯 Especialistas Sugeridos" class="bg-[#0a0f1e] text-emerald-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(esp.cargo).sugeridos" :key="'esp-sug-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-white">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '(' + u.cargo + ')' : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
-                            </option>
-                          </optgroup>
-                          <optgroup label="👷 Resto de Personal Activo" class="bg-[#0a0f1e] text-slate-400 font-bold">
-                            <option v-for="u in getUsuariosAgrupados(esp.cargo).otros" :key="'esp-otr-'+u.id_user" :value="u.id_user" class="bg-[#0a0f1e] text-slate-200">
-                              {{ u.nombre_user || u.name_user }} {{ u.cargo ? '• ' + u.cargo : '' }} {{ (u.is_externo || u.json_data?.is_externo) ? '🏢 [EXTERNO]' : '' }}
-                            </option>
-                          </optgroup>
-                        </select>
-                        <button
-                          v-if="esp.cargo === 'Rigger'"
-                          type="button"
-                          @click.stop="abrirModalRiggerExterno(esp)"
-                          class="px-2 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 flex-shrink-0 cursor-pointer transition-all shadow-xs"
-                          title="Enrolar y asignar rápidamente un Rigger Externo contratado para esta faena"
-                        >
-                          <span>➕</span> Ext
-                        </button>
-                        <template v-if="esp.id_user">
-                          <span v-if="esp.cargo === 'Rigger' && isRiggerExterno(esp.id_user)" class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0" title="Rigger Externo / Subcontratista">🏢 EXT</span>
-                          <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'GREEN'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'GREEN' })" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Acreditación Vigente">🟢 VIG</button>
-                          <button type="button" v-else-if="getSemaforoTripulante(esp.id_user) === 'YELLOW'" @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'YELLOW' })" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Por Vencer">🟡 VNC</button>
-                          <button type="button" v-else @click.stop="abrirDetalleAcreditacion('persona', { id_user: esp.id_user, cargo: esp.cargo, semaforo: 'RED' })" class="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold font-sans flex-shrink-0 cursor-pointer" title="Vencido">🔴 VNC</button>
-                        </template>
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 font-sans min-w-0 overflow-hidden">
-                      <div class="flex items-center gap-1 bg-[#050810] border border-emerald-500/20 rounded px-1.5 py-1 min-w-0">
-                        <input type="date" v-model="esp.fecha_plan_ini" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                        <span class="text-slate-500 text-xs font-bold px-0.5 flex-shrink-0">➔</span>
-                        <input type="date" v-model="esp.fecha_plan_fin" @change="marcarDirtyAsignacion" class="w-full min-w-0 bg-transparent text-white text-[11px] font-mono font-bold outline-none [color-scheme:dark]" />
-                      </div>
-                    </td>
-                    <td class="py-2 px-2 text-center">
-                      <button v-if="!esp.is_linea_base" @click="eliminarEspecialista(idx)" type="button" class="text-slate-500 hover:text-red-400 p-1 cursor-pointer" title="Eliminar especialista">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                    </td>
-                  </tr>
-
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+          <!-- ÁRBOL JERÁRQUICO DE ASIGNACIÓN (SPEC-131: ESTRUCTURA IDÉNTICA A PREVENTA) -->
+          <AsignadorArbolRecursos
+            v-model:servicios="serviciosArbol"
+            v-model:lines="lines"
+            :db-categories="dbCategories"
+            :lista-equipos-master="listaEquiposMaster"
+            :usuarios="usuarios"
+            :disabled="isAsignacionConfirmada"
+            :format-currency="formatCurrency"
+            :get-semaforo-equipo="getSemaforoEquipo"
+            :get-semaforo-tripulante="getSemaforoTripulante"
+            :default-fecha-ini="operacionesAssignment.fecha_salida_plan"
+            :default-fecha-fin="operacionesAssignment.fecha_fin_plan"
+            @dirty="marcarDirtyAsignacion"
+            @abrir-acreditacion-equipo="abrirDetalleAcreditacion('equipo', $event)"
+            @abrir-acreditacion-persona="abrirDetalleAcreditacion('persona', $event)"
+            @abrir-modal-rigger-ext="abrirModalRiggerExterno($event)"
+          />
           <!-- BLOQUE INFERIOR: REFERENCIA VISITA A TERRENO + MATRIZ DE APAREJOS LADO A LADO -->
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
             
@@ -7292,6 +6706,7 @@ import ModalCaratulaEDP from '../../components/Operaciones/ModalCaratulaEDP.vue'
 import ModalITS from '../../components/Operaciones/ModalITS.vue'
 import ModalDespachoWhatsApp from '../../components/Operaciones/ModalDespachoWhatsApp.vue'
 import EstructuradorArbolServicios from '../../components/CRM/EstructuradorArbolServicios.vue'
+import AsignadorArbolRecursos from '../../components/Operaciones/AsignadorArbolRecursos.vue'
 
 const panelClienteMinimizado = ref(false)
 const modalWhatsAppVisible = ref(false)
@@ -8144,6 +7559,7 @@ const guardarCambiosAsignacion = async () => {
         await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
           id_proyecto: parseInt(projectId),
           id_user: parseInt(p.id_user),
+          id_linea_servicio: p.id_linea_servicio ? parseInt(p.id_linea_servicio) : null,
           rol_asignado: p.cargo || 'Personal Asignado',
           fecha_plan_ini: fIni,
           fecha_plan_fin: fFin,
@@ -8162,6 +7578,7 @@ const guardarCambiosAsignacion = async () => {
         if (l.equipo_asignado_id && !isNaN(parseInt(l.equipo_asignado_id))) {
           mapEquipos.set(parseInt(l.equipo_asignado_id), {
             id_equipo: l.equipo_asignado_id,
+            id_linea_servicio: l.id_linea_servicio ? parseInt(l.id_linea_servicio) : null,
             rol: l.tipo || 'Equipo Principal',
             f_ini: l.fecha_plan_ini,
             f_fin: l.fecha_plan_fin
@@ -8174,6 +7591,7 @@ const guardarCambiosAsignacion = async () => {
           if (ex.id_equipo && !isNaN(parseInt(ex.id_equipo)) && !mapEquipos.has(parseInt(ex.id_equipo))) {
             mapEquipos.set(parseInt(ex.id_equipo), {
               id_equipo: ex.id_equipo,
+              id_linea_servicio: ex.id_linea_servicio ? parseInt(ex.id_linea_servicio) : null,
               rol: ex.rol || 'Equipo Traslado',
               f_ini: ex.fecha_plan_ini,
               f_fin: ex.fecha_plan_fin
@@ -8188,6 +7606,7 @@ const guardarCambiosAsignacion = async () => {
         await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
           id_proyecto: parseInt(projectId),
           id_equipo: parseInt(eq.id_equipo),
+          id_linea_servicio: eq.id_linea_servicio ? parseInt(eq.id_linea_servicio) : null,
           rol_equipo: eq.rol || 'Equipo Asignado',
           fecha_plan_ini: fIni,
           fecha_plan_fin: fFin,
@@ -8364,6 +7783,16 @@ const getEquiposFiltradosPorLinea = (line) => {
 const getEquiposSugeridosPuros = (line) => {
   const master = listaEquiposMaster.value || []
   if (!line) return master
+
+  // Filtrado Relacional Estricto por ID de Subcategoría (SPEC-131)
+  if (line.id_subcategoria && Number(line.id_subcategoria) > 0) {
+    const porIdSub = master.filter(eq => Number(eq.id_subcategoria) === Number(line.id_subcategoria))
+    if (porIdSub.length > 0) return porIdSub
+  }
+  if (line.id_categoria && Number(line.id_categoria) > 0) {
+    const porIdCat = master.filter(eq => Number(eq.id_categoria) === Number(line.id_categoria))
+    if (porIdCat.length > 0) return porIdCat
+  }
 
   let catTarget = (line.tipo || line.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
   let subTarget = (line.subcategoria || line.descripcion || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
@@ -10017,6 +9446,7 @@ const tripulacionAsignada = computed(() => {
       } else {
         list.push({
           id_user: line.operador_asignado_id || null,
+          id_linea_servicio: line.id_linea_servicio ? parseInt(line.id_linea_servicio) : null,
           cargo,
           requerimiento: line.descripcion || line.subcategoria || cargo,
           equipo_asignado_id: line.equipo_asignado_id || '',
@@ -10656,6 +10086,7 @@ const confirmarGenerarRequerimiento = async () => {
     obra_direccion: siteVisit.value.obra_direccion || '',
     obra_ciudad: siteVisit.value.obra_ciudad || '',
     lines: JSON.parse(JSON.stringify(lines.value)),
+    servicios: JSON.parse(JSON.stringify(serviciosArbol.value || [])),
     equipo_descripcion: lines.value[0]?.descripcion || '',
     equipo_cantidad: lines.value[0]?.cantidad || 1,
     equipo_valor: lines.value[0]?.valorUnitario || 0,
@@ -11011,6 +10442,15 @@ const isOriginalLine = (index) => {
   }
   return index === 0 && !!snapshotComercial.value.equipo_descripcion
 }
+
+const snapshotComercialServicios = computed(() => {
+  if (Array.isArray(snapshotComercial.value?.servicios) && snapshotComercial.value.servicios.length > 0) {
+    return snapshotComercial.value.servicios
+  }
+  const crmServicios = opportunity.value?.json_field?.crm_v1?.servicios
+  if (Array.isArray(crmServicios) && crmServicios.length > 0) return crmServicios
+  return []
+})
 
 const cleanVal = (v) => (v === null || v === undefined) ? '' : String(v).trim()
 

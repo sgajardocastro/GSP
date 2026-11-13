@@ -1670,6 +1670,54 @@ class ProyectoModel {
       const flotaItems = [];
       const lineasServicio = crm.lineas_servicio || [];
 
+      // =========================================================================
+      // CONSULTA RELACIONAL DIRECTA A BASE DE DATOS (SINGLE SOURCE OF TRUTH)
+      // Omitiendo dependencia de JSON para datos transaccionales de asignación
+      // =========================================================================
+      const { rows: equiposAsignadosBD } = await client.query(`
+        SELECT 
+          re.id_rel_equipo,
+          re.id_equipo,
+          re.id_linea_servicio,
+          re.rol_equipo,
+          re.fecha_plan_ini,
+          re.fecha_plan_fin,
+          re.observaciones,
+          e.codigo_interno,
+          e.patente,
+          e.ppu,
+          e.marca,
+          e.modelo,
+          e.tipo,
+          e.capacidad_ton
+        FROM tpry_rel_equipo re
+        INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+        WHERE re.id_proyecto = $1 AND re.estado_real != 'CANCELADO'
+        ORDER BY re.fecha_plan_ini ASC, re.id_rel_equipo ASC
+      `, [id_proyecto]);
+
+      const { rows: personasAsignadasBD } = await client.query(`
+        SELECT 
+          rp.id_rel_persona,
+          rp.id_user,
+          rp.id_linea_servicio,
+          rp.rol_asignado,
+          rp.fecha_plan_ini,
+          rp.fecha_plan_fin,
+          rp.observaciones,
+          u.name_frst,
+          u.apellido_pat,
+          u.apellido_mat,
+          u.rut_user,
+          u.email,
+          u.fono,
+          u.cargo
+        FROM tpry_rel_persona rp
+        INNER JOIN tsec_users u ON rp.id_user = u.id_user
+        WHERE rp.id_proyecto = $1 AND rp.estado_real != 'CANCELADO'
+        ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
+      `, [id_proyecto]);
+
       // Horas Mínimas Contractuales (Piso Mínimo)
       // REQ-1105: Clasificación determinista por Categoría/Subcategoría (Excluyendo Personal Certificado y Traslados)
       const esLineaPersonalOT = (l) => {
@@ -1780,97 +1828,140 @@ class ProyectoModel {
         return f1 || f2 || '';
       };
 
-      const patentesFlotaVistas = new Set(); lineasEquiposOT.forEach((l, idx) => {
-        if (isTrasladoOrLogistica(l)) return; // Excluir traslados/fletes de la flota principal
-
-        const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
-        if (eqId) {
-          const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
-          const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
-            ? l.turnos_operadores.filter(t => t && t.operador_id)
-            : [];
-          let choferLabel = 'Sin Operador Asignado';
-          if (turnos.length > 0) {
-            choferLabel = turnos.map(t => {
-              const u = getUserInfo(t.operador_id) || {};
-              const nom = u.nombre_user || u.name_frst || 'Operador';
-              const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
-              return rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
-            }).join('<br>');
-          } else {
-            const opObj = getUserInfo(l.operador_asignado_id || ejec.operador_id) || {};
-            if (opObj.nombre_user || opObj.name_frst) {
-              const rng = fmtRangoTurnoOT(l.fecha_plan_ini, l.fecha_plan_fin);
-              choferLabel = rng
-                ? `<strong>${opObj.nombre_user || opObj.name_frst}</strong> (Operador • ${rng})`
-                : `${opObj.nombre_user || opObj.name_frst} (Operador)`;
+      if (equiposAsignadosBD.length > 0) {
+        // =========================================================================
+        // GENERACIÓN DE FLOTA 100% RELACIONAL DESDE BASE DE DATOS
+        // =========================================================================
+        equiposAsignadosBD.forEach((eq) => {
+          const pat = (eq.patente || eq.ppu || eq.codigo_interno || '').toUpperCase();
+          const rolNorm = String(eq.rol_equipo || '').toUpperCase();
+          const tipoNorm = String(eq.tipo || '').toUpperCase();
+          const esPrimario = rolNorm === 'PRIMARIO' || tipoNorm.includes('GRUA') || tipoNorm.includes('TELESCOPICA');
+          
+          // Cruzar operador asignado desde personasAsignadasBD
+          let personaAsociada = null;
+          if (eq.id_linea_servicio) {
+            personaAsociada = personasAsignadasBD.find(p => Number(p.id_linea_servicio) === Number(eq.id_linea_servicio));
+          }
+          if (!personaAsociada) {
+            if (esPrimario) {
+              personaAsociada = personasAsignadasBD.find(p => String(p.rol_asignado || '').toUpperCase().includes('OPERADOR'));
+            } else {
+              personaAsociada = personasAsignadasBD.find(p => {
+                const r = String(p.rol_asignado || '').toUpperCase();
+                return r.includes('CHOFER') || r.includes('TRANSPORTE') || r.includes('CONDUCTOR') || r.includes('PLUMA');
+              });
             }
           }
+          
+          let choferLabel = 'Sin Operador Asignado';
+          if (personaAsociada) {
+            const nom = `${personaAsociada.name_frst || ''} ${personaAsociada.apellido_pat || ''}`.trim() || 'Operador Asignado';
+            const rng = fmtRangoTurnoOT(eq.fecha_plan_ini || personaAsociada.fecha_plan_ini, eq.fecha_plan_fin || personaAsociada.fecha_plan_fin);
+            choferLabel = rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
+          }
+
           flotaItems.push({
-            segmento: 'Izaje Principal',
-            tipo: l.tipo || eqObj.tipo || 'Grúa Móvil',
-            modelo: l.subcategoria || eqObj.nombre_equipo || eqObj.modelo || 'General',
-            patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+            segmento: esPrimario ? 'Izaje Principal' : 'Traslado & Logística',
+            tipo: eq.tipo || (esPrimario ? 'Grúa Móvil' : 'Transporte'),
+            modelo: eq.modelo || eq.codigo_interno || eq.marca || 'Equipo de Flota',
+            patente: pat,
             chofer: choferLabel
           });
-        }
-      });
+        });
+      } else {
+        // Fallback histórico para proyectos antiguos
+        const patentesFlotaVistas = new Set(); lineasEquiposOT.forEach((l, idx) => {
+          if (isTrasladoOrLogistica(l)) return;
 
-      // Segmento 2: Traslados & Logística
-      const equiposExtra = Array.isArray(ejec.equipos_extra) ? ejec.equipos_extra : [];
-      const fmtModalidadTrasladoOT = (mod) => {
-        const m = String(mod || '').toUpperCase().trim();
-        if (m === 'SOLO_IDA' || m === 'IDA') return 'SOLO IDA — Entrega en Obra (Retiro Pendiente)';
-        if (m === 'SOLO_RETORNO' || m === 'RETORNO') return 'SOLO RETORNO — Retiro desde Obra';
-        if (m === 'IDA_VUELTA') return 'IDA Y VUELTA';
-        return '';
-      };
-      equiposExtra.forEach((ex, idx) => {
-        const eqId = typeof ex === 'object' ? ex.id_equipo : ex;
-        if (eqId) {
-          const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
-          const chObj = getUserInfo(ex.chofer_id || ejec.chofer_id) || {};
-          const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
-          const rngEx = fmtRangoTurnoOT(ex.fecha_plan_ini, ex.fecha_plan_fin);
-          const chNombre = chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado';
-          flotaItems.push({
-            segmento: modTexto ? `Traslado (${modTexto})` : 'Traslado & Logística',
-            tipo: ex.tipo || eqObj.tipo || 'Transporte',
-            modelo: eqObj.nombre_equipo || ex.subcategoria || ex.descripcion || 'Cama Baja',
-            patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
-            chofer: rngEx ? `${chNombre} <span style="color:#475569;">(${rngEx})</span>` : chNombre
-          });
-        }
-      });
-
-      // Si no hay equipos_extra pero lineasServicio tenía una línea de traslado con equipo asignado:
-      if (equiposExtra.length === 0) {
-        lineasServicio.filter(esLineaTrasladoOT).forEach((l) => {
           const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
           if (eqId) {
             const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
-            const chObj = getUserInfo(l.operador_asignado_id || ejec.chofer_id) || {};
+            const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
+              ? l.turnos_operadores.filter(t => t && t.operador_id)
+              : [];
+            let choferLabel = 'Sin Operador Asignado';
+            if (turnos.length > 0) {
+              choferLabel = turnos.map(t => {
+                const u = getUserInfo(t.operador_id) || {};
+                const nom = u.nombre_user || u.name_frst || 'Operador';
+                const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
+                return rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
+              }).join('<br>');
+            } else {
+              const opObj = getUserInfo(l.operador_asignado_id || ejec.operador_id) || {};
+              if (opObj.nombre_user || opObj.name_frst) {
+                const rng = fmtRangoTurnoOT(l.fecha_plan_ini, l.fecha_plan_fin);
+                choferLabel = rng
+                  ? `<strong>${opObj.nombre_user || opObj.name_frst}</strong> (Operador • ${rng})`
+                  : `${opObj.nombre_user || opObj.name_frst} (Operador)`;
+              }
+            }
             flotaItems.push({
-              segmento: 'Traslado & Logística',
-              tipo: l.tipo || eqObj.tipo || 'Transporte',
-              modelo: eqObj.nombre_equipo || eqObj.modelo || l.subcategoria || l.descripcion || 'Cama Baja',
+              segmento: 'Izaje Principal',
+              tipo: l.tipo || eqObj.tipo || 'Grúa Móvil',
+              modelo: l.subcategoria || eqObj.nombre_equipo || eqObj.modelo || 'General',
               patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
-              chofer: chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado'
+              chofer: choferLabel
             });
           }
         });
-      }
 
-      if (flotaItems.length === 0 && ejec.equipo_id) {
-        const eqObj = getEquipoInfo(ejec.equipo_id) || {};
-        const opObj = getUserInfo(ejec.operador_id) || {};
-        flotaItems.push({
-          segmento: 'Izaje Principal',
-          tipo: eqObj.tipo || 'Grúa',
-          modelo: eqObj.nombre_equipo || 'Equipo Principal',
-          patente: (eqObj.patente || ejec.equipo_id || '').toUpperCase(),
-          chofer: opObj.nombre_user ? `${opObj.nombre_user} (Operador)` : 'Asignado'
+        // Segmento 2: Traslados & Logística
+        const equiposExtra = Array.isArray(ejec.equipos_extra) ? ejec.equipos_extra : [];
+        const fmtModalidadTrasladoOT = (mod) => {
+          const m = String(mod || '').toUpperCase().trim();
+          if (m === 'SOLO_IDA' || m === 'IDA') return 'SOLO IDA — Entrega en Obra (Retiro Pendiente)';
+          if (m === 'SOLO_RETORNO' || m === 'RETORNO') return 'SOLO RETORNO — Retiro desde Obra';
+          if (m === 'IDA_VUELTA') return 'IDA Y VUELTA';
+          return '';
+        };
+        equiposExtra.forEach((ex, idx) => {
+          const eqId = typeof ex === 'object' ? ex.id_equipo : ex;
+          if (eqId) {
+            const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
+            const chObj = getUserInfo(ex.chofer_id || ejec.chofer_id) || {};
+            const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
+            const rngEx = fmtRangoTurnoOT(ex.fecha_plan_ini, ex.fecha_plan_fin);
+            const chNombre = chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado';
+            flotaItems.push({
+              segmento: modTexto ? `Traslado (${modTexto})` : 'Traslado & Logística',
+              tipo: ex.tipo || eqObj.tipo || 'Transporte',
+              modelo: eqObj.nombre_equipo || ex.subcategoria || ex.descripcion || 'Cama Baja',
+              patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+              chofer: rngEx ? `${chNombre} <span style="color:#475569;">(${rngEx})</span>` : chNombre
+            });
+          }
         });
+
+        if (equiposExtra.length === 0) {
+          lineasServicio.filter(esLineaTrasladoOT).forEach((l) => {
+            const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
+            if (eqId) {
+              const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
+              const chObj = getUserInfo(l.operador_asignado_id || ejec.chofer_id) || {};
+              flotaItems.push({
+                segmento: 'Traslado & Logística',
+                tipo: l.tipo || eqObj.tipo || 'Transporte',
+                modelo: eqObj.nombre_equipo || eqObj.modelo || l.subcategoria || l.descripcion || 'Cama Baja',
+                patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
+                chofer: chObj.nombre_user || chObj.name_frst ? `${chObj.nombre_user || chObj.name_frst} (Chofer)` : 'Sin Chofer Asignado'
+              });
+            }
+          });
+        }
+
+        if (flotaItems.length === 0 && ejec.equipo_id) {
+          const eqObj = getEquipoInfo(ejec.equipo_id) || {};
+          const opObj = getUserInfo(ejec.operador_id) || {};
+          flotaItems.push({
+            segmento: 'Izaje Principal',
+            tipo: eqObj.tipo || 'Grúa',
+            modelo: eqObj.nombre_equipo || 'Equipo Principal',
+            patente: (eqObj.patente || ejec.equipo_id || '').toUpperCase(),
+            chofer: opObj.nombre_user ? `${opObj.nombre_user} (Operador)` : 'Asignado'
+          });
+        }
       }
 
       let flotaHtml = '';
@@ -1888,51 +1979,79 @@ class ProyectoModel {
 
       // Dotación Humana / Tripulación
       const tripulacionItems = [];
-      const userIdsSeen = new Set();
-
-      lineasServicio.forEach(l => {
-        const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
-          ? l.turnos_operadores.filter(t => t && t.operador_id)
-          : [];
-        if (turnos.length > 0) {
-          turnos.forEach(t => {
-            if (t.operador_id && !userIdsSeen.has(t.operador_id)) {
-              userIdsSeen.add(t.operador_id);
-              const u = getUserInfo(t.operador_id);
-              const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
-              if (u) tripulacionItems.push({ rol: rng ? `Operador Grúa / Equipo (${rng})` : 'Operador Grúa / Equipo', ...u });
-            }
+      if (personasAsignadasBD.length > 0) {
+        // =========================================================================
+        // GENERACIÓN DE TRIPULACIÓN 100% RELACIONAL DESDE BASE DE DATOS
+        // =========================================================================
+        personasAsignadasBD.forEach((p) => {
+          const nombreCompleto = `${p.name_frst || ''} ${p.apellido_pat || ''} ${p.apellido_mat || ''}`.replace(/\s+/g, ' ').trim();
+          const rng = fmtRangoTurnoOT(p.fecha_plan_ini, p.fecha_plan_fin);
+          const rolTexto = rng ? `${p.rol_asignado || p.cargo || 'Especialista'} (${rng})` : (p.rol_asignado || p.cargo || 'Especialista');
+          
+          tripulacionItems.push({
+            nombre_user: nombreCompleto || 'Personal Asignado',
+            rut_user: p.rut_user || 'N/A',
+            rol: rolTexto,
+            cargo: p.cargo || 'Operaciones',
+            email: p.email || '-',
+            fono: p.fono || '-'
           });
-        } else if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
-          userIdsSeen.add(l.operador_asignado_id);
-          const u = getUserInfo(l.operador_asignado_id);
-          if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
-        }
-      });
+        });
+      } else {
+        // Fallback histórico para proyectos antiguos
+        const userIdsSeen = new Set();
+        lineasServicio.forEach(l => {
+          const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
+            ? l.turnos_operadores.filter(t => t && t.operador_id)
+            : [];
+          if (turnos.length > 0) {
+            turnos.forEach(t => {
+              if (t.operador_id && !userIdsSeen.has(t.operador_id)) {
+                userIdsSeen.add(t.operador_id);
+                const u = getUserInfo(t.operador_id);
+                const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
+                if (u) tripulacionItems.push({ rol: rng ? `Operador Grúa / Equipo (${rng})` : 'Operador Grúa / Equipo', ...u });
+              }
+            });
+          } else if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
+            userIdsSeen.add(l.operador_asignado_id);
+            const u = getUserInfo(l.operador_asignado_id);
+            if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
+          }
+        });
 
-      equiposExtra.forEach(ex => {
-        if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
-          userIdsSeen.add(ex.chofer_id);
-          const u = getUserInfo(ex.chofer_id);
-          const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
-          if (u) tripulacionItems.push({ rol: modTexto ? `Chofer Transporte (${modTexto})` : 'Chofer Cama Baja / Transporte', ...u });
-        }
-      });
+        const equiposExtra = Array.isArray(ejec.equipos_extra) ? ejec.equipos_extra : [];
+        const fmtModalidadTrasladoOT = (mod) => {
+          const m = String(mod || '').toUpperCase().trim();
+          if (m === 'SOLO_IDA' || m === 'IDA') return 'SOLO IDA — Entrega en Obra (Retiro Pendiente)';
+          if (m === 'SOLO_RETORNO' || m === 'RETORNO') return 'SOLO RETORNO — Retiro desde Obra';
+          if (m === 'IDA_VUELTA') return 'IDA Y VUELTA';
+          return '';
+        };
+        equiposExtra.forEach(ex => {
+          if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
+            userIdsSeen.add(ex.chofer_id);
+            const u = getUserInfo(ex.chofer_id);
+            const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
+            if (u) tripulacionItems.push({ rol: modTexto ? `Chofer Transporte (${modTexto})` : 'Chofer Cama Baja / Transporte', ...u });
+          }
+        });
 
-      if (ejec.operador_id && !userIdsSeen.has(ejec.operador_id)) {
-        userIdsSeen.add(ejec.operador_id);
-        const u = getUserInfo(ejec.operador_id);
-        if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
-      }
-      if (ejec.rigger_id && !userIdsSeen.has(ejec.rigger_id)) {
-        userIdsSeen.add(ejec.rigger_id);
-        const u = getUserInfo(ejec.rigger_id);
-        if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });
-      }
-      if (ejec.chofer_id && !userIdsSeen.has(ejec.chofer_id)) {
-        userIdsSeen.add(ejec.chofer_id);
-        const u = getUserInfo(ejec.chofer_id);
-        if (u) tripulacionItems.push({ rol: 'Chofer Transporte', ...u });
+        if (ejec.operador_id && !userIdsSeen.has(ejec.operador_id)) {
+          userIdsSeen.add(ejec.operador_id);
+          const u = getUserInfo(ejec.operador_id);
+          if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
+        }
+        if (ejec.rigger_id && !userIdsSeen.has(ejec.rigger_id)) {
+          userIdsSeen.add(ejec.rigger_id);
+          const u = getUserInfo(ejec.rigger_id);
+          if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });
+        }
+        if (ejec.chofer_id && !userIdsSeen.has(ejec.chofer_id)) {
+          userIdsSeen.add(ejec.chofer_id);
+          const u = getUserInfo(ejec.chofer_id);
+          if (u) tripulacionItems.push({ rol: 'Chofer Transporte', ...u });
+        }
       }
 
       let tripulacionHtml = '';

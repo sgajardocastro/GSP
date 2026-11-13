@@ -165,9 +165,14 @@
             />
           </div>
 
+          <!-- Badge si el servicio completo fue agregado en Operaciones -->
+          <span v-if="esServicioAgregado(srv)" class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            + Agregado en Operaciones
+          </span>
+
           <div class="flex items-center gap-3">
-            <!-- Subtotal del Servicio -->
-            <div class="text-right">
+            <!-- Subtotal del Servicio (Oculto en Operaciones) -->
+            <div v-if="!ocultarPrecios" class="text-right">
               <span class="text-xs mr-1.5 text-slate-400">Subtotal:</span>
               <span class="tabular font-mono text-sm font-bold text-slate-100">
                 {{ formatMoneda(srv.subtotal_servicio) }}
@@ -218,8 +223,9 @@
                 <th class="py-2.5 px-2.5 w-[26%]">Glosa Comercial</th>
                 <th class="py-2.5 px-2.5 w-[17%]">Unidad de Cobro</th>
                 <th class="py-2.5 px-2.5 w-[13%]">Magnitud</th>
-                <th class="py-2.5 px-2.5 w-[10%] text-right">Tarifa Neto</th>
-                <th class="py-2.5 pl-2.5 pr-4 w-[8%] text-right">Subtotal</th>
+                <th v-if="!ocultarPrecios" class="py-2.5 px-2.5 w-[10%] text-right">Tarifa Neto</th>
+                <th v-if="!ocultarPrecios" class="py-2.5 pl-2.5 pr-4 w-[8%] text-right">Subtotal</th>
+                <th v-if="ocultarPrecios" class="py-2.5 pl-2.5 pr-4 w-[5%] text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -398,8 +404,8 @@
                   </div>
                 </td>
 
-                <!-- Tarifa Unitario Primario -->
-                <td class="py-2 px-2.5">
+                <!-- Tarifa Unitario Primario (Oculto en Operaciones) -->
+                <td v-if="!ocultarPrecios" class="py-2 px-2.5">
                   <div class="relative">
                     <span class="absolute left-2 top-1.5 text-xs pointer-events-none text-slate-400">$</span>
                     <input
@@ -413,14 +419,17 @@
                   </div>
                 </td>
 
-                <!-- Subtotal Primario -->
-                <td class="py-2 pl-2.5 pr-4 text-right">
+                <!-- Subtotal Primario (Oculto en Operaciones) -->
+                <td v-if="!ocultarPrecios" class="py-2 pl-2.5 pr-4 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <span class="tabular font-mono text-xs font-semibold text-slate-100">
                       {{ formatMoneda(srv.primario.subtotal) }}
                     </span>
                     <span class="w-5 inline-block"></span>
                   </div>
+                </td>
+                <td v-else class="py-2 pl-2.5 pr-4 text-right">
+                  <span class="w-5 inline-block"></span>
                 </td>
               </tr>
 
@@ -433,9 +442,12 @@
                 <!-- Celda con conector de árbol -->
                 <td class="py-1.5 pr-4 tree-branch-cell">
                   <!-- Rama Traslado: CERO dropdown, solo etiqueta limpia Traslado -->
-                  <div v-if="rama.rol === 'Traslado'" class="flex items-center py-1">
+                  <div v-if="rama.rol === 'Traslado'" class="flex items-center gap-2 py-1">
                     <span class="text-xs font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                       Traslado
+                    </span>
+                    <span v-if="esRamaAgregada(srv, rama)" class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      + Agregado en Operaciones
                     </span>
                   </div>
 
@@ -443,6 +455,9 @@
                   <div v-else class="flex items-center gap-2">
                     <span class="text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 bg-slate-800 text-slate-400 border border-slate-700">
                       Personal
+                    </span>
+                    <span v-if="esRamaAgregada(srv, rama)" class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      + Agregado
                     </span>
                     <select
                       v-model="rama.id_subcategoria"
@@ -586,8 +601,8 @@
                   </div>
                 </td>
 
-                <!-- Tarifa Neto Rama -->
-                <td class="py-1.5 px-2.5">
+                <!-- Tarifa Neto Rama (Oculto en Operaciones) -->
+                <td v-if="!ocultarPrecios" class="py-1.5 px-2.5">
                   <div class="relative">
                     <span class="absolute left-2 top-1.5 text-xs pointer-events-none text-slate-400">$</span>
                     <input
@@ -602,7 +617,7 @@
                 </td>
 
                 <!-- Subtotal Rama + Botón Eliminar Rama -->
-                <td class="py-1.5 pl-2.5 pr-4 text-right">
+                <td v-if="!ocultarPrecios" class="py-1.5 pl-2.5 pr-4 text-right">
                   <div class="flex items-center justify-end gap-1.5">
                     <span class="tabular font-mono text-xs font-medium text-slate-300">
                       {{ formatMoneda(rama.subtotal) }}
@@ -618,11 +633,22 @@
                     </button>
                   </div>
                 </td>
+                <td v-else class="py-1.5 pl-2.5 pr-4 text-right">
+                  <button
+                    type="button"
+                    @click="eliminarRama(srv, rIdx)"
+                    :disabled="disabled"
+                    class="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                    title="Quitar ítem"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </td>
               </tr>
 
               <!-- FILA DE AGREGAR ÍTEM AL FINAL DEL ÁRBOL (TERMINA EN CODO └── [+]) -->
               <tr class="hover:bg-white/[0.01] transition-colors">
-                <td colspan="6" class="py-2 pr-4 tree-branch-cell is-last">
+                <td :colspan="ocultarPrecios ? 5 : 6" class="py-2 pr-4 tree-branch-cell is-last">
                   <button
                     type="button"
                     @click="abrirAddMenuPopover($event, srvIdx)"
@@ -745,6 +771,14 @@ const props = defineProps({
   formatInputMiles: {
     type: Function,
     default: null
+  },
+  ocultarPrecios: {
+    type: Boolean,
+    default: false
+  },
+  snapshotServicios: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -1043,6 +1077,19 @@ const calcularSubtotalNodo = (nodo) => {
 const totalNetoServicios = computed(() => {
   return localServicios.value.reduce((acc, s) => acc + (s.subtotal_servicio || 0), 0)
 })
+
+// Detección de servicios o ramas incorporados en Operaciones vs Cotización Original
+const esServicioAgregado = (srv) => {
+  if (!props.snapshotServicios || props.snapshotServicios.length === 0) return false
+  return !props.snapshotServicios.some(s => s.id_servicio === srv.id_servicio)
+}
+
+const esRamaAgregada = (srv, rama) => {
+  if (!props.snapshotServicios || props.snapshotServicios.length === 0) return false
+  const srvOrig = props.snapshotServicios.find(s => s.id_servicio === srv.id_servicio)
+  if (!srvOrig) return true
+  return !srvOrig.ramas?.some(r => r.id_linea === rama.id_linea)
+}
 
 // Total de ítems planos sincronizados
 const totalItemsPlanos = computed(() => {
