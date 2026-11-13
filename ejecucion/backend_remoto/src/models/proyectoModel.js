@@ -1685,11 +1685,10 @@ class ProyectoModel {
           re.observaciones,
           e.codigo_interno,
           e.patente,
-          e.ppu,
           e.marca,
           e.modelo,
-          e.tipo,
-          e.capacidad_ton
+          e.tipo_equipo as tipo,
+          e.capacidad_maxima as capacidad_ton
         FROM tpry_rel_equipo re
         INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
         WHERE re.id_proyecto = $1 AND re.estado_real != 'CANCELADO'
@@ -1726,7 +1725,7 @@ class ProyectoModel {
             INSERT INTO tpry_rel_persona (
               id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, estado_real, id_user_creacion
             ) VALUES ($1, $2, $3, COALESCE($4, NOW()), COALESCE($5, NOW()), 'PROGRAMADO', $6)
-          `, [id_proyecto, ps.id_user, ps.rol_asignado, ps.f_ini ? new Date(ps.f_ini) : null, ps.f_fin ? new Date(ps.f_fin) : null, id_user || 1]);
+          `, [id_proyecto, ps.id_user, ps.rol_asignado, ps.f_ini ? new Date(ps.f_ini) : null, ps.f_fin ? new Date(ps.f_fin) : null, p.id_user_creacion || 1]);
         }
       }
 
